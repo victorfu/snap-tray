@@ -154,6 +154,8 @@ std::optional<CursorTimeline> CursorTimeline::parse(const QByteArray& jsonl, QSt
     timeline.info.shapesAvailable = header.value(QStringLiteral("shapes")).toBool();
     timeline.info.clicksAvailable = header.value(QStringLiteral("clicks")).toBool();
     timeline.info.cursorInVideo = header.value(QStringLiteral("cursorInVideo")).toBool();
+    const double pixelRatio = header.value(QStringLiteral("pixelRatio")).toDouble(1.0);
+    timeline.info.pixelRatio = pixelRatio > 0.0 ? pixelRatio : 1.0;
 
     QSet<quint32> unreadableShapes;
     for (int i = 1; i < lines.size(); ++i) {
@@ -234,7 +236,8 @@ bool CursorTimelineWriter::open(const CursorTimelineInfo& info)
                  {QStringLiteral("coordinates"), QStringLiteral("video-pixels")},
                  {QStringLiteral("shapes"), info.shapesAvailable},
                  {QStringLiteral("clicks"), info.clicksAvailable},
-                 {QStringLiteral("cursorInVideo"), info.cursorInVideo}}),
+                 {QStringLiteral("cursorInVideo"), info.cursorInVideo},
+                 {QStringLiteral("pixelRatio"), info.pixelRatio}}),
            true);
     flush();
     return !m_failed;

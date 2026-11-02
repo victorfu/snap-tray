@@ -1954,6 +1954,71 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Highlight Clicks</source>
+        <translation>إبراز النقرات</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Click Highlights</source>
+        <translation>إخفاء إبراز النقرات</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Clicks</source>
+        <translation>النقرات</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooths the pointer's path; clicks stay where they happened</source>
+        <translation>ينعّم مسار المؤشر؛ وتبقى النقرات في مكان حدوثها</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Size: %1</source>
+        <translation>حجم المؤشر: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the Mouse Pointer</source>
+        <translation>إظهار مؤشر الماوس</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the Mouse Pointer</source>
+        <translation>إخفاء مؤشر الماوس</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer</source>
+        <translation>المؤشر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>pointer effects need GIF or WebP on this system</source>
+        <translation>تأثيرات المؤشر تتطلب GIF أو WebP على هذا النظام</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: High</source>
+        <translation>تنعيم: مرتفع</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Medium</source>
+        <translation>تنعيم: متوسط</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Low</source>
+        <translation>تنعيم: منخفض</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Off</source>
+        <translation>تنعيم: إيقاف</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
         <source>Save again with the current settings</source>
         <translation>الحفظ مرة أخرى بالإعدادات الحالية</translation>

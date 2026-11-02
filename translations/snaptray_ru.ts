@@ -1960,6 +1960,71 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Highlight Clicks</source>
+        <translation>Подсвечивать щелчки</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Click Highlights</source>
+        <translation>Скрыть подсветку щелчков</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Clicks</source>
+        <translation>Щелчки</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooths the pointer's path; clicks stay where they happened</source>
+        <translation>Сглаживает путь указателя; щелчки остаются на своих местах</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Size: %1</source>
+        <translation>Размер указателя: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the Mouse Pointer</source>
+        <translation>Показать указатель мыши</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the Mouse Pointer</source>
+        <translation>Скрыть указатель мыши</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer</source>
+        <translation>Указатель</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>pointer effects need GIF or WebP on this system</source>
+        <translation>для эффектов указателя в этой системе нужен GIF или WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: High</source>
+        <translation>Сглаживание: Высокое</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Medium</source>
+        <translation>Сглаживание: Среднее</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Low</source>
+        <translation>Сглаживание: Низкое</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Off</source>
+        <translation>Сглаживание: Выкл.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
         <source>Save again with the current settings</source>
         <translation>Сохранить снова с текущими настройками</translation>

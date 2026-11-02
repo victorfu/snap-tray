@@ -1941,6 +1941,71 @@ English is always included and cannot be removed.</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Highlight Clicks</source>
+        <translation>เน้นการคลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Click Highlights</source>
+        <translation>ซ่อนการเน้นการคลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Clicks</source>
+        <translation>การคลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooths the pointer's path; clicks stay where they happened</source>
+        <translation>ทำให้เส้นทางตัวชี้ลื่นขึ้น ตำแหน่งคลิกยังคงเดิม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Size: %1</source>
+        <translation>ขนาดตัวชี้: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the Mouse Pointer</source>
+        <translation>แสดงตัวชี้เมาส์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the Mouse Pointer</source>
+        <translation>ซ่อนตัวชี้เมาส์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer</source>
+        <translation>ตัวชี้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>pointer effects need GIF or WebP on this system</source>
+        <translation>เอฟเฟกต์ตัวชี้ต้องใช้ GIF หรือ WebP ในระบบนี้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: High</source>
+        <translation>ความลื่น: สูง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Medium</source>
+        <translation>ความลื่น: กลาง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Low</source>
+        <translation>ความลื่น: ต่ำ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Off</source>
+        <translation>ความลื่น: ปิด</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
         <source>Save again with the current settings</source>
         <translation>บันทึกอีกครั้งด้วยการตั้งค่าปัจจุบัน</translation>

@@ -1954,6 +1954,71 @@ Storlek: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Highlight Clicks</source>
+        <translation>Markera klick</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Click Highlights</source>
+        <translation>Dölj klickmarkering</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Clicks</source>
+        <translation>Klick</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooths the pointer's path; clicks stay where they happened</source>
+        <translation>Jämnar ut pekarens väg; klick stannar där de skedde</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Size: %1</source>
+        <translation>Pekarstorlek: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the Mouse Pointer</source>
+        <translation>Visa muspekaren</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the Mouse Pointer</source>
+        <translation>Dölj muspekaren</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer</source>
+        <translation>Pekare</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>pointer effects need GIF or WebP on this system</source>
+        <translation>pekareffekter kräver GIF eller WebP på det här systemet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: High</source>
+        <translation>Utjämning: Hög</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Medium</source>
+        <translation>Utjämning: Medel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Low</source>
+        <translation>Utjämning: Låg</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Off</source>
+        <translation>Utjämning: Av</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
         <source>Save again with the current settings</source>
         <translation>Spara igen med nuvarande inställningar</translation>

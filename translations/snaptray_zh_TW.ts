@@ -2087,6 +2087,71 @@ File size: %3</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Highlight Clicks</source>
+        <translation>醒目提示點擊</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Click Highlights</source>
+        <translation>隱藏點擊醒目提示</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Clicks</source>
+        <translation>點擊</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooths the pointer's path; clicks stay where they happened</source>
+        <translation>平滑指標路徑；點擊位置保持不變</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Size: %1</source>
+        <translation>指標大小：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the Mouse Pointer</source>
+        <translation>顯示滑鼠指標</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the Mouse Pointer</source>
+        <translation>隱藏滑鼠指標</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer</source>
+        <translation>指標</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>pointer effects need GIF or WebP on this system</source>
+        <translation>此系統上的指標效果需要 GIF 或 WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: High</source>
+        <translation>平滑：高</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Medium</source>
+        <translation>平滑：中</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Low</source>
+        <translation>平滑：低</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smooth: Off</source>
+        <translation>平滑：關</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
         <source>Save again with the current settings</source>
         <translation>以目前設定再次儲存</translation>

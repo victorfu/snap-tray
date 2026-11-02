@@ -78,7 +78,18 @@ If several of these happen at once, the recording still ends only once and the f
 
 The recorded video does not contain the mouse pointer. While a recording that opens in the preview runs, SnapTray keeps a separate record of the pointer next to it: where it was, what it looked like, and when buttons were pressed. Keyboard input is never recorded. This record stays with the temporary recording and is deleted with it when you save or discard; saved videos and exports never include it. It is what later editing features use to show, enlarge or highlight the pointer.
 
-On Linux (X11) it includes the pointer's shape and clicks. On macOS and Windows only the position is kept for now. If the record cannot be written, the recording itself is not affected.
+On Linux (X11) it includes the pointer's shape and clicks. On macOS and Windows only the position is kept for now, and the pointer is drawn as a plain arrow. If the record cannot be written, the recording itself is not affected.
+
+### Pointer effects in the preview
+
+When a recording has this record, the preview shows pointer controls next to the format buttons. What you see in the preview is what the export draws, through the same crop and trim:
+
+- **Pointer**: show or hide the mouse pointer in the exported video.
+- **Size** (1×, 1.5×, 2×, 3×): draw the pointer larger.
+- **Smooth** (Off, Low, Medium, High): smooth out a shaky path. Clicks always stay exactly where and when they happened. Off by default.
+- **Clicks**: show a brief ring where each click happened. Needs recorded clicks (Linux).
+
+Your last choices are remembered, and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. On macOS and Windows, pointer effects are available for GIF and WebP exports; MP4 exports there do not draw them yet, and the preview says so.
 
 ## Recovering unsaved recordings
 

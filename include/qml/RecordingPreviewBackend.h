@@ -1,6 +1,7 @@
 #pragma once
 
 #include "recording/PreviewEditHistory.h"
+#include "recording/CursorEffects.h"
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
 #include "recording/WindowTimeline.h"
@@ -90,6 +91,16 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY editHistoryChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY editHistoryChanged)
     Q_PROPERTY(bool hasEdits READ hasEdits NOTIFY editHistoryChanged)
+
+    // Pointer effects (#160), drawn the same way by the preview and exports.
+    Q_PROPERTY(bool hasPointerData READ hasPointerData NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(bool cursorEffectsAvailable READ cursorEffectsAvailable NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(bool clickEffectsAvailable READ clickEffectsAvailable NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(bool cursorEffectsActive READ cursorEffectsActive NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(bool showCursor READ showCursor WRITE setShowCursor NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(qreal cursorScale READ cursorScale WRITE setCursorScale NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(int cursorSmoothing READ cursorSmoothing WRITE setCursorSmoothing NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(bool clickRipple READ clickRipple WRITE setClickRipple NOTIFY cursorEffectsChanged)
 
     // True while the "discard this recording?" confirmation is shown.
     Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending NOTIFY discardConfirmationChanged)
@@ -214,6 +225,24 @@ public:
     // Back to the unedited recording, as one undoable step.
     Q_INVOKABLE void resetEdits();
 
+    // A usable pointer sidecar exists for this recording.
+    bool hasPointerData() const;
+    // The options can be used with the selected format on this platform.
+    bool cursorEffectsAvailable() const;
+    bool clickEffectsAvailable() const;
+    // Effects will be drawn into the export (and so are shown in the preview).
+    bool cursorEffectsActive() const;
+    bool showCursor() const { return m_cursorEffects.showCursor; }
+    void setShowCursor(bool value);
+    qreal cursorScale() const { return m_cursorEffects.scale; }
+    void setCursorScale(qreal value);
+    int cursorSmoothing() const { return int(m_cursorEffects.smoothing); }
+    void setCursorSmoothing(int value);
+    bool clickRipple() const { return m_cursorEffects.clickRipple; }
+    void setClickRipple(bool value);
+    const SnapTray::CursorTimeline* cursorTimeline() const { return m_cursorTimeline.get(); }
+    SnapTray::CursorEffectSettings cursorEffects() const { return m_cursorEffects; }
+
     // Called by QML VideoPlaybackItem position/duration updates
     Q_INVOKABLE void updatePosition(qint64 ms);
     Q_INVOKABLE void updateDuration(qint64 ms);
@@ -221,6 +250,7 @@ public:
 
 signals:
     void windowTimelineChanged();
+    void cursorEffectsChanged();
     // External interface consumed by MainApplication. `outputSize` is the
     // pixel size of a cropped export (for the filename's {w}x{h}); it is
     // empty when the output is not cropped.
@@ -295,6 +325,13 @@ private:
     QRect m_cropRect;
     QSize m_videoSize;
     std::optional<SnapTray::WindowTimeline> m_windowTimeline;
+    std::shared_ptr<const SnapTray::CursorTimeline> m_cursorTimeline;
+    SnapTray::CursorEffectSettings m_cursorEffects;
+    mutable std::optional<bool> m_mp4FrameFilterSupported;
+    void setCursorEffects(const SnapTray::CursorEffectSettings& settings);
+    // Draws the current pointer effects on an output frame; a snapshot.
+    std::function<void(QImage&, qint64)> cursorFrameFilter() const;
+    void editCursorEffects(const std::function<void(SnapTray::CursorEffectSettings&)>& change);
     std::optional<SnapTray::WindowSample> windowAt(const QPointF &viewPoint, const QRectF &contentRect,
                                                    qint64 positionMs) const;
 

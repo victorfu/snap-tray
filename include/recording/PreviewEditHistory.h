@@ -1,6 +1,8 @@
 #ifndef PREVIEWEDITHISTORY_H
 #define PREVIEWEDITHISTORY_H
 
+#include "recording/CursorEffects.h"
+
 #include <QRect>
 #include <QVector>
 #include <QtGlobal>
@@ -13,13 +15,17 @@ struct PreviewEditState {
     QRect crop;
     qint64 trimStart = 0;
     qint64 trimEnd = -1;
+    // Pointer effects (#160) are undoable like crop and trim, but they are a
+    // look, not an edit of the footage: isUnedited() ignores them.
+    CursorEffectSettings cursor;
 
     bool operator==(const PreviewEditState& other) const
     {
-        return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd;
+        return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd
+            && cursor == other.cursor;
     }
     bool operator!=(const PreviewEditState& other) const { return !(*this == other); }
-    bool isUnedited() const { return *this == PreviewEditState{}; }
+    bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1; }
 };
 
 // Session-only undo/redo for preview edits. Each record() is one undo step;
@@ -60,6 +66,13 @@ public:
     }
 
     PreviewEditState current() const { return m_states.at(m_index); }
+
+    // Starts over from `initial` (the state the preview opened with).
+    void reset(const PreviewEditState& initial)
+    {
+        m_states = {initial};
+        m_index = 0;
+    }
 
 private:
     QVector<PreviewEditState> m_states{PreviewEditState{}};

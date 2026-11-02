@@ -38,6 +38,19 @@ Item {
         }
     }
     readonly property var aspectPresetLabels: [qsTr("Free"), qsTr("Original"), "16:9", "4:3", "1:1", "9:16"]
+    // The "backend" context object, for items that have a property of that name.
+    readonly property QtObject previewBackend: backend
+    // Pointer effects (#160): size steps and smoothing levels, in backend order.
+    readonly property var pointerScales: [1.0, 1.5, 2.0, 3.0]
+    readonly property var pointerSmoothingLabels: [qsTr("Smooth: Off"), qsTr("Smooth: Low"),
+                                                   qsTr("Smooth: Medium"), qsTr("Smooth: High")]
+    function nextPointerScale(current) {
+        for (let i = 0; i < pointerScales.length; ++i) {
+            if (pointerScales[i] > current + 0.01)
+                return pointerScales[i]
+        }
+        return pointerScales[0]
+    }
     // A text field has keyboard focus: playback shortcuts must not steal its keys.
     readonly property bool textEntryActive: !!Window.activeFocusItem
                                             && Window.activeFocusItem.selectedText !== undefined
@@ -208,6 +221,18 @@ Item {
                     setLooping(true)
                     play()
                 }
+            }
+
+            // The pointer and click effects the export will draw, drawn by
+            // the same renderer; hidden while comparing with the original.
+            RecordingCursorOverlay {
+                objectName: "previewCursorOverlay"
+                anchors.fill: parent
+                z: 3
+                visible: !root.comparingOriginal
+                backend: root.previewBackend
+                position: videoPlayer.position
+                contentRect: videoPlayer.contentRect
             }
 
             MouseArea {
@@ -610,6 +635,8 @@ Item {
                                    qsTr("%1 kept").arg(backend.formatPreciseTime(backend.trimmedDuration))]
                     if (backend.selectedFormat !== 0)
                         parts.push(qsTr("no audio"))
+                    if (backend.hasPointerData && !backend.cursorEffectsAvailable)
+                        parts.push(qsTr("pointer effects need GIF or WebP on this system"))
                     return parts.join(" · ")
                 }
             }
@@ -671,6 +698,49 @@ Item {
                     tooltipText: qsTr("Export as WebP")
                     selected: backend.selectedFormat === 2
                     onClicked: backend.selectedFormat = 2
+                }
+
+                // Pointer effects, only for recordings with pointer data.
+                Item {
+                    width: SemanticTokens.spacing8
+                    height: 1
+                    visible: backend.hasPointerData
+                }
+                SegmentButton {
+                    objectName: "previewPointerToggle"
+                    visible: backend.hasPointerData
+                    enabled: backend.cursorEffectsAvailable
+                    text: qsTr("Pointer")
+                    tooltipText: backend.showCursor ? qsTr("Hide the Mouse Pointer") : qsTr("Show the Mouse Pointer")
+                    selected: backend.showCursor && backend.cursorEffectsAvailable
+                    onClicked: backend.showCursor = !backend.showCursor
+                }
+                SegmentButton {
+                    objectName: "previewPointerSize"
+                    visible: backend.hasPointerData
+                    enabled: backend.cursorEffectsAvailable && backend.showCursor
+                    minimumButtonWidth: 0
+                    text: Number(backend.cursorScale).toLocaleString(Qt.locale(), "f", backend.cursorScale % 1 ? 1 : 0) + "×"
+                    tooltipText: qsTr("Pointer Size: %1").arg(text)
+                    onClicked: backend.cursorScale = root.nextPointerScale(backend.cursorScale)
+                }
+                SegmentButton {
+                    objectName: "previewPointerSmoothing"
+                    visible: backend.hasPointerData
+                    enabled: backend.cursorEffectsAvailable && backend.showCursor
+                    minimumButtonWidth: 0
+                    text: root.pointerSmoothingLabels[backend.cursorSmoothing]
+                    tooltipText: qsTr("Smooths the pointer's path; clicks stay where they happened")
+                    onClicked: backend.cursorSmoothing = (backend.cursorSmoothing + 1) % root.pointerSmoothingLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewClickRipple"
+                    visible: backend.hasPointerData
+                    enabled: backend.clickEffectsAvailable
+                    text: qsTr("Clicks")
+                    tooltipText: backend.clickRipple ? qsTr("Hide Click Highlights") : qsTr("Highlight Clicks")
+                    selected: backend.clickRipple && backend.clickEffectsAvailable
+                    onClicked: backend.clickRipple = !backend.clickRipple
                 }
             }
 
@@ -1502,6 +1572,13 @@ Item {
         width: Math.max(minimumButtonWidth, fmtLabel.implicitWidth + 2 * SemanticTokens.spacing16)
         height: ComponentTokens.recordingPreviewControlButtonHeight
         radius: SemanticTokens.radiusMedium
+        opacity: enabled ? 1.0 : root.disabledControlOpacity
+
+        Accessible.role: Accessible.Button
+        Accessible.name: text
+        Accessible.description: tooltipText
+        Accessible.checked: selected
+        Accessible.onPressAction: if (enabled) clicked()
 
         color: selected ? (fmtMouseArea.containsMouse ? root.accentHover : root.accent)
              : fmtMouseArea.pressed ? root.bgPanelPressed

@@ -25,6 +25,7 @@ class FFmpegTranscoder final : public IVideoTranscoder, public VideoTranscoderFa
 public:
     void setFaultForTesting(VideoTranscodeFault value) override { fault = value; }
     VideoFileProbe probe(const QString& path) override { return probeFile(path); }
+    bool supportsFrameFilter() const override { return true; }
     VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback& progress) override {
         VideoTranscodeResult result;
         auto fail = [&](const QString& message) { result.audioCopied = false; result.errorMessage = message; qWarning() << "FFmpeg export:" << message; return result; };
@@ -52,22 +53,48 @@ public:
         qint64 sourceTime = start;
         qint64 writtenTime = -1;
         QImage lastImage;
+        QImage lastSource;
         while (sourceTime < end) {
             const qint64 time = sourceTime-start;
             if (progress && !progress(int(time*85/(end-start)))) return fail(QStringLiteral("Export cancelled."));
             const QImage image = reader.frameAt(sourceTime);
             if (image.isNull()) return fail(reader.lastError());
             lastImage = crop == bounds ? image : image.copy(crop);
+            if (request.frameFilter) {
+                // Painting detaches from the decoder's buffer; keep the clean frame.
+                lastSource = lastImage;
+                lastImage = lastSource.copy();
+                request.frameFilter(lastImage, sourceTime);
+            }
             encoder.writeFrame(lastImage, time); writtenTime = time;
             if (!encoder.isRunning()) return fail(encoder.lastError());
             const qint64 next = reader.nextTimestampMs();
+            if (next >= 0 && next <= sourceTime) return fail(QStringLiteral("Invalid source frame timing."));
+            if (request.frameFilter) {
+                // Effects move on over a still picture (a pointer over a
+                // static screen, a ripple): fill source gaps at the frame rate.
+                const qint64 interval = qMax<qint64>(1, qRound(1000.0 / fps));
+                const qint64 gapEnd = next < 0 ? end : qMin(next, end);
+                for (qint64 t = sourceTime + interval; gapEnd - t >= interval / 2; t += interval) {
+                    lastImage = lastSource.copy();
+                    request.frameFilter(lastImage, t);
+                    encoder.writeFrame(lastImage, t - start); writtenTime = t - start;
+                    if (!encoder.isRunning()) return fail(encoder.lastError());
+                }
+            }
             if (next < 0 || next >= end) break;
-            if (next <= sourceTime) return fail(QStringLiteral("Invalid source frame timing."));
             sourceTime = next;
         }
         // Hold the final image through a source gap at the end of the trim.
         const qint64 finalTime = qMax<qint64>(0, end-start-qRound(1000.0/fps));
-        if (writtenTime < finalTime) encoder.writeFrame(lastImage, finalTime);
+        if (writtenTime < finalTime) {
+            // Redraw the held frame's effects for its own time (a ripple moves on).
+            if (request.frameFilter && !lastSource.isNull()) {
+                lastImage = lastSource.copy();
+                request.frameFilter(lastImage, start + finalTime);
+            }
+            encoder.writeFrame(lastImage, finalTime);
+        }
         encoder.finish();
         if (!encoder.lastError().isEmpty()) return fail(encoder.lastError());
         const QString muxed = temporary.filePath("output.mp4");

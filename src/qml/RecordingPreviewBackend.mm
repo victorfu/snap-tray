@@ -59,6 +59,100 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     , m_recordedAsIntermediate(recordedAsIntermediate)
 {
     m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
+    if (auto cursor = SnapTray::CursorTimelineSidecar::read(videoPath)) {
+        m_cursorTimeline = std::make_shared<const SnapTray::CursorTimeline>(std::move(*cursor));
+    }
+    // The pointer look the user chose last time; undo starts from it.
+    m_cursorEffects = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects());
+    m_editHistory.reset(currentEditState());
+    // Availability depends on the format (MP4 needs a capable transcoder).
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::cursorEffectsChanged);
+}
+
+std::function<void(QImage&, qint64)> RecordingPreviewBackend::cursorFrameFilter() const
+{
+    // Shares the immutable timeline; copies the settings and geometry.
+    auto renderer = std::make_shared<SnapTray::CursorEffectRenderer>(*m_cursorTimeline, m_cursorEffects);
+    const auto timeline = m_cursorTimeline;
+    const QRect crop = m_cropRect;
+    const QSize videoSize = m_videoSize.isEmpty() ? m_cursorTimeline->info.frameSize : m_videoSize;
+    return [renderer, timeline, crop, videoSize](QImage& frame, qint64 sourceMs) {
+        if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
+            frame = frame.convertToFormat(QImage::Format_RGB32);
+        }
+        renderer->paint(frame, sourceMs, {crop, videoSize, frame.size()});
+    };
+}
+
+bool RecordingPreviewBackend::hasPointerData() const
+{
+    return SnapTray::CursorEffectAvailability::of(m_cursorTimeline.get()).cursor;
+}
+
+bool RecordingPreviewBackend::cursorEffectsAvailable() const
+{
+    if (!hasPointerData()) return false;
+    if (m_selectedFormat != MP4) return true; // GIF/WebP frames are drawn here
+    if (!m_mp4FrameFilterSupported) {
+        const auto factory = transcoderFactoryOverride() ? transcoderFactoryOverride()
+                                                         : TranscoderFactory(&IVideoTranscoder::create);
+        const auto transcoder = factory ? factory() : nullptr;
+        m_mp4FrameFilterSupported = transcoder && transcoder->supportsFrameFilter();
+    }
+    return *m_mp4FrameFilterSupported;
+}
+
+bool RecordingPreviewBackend::clickEffectsAvailable() const
+{
+    return cursorEffectsAvailable() && SnapTray::CursorEffectAvailability::of(m_cursorTimeline.get()).clicks;
+}
+
+bool RecordingPreviewBackend::cursorEffectsActive() const
+{
+    if (!cursorEffectsAvailable()) return false;
+    return m_cursorEffects.showCursor || (m_cursorEffects.clickRipple && clickEffectsAvailable());
+}
+
+void RecordingPreviewBackend::setCursorEffects(const SnapTray::CursorEffectSettings& settings)
+{
+    if (m_cursorEffects == settings) return;
+    m_cursorEffects = settings;
+    emit cursorEffectsChanged();
+}
+
+void RecordingPreviewBackend::editCursorEffects(const std::function<void(SnapTray::CursorEffectSettings&)>& change)
+{
+    // A running export keeps the settings it started with.
+    if (isProcessing()) return;
+    auto settings = m_cursorEffects;
+    change(settings);
+    if (settings == m_cursorEffects) return;
+    RecordingSettingsManager::instance().setPointerEffects(settings.toJson());
+    setCursorEffects(settings);
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setShowCursor(bool value)
+{
+    editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.showCursor = value; });
+}
+
+void RecordingPreviewBackend::setCursorScale(qreal value)
+{
+    const double clamped = std::clamp(double(value), SnapTray::CursorEffectSettings::kMinScale,
+                                      SnapTray::CursorEffectSettings::kMaxScale);
+    editCursorEffects([clamped](SnapTray::CursorEffectSettings& s) { s.scale = clamped; });
+}
+
+void RecordingPreviewBackend::setCursorSmoothing(int value)
+{
+    const int level = qBound(0, value, int(SnapTray::CursorEffectSettings::Smoothing::High));
+    editCursorEffects([level](SnapTray::CursorEffectSettings& s) { s.smoothing = SnapTray::CursorEffectSettings::Smoothing(level); });
+}
+
+void RecordingPreviewBackend::setClickRipple(bool value)
+{
+    editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.clickRipple = value; });
 }
 
 std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
@@ -394,7 +488,7 @@ void RecordingPreviewBackend::save()
 
     // An export writes a second file next to the recording. Check the room
     // for it first (an unedited MP4 can be moved as is, so it needs none).
-    const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop();
+    const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || cursorEffectsActive();
     if (writesNewFile) {
         const QString directory = QFileInfo(m_videoPath).absolutePath();
         const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
@@ -421,7 +515,8 @@ void RecordingPreviewBackend::save()
         return;
     }
 
-    if (hasTrim() || hasCrop()) {
+    // Drawing the pointer is an edit: the unedited file cannot just be moved.
+    if (hasTrim() || hasCrop() || cursorEffectsActive()) {
         performTranscode(false);
         return;
     }
@@ -634,6 +729,12 @@ void RecordingPreviewBackend::updateVideoSize(const QSize &size)
         m_windowTimeline.reset();
         emit windowTimelineChanged();
     }
+    if (m_cursorTimeline && m_cursorTimeline->info.frameSize != size) {
+        qWarning() << "RecordingPreviewBackend: pointer data frame size" << m_cursorTimeline->info.frameSize
+                   << "does not match the video" << size << "- pointer effects disabled";
+        m_cursorTimeline.reset();
+        emit cursorEffectsChanged();
+    }
     setCropRect(m_cropRect);
 }
 
@@ -779,6 +880,7 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
 {
     SnapTray::PreviewEditState state;
     state.crop = m_cropRect;
+    state.cursor = m_cursorEffects;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -798,6 +900,10 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         m_trimStart = state.trimStart;
         m_trimEnd = state.trimEnd;
         emit trimRangeChanged();
+    }
+    if (state.cursor != m_cursorEffects) {
+        setCursorEffects(state.cursor);
+        RecordingSettingsManager::instance().setPointerEffects(state.cursor.toJson());
     }
     emit editHistoryChanged();
 }
@@ -830,7 +936,10 @@ void RecordingPreviewBackend::resetEdits()
     if (isProcessing() || !hasEdits()) {
         return;
     }
-    applyEditState({});
+    // Crop and trim only; the pointer look stays as chosen.
+    SnapTray::PreviewEditState unedited;
+    unedited.cursor = m_cursorEffects;
+    applyEditState(unedited);
     recordEdit();
 }
 
@@ -931,6 +1040,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     const qint64 requestedStartMs = m_trimStart;
     const qint64 requestedEndMs = m_trimEnd;
     const QRect cropRect = m_cropRect;
+    const auto cursorFilter = cursorEffectsActive() ? cursorFrameFilter()
+                                                    : std::function<void(QImage&, qint64)>();
     const int selectedFormat = static_cast<int>(format);
     const QString createPlayerError = tr("Failed to create video player for conversion");
     const QString loadVideoError = tr("Failed to load video for conversion");
@@ -949,6 +1060,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              requestedStartMs,
                              requestedEndMs,
                              cropRect,
+                             cursorFilter,
                              outputPath,
                              selectedFormat,
                              createPlayerError,
@@ -1158,6 +1270,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                     }
                     capturedFrame = capturedFrame.copy(cropRect);
                 }
+                if (cursorFilter) {
+                    cursorFilter(capturedFrame, timeMs);
+                }
                 const qint64 framesBefore = gifEncoder
                     ? gifEncoder->framesWritten()
                     : webpEncoder->framesWritten();
@@ -1309,6 +1424,10 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     request.startMs = m_trimStart;
     request.endMs = m_trimEnd;
     request.cropRect = m_cropRect;
+    if (cursorEffectsActive()) {
+        // A snapshot: later changes in the preview do not reach this job.
+        request.frameFilter = cursorFrameFilter();
+    }
     const QSize croppedSize = m_cropRect.isEmpty() ? QSize() : m_cropRect.size();
     const QString unsupportedError = tr("Video export is not supported on this platform");
     const QString failedTemplate = tr("Export failed: %1");

@@ -7,6 +7,10 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimeline.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "recording/CursorTimeline.h"
+#include "qml/RecordingCursorOverlay.h"
+#include "video/IVideoFrameReader.h"
+#include <QPainter>
 #include "video/IVideoTranscoder.h"
 
 #include <QDir>
@@ -262,6 +266,54 @@ private:
     std::unique_ptr<IVideoTranscoder> m_real;
 };
 
+// Pointer fixture (#160): a 10x10 magenta pointer, hotspot at its corner, at
+// (40,30) until 500 ms, then at (100,70).
+const QColor kPointerColor(255, 0, 255);
+constexpr int kPointerSide = 10;
+
+bool writePointerSidecar(const QString& videoPath, const QSize& frameSize)
+{
+    SnapTray::CursorTimelineWriter writer(SnapTray::CursorTimelineSidecar::pathFor(videoPath));
+    SnapTray::CursorTimelineInfo info;
+    info.frameSize = frameSize;
+    info.shapesAvailable = true;
+    if (!writer.open(info)) return false;
+    QImage shape(kPointerSide, kPointerSide, QImage::Format_ARGB32_Premultiplied);
+    shape.fill(kPointerColor);
+    writer.addShape({1, QPoint(0, 0), shape});
+    writer.addSample({0, QPoint(40, 30), true, 1});
+    writer.addSample({500, QPoint(100, 70), true, 1});
+    return writer.finish();
+}
+
+// Top-left of the magenta block, or (-1,-1).
+QPoint pointerTopLeft(const QImage& image)
+{
+    QRect found;
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            const QColor c = image.pixelColor(x, y);
+            if (c.red() > 170 && c.blue() > 170 && c.green() < 100) found |= QRect(x, y, 1, 1);
+        }
+    }
+    return found.isEmpty() ? QPoint(-1, -1) : found.topLeft();
+}
+
+// The frame of an animated image shown at `ms`.
+QImage animationFrameAt(const QString& path, qint64 ms)
+{
+    QImageReader reader(path);
+    qint64 start = 0;
+    QImage frame;
+    while (reader.canRead()) {
+        frame = reader.read();
+        const int delay = reader.nextImageDelay();
+        if (ms < start + qMax(delay, 1)) return frame;
+        start += qMax(delay, 1);
+    }
+    return frame;
+}
+
 QStringList partFiles(const QString& directoryPath)
 {
     return QDir(directoryPath).entryList(QStringList(QStringLiteral("*.part-*")), QDir::Files);
@@ -351,6 +403,10 @@ private slots:
     void saveOutcomeKeepsRecordingUntilCommitted_data();
     void saveOutcomeKeepsRecordingUntilCommitted();
     void closeDuringExportAsks();
+    void pointerMatchesAcrossPreviewAndOutputs_data();
+    void pointerMatchesAcrossPreviewAndOutputs();
+    void pointerEffectsOnlyReencodeWhenDrawn();
+    void pointerMovesOverAStillPicture();
 };
 
 void tst_RecordingPreviewExport::saveAnimation_data()
@@ -1530,6 +1586,216 @@ void tst_RecordingPreviewExport::closeDuringExportAsks()
     QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
     QCOMPARE(closedSpy.count(), 0);
     QVERIFY(QFileInfo::exists(inputPath));
+}
+
+void tst_RecordingPreviewExport::pointerMatchesAcrossPreviewAndOutputs_data()
+{
+    QTest::addColumn<int>("format");
+    QTest::newRow("mp4") << int(RecordingPreviewBackend::MP4);
+    QTest::newRow("gif") << int(RecordingPreviewBackend::GIF);
+    QTest::newRow("webp") << int(RecordingPreviewBackend::WebP);
+}
+
+void tst_RecordingPreviewExport::pointerMatchesAcrossPreviewAndOutputs()
+{
+    QFETCH(int, format);
+    const QSize sourceSize(160, 120);
+    const QRect crop(20, 10, 120, 100);
+    constexpr qint64 kTrimStart = 300;
+    constexpr qint64 kTrimEnd = 900;
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    QVERIFY(writePointerSidecar(inputPath, sourceSize));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QVERIFY(backend.hasPointerData());
+    if (!backend.cursorEffectsAvailable()) {
+        QSKIP("This platform's MP4 transcoder cannot draw pointer effects yet");
+    }
+    backend.setShowCursor(true);
+    backend.setCursorScale(1.0);
+    backend.setCursorSmoothing(0);
+    QVERIFY(backend.cursorEffectsActive());
+    backend.setCropRect(crop);
+    backend.setTrimStart(kTrimStart);
+    backend.setTrimEnd(kTrimEnd);
+
+    // The preview overlay at a fixed source time (full frame, 1:1).
+    const struct { qint64 sourceMs; QPoint sourcePoint; } checks[] = {
+        {400, QPoint(40, 30)},
+        {700, QPoint(100, 70)},
+    };
+    RecordingCursorOverlay overlay;
+    overlay.setBackend(&backend);
+    overlay.setContentRect(QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+    for (const auto& check : checks) {
+        QImage preview(sourceSize, QImage::Format_RGB32);
+        preview.fill(Qt::black);
+        overlay.setPosition(check.sourceMs);
+        QPainter painter(&preview);
+        overlay.paint(&painter);
+        painter.end();
+        QCOMPARE(pointerTopLeft(preview), check.sourcePoint);
+    }
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    // Changing the look while exporting must not reach the running job.
+    backend.setCursorScale(3.0);
+    QVERIFY(qFuzzyCompare(backend.cursorScale(), 1.0));
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+
+    // The same source times in the output: geometry through the crop, time through the trim.
+    for (const auto& check : checks) {
+        const qint64 editedMs = check.sourceMs - kTrimStart;
+        QImage frame;
+        if (format == RecordingPreviewBackend::MP4) {
+            auto reader = IVideoFrameReader::create();
+            if (!reader) QSKIP("No frame reader to inspect the MP4 on this platform");
+            QVERIFY2(reader->load(output), qPrintable(reader->lastError()));
+            frame = reader->frameAt(editedMs);
+        } else {
+            frame = animationFrameAt(output, editedMs);
+        }
+        QVERIFY(!frame.isNull());
+        QCOMPARE(frame.size(), crop.size());
+        const QPoint expected = check.sourcePoint - crop.topLeft();
+        const QPoint actual = pointerTopLeft(frame);
+        // Codec and palette error may blur an edge by a pixel, never more.
+        QVERIFY2((actual - expected).manhattanLength() <= 2,
+                 qPrintable(QStringLiteral("at %1 ms: expected %2,%3 got %4,%5")
+                                .arg(check.sourceMs).arg(expected.x()).arg(expected.y())
+                                .arg(actual.x()).arg(actual.y())));
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+void tst_RecordingPreviewExport::pointerEffectsOnlyReencodeWhenDrawn()
+{
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    QVERIFY(writePointerSidecar(inputPath, sourceSize));
+    auto restore = qScopeGuard([]() { RecordingPreviewBackend::outputQualityOverride() = {}; });
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+
+    // Pointer hidden: an unedited, small recording is still moved as is.
+    {
+        RecordingPreviewBackend backend(inputPath);
+        backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+        backend.updateVideoSize(sourceSize);
+        backend.updateDuration(kFrameCount * kFrameIntervalMs);
+        backend.setShowCursor(false);
+        backend.setClickRipple(false);
+        QVERIFY(!backend.cursorEffectsActive());
+        QVERIFY(!backend.hasEdits());
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+        QCOMPARE(savedSpy.count(), 1);
+        QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+    }
+    // Pointer shown: drawing it is an edit, so the file is re-encoded.
+    {
+        RecordingPreviewBackend backend(inputPath);
+        backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+        backend.updateVideoSize(sourceSize);
+        backend.updateDuration(kFrameCount * kFrameIntervalMs);
+        if (!backend.cursorEffectsAvailable()) {
+            QSKIP("This platform's MP4 transcoder cannot draw pointer effects yet");
+        }
+        backend.setShowCursor(true);
+        // A look, not a footage edit: undoable, but "Reset Crop and Trim" keeps it.
+        QVERIFY(!backend.hasEdits());
+        QVERIFY(backend.canUndo());
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        QCOMPARE(savedSpy.count(), 1);
+        QVERIFY(savedSpy.first().at(0).toString() != inputPath);
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+    }
+}
+
+void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()
+{
+    // Source frames at 0-300 ms, then nothing until 1000 ms (a static screen
+    // with a variable-frame-rate source); the pointer moves at 600 ms.
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder);
+        QVERIFY(encoder->start(inputPath, sourceSize, kFrameRate));
+        QImage frame(sourceSize, QImage::Format_ARGB32);
+        frame.fill(Qt::green);
+        for (const qint64 ms : {0, 100, 200, 300, 1000, 1100}) {
+            const qint64 before = encoder->framesWritten();
+            QElapsedTimer wait;
+            wait.start();
+            do {
+                encoder->writeFrame(frame, ms);
+                if (encoder->framesWritten() != before) break;
+                QTest::qWait(5);
+            } while (wait.elapsed() < 2000);
+        }
+        QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+        encoder->finish();
+        QVERIFY(!finished.isEmpty() || finished.wait(10000));
+    }
+    {
+        SnapTray::CursorTimelineWriter writer(SnapTray::CursorTimelineSidecar::pathFor(inputPath));
+        SnapTray::CursorTimelineInfo info;
+        info.frameSize = sourceSize;
+        info.shapesAvailable = true;
+        QVERIFY(writer.open(info));
+        QImage shape(kPointerSide, kPointerSide, QImage::Format_ARGB32_Premultiplied);
+        shape.fill(kPointerColor);
+        writer.addShape({1, QPoint(0, 0), shape});
+        writer.addSample({0, QPoint(20, 20), true, 1});
+        writer.addSample({600, QPoint(110, 80), true, 1});
+        QVERIFY(writer.finish());
+    }
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(1200);
+    if (!backend.cursorEffectsAvailable()) {
+        QSKIP("This platform's MP4 transcoder cannot draw pointer effects yet");
+    }
+    backend.setShowCursor(true);
+    backend.setCursorSmoothing(0);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    auto reader = IVideoFrameReader::create();
+    if (!reader) QSKIP("No frame reader to inspect the MP4 on this platform");
+    QVERIFY(reader->load(savedSpy.first().at(0).toString()));
+    const QPoint early = pointerTopLeft(reader->frameAt(250));
+    const QPoint moved = pointerTopLeft(reader->frameAt(800));
+    QVERIFY2((early - QPoint(20, 20)).manhattanLength() <= 2, qPrintable(QString::number(early.x())));
+    // Without filling the gap, 800 ms would still show the 300 ms frame.
+    QVERIFY2((moved - QPoint(110, 80)).manhattanLength() <= 2,
+             qPrintable(QStringLiteral("%1,%2").arg(moved.x()).arg(moved.y())));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
 }
 
 QTEST_MAIN(tst_RecordingPreviewExport)
