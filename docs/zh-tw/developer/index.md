@@ -18,6 +18,7 @@ docs_copy_key: developer
 - [從原始碼建置](build-from-source.md)：前置需求、腳本、手動 CMake 流程、快取工具與本地建置排錯
 - [發佈與打包](release-packaging.md)：DMG / NSIS / MSIX 打包、簽章、公證、Store 提交流程與圖示資產
 - [架構總覽](architecture.md)：專案結構、library 邊界、架構模式、平台對照與開發慣例
+- [錄影同步驗證矩陣](recording-sync-matrix.md)：以故障注入端到端驗證錄影、報告與 A/B 比較，以及實機流程
 
 ## 受眾分工
 

@@ -54,6 +54,9 @@ struct CursorTimelineInfo {
     bool clicksAvailable = false;
     // The video already shows the pointer: drawing it again would double it.
     bool cursorInVideo = false;
+    // Video pixels per logical pixel of the recorded screen, for drawing
+    // things at a natural size (a generic arrow, click ripples).
+    double pixelRatio = 1.0;
 };
 
 class CursorTimeline {

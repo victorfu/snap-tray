@@ -324,6 +324,7 @@ class tst_VideoTranscoder : public QObject
 private slots:
     void init();
     void probeReportsFixture();
+    void cancelStopsInsideAGapFill();
     void fixtureHasTimedPulses();
     void cropAndTrimKeepsAudio();
     void cropOnlyKeepsPrimedAudio();
@@ -959,6 +960,40 @@ void tst_VideoTranscoder::invalidInputFails()
     QVERIFY(!result.errorMessage.isEmpty());
     QVERIFY(!QFileInfo::exists(request.outputPath));
     QVERIFY(!m_transcoder->probe(request.inputPath).valid);
+}
+
+void tst_VideoTranscoder::cancelStopsInsideAGapFill()
+{
+    // PR #175 review: drawing effects fills source gaps at the frame rate,
+    // and that loop did not check for Cancel.
+    auto transcoder = IVideoTranscoder::create();
+    if (!transcoder || !transcoder->supportsFrameFilter()) QSKIP("No frame-filter transcoder on this platform");
+    QTemporaryDir dir;
+    const QString input = dir.filePath(QStringLiteral("gap.mp4"));
+    {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder && encoder->start(input, QSize(64, 48), 30));
+        QImage frame(64, 48, QImage::Format_ARGB32);
+        frame.fill(Qt::green);
+        // A second at 30 fps, then nothing until 20 s (a still screen).
+        for (int i = 0; i < 30; ++i) encoder->writeFrame(frame, i * 33);
+        encoder->writeFrame(frame, 20000);
+        QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+        encoder->finish();
+        QVERIFY(!finished.isEmpty() || finished.wait(10000));
+    }
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = dir.filePath(QStringLiteral("out.mp4"));
+    int filtered = 0;
+    request.frameFilter = [&filtered](QImage&, qint64) { ++filtered; };
+    // Cancel once progress passes 20 %: only reachable inside the gap.
+    const auto result = transcoder->transcode(request, [](int percent) { return percent < 20; });
+    QVERIFY(!result.success);
+    QVERIFY(result.errorMessage.contains(QStringLiteral("cancelled")));
+    // Stopped early in the gap (~20 %), not after filling all ~570 frames of it.
+    QVERIFY2(filtered < 300, qPrintable(QString::number(filtered)));
+    QVERIFY(!QFileInfo::exists(request.outputPath));
 }
 
 QTEST_MAIN(tst_VideoTranscoder)
