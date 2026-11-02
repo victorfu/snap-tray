@@ -989,6 +989,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         m_encodingWorker->setVideoEncoder(nativeEncoder);
         m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Video);
     }
+    m_writtenOutputBytes = nativeEncoder ? nativeEncoder->writtenBytesCounter() : nullptr;
     m_bufferedOutputBytes = gifEncoder ? gifEncoder->bufferedBytesCounter()
         : webpEncoder ? webpEncoder->bufferedBytesCounter() : nullptr;
     if (gifEncoder) {
@@ -1487,11 +1488,14 @@ void RecordingManager::checkDiskSpace()
     const QString path = m_recordingFilePath;
     const auto probe = m_freeBytesForPath;
     const auto buffered = m_bufferedOutputBytes;
+    const auto written = m_writtenOutputBytes;
     const qint64 sampleMs = m_elapsedTimer.isValid() ? m_elapsedTimer.elapsed() : 0;
     const QPointer<RecordingManager> guard(this);
-    (void)QtConcurrent::run([guard, generation, path, probe, buffered, sampleMs]() {
+    (void)QtConcurrent::run([guard, generation, path, probe, buffered, written, sampleMs]() {
         const qint64 freeBytes = probe ? probe(QFileInfo(path).absolutePath()) : -1;
-        const qint64 fileBytes = QFileInfo(path).size();
+        // An encoder writing a temporary file until it finishes (#171 review)
+        // reports its size; otherwise the output file shows it.
+        const qint64 fileBytes = written ? written->load() : QFileInfo(path).size();
         // Buffered formats have no file yet: all of it still needs the room.
         const qint64 pendingBytes = buffered ? buffered->load() : 0;
         QMetaObject::invokeMethod(QCoreApplication::instance(),
