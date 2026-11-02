@@ -1,5 +1,7 @@
 #include "recording/RecordingSession.h"
 
+#include <QImageReader>
+
 #include "recording/WindowTimelineSidecar.h"
 
 #include <QDir>
@@ -140,6 +142,45 @@ void discard(const QString& videoPath)
     remove(videoPath);
 }
 
+bool isAnimatedFormat(const QString& videoPath)
+{
+    const QString suffix = QFileInfo(videoPath).suffix().toLower();
+    return suffix == QLatin1String("gif") || suffix == QLatin1String("webp");
+}
+
+ProbeResult probeFinishedAnimation(const QString& path)
+{
+    ProbeResult result;
+    result.durationFromManifest = true;
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly) || file.size() < 16) return result;
+    const qint64 size = file.size();
+    const QByteArray head = file.read(12);
+    bool complete = false;
+    if (head.startsWith("GIF8")) {
+        // A GIF ends with its trailer byte.
+        file.seek(size - 1);
+        complete = file.read(1) == QByteArray(1, '\x3B');
+    } else if (head.startsWith("RIFF") && head.mid(8, 4) == "WEBP") {
+        // The RIFF header states the whole file's size.
+        const auto* bytes = reinterpret_cast<const uchar*>(head.constData());
+        const qint64 riffSize = qint64(bytes[4]) | qint64(bytes[5]) << 8 | qint64(bytes[6]) << 16
+            | qint64(bytes[7]) << 24;
+        complete = riffSize + 8 == size;
+    }
+    file.close();
+    if (!complete) return result;
+    QImageReader reader(path);
+    result.decodable = reader.canRead() && !reader.read().isNull();
+    return result;
+}
+
+ProbeResult probeForRecovery(const QString& path, const Probe& videoProbe)
+{
+    if (isAnimatedFormat(path)) return probeFinishedAnimation(path);
+    return videoProbe ? videoProbe(path) : ProbeResult{};
+}
+
 QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsActive& isActive)
 {
     QList<Recoverable> found;
@@ -172,8 +213,9 @@ QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsAc
         item.complete = info->state == RecordingSessionInfo::State::Finished;
         // Trust the file, not the manifest: decode what is really there.
         const ProbeResult result = probe ? probe(info->videoPath) : ProbeResult{};
-        item.decodable = result.decodable && result.durationMs > 0;
-        item.durationMs = item.decodable ? result.durationMs : 0;
+        const qint64 durationMs = result.durationFromManifest ? info->recordedMs : result.durationMs;
+        item.decodable = result.decodable && (result.durationFromManifest || durationMs > 0);
+        item.durationMs = item.decodable ? qMax<qint64>(0, durationMs) : 0;
         item.audioMissing = item.decodable && info->audioRequired && !result.hasAudio;
         if (!item.decodable) {
             item.problem = info->fragmented

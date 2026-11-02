@@ -35,6 +35,7 @@
 #include <QFileInfo>
 #include <QStorageInfo>
 #include "video/IVideoTranscoder.h"
+#include <QImageReader>
 #include <QLockFile>
 #include <QLocale>
 #include "encoding/IntermediateQuality.h"
@@ -445,6 +446,13 @@ void RecordingManager::teardownEncodingWorker(bool abortEncoding)
     {
         QMutexLocker lock(&m_durationMutex);
         m_acceptAsyncFrames = false;
+        // The recorded length, for the recovery manifest (a finished
+        // animation's duration comes from it, #172 review).
+        if (m_elapsedTimer.isValid()) {
+            const qint64 raw = m_elapsedTimer.elapsed();
+            const qint64 currentPause = m_state == State::Paused ? raw - m_pauseStartTime : 0;
+            m_session.recordedMs = qMax<qint64>(0, raw - m_pausedDuration - currentPause);
+        }
     }
     // Invalidate any queued callbacks from previous encoding workers.
     ++m_encodingGeneration;
@@ -1596,7 +1604,7 @@ void RecordingManager::scanForRecoveries()
     const QPointer<RecordingManager> guard(this);
     (void)QtConcurrent::run([guard, directory]() {
         std::unique_ptr<IVideoTranscoder> transcoder = IVideoTranscoder::create();
-        const auto probe = [&transcoder](const QString& path) {
+        const SnapTray::RecordingSession::Probe videoProbe = [&transcoder](const QString& path) {
             SnapTray::RecordingSession::ProbeResult result;
             if (!transcoder) return result;
             const VideoFileProbe info = transcoder->probe(path);
@@ -1604,6 +1612,11 @@ void RecordingManager::scanForRecoveries()
             result.durationMs = info.durationMs;
             result.hasAudio = info.hasAudio;
             return result;
+        };
+        // GIF and WebP are checked as images: the video probe cannot open
+        // them on every platform (#172 review).
+        const auto probe = [&videoProbe](const QString& path) {
+            return SnapTray::RecordingSession::probeForRecovery(path, videoProbe);
         };
         const auto found = SnapTray::RecordingSession::scan(directory, probe, &RecordingManager::isSessionActive);
         QMetaObject::invokeMethod(QCoreApplication::instance(), [guard, found]() {
@@ -1626,6 +1639,26 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
         m_sessionLock.reset();
         m_session = {};
         return false;  // another SnapTray has it open
+    }
+    if (SnapTray::RecordingSession::isAnimatedFormat(videoPath)) {
+        // A finished GIF/WebP is the output already, and the preview plays
+        // video only (#172 review): save it as the no-preview flow does. The
+        // file stays if the save is cancelled or fails, and so does its
+        // manifest, to be recovered later.
+        const std::shared_ptr<QLockFile> sessionLock(m_sessionLock.release());
+        m_session = {};
+        QMetaObject::invokeMethod(this, [this, videoPath, sessionLock]() {
+            // Named by its own size: a recovered recording has no region.
+            const SaveOutcome outcome = showSaveDialog(videoPath, QImageReader(videoPath).size(), true);
+            if (outcome == SaveOutcome::Saved) {
+                SnapTray::RecordingSession::remove(videoPath);
+            }
+            if (sessionLock) sessionLock->unlock();
+            if (outcome != SaveOutcome::Saved) {
+                emit recoveryKept(videoPath); // still recoverable
+            }
+        }, Qt::QueuedConnection);
+        return true;
     }
     m_tempVideoPath = videoPath;
     setState(State::Previewing);
