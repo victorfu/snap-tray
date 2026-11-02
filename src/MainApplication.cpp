@@ -75,6 +75,7 @@ SnapTray::TrayRecordingStatus trayRecordingStatusForState(RecordingManager::Stat
 }
 
 constexpr qint64 kTrayElapsedResolutionMs = 1000;
+// Recording hotkeys repeated faster than this are treated as one press.
 // Text pixmap rendering constants (for paste-as-text feature)
 constexpr int kMaxTextPixmapWidth = 800;
 constexpr int kMaxTextPixmapHeight = 600;
@@ -399,11 +400,17 @@ void MainApplication::initialize()
                 &QAction::triggered,
                 this,
                 &MainApplication::onFullScreenRecording);
-        if (PlatformFeatures::instance().capabilities().recordingControlsInTray) {
-            m_pauseRecordingAction = m_trayMenu->addAction(QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
-            m_pauseRecordingAction->setVisible(false);
-            connect(m_pauseRecordingAction, &QAction::triggered, this, [this] {
-                if (m_recordingManager) m_recordingManager->togglePause();
+        m_pauseRecordingAction = m_trayMenu->addAction(QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+        m_pauseRecordingAction->setVisible(false);
+        connect(m_pauseRecordingAction, &QAction::triggered, this, [this] {
+            if (m_recordingManager) m_recordingManager->togglePause();
+        });
+        // Platforms that keep active controls in the tray never show the bar while recording.
+        if (!PlatformFeatures::instance().capabilities().recordingControlsInTray) {
+            m_showRecordingControlsAction = m_trayMenu->addAction(tr("Show Recording Controls"));
+            m_showRecordingControlsAction->setVisible(false);
+            connect(m_showRecordingControlsAction, &QAction::triggered, this, [this] {
+                if (m_recordingManager) m_recordingManager->showRecordingControls();
             });
         }
     }
@@ -445,6 +452,8 @@ void MainApplication::initialize()
     auto& hotkeyManager = SnapTray::HotkeyManager::instance();
     connect(&hotkeyManager, &SnapTray::HotkeyManager::actionTriggered,
             this, &MainApplication::onHotkeyAction);
+    connect(&hotkeyManager, &SnapTray::HotkeyManager::actionReleased, this,
+            [this](SnapTray::HotkeyAction action) { m_recordingHotkeyHolds.release(static_cast<int>(action)); });
     connect(&hotkeyManager, &SnapTray::HotkeyManager::hotkeyChanged,
             this, &MainApplication::onHotkeyChanged);
     connect(&hotkeyManager, &SnapTray::HotkeyManager::initializationCompleted,
@@ -831,13 +840,34 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
         onToggleAllPinsVisibility();
         break;
     case HotkeyAction::RecordFullScreen:
-        if (PlatformFeatures::instance().capabilities().supportsRecording) {
+        if (PlatformFeatures::instance().capabilities().supportsRecording
+            && acceptRecordingHotkey(action)) {
             onFullScreenRecording();
+        }
+        break;
+    case HotkeyAction::PauseResumeRecording:
+        if (m_recordingManager && acceptRecordingHotkey(action)) {
+            m_recordingManager->togglePause();
+        }
+        break;
+    case HotkeyAction::ShowRecordingControls:
+        if (m_recordingManager) {
+            m_recordingManager->showRecordingControls();
         }
         break;
     default:
         break;
     }
+}
+
+bool MainApplication::acceptRecordingHotkey(SnapTray::HotkeyAction action)
+{
+    // Key auto-repeat or a double press must not start and cancel a recording,
+    // or pause and immediately resume it: a hold is one press until release.
+    if (!m_recordingHotkeyClock.isValid()) {
+        m_recordingHotkeyClock.start();
+    }
+    return m_recordingHotkeyHolds.accept(static_cast<int>(action), m_recordingHotkeyClock.elapsed());
 }
 
 void MainApplication::onHotkeyChanged(SnapTray::HotkeyAction, const SnapTray::HotkeyConfig&)
@@ -1075,10 +1105,25 @@ void MainApplication::updateTrayMenuHotkeyText()
 
 void MainApplication::updateRecordingActionText()
 {
+    const auto recordingState = m_recordingManager ? m_recordingManager->state() : RecordingManager::State::Idle;
+    const bool capturing = recordingState == RecordingManager::State::Recording
+        || recordingState == RecordingManager::State::Paused;
     if (m_pauseRecordingAction) {
-        const auto state = m_recordingManager ? m_recordingManager->state() : RecordingManager::State::Idle;
-        m_pauseRecordingAction->setVisible(state == RecordingManager::State::Recording || state == RecordingManager::State::Paused);
-        m_pauseRecordingAction->setText(state == RecordingManager::State::Paused ? QCoreApplication::translate("RecordingControlBar", "Resume Recording") : QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+        m_pauseRecordingAction->setVisible(capturing);
+        updateActionHotkeyText(m_pauseRecordingAction,
+                               SnapTray::HotkeyAction::PauseResumeRecording,
+                               recordingState == RecordingManager::State::Paused
+                                   ? QCoreApplication::translate("RecordingControlBar", "Resume Recording")
+                                   : QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+    }
+    if (m_showRecordingControlsAction) {
+        m_showRecordingControlsAction->setVisible(
+            capturing
+            || recordingState == RecordingManager::State::Preparing
+            || recordingState == RecordingManager::State::Countdown);
+        updateActionHotkeyText(m_showRecordingControlsAction,
+                               SnapTray::HotkeyAction::ShowRecordingControls,
+                               tr("Show Recording Controls"));
     }
     if (!m_fullScreenRecordingAction) {
         return;

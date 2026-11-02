@@ -588,6 +588,11 @@ File size: %3</source>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="411" />
+        <source>Show Recording Controls</source>
+        <translation>แสดงตัวควบคุมการบันทึก</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="149"/>
         <source>SnapTray is already running</source>
         <translation>SnapTray กำลังทำงานอยู่แล้ว</translation>
@@ -1644,6 +1649,21 @@ English is always included and cannot be removed.</source>
 <context>
     <name>RecordingControlBar</name>
     <message>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="260" />
+        <source>Paused %1</source>
+        <translation>หยุดชั่วคราว %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="43" />
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="41" />
+        <source>Stop and Review</source>
+        <translation>หยุดและตรวจทาน</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="31"/>
         <source>-- fps</source>
         <translation>-- fps</translation>
@@ -1795,6 +1815,26 @@ English is always included and cannot be removed.</source>
 </context>
 <context>
     <name>RecordingPreview</name>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
+        <source>Discard</source>
+        <translation>ทิ้ง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="767" />
+        <source>Keep Recording</source>
+        <translation>เก็บการบันทึกไว้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="755" />
+        <source>The video will be deleted and cannot be recovered.</source>
+        <translation>วิดีโอจะถูกลบและกู้คืนไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="744" />
+        <source>Discard this recording?</source>
+        <translation>ทิ้งการบันทึกนี้หรือไม่</translation>
+    </message>
     <message>
         <source>Clear Crop</source>
         <translation>ล้างการครอบตัด</translation>
@@ -2332,6 +2372,26 @@ English is always included and cannot be removed.</source>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="194" />
+        <source>Bring the recording control bar back into view</source>
+        <translation>นำแถบควบคุมการบันทึกกลับมาแสดง</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="193" />
+        <source>Show Recording Controls</source>
+        <translation>แสดงตัวควบคุมการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="186" />
+        <source>Pause or resume the current screen recording</source>
+        <translation>หยุดชั่วคราวหรือดำเนินการบันทึกหน้าจอปัจจุบันต่อ</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="185" />
+        <source>Pause/Resume Recording</source>
+        <translation>หยุดชั่วคราว/ดำเนินการบันทึกต่อ</translation>
+    </message>
     <message>
         <location filename="../src/hotkey/HotkeyManager.cpp" line="371"/>
         <source>Conflicts with: %1</source>

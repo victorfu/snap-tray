@@ -225,6 +225,12 @@ target_link_libraries(Qml_RecordingPreviewCrop PRIVATE snaptray_ui snaptray_qmlp
 add_test(NAME Qml_RecordingPreviewCrop COMMAND Qml_RecordingPreviewCrop)
 set_tests_properties(Qml_RecordingPreviewCrop PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_RecordingPreviewDiscard Qml/tst_RecordingPreviewDiscard.cpp)
+target_link_libraries(Qml_RecordingPreviewDiscard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingPreviewDiscard PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingPreviewDiscard COMMAND Qml_RecordingPreviewDiscard)
+set_tests_properties(Qml_RecordingPreviewDiscard PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Qml_RecordingCropOverlay Qml/tst_RecordingCropOverlay.cpp)
 target_link_libraries(Qml_RecordingCropOverlay PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_RecordingCropOverlay PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -1045,6 +1051,12 @@ set_tests_properties(Cursor_CursorQmlGuard PROPERTIES TIMEOUT 60 LABELS "unit")
 # ============================================================================
 # Hotkey Tests (link snaptray_ui for HotkeyManager)
 # ============================================================================
+
+add_executable(Hotkey_HotkeyHoldFilter Hotkey/tst_HotkeyHoldFilter.cpp)
+target_include_directories(Hotkey_HotkeyHoldFilter PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Hotkey_HotkeyHoldFilter PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME Hotkey_HotkeyHoldFilter COMMAND Hotkey_HotkeyHoldFilter)
+set_tests_properties(Hotkey_HotkeyHoldFilter PROPERTIES TIMEOUT 30 LABELS "unit")
 
 add_executable(Hotkey_HotkeyManager Hotkey/tst_HotkeyManager.cpp)
 target_link_libraries(Hotkey_HotkeyManager PRIVATE snaptray_ui Qt6::Test)

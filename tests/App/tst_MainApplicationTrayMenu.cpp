@@ -145,6 +145,7 @@ private slots:
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
     void initialize_hidesRecordingActionWhenUnsupported();
     void recordingState_updatesTrayIconAndToolTip();
+    void pauseResumeHotkey_ignoresRepeatsAndOnlyActsWhileCapturing();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_removedRecordCommandIsIgnored();
@@ -346,13 +347,21 @@ void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported
         QVERIFY(application.m_trayMenu->actions().contains(application.m_fullScreenRecordingAction));
         QVERIFY(application.m_fullScreenRecordingAction->text().contains(MainApplication::tr("Record Screen")));
     }
-    if (SnapTray::currentPlatformCapabilities().recordingControlsInTray) {
+    QCOMPARE(application.m_showRecordingControlsAction != nullptr,
+             supported && !SnapTray::currentPlatformCapabilities().recordingControlsInTray);
+    if (application.m_showRecordingControlsAction) {
+        QVERIFY(!application.m_showRecordingControlsAction->isVisible());
+    }
+    if (supported) {
         QVERIFY(application.m_pauseRecordingAction);
         QVERIFY(!application.m_pauseRecordingAction->isVisible());
         application.m_recordingManager->m_elapsedTimer.start();
         application.m_recordingManager->m_state = RecordingManager::State::Recording;
         application.updateRecordingActionText();
         QVERIFY(application.m_pauseRecordingAction->isVisible());
+        if (application.m_showRecordingControlsAction) {
+            QVERIFY(application.m_showRecordingControlsAction->isVisible());
+        }
         QCOMPARE(application.m_pauseRecordingAction->text(), QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
         application.m_pauseRecordingAction->trigger();
         QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Paused);
@@ -362,6 +371,48 @@ void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported
         QVERIFY(!application.m_pauseRecordingAction->isVisible());
     }
 
+}
+
+void tst_MainApplicationTrayMenu::pauseResumeHotkey_ignoresRepeatsAndOnlyActsWhileCapturing()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    using State = RecordingManager::State;
+    RecordingManager* recording = application.m_recordingManager;
+
+    // Idle, preparing or finishing: the hotkey does nothing.
+    for (State state : {State::Idle, State::Preparing, State::Countdown, State::Encoding}) {
+        recording->m_state = state;
+        application.m_recordingHotkeyHolds = {};
+        application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+        QCOMPARE(recording->state(), state);
+    }
+
+    recording->m_elapsedTimer.start();
+    recording->m_state = State::Recording;
+    application.m_recordingHotkeyHolds = {};
+    application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+    QCOMPARE(recording->state(), State::Paused);
+    // Holding the key: auto-repeat for longer than the old 400 ms throttle
+    // must not resume (PR #165 review).
+    constexpr int kRepeatMs = 40;
+    for (int i = 0; i < 15; ++i) {
+        QTest::qWait(kRepeatMs);
+        application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+        QCOMPARE(recording->state(), State::Paused);
+    }
+    // Released, then a deliberate second press resumes.
+    emit SnapTray::HotkeyManager::instance().actionReleased(SnapTray::HotkeyAction::PauseResumeRecording);
+    QTest::qWait(int(SnapTray::HotkeyHoldFilter::kMinIntervalMs) + 50);
+    application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+    QCOMPARE(recording->state(), State::Recording);
+
+    // Show Recording Controls has nothing to show without a control bar.
+    QVERIFY(!recording->showRecordingControls());
+    application.onHotkeyAction(SnapTray::HotkeyAction::ShowRecordingControls);
+    QCOMPARE(recording->state(), State::Recording);
+    recording->m_state = State::Idle;
 }
 
 void tst_MainApplicationTrayMenu::recordingState_updatesTrayIconAndToolTip()
@@ -601,6 +652,8 @@ void tst_MainApplicationTrayMenu::clearAllTestSettings()
     clearSetting(SnapTray::kSettingsKeyHistoryWindowHotkey);
     clearSetting(SnapTray::kSettingsKeyTogglePinsVisibilityHotkey);
     clearSetting(SnapTray::kSettingsKeyRecordFullScreenHotkey);
+    clearSetting(SnapTray::kSettingsKeyPauseResumeRecordingHotkey);
+    clearSetting(SnapTray::kSettingsKeyShowRecordingControlsHotkey);
 
     auto settings = SnapTray::getSettings();
     settings.remove(QString::fromLatin1(SnapTray::kSettingsKeyHotkeyRegistrationCounter));
@@ -828,8 +881,22 @@ void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile()
         QVERIFY(QTest::qWaitForWindowActive(preview));
     }
 #endif
-    if (escape) QTest::keyClick(preview, Qt::Key_Escape);
-    else QVERIFY(preview->close());
+    // Esc and the title-bar close ask first; nothing is deleted yet.
+    if (escape) {
+        QTest::keyClick(preview, Qt::Key_Escape);
+    } else {
+        QVERIFY(!preview->close());
+    }
+    QVERIFY(backend->discardConfirmationPending());
+    QCOMPARE(discarded.count(), 0);
+    QVERIFY(QFileInfo::exists(path));
+    // Confirm with the keyboard: Tab to "Discard", then Enter.
+    if (escape) {
+        QTest::keyClick(preview, Qt::Key_Tab);
+        QTest::keyClick(preview, Qt::Key_Return);
+    } else {
+        backend->discard();
+    }
     QCOMPARE(discarded.count(), 1);
     QCOMPARE(discarded.first().first().toString(), path);
     QCOMPARE(closed.count(), 1);

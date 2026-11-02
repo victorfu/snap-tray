@@ -614,8 +614,9 @@ Item {
                 IconButton {
                     iconSource: "qrc:/icons/icons/trash-2.svg"
                     destructive: true
+                    objectName: "previewDiscardButton"
                     tooltipText: qsTr("Discard Recording (Esc)")
-                    onClicked: backend.discard()
+                    onClicked: backend.requestDiscard()
                 }
 
                 IconButton {
@@ -693,6 +694,105 @@ Item {
     }
 
     Rectangle {
+        id: discardConfirmation
+        objectName: "discardConfirmation"
+        anchors.fill: parent
+        color: SemanticTokens.backgroundOverlay
+        visible: backend.discardConfirmationPending === true
+        z: 30
+
+        // 0 = Keep Recording (default), 1 = Discard
+        property int focusIndex: 0
+        onVisibleChanged: if (visible) focusIndex = 0
+
+        function activateFocused() {
+            if (focusIndex === 1)
+                backend.discard()
+            else
+                backend.cancelDiscard()
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onWheel: function(wheel) { wheel.accepted = true }
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - SemanticTokens.spacing40, 380)
+            height: confirmColumn.implicitHeight + SemanticTokens.spacing40
+            radius: SemanticTokens.radiusMedium
+            color: root.bgPanel
+            border.width: 1
+            border.color: root.borderColor
+
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: confirmTitle.text
+            Accessible.description: confirmBody.text
+
+            Column {
+                id: confirmColumn
+                anchors.centerIn: parent
+                width: parent.width - SemanticTokens.spacing40
+                spacing: SemanticTokens.spacing12
+
+                Text {
+                    id: confirmTitle
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    text: qsTr("Discard this recording?")
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    font.weight: SemanticTokens.fontWeightMedium
+                    color: root.textPrimary
+                }
+
+                Text {
+                    id: confirmBody
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    text: qsTr("The video will be deleted and cannot be recovered.")
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
+                    color: root.textSecondary
+                }
+
+                Row {
+                    anchors.right: parent.right
+                    spacing: SemanticTokens.spacing8
+
+                    DialogButton {
+                        objectName: "discardKeepButton"
+                        text: qsTr("Keep Recording")
+                        style: "secondary"
+                        border.width: discardConfirmation.focusIndex === 0 ? 2 : 1
+                        border.color: discardConfirmation.focusIndex === 0 ? root.accent
+                                                                           : ComponentTokens.buttonSecondaryBorder
+                        Accessible.role: Accessible.Button
+                        Accessible.name: text
+                        Accessible.onPressAction: backend.cancelDiscard()
+                        onClicked: backend.cancelDiscard()
+                    }
+
+                    DialogButton {
+                        objectName: "discardConfirmButton"
+                        text: qsTr("Discard")
+                        style: "primary"
+                        color: ComponentTokens.recordingPreviewDangerPressed
+                        border.width: discardConfirmation.focusIndex === 1 ? 2 : 0
+                        border.color: root.textPrimary
+                        Accessible.role: Accessible.Button
+                        Accessible.name: text
+                        Accessible.onPressAction: backend.discard()
+                        onClicked: backend.discard()
+                    }
+                }
+            }
+        }
+    }
+
+    Rectangle {
         id: errorBanner
         anchors.top: parent.top
         anchors.left: parent.left
@@ -741,6 +841,29 @@ Item {
             return
         }
 
+        if (backend.discardConfirmationPending) {
+            // Esc always keeps the recording; Tab/arrows move between the two
+            // buttons and Enter/Space activates the focused one ("Keep" first).
+            switch (event.key) {
+            case Qt.Key_Escape:
+                backend.cancelDiscard()
+                break
+            case Qt.Key_Tab:
+            case Qt.Key_Backtab:
+            case Qt.Key_Left:
+            case Qt.Key_Right:
+                discardConfirmation.focusIndex = 1 - discardConfirmation.focusIndex
+                break
+            case Qt.Key_Return:
+            case Qt.Key_Enter:
+            case Qt.Key_Space:
+                discardConfirmation.activateFocused()
+                break
+            }
+            event.accepted = true
+            return
+        }
+
         if (cropOverlay.editing) {
             // Escape only drops the draft (the preview stays open); Enter only applies it.
             if (event.key === Qt.Key_Escape) {
@@ -761,7 +884,7 @@ Item {
             event.accepted = true
             break
         case Qt.Key_Escape:
-            backend.discard()
+            backend.requestDiscard()
             event.accepted = true
             break
         case Qt.Key_Return:

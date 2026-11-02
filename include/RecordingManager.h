@@ -71,6 +71,10 @@ public slots:
     void pauseRecording();          // Pause recording
     void resumeRecording();         // Resume recording
     void togglePause();             // Toggle pause state
+    // Brings the floating control bar back into view on the recorded screen.
+    // Returns false when there is no bar to show, including while recording on
+    // platforms that keep active controls in the tray.
+    bool showRecordingControls();
     void onPreviewClosed(bool saved);  // Handle preview window close
     // Show save dialog for video. `outputSize` (pixels) replaces the recording
     // region in the filename's {w}x{h} for a cropped export; empty = region.

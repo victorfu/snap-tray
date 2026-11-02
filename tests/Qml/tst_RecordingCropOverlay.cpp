@@ -87,6 +87,7 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(int processProgress READ processProgress CONSTANT)
     Q_PROPERTY(QString processStatus READ processStatus CONSTANT)
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT)
+    Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending CONSTANT)
     Q_PROPERTY(bool hasWindowTimeline READ hasWindowTimeline NOTIFY windowTimelineChanged)
 
 public:
@@ -158,6 +159,9 @@ public:
         cropAtSave = m_cropRect;
     }
     Q_INVOKABLE void discard() { ++discardCount; }
+    Q_INVOKABLE void requestDiscard() { ++requestDiscardCount; }
+    Q_INVOKABLE void cancelDiscard() {}
+    bool discardConfirmationPending() const { return false; }
     Q_INVOKABLE void toggleTrim() {}
     // Same "mm:ss" shape as the real backend, so toolbar widths are realistic.
     Q_INVOKABLE QString formatTime(qint64 ms) const
@@ -214,6 +218,7 @@ public:
 
     int saveCount = 0;
     int discardCount = 0;
+    int requestDiscardCount = 0;
     int setCropFromViewCount = 0;
     QRect cropAtSave;
 
@@ -1058,9 +1063,12 @@ void tst_RecordingCropOverlay::previewEscapeRestoresCommitted()
     QVERIFY(!overlay->property("hasShownRect").toBool());
     QCOMPARE(m_backend->discardCount, 0);
 
-    // Outside editing, Escape keeps its existing meaning.
+    QCOMPARE(m_backend->requestDiscardCount, 0);
+
+    // Outside editing, Escape asks to discard the recording (it never deletes directly).
     sendKey(Qt::Key_Escape);
-    QCOMPARE(m_backend->discardCount, 1);
+    QCOMPARE(m_backend->requestDiscardCount, 1);
+    QCOMPARE(m_backend->discardCount, 0);
 }
 
 void tst_RecordingCropOverlay::previewEmptyDraftApplyIsNoop()
