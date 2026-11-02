@@ -1458,7 +1458,7 @@ Item {
 
                 IconButton {
                     objectName: "previewUndoButton"
-                    iconText: "↶"
+                    iconSource: "qrc:/icons/icons/undo.svg"
                     enabled: backend.canUndo
                     opacity: enabled ? 1.0 : root.disabledControlOpacity
                     tooltipText: qsTr("Undo Edit (Ctrl+Z)")
@@ -1469,7 +1469,7 @@ Item {
 
                 IconButton {
                     objectName: "previewRedoButton"
-                    iconText: "↷"
+                    iconSource: "qrc:/icons/icons/redo.svg"
                     enabled: backend.canRedo
                     opacity: enabled ? 1.0 : root.disabledControlOpacity
                     tooltipText: qsTr("Redo Edit (Ctrl+Shift+Z)")
@@ -1480,7 +1480,7 @@ Item {
 
                 IconButton {
                     objectName: "previewResetButton"
-                    iconText: "⟲"
+                    iconSource: "qrc:/icons/icons/reset.svg"
                     Accessible.role: Accessible.Button
                     Accessible.name: qsTr("Reset Crop and Trim")
                     enabled: backend.hasEdits
@@ -1494,7 +1494,7 @@ Item {
 
                 IconButton {
                     objectName: "previewCompareButton"
-                    iconText: "◧"
+                    iconSource: "qrc:/icons/icons/compare.svg"
                     Accessible.role: Accessible.Button
                     Accessible.name: qsTr("Compare with Original")
                     enabled: backend.hasCrop

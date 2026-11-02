@@ -21,6 +21,8 @@
         <file>icons/emoji.svg</file>
         <file>icons/undo.svg</file>
         <file>icons/redo.svg</file>
+        <file>icons/reset.svg</file>
+        <file>icons/compare.svg</file>
         <file>icons/cancel.svg</file>
         <file>icons/mic.svg</file>
         <file>icons/done.svg</file>

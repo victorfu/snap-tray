@@ -1,3 +1,4 @@
+#include <QFile>
 #include <QtTest/QtTest>
 
 #include "qml/QmlOverlayManager.h"
@@ -394,6 +395,7 @@ private slots:
     void previewLockedSizeEntryOnNativeOriginal();
     void previewUndoShortcutCancelsDraft();
     void previewCompareShowsOriginal();
+    void previewEditButtonsUseSvgIcons();
 
     // The draft follows the content when the window is resized (#11).
     void draftFollowsContentRect();
@@ -1961,6 +1963,21 @@ void tst_RecordingCropOverlay::previewCompareShowsOriginal()
     sendKey(Qt::Key_Backslash);
     m_backend->clearCrop();
     QVERIFY(!previewItem("previewCompareChip")->isVisible());
+}
+
+void tst_RecordingCropOverlay::previewEditButtonsUseSvgIcons()
+{
+    // These buttons drew Unicode glyphs (U+21B6, U+21B7, U+27F2, U+25E7) that
+    // the UI font lacks, so they showed as empty squares. They must use SVGs.
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    for (const char* name : {"previewUndoButton", "previewRedoButton", "previewResetButton", "previewCompareButton"}) {
+        QQuickItem* button = previewItem(name);
+        QVERIFY2(button, name);
+        QVERIFY2(button->property("iconText").toString().isEmpty(), name);
+        const QUrl icon = button->property("iconSource").toUrl();
+        QVERIFY2(icon.scheme() == QLatin1String("qrc"), name);
+        QVERIFY2(QFile::exists(QLatin1Char(':') + icon.path()), qPrintable(icon.toString()));
+    }
 }
 
 void tst_RecordingCropOverlay::lockedCornerShrinksAlongTheMovedAxis_data()
