@@ -60,7 +60,9 @@ signals:
     void stateChanged(IVideoPlayer::State state);
     void positionChanged(qint64 positionMs);
     void durationChanged(qint64 durationMs);
-    void frameReady(const QImage &frame);
+    // positionMs: the frame's presentation time, -1 when unknown. Unlike
+    // positionChanged (throttled on some platforms), it is exact per frame.
+    void frameReady(const QImage &frame, qint64 positionMs = -1);
     void error(const QString &message);
     void mediaLoaded();
     void playbackFinished();

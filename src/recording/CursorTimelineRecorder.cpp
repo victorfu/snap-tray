@@ -64,6 +64,7 @@ bool CursorTimelineRecorder::start()
     info.shapesAvailable = m_capabilities.shapes;
     info.clicksAvailable = m_capabilities.clicks;
     info.cursorInVideo = m_cursorInVideo;
+    info.pixelRatio = m_mapping.devicePixelRatio;
     if (!m_writer.open(info)) return false;
     m_running = true;
     m_paused = false;

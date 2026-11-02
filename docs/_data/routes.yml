@@ -147,6 +147,10 @@ developer_architecture:
   en: /developer/architecture/
   zh-tw: /zh-tw/developer/architecture/
 
+developer_recording_sync_matrix:
+  en: /developer/recording-sync-matrix/
+  zh-tw: /zh-tw/developer/recording-sync-matrix/
+
 screenshot_tool:
   en: /screenshot-tool/
   zh-tw: /zh-tw/screenshot-tool/

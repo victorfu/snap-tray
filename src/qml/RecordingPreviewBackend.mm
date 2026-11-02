@@ -1,6 +1,7 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
+#include "qml/VideoPlaybackItem.h"
 #include "utils/VideoCropGeometry.h"
 #include "video/IVideoTranscoder.h"
 #include "video/IVideoFrameReader.h"
@@ -26,10 +27,12 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QPainter>
 #include <QPointer>
 #include <QQmlContext>
 #include <QQuickView>
 #include <QTimer>
+#include <QtMath>
 #include <QScreen>
 #include <QtConcurrent/QtConcurrentRun>
 #include <QUuid>
@@ -60,6 +63,463 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     , m_recordedAsIntermediate(recordedAsIntermediate)
 {
     m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
+    if (auto cursor = SnapTray::CursorTimelineSidecar::read(videoPath)) {
+        m_cursorTimeline = std::make_shared<const SnapTray::CursorTimeline>(std::move(*cursor));
+    }
+    // The pointer look the user chose last time; undo starts from it.
+    m_cursorEffects = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects());
+    m_editHistory.reset(currentEditState());
+    // Availability depends on the format (MP4 needs a capable transcoder).
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::cursorEffectsChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::masksChanged);
+}
+
+std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
+{
+    // A snapshot: shares the immutable timeline, copies settings and geometry.
+    const QSize videoSize = m_videoSize.isEmpty() && m_cursorTimeline ? m_cursorTimeline->info.frameSize : m_videoSize;
+    const QRectF bounds = m_cropRect.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(videoSize)) : QRectF(m_cropRect);
+    const auto timeline = m_cursorTimeline;
+    const bool drawCursor = cursorEffectsActive();
+    const auto cursor = drawCursor ? std::make_shared<SnapTray::CursorEffectRenderer>(*timeline, m_cursorEffects)
+                                   : std::shared_ptr<SnapTray::CursorEffectRenderer>();
+    const auto zoom = zoomAvailable() && m_zoom.isActive() ? std::make_shared<SnapTray::ZoomTrack>(m_zoom)
+                                                            : std::shared_ptr<SnapTray::ZoomTrack>();
+    const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()
+                                                  : std::make_shared<SnapTray::RedactionTrack>(m_redaction);
+    return [timeline, cursor, zoom, redaction, bounds, videoSize](QImage& frame, qint64 sourceMs) {
+        if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
+            frame = frame.convertToFormat(QImage::Format_RGB32);
+        }
+        // Masks first, on the source content: nothing they cover can come
+        // back through the zoom's resampling.
+        // Never skip masks for lack of geometry: without a known size the
+        // frame itself is the source area.
+        if (redaction) {
+            redaction->apply(frame, sourceMs,
+                             bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds);
+        }
+        // The frame shows `bounds`; a zoom shows part of it, scaled to fill.
+        QRectF shown = bounds;
+        if (zoom) {
+            shown = zoom->viewportAt(sourceMs, bounds);
+            if (shown != bounds) {
+                QImage zoomed(frame.size(), frame.format());
+                QPainter painter(&zoomed);
+                painter.setRenderHint(QPainter::SmoothPixmapTransform);
+                const double sx = frame.width() / bounds.width();
+                const double sy = frame.height() / bounds.height();
+                const QRectF source((shown.x() - bounds.x()) * sx, (shown.y() - bounds.y()) * sy,
+                                    shown.width() * sx, shown.height() * sy);
+                painter.drawImage(QRectF(zoomed.rect()), frame, source);
+                painter.end();
+                frame = zoomed;
+            }
+        }
+        if (cursor) cursor->paint(frame, sourceMs, {shown, videoSize, frame.size()});
+    };
+}
+
+bool RecordingPreviewBackend::hasPointerData() const
+{
+    return SnapTray::CursorEffectAvailability::of(m_cursorTimeline.get()).cursor;
+}
+
+bool RecordingPreviewBackend::cursorEffectsAvailable() const
+{
+    return hasPointerData() && formatCanDrawEffects();
+}
+
+bool RecordingPreviewBackend::formatCanDrawEffects() const
+{
+    if (m_selectedFormat != MP4) return true; // GIF/WebP frames are drawn here
+    if (!m_mp4FrameFilterSupported) {
+        const auto factory = transcoderFactoryOverride() ? transcoderFactoryOverride()
+                                                         : TranscoderFactory(&IVideoTranscoder::create);
+        const auto transcoder = factory ? factory() : nullptr;
+        m_mp4FrameFilterSupported = transcoder && transcoder->supportsFrameFilter();
+    }
+    return *m_mp4FrameFilterSupported;
+}
+
+bool RecordingPreviewBackend::clickEffectsAvailable() const
+{
+    return cursorEffectsAvailable() && SnapTray::CursorEffectAvailability::of(m_cursorTimeline.get()).clicks;
+}
+
+bool RecordingPreviewBackend::cursorEffectsActive() const
+{
+    if (!cursorEffectsAvailable()) return false;
+    return m_cursorEffects.showCursor || (m_cursorEffects.clickRipple && clickEffectsAvailable());
+}
+
+void RecordingPreviewBackend::setCursorEffects(const SnapTray::CursorEffectSettings& settings)
+{
+    if (m_cursorEffects == settings) return;
+    m_cursorEffects = settings;
+    emit cursorEffectsChanged();
+}
+
+void RecordingPreviewBackend::editCursorEffects(const std::function<void(SnapTray::CursorEffectSettings&)>& change)
+{
+    // A running export keeps the settings it started with.
+    if (isProcessing()) return;
+    auto settings = m_cursorEffects;
+    change(settings);
+    if (settings == m_cursorEffects) return;
+    RecordingSettingsManager::instance().setPointerEffects(settings.toJson());
+    setCursorEffects(settings);
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setShowCursor(bool value)
+{
+    editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.showCursor = value; });
+}
+
+void RecordingPreviewBackend::setCursorScale(qreal value)
+{
+    const double clamped = std::clamp(double(value), SnapTray::CursorEffectSettings::kMinScale,
+                                      SnapTray::CursorEffectSettings::kMaxScale);
+    editCursorEffects([clamped](SnapTray::CursorEffectSettings& s) { s.scale = clamped; });
+}
+
+void RecordingPreviewBackend::setCursorSmoothing(int value)
+{
+    const int level = qBound(0, value, int(SnapTray::CursorEffectSettings::Smoothing::High));
+    editCursorEffects([level](SnapTray::CursorEffectSettings& s) { s.smoothing = SnapTray::CursorEffectSettings::Smoothing(level); });
+}
+
+void RecordingPreviewBackend::setClickRipple(bool value)
+{
+    editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.clickRipple = value; });
+}
+
+bool RecordingPreviewBackend::effectsActive() const
+{
+    return !m_redaction.isEmpty() || cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive());
+}
+
+QVariantList RecordingPreviewBackend::masks() const
+{
+    QVariantList list;
+    for (const auto& mask : m_redaction.masks) {
+        list.append(QVariantMap{{QStringLiteral("x"), mask.rect.x()},
+                                {QStringLiteral("y"), mask.rect.y()},
+                                {QStringLiteral("width"), mask.rect.width()},
+                                {QStringLiteral("height"), mask.rect.height()},
+                                {QStringLiteral("start"), mask.startMs},
+                                {QStringLiteral("end"), mask.endMs},
+                                {QStringLiteral("style"), int(mask.style)}});
+    }
+    return list;
+}
+
+void RecordingPreviewBackend::setSelectedMask(int index)
+{
+    index = index >= 0 && index < int(m_redaction.masks.size()) ? index : -1;
+    if (m_selectedMask == index) return;
+    m_selectedMask = index;
+    emit selectedMaskChanged();
+}
+
+void RecordingPreviewBackend::editRedaction(const std::function<void(SnapTray::RedactionTrack&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::RedactionTrack redaction = m_redaction;
+    change(redaction);
+    if (redaction == m_redaction) return;
+    m_redaction = redaction;
+    if (m_selectedMask >= int(m_redaction.masks.size())) setSelectedMask(-1);
+    emit masksChanged();
+    recordEdit();
+}
+
+int RecordingPreviewBackend::addMask()
+{
+    if (isProcessing() || !masksAvailable() || m_videoSize.isEmpty()) return -1;
+    // A quarter of the picture in the middle, for the whole recording.
+    const QSize size(qMax(SnapTray::RedactionTrack::kMinMaskSide, m_videoSize.width() / 4),
+                     qMax(SnapTray::RedactionTrack::kMinMaskSide, m_videoSize.height() / 4));
+    SnapTray::RedactionMask mask;
+    mask.rect = QRect(QPoint((m_videoSize.width() - size.width()) / 2, (m_videoSize.height() - size.height()) / 2), size);
+    editRedaction([&mask](SnapTray::RedactionTrack& r) { r.masks.push_back(mask); });
+    const int index = int(m_redaction.masks.size()) - 1;
+    setSelectedMask(index);
+    return index;
+}
+
+void RecordingPreviewBackend::removeMask(int index)
+{
+    editRedaction([index](SnapTray::RedactionTrack& r) {
+        if (index >= 0 && index < int(r.masks.size())) r.masks.erase(r.masks.begin() + index);
+    });
+    setSelectedMask(-1);
+}
+
+void RecordingPreviewBackend::setMaskRectFromView(int index, const QRectF& viewRect, const QRectF& contentRect)
+{
+    if (m_videoSize.isEmpty() || contentRect.isEmpty()) return;
+    const double sx = m_videoSize.width() / contentRect.width();
+    const double sy = m_videoSize.height() / contentRect.height();
+    // Outward to whole video pixels, inside the picture, never smaller than the minimum.
+    QRect rect(QPoint(qFloor((viewRect.left() - contentRect.x()) * sx), qFloor((viewRect.top() - contentRect.y()) * sy)),
+               QPoint(qCeil((viewRect.right() - contentRect.x()) * sx) - 1, qCeil((viewRect.bottom() - contentRect.y()) * sy) - 1));
+    rect = rect.intersected(QRect(QPoint(0, 0), m_videoSize));
+    if (rect.width() < SnapTray::RedactionTrack::kMinMaskSide || rect.height() < SnapTray::RedactionTrack::kMinMaskSide) {
+        return;
+    }
+    editRedaction([index, rect](SnapTray::RedactionTrack& r) {
+        if (index >= 0 && index < int(r.masks.size())) r.masks[index].rect = rect;
+    });
+}
+
+QRectF RecordingPreviewBackend::maskRectInView(int index, const QRectF& contentRect) const
+{
+    if (index < 0 || index >= int(m_redaction.masks.size()) || m_videoSize.isEmpty()) return {};
+    const QRect rect = m_redaction.masks[index].rect;
+    const double sx = contentRect.width() / m_videoSize.width();
+    const double sy = contentRect.height() / m_videoSize.height();
+    return QRectF(contentRect.x() + rect.x() * sx, contentRect.y() + rect.y() * sy, rect.width() * sx, rect.height() * sy);
+}
+
+void RecordingPreviewBackend::setMaskStyle(int index, int style)
+{
+    const int clamped = qBound(0, style, int(SnapTray::RedactionMask::Style::Blur));
+    editRedaction([index, clamped](SnapTray::RedactionTrack& r) {
+        if (index >= 0 && index < int(r.masks.size())) r.masks[index].style = SnapTray::RedactionMask::Style(clamped);
+    });
+}
+
+bool RecordingPreviewBackend::setMaskRange(int index, qint64 startMs, qint64 endMs)
+{
+    if (isProcessing() || index < 0 || index >= int(m_redaction.masks.size())) return false;
+    if (startMs < 0 || (endMs >= 0 && endMs <= startMs) || (m_duration > 0 && startMs >= m_duration)) return false;
+    editRedaction([index, startMs, endMs](SnapTray::RedactionTrack& r) {
+        r.masks[index].startMs = startMs;
+        r.masks[index].endMs = endMs;
+    });
+    return true;
+}
+
+void RecordingPreviewBackend::installPreviewFrameProcessor()
+{
+    auto* player = m_view && m_view->rootObject()
+        ? m_view->rootObject()->findChild<VideoPlaybackItem*>(QStringLiteral("previewVideoPlayer"))
+        : nullptr;
+    if (!player) return;
+    // The preview shows masks burned into the real pixels, with the same
+    // function as the exports, never a lookalike drawn on top.
+    QPointer<RecordingPreviewBackend> weakThis(this);
+    player->setFrameProcessor([weakThis](QImage& frame, qint64 positionMs) {
+        if (!weakThis || weakThis->m_redaction.isEmpty()) return;
+        const QSize source = weakThis->m_videoSize.isEmpty() ? frame.size() : weakThis->m_videoSize;
+        // positionMs is this frame's own time (#175), so the preview masks
+        // exactly the frames the export does, with the same function; no
+        // extra margin that would show frames masked that are exported
+        // unmasked (#177 review).
+        weakThis->m_redaction.apply(frame, positionMs, QRectF(QPointF(0, 0), QSizeF(source)));
+    });
+    connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
+}
+
+bool RecordingPreviewBackend::zoomAvailable() const
+{
+    return formatCanDrawEffects();
+}
+
+bool RecordingPreviewBackend::autoZoomAvailable() const
+{
+    return zoomAvailable() && SnapTray::CursorEffectAvailability::of(m_cursorTimeline.get()).clicks;
+}
+
+QRectF RecordingPreviewBackend::zoomBounds() const
+{
+    const QSize size = m_videoSize.isEmpty() && m_cursorTimeline ? m_cursorTimeline->info.frameSize : m_videoSize;
+    return m_cropRect.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(size)) : QRectF(m_cropRect);
+}
+
+void RecordingPreviewBackend::editZoom(const std::function<void(SnapTray::ZoomTrack&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::ZoomTrack zoom = m_zoom;
+    change(zoom);
+    if (zoom == m_zoom) return;
+    m_zoom = zoom;
+    if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
+    emit zoomChanged();
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setZoomEnabled(bool value)
+{
+    editZoom([value](SnapTray::ZoomTrack& z) { z.enabled = value; });
+}
+
+void RecordingPreviewBackend::setZoomReduceMotion(bool value)
+{
+    editZoom([value](SnapTray::ZoomTrack& z) { z.reduceMotion = value; });
+}
+
+QVariantList RecordingPreviewBackend::zoomSegments() const
+{
+    QVariantList list;
+    for (const auto& s : m_zoom.segments()) {
+        list.append(QVariantMap{{QStringLiteral("start"), s.startMs},
+                                {QStringLiteral("end"), s.endMs},
+                                {QStringLiteral("scale"), s.scale},
+                                {QStringLiteral("manual"), s.manual}});
+    }
+    return list;
+}
+
+void RecordingPreviewBackend::setSelectedZoom(int index)
+{
+    index = index >= 0 && index < int(m_zoom.segments().size()) ? index : -1;
+    if (m_selectedZoom == index) return;
+    m_selectedZoom = index;
+    emit selectedZoomChanged();
+}
+
+int RecordingPreviewBackend::generateAutoZoom()
+{
+    if (isProcessing() || !autoZoomAvailable()) return 0;
+    SnapTray::AutoZoomOptions options;
+    options.bounds = zoomBounds();
+    options.durationMs = m_duration;
+    auto generated = SnapTray::generateAutoZoom(*m_cursorTimeline, options);
+    const int count = int(generated.size());
+    editZoom([&generated](SnapTray::ZoomTrack& z) {
+        // The user's own segments win; automatic ones that collide with them go.
+        std::vector<SnapTray::ZoomSegment> segments;
+        for (const auto& s : z.segments()) {
+            if (s.manual) segments.push_back(s);
+        }
+        const size_t manualCount = segments.size();
+        for (const auto& candidate : generated) {
+            bool collides = false;
+            for (size_t i = 0; i < manualCount; ++i) {
+                collides |= candidate.startMs < segments[i].endMs && segments[i].startMs < candidate.endMs;
+            }
+            if (!collides) segments.push_back(candidate);
+        }
+        z.enabled = true;
+        z.setSegments(std::move(segments));
+    });
+    return count;
+}
+
+int RecordingPreviewBackend::addZoomAt(qint64 positionMs)
+{
+    if (isProcessing() || !zoomAvailable()) return -1;
+    constexpr qint64 kNewZoomMs = 2000;
+    constexpr double kNewZoomScale = 2.0;
+    const QRectF bounds = zoomBounds();
+    if (bounds.isEmpty()) return -1;
+    // Only into free time: existing zooms are never trimmed or replaced
+    // (#176 review). Inside one, nothing is added.
+    const qint64 start = qMax<qint64>(0, positionMs);
+    if (m_zoom.segmentAt(start) >= 0) return -1;
+    qint64 end = m_duration > 0 ? qMin(m_duration, start + kNewZoomMs) : start + kNewZoomMs;
+    for (const auto& existing : m_zoom.segments()) {
+        if (existing.startMs > start) {
+            end = qMin(end, existing.startMs);
+            break;
+        }
+    }
+    if (end - start < SnapTray::ZoomTrack::kMinSegmentMs) return -1;
+    SnapTray::ZoomSegment segment;
+    segment.startMs = start;
+    segment.endMs = end;
+    segment.scale = kNewZoomScale;
+    segment.focus = bounds.center();
+    if (m_cursorTimeline) {
+        if (const auto* sample = m_cursorTimeline->sampleAt(positionMs); sample && sample->visible
+            && bounds.contains(QPointF(sample->position))) {
+            segment.focus = QPointF(sample->position);
+        }
+    }
+    segment.manual = true;
+    editZoom([&segment](SnapTray::ZoomTrack& z) {
+        auto segments = z.segments();
+        segments.push_back(segment);
+        z.enabled = true;
+        z.setSegments(std::move(segments));
+    });
+    // Select the zoom that was inserted (it starts exactly at `start`).
+    int index = -1;
+    for (int i = 0; i < int(m_zoom.segments().size()); ++i) {
+        if (m_zoom.segments()[i].startMs == start) index = i;
+    }
+    setSelectedZoom(index);
+    return index;
+}
+
+void RecordingPreviewBackend::removeZoom(int index)
+{
+    editZoom([index](SnapTray::ZoomTrack& z) {
+        auto segments = z.segments();
+        if (index < 0 || index >= int(segments.size())) return;
+        segments.erase(segments.begin() + index);
+        z.setSegments(std::move(segments));
+    });
+    setSelectedZoom(-1);
+}
+
+void RecordingPreviewBackend::setZoomScale(int index, qreal scale)
+{
+    editZoom([index, scale](SnapTray::ZoomTrack& z) {
+        auto segments = z.segments();
+        if (index < 0 || index >= int(segments.size())) return;
+        segments[index].scale = scale;
+        segments[index].manual = true;
+        z.setSegments(std::move(segments));
+    });
+}
+
+bool RecordingPreviewBackend::setZoomRange(int index, qint64 startMs, qint64 endMs)
+{
+    const auto& current = m_zoom.segments();
+    if (isProcessing() || index < 0 || index >= int(current.size())) return false;
+    // Must stay between its neighbours and long enough to see.
+    const qint64 lower = index > 0 ? current[index - 1].endMs : 0;
+    const qint64 upper = index + 1 < int(current.size()) ? current[index + 1].startMs
+                                                         : (m_duration > 0 ? m_duration : endMs);
+    if (startMs < lower || endMs > upper || endMs - startMs < SnapTray::ZoomTrack::kMinSegmentMs) return false;
+    editZoom([index, startMs, endMs](SnapTray::ZoomTrack& z) {
+        auto segments = z.segments();
+        segments[index].startMs = startMs;
+        segments[index].endMs = endMs;
+        segments[index].manual = true;
+        z.setSegments(std::move(segments));
+    });
+    return true;
+}
+
+void RecordingPreviewBackend::setZoomFocusFromView(int index, const QPointF& viewPoint, const QRectF& contentRect)
+{
+    if (m_videoSize.isEmpty() || contentRect.isEmpty()) return;
+    const QPointF videoPoint((viewPoint.x() - contentRect.x()) * m_videoSize.width() / contentRect.width(),
+                             (viewPoint.y() - contentRect.y()) * m_videoSize.height() / contentRect.height());
+    editZoom([index, videoPoint](SnapTray::ZoomTrack& z) {
+        auto segments = z.segments();
+        if (index < 0 || index >= int(segments.size())) return;
+        segments[index].focus = videoPoint;
+        segments[index].manual = true;
+        z.setSegments(std::move(segments));
+    });
+}
+
+QRectF RecordingPreviewBackend::zoomViewportInView(qint64 positionMs, const QRectF& contentRect) const
+{
+    const QRectF bounds = zoomBounds();
+    if (m_videoSize.isEmpty() || contentRect.isEmpty() || bounds.isEmpty()) return contentRect;
+    const QRectF shown = zoomAvailable() ? m_zoom.viewportAt(positionMs, bounds) : bounds;
+    const double sx = contentRect.width() / m_videoSize.width();
+    const double sy = contentRect.height() / m_videoSize.height();
+    return QRectF(contentRect.x() + shown.x() * sx, contentRect.y() + shown.y() * sy,
+                  shown.width() * sx, shown.height() * sy);
 }
 
 std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
@@ -134,6 +594,7 @@ void RecordingPreviewBackend::ensureView()
 
     m_view->setSource(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingPreview.qml")));
+    installPreviewFrameProcessor();
 
     // Handle window close
     connect(m_view, &QQuickView::closing, this, [this](QQuickCloseEvent *) {
@@ -393,9 +854,17 @@ void RecordingPreviewBackend::save()
     m_outputQuality = outputQualityOverride() ? outputQualityOverride()()
                                               : RecordingSettingsManager::instance().quality();
 
+    // Masks are only kept off the export by drawing them; an export that
+    // cannot draw them must not happen at all.
+    if (!m_redaction.isEmpty() && !masksAvailable()) {
+        setErrorMessage(tr("Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, "
+                           "or remove the masks to export MP4. Nothing was exported."));
+        return;
+    }
+
     // An export writes a second file next to the recording. Check the room
     // for it first (an unedited MP4 can be moved as is, so it needs none).
-    const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop();
+    const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || effectsActive();
     if (writesNewFile) {
         const QString directory = QFileInfo(m_videoPath).absolutePath();
         const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
@@ -428,7 +897,8 @@ void RecordingPreviewBackend::save()
         return;
     }
 
-    if (hasTrim() || hasCrop()) {
+    // Drawing the pointer or a zoom is an edit: the unedited file cannot just be moved.
+    if (hasTrim() || hasCrop() || effectsActive()) {
         performTranscode(false);
         return;
     }
@@ -648,6 +1118,12 @@ void RecordingPreviewBackend::updateVideoSize(const QSize &size)
         m_windowTimeline.reset();
         emit windowTimelineChanged();
     }
+    if (m_cursorTimeline && m_cursorTimeline->info.frameSize != size) {
+        qWarning() << "RecordingPreviewBackend: pointer data frame size" << m_cursorTimeline->info.frameSize
+                   << "does not match the video" << size << "- pointer effects disabled";
+        m_cursorTimeline.reset();
+        emit cursorEffectsChanged();
+    }
     setCropRect(m_cropRect);
 }
 
@@ -793,6 +1269,9 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
 {
     SnapTray::PreviewEditState state;
     state.crop = m_cropRect;
+    state.cursor = m_cursorEffects;
+    state.zoom = m_zoom;
+    state.redaction = m_redaction;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -812,6 +1291,20 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         m_trimStart = state.trimStart;
         m_trimEnd = state.trimEnd;
         emit trimRangeChanged();
+    }
+    if (state.redaction != m_redaction) {
+        m_redaction = state.redaction;
+        if (m_selectedMask >= int(m_redaction.masks.size())) setSelectedMask(-1);
+        emit masksChanged();
+    }
+    if (state.zoom != m_zoom) {
+        m_zoom = state.zoom;
+        if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
+        emit zoomChanged();
+    }
+    if (state.cursor != m_cursorEffects) {
+        setCursorEffects(state.cursor);
+        RecordingSettingsManager::instance().setPointerEffects(state.cursor.toJson());
     }
     emit editHistoryChanged();
 }
@@ -844,7 +1337,12 @@ void RecordingPreviewBackend::resetEdits()
     if (isProcessing() || !hasEdits()) {
         return;
     }
-    applyEditState({});
+    // Crop and trim only; the pointer look stays as chosen.
+    SnapTray::PreviewEditState unedited;
+    unedited.cursor = m_cursorEffects;
+    unedited.zoom = m_zoom;
+    unedited.redaction = m_redaction;
+    applyEditState(unedited);
     recordEdit();
 }
 
@@ -945,6 +1443,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     const qint64 requestedStartMs = m_trimStart;
     const qint64 requestedEndMs = m_trimEnd;
     const QRect cropRect = m_cropRect;
+    const auto cursorFilter = effectsActive() ? effectsFrameFilter()
+                                              : std::function<void(QImage&, qint64)>();
     const int selectedFormat = static_cast<int>(format);
     const QString createPlayerError = tr("Failed to create video player for conversion");
     const QString loadVideoError = tr("Failed to load video for conversion");
@@ -963,6 +1463,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              requestedStartMs,
                              requestedEndMs,
                              cropRect,
+                             cursorFilter,
                              outputPath,
                              selectedFormat,
                              createPlayerError,
@@ -1172,6 +1673,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                     }
                     capturedFrame = capturedFrame.copy(cropRect);
                 }
+                if (cursorFilter) {
+                    cursorFilter(capturedFrame, timeMs);
+                }
                 const qint64 framesBefore = gifEncoder
                     ? gifEncoder->framesWritten()
                     : webpEncoder->framesWritten();
@@ -1323,6 +1827,10 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     request.startMs = m_trimStart;
     request.endMs = m_trimEnd;
     request.cropRect = m_cropRect;
+    if (effectsActive()) {
+        // A snapshot: later changes in the preview do not reach this job.
+        request.frameFilter = effectsFrameFilter();
+    }
     const QSize croppedSize = m_cropRect.isEmpty() ? QSize() : m_cropRect.size();
     const QString unsupportedError = tr("Video export is not supported on this platform");
     const QString failedTemplate = tr("Export failed: %1");
@@ -1349,7 +1857,9 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             return false;
         };
         auto transcoder = createTranscoder();
-        const bool unsupported = !transcoder;
+        // Never export without drawing what was asked for: masks left out
+        // would leave what they cover visible.
+        const bool unsupported = !transcoder || (request.frameFilter && !transcoder->supportsFrameFilter());
         VideoTranscodeResult result;
         VideoFileProbe sourceProbe;
         bool moveInstead = false;

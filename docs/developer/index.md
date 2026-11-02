@@ -18,6 +18,7 @@ This section is the canonical home for SnapTray's technical documentation. The r
 - [Build from Source](build-from-source.md): prerequisites, scripts, manual CMake flows, cache setup, and local build troubleshooting
 - [Release & Packaging](release-packaging.md): DMG / NSIS / MSIX packaging, signing, notarization, Store submission, and icon asset workflow
 - [Architecture Overview](architecture.md): repository structure, library boundaries, architecture patterns, platform-specific code, and development conventions
+- [Recording Sync Matrix](recording-sync-matrix.md): end-to-end recording verification with fault injection, reports and A/B comparison, and the real-device procedure
 
 ## Audience split
 

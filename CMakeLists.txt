@@ -350,6 +350,9 @@ add_library(snaptray_core STATIC
     src/recording/RecordingSession.cpp
     src/recording/RecordingInterruption.cpp
     src/recording/CursorTimeline.cpp
+    src/recording/CursorEffects.cpp
+    src/recording/ZoomTrack.cpp
+    src/recording/RedactionTrack.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -1204,6 +1207,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
         include/qml/VideoPlaybackItem.h
+        src/qml/RecordingCursorOverlay.cpp
+        include/qml/RecordingCursorOverlay.h
         src/qml/SvgIconItem.cpp
         include/qml/SvgIconItem.h
         include/qml/RecordingPreviewBackend.h

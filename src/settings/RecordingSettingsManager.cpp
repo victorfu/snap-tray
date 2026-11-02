@@ -1,6 +1,8 @@
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
 
+#include <QJsonDocument>
+
 RecordingSettingsManager& RecordingSettingsManager::instance()
 {
     static RecordingSettingsManager instance;
@@ -125,4 +127,16 @@ void RecordingSettingsManager::setShowSetupBeforeRecording(bool value)
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kKeyShowSetupBeforeRecording, value);
+}
+
+QJsonObject RecordingSettingsManager::pointerEffects() const
+{
+    auto settings = SnapTray::getSettings();
+    return QJsonDocument::fromJson(settings.value(kKeyPointerEffects).toByteArray()).object();
+}
+
+void RecordingSettingsManager::setPointerEffects(const QJsonObject& value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyPointerEffects, QJsonDocument(value).toJson(QJsonDocument::Compact));
 }

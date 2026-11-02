@@ -1,6 +1,10 @@
 #ifndef PREVIEWEDITHISTORY_H
 #define PREVIEWEDITHISTORY_H
 
+#include "recording/CursorEffects.h"
+#include "recording/ZoomTrack.h"
+#include "recording/RedactionTrack.h"
+
 #include <QRect>
 #include <QVector>
 #include <QtGlobal>
@@ -13,13 +17,23 @@ struct PreviewEditState {
     QRect crop;
     qint64 trimStart = 0;
     qint64 trimEnd = -1;
+    // Pointer effects (#160) are undoable like crop and trim, but they are a
+    // look, not an edit of the footage: isUnedited() ignores them.
+    CursorEffectSettings cursor;
+    // Zoom and pan segments (#161); like the pointer look, undoable but kept
+    // by "Reset Crop and Trim".
+    ZoomTrack zoom;
+    // Masks over sensitive content (#162), undoable; also kept by "Reset
+    // Crop and Trim", so a reset never uncovers anything.
+    RedactionTrack redaction;
 
     bool operator==(const PreviewEditState& other) const
     {
-        return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd;
+        return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd
+            && cursor == other.cursor && zoom == other.zoom && redaction == other.redaction;
     }
     bool operator!=(const PreviewEditState& other) const { return !(*this == other); }
-    bool isUnedited() const { return *this == PreviewEditState{}; }
+    bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1; }
 };
 
 // Session-only undo/redo for preview edits. Each record() is one undo step;
@@ -60,6 +74,13 @@ public:
     }
 
     PreviewEditState current() const { return m_states.at(m_index); }
+
+    // Starts over from `initial` (the state the preview opened with).
+    void reset(const PreviewEditState& initial)
+    {
+        m_states = {initial};
+        m_index = 0;
+    }
 
 private:
     QVector<PreviewEditState> m_states{PreviewEditState{}};

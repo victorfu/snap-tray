@@ -39,6 +39,7 @@ struct AVFoundationSeekState {
 - (void)setupWithAVPlayer:(AVPlayer *)avPlayer;
 - (void)cleanup;
 - (QImage)currentFrame;
+- (QImage)currentFrameWithTime:(qint64 *)timeMs;
 @end
 
 class AVFoundationPlayer : public IVideoPlayer
@@ -192,11 +193,20 @@ private:
 
 - (QImage)currentFrame
 {
+    return [self currentFrameWithTime:nullptr];
+}
+
+- (QImage)currentFrameWithTime:(qint64 *)timeMs
+{
     if (!self.videoOutput || !self.avPlayer.currentItem) {
         return QImage();
     }
 
     CMTime currentTime = self.avPlayer.currentItem.currentTime;
+    // The frame below is the one at this time: report it with the frame.
+    if (timeMs && CMTIME_IS_NUMERIC(currentTime)) {
+        *timeMs = qMax<qint64>(0, qint64(CMTimeGetSeconds(currentTime) * 1000.0));
+    }
     
     // Note: We intentionally DO NOT check hasNewPixelBufferForItemTime here
     // because that only works during playback. For seeking/frame extraction,
@@ -382,11 +392,12 @@ void AVFoundationPlayer::deliverSeekFrame()
         return;
     }
 
-    const QImage frame = [m_helper currentFrame];
+    qint64 timeMs = -1;
+    const QImage frame = [m_helper currentFrameWithTime:&timeMs];
     // Always emit frameReady so downstream consumers (like the preview's
     // animated export) don't hang waiting for a signal that never comes.
     // Consumers should handle null frames appropriately.
-    emit frameReady(frame);
+    emit frameReady(frame, timeMs);
 }
 
 void AVFoundationPlayer::setVolume(float volume)
@@ -492,9 +503,10 @@ void AVFoundationPlayer::updateFrame()
 {
     if (m_state != State::Playing) return;
 
-    QImage frame = [m_helper currentFrame];
+    qint64 timeMs = -1;
+    QImage frame = [m_helper currentFrameWithTime:&timeMs];
     if (!frame.isNull()) {
-        emit frameReady(frame);
+        emit frameReady(frame, timeMs);
     }
 }
 

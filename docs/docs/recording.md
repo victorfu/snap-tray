@@ -78,7 +78,40 @@ If several of these happen at once, the recording still ends only once and the f
 
 The recorded video does not contain the mouse pointer. While a recording that opens in the preview runs, SnapTray keeps a separate record of the pointer next to it: where it was, what it looked like, and when buttons were pressed. Keyboard input is never recorded. This record stays with the temporary recording and is deleted with it when you save or discard; saved videos and exports never include it. It is what later editing features use to show, enlarge or highlight the pointer.
 
-On Linux (X11) it includes the pointer's shape and clicks. On macOS and Windows only the position is kept for now. If the record cannot be written, the recording itself is not affected.
+On Linux (X11) it includes the pointer's shape and clicks. On macOS and Windows only the position is kept for now, and the pointer is drawn as a plain arrow. If the record cannot be written, the recording itself is not affected.
+
+### Pointer effects in the preview
+
+When a recording has this record, the preview shows pointer controls next to the format buttons. What you see in the preview is what the export draws, through the same crop and trim:
+
+- **Pointer**: show or hide the mouse pointer in the exported video.
+- **Size** (1×, 1.5×, 2×, 3×): draw the pointer larger.
+- **Smooth** (Off, Low, Medium, High): smooth out a shaky path. Clicks always stay exactly where and when they happened. Off by default.
+- **Clicks**: show a brief ring where each click happened. Needs recorded clicks (Linux).
+
+Your last choices are remembered, and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. On macOS and Windows, pointer effects are available for GIF and WebP exports; MP4 exports there do not draw them yet, and the preview says so.
+
+### Zoom and pan
+
+Full-screen recordings often make buttons and text small once shared. The preview can zoom in on parts of the recording:
+
+- **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux); actions spread over most of the screen stay at the full view. Running it again replaces the automatic zooms but keeps the ones you added or changed.
+- **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
+- Zooms appear as bars above the timeline. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less Motion** makes all zooms smaller and slower without direct pans, **Zoom On/Off** turns them all off without deleting them, and **Delete** removes one.
+
+The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Like pointer effects, zooms are available for MP4 on Linux and for GIF and WebP everywhere.
+
+### Masking sensitive areas
+
+Before sharing, cover account names, chats, notifications or other private content with **Add Mask**. A mask starts over the middle of the picture for the whole recording; drag it to move it and drag its corner to resize it. While it is selected you can choose:
+
+- **Solid**: covers the area with black. This is the default and the only style that removes the content.
+- **Pixelate** or **Blur**: weaken the detail. They do not guarantee that text or faces cannot be recognised or recovered; use Solid for anything that must not be seen.
+- **Whole Recording**, or a start and end time for the mask.
+
+Masks are burned into the exported MP4, GIF or WebP, and the preview shows them on the real picture, before any crop or zoom, so a zoom never uncovers what a mask hides. Each mask starts a fraction of a second early so no frame shows the content as it begins. Masks can be undone like other edits; **Reset Crop and Trim** keeps them.
+
+**Masks are only in the exported file.** The unmasked recording is a temporary file: it stays available in the preview until you save (also after Cancel or a failed save), and once the masked export is saved, SnapTray deletes it. If you need an unmasked copy too, save once without masks first. SnapTray never uploads recordings. If the selected format cannot draw masks on your system (MP4 on macOS and Windows for now), SnapTray refuses to export and says so, instead of saving a file without the masks. Masks are not tracked automatically: if the content moves, add masks for each time range.
 
 ## Recovering unsaved recordings
 
