@@ -92,6 +92,7 @@ private slots:
     void unwritableSidecarDoesNotStart();
     void timerSamplesWhileRunning();
     void x11ProbeOnIsolatedDisplay();
+    void x11RecorderKeepsQueuedClicks();
 };
 
 void TestCursorTimelineRecorder::startRecordsTheInitialPointer()
@@ -369,6 +370,42 @@ void TestCursorTimelineRecorder::x11ProbeOnIsolatedDisplay()
     const double usPerPoll = timer.nsecsElapsed() / 1000.0 / kPolls;
     qInfo("X11 pointer poll with a move: %.0f us", usPerPoll);
     QVERIFY(usPerPoll < 5000);
+#else
+    QSKIP("Built without XTest");
+#endif
+}
+
+void TestCursorTimelineRecorder::x11RecorderKeepsQueuedClicks()
+{
+#if defined(SNAPTRAY_TEST_HAS_XTEST)
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != QLatin1String("1")
+        || QGuiApplication::platformName() != QLatin1String("xcb")) {
+        QSKIP("Clicks the pointer: runs only on an isolated X display (ctest provides one).");
+    }
+    // PR #174 review: the real probe connected to the recorder. A press and
+    // its release queued together used to lose the release, because the
+    // press handler's position poll drained the queue re-entrantly.
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("x11.cursor.jsonl"));
+    qint64 now = 0;
+    CursorTimelineRecorder recorder(createCursorProbe(), [&now] { return now; }, kMapping, path, false);
+    QVERIFY(recorder.start());
+    snaptrayTestX11Pointer("move", 50, 60);
+    for (int i = 0; i < 2; ++i) {
+        // Both events reach the socket before SnapTray reads either.
+        snaptrayTestX11Pointer("button", 1, 1);
+        snaptrayTestX11Pointer("button", 1, 0);
+        QTest::qWait(150);
+        now += 200;
+    }
+    recorder.stop();
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const auto timeline = CursorTimeline::parse(file.readAll());
+    QVERIFY(timeline);
+    QCOMPARE(int(timeline->buttons.size()), 4); // two real clicks, nothing synthetic
+    for (const auto& event : timeline->buttons) QVERIFY(!event.synthetic);
+    QCOMPARE(timeline->buttons.back().down, false);
 #else
     QSKIP("Built without XTest");
 #endif
