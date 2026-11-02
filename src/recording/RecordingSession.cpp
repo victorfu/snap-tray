@@ -51,6 +51,7 @@ bool write(const RecordingSessionInfo& info, QString* error)
     object[QStringLiteral("height")] = info.frameSize.height();
     object[QStringLiteral("frameRate")] = info.frameRate;
     object[QStringLiteral("audioRequired")] = info.audioRequired;
+    object[QStringLiteral("intermediate")] = info.intermediate;
     object[QStringLiteral("fragmented")] = info.fragmented;
     object[QStringLiteral("startedAt")] = info.startedAt.toUTC().toString(Qt::ISODateWithMs);
     object[QStringLiteral("updatedAt")] = info.updatedAt.toUTC().toString(Qt::ISODateWithMs);
@@ -115,6 +116,7 @@ std::optional<RecordingSessionInfo> read(const QString& manifestPath, QString* e
                            object.value(QStringLiteral("height")).toInt());
     info.frameRate = object.value(QStringLiteral("frameRate")).toInt();
     info.audioRequired = object.value(QStringLiteral("audioRequired")).toBool();
+    info.intermediate = object.value(QStringLiteral("intermediate")).toBool(true);
     info.fragmented = object.value(QStringLiteral("fragmented")).toBool();
     info.startedAt = QDateTime::fromString(object.value(QStringLiteral("startedAt")).toString(), Qt::ISODateWithMs);
     info.updatedAt = QDateTime::fromString(object.value(QStringLiteral("updatedAt")).toString(), Qt::ISODateWithMs);

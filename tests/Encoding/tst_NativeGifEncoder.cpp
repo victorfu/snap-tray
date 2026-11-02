@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 #include <QTemporaryDir>
+#include "encoding/WebPAnimEncoder.h"
 #include <QSignalSpy>
 #include <QFile>
 #include "encoding/NativeGifEncoder.h"
@@ -122,6 +123,7 @@ class TestNativeGifEncoder : public QObject
     Q_OBJECT
 
 private slots:
+    void bufferedBytesAreCountedBeforeTheFileExists();
     void initTestCase();
     void cleanupTestCase();
     void init();
@@ -725,6 +727,41 @@ void TestNativeGifEncoder::testLastErrorMessage()
     m_encoder->finish();
 
     QVERIFY(!m_encoder->lastError().isEmpty());
+}
+
+void TestNativeGifEncoder::bufferedBytesAreCountedBeforeTheFileExists()
+{
+    // PR #171 review: these encoders write the file only in finish(); the
+    // disk guard reads how much they hold.
+    QTemporaryDir dir;
+    QImage a(64, 48, QImage::Format_ARGB32);
+    QImage b(64, 48, QImage::Format_ARGB32);
+    a.fill(Qt::red);
+    b.fill(Qt::blue);
+
+    NativeGifEncoder gif;
+    const QString gifPath = dir.filePath(QStringLiteral("held.gif"));
+    QVERIFY(gif.start(gifPath, a.size(), 10));
+    const auto gifBytes = gif.bufferedBytesCounter();
+    for (int i = 0; i < 6; ++i) gif.writeFrame(i % 2 ? a : b, i * 100);
+    QVERIFY(!QFileInfo::exists(gifPath) || QFileInfo(gifPath).size() == 0);
+    QVERIFY(gifBytes->load() > 0);
+    gif.abort();
+
+    WebPAnimationEncoder webp;
+    const QString webpPath = dir.filePath(QStringLiteral("held.webp"));
+    QVERIFY(webp.start(webpPath, a.size(), 10));
+    const auto webpBytes = webp.bufferedBytesCounter();
+    webp.writeFrame(a, 0);
+    const qint64 afterFirst = webpBytes->load();
+    QVERIFY(afterFirst > 0);
+    // An unchanged screen adds nothing to the estimate; a change does.
+    webp.writeFrame(a, 100);
+    QCOMPARE(webpBytes->load(), afterFirst);
+    webp.writeFrame(b, 200);
+    QVERIFY(webpBytes->load() > afterFirst);
+    QVERIFY(!QFileInfo::exists(webpPath) || QFileInfo(webpPath).size() == 0);
+    webp.abort();
 }
 
 QTEST_MAIN(TestNativeGifEncoder)

@@ -60,6 +60,7 @@ bool NativeGifEncoder::start(const QString &outputPath, const QSize &frameSize, 
     );
     m_frameRate = qBound(1, frameRate, 240);
     m_framesWritten = 0;
+    m_bufferedBytes->store(0);
     m_consecutiveFailures = 0;
     m_pendingFrame = QImage();
     m_pendingTimestampMs = -1;
@@ -191,6 +192,9 @@ bool NativeGifEncoder::encodePendingFrame(int centiSeconds)
         m_pendingFrame.bytesPerLine());
     if (result) {
         m_consecutiveFailures = 0;
+        if (GIF_STATE->listTail) {
+            m_bufferedBytes->fetch_add(qint64(GIF_STATE->listTail->size));
+        }
         return true;
     }
 

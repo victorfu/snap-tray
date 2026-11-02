@@ -569,7 +569,7 @@ void RecordingPreviewBackend::handOffForSave(const QString &outputPath, const QS
     emit saveRequested(outputPath, croppedSize);
 }
 
-void RecordingPreviewBackend::completeSave(SaveOutcome outcome)
+void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &savedPath)
 {
     if (!m_awaitingSave) {
         return;
@@ -580,8 +580,15 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome)
     const bool derived = output != m_videoPath;
 
     if (outcome == SaveOutcome::Saved) {
-        // Only now is the source no longer needed.
-        if (derived) {
+        // Only now is the source no longer needed, unless the export was
+        // saved over it: then that path is the user's saved file.
+        const auto samePath = [](const QString& a, const QString& b) {
+            const QFileInfo fa(a), fb(b);
+            const QString ca = fa.canonicalFilePath(), cb = fb.canonicalFilePath();
+            return !ca.isEmpty() ? ca == cb : fa.absoluteFilePath() == fb.absoluteFilePath();
+        };
+        const bool savedOverSource = !savedPath.isEmpty() && samePath(savedPath, m_videoPath);
+        if (derived && !savedOverSource) {
             QFile::remove(m_videoPath);
         }
         SnapTray::WindowTimelineSidecar::remove(m_videoPath);
@@ -1480,6 +1487,20 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                                         sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
                 moveInstead = true;
                 moveReason = "meets the output quality target";
+            }
+        }
+        if (smartSave && !moveInstead && !unsupported) {
+            // Re-encoding an unedited recording writes a second file. Without
+            // room for it, save the recording as recorded (a move needs no
+            // space) instead of filling the disk with an export.
+            const QString directory = QFileInfo(request.outputPath).absolutePath();
+            const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
+                                                                : QStorageInfo(directory).bytesAvailable();
+            const qint64 needed = SnapTray::DiskSpaceGuard::kFloorBytes
+                + qMax<qint64>(0, QFileInfo(request.inputPath).size());
+            if (freeBytes >= 0 && freeBytes < needed) {
+                moveInstead = true;
+                moveReason = "not enough free space to re-encode";
             }
         }
         if (moveInstead) {

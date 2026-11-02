@@ -296,8 +296,10 @@ Item {
         const dirY = edges & edgeTop ? -1 : edges & edgeBottom ? 1 : 0
         const ax = dirX < 0 ? r.x + r.width : dirX > 0 ? r.x : r.x + r.width / 2
         const ay = dirY < 0 ? r.y + r.height : dirY > 0 ? r.y : r.y + r.height / 2
-        // A corner follows whichever side moved further; a side handle leads with its axis.
-        const widthLeads = horizontal && (!vertical || w / r.width >= h / r.height)
+        // A corner follows whichever side changed more, growing or shrinking;
+        // a side handle leads with its axis.
+        const widthLeads = horizontal
+            && (!vertical || Math.abs(w / r.width - 1) >= Math.abs(h / r.height - 1))
         return anchoredAspectRect(ax, ay, dirX, dirY, w, h, widthLeads)
     }
     function containsPoint(r, x, y) {

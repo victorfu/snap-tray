@@ -115,13 +115,15 @@ public:
     QString path() const { return m_file.fileName(); }
 
 private:
-    void append(const QByteArray& line, bool essential);
+    // False when the line was not kept (size limit, failure).
+    bool append(const QByteArray& line, bool essential);
 
     QFile m_file;
     QByteArray m_buffer;
     qint64 m_maxBytes;
     qint64 m_bytes = 0;
     int m_shapeCount = 0;
+    Qt::MouseButtons m_writtenDown; // presses in the file without their release yet
     bool m_failed = false;
     bool m_truncated = false;
     bool m_finished = false;
