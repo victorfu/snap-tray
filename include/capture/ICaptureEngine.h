@@ -116,6 +116,18 @@ public:
      */
     virtual QImage captureFrame() = 0;
 
+    /**
+     * @brief captureFrame(), plus the backend's own surface for it when it has
+     * one (CapturedFrame::nativeBuffer), so a matching encoder can skip the
+     * CPU copy. Only image and nativeBuffer are filled in.
+     */
+    virtual SnapTray::CapturedFrame captureNativeFrame()
+    {
+        SnapTray::CapturedFrame frame;
+        frame.image = captureFrame();
+        return frame;
+    }
+
     // Asynchronous backends can deliver completed frames directly to the
     // encoding queue instead of depending on GUI-thread polling.
     virtual bool deliversFrames() const { return false; }

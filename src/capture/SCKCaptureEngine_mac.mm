@@ -87,18 +87,29 @@ public:
     QList<CGWindowID> excludedWindowIds;
     bool requireAllExcludedWindows = false;
 
-    // Latest captured frame (for async delivery)
+    // Latest captured frame (for async delivery). latestFrame wraps the
+    // pixels of latestBuffer, the CVPixelBuffer they live in.
     QImage latestFrame;
+    std::shared_ptr<void> latestBuffer;
     std::mutex frameMutex;
 
-    void setLatestFrame(const QImage &frame) {
+    void setLatestFrame(const QImage &frame, std::shared_ptr<void> buffer = {}) {
         std::lock_guard<std::mutex> lock(frameMutex);
         latestFrame = frame;
+        latestBuffer = std::move(buffer);
     }
 
     QImage getLatestFrame() {
         std::lock_guard<std::mutex> lock(frameMutex);
         return latestFrame;
+    }
+
+    SnapTray::CapturedFrame getLatestCapturedFrame() {
+        std::lock_guard<std::mutex> lock(frameMutex);
+        SnapTray::CapturedFrame frame;
+        frame.image = latestFrame;
+        frame.nativeBuffer = latestBuffer;
+        return frame;
     }
 };
 
@@ -165,7 +176,13 @@ API_AVAILABLE(macos(12.3))
         );
 
         if (!self.invalidated && localEngine) {
-            localEngine->setLatestFrame(wrappedImage);
+            // Encoders can take this surface as is (#154). Each holder keeps
+            // its own retain, so the stream's pool cannot reuse it early.
+            CVPixelBufferRetain(imageBuffer);
+            std::shared_ptr<void> nativeBuffer(imageBuffer, [](void *buffer) {
+                CVPixelBufferRelease(static_cast<CVPixelBufferRef>(buffer));
+            });
+            localEngine->setLatestFrame(wrappedImage, std::move(nativeBuffer));
         } else {
             // If invalidated or no engine, we must release the buffer ourselves
             // because wrappedImage destructor will not run properly or we want to release immediately
@@ -802,6 +819,17 @@ QImage SCKCaptureEngine::captureFrame()
         qDebug() << "SCKCaptureEngine::captureFrame() - Fallback, returning empty";
     }
     return QImage();
+}
+
+SnapTray::CapturedFrame SCKCaptureEngine::captureNativeFrame()
+{
+#if HAS_SCREENCAPTUREKIT
+    if (d->running && d->useScreenCaptureKit) {
+        return d->getLatestCapturedFrame();
+    }
+#endif
+    // Same empty result as captureFrame() when not capturing.
+    return ICaptureEngine::captureNativeFrame();
 }
 
 QString SCKCaptureEngine::engineName() const

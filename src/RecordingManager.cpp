@@ -1008,6 +1008,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     if (nativeEncoder) {
         m_encodingWorker->setVideoEncoder(nativeEncoder);
         m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Video);
+        m_encodingWorker->setNativeFramesEnabled(
+            RecordingSettingsManager::instance().nativeFrameEncoding());
     }
     m_writtenOutputBytes = nativeEncoder ? nativeEncoder->writtenBytesCounter() : nullptr;
     m_bufferedOutputBytes = gifEncoder ? gifEncoder->bufferedBytesCounter()
@@ -1088,7 +1090,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
                                                                 : SnapTray::captureClockNowNs();
             qint64 timeMs = 0;
             if (!admitFrameLocked(sourceTimeNs, true, &timeMs)) return;
-            if (worker->enqueueFrame({frame.image, timeMs})) ++m_frameCount;
+            if (worker->enqueueFrame({frame.image, timeMs, 0, frame.nativeBuffer})) ++m_frameCount;
         }, Qt::DirectConnection);
     }
 
@@ -1467,9 +1469,9 @@ void RecordingManager::captureFrame()
     // Polling backends return their latest frame; it is stamped when read.
     // (Backends that capture on their own thread stamp frames themselves.)
     const qint64 sourceTimeNs = SnapTray::captureClockNowNs();
-    QImage frame = captureEngine->captureFrame();
+    const SnapTray::CapturedFrame frame = captureEngine->captureNativeFrame();
 
-    if (!frame.isNull()) {
+    if (!frame.image.isNull()) {
         qint64 timeMs = 0;
         {
             QMutexLocker locker(&m_durationMutex);
@@ -1479,7 +1481,7 @@ void RecordingManager::captureFrame()
 
         // Enqueue frame for encoding (non-blocking)
         // Watermark is applied by the worker thread
-        EncodingWorker::FrameData frameData{frame, timeMs};
+        EncodingWorker::FrameData frameData{frame.image, timeMs, 0, frame.nativeBuffer};
         if (encodingWorker->enqueueFrame(frameData)) ++m_frameCount;
     }
 }

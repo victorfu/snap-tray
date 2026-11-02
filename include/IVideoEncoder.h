@@ -35,6 +35,22 @@ public:
     // Encoding lifecycle
     virtual bool start(const QString &outputPath, const QSize &frameSize, int frameRate) = 0;
     virtual void writeFrame(const QImage &frame, qint64 timestampMs = -1) = 0;
+
+    /**
+     * @brief Encode a capture backend's own surface without a CPU copy.
+     * @param nativeBuffer CapturedFrame::nativeBuffer (a CVPixelBuffer on macOS)
+     * @return true when the encoder took charge of the frame (written, or
+     * dropped the way writeFrame() drops under backpressure); false when it
+     * cannot use this buffer as is (pixel format or size). The caller then
+     * writes the frame's image instead, so no frame is lost.
+     */
+    virtual bool writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs)
+    {
+        Q_UNUSED(nativeBuffer);
+        Q_UNUSED(timestampMs);
+        return false;
+    }
+
     virtual void finish() = 0;
     virtual void abort() = 0;
 

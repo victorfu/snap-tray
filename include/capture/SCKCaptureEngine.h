@@ -38,6 +38,7 @@ public:
     void stop() override;
     bool isRunning() const override;
     QImage captureFrame() override;
+    SnapTray::CapturedFrame captureNativeFrame() override;
     QString engineName() const override;
 
     /**
