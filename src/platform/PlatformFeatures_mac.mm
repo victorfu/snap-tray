@@ -105,7 +105,7 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
     return new WindowDetector(parent);
 }
 
-QIcon PlatformFeatures::createTrayIcon() const
+QPixmap PlatformFeatures::createTrayPixmap() const
 {
     // Render the 32pt-grid design into a narrower canvas so the menu bar item
     // (and thus the system highlight pill) matches widths like Google Drive.
@@ -138,7 +138,7 @@ QIcon PlatformFeatures::createTrayIcon() const
     painter.setBrush(Qt::white);
     painter.drawPath(finalPath);
 
-    return QIcon(pixmap);
+    return pixmap;
 }
 
 bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const

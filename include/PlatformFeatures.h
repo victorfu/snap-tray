@@ -5,6 +5,7 @@
 #include <QString>
 #include <QIcon>
 #include <QImage>
+#include <QPixmap>
 
 #include <functional>
 
@@ -33,7 +34,8 @@ public:
     OCRManager* createOCRManager(QObject* parent = nullptr) const;
     WindowDetector* createWindowDetector(QObject* parent = nullptr) const;
 
-    QIcon createTrayIcon() const;
+    // Base tray / menu bar artwork; MainApplication badges it with the recording state.
+    QPixmap createTrayPixmap() const;
 
     // Copy image to clipboard using native APIs for flows that must survive process exit,
     // such as the CLI capture command.

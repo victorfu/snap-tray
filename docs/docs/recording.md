@@ -27,6 +27,8 @@ PulseAudio compatibility service).
 3. Use the floating control bar to monitor duration and stop recording. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
 4. Click Stop to export.
 
+While a recording is in progress, the tray or menu bar icon shows its state with a corner badge: a ring while preparing or counting down, a red dot while recording, pause bars while paused, and three dots while the video is finishing. Hover the icon to see the state, the recorded time (pauses excluded), and the screen being recorded. If the tray sits on the recorded screen, the icon can appear in the video.
+
 ## Crop a recording
 
 Recording always captures the full screen. To keep only part of it, open the preview after you stop:

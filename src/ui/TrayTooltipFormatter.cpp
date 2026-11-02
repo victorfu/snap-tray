@@ -23,18 +23,19 @@ QString formatWindowsTrayTooltip(const QString& applicationName,
     }
 
     QStringList lines;
-    lines.reserve(hotkeyLines.size() + 1);
+    lines.reserve(hotkeyLines.size() + 2);
     lines.append(title);
+    // Keep the status right after the title: Windows truncates tray tooltips
+    // at 127 characters, and the recording status must survive that cut.
+    if (!statusLine.isEmpty()) {
+        lines.append(statusLine);
+    }
 
     for (const auto& hotkeyLine : hotkeyLines) {
         const QString displayHotkey = hotkeyLine.hotkey.isEmpty()
             ? emptyHotkeyText
             : hotkeyLine.hotkey;
         lines.append(QStringLiteral("%1: %2").arg(hotkeyLine.label, displayHotkey));
-    }
-
-    if (!statusLine.isEmpty()) {
-        lines.append(statusLine);
     }
 
     return lines.join(QLatin1Char('\n'));

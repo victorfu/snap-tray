@@ -850,8 +850,10 @@ add_library(snaptray_ui STATIC
     # Global UI components
     src/ui/DesignTokens.cpp
     src/ui/TrayTooltipFormatter.cpp
+    src/ui/TrayRecordingIndicator.cpp
     include/ui/DesignTokens.h
     include/ui/TrayTooltipFormatter.h
+    include/ui/TrayRecordingIndicator.h
     include/region/MagnifierOverlay.h
 
     # Update system

@@ -846,6 +846,11 @@ target_link_libraries(Utils_TrayTooltipFormatter PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Utils_TrayTooltipFormatter COMMAND Utils_TrayTooltipFormatter)
 set_tests_properties(Utils_TrayTooltipFormatter PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_TrayRecordingIndicator Utils/tst_TrayRecordingIndicator.cpp)
+target_link_libraries(Utils_TrayRecordingIndicator PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Utils_TrayRecordingIndicator COMMAND Utils_TrayRecordingIndicator)
+set_tests_properties(Utils_TrayRecordingIndicator PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # CLI Tests
 # ============================================================================
