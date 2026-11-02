@@ -7,6 +7,9 @@
 #include <QString>
 #include "encoding/VideoRateControl.h"
 
+#include <atomic>
+#include <memory>
+
 /**
  * @brief Abstract interface for video encoders (MP4 only)
  *
@@ -114,6 +117,13 @@ public:
     virtual void writeAudioSamples(const QByteArray &pcmData, qint64 startFrame) {
         Q_UNUSED(pcmData); Q_UNUSED(startFrame);
     }
+
+    // Bytes this encoder has written to disk so far, readable from any thread;
+    // null when the output file at outputPath() shows that itself. Encoders
+    // that write elsewhere until finish() (a temporary file) report it here
+    // so the disk guard sees the real size during recording.
+    using ByteCounter = std::shared_ptr<std::atomic<qint64>>;
+    virtual ByteCounter writtenBytesCounter() const { return nullptr; }
 
     /**
      * @brief Factory: create best available native encoder for MP4
