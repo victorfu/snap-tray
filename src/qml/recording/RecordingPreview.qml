@@ -870,7 +870,7 @@ Item {
                         parts.push(qsTr("pointer effects need GIF or WebP on this system"))
                     if (backend.masks.length > 0)
                         parts.push(backend.masksAvailable
-                                   ? qsTr("masks: %1, burned into the export; the original keeps everything").arg(backend.masks.length)
+                                   ? qsTr("masks: %1, burned into the export; the unmasked temporary file is deleted after saving").arg(backend.masks.length)
                                    : qsTr("masks need GIF or WebP on this system"))
                     return parts.join(" · ")
                 }
@@ -1029,7 +1029,7 @@ Item {
                     minimumButtonWidth: 0
                     text: qsTr("Add Mask")
                     tooltipText: backend.masksAvailable
-                        ? qsTr("Cover a sensitive area in the export. The original recording is not changed.")
+                        ? qsTr("Cover a sensitive area in the exported file")
                         : qsTr("Masks need GIF or WebP on this system")
                     onClicked: {
                         videoPlayer.pause()

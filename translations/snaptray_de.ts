@@ -1966,6 +1966,16 @@ Größe: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Einen sensiblen Bereich in der exportierten Datei abdecken</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>Masken: %1, in den Export eingebrannt; die unmaskierte temporäre Datei wird nach dem Speichern gelöscht</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Selected mask</source>
         <translation>Ausgewählte Maske</translation>
     </message>

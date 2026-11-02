@@ -1960,6 +1960,16 @@ Kích thước: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Che vùng nhạy cảm trong tệp đã xuất</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>mặt nạ: %1, được áp vào tệp xuất; tệp tạm chưa che sẽ bị xóa sau khi lưu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Selected mask</source>
         <translation>Mặt nạ đã chọn</translation>
     </message>

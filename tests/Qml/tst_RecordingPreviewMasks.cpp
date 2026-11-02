@@ -228,6 +228,9 @@ void tst_RecordingPreviewMasks::previewShowsTheMaskedPixels()
     if (!backend.masksAvailable()) QSKIP("This platform's MP4 transcoder cannot draw masks yet");
     QCOMPARE(backend.addMask(), 0);
     backend.setMaskRectFromView(0, QRectF(kSecret), QRectF(QPointF(0, 0), QSizeF(kSize)));
+    // Measure the picture, not the editor: a selected mask draws an outline
+    // and handle in the accent colour, which can be light (CI's theme).
+    backend.setSelectedMask(-1);
     // The real frame is re-processed at once: no pattern left in the video area.
     QTRY_COMPARE_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()), 0, 5000);
     // Undo takes the mask away again.

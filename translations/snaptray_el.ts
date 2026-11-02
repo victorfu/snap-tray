@@ -1960,6 +1960,16 @@ Size: %2</source>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Κάλυψη ευαίσθητης περιοχής στο εξαγόμενο αρχείο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>μάσκες: %1, ενσωματωμένες στην εξαγωγή· το προσωρινό αρχείο χωρίς μάσκες διαγράφεται μετά την αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Selected mask</source>
         <translation>Επιλεγμένη μάσκα</translation>
     </message>

@@ -1947,6 +1947,16 @@ English is always included and cannot be removed.</source>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>ปิดบังพื้นที่ที่ละเอียดอ่อนในไฟล์ที่ส่งออก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>มาสก์: %1 ฝังในไฟล์ส่งออก ไฟล์ชั่วคราวที่ไม่มีมาสก์จะถูกลบหลังบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Selected mask</source>
         <translation>มาสก์ที่เลือก</translation>
     </message>

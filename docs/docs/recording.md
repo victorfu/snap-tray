@@ -111,7 +111,7 @@ Before sharing, cover account names, chats, notifications or other private conte
 
 Masks are burned into the exported MP4, GIF or WebP, and the preview shows them on the real picture, before any crop or zoom, so a zoom never uncovers what a mask hides. Each mask starts a fraction of a second early so no frame shows the content as it begins. Masks can be undone like other edits; **Reset Crop and Trim** keeps them.
 
-**The original recording is not changed.** Only the exported file is masked; SnapTray never deletes or uploads the original for you. If the selected format cannot draw masks on your system (MP4 on macOS and Windows for now), SnapTray refuses to export and says so, instead of saving a file without the masks. Masks are not tracked automatically: if the content moves, add masks for each time range.
+**Masks are only in the exported file.** The unmasked recording is a temporary file: it stays available in the preview until you save (also after Cancel or a failed save), and once the masked export is saved, SnapTray deletes it. If you need an unmasked copy too, save once without masks first. SnapTray never uploads recordings. If the selected format cannot draw masks on your system (MP4 on macOS and Windows for now), SnapTray refuses to export and says so, instead of saving a file without the masks. Masks are not tracked automatically: if the content moves, add masks for each time range.
 
 ## Recovering unsaved recordings
 
