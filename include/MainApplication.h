@@ -133,10 +133,10 @@ private:
     SnapTray::TrayRecordingStatus m_trayRecordingStatus = SnapTray::TrayRecordingStatus::Idle;
     // Effective (pause-excluded) duration shown in the tray tooltip; -1 when none.
     qint64 m_trayRecordingElapsedMs = -1;
-    // Recording warnings (#170 review). Where overlays cannot be kept out of
-    // the capture (X11), a toast shown while capturing would be burned into
-    // the video: warnings wait in the tray tooltip and are shown when the
-    // recording stops.
+    // Recording warnings (#170 review). The toast cannot be kept out of the
+    // capture on every platform, and one shown while capturing would be
+    // burned into the video: warnings wait in the tray tooltip and are shown
+    // when the recording stops.
     bool holdsRecordingWarnings() const;
     void showRecordingWarning(const QString& warning);
     void flushHeldRecordingWarnings();

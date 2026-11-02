@@ -144,11 +144,18 @@ bool EncodingWorker::startOnWorkerThread()
     // Clear any stale data from previous session
     {
         QMutexLocker locker(&m_queueMutex);
-        m_frameQueue.clear();
-        m_audioQueue.clear();
+        clearQueuesLocked();
     }
 
     return true;
+}
+
+void EncodingWorker::clearQueuesLocked()
+{
+    // The byte count belongs to the queued frames: dropping them drops it.
+    m_frameQueue.clear();
+    m_audioQueue.clear();
+    m_queuedBytes = 0;
 }
 
 void EncodingWorker::stop()
@@ -184,8 +191,7 @@ void EncodingWorker::stopOnWorkerThread()
     // Clear queues
     {
         QMutexLocker locker(&m_queueMutex);
-        m_frameQueue.clear();
-        m_audioQueue.clear();
+        clearQueuesLocked();
     }
 
     // Abort encoders. This runs in the worker affinity thread.
@@ -545,8 +551,7 @@ void EncodingWorker::handleProcessingFailure(const QString& context, const QStri
 
     {
         QMutexLocker locker(&m_queueMutex);
-        m_frameQueue.clear();
-        m_audioQueue.clear();
+        clearQueuesLocked();
     }
 
     // Another path already stopped this worker; avoid duplicate error emissions.
