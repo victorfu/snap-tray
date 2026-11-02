@@ -130,11 +130,40 @@ Item {
                 return
             }
         }
-        if (zoomPanel.visible && !zoomPanel.commitPendingRange())
+        if (zoomPanel.visible && !root.commitPendingRange(zoomStartField, zoomEndField,
+                (start, end) => backend.setZoomRange(backend.selectedZoom, start, end)))
+            return
+        if (maskPanel.visible && !maskPanel.wholeRecording && !root.commitPendingRange(maskStartField, maskEndField,
+                (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
             return
         if (cropOverlay.editing && !root.applyCropWithPendingInput())
             return
         backend.save()
+    }
+
+    // A start/end pair typed but not confirmed yet (Save does not take
+    // focus), applied together so a range that needs both ends works. False,
+    // with the field marked and focused, when it is unreadable or rejected.
+    function commitPendingRange(startField, endField, apply) {
+        if (!startField.edited && !endField.edited)
+            return true
+        const start = startField.edited ? backend.parseTime(startField.text) : startField.timeMs
+        const end = endField.edited ? backend.parseTime(endField.text) : endField.timeMs
+        // Unreadable text marks its own field; a rejected range marks what was typed.
+        const unreadable = start < 0 || end < 0
+        if (unreadable || !apply(start, end)) {
+            startField.invalid = startField.edited && (!unreadable || start < 0)
+            endField.invalid = endField.edited && (!unreadable || end < 0)
+            const focusField = startField.invalid ? startField : endField
+            focusField.forceActiveFocus()
+            return false
+        }
+        for (const field of [startField, endField]) {
+            field.edited = false
+            field.invalid = false
+            field.text = backend.formatPreciseTime(field.timeMs)
+        }
+        return true
     }
 
     // Apply Crop and Save do not take focus: typed X/Y/W/H not yet confirmed
@@ -470,6 +499,7 @@ Item {
 
             Rectangle {
                 id: playOverlay
+                objectName: "previewPlayOverlay"
                 anchors.centerIn: parent
                 width: 72
                 height: 72
@@ -1133,6 +1163,7 @@ Item {
                     }
                 }
                 TimeField {
+                    id: maskStartField
                     objectName: "previewMaskStartField"
                     visible: !maskPanel.wholeRecording
                     accessibleName: qsTr("Mask start")
@@ -1142,6 +1173,7 @@ Item {
                     }
                 }
                 TimeField {
+                    id: maskEndField
                     objectName: "previewMaskEndField"
                     visible: !maskPanel.wholeRecording
                     accessibleName: qsTr("Mask end")
@@ -1175,31 +1207,6 @@ Item {
                 spacing: SemanticTokens.spacing4
                 visible: backend.selectedZoom >= 0 && !(backend.selectedMask >= 0) && !cropOverlay.editing
                 readonly property var segment: backend.selectedZoom >= 0 ? backend.zoomSegments[backend.selectedZoom] : null
-
-                // Typed zoom times not confirmed yet (Save does not take
-                // focus), applied together so a range that needs both ends
-                // works; false, with the field marked, when it is rejected.
-                function commitPendingRange() {
-                    if (!segment || (!zoomStartField.edited && !zoomEndField.edited))
-                        return true
-                    const start = zoomStartField.edited ? backend.parseTime(zoomStartField.text) : segment.start
-                    const end = zoomEndField.edited ? backend.parseTime(zoomEndField.text) : segment.end
-                    // Unreadable text marks its own field; a rejected range marks what was typed.
-                    const unreadable = start < 0 || end < 0
-                    if (unreadable || !backend.setZoomRange(backend.selectedZoom, start, end)) {
-                        zoomStartField.invalid = zoomStartField.edited && (!unreadable || start < 0)
-                        zoomEndField.invalid = zoomEndField.edited && (!unreadable || end < 0)
-                        const focusField = zoomStartField.invalid ? zoomStartField : zoomEndField
-                        focusField.forceActiveFocus()
-                        return false
-                    }
-                    for (const field of [zoomStartField, zoomEndField]) {
-                        field.edited = false
-                        field.invalid = false
-                        field.text = backend.formatPreciseTime(field.timeMs)
-                    }
-                    return true
-                }
 
                 Repeater {
                     model: root.zoomScales
