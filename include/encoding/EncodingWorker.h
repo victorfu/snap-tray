@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "WatermarkRenderer.h"
+#include "recording/RecordingHealth.h"
 
 class IVideoEncoder;
 class NativeGifEncoder;
@@ -44,6 +45,19 @@ public:
     struct FrameData {
         QImage frame;
         qint64 timestampMs;
+        qint64 enqueuedNs = 0;  // set by enqueueFrame(), for the queue-age metric
+    };
+
+    // Limits for frames waiting to be encoded. When one is reached the new
+    // frame is dropped (the queue keeps the older frames, so what is encoded
+    // stays in order) and the reason is counted. Bytes are each frame's full
+    // image size: shared images are counted more than once, erring on the
+    // side of a smaller queue. Stale: the oldest waiting frame is older than
+    // maxAgeMs, so the encoder is not keeping up.
+    struct QueueBudget {
+        int maxFrames = 30;
+        qint64 maxBytes = 512LL * 1024 * 1024;
+        qint64 maxAgeMs = 3000;
     };
 
     /**
@@ -96,6 +110,10 @@ public:
      * @brief Configure watermark settings
      */
     void setWatermarkSettings(const WatermarkRenderer::Settings& settings);
+
+    void setQueueBudget(const QueueBudget& budget);
+    // Counters for this recording; optional. Shared with RecordingManager.
+    void setHealth(std::shared_ptr<SnapTray::RecordingHealth> health);
 
     // ========== Lifecycle ==========
 
@@ -172,6 +190,8 @@ signals:
 private:
     bool startOnWorkerThread();
     void stopOnWorkerThread();
+    // Empties both queues and their byte count; m_queueMutex must be held.
+    void clearQueuesLocked();
     void requestFinishOnWorkerThread();
     void scheduleProcessing();
     void processNextFrame();
@@ -189,7 +209,10 @@ private:
     // Frame queue (thread-safe)
     mutable QMutex m_queueMutex;
     QQueue<FrameData> m_frameQueue;
-    static constexpr int MAX_QUEUE_SIZE = 30;  // ~1 second at 30fps
+    QueueBudget m_budget;         // guarded by m_queueMutex
+    qint64 m_queuedBytes = 0;     // guarded by m_queueMutex
+    std::shared_ptr<SnapTray::RecordingHealth> m_health;
+    qint64 encoderFramesWritten() const;
 
     // Audio queue (thread-safe, shared mutex with frame queue)
     QQueue<AudioData> m_audioQueue;
@@ -208,9 +231,9 @@ private:
     WatermarkRenderer::Settings m_watermarkSettings;
     QImage m_cachedWatermarkImage;  // Use QImage for thread safety (QPixmap is not thread-safe)
 
-    // Queue thresholds
-    static constexpr int QUEUE_NEAR_FULL_THRESHOLD = 24;  // 80% of max
-    static constexpr int QUEUE_LOW_THRESHOLD = 6;         // 20% of max
+    // Queue thresholds, as percentages of the frame budget
+    static constexpr int QUEUE_NEAR_FULL_PERCENT = 80;
+    static constexpr int QUEUE_LOW_PERCENT = 20;
 };
 
 #endif // ENCODINGWORKER_H

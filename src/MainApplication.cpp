@@ -277,12 +277,7 @@ void MainApplication::initialize()
                 error, 5000);
         });
     connect(m_recordingManager, &RecordingManager::recordingWarning,
-        this, [](const QString& warning) {
-            SnapTray::QmlToast::screenToast().showToast(
-                SnapTray::QmlToast::Level::Warning,
-                MainApplication::tr("Recording Warning"),
-                warning, 5000);
-        });
+        this, &MainApplication::showRecordingWarning);
 
     // Connect screenshot save signals from CaptureManager
     connect(m_captureManager, &CaptureManager::saveCompleted,
@@ -350,11 +345,18 @@ void MainApplication::initialize()
 
             updateRecordingActionText();
             updateTrayRecordingIndicator();
+            if (!holdsRecordingWarnings()) {
+                flushHeldRecordingWarnings();
+            }
         });
     connect(m_recordingManager, &RecordingManager::durationChanged,
         this, &MainApplication::onRecordingDurationChanged);
     connect(m_recordingManager, &RecordingManager::audioStatusChanged,
         this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::droppingFramesChanged,
+        this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::diagnosticsAvailable,
+        this, &MainApplication::updateRecordingActionText);
 
     // Create system tray icon
     m_trayBasePixmap = PlatformFeatures::instance().createTrayPixmap();
@@ -407,6 +409,17 @@ void MainApplication::initialize()
         m_pauseRecordingAction->setVisible(false);
         connect(m_pauseRecordingAction, &QAction::triggered, this, [this] {
             if (m_recordingManager) m_recordingManager->togglePause();
+        });
+        // Local diagnostics for the last recording; only copied when the user asks.
+        m_copyRecordingDiagnosticsAction = m_trayMenu->addAction(tr("Copy Recording Diagnostics"));
+        m_copyRecordingDiagnosticsAction->setVisible(false);
+        connect(m_copyRecordingDiagnosticsAction, &QAction::triggered, this, [this] {
+            if (!m_recordingManager || m_recordingManager->lastDiagnostics().isEmpty()) return;
+            QGuiApplication::clipboard()->setText(m_recordingManager->lastDiagnostics());
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Info,
+                tr("Diagnostics Copied"),
+                tr("The recording diagnostics are on the clipboard. They contain no images, audio or file names."));
         });
         // Platforms that keep active controls in the tray never show the bar while recording.
         if (!PlatformFeatures::instance().capabilities().recordingControlsInTray) {
@@ -1131,6 +1144,12 @@ void MainApplication::updateRecordingActionText()
                                    ? QCoreApplication::translate("RecordingControlBar", "Resume Recording")
                                    : QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
     }
+    if (m_copyRecordingDiagnosticsAction) {
+        m_copyRecordingDiagnosticsAction->setVisible(
+            m_recordingManager && !m_recordingManager->lastDiagnostics().isEmpty()
+            && (recordingState == RecordingManager::State::Idle
+                || recordingState == RecordingManager::State::Previewing));
+    }
     if (m_showRecordingControlsAction) {
         m_showRecordingControlsAction->setVisible(
             capturing
@@ -1228,6 +1247,56 @@ void MainApplication::updateTrayToolTip()
 #endif
 }
 
+bool MainApplication::holdsRecordingWarnings() const
+{
+    if (!m_recordingManager) {
+        return false;
+    }
+    // Recording captures the whole screen, and the toast cannot be kept out
+    // of it everywhere: X11 has no capture exclusion, Windows only from 10
+    // 2004, and ScreenCaptureKit fixes its excluded windows when capture
+    // starts. Warnings wait in the tray tooltip until capture ends (#170
+    // review). From preparation on: a five-second toast shown during the
+    // countdown would still be on screen when capture starts.
+    switch (m_recordingManager->state()) {
+    case RecordingManager::State::Preparing:
+    case RecordingManager::State::Countdown:
+    case RecordingManager::State::Recording:
+    case RecordingManager::State::Paused:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void MainApplication::showRecordingWarning(const QString& warning)
+{
+    if (holdsRecordingWarnings()) {
+        if (!m_heldRecordingWarnings.contains(warning)) {
+            m_heldRecordingWarnings.append(warning);
+        }
+        updateTrayToolTip();
+        return;
+    }
+    if (m_recordingWarningToast) {
+        m_recordingWarningToast(tr("Recording Warning"), warning);
+        return;
+    }
+    SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Warning, tr("Recording Warning"),
+                                                warning, 5000);
+}
+
+void MainApplication::flushHeldRecordingWarnings()
+{
+    if (m_heldRecordingWarnings.isEmpty()) {
+        return;
+    }
+    const QString text = m_heldRecordingWarnings.join(QLatin1Char('\n'));
+    m_heldRecordingWarnings.clear();
+    updateTrayToolTip();
+    showRecordingWarning(text);
+}
+
 QString MainApplication::trayRecordingStatusLine() const
 {
     using Status = SnapTray::TrayRecordingStatus;
@@ -1252,6 +1321,9 @@ QString MainApplication::trayRecordingStatusLine() const
     if (!screenSummary.isEmpty()) {
         parts.append(screenSummary);
     }
+    if (m_recordingManager && m_recordingManager->isDroppingFrames()) {
+        parts.append(tr("dropping frames"));
+    }
     QString line = parts.join(QStringLiteral(" \u00B7 "));
     // Audio stays visible for the whole recording, including fallbacks that
     // were announced once in a notification.
@@ -1260,6 +1332,10 @@ QString MainApplication::trayRecordingStatusLine() const
         : QString();
     if (!audioLine.isEmpty()) {
         line += QLatin1Char('\n') + audioLine;
+    }
+    // Warnings held back from the screen while capturing (shown after).
+    if (!m_heldRecordingWarnings.isEmpty()) {
+        line += QLatin1Char('\n') + tr("Warning: %1").arg(m_heldRecordingWarnings.last());
     }
     return line;
 }

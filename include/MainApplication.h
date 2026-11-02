@@ -121,6 +121,7 @@ private:
     QAction *m_fullScreenRecordingAction;
     QAction *m_pauseRecordingAction = nullptr;
     QAction *m_showRecordingControlsAction = nullptr;
+    QAction *m_copyRecordingDiagnosticsAction = nullptr;
     QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;
@@ -132,6 +133,15 @@ private:
     SnapTray::TrayRecordingStatus m_trayRecordingStatus = SnapTray::TrayRecordingStatus::Idle;
     // Effective (pause-excluded) duration shown in the tray tooltip; -1 when none.
     qint64 m_trayRecordingElapsedMs = -1;
+    // Recording warnings (#170 review). The toast cannot be kept out of the
+    // capture on every platform, and one shown while capturing would be
+    // burned into the video: warnings wait in the tray tooltip and are shown
+    // when the recording stops.
+    bool holdsRecordingWarnings() const;
+    void showRecordingWarning(const QString& warning);
+    void flushHeldRecordingWarnings();
+    QStringList m_heldRecordingWarnings;
+    std::function<void(const QString& title, const QString& text)> m_recordingWarningToast;
     // A held recording hotkey counts once (#147 review): on m_recordingHotkeyClock.
     QElapsedTimer m_recordingHotkeyClock;
     SnapTray::HotkeyHoldFilter m_recordingHotkeyHolds;

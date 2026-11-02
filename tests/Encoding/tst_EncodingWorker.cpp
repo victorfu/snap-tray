@@ -9,6 +9,8 @@
 
 #include "encoding/EncodingWorker.h"
 #include "IVideoEncoder.h"
+#include "recording/CapturedFrame.h"
+#include "recording/RecordingHealth.h"
 
 #include <atomic>
 #include <stdexcept>
@@ -241,6 +243,60 @@ private:
     QString m_outputPath;
 };
 
+// Takes `delayMs` per frame and, optionally, rejects every other frame, like
+// a busy hardware encoder. Frame counting is synchronous, as in the real ones.
+class SlowRejectingVideoEncoder final : public IVideoEncoder
+{
+public:
+    SlowRejectingVideoEncoder(int delayMs, bool rejectOdd) : m_delayMs(delayMs), m_rejectOdd(rejectOdd) {}
+    bool isAvailable() const override { return true; }
+    QString encoderName() const override { return QStringLiteral("SlowRejectingVideoEncoder"); }
+    bool start(const QString& outputPath, const QSize&, int) override { m_outputPath = outputPath; m_running = true; return true; }
+    void writeFrame(const QImage&, qint64) override
+    {
+        QThread::msleep(m_delayMs);
+        if (m_rejectOdd && (m_calls++ % 2 == 1)) return;
+        ++m_framesWritten;
+    }
+    void writeAudioSamples(const QByteArray&, qint64) override { ++m_audioPackets; }
+    void finish() override { m_running = false; emit finished(true, m_outputPath); }
+    void abort() override { m_running = false; }
+    bool isRunning() const override { return m_running; }
+    QString lastError() const override { return {}; }
+    qint64 framesWritten() const override { return m_framesWritten; }
+    QString outputPath() const override { return m_outputPath; }
+    std::atomic<int> m_audioPackets{0};
+
+private:
+    int m_delayMs;
+    bool m_rejectOdd;
+    int m_calls = 0;
+    std::atomic<qint64> m_framesWritten{0};
+    bool m_running = false;
+    QString m_outputPath;
+};
+
+// Runs a worker on its own thread and joins it, as RecordingManager does.
+struct ThreadedWorker {
+    EncodingWorker worker;
+    QThread thread;
+    explicit ThreadedWorker(IVideoEncoder* encoder)
+    {
+        worker.setEncoderType(EncodingWorker::EncoderType::Video);
+        worker.setVideoEncoder(encoder);
+        worker.moveToThread(&thread);
+        thread.start();
+    }
+    ~ThreadedWorker()
+    {
+        QThread* mainThread = QCoreApplication::instance()->thread();
+        QMetaObject::invokeMethod(&worker, [this, mainThread]() { worker.moveToThread(mainThread); },
+                                  Qt::BlockingQueuedConnection);
+        thread.quit();
+        thread.wait(5000);
+    }
+};
+
 class TestEncodingWorker : public QObject
 {
     Q_OBJECT
@@ -252,6 +308,12 @@ private slots:
     void testRequestFinishAfterFailureDoesNotEmitFinished();
     void testRequestFinishIsAsyncAndRunsOnWorkerThread();
     void testStopDuringFrameProcessingResetsProcessingState();
+    void testFullQueueDropsNewFramesWithoutBlocking();
+    void testByteBudgetBoundsRetainedFrames();
+    void testRestartClearsQueuedBytes();
+    void testStaleQueueDropsAndAges();
+    void testEncoderRejectionsAreCounted();
+    void testAudioOverloadIsCounted();
 };
 
 void TestEncodingWorker::testFrameExceptionStopsWorker()
@@ -432,6 +494,163 @@ void TestEncodingWorker::testStopDuringFrameProcessingResetsProcessingState()
 
     workerThread.quit();
     QVERIFY(workerThread.wait(3000));
+}
+
+namespace {
+QImage frameOfSize(int side)
+{
+    QImage frame(side, side, QImage::Format_ARGB32);
+    frame.fill(Qt::blue);
+    return frame;
+}
+
+bool finishAndWait(EncodingWorker& worker)
+{
+    QSignalSpy finished(&worker, &EncodingWorker::finished);
+    worker.requestFinish();
+    return finished.wait(20000) || finished.count() > 0;
+}
+} // namespace
+
+void TestEncodingWorker::testFullQueueDropsNewFramesWithoutBlocking()
+{
+    ThreadedWorker run(new SlowRejectingVideoEncoder(20, false));
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    health->reset(QStringLiteral("test"), 1);
+    run.worker.setHealth(health);
+    EncodingWorker::QueueBudget budget;
+    budget.maxFrames = 8;
+    run.worker.setQueueBudget(budget);
+    QVERIFY(run.worker.start());
+
+    // A source far faster than the encoder: the capture side never waits.
+    QElapsedTimer timer;
+    timer.start();
+    for (int i = 0; i < 100; ++i) {
+        run.worker.enqueueFrame({frameOfSize(16), i * 5});
+        QVERIFY(run.worker.queueDepth() <= budget.maxFrames);
+    }
+    QVERIFY2(timer.elapsed() < 500, qPrintable(QString::number(timer.elapsed())));
+    QVERIFY(finishAndWait(run.worker));
+
+    const auto s = health->snapshot(SnapTray::captureClockNowNs());
+    QCOMPARE(s.offered, qint64(100));
+    QVERIFY(s.droppedQueueFull > 0);
+    // Every frame is accounted for, layer by layer.
+    QCOMPARE(s.queued + s.droppedQueueFull + s.droppedQueueBytes + s.droppedQueueStale, s.offered);
+    QCOMPARE(s.encoded + s.encoderRejected, s.queued);
+    QVERIFY(s.peakQueueDepth <= budget.maxFrames);
+    QVERIFY(s.queueAgeP95Ms >= s.queueAgeP50Ms);
+    QVERIFY(s.encodeP50Ms >= 15);
+    const QString text = SnapTray::RecordingHealth::formatDiagnostics(s);
+    QVERIFY(text.contains(QStringLiteral("offered 100")));
+}
+
+void TestEncodingWorker::testByteBudgetBoundsRetainedFrames()
+{
+    ThreadedWorker run(new SlowRejectingVideoEncoder(20, false));
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    run.worker.setHealth(health);
+    const qint64 frameBytes = frameOfSize(64).sizeInBytes();  // 16 KiB
+    EncodingWorker::QueueBudget budget;
+    budget.maxFrames = 100;
+    budget.maxBytes = 3 * frameBytes;
+    run.worker.setQueueBudget(budget);
+    QVERIFY(run.worker.start());
+    for (int i = 0; i < 40; ++i) {
+        run.worker.enqueueFrame({frameOfSize(64), i * 5});
+    }
+    QVERIFY(finishAndWait(run.worker));
+    const auto s = health->snapshot(SnapTray::captureClockNowNs());
+    QVERIFY(s.droppedQueueBytes > 0);
+    QVERIFY2(s.peakQueueBytes <= budget.maxBytes, qPrintable(QString::number(s.peakQueueBytes)));
+    QCOMPARE(s.droppedQueueFull, qint64(0));
+}
+
+void TestEncodingWorker::testRestartClearsQueuedBytes()
+{
+    // PR #170 review: stop() and start() cleared the frame queue but kept
+    // its byte count, so a restarted worker dropped frames for a budget
+    // that the discarded frames still seemed to use.
+    EncodingWorker worker; // on this thread: nothing is processed until events run
+    worker.setEncoderType(EncodingWorker::EncoderType::Video);
+    worker.setVideoEncoder(new BlockingVideoEncoder());
+    const qint64 frameBytes = frameOfSize(64).sizeInBytes();
+    EncodingWorker::QueueBudget budget;
+    budget.maxFrames = 100;
+    budget.maxBytes = 3 * frameBytes;
+    worker.setQueueBudget(budget);
+
+    for (int run = 0; run < 2; ++run) {
+        QVERIFY(worker.start());
+        for (int i = 0; i < 3; ++i) {
+            QVERIFY2(worker.enqueueFrame({frameOfSize(64), i * 5}),
+                     qPrintable(QStringLiteral("run %1, frame %2").arg(run).arg(i)));
+        }
+        QCOMPARE(worker.queueDepth(), 3);
+        worker.stop();
+        QCOMPARE(worker.queueDepth(), 0);
+    }
+}
+
+void TestEncodingWorker::testStaleQueueDropsAndAges()
+{
+    ThreadedWorker run(new SlowRejectingVideoEncoder(60, false));
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    run.worker.setHealth(health);
+    EncodingWorker::QueueBudget budget;
+    budget.maxFrames = 100;
+    budget.maxAgeMs = 50;
+    run.worker.setQueueBudget(budget);
+    QVERIFY(run.worker.start());
+    for (int i = 0; i < 30; ++i) {
+        run.worker.enqueueFrame({frameOfSize(16), i * 10});
+        QThread::msleep(10);
+    }
+    QVERIFY(finishAndWait(run.worker));
+    const auto s = health->snapshot(SnapTray::captureClockNowNs());
+    // The encoder fell behind: new frames stop being queued instead of the
+    // queue (and latency) growing without bound.
+    QVERIFY(s.droppedQueueStale > 0);
+    QVERIFY2(s.queueAgeP95Ms < 500, qPrintable(QString::number(s.queueAgeP95Ms)));
+}
+
+void TestEncodingWorker::testEncoderRejectionsAreCounted()
+{
+    ThreadedWorker run(new SlowRejectingVideoEncoder(1, true));
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    run.worker.setHealth(health);
+    QVERIFY(run.worker.start());
+    for (int i = 0; i < 10; ++i) {
+        QVERIFY(run.worker.enqueueFrame({frameOfSize(16), i * 33}));
+        QTRY_COMPARE(run.worker.queueDepth(), 0);
+    }
+    QVERIFY(finishAndWait(run.worker));
+    const auto s = health->snapshot(SnapTray::captureClockNowNs());
+    QCOMPARE(s.queued, qint64(10));
+    QCOMPARE(s.encoderRejected, qint64(5));
+    QCOMPARE(s.encoded, qint64(5));
+}
+
+void TestEncodingWorker::testAudioOverloadIsCounted()
+{
+    auto* encoder = new SlowRejectingVideoEncoder(300, false);
+    ThreadedWorker run(encoder);
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    run.worker.setHealth(health);
+    QVERIFY(run.worker.start());
+    // The encoder is busy with a frame while audio keeps arriving.
+    QVERIFY(run.worker.enqueueFrame({frameOfSize(16), 0}));
+    QThread::msleep(50);
+    for (int i = 0; i < 150; ++i) {
+        run.worker.writeAudioSamples(QByteArray(64, '\0'), i * 16);
+    }
+    QVERIFY(finishAndWait(run.worker));
+    const auto s = health->snapshot(SnapTray::captureClockNowNs());
+    QVERIFY(s.audioDropped > 0);
+    QCOMPARE(s.audioDropped + s.audioQueued, qint64(150));
+    QCOMPARE(s.audioDroppedBytes, s.audioDropped * 64);
+    QCOMPARE(qint64(encoder->m_audioPackets.load()), s.audioQueued);
 }
 
 QTEST_MAIN(TestEncodingWorker)

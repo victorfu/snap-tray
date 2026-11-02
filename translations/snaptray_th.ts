@@ -588,6 +588,31 @@ File size: %3</source>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Warning: %1</source>
+        <translation>คำเตือน: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1282" />
+        <source>dropping frames</source>
+        <translation>กำลังทิ้งเฟรม</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="425" />
+        <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
+        <translation>ข้อมูลวินิจฉัยการบันทึกอยู่ในคลิปบอร์ดแล้ว ไม่มีรูปภาพ เสียง หรือชื่อไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="424" />
+        <source>Diagnostics Copied</source>
+        <translation>คัดลอกข้อมูลวินิจฉัยแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="417" />
+        <source>Copy Recording Diagnostics</source>
+        <translation>คัดลอกข้อมูลวินิจฉัยการบันทึก</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="411" />
         <source>Show Recording Controls</source>
         <translation>แสดงตัวควบคุมการบันทึก</translation>
@@ -1699,6 +1724,11 @@ English is always included and cannot be removed.</source>
 </context>
 <context>
     <name>RecordingManager</name>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1460" />
+        <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
+        <translation>การบันทึกตามไม่ทันและกำลังทิ้งเฟรม ลองลดอัตราเฟรมหรือปิดแอปอื่นที่ทำงานหนัก</translation>
+    </message>
     <message>
         <location filename="../src/RecordingManager.cpp" line="1145" />
         <source>The selected microphone was not found. Recording from the default microphone.</source>
