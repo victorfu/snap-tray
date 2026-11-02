@@ -13,6 +13,7 @@ qint64 DiskSpaceGuard::safeStopThreshold(const Input& input)
 {
     return kFloorBytes
         + input.recordedBytes * kFinalizePercent / kPercent
+        + input.pendingBytes
         + input.bytesPerSecond * kSafeStopSeconds;
 }
 

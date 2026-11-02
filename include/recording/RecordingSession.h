@@ -36,6 +36,9 @@ struct RecordingSessionInfo {
     int frameRate = 0;
     bool audioRequired = false;
     bool fragmented = false;  // a crash leaves a playable prefix
+    // Recorded at the high-quality intermediate, so saving it unedited must
+    // still meet the output quality. Unknown (older manifests) counts as true.
+    bool intermediate = true;
     QDateTime startedAt;
     QDateTime updatedAt;
     qint64 recordedMs = 0;    // last known recorded duration

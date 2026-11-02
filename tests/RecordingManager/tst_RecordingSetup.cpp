@@ -100,6 +100,8 @@ private slots:
     void missingDeviceIsReported();
     void startFailureIsUnavailable();
     void levelIsThrottledAndReleasedOnStop();
+    void lostMicrophoneEndsTheTest_data();
+    void lostMicrophoneEndsTheTest();
 
     // Picker setup
     void setupTogglesSaveSettings();
@@ -511,6 +513,37 @@ void TestRecordingSetup::recoveryDialogLists()
     viewModel->recover(0);
     QCOMPARE(recover.count(), 1);
     QCOMPARE(recover.first().first().toString(), video);
+}
+
+void TestRecordingSetup::lostMicrophoneEndsTheTest_data()
+{
+    QTest::addColumn<bool>("viaDeviceLost");
+    QTest::addColumn<int>("expected");
+    // Windows reports deviceLost; macOS and PulseAudio report no active source.
+    QTest::newRow("deviceLost") << true << int(AudioLevelMonitor::State::DeviceMissing);
+    QTest::newRow("no active source") << false << int(AudioLevelMonitor::State::Unavailable);
+}
+
+void TestRecordingSetup::lostMicrophoneEndsTheTest()
+{
+    QFETCH(bool, viaDeviceLost);
+    QFETCH(int, expected);
+    AudioLevelMonitor monitor;
+    FakeLevelEngine* engine = nullptr;
+    auto state = m_engineState;
+    monitor.setEngineFactory([state, &engine] { return engine = new FakeLevelEngine(state); });
+    monitor.setPermissionFunctions([] { return Permission::Authorized; }, {});
+    monitor.start(QString());
+    QCOMPARE(monitor.state(), AudioLevelMonitor::State::Listening);
+    if (viaDeviceLost) {
+        emit engine->deviceLost(IAudioCaptureEngine::AudioSource::Microphone);
+    } else {
+        emit engine->activeSourceChanged(IAudioCaptureEngine::AudioSource::None);
+    }
+    // Not "Speak to test the microphone" at a silent zero: an error state, engine released.
+    QTRY_COMPARE(int(monitor.state()), expected);
+    QCOMPARE(monitor.level(), 0.0f);
+    QTRY_COMPARE(m_engineState->destroyed, m_engineState->created);
 }
 
 QTEST_MAIN(TestRecordingSetup)

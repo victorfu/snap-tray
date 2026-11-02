@@ -61,6 +61,8 @@ bool WebPAnimationEncoder::start(const QString &outputPath, const QSize &frameSi
     m_frameSize = frameSize;
     m_frameRate = qBound(1, frameRate, 240);
     m_framesWritten = 0;
+    m_bufferedBytes->store(0);
+    m_lastCountedFrame = QImage();
     m_lastTimestampMs = 0;
     m_lastError.clear();
     m_aborted = false;
@@ -222,6 +224,10 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
 
     m_framesWritten++;
     m_lastTimestampMs = currentTimestampMs;
+    if (m_lastCountedFrame.isNull() || processed != m_lastCountedFrame) {
+        m_bufferedBytes->fetch_add(qint64(double(processed.width()) * processed.height() * kEstimatedBytesPerPixel));
+        m_lastCountedFrame = processed;
+    }
 
     // Emit progress every 30 frames
     if (m_framesWritten % 30 == 0) {
