@@ -97,6 +97,7 @@ private slots:
     void x11RecorderKeepsQueuedClicks();
     void queuedClicksKeepTheirSourceTime();
     void x11QueuedClickKeepsItsDuration();
+    void x11ClicksDuringAnotherPointerGrab();
 };
 
 void TestCursorTimelineRecorder::startRecordsTheInitialPointer()
@@ -477,6 +478,42 @@ void TestCursorTimelineRecorder::x11QueuedClickKeepsItsDuration()
     QCOMPARE(int(timeline->buttons.size()), 2);
     const qint64 held = timeline->buttons[1].tMs - timeline->buttons[0].tMs;
     QVERIFY2(held >= 250 && held <= 400, qPrintable(QString::number(held)));
+#else
+    QSKIP("Built without XTest");
+#endif
+}
+
+void TestCursorTimelineRecorder::x11ClicksDuringAnotherPointerGrab()
+{
+#if defined(SNAPTRAY_TEST_HAS_XTEST)
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != QLatin1String("1")
+        || QGuiApplication::platformName() != QLatin1String("xcb")) {
+        QSKIP("Clicks the pointer: runs only on an isolated X display (ctest provides one).");
+    }
+    // PR #174 review: with XI 2.0 the server filters raw button events for
+    // clients that do not hold an active grab, so a click while another
+    // application grabs the pointer was lost (a press without its release
+    // looked held until stop). XI 2.1 delivers them regardless.
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("x11-grab.cursor.jsonl"));
+    qint64 now = 0;
+    CursorTimelineRecorder recorder(createCursorProbe(), [&now] { return now; }, kMapping, path, false);
+    QVERIFY(recorder.start());
+    snaptrayTestX11Pointer("move", 70, 80);
+    snaptrayTestX11Pointer("grab", 1, 0);
+    snaptrayTestX11Pointer("button", 1, 1);
+    QTest::qWait(50);
+    now += 100;
+    snaptrayTestX11Pointer("button", 1, 0);
+    QTest::qWait(100);
+    snaptrayTestX11Pointer("grab", 0, 0);
+    recorder.stop();
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const auto timeline = CursorTimeline::parse(file.readAll());
+    QVERIFY(timeline);
+    QCOMPARE(int(timeline->buttons.size()), 2);
+    for (const auto& event : timeline->buttons) QVERIFY(!event.synthetic);
 #else
     QSKIP("Built without XTest");
 #endif
