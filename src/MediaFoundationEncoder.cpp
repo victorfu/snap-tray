@@ -36,6 +36,10 @@ namespace {
 
 // Frames the GPU probe encodes before checking that the file decodes.
 constexpr int kGpuProbeFrames = 3;
+// Probe frames are cleared to 50% gray; decoded luma must come back near it
+// (16 + 0.5 * 219 in BT.709 limited range).
+constexpr int kGpuProbeLuma = 126;
+constexpr int kGpuProbeLumaTolerance = 24;
 
 // The GPU path converts with an explicit matrix; tag the stream with it so
 // players do not guess (BT.601 is the usual guess for unknown streams).
@@ -496,7 +500,9 @@ public:
 
 namespace {
 
-// Empty when `path` holds a decodable video stream of `size`.
+// Empty when `path` holds a video stream of `size` that decodes to the probe's
+// mid-gray. The reader is asked for uncompressed NV12, so a decoder has to
+// run: without an output type ReadSample hands back the compressed samples.
 QString verifyDecodes(const QString &path, const QSize &size)
 {
     ComPtr<IMFSourceReader> reader;
@@ -511,12 +517,35 @@ QString verifyDecodes(const QString &path, const QSize &size)
         || QSize(int(width), int(height)) != size) {
         return QString("probe output has the wrong frame size %1x%2").arg(width).arg(height);
     }
+    ComPtr<IMFMediaType> uncompressed;
+    hr = MFCreateMediaType(&uncompressed);
+    if (SUCCEEDED(hr)) hr = uncompressed->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+    if (SUCCEEDED(hr)) hr = uncompressed->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_NV12);
+    if (SUCCEEDED(hr)) hr = reader->SetCurrentMediaType(stream, nullptr, uncompressed.Get());
+    if (FAILED(hr)) return QString("no decoder for the probe output: %1").arg(hrText(hr));
+
     for (int attempt = 0; attempt < kGpuProbeFrames * 4; ++attempt) {
         DWORD flags = 0;
         ComPtr<IMFSample> sample;
         hr = reader->ReadSample(stream, 0, nullptr, &flags, nullptr, &sample);
         if (FAILED(hr)) return QString("probe output does not decode: %1").arg(hrText(hr));
-        if (sample) return {};
+        if (sample) {
+            ComPtr<IMFMediaBuffer> buffer;
+            BYTE *data = nullptr;
+            DWORD length = 0;
+            if (FAILED(sample->ConvertToContiguousBuffer(&buffer)) || FAILED(buffer->Lock(&data, nullptr, &length))
+                || length == 0) {
+                return QStringLiteral("probe output decoded to an empty frame");
+            }
+            // The first luma sample of a frame cleared to 50% gray: about 126
+            // in BT.709 limited range. Far off means the encoder wrote garbage.
+            const int luma = data[0];
+            buffer->Unlock();
+            if (qAbs(luma - kGpuProbeLuma) > kGpuProbeLumaTolerance) {
+                return QString("probe output decoded to the wrong picture (luma %1)").arg(luma);
+            }
+            return {};
+        }
         if (flags & MF_SOURCE_READERF_ENDOFSTREAM) break;
     }
     return QStringLiteral("probe output has no decodable frame");
