@@ -70,6 +70,7 @@ private slots:
     void sessionManifestFollowsTheRecording();
     void staleCleanupSparesPendingRecoveries();
     void recoveredRecordingOpensInPreview();
+    void bufferedAnimationCountsTowardTheDiskGuard();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
@@ -79,6 +80,7 @@ private slots:
     void permissionWaitIsOutsideTimelineAndOldTimerIsIgnored();
     void encoderCapabilityControlsAudioPipeline_data();
     void encoderCapabilityControlsAudioPipeline();
+    void lostSystemAudioDeviceKeepsTheMicrophone();
     void captureExclusionWarning_data();
     void captureExclusionWarning();
     void nativeStreamStopFinishesRecording_data();
@@ -86,6 +88,7 @@ private slots:
     void basicBackendIgnoresUnsupportedPreferences();
 private:
     void prepare(RecordingManager& manager);
+    void startFakeRecordingForDisk(RecordingManager& manager);
 };
 
 void TestRecordingStartup::nativeStreamStopFinishesRecording_data()
@@ -234,7 +237,7 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
         QCOMPARE(warnings.count(), 2);
         QCOMPARE(manager.audioStatus().microphone, AudioState::Unavailable);
         QCOMPARE(manager.audioStatus().systemAudio, AudioState::Unavailable);
-        emit audio->deviceLost();
+        emit audio->deviceLost(IAudioCaptureEngine::AudioSource::Microphone);
         QCOMPARE(manager.audioStatus().microphone, AudioState::DeviceMissing);
         QCOMPARE(manager.state(), RecordingManager::State::Recording);
         QVERIFY(!manager.m_audioEnabled);
@@ -249,6 +252,88 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QTRY_COMPARE(encoderState->destroyed.load(), 1);
     QCOMPARE(audioState->destroyed, audioState->created);
+}
+
+void TestRecordingStartup::lostSystemAudioDeviceKeepsTheMicrophone()
+{
+    // Both sources; the playback endpoint fails (Windows reports deviceLost
+    // for it too). The microphone is still recording and must not read as missing.
+    RecordingSettingsManager::instance().setAudioEnabled(true);
+    constexpr int kBothSourcesSetting = 2;
+    RecordingSettingsManager::instance().setAudioSource(kBothSourcesSetting);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    auto audioState = std::make_shared<AudioCaptureTestState>();
+    RecordingManager manager;
+    prepare(manager);
+    manager.m_createAudioEngine = [audioState] { return new FakeStartupAudio(audioState); };
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.audioEnabled = true;
+    config.outputPath = "unused-device-lost.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    using AudioState = SnapTray::AudioSourceState;
+    QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    auto* audio = static_cast<FakeStartupAudio*>(manager.m_audioEngine.get());
+    emit audio->deviceLost(IAudioCaptureEngine::AudioSource::SystemAudio);
+    audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::Microphone);
+    QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    QCOMPARE(manager.audioStatus().systemAudio, AudioState::DeviceMissing);
+    manager.cancelRecording();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QTRY_COMPARE(encoderState->destroyed.load(), 1);
+}
+
+void TestRecordingStartup::bufferedAnimationCountsTowardTheDiskGuard()
+{
+    // PR #171 review: with preview off, a GIF/WebP recording has no file
+    // until it ends; its buffered size must still count.
+    RecordingManager manager;
+    startFakeRecordingForDisk(manager);
+    constexpr qint64 kMiB = 1024 * 1024;
+    const quint64 generation = manager.m_startGeneration;
+    QSignalSpy interrupted(&manager, &RecordingManager::recordingWarning);
+    // 400 MiB free, no file on disk, 500 MiB of animation in memory.
+    manager.onDiskSample(generation, 400 * kMiB, 0, 1000, 500 * kMiB);
+    QCOMPARE(manager.state(), RecordingManager::State::Encoding); // stopped safely, kept
+    QVERIFY(interrupted.count() >= 1);
+    manager.cancelRecording();
+}
+
+void TestRecordingStartup::startFakeRecordingForDisk(RecordingManager& manager)
+{
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingSettingsManager::instance().setShowPreview(false);
+    prepare(manager);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.outputPath = "unused-buffered-disk-test.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.m_recordingFilePath = QStringLiteral("unused-buffered-disk-test.mp4");
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
 }
 
 void TestRecordingStartup::init()
