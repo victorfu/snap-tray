@@ -586,6 +586,7 @@ void RecordingManager::initializeStartState()
     m_reportedStartupAudioWarnings.clear();
     m_collectStartupAudioWarnings = true;
     m_elapsedTimer.invalidate();
+    m_sessionClock.reset();
     m_frameCount = 0;
     resetPauseTracking();
     setState(State::Preparing);
@@ -1027,12 +1028,16 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
 
     if (m_captureEngine && m_captureEngine->deliversFrames()) {
         auto* worker = m_encodingWorker.get();
-        connect(m_captureEngine.get(), &ICaptureEngine::frameReady, worker,
-                [this, worker](const QImage& frame) {
+        connect(m_captureEngine.get(), &ICaptureEngine::frameCaptured, worker,
+                [this, worker](const SnapTray::CapturedFrame& frame) {
             QMutexLocker lock(&m_durationMutex);
-            if (!m_acceptAsyncFrames || frame.isNull()) return;
-            const qint64 time = qMax<qint64>(0, m_elapsedTimer.elapsed()-m_pausedDuration);
-            if (worker->enqueueFrame({frame, time})) ++m_frameCount;
+            if (!m_acceptAsyncFrames || frame.image.isNull()) return;
+            // The frame's own capture time, not when this thread got to it.
+            const qint64 sourceTimeNs = frame.sourceTimeNs >= 0 ? frame.sourceTimeNs
+                                                                : SnapTray::captureClockNowNs();
+            qint64 timeMs = 0;
+            if (!admitFrameLocked(sourceTimeNs, true, &timeMs)) return;
+            if (worker->enqueueFrame({frame.image, timeMs})) ++m_frameCount;
         }, Qt::DirectConnection);
     }
 
@@ -1269,7 +1274,13 @@ void RecordingManager::startRecordingAfterCountdown()
         if (m_captureEngine) m_captureEngine->captureFrame();
     }
 
-    // Initialize state and counters
+    // Initialize state and counters. The session clock's epoch is the same
+    // moment as the elapsed timer used for the duration and window timeline.
+    {
+        QMutexLocker lock(&m_durationMutex);
+        m_framePacer.reset(m_frameRate);
+    }
+    m_sessionClock.start(SnapTray::captureClockNowNs());
     m_elapsedTimer.start();
     setState(State::Recording);
     if (m_state != State::Recording || generation != m_startGeneration) return;
@@ -1392,26 +1403,37 @@ void RecordingManager::captureFrame()
         return;
     }
 
-    // Capture frame using the capture engine (fast - returns cached frame)
+    // Polling backends return their latest frame; it is stamped when read.
+    // (Backends that capture on their own thread stamp frames themselves.)
+    const qint64 sourceTimeNs = SnapTray::captureClockNowNs();
     QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
-        // Calculate timestamp (keep on main thread for accuracy)
-        qint64 elapsedMs = 0;
+        qint64 timeMs = 0;
         {
             QMutexLocker locker(&m_durationMutex);
-            qint64 rawElapsed = m_elapsedTimer.elapsed();
-            elapsedMs = rawElapsed - m_pausedDuration;
-        }
-        if (elapsedMs < 0) {
-            elapsedMs = 0;
+            // The capture timer already paces polling.
+            if (!admitFrameLocked(sourceTimeNs, false, &timeMs)) return;
         }
 
         // Enqueue frame for encoding (non-blocking)
         // Watermark is applied by the worker thread
-        EncodingWorker::FrameData frameData{frame, elapsedMs};
+        EncodingWorker::FrameData frameData{frame, timeMs};
         if (encodingWorker->enqueueFrame(frameData)) ++m_frameCount;
     }
+}
+
+bool RecordingManager::admitFrameLocked(qint64 sourceTimeNs, bool paced, qint64* encoderTimeMs)
+{
+    qint64 recordingTimeNs = 0;
+    if (m_sessionClock.admit(sourceTimeNs, &recordingTimeNs) != SnapTray::SessionClock::Admission::Accepted) {
+        return false;
+    }
+    if (paced && m_framePacer.onFrame(recordingTimeNs) != SnapTray::FramePacer::Decision::Emit) {
+        return false;
+    }
+    *encoderTimeMs = SnapTray::SessionClock::toEncoderMs(recordingTimeNs);
+    return true;
 }
 
 void RecordingManager::updateDuration()
@@ -1462,7 +1484,9 @@ void RecordingManager::pauseRecording()
     {
         QMutexLocker locker(&m_durationMutex);
         m_pauseStartTime = m_elapsedTimer.elapsed();
+        m_framePacer.notePause();
     }
+    m_sessionClock.pause(SnapTray::captureClockNowNs());
 
     if (m_windowTimelineRecorder) {
         m_windowTimelineRecorder->pause();
@@ -1488,6 +1512,7 @@ void RecordingManager::resumeRecording()
         QMutexLocker locker(&m_durationMutex);
         m_pausedDuration += m_elapsedTimer.elapsed() - m_pauseStartTime;
     }
+    m_sessionClock.resume(SnapTray::captureClockNowNs());
 
     // Resume audio capture
     if (m_audioEngine) {
@@ -1625,7 +1650,19 @@ void RecordingManager::stopFrameCapture()
     {
         QMutexLocker lock(&m_durationMutex);
         m_acceptAsyncFrames = false;
+        if (m_sessionClock.isStarted()) {
+            const auto clock = m_sessionClock.stats();
+            const auto pacing = m_framePacer.stats();
+            qDebug() << "RecordingManager: frames accepted" << clock.accepted
+                     << "before start" << clock.beforeStart << "paused" << clock.paused
+                     << "duplicate" << clock.duplicates << "backward" << clock.backwards
+                     << "| paced: emitted" << pacing.emitted << "dropped" << pacing.dropped
+                     << "late" << pacing.late << "stalls" << pacing.stalls
+                     << "longest gap ms" << pacing.longestGapNs / 1000000;
+        }
     }
+    // Frames still in flight from a capture thread are rejected from here on.
+    m_sessionClock.stop();
     if (m_windowTimelineRecorder) {
         if (m_windowTimelineRecorder->isRunning()) {
             m_windowTimelineRecorder->sampleNow(); // capture the final window layout

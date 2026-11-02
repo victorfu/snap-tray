@@ -16,6 +16,8 @@
 #include <QStringList>
 #include "capture/IAudioCaptureEngine.h"
 #include "recording/RecordingAudioStatus.h"
+#include "recording/SessionClock.h"
+#include "recording/FramePacer.h"
 
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
@@ -181,6 +183,16 @@ private:
     int m_frameRate;
     std::atomic<qint64> m_frameCount;
     bool m_acceptAsyncFrames = false; // guarded by m_durationMutex
+
+    // Recording clock for video frames: start gate, pause removal and
+    // ordering (SessionClock), then rate limiting (FramePacer). The pacer is
+    // guarded by m_durationMutex, like m_acceptAsyncFrames.
+    SnapTray::SessionClock m_sessionClock;
+    SnapTray::FramePacer m_framePacer;
+    // With m_durationMutex held: true and the encoder time when a frame
+    // captured at `sourceTimeNs` belongs in the video. `paced` applies the
+    // frame pacer (backends that capture on their own thread).
+    bool admitFrameLocked(qint64 sourceTimeNs, bool paced, qint64* encoderTimeMs);
 
     // Pause tracking
     qint64 m_pausedDuration;     // Total time spent paused

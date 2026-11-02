@@ -1,4 +1,6 @@
 #include "IVideoEncoder.h"
+#include <mutex>
+#include "capture/X11CaptureEngine.h"
 #include "encoding/EncodingWorker.h"
 #include "RecordingManager.h"
 #include "settings/RecordingSettingsManager.h"
@@ -28,6 +30,7 @@ class TestLinuxRecordingPrototype : public QObject
     Q_OBJECT
 private slots:
     void captureFullScreen();
+    void captureContinuesWhileGuiBlocked();
     void benchmark4K();
     void mainRecordingFlowSavesSilentMp4();
     void mainRecordingFlowRequestsPreview();
@@ -191,6 +194,51 @@ void TestLinuxRecordingPrototype::mainRecordingFlowRequestsPreview()
     QVERIFY(QFileInfo::exists(path));
     manager.cancelRecording();
     QFile::remove(path);
+}
+
+void TestLinuxRecordingPrototype::captureContinuesWhileGuiBlocked()
+{
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != "1") {
+        QSKIP("Run through CTest's isolated Xvfb wrapper.");
+    }
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    X11CaptureEngine engine;
+    QVERIFY(engine.setRegion(screen->geometry(), screen));
+    engine.setFrameRate(30);
+    std::mutex mutex;
+    QList<qint64> times;
+    QList<quint64> sequences;
+    // Frames arrive on the capture thread; nothing here needs the GUI thread.
+    QObject::connect(&engine, &ICaptureEngine::frameCaptured, &engine,
+                     [&](const SnapTray::CapturedFrame& frame) {
+        std::lock_guard<std::mutex> lock(mutex);
+        times.append(frame.sourceTimeNs);
+        sequences.append(frame.sequence);
+    }, Qt::DirectConnection);
+    QVERIFY(engine.start());
+    const qint64 blockStart = SnapTray::captureClockNowNs();
+    QThread::msleep(600);  // the GUI thread is busy; no events are processed
+    const qint64 blockEnd = SnapTray::captureClockNowNs();
+    engine.stop();
+
+    std::lock_guard<std::mutex> lock(mutex);
+    QList<qint64> duringBlock;
+    for (const qint64 t : times) {
+        if (t >= blockStart && t <= blockEnd) duringBlock.append(t);
+    }
+    // Capture kept its cadence without the GUI: about 18 frames in 600 ms.
+    QVERIFY2(duringBlock.size() >= 10, qPrintable(QString::number(duringBlock.size())));
+    for (int i = 1; i < times.size(); ++i) {
+        QVERIFY(times[i] > times[i - 1]);
+        QCOMPARE(sequences[i], sequences[i - 1] + 1);
+    }
+    qint64 longestGap = 0;
+    for (int i = 1; i < duringBlock.size(); ++i) {
+        longestGap = qMax(longestGap, duringBlock[i] - duringBlock[i - 1]);
+    }
+    // No stall (four intervals or more) while the GUI was blocked.
+    QVERIFY2(longestGap < 4 * 1000000000LL / 30, qPrintable(QString::number(longestGap / 1000000)));
 }
 
 void TestLinuxRecordingPrototype::benchmark4K()

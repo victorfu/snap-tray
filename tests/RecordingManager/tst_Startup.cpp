@@ -56,6 +56,7 @@ class TestRecordingStartup : public QObject
     Q_OBJECT
 private slots:
     void init();
+    void sessionClockFollowsRecordingLifecycle();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
@@ -558,6 +559,61 @@ void TestRecordingStartup::controlBarOffersPauseResumeAndStop()
     QCOMPARE(bar.tooltipForButton(0), QStringLiteral("Stop and Review (F10)"));
     bar.setPaused(true);
     QCOMPARE(bar.tooltipForButton(1), QStringLiteral("Resume Recording (F9)"));
+}
+
+void TestRecordingStartup::sessionClockFollowsRecordingLifecycle()
+{
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingManager manager;
+    prepare(manager);
+    // Preparation: frames from now on are before the recording starts.
+    const qint64 beforeStartNs = SnapTray::captureClockNowNs();
+    QVERIFY(!manager.m_sessionClock.isStarted());
+
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.outputPath = "unused-session-clock-test.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    QVERIFY(manager.m_sessionClock.isStarted());
+
+    qint64 ms = -1;
+    {
+        QMutexLocker lock(&manager.m_durationMutex);
+        // A frame captured before the start gate (preparation, countdown) is not recorded.
+        QVERIFY(!manager.admitFrameLocked(beforeStartNs, true, &ms));
+        // Frames carry their own capture time, whatever thread delivers them.
+        const qint64 now = SnapTray::captureClockNowNs();
+        QVERIFY(manager.admitFrameLocked(now, true, &ms));
+        QVERIFY(ms >= 0 && ms < 5000);
+        // A copy of the same frame, or one older than it, is rejected.
+        QVERIFY(!manager.admitFrameLocked(now, true, &ms));
+    }
+
+    manager.pauseRecording();
+    QVERIFY(manager.m_sessionClock.isPaused());
+    manager.resumeRecording();
+    QVERIFY(!manager.m_sessionClock.isPaused());
+
+    manager.stopRecording();
+    QVERIFY(!manager.m_sessionClock.isStarted());
+    {
+        QMutexLocker lock(&manager.m_durationMutex);
+        QVERIFY(!manager.admitFrameLocked(SnapTray::captureClockNowNs(), true, &ms));
+    }
+    manager.cancelRecording();
 }
 
 QTEST_MAIN(TestRecordingStartup)

@@ -1,6 +1,7 @@
 #ifndef ICAPTUREENGINE_H
 #define ICAPTUREENGINE_H
 
+#include "recording/CapturedFrame.h"
 #include <QObject>
 #include <QRect>
 #include <QImage>
@@ -132,7 +133,10 @@ public:
     static ICaptureEngine *createBestEngine(QObject *parent = nullptr);
 
 signals:
-    void frameReady(const QImage& frame);
+    // A completed frame from a backend that captures on its own thread
+    // (deliversFrames()). It carries its own capture time, so the recording
+    // clock does not depend on when the GUI thread gets to it.
+    void frameCaptured(const SnapTray::CapturedFrame& frame);
     // The user ended capture through a native system control. Finish encoding
     // normally so the recording can still be previewed or saved.
     void stoppedByUser();

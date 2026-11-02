@@ -181,6 +181,9 @@ Capture history is recorded by `RegionSelector` through `HistoryRecorder` and `H
 - `QmlCountdownOverlay`
 - `RecordingInitTask`
 - `RecordingRegionNormalizer`
+- `SessionClock`, `FramePacer`, `CapturedFrame` (`src/recording/`): video frame timing
+
+Frame timing: every frame carries the monotonic time it was captured (`CapturedFrame::sourceTimeNs`). Backends that capture on their own thread (`deliversFrames()`, X11 today) stamp frames there and emit `frameCaptured`. Polling backends are stamped when `RecordingManager` reads them. `SessionClock` turns capture time into recording time: frames before the start gate (preparation, countdown) and inside pauses are dropped, and so are duplicate or backward times; nanoseconds are rounded to the encoders' milliseconds once. `FramePacer` drops over-delivery from self-capturing backends and counts late frames and stalls; it never adds frames, since the encoders are variable-frame-rate. The window timeline and the shown duration use the same epoch and pause semantics; audio keeps its sample timeline in `TimestampedPcmMixer`. `CapturedFrame::nativeBuffer` holds a platform surface alive (RAII) for future native-buffer encoders.
 
 ### CLI subsystem
 
