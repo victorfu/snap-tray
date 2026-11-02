@@ -70,6 +70,18 @@ void RecordingHealth::frameEncoded(qint64 queueAgeNs, qint64 encodeNs, qint64 no
     }
 }
 
+void RecordingHealth::framePath(FramePath path)
+{
+    QMutexLocker lock(&m_mutex);
+    switch (path) {
+    case FramePath::Native: ++m_counts.nativeFrames; break;
+    case FramePath::NoNativeBuffer: ++m_counts.imageNoNativeBuffer; break;
+    case FramePath::Watermark: ++m_counts.imageWatermark; break;
+    case FramePath::Disabled: ++m_counts.imageDisabled; break;
+    case FramePath::Incompatible: ++m_counts.imageIncompatible; break;
+    }
+}
+
 void RecordingHealth::audioQueued()
 {
     QMutexLocker lock(&m_mutex);
@@ -132,6 +144,10 @@ QString RecordingHealth::formatDiagnostics(const Snapshot& s)
                  .arg(s.queueAgeP50Ms).arg(s.queueAgeP95Ms);
     lines << QStringLiteral("encode: p50 %1 ms, p95 %2 ms, output %3 fps (last 2 s)")
                  .arg(s.encodeP50Ms).arg(s.encodeP95Ms).arg(s.outputFps, 0, 'f', 1);
+    lines << QStringLiteral("video input: native %1, image %2 (no native buffer %3, watermark %4, turned off %5, incompatible %6)")
+                 .arg(s.nativeFrames)
+                 .arg(s.imageNoNativeBuffer + s.imageWatermark + s.imageDisabled + s.imageIncompatible)
+                 .arg(s.imageNoNativeBuffer).arg(s.imageWatermark).arg(s.imageDisabled).arg(s.imageIncompatible);
     lines << QStringLiteral("audio: queued %1 packets, dropped %2 packets (%3 bytes; kept as silence)")
                  .arg(s.audioQueued).arg(s.audioDropped).arg(s.audioDroppedBytes);
     return lines.join(QLatin1Char('\n'));

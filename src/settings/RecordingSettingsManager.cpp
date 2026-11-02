@@ -129,6 +129,18 @@ void RecordingSettingsManager::setShowSetupBeforeRecording(bool value)
     settings.setValue(kKeyShowSetupBeforeRecording, value);
 }
 
+bool RecordingSettingsManager::nativeFrameEncoding() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyNativeFrameEncoding, kDefaultNativeFrameEncoding).toBool();
+}
+
+void RecordingSettingsManager::setNativeFrameEncoding(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyNativeFrameEncoding, value);
+}
+
 QJsonObject RecordingSettingsManager::pointerEffects() const
 {
     auto settings = SnapTray::getSettings();

@@ -46,6 +46,10 @@ public:
         QImage frame;
         qint64 timestampMs;
         qint64 enqueuedNs = 0;  // set by enqueueFrame(), for the queue-age metric
+        // The capture backend's surface for `frame` (CapturedFrame::nativeBuffer).
+        // The video encoder encodes it directly when it can; `frame` stays the
+        // fallback (watermark, incompatible buffer, native frames turned off).
+        std::shared_ptr<void> nativeBuffer;
     };
 
     // Limits for frames waiting to be encoded. When one is reached the new
@@ -110,6 +114,10 @@ public:
      * @brief Configure watermark settings
      */
     void setWatermarkSettings(const WatermarkRenderer::Settings& settings);
+
+    // Let the video encoder take frames' native buffers (default on). Off
+    // forces the image path for every frame, for A/B comparison.
+    void setNativeFramesEnabled(bool enabled) { m_nativeFramesEnabled = enabled; }
 
     void setQueueBudget(const QueueBudget& budget);
     // Counters for this recording; optional. Shared with RecordingManager.
@@ -198,6 +206,8 @@ private:
     void doProcessFrame(const FrameData& frameData);
     void handleProcessingFailure(const QString& context, const QString& details);
     void applyWatermark(QImage& frame);
+    // Hands the frame's native buffer to the video encoder; false = write the image.
+    bool writeNativeFrame(const FrameData& frameData);
     void finishEncoder();
 
     // Encoders (owned, accessed only by worker thread)
@@ -226,6 +236,7 @@ private:
     std::atomic<qint64> m_framesWritten{0};
     std::atomic<bool> m_finishCalled{false};
     std::atomic<bool> m_wasNearFull{false};
+    std::atomic<bool> m_nativeFramesEnabled{true};
 
     // Configuration
     WatermarkRenderer::Settings m_watermarkSettings;

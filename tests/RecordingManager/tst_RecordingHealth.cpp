@@ -92,8 +92,15 @@ void TestRecordingHealth::diagnosticsHaveNoMediaOrPaths()
     clock.stalls = 2;
     clock.longestGapMs = 900;
     health.setClockCounters(clock);
+    health.framePath(RecordingHealth::FramePath::Native);
+    health.framePath(RecordingHealth::FramePath::Native);
+    health.framePath(RecordingHealth::FramePath::Watermark);
+    health.framePath(RecordingHealth::FramePath::Incompatible);
     const QString text = RecordingHealth::formatDiagnostics(health.snapshot(0));
     QVERIFY(text.contains(QStringLiteral("ScreenCaptureKit")));
+    QVERIFY2(text.contains(QStringLiteral(
+                 "video input: native 2, image 2 (no native buffer 0, watermark 1, turned off 0, incompatible 1)")),
+             qPrintable(text));
     QVERIFY(text.contains(QStringLiteral("stalls 2")));
     QVERIFY(text.contains(QStringLiteral("1024 bytes; kept as silence")));
     QVERIFY(!text.contains(QLatin1Char('/')));

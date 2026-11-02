@@ -856,6 +856,13 @@ if(APPLE)
         "-framework AVFoundation" "-framework CoreMedia")
     add_test(NAME Encoding_AVFoundationEncoderIntermediate COMMAND Encoding_AVFoundationEncoderIntermediate)
     set_tests_properties(Encoding_AVFoundationEncoderIntermediate PROPERTIES TIMEOUT 120 LABELS "integration;slow")
+
+    add_executable(Encoding_AVFoundationNativeFrames Encoding/tst_AVFoundationNativeFrames_mac.mm)
+    set_source_files_properties(Encoding/tst_AVFoundationNativeFrames_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    target_link_libraries(Encoding_AVFoundationNativeFrames PRIVATE snaptray_platform Qt6::Gui Qt6::Test
+        "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo")
+    add_test(NAME Encoding_AVFoundationNativeFrames COMMAND Encoding_AVFoundationNativeFrames)
+    set_tests_properties(Encoding_AVFoundationNativeFrames PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 endif()
 
 # ============================================================================

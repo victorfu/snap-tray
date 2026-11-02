@@ -44,6 +44,12 @@ public:
     QJsonObject pointerEffects() const;
     void setPointerEffects(const QJsonObject& value);
 
+    // Hand captured surfaces straight to the hardware video encoder when they
+    // fit (macOS ScreenCaptureKit + AVFoundation). Off forces the CPU image
+    // copy for every frame; kept as a setting for A/B comparison.
+    bool nativeFrameEncoding() const;
+    void setNativeFrameEncoding(bool value);
+
     // Default values (shared with RecordingManager)
     static constexpr int kDefaultFrameRate = 30;
     static constexpr int kDefaultOutputFormat = 0;
@@ -55,6 +61,7 @@ public:
     static constexpr bool kDefaultCountdownEnabled = true;
     static constexpr int kDefaultCountdownSeconds = 3;
     static constexpr bool kDefaultShowSetupBeforeRecording = false;
+    static constexpr bool kDefaultNativeFrameEncoding = true;
 
 private:
     RecordingSettingsManager() = default;
@@ -73,4 +80,5 @@ private:
     static constexpr const char* kKeyCountdownSeconds = "recording/countdownSeconds";
     static constexpr const char* kKeyShowSetupBeforeRecording = "recording/showSetupBeforeRecording";
     static constexpr const char* kKeyPointerEffects = "recording/pointerEffects";
+    static constexpr const char* kKeyNativeFrameEncoding = "recording/nativeFrameEncoding";
 };

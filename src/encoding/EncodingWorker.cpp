@@ -491,24 +491,28 @@ void EncodingWorker::processNextFrame()
 void EncodingWorker::doProcessFrame(const FrameData& frameData)
 {
     try {
-        // Make a copy for modification (triggers COW only now)
-        QImage frame = frameData.frame;
-
-        // Apply watermark if enabled
-        if (m_watermarkSettings.enabled) {
-            applyWatermark(frame);
-        }
-
         // Write to encoder. Every encoder counts accepted frames synchronously
         // in writeFrame(), so an unchanged count means it rejected the frame.
         const qint64 writtenBefore = encoderFramesWritten();
         const qint64 encodeStartNs = SnapTray::captureClockNowNs();
-        if (m_encoderType == EncoderType::Video && m_videoEncoder) {
-            m_videoEncoder->writeFrame(frame, frameData.timestampMs);
-        } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
-            m_gifEncoder->writeFrame(frame, frameData.timestampMs);
-        } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
-            m_webpEncoder->writeFrame(frame, frameData.timestampMs);
+        const bool wroteNative = m_encoderType == EncoderType::Video && m_videoEncoder
+            && writeNativeFrame(frameData);
+        if (!wroteNative) {
+            // Make a copy for modification (triggers COW only now)
+            QImage frame = frameData.frame;
+
+            // Apply watermark if enabled
+            if (m_watermarkSettings.enabled) {
+                applyWatermark(frame);
+            }
+
+            if (m_encoderType == EncoderType::Video && m_videoEncoder) {
+                m_videoEncoder->writeFrame(frame, frameData.timestampMs);
+            } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
+                m_gifEncoder->writeFrame(frame, frameData.timestampMs);
+            } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
+                m_webpEncoder->writeFrame(frame, frameData.timestampMs);
+            }
         }
         if (m_health) {
             const qint64 nowNs = SnapTray::captureClockNowNs();
@@ -538,6 +542,26 @@ void EncodingWorker::doProcessFrame(const FrameData& frameData)
         handleProcessingFailure(QStringLiteral("frame encoding"),
                                 QStringLiteral("unknown exception"));
     }
+}
+
+bool EncodingWorker::writeNativeFrame(const FrameData& frameData)
+{
+    using Path = SnapTray::RecordingHealth::FramePath;
+    std::optional<Path> imagePath;
+    if (!frameData.nativeBuffer) {
+        imagePath = Path::NoNativeBuffer;
+    } else if (m_watermarkSettings.enabled) {
+        // The watermark is composited on the CPU image; the surface lacks it.
+        imagePath = Path::Watermark;
+    } else if (!m_nativeFramesEnabled.load()) {
+        imagePath = Path::Disabled;
+    } else if (!m_videoEncoder->writeNativeFrame(frameData.nativeBuffer, frameData.timestampMs)) {
+        imagePath = Path::Incompatible;
+    }
+    if (m_health) {
+        m_health->framePath(imagePath.value_or(Path::Native));
+    }
+    return !imagePath;
 }
 
 void EncodingWorker::handleProcessingFailure(const QString& context, const QString& details)
