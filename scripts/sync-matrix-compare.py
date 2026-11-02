@@ -18,12 +18,22 @@ QUALITY_KEYS = ("worstAvOffsetMs", "uniqueFps", "missing", "unexpected", "mispla
 
 
 def load(directory):
+    path = Path(directory)
+    if not path.is_dir():
+        raise SystemExit(f"error: {directory} is not a directory")
     reports = {}
-    for path in sorted(Path(directory).glob("*.json")):
+    for path in sorted(path.glob("*.json")):
         with open(path, encoding="utf-8") as handle:
             report = json.load(handle)
         reports[report["scenario"]["name"]] = report
     return reports
+
+
+def succeeded(report):
+    """Whether the row's test passed: detect-* rows pass when the analysis fails."""
+    if "testSucceeded" in report:
+        return report["testSucceeded"]
+    return report["passed"]  # reports from before the field existed
 
 
 def delta(before, after):
@@ -39,16 +49,24 @@ def main():
         print(__doc__)
         return 2
     baseline, candidate = load(sys.argv[1]), load(sys.argv[2])
+    if not baseline:
+        raise SystemExit(f"error: no reports in {sys.argv[1]}")
     regressions = []
     for name in sorted(set(baseline) | set(candidate)):
         a, b = baseline.get(name), candidate.get(name)
-        if a is None or b is None:
-            print(f"{name}: only in {'candidate' if a is None else 'baseline'}")
+        if b is None:
+            # An incomplete or misplaced run must not look regression-free.
+            print(f"{name}: MISSING from the candidate")
+            regressions.append(f"{name}: no candidate report")
             continue
-        status = f"{'pass' if a['passed'] else 'FAIL'} -> {'pass' if b['passed'] else 'FAIL'}"
+        if a is None:
+            print(f"{name}: new in the candidate")
+            continue
+        status = f"{'pass' if succeeded(a) else 'FAIL'} -> {'pass' if succeeded(b) else 'FAIL'}"
         print(f"{name}: {status}")
-        if a["passed"] and not b["passed"]:
-            regressions.append(f"{name}: now fails: {'; '.join(b['failures'])}")
+        if succeeded(a) and not succeeded(b):
+            why = "; ".join(b["failures"]) if b.get("mustPass", True) else "the injected error is no longer detected"
+            regressions.append(f"{name}: now fails: {why}")
         for key in QUALITY_KEYS:
             va, vb = a["measured"].get(key), b["measured"].get(key)
             if va != vb:

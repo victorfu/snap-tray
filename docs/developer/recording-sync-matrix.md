@@ -45,11 +45,12 @@ Source timestamps and callback arrival are controlled separately.
 | Early and repeated pause/resume | `pauses` |
 | One audio source silent for a while | `audioGapFromMs` / `audioGapToMs` |
 | Audio engine clock offset and drift | `audioClockOffsetMs`, `audioDriftPpm` |
-| Slow encoder (stalls) | `slowEncoderMs` |
+| Encoder unavailable (stalls every 2 s on the simulated clock; frames wait in a model of the encoding worker's queue and are refused past its 30-frame / 3 s budget, as the worker does) | `slowEncoderMs` |
 
 ## What is checked (decoded media)
 
-- Every expected frame is present, in order, and presented at its expected time
+- Every expected frame is present (counted per occurrence, so lost repeats of a
+  still screen count), in order, and presented at its expected time
   (within half a frame); no frame from inside a pause; no gap where a pause was.
 - The tail is complete: last frame ID and end time.
 - Unique frames are counted apart from repeats (`uniqueFps`); repeated frames
@@ -65,8 +66,8 @@ same timing pieces without the injected pipeline bug.
 `detect-*` rows inject a bug or a fault the pipeline does not correct, and the
 analysis must report a failure: a pause that is not removed, audio shifted by
 120 ms, a tail cut by 500 ms, backward timestamps reaching the encoder (it
-clamps them, so frames appear at the wrong time), and an audio engine whose
-clock starts 150 ms late.
+clamps them, so frames appear at the wrong time), an audio engine whose
+clock starts 150 ms late, and lost repeats of a still screen.
 
 ## Running
 
@@ -82,7 +83,10 @@ Each report keeps the scenario (configuration), the expected and measured
 values, failures and skipped checks, and the cost: wall and CPU time, resident
 memory, file size, frames written, and frames the encoder rejected. The compare
 script exits with status 1 when a passing row fails or the A/V offset grows by
-more than 10 ms; cost changes are listed, not judged, until a baseline per
+more than 10 ms. A `detect-*` row counts as passing when its injected error
+is reported (each report stores `mustPass` and `testSucceeded`), and a
+scenario missing from the candidate, an empty candidate or a missing directory
+is an error. Cost changes are listed, not judged, until a baseline per
 machine exists. Compare runs from the same machine, build type, encoder and
 power mode only.
 

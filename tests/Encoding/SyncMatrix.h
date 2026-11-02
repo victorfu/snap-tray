@@ -16,7 +16,7 @@ namespace SyncMatrix {
 enum class Audio { None, Microphone, SystemAudio, Mixed };
 
 // Deliberate pipeline bugs: the analysis must catch each of them.
-enum class Mutation { None, IgnorePause, ShiftAudio, TruncateTail, ReorderTimestamps };
+enum class Mutation { None, IgnorePause, ShiftAudio, TruncateTail, ReorderTimestamps, DropRepeats };
 
 struct Pause {
     qint64 atMs = 0;     // wall time (arrival clock) the pause begins
@@ -44,7 +44,7 @@ struct Scenario {
     qint64 audioGapToMs = -1;
     qint64 audioClockOffsetMs = 0; // audio engine started this much later
     double audioDriftPpm = 0;      // audio clock runs fast (+) or slow (-)
-    qint64 slowEncoderMs = 0;      // the encoder stalls this long every second
+    qint64 slowEncoderMs = 0;      // the encoder is unavailable this long every 2 s (simulated clock)
 
     Mutation mutation = Mutation::None;
     QJsonObject toJson() const;
@@ -59,7 +59,9 @@ struct Result {
     QJsonObject cost;     // wall/CPU time, memory, file size
 
     bool passed() const { return failures.isEmpty(); }
-    QJsonObject toJson(const Scenario& scenario) const;
+    // `mustPass`: a detect-* row succeeds when the analysis fails; reports
+    // keep both so comparisons judge the test, not the raw media.
+    QJsonObject toJson(const Scenario& scenario, bool mustPass) const;
 };
 
 // Runs one scenario in `workDir`. The analysis tolerance for A/V offset is
@@ -68,6 +70,6 @@ constexpr qint64 kAvToleranceMs = 25;
 Result run(const Scenario& scenario, const QString& workDir);
 
 // Writes <dir>/<scenario>.json when SNAPTRAY_SYNC_REPORT_DIR is set.
-void writeReport(const Scenario& scenario, const Result& result);
+void writeReport(const Scenario& scenario, const Result& result, bool mustPass);
 
 } // namespace SyncMatrix

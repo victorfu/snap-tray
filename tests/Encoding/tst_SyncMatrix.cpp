@@ -54,6 +54,9 @@ QVector<Row> rows()
         s = base; s.name = "audio-gap-one-source"; s.audio = Audio::Mixed; s.audioGapFromMs = 900; s.audioGapToMs = 1300; add(s);
         s = base; s.name = "audio-clock-offset-and-drift"; s.audioClockOffsetMs = 3; s.audioDriftPpm = 300; add(s);
         s = base; s.name = "slow-encoder"; s.slowEncoderMs = 150; add(s);
+        // Unavailable longer than the queue's 30 frames: frames are refused
+        // as the real worker does, and the rest stay correct.
+        s = base; s.name = "encoder-stall-over-budget"; s.slowEncoderMs = 1500; s.durationMs = 4000; add(s);
     }
     {
         // The analysis must catch these.
@@ -62,6 +65,8 @@ QVector<Row> rows()
         s = base; s.name = "detect-truncated-tail"; s.mutation = Mutation::TruncateTail; add(s, false);
         s = base; s.name = "detect-reordered-timestamps"; s.mutation = Mutation::ReorderTimestamps; add(s, false);
         s = base; s.name = "detect-late-audio-engine"; s.audioClockOffsetMs = 150; add(s, false);
+        s = base; s.name = "detect-lost-repeats"; s.staticFromMs = 1000; s.staticToMs = 2000;
+        s.mutation = Mutation::DropRepeats; add(s, false);
     }
     {
         auto s = base; s.name = "full-2160p30-mixed"; s.size = QSize(3840, 2160); s.durationMs = 3000; s.audio = Audio::Mixed; add(s, true, true);
@@ -93,7 +98,7 @@ void TestSyncMatrix::matrix()
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     const Result result = run(r.scenario, dir.path());
-    writeReport(r.scenario, result);
+    writeReport(r.scenario, result, r.mustPass);
     if (!result.skipped.isEmpty()) QSKIP(qPrintable(result.skipped.join(QStringLiteral("; "))));
     qInfo().noquote() << r.scenario.name << "measured" << QJsonDocument(result.measured).toJson(QJsonDocument::Compact);
     qInfo().noquote() << r.scenario.name << "cost" << QJsonDocument(result.cost).toJson(QJsonDocument::Compact);

@@ -6,6 +6,9 @@
 #include "recording/SessionClock.h"
 #include "video/FFmpegMedia.h"
 
+#include <deque>
+#include <QHash>
+#include "encoding/EncodingWorker.h"
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
@@ -217,6 +220,51 @@ bool insidePause(const Scenario& s, qint64 wallMs)
 }
 
 // The reference: what a correct pipeline accepts and where it places it.
+// The encoding worker's frame queue while the encoder is unavailable: the
+// same budget and refusal rule (a new frame is refused when the queue is
+// full or its oldest frame too old), on the simulated clock. Stalls recur
+// every kStallPeriodMs for slowEncoderMs.
+constexpr qint64 kStallPeriodMs = 2000;
+
+struct EncoderQueueModel {
+    const Scenario& s;
+    const EncodingWorker::QueueBudget budget{};
+    struct Queued { qint64 ms; int id; bool flash; int motion; double enqueuedMs; };
+    std::deque<Queued> queue;
+    qint64 dropped = 0;
+    int maxDepth = 0;
+
+    bool stalled(double wallMs) const
+    {
+        return s.slowEncoderMs > 0 && std::fmod(wallMs, double(kStallPeriodMs)) < s.slowEncoderMs;
+    }
+    // Frames the encoder takes now (in order), given a new one arriving at wallMs.
+    template <typename Write>
+    void offer(double wallMs, const Queued& frame, Write&& write)
+    {
+        if (!stalled(wallMs)) {
+            drain(write);
+            write(frame);
+            return;
+        }
+        if (int(queue.size()) >= budget.maxFrames
+            || (!queue.empty() && wallMs - queue.front().enqueuedMs > budget.maxAgeMs)) {
+            ++dropped; // refused, like EncodingWorker's QueueFull / stale
+            return;
+        }
+        queue.push_back(frame);
+        maxDepth = std::max(maxDepth, int(queue.size()));
+    }
+    template <typename Write>
+    void drain(Write&& write)
+    {
+        while (!queue.empty()) {
+            write(queue.front());
+            queue.pop_front();
+        }
+    }
+};
+
 std::vector<ExpectedFrame> expectedFrames(const Scenario& s, const std::vector<VideoEvent>& events)
 {
     SnapTray::SessionClock clock;
@@ -225,6 +273,7 @@ std::vector<ExpectedFrame> expectedFrames(const Scenario& s, const std::vector<V
     auto ctl = controls(s);
     size_t next = 0;
     std::vector<ExpectedFrame> frames;
+    EncoderQueueModel queue{s};
     for (const auto& e : events) {
         while (next < ctl.size() && ctl[next].wallMs <= e.arrivalMs) {
             if (ctl[next].pause) { clock.pause(qint64(ctl[next].wallMs * kNsPerMs)); pacer.notePause(); }
@@ -234,8 +283,10 @@ std::vector<ExpectedFrame> expectedFrames(const Scenario& s, const std::vector<V
         qint64 recNs = 0;
         if (clock.admit(qint64(e.sourceMs * kNsPerMs), &recNs) != SnapTray::SessionClock::Admission::Accepted) continue;
         if (pacer.onFrame(recNs) != SnapTray::FramePacer::Decision::Emit) continue;
-        frames.push_back({SnapTray::SessionClock::toEncoderMs(recNs), e.id, e.flash});
+        queue.offer(e.arrivalMs, {SnapTray::SessionClock::toEncoderMs(recNs), e.id, e.flash, e.motion, e.arrivalMs},
+                    [&frames](const EncoderQueueModel::Queued& q) { frames.push_back({q.ms, q.id, q.flash}); });
     }
+    queue.drain([&frames](const EncoderQueueModel::Queued& q) { frames.push_back({q.ms, q.id, q.flash}); });
     return frames;
 }
 
@@ -420,6 +471,7 @@ const char* mutationName(Mutation m)
     case Mutation::ShiftAudio: return "shift-audio";
     case Mutation::TruncateTail: return "truncate-tail";
     case Mutation::ReorderTimestamps: return "reorder-timestamps";
+    case Mutation::DropRepeats: return "drop-repeats";
     }
     return "?";
 }
@@ -440,20 +492,21 @@ QJsonObject Scenario::toJson() const
             {"slowEncoderMs", slowEncoderMs}, {"mutation", mutationName(mutation)}};
 }
 
-QJsonObject Result::toJson(const Scenario& s) const
+QJsonObject Result::toJson(const Scenario& s, bool mustPass) const
 {
-    return {{"scenario", s.toJson()}, {"passed", passed()}, {"failures", QJsonArray::fromStringList(failures)},
+    return {{"scenario", s.toJson()}, {"passed", passed()}, {"mustPass", mustPass},
+            {"testSucceeded", mustPass ? passed() : !passed()}, {"failures", QJsonArray::fromStringList(failures)},
             {"skipped", QJsonArray::fromStringList(skipped)}, {"expected", expected}, {"measured", measured},
             {"cost", cost}};
 }
 
-void writeReport(const Scenario& scenario, const Result& result)
+void writeReport(const Scenario& scenario, const Result& result, bool mustPass)
 {
     const QString dir = qEnvironmentVariable("SNAPTRAY_SYNC_REPORT_DIR");
     if (dir.isEmpty()) return;
     QDir().mkpath(dir);
     QFile file(QDir(dir).filePath(scenario.name + QStringLiteral(".json")));
-    if (file.open(QIODevice::WriteOnly)) file.write(QJsonDocument(result.toJson(scenario)).toJson());
+    if (file.open(QIODevice::WriteOnly)) file.write(QJsonDocument(result.toJson(scenario, mustPass)).toJson());
 }
 
 Result run(const Scenario& s, const QString& workDir)
@@ -494,7 +547,6 @@ Result run(const Scenario& s, const QString& workDir)
     double nextAudio = 0;
     qint64 framesWritten = 0;
     qint64 encoderRejected = 0;
-    qint64 lastStall = 0;
     const auto runControlsUntil = [&](double wallMs) {
         while (nextControl < ctl.size() && ctl[nextControl].wallMs <= wallMs) {
             const auto& c = ctl[nextControl++];
@@ -516,6 +568,21 @@ Result run(const Scenario& s, const QString& workDir)
         }
     };
     int written = 0;
+    int lastWrittenId = -1;
+    EncoderQueueModel encoderQueue{s};
+    const auto write = [&](const EncoderQueueModel::Queued& q) {
+        const QImage image = makeFrame(s.size, q.id, q.flash, q.motion);
+        const qint64 before = encoder->framesWritten();
+        QElapsedTimer retry;
+        retry.start();
+        do {
+            encoder->writeFrame(image, q.ms);
+            if (encoder->framesWritten() != before) break;
+            QThread::msleep(2); // backpressure: retry the same frame
+        } while (retry.elapsed() < kWriteRetryMs);
+        if (encoder->framesWritten() == before) ++encoderRejected;
+        else ++framesWritten;
+    };
     for (const auto& e : events) {
         runAudioUntil(e.arrivalMs);
         runControlsUntil(e.arrivalMs);
@@ -525,22 +592,14 @@ Result run(const Scenario& s, const QString& workDir)
         qint64 ms = SnapTray::SessionClock::toEncoderMs(recNs);
         if (cutoffMs >= 0 && ms >= cutoffMs) continue;
         if (s.mutation == Mutation::ReorderTimestamps && ++written % 10 == 0) ms = std::max<qint64>(0, ms - qint64(2 * interval));
-        const QImage image = makeFrame(s.size, e.id, e.flash, e.motion);
-        const qint64 before = encoder->framesWritten();
-        QElapsedTimer retry;
-        retry.start();
-        do {
-            encoder->writeFrame(image, ms);
-            if (encoder->framesWritten() != before) break;
-            QThread::msleep(2); // backpressure: retry the same frame
-        } while (retry.elapsed() < kWriteRetryMs);
-        if (encoder->framesWritten() == before) ++encoderRejected;
-        else ++framesWritten;
-        if (s.slowEncoderMs > 0 && ms / 1000 != lastStall) {
-            lastStall = ms / 1000;
-            QThread::msleep(ulong(s.slowEncoderMs));
-        }
+        // Bug: a still screen's repeated frames are dropped.
+        if (s.mutation == Mutation::DropRepeats && e.id == lastWrittenId) continue;
+        lastWrittenId = e.id;
+        // A stalled encoder: frames wait in the worker's queue (or are
+        // refused past its budget) while capture and audio carry on.
+        encoderQueue.offer(e.arrivalMs, {ms, e.id, e.flash, e.motion, e.arrivalMs}, write);
     }
+    encoderQueue.drain(write);
     runAudioUntil(s.durationMs + kAudioChunkMs + kAudioLatencyMs);
     runControlsUntil(s.durationMs);
     clock.stop();
@@ -557,6 +616,8 @@ Result run(const Scenario& s, const QString& workDir)
                    {"fileBytes", QFileInfo(output).size()},
                    {"framesWritten", framesWritten},
                    {"encoderRejected", encoderRejected},
+                   {"queueDropped", encoderQueue.dropped},
+                   {"queueMaxDepth", encoderQueue.maxDepth},
                    {"audioFramesWritten", audio.writtenFrames}};
 
     // Expected, from the reference model.
@@ -588,13 +649,21 @@ Result run(const Scenario& s, const QString& workDir)
         if (i == 0 || decoded[i].id != decoded[i - 1].id) ++unique; else ++repeated;
         if (i > 0 && decoded[i].id < decoded[i - 1].id) ++outOfOrder;
     }
-    QSet<int> decodedSet(decodedIds.begin(), decodedIds.end());
-    QSet<int> expectedSet(expectedIds.begin(), expectedIds.end());
-    const QSet<int> missing = expectedSet - decodedSet;
-    const QSet<int> unexpected = decodedSet - expectedSet;
-    if (!missing.isEmpty()) result.failures << QStringLiteral("%1 expected frames missing").arg(missing.size());
-    if (!unexpected.isEmpty()) {
-        result.failures << QStringLiteral("%1 frames that should not be there (e.g. from a pause)").arg(unexpected.size());
+    // Occurrences, not just IDs: a still screen repeats one ID many times,
+    // and losing most of those repeats must count (#178 review).
+    QHash<int, int> expectedCount, decodedCount;
+    for (const int id : expectedIds) ++expectedCount[id];
+    for (const int id : decodedIds) ++decodedCount[id];
+    int missingCount = 0, unexpectedCount = 0;
+    for (auto it = expectedCount.cbegin(); it != expectedCount.cend(); ++it) {
+        missingCount += std::max(0, it.value() - decodedCount.value(it.key()));
+    }
+    for (auto it = decodedCount.cbegin(); it != decodedCount.cend(); ++it) {
+        unexpectedCount += std::max(0, it.value() - expectedCount.value(it.key()));
+    }
+    if (missingCount) result.failures << QStringLiteral("%1 expected frames missing").arg(missingCount);
+    if (unexpectedCount) {
+        result.failures << QStringLiteral("%1 frames that should not be there (e.g. from a pause)").arg(unexpectedCount);
     }
     if (outOfOrder) result.failures << QStringLiteral("%1 frames out of order").arg(outOfOrder);
     // Placement: every decoded frame is presented when that frame was
@@ -635,7 +704,7 @@ Result run(const Scenario& s, const QString& workDir)
     }
     result.measured = {{"frames", int(decoded.size())}, {"uniqueFrames", unique}, {"repeatedFrames", repeated},
                        {"firstId", decoded.front().id}, {"lastId", decoded.back().id},
-                       {"lastFrameMs", lastDecodedMs}, {"missing", missing.size()}, {"unexpected", unexpected.size()},
+                       {"lastFrameMs", lastDecodedMs}, {"missing", missingCount}, {"unexpected", unexpectedCount},
                        {"outOfOrder", outOfOrder}, {"misplaced", misplaced}, {"flashesMs", decodedFlashes},
                        {"uniqueFps", lastDecodedMs > 0 ? unique * 1000.0 / lastDecodedMs : 0.0}};
     if (decodedFlashes.size() != expectedFlashes.size()) {
