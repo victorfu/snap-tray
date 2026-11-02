@@ -33,6 +33,7 @@ private slots:
     void unknownIsNotUnlimited();
     void secondsLeftIsAnEstimate();
     void writeRateSmoothsBursts();
+    void bufferedOutputIsReservedInFull();
 };
 
 void TestDiskSpaceGuard::thresholdsFollowTheRecording()
@@ -126,6 +127,18 @@ void TestDiskSpaceGuard::writeRateSmoothsBursts()
     QCOMPARE(rate.bytesPerSecond(), before);
     rate.reset();
     QCOMPARE(rate.bytesPerSecond(), qint64(0));
+}
+
+void TestDiskSpaceGuard::bufferedOutputIsReservedInFull()
+{
+    // PR #171 review: GIF/WebP hold the animation in memory and write it all
+    // at the end, so it is reserved in full, not as 1 % of a file on disk.
+    DiskSpaceGuard::Input buffered;
+    buffered.pendingBytes = 500 * kMiB;
+    QCOMPARE(DiskSpaceGuard::safeStopThreshold(buffered), DiskSpaceGuard::kFloorBytes + 500 * kMiB);
+    DiskSpaceGuard guard;
+    buffered.freeBytes = 400 * kMiB; // plenty for an MP4, not for this animation
+    QCOMPARE(guard.evaluate(buffered).level, Level::SafeStop);
 }
 
 QTEST_MAIN(TestDiskSpaceGuard)

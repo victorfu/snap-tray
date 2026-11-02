@@ -582,7 +582,8 @@ void WASAPIAudioCaptureEngine::handleSourceFailure(
                 qMax<qint64>(qint64(0), effectiveTimeNs)));
         }
     }
-    emit deviceLost();
+    emit deviceLost(source == SnapTray::Audio::Source::Microphone ? AudioSource::Microphone
+                                                                 : AudioSource::SystemAudio);
     notifyActiveSourceChanged();
 
     if (activeAudioSource() == AudioSource::None) {
