@@ -80,7 +80,6 @@ SnapTray::TrayRecordingStatus trayRecordingStatusForState(RecordingManager::Stat
 
 constexpr qint64 kTrayElapsedResolutionMs = 1000;
 // Recording hotkeys repeated faster than this are treated as one press.
-constexpr qint64 kRecordingHotkeyRepeatGuardMs = 400;
 // Text pixmap rendering constants (for paste-as-text feature)
 constexpr int kMaxTextPixmapWidth = 800;
 constexpr int kMaxTextPixmapHeight = 600;
@@ -499,6 +498,8 @@ void MainApplication::initialize()
     auto& hotkeyManager = SnapTray::HotkeyManager::instance();
     connect(&hotkeyManager, &SnapTray::HotkeyManager::actionTriggered,
             this, &MainApplication::onHotkeyAction);
+    connect(&hotkeyManager, &SnapTray::HotkeyManager::actionReleased, this,
+            [this](SnapTray::HotkeyAction action) { m_recordingHotkeyHolds.release(static_cast<int>(action)); });
     connect(&hotkeyManager, &SnapTray::HotkeyManager::hotkeyChanged,
             this, &MainApplication::onHotkeyChanged);
     connect(&hotkeyManager, &SnapTray::HotkeyManager::initializationCompleted,
@@ -913,18 +914,11 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
 bool MainApplication::acceptRecordingHotkey(SnapTray::HotkeyAction action)
 {
     // Key auto-repeat or a double press must not start and cancel a recording,
-    // or pause and immediately resume it.
+    // or pause and immediately resume it: a hold is one press until release.
     if (!m_recordingHotkeyClock.isValid()) {
         m_recordingHotkeyClock.start();
     }
-    const qint64 now = m_recordingHotkeyClock.elapsed();
-    const auto key = static_cast<int>(action);
-    const auto last = m_lastRecordingHotkeyMs.constFind(key);
-    if (last != m_lastRecordingHotkeyMs.constEnd() && now - last.value() < kRecordingHotkeyRepeatGuardMs) {
-        return false;
-    }
-    m_lastRecordingHotkeyMs.insert(key, now);
-    return true;
+    return m_recordingHotkeyHolds.accept(static_cast<int>(action), m_recordingHotkeyClock.elapsed());
 }
 
 void MainApplication::onHotkeyChanged(SnapTray::HotkeyAction, const SnapTray::HotkeyConfig&)
