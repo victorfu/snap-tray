@@ -133,6 +133,15 @@ private:
     SnapTray::TrayRecordingStatus m_trayRecordingStatus = SnapTray::TrayRecordingStatus::Idle;
     // Effective (pause-excluded) duration shown in the tray tooltip; -1 when none.
     qint64 m_trayRecordingElapsedMs = -1;
+    // Recording warnings (#170 review). Where overlays cannot be kept out of
+    // the capture (X11), a toast shown while capturing would be burned into
+    // the video: warnings wait in the tray tooltip and are shown when the
+    // recording stops.
+    bool holdsRecordingWarnings() const;
+    void showRecordingWarning(const QString& warning);
+    void flushHeldRecordingWarnings();
+    QStringList m_heldRecordingWarnings;
+    std::function<void(const QString& title, const QString& text)> m_recordingWarningToast;
     // A held recording hotkey counts once (#147 review): on m_recordingHotkeyClock.
     QElapsedTimer m_recordingHotkeyClock;
     SnapTray::HotkeyHoldFilter m_recordingHotkeyHolds;
