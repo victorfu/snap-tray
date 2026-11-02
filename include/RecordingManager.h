@@ -201,9 +201,10 @@ private:
     std::unique_ptr<EncodingWorker> m_encodingWorker;
     // GIF/WebP keep the whole animation in memory until finish(); the disk
     // guard counts it as recorded data (#171 review).
-    std::shared_ptr<std::atomic<qint64>> m_bufferedOutputBytes;
+    std::shared_ptr<std::atomic<qint64>> m_bufferedOutputBytes;  // GIF/WebP held in memory until the end
+    std::shared_ptr<std::atomic<qint64>> m_writtenOutputBytes;   // MP4 written to a temporary file (Linux)
     // Whether a kept file can be played (the recovery scan's probe); a seam for tests.
-    std::function<bool(const QString&)> m_isRecordingPlayable;  // Offloads encoding to worker thread
+    std::function<bool(const QString&)> m_isRecordingPlayable;
     std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload
     quint64 m_encodingGeneration = 0;                  // Guards stale queued encoding callbacks
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
