@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QImage>
 #include <QJsonObject>
 #include <QSize>
 #include <QString>
@@ -68,6 +69,11 @@ struct Result {
 // one frame interval plus kAvToleranceMs.
 constexpr qint64 kAvToleranceMs = 25;
 Result run(const Scenario& scenario, const QString& workDir);
+
+// The synthetic frame (a 32-bit frame ID barcode across the top) and its
+// reader, exposed for the barcode round-trip test.
+QImage makeFrame(const QSize& size, int id, bool flash, int motion);
+int readId(const QImage& frame);
 
 // Writes <dir>/<scenario>.json when SNAPTRAY_SYNC_REPORT_DIR is set.
 void writeReport(const Scenario& scenario, const Result& result, bool mustPass);

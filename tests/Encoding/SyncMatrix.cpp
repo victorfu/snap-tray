@@ -38,7 +38,12 @@ using SnapTray::Audio::Source;
 using SnapTray::Audio::TimestampedPcmMixer;
 
 constexpr qint64 kNsPerMs = 1000000;
-constexpr int kIdBits = 16;              // frame ID barcode width
+// Frame ID barcode: two rows of 16 cells, 32 bits, so long rows (an hour at
+// 60 fps is 216000 frames) never wrap (#178 review). Both rows sit above the
+// flash area, which starts a quarter of the way down.
+constexpr int kIdCellsPerRow = 16;
+constexpr int kIdRows = 2;
+constexpr int kIdBits = kIdCellsPerRow * kIdRows;
 constexpr qint64 kFlashFirstMs = 350;    // flash + audio pulse schedule (wall clock)
 constexpr qint64 kFlashEveryMs = 700;
 constexpr qint64 kPulseMs = 40;
@@ -55,15 +60,23 @@ constexpr double kPulseThreshold = 0.1;   // RMS (full scale 1.0) that counts as
 
 // --- Synthetic content -----------------------------------------------------
 
+QRect idCell(const QSize& size, int bit)
+{
+    const int band = size.height() / 8;
+    const int cell = size.width() / kIdCellsPerRow;
+    return QRect((bit % kIdCellsPerRow) * cell, (bit / kIdCellsPerRow) * band, cell, band);
+}
+
+} // namespace
+
 QImage makeFrame(const QSize& size, int id, bool flash, int motion)
 {
     QImage image(size, QImage::Format_RGB32);
     image.fill(QColor(64, 64, 64));
     QPainter painter(&image);
-    const int band = size.height() / 8;
-    const int cell = size.width() / kIdBits;
+    const auto bits = static_cast<quint32>(id);
     for (int bit = 0; bit < kIdBits; ++bit) {
-        painter.fillRect(bit * cell, 0, cell, band, (id >> bit) & 1 ? Qt::white : Qt::black);
+        painter.fillRect(idCell(size, bit), (bits >> bit) & 1u ? Qt::white : Qt::black);
     }
     if (flash) {
         painter.fillRect(0, size.height() / 4, size.width(), size.height() - size.height() / 4, Qt::white);
@@ -75,6 +88,8 @@ QImage makeFrame(const QSize& size, int id, bool flash, int motion)
     }
     return image;
 }
+
+namespace {
 
 int meanGray(const QImage& image, const QRect& rect)
 {
@@ -91,18 +106,22 @@ int meanGray(const QImage& image, const QRect& rect)
     return count ? int(sum / count) : 0;
 }
 
+} // namespace
+
 int readId(const QImage& frame)
 {
-    const int band = frame.height() / 8;
-    const int cell = frame.width() / kIdBits;
-    int id = 0;
+    quint32 bits = 0;
     for (int bit = 0; bit < kIdBits; ++bit) {
         // The middle half of each cell, away from codec ringing at its edges.
-        const QRect probe(bit * cell + cell / 4, band / 4, std::max(1, cell / 2), std::max(1, band / 2));
-        if (meanGray(frame, probe) > 128) id |= 1 << bit;
+        const QRect cell = idCell(frame.size(), bit);
+        const QRect probe(cell.x() + cell.width() / 4, cell.y() + cell.height() / 4,
+                          std::max(1, cell.width() / 2), std::max(1, cell.height() / 2));
+        if (meanGray(frame, probe) > 128) bits |= 1u << bit;
     }
-    return id;
+    return static_cast<int>(bits);
 }
+
+namespace {
 
 bool isFlash(const QImage& frame)
 {

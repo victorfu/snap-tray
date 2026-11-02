@@ -19,6 +19,7 @@ class TestSyncMatrix : public QObject
 private slots:
     void matrix_data();
     void matrix();
+    void barcodeKeepsLongRunIds();
 };
 
 #ifdef SNAPTRAY_SYNC_MATRIX_DECODE
@@ -110,6 +111,18 @@ void TestSyncMatrix::matrix()
     }
 }
 
+void TestSyncMatrix::barcodeKeepsLongRunIds()
+{
+    // PR #178 review: a 16-bit barcode wrapped after 65535 frames (about 36
+    // minutes at 30 fps), so long rows failed for correct recordings.
+    for (const QSize size : {QSize(640, 360), QSize(3840, 2160)}) {
+        for (const int id : {0, 1, 65535, 65536, 108000, 216000, 0x7fffffff}) {
+            QCOMPARE(readId(makeFrame(size, id, false, id % 50)), id);
+            QCOMPARE(readId(makeFrame(size, id, true, 0)), id);
+        }
+    }
+}
+
 #else
 
 void TestSyncMatrix::matrix_data()
@@ -124,6 +137,11 @@ void TestSyncMatrix::matrix()
     // media for analysis uses the FFmpeg readers of the Linux build.
     QSKIP("Decoded-media analysis is not available on this platform yet; "
           "see docs/developer/recording-sync-matrix.md");
+}
+
+void TestSyncMatrix::barcodeKeepsLongRunIds()
+{
+    QSKIP("The sync matrix runs with the Linux build's FFmpeg readers");
 }
 
 #endif

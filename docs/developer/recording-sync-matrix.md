@@ -25,7 +25,8 @@ Sources: `tests/Encoding/SyncMatrix.{h,cpp}` (harness and analysis),
 
 ## What is generated
 
-- **Video**: each frame carries its frame ID as a 16-cell barcode, a moving
+- **Video**: each frame carries its frame ID as a 32-bit barcode (two rows of
+  16 cells, so long rows never wrap), a moving
   square, and a full white flash at fixed wall times (every 700 ms from 350 ms).
   A static span repeats one ID, as an unchanged screen does.
 - **Audio**: a 40 ms, 1 kHz pulse at every flash time, from the microphone,
