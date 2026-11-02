@@ -1653,8 +1653,14 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
         const std::shared_ptr<QLockFile> sessionLock(m_sessionLock.release());
         m_session = {};
         QMetaObject::invokeMethod(this, [this, videoPath, sessionLock]() {
-            // Named by its own size: a recovered recording has no region.
-            const SaveOutcome outcome = showSaveDialog(videoPath, QImageReader(videoPath).size(), true);
+            // Named by its own size: a recovered recording has no region. The
+            // reader is closed before saving: Windows cannot move an open file.
+            QSize size;
+            {
+                QImageReader reader(videoPath);
+                size = reader.size();
+            }
+            const SaveOutcome outcome = showSaveDialog(videoPath, size, true);
             if (outcome == SaveOutcome::Saved) {
                 SnapTray::RecordingSession::remove(videoPath);
             }
