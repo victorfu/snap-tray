@@ -742,6 +742,9 @@ void HotkeyManager::createHotkeyInstance(HotkeyAction action)
         connect(hotkey, &QHotkey::activated, this, [this, action]() {
             onHotkeyActivated(action);
         });
+        connect(hotkey, &QHotkey::released, this, [this, action]() {
+            emit actionReleased(action);
+        });
 
         m_hotkeys[action] = hotkey;
     }
