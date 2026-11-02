@@ -1039,7 +1039,7 @@ void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestamp)
     if (m_state == State::Paused) {
         emit positionChanged(m_position);
     }
-    emit frameReady(frame);
+    emit frameReady(frame, m_position);
 }
 
 void MediaFoundationPlayer::onEndOfStream()

@@ -114,7 +114,7 @@ public:
             const auto decoded = watcher.result();
             if (decoded.generation != generation) { dispatch(); return; }
             if (!decoded.error.isEmpty()) { pause(); emit error(decoded.error); return; }
-            if (!decoded.image.isNull()) emit frameReady(decoded.image);
+            if (!decoded.image.isNull()) emit frameReady(decoded.image, decoded.position);
             if (!decoded.pcm.isEmpty() && m_state == State::Playing) {
                 if (output.write(decoded.pcm, muted ? 0.0f : gain)) audioCursor = decoded.audioEnd;
                 else {
