@@ -54,7 +54,9 @@ Item {
         void backend.cropRect; void backend.selectedFormat
         if (cropOverlay.editing || root.comparingOriginal || backend.selectedMask >= 0)
             return root.zoomTarget
-        return backend.zoomViewportInView(videoPlayer.position, videoPlayer.contentRect)
+        // Per frame, like the pointer overlay (#175 review): the reported
+        // position would pan the zoom at 10 fps on some platforms.
+        return backend.zoomViewportInView(videoPlayer.framePosition, videoPlayer.contentRect)
     }
     readonly property real zoomFactor: zoomView.width > 0 ? zoomTarget.width / zoomView.width : 1
     readonly property var zoomScales: [1.5, 2.0, 2.5, 3.0]
@@ -361,7 +363,9 @@ Item {
                     height: pointerClip.parent.height
                     visible: !root.comparingOriginal
                     backend: root.previewBackend
-                    position: videoPlayer.position
+                    // Each frame's own time: the player's position is reported
+                    // only every 100 ms on some platforms (#175 review).
+                    position: videoPlayer.framePosition
                     contentRect: videoPlayer.contentRect
                     transform: [
                         Translate { x: -root.zoomView.x; y: -root.zoomView.y },
@@ -1208,6 +1212,16 @@ Item {
                 visible: backend.selectedZoom >= 0 && !(backend.selectedMask >= 0) && !cropOverlay.editing
                 readonly property var segment: backend.selectedZoom >= 0 ? backend.zoomSegments[backend.selectedZoom] : null
 
+                // The fields are shared by all zooms: text typed for one and
+                // not applied must not reach the next one selected (#176 review).
+                Connections {
+                    target: root.previewBackend
+                    function onSelectedZoomChanged() {
+                        zoomStartField.discardEdit()
+                        zoomEndField.discardEdit()
+                    }
+                }
+
                 Repeater {
                     model: root.zoomScales
                     SegmentButton {
@@ -1267,7 +1281,12 @@ Item {
                     minimumButtonWidth: 0
                     text: qsTr("Done")
                     tooltipText: qsTr("Click the video to move the zoom's centre. Done finishes editing.")
-                    onClicked: backend.selectedZoom = -1
+                    // Typed times are applied first; invalid ones keep the editor open.
+                    onClicked: {
+                        if (root.commitPendingRange(zoomStartField, zoomEndField,
+                                (start, end) => backend.setZoomRange(backend.selectedZoom, start, end)))
+                            backend.selectedZoom = -1
+                    }
                 }
             }
 
@@ -2048,10 +2067,14 @@ Item {
             invalid = false
             edited = true
         }
-        Keys.onEscapePressed: function(event) {
+        // Drops typed text that was not applied, back to the value.
+        function discardEdit() {
             invalid = false
             edited = false
             text = backend.formatPreciseTime(timeMs)
+        }
+        Keys.onEscapePressed: function(event) {
+            discardEdit()
             root.forceActiveFocus()
             event.accepted = true
         }

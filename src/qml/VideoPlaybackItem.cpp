@@ -39,6 +39,11 @@ void VideoPlaybackItem::createPlayer()
             this, &VideoPlaybackItem::stateChanged);
     connect(m_player, &IVideoPlayer::positionChanged,
             this, &VideoPlaybackItem::positionChanged);
+    // Paused or seeking without a new frame: the reported position is the
+    // frame on screen. While playing, frames carry their own time.
+    connect(m_player, &IVideoPlayer::positionChanged, this, [this](qint64 positionMs) {
+        if (!isPlaying()) setFramePosition(positionMs);
+    });
     connect(m_player, &IVideoPlayer::durationChanged,
             this, &VideoPlaybackItem::durationChanged);
     connect(m_player, &IVideoPlayer::error,
@@ -200,6 +205,10 @@ void VideoPlaybackItem::clearFrame()
     m_rawFrame = QImage();
     m_scaledFrame = QImage();
     m_lastFrameSize = QSize();
+    if (m_framePosition != 0) {
+        m_framePosition = 0;
+        emit framePositionChanged();
+    }
     // No frame, no content: overlays placed by contentRect must know.
     if (!m_contentRect.isEmpty()) {
         m_contentRect = QRectF();
@@ -228,12 +237,21 @@ void VideoPlaybackItem::stepForward()
         m_player->stepForward();
 }
 
-void VideoPlaybackItem::onFrameReady(const QImage &frame)
+void VideoPlaybackItem::setFramePosition(qint64 positionMs)
+{
+    if (positionMs < 0 || positionMs == m_framePosition)
+        return;
+    m_framePosition = positionMs;
+    emit framePositionChanged();
+}
+
+void VideoPlaybackItem::onFrameReady(const QImage &frame, qint64 positionMs)
 {
     if (frame.isNull())
         return;
 
     m_rawFrame = frame;
+    setFramePosition(positionMs >= 0 ? positionMs : position());
     m_currentFrame = frame;
     if (m_frameProcessor) {
         m_frameProcessor(m_currentFrame, position());
