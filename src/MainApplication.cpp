@@ -19,6 +19,7 @@
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "recording/CursorTimeline.h"
 #include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "ui/TrayRecordingIndicator.h"
@@ -1103,6 +1104,7 @@ void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
         }
     }
     SnapTray::WindowTimelineSidecar::remove(videoPath);
+    SnapTray::CursorTimelineSidecar::remove(videoPath);
     SnapTray::RecordingSession::remove(videoPath);
 }
 

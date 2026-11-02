@@ -10,6 +10,8 @@
 #include <QDir>
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/WindowTimelineRecorder.h"
+#include "recording/CursorTimeline.h"
+#include "recording/RecordingSession.h"
 #include "encoding/IntermediateQuality.h"
 
 /**
@@ -51,6 +53,9 @@ private slots:
     void testFinishWritesSidecarOnlyOnSuccess();
     void testFinishSkipsSidecarWithoutWindows();
     void testStaleSidecarsAreCleanedUp();
+    void testCursorTimelineFollowsTheRecording();
+    void testCursorTimelineOutcome_data();
+    void testCursorTimelineOutcome();
     void intermediateQualityFollowsFreeSpace_data();
     void intermediateQualityFollowsFreeSpace();
     void previewRequestedCarriesIntermediateDecision_data();
@@ -349,10 +354,129 @@ void TestRecordingManagerLifecycle::testStaleSidecarsAreCleanedUp()
         QVERIFY(file.open(QIODevice::ReadWrite));
         QVERIFY(file.setFileTime(QDateTime::currentDateTime().addDays(-2), QFileDevice::FileModificationTime));
     }
+    // Pointer sidecars: an old one goes, unless its recording awaits recovery.
+    const QString staleCursor = QDir(tempDir).filePath(QStringLiteral("SnapTray_Recording_stale-c.mp4.cursor.jsonl"));
+    const QString pendingVideo = QDir(tempDir).filePath(QStringLiteral("SnapTray_Recording_pending-c.mp4"));
+    const QString pendingCursor = SnapTray::CursorTimelineSidecar::pathFor(pendingVideo);
+    SnapTray::RecordingSessionInfo pending;
+    pending.videoPath = pendingVideo;
+    QVERIFY(SnapTray::RecordingSession::write(pending));
+    for (const QString& path : {staleCursor, pendingCursor}) {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("{}");
+        file.close();
+        QVERIFY(file.open(QIODevice::ReadWrite));
+        QVERIFY(file.setFileTime(QDateTime::currentDateTime().addDays(-2), QFileDevice::FileModificationTime));
+    }
     m_manager->cleanupStaleTempFiles();
     QVERIFY(!QFile::exists(stale));
     QVERIFY(QFile::exists(fresh));
+    QVERIFY(!QFile::exists(staleCursor));
+    QVERIFY(QFile::exists(pendingCursor));
     QFile::remove(fresh);
+    SnapTray::RecordingSession::discard(pendingVideo);
+    QVERIFY(!QFile::exists(pendingCursor));
+}
+
+namespace {
+class LifecycleCursorProbe : public SnapTray::CursorProbe
+{
+public:
+    Capabilities capabilities() const override { return {false, true}; }
+    std::optional<State> poll() override { return State{QPoint(5, 5), false, 0}; }
+    QString name() const override { return QStringLiteral("test"); }
+    void click(bool down) { emit buttonChanged(Qt::LeftButton, down); }
+};
+} // namespace
+
+void TestRecordingManagerLifecycle::testCursorTimelineFollowsTheRecording()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_c.mp4"));
+    LifecycleCursorProbe* probe = nullptr;
+    m_manager->m_createCursorProbe = [&probe] {
+        auto owned = std::make_unique<LifecycleCursorProbe>();
+        probe = owned.get();
+        return owned;
+    };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 1000, 500), QRect(), 2.0, QRect(0, 0, 2000, 1000)};
+    m_manager->m_session.videoPath = video;
+    m_manager->m_elapsedTimer.start();
+
+    // Without a preview there is no use for it.
+    m_manager->m_startSettings.showPreview = false;
+    m_manager->startCursorTimeline();
+    QVERIFY(!m_manager->m_cursorRecorder);
+    QVERIFY(!probe);
+
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->startCursorTimeline();
+    QVERIFY(m_manager->m_cursorRecorder && m_manager->m_cursorRecorder->isRunning());
+    QVERIFY(m_manager->m_cursorDiagnostics.contains(QStringLiteral("shapes no, clicks yes")));
+    QVERIFY(QFile::exists(SnapTray::CursorTimelineSidecar::pathFor(video)));
+
+    // Pauses with the recording; a held button is released at the pause.
+    m_manager->m_state = RecordingManager::State::Recording;
+    probe->click(true);
+    m_manager->pauseRecording();
+    QVERIFY(!m_manager->m_cursorRecorder->isRunning());
+    m_manager->resumeRecording();
+    QVERIFY(m_manager->m_cursorRecorder->isRunning());
+
+    m_manager->stopFrameCapture();
+    const auto timeline = SnapTray::CursorTimelineSidecar::read(video);
+    QVERIFY(timeline && timeline->finished);
+    QCOMPARE(timeline->samples.front().position, QPoint(10, 10));
+    QCOMPARE(int(timeline->buttons.size()), 2);
+    QVERIFY(timeline->buttons.back().synthetic);
+
+    // Cancelling deletes the recording, and the sidecar with it.
+    m_manager->cancelRecording();
+    QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
+    QVERIFY(!QFile::exists(SnapTray::CursorTimelineSidecar::pathFor(video)));
+    m_manager->m_session = {};
+}
+
+void TestRecordingManagerLifecycle::testCursorTimelineOutcome_data()
+{
+    QTest::addColumn<bool>("success");
+    QTest::addColumn<bool>("crashSafe");
+    QTest::addColumn<bool>("kept");
+    QTest::newRow("finished") << true << false << true;
+    QTest::newRow("failed, part kept for recovery") << false << true << true;
+    QTest::newRow("failed, nothing usable") << false << false << false;
+}
+
+void TestRecordingManagerLifecycle::testCursorTimelineOutcome()
+{
+    QFETCH(bool, success);
+    QFETCH(bool, crashSafe);
+    QFETCH(bool, kept);
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_o.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("partial");
+    }
+    m_manager->m_createCursorProbe = [] { return std::make_unique<LifecycleCursorProbe>(); };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 1000, 500), QRect(), 1.0, QRect(0, 0, 1000, 500)};
+    m_manager->m_session.videoPath = video;
+    m_manager->m_session.fragmented = crashSafe;
+    // With a preview, success hands the file on (previewRequested; nothing listens here).
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->m_elapsedTimer.start();
+    m_manager->startCursorTimeline();
+    m_manager->stopFrameCapture();
+    m_manager->m_state = RecordingManager::State::Encoding;
+    m_manager->onEncodingFinished(success, video);
+    QCOMPARE(QFile::exists(SnapTray::CursorTimelineSidecar::pathFor(video)), kept);
+    QVERIFY(!m_manager->m_cursorRecorder);
+    QCoreApplication::processEvents(); // the queued preview hand-off
+    m_manager->m_state = RecordingManager::State::Idle;
+    m_manager->m_session = {};
+    SnapTray::CursorTimelineSidecar::remove(video);
 }
 
 void TestRecordingManagerLifecycle::blocksCaptureOnlyWhileRecordingWork()

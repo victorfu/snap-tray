@@ -74,6 +74,12 @@ If something outside SnapTray ends a recording, it stops the same way as pressin
 
 If several of these happen at once, the recording still ends only once and the first reason is reported. If the microphone is unplugged while recording, the recording continues without it and SnapTray says so; it never switches to another microphone on its own. If the file itself cannot be finished, SnapTray says whether a playable part was kept (on Linux it can be recovered from the tray menu, see below). A recording is only deleted when you choose Discard.
 
+## The pointer in recordings
+
+The recorded video does not contain the mouse pointer. While a recording that opens in the preview runs, SnapTray keeps a separate record of the pointer next to it: where it was, what it looked like, and when buttons were pressed. Keyboard input is never recorded. This record stays with the temporary recording and is deleted with it when you save or discard; saved videos and exports never include it. It is what later editing features use to show, enlarge or highlight the pointer.
+
+On Linux (X11) it includes the pointer's shape and clicks. On macOS and Windows only the position is kept for now. If the record cannot be written, the recording itself is not affected.
+
 ## Recovering unsaved recordings
 
 SnapTray keeps a small record next to each recording until it is saved or discarded. If SnapTray stops before that (a crash, power loss, or quitting with an unsaved preview open), the next start shows a notice, and **Recover Recordings** in the tray menu lists what was left. Each entry shows when it was recorded, how much of it can be played, and whether audio that should be there is missing. **Recover** opens it in the preview so you can save it; **Discard** deletes it; **Later** keeps it for next time. Files waiting here are never removed by SnapTray's routine clean-up of old temporary files.

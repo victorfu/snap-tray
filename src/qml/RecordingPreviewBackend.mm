@@ -10,6 +10,7 @@
 #include "encoding/IntermediateQuality.h"
 #include "settings/RecordingSettingsManager.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "recording/CursorTimeline.h"
 
 #include <QCloseEvent>
 #include "recording/DiskSpaceGuard.h"
@@ -489,6 +490,7 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome)
             QFile::remove(m_videoPath);
         }
         SnapTray::WindowTimelineSidecar::remove(m_videoPath);
+        SnapTray::CursorTimelineSidecar::remove(m_videoPath);
         SnapTray::RecordingSession::remove(m_videoPath);
         finishProcessing();
         m_saved = true;

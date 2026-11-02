@@ -120,6 +120,10 @@ public:
     // encoding queue instead of depending on GUI-thread polling.
     virtual bool deliversFrames() const { return false; }
 
+    // True when captured frames already contain the pointer. Every current
+    // backend leaves it out; the cursor sidecar records it instead (#159).
+    virtual bool capturesCursor() const { return false; }
+
     /**
      * @brief Get the name of this capture engine
      */

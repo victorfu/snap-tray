@@ -3,6 +3,7 @@
 #include "capture/X11CaptureEngine.h"
 #include "encoding/EncodingWorker.h"
 #include "RecordingManager.h"
+#include "recording/CursorTimeline.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "qml/SettingsBackend.h"
@@ -192,8 +193,20 @@ void TestLinuxRecordingPrototype::mainRecordingFlowRequestsPreview()
     QCOMPARE(manager.state(), RecordingManager::State::Previewing);
     const QString path = preview.first().first().toString();
     QVERIFY(QFileInfo::exists(path));
+    // The real X11 pointer sidecar: complete, with shapes and clicks, in video pixels.
+    const auto cursor = SnapTray::CursorTimelineSidecar::read(path);
+    QVERIFY(cursor);
+    QVERIFY(cursor->finished);
+    QVERIFY(cursor->info.shapesAvailable);
+    QVERIFY(cursor->info.clicksAvailable);
+    QVERIFY(!cursor->info.cursorInVideo);
+    QCOMPARE(cursor->info.frameSize, QGuiApplication::primaryScreen()->size());
+    QVERIFY(!cursor->samples.empty());
+    QVERIFY(cursor->samples.front().shapeId != 0);
+    QVERIFY(cursor->shape(cursor->samples.front().shapeId));
     manager.cancelRecording();
     QFile::remove(path);
+    SnapTray::CursorTimelineSidecar::remove(path);
 }
 
 void TestLinuxRecordingPrototype::captureContinuesWhileGuiBlocked()

@@ -250,9 +250,13 @@ Existing `SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE` build caches migrate to the new opti
 
 ```bash
 sudo apt install pkg-config libavcodec-dev libavformat-dev libavutil-dev \
-  libswscale-dev libswresample-dev libpulse-dev libxcb-shm0-dev libxcb-randr0-dev
+  libswscale-dev libswresample-dev libpulse-dev libxcb-shm0-dev libxcb-randr0-dev \
+  libxfixes-dev libxi-dev
 ./scripts/build-and-run.sh
 ```
+
+`libxfixes-dev` and `libxi-dev` let recordings keep the pointer's shape and clicks
+for editing after recording; without them only its position is kept.
 
 Select **Record Screen** in the tray and choose a screen. Recording uses a
 background X11 connection with MIT-SHM when available, falling back to XCB image

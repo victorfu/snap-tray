@@ -316,6 +316,28 @@ target_link_libraries(RecordingManager_WindowTimelineRecorder PRIVATE snaptray_p
 add_test(NAME RecordingManager_WindowTimelineRecorder COMMAND RecordingManager_WindowTimelineRecorder)
 set_tests_properties(RecordingManager_WindowTimelineRecorder PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_CursorTimeline RecordingManager/tst_CursorTimeline.cpp)
+target_link_libraries(RecordingManager_CursorTimeline PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_CursorTimeline COMMAND RecordingManager_CursorTimeline)
+set_tests_properties(RecordingManager_CursorTimeline PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
+target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_CursorTimelineRecorder COMMAND RecordingManager_CursorTimelineRecorder)
+set_tests_properties(RecordingManager_CursorTimelineRecorder PROPERTIES TIMEOUT 60 LABELS "unit")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND X11_XTest_FOUND AND X11_Xfixes_FOUND AND X11_Xi_FOUND)
+    # The real X11 probe, driven through XTest on its own Xvfb display.
+    target_sources(RecordingManager_CursorTimelineRecorder PRIVATE RecordingManager/x11_pointer_helper.cpp)
+    target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE X11::X11 X11::Xtst)
+    target_compile_definitions(RecordingManager_CursorTimelineRecorder PRIVATE SNAPTRAY_TEST_HAS_XTEST)
+    add_test(NAME RecordingManager_X11CursorProbe
+        COMMAND xvfb-run -a -s "-screen 0 800x600x24"
+            ${CMAKE_COMMAND} -E env --unset=WAYLAND_DISPLAY --unset=WAYLAND_SOCKET
+            QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
+            $<TARGET_FILE:RecordingManager_CursorTimelineRecorder> x11ProbeOnIsolatedDisplay)
+    set_tests_properties(RecordingManager_X11CursorProbe PROPERTIES TIMEOUT 60 LABELS "integration")
+endif()
+
 add_executable(RecordingManager_WindowTimelineSidecar RecordingManager/tst_WindowTimelineSidecar.cpp)
 target_link_libraries(RecordingManager_WindowTimelineSidecar PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_WindowTimelineSidecar COMMAND RecordingManager_WindowTimelineSidecar)
