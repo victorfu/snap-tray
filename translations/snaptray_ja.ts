@@ -1840,6 +1840,31 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
+        <source>Save again with the current settings</source>
+        <translation>現在の設定でもう一度保存</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1149" />
+        <source>Try Again</source>
+        <translation>再試行</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="998" />
+        <source>Keep Exporting</source>
+        <translation>書き出しを続行</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="988" />
+        <source>An export is in progress. Keep exporting or cancel it?</source>
+        <translation>書き出し中です。続行しますか、キャンセルしますか？</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="975" />
+        <source>Cancel Export</source>
+        <translation>書き出しをキャンセル</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>切り抜きを適用 (Enter) · 矢印キーで 2 px 移動 (Shift: 10 px)</translation>
@@ -2047,6 +2072,31 @@ Size: %2</source>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
+        <source>Writing file...</source>
+        <translation>ファイルを書き込み中...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to WebP...</source>
+        <translation>WebP に変換中...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to GIF...</source>
+        <translation>GIF に変換中...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="471" />
+        <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
+        <translation>ファイルを保存できませんでした。録画は保持されています。もう一度保存するか、別の場所を選んでください。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="436" />
+        <source>Saving...</source>
+        <translation>保存中...</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>

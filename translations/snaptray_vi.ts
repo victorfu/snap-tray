@@ -1834,6 +1834,31 @@ Kích thước: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
+        <source>Save again with the current settings</source>
+        <translation>Lưu lại với thiết lập hiện tại</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1149" />
+        <source>Try Again</source>
+        <translation>Thử lại</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="998" />
+        <source>Keep Exporting</source>
+        <translation>Tiếp tục xuất</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="988" />
+        <source>An export is in progress. Keep exporting or cancel it?</source>
+        <translation>Đang xuất. Tiếp tục hay hủy?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="975" />
+        <source>Cancel Export</source>
+        <translation>Hủy xuất</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>Áp dụng cắt (Enter) · phím mũi tên di chuyển 2 px (Shift: 10 px)</translation>
@@ -2041,6 +2066,31 @@ Kích thước: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
+        <source>Writing file...</source>
+        <translation>Đang ghi tệp...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to WebP...</source>
+        <translation>Đang chuyển sang WebP...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to GIF...</source>
+        <translation>Đang chuyển sang GIF...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="471" />
+        <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
+        <translation>Không thể lưu tệp. Bản ghi của bạn vẫn được giữ; hãy thử lưu lại hoặc chọn vị trí khác.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="436" />
+        <source>Saving...</source>
+        <translation>Đang lưu...</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>

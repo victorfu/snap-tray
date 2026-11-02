@@ -1840,6 +1840,31 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
+        <source>Save again with the current settings</source>
+        <translation>Сачувај поново са тренутним подешавањима</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1149" />
+        <source>Try Again</source>
+        <translation>Покушај поново</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="998" />
+        <source>Keep Exporting</source>
+        <translation>Настави извоз</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="988" />
+        <source>An export is in progress. Keep exporting or cancel it?</source>
+        <translation>Извоз је у току. Наставити или отказати?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="975" />
+        <source>Cancel Export</source>
+        <translation>Откажи извоз</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>Примени обрезивање (Enter) · стрелице померају за 2 px (Shift: 10 px)</translation>
@@ -2047,6 +2072,31 @@ Size: %2</source>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
+        <source>Writing file...</source>
+        <translation>Уписивање датотеке...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to WebP...</source>
+        <translation>Конвертовање у WebP...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to GIF...</source>
+        <translation>Конвертовање у GIF...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="471" />
+        <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
+        <translation>Датотека није сачувана. Снимак је задржан; покушајте поново или изаберите другу локацију.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="436" />
+        <source>Saving...</source>
+        <translation>Чување...</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>

@@ -1831,6 +1831,31 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
+        <source>Save again with the current settings</source>
+        <translation>使用当前设置重新保存</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1149" />
+        <source>Try Again</source>
+        <translation>重试</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="998" />
+        <source>Keep Exporting</source>
+        <translation>继续导出</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="988" />
+        <source>An export is in progress. Keep exporting or cancel it?</source>
+        <translation>正在导出。要继续导出还是取消？</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="975" />
+        <source>Cancel Export</source>
+        <translation>取消导出</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>应用裁剪 (Enter) · 方向键移动 2 像素（Shift：10 像素）</translation>
@@ -2038,6 +2063,31 @@ Size: %2</source>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
+        <source>Writing file...</source>
+        <translation>正在写入文件...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to WebP...</source>
+        <translation>正在转换为 WebP...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to GIF...</source>
+        <translation>正在转换为 GIF...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="471" />
+        <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
+        <translation>无法保存文件。录制内容已保留；请重新保存或选择其他位置。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="436" />
+        <source>Saving...</source>
+        <translation>正在保存...</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>

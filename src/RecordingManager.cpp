@@ -1736,17 +1736,24 @@ void RecordingManager::onPreviewClosed(bool saved)
     m_tempVideoPath.clear();
 }
 
-void RecordingManager::triggerSaveDialog(const QString &videoPath, const QSize &outputSize)
+RecordingManager::SaveOutcome RecordingManager::triggerSaveDialog(const QString &videoPath,
+                                                                  const QSize &outputSize,
+                                                                  QString *savedPath)
 {
-    showSaveDialog(videoPath, outputSize);
+    return showSaveDialog(videoPath, outputSize, true, savedPath);
 }
 
-void RecordingManager::showSaveDialog(const QString &tempOutputPath, const QSize &outputSize)
+RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &tempOutputPath,
+                                                               const QSize &outputSize,
+                                                               bool keepOnCancel,
+                                                               QString *savedPath)
 {
-    // Whatever happens below, the temp recording stops being a preview input:
-    // it is moved, kept as the final file, or deleted. Its sidecar goes with it.
-    const auto dropSidecar = qScopeGuard([&tempOutputPath]() {
-        SnapTray::WindowTimelineSidecar::remove(tempOutputPath);
+    // Once saved or deleted, the temp recording stops being a preview input
+    // and its window-timeline sidecar goes with it. A file the preview keeps
+    // (cancelled or failed save) keeps its sidecar too.
+    bool keepSidecar = false;
+    const auto dropSidecar = qScopeGuard([&tempOutputPath, &keepSidecar]() {
+        if (!keepSidecar) SnapTray::WindowTimelineSidecar::remove(tempOutputPath);
     });
 
     // Get settings from FileSettingsManager
@@ -1792,8 +1799,9 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath, const QSize
         while (attempt < maxAttempts) {
             if (QFile::rename(tempOutputPath, savePath)) {
                 syncFile(savePath);
+                if (savedPath) *savedPath = savePath;
                 emit recordingStopped(savePath);
-                return;
+                return SaveOutcome::Saved;
             }
 
             if (QFile::exists(savePath)) {
@@ -1815,8 +1823,9 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath, const QSize
         if (QFile::copy(tempOutputPath, savePath)) {
             QFile::remove(tempOutputPath);
             syncFile(savePath);
+            if (savedPath) *savedPath = savePath;
             emit recordingStopped(savePath);
-            return;
+            return SaveOutcome::Saved;
         }
 
         if (!renderError.isEmpty()) {
@@ -1842,27 +1851,36 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath, const QSize
     const QString savePath = forceFileExtension(dialogPath, extension);
 
     if (savePath.isEmpty()) {
-        // User cancelled - delete the temp file
+        if (keepOnCancel) {
+            // Back to the preview with the recording intact.
+            keepSidecar = true;
+            return SaveOutcome::Cancelled;
+        }
+        // No preview to return to: cancelling discards the temp file.
         QFile::remove(tempOutputPath);
         emit recordingCancelled();
-    } else {
-        // Move/rename the file to chosen location
-        if (savePath != tempOutputPath) {
-            QString saveError;
-            if (SnapTray::RecordingFileUtils::replaceRecordingFile(
-                    tempOutputPath, savePath, &saveError)) {
-                syncFile(savePath);
-                emit recordingStopped(savePath);
-            } else {
-                qWarning() << "RecordingManager: Failed to save recording to:" << savePath
-                           << saveError;
-                emit recordingError(tr("Failed to save recording to selected location"));
-            }
-        } else {
-            syncFile(tempOutputPath);
-            emit recordingStopped(tempOutputPath);
-        }
+        return SaveOutcome::Cancelled;
     }
+    // Move/rename the file to chosen location
+    if (savePath != tempOutputPath) {
+        QString saveError;
+        if (SnapTray::RecordingFileUtils::replaceRecordingFile(
+                tempOutputPath, savePath, &saveError)) {
+            syncFile(savePath);
+            if (savedPath) *savedPath = savePath;
+            emit recordingStopped(savePath);
+            return SaveOutcome::Saved;
+        }
+        qWarning() << "RecordingManager: Failed to save recording to:" << savePath
+                   << saveError;
+        keepSidecar = keepOnCancel;
+        emit recordingError(tr("Failed to save recording to selected location"));
+        return SaveOutcome::Failed;
+    }
+    syncFile(tempOutputPath);
+    if (savedPath) *savedPath = tempOutputPath;
+    emit recordingStopped(tempOutputPath);
+    return SaveOutcome::Saved;
 }
 
 void RecordingManager::onEncodingError(const QString &error)

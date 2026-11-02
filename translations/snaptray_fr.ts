@@ -1840,6 +1840,31 @@ Taille : %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
+        <source>Save again with the current settings</source>
+        <translation>Enregistrer à nouveau avec les réglages actuels</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1149" />
+        <source>Try Again</source>
+        <translation>Réessayer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="998" />
+        <source>Keep Exporting</source>
+        <translation>Poursuivre l’exportation</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="988" />
+        <source>An export is in progress. Keep exporting or cancel it?</source>
+        <translation>Une exportation est en cours. La poursuivre ou l’annuler ?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="975" />
+        <source>Cancel Export</source>
+        <translation>Annuler l’exportation</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>Appliquer le recadrage (Entrée) · les flèches le déplacent de 2 px (Maj : 10 px)</translation>
@@ -2047,6 +2072,31 @@ Taille : %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
+        <source>Writing file...</source>
+        <translation>Écriture du fichier...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to WebP...</source>
+        <translation>Conversion en WebP...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
+        <source>Converting to GIF...</source>
+        <translation>Conversion en GIF...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="471" />
+        <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
+        <translation>Impossible d’enregistrer le fichier. Votre enregistrement est conservé ; réessayez ou choisissez un autre emplacement.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="436" />
+        <source>Saving...</source>
+        <translation>Enregistrement...</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>

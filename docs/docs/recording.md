@@ -52,6 +52,12 @@ With a trim range, the start and end times under the timeline can be typed as `m
 
 Every applied crop and trim change can be undone (**Ctrl+Z**) and redone (**Ctrl+Shift+Z** or **Ctrl+Y**). Use ⟲ to go back to the unedited recording (also undoable), and ◧ or **\\** to compare with the original frame. The line under the timeline shows the original and output pixel sizes, the kept duration, and whether the chosen format has audio.
 
+## Saving and cancelling
+
+While MP4, GIF, or WebP is being exported, the preview shows what it is doing: converting (with a percentage), writing the file, or saving. **Cancel** stops any of them between frames. Your recording, its crop, and its trim stay, so you can change them or pick another format and save again.
+
+The recording is only removed once the file is saved. If you cancel the save dialog, or the file cannot be saved, the preview stays open with everything you had; use **Try Again** or **Save** to save again. Closing the preview window during an export asks whether to keep exporting or cancel it.
+
 ## Output formats
 
 | Format | Typical use |
