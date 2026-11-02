@@ -912,9 +912,13 @@ Item {
         Item {
             id: controlRowArea
             Layout.fillWidth: true
-            // Rows wrap at narrow widths (down to the 640 px minimum): grow with them.
-            Layout.preferredHeight: Math.max(formatRow.visible ? formatRow.height : 0,
+            // Rows wrap at narrow widths (down to the 640 px minimum): grow with
+            // them. The format row always keeps its size (hidden by opacity
+            // while a panel replaces it), so opening the crop or zoom editor
+            // never resizes the video under the pointer.
+            Layout.preferredHeight: Math.max(formatRow.height,
                                              zoomPanel.visible ? zoomPanel.height : 0,
+                                             maskPanel.visible ? maskPanel.height : 0,
                                              cropPanel.visible ? cropPanel.height : 0,
                                              ComponentTokens.recordingPreviewControlButtonHeight)
                                     + SemanticTokens.spacing16
@@ -924,7 +928,11 @@ Item {
                 anchors.centerIn: parent
                 width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing8
-                visible: !cropOverlay.editing && !(backend.selectedZoom >= 0) && !(backend.selectedMask >= 0)
+                readonly property bool shown: !cropOverlay.editing && !(backend.selectedZoom >= 0)
+                                              && !(backend.selectedMask >= 0)
+                opacity: shown ? 1 : 0
+                enabled: shown
+                Accessible.ignored: !shown
 
                 SegmentButton {
                     text: "MP4"
@@ -1040,10 +1048,11 @@ Item {
             }
 
             // Editing one mask, in place of the format buttons.
-            Row {
+            Flow {
                 id: maskPanel
                 objectName: "previewMaskPanel"
                 anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing4
                 visible: backend.selectedMask >= 0 && !cropOverlay.editing
                 readonly property bool wholeRecording: root.selectedMaskData !== null
