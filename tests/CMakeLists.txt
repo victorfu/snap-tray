@@ -391,8 +391,13 @@ set_tests_properties(RecordingManager_KeyTimeline PROPERTIES TIMEOUT 60 LABELS "
 add_executable(RecordingManager_OverlayTrack RecordingManager/tst_OverlayTrack.cpp)
 target_link_libraries(RecordingManager_OverlayTrack PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_OverlayTrack COMMAND RecordingManager_OverlayTrack)
-set_tests_properties(RecordingManager_OverlayTrack PROPERTIES TIMEOUT 60 LABELS "unit"
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_tests_properties(RecordingManager_OverlayTrack PROPERTIES TIMEOUT 60 LABELS "unit")
+if(UNIX AND NOT APPLE)
+    set_tests_properties(RecordingManager_OverlayTrack PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+# Windows/macOS use their native platform font databases. In particular, the
+# Windows offscreen plugin looks for fonts in the SDK, where Qt no longer
+# ships fonts. This image-only test creates no windows.
 
 add_executable(RecordingManager_AudioTracks RecordingManager/tst_AudioTracks.cpp)
 target_link_libraries(RecordingManager_AudioTracks PRIVATE snaptray_core Qt6::Test)
