@@ -24,6 +24,9 @@ private slots:
     void capsLockTypesCapitals();
     void queuedKeysKeepTheirStateAndTime();
     void internationalKeysAreRecorded();
+    void modifiersHeldAtStartCount();
+    void pairedModifierKeysAreTrackedApart();
+    void keypadKeysFollowNumLock();
 
 private:
     static void tap(Display* display, KeySym keysym);
@@ -145,6 +148,99 @@ void TestX11KeyProbe::internationalKeysAreRecorded()
         QCOMPARE(pressed.last().at(0).toInt(), key);
         QCOMPARE(pressed.last().at(2).toString(), text);
     }
+}
+
+// PR #200 review: Ctrl already held when the probe opens (recording started
+// with a hotkey) still makes the next key a shortcut.
+void TestX11KeyProbe::modifiersHeldAtStartCount()
+{
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != QLatin1String("1"))
+        QSKIP("Run through CTest's isolated Xvfb wrapper.");
+    Display* display = XOpenDisplay(nullptr);
+    QVERIFY(display);
+    const KeyCode control = XKeysymToKeycode(display, XK_Control_L);
+    const auto release = qScopeGuard([display, control] {
+        XTestFakeKeyEvent(display, control, False, CurrentTime);
+        XSync(display, False);
+        XCloseDisplay(display);
+    });
+    XTestFakeKeyEvent(display, control, True, CurrentTime);
+    XSync(display, False);
+    auto probe = createKeyProbe();
+    QVERIFY(probe);
+    QSignalSpy pressed(probe.get(), &KeyProbe::keyPressed);
+    tap(display, XK_c);
+    QTRY_COMPARE(pressed.count(), 1);
+    QCOMPARE(pressed.last().at(0).toInt(), int(Qt::Key_C));
+    QVERIFY(pressed.last().at(1).value<Qt::KeyboardModifiers>().testFlag(Qt::ControlModifier)); // was none
+}
+
+// PR #200 review: with both Ctrl keys down, releasing one keeps Ctrl held.
+void TestX11KeyProbe::pairedModifierKeysAreTrackedApart()
+{
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != QLatin1String("1"))
+        QSKIP("Run through CTest's isolated Xvfb wrapper.");
+    auto probe = createKeyProbe();
+    QVERIFY(probe);
+    Display* display = XOpenDisplay(nullptr);
+    QVERIFY(display);
+    const KeyCode left = XKeysymToKeycode(display, XK_Control_L);
+    const KeyCode right = XKeysymToKeycode(display, XK_Control_R);
+    QVERIFY(left && right && left != right);
+    const auto release = qScopeGuard([display, left, right] {
+        XTestFakeKeyEvent(display, left, False, CurrentTime);
+        XTestFakeKeyEvent(display, right, False, CurrentTime);
+        XSync(display, False);
+        XCloseDisplay(display);
+    });
+    QSignalSpy pressed(probe.get(), &KeyProbe::keyPressed);
+    XTestFakeKeyEvent(display, left, True, CurrentTime);
+    XTestFakeKeyEvent(display, right, True, CurrentTime);
+    XTestFakeKeyEvent(display, left, False, CurrentTime);
+    tap(display, XK_c);
+    QTRY_COMPARE(pressed.count(), 1);
+    QVERIFY(pressed.last().at(1).value<Qt::KeyboardModifiers>().testFlag(Qt::ControlModifier)); // was none
+    XTestFakeKeyEvent(display, right, False, CurrentTime);
+    tap(display, XK_c);
+    QTRY_COMPARE(pressed.count(), 2);
+    QVERIFY(!pressed.last().at(1).value<Qt::KeyboardModifiers>().testFlag(Qt::ControlModifier));
+}
+
+// PR #200 review: a keypad key is recorded as what Num Lock makes it.
+void TestX11KeyProbe::keypadKeysFollowNumLock()
+{
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != QLatin1String("1"))
+        QSKIP("Run through CTest's isolated Xvfb wrapper.");
+    Display* display = XOpenDisplay(nullptr);
+    QVERIFY(display);
+    const unsigned int numLock = XkbKeysymToModifiers(display, XK_Num_Lock);
+    QVERIFY(numLock);
+    const auto restore = qScopeGuard([display, numLock] {
+        XkbLockModifiers(display, XkbUseCoreKbd, numLock, 0);
+        XSync(display, False);
+        XCloseDisplay(display);
+    });
+    XkbLockModifiers(display, XkbUseCoreKbd, numLock, 0);
+    XSync(display, False);
+    auto probe = createKeyProbe();
+    QVERIFY(probe);
+    QSignalSpy pressed(probe.get(), &KeyProbe::keyPressed);
+    const KeyCode keypad1 = XKeysymToKeycode(display, XK_KP_End);
+    QVERIFY(keypad1);
+    XTestFakeKeyEvent(display, keypad1, True, CurrentTime);
+    XTestFakeKeyEvent(display, keypad1, False, CurrentTime);
+    XSync(display, False);
+    QTRY_COMPARE(pressed.count(), 1); // was dropped
+    QCOMPARE(pressed.last().at(0).toInt(), int(Qt::Key_End));
+
+    XkbLockModifiers(display, XkbUseCoreKbd, numLock, numLock);
+    XSync(display, False);
+    XTestFakeKeyEvent(display, keypad1, True, CurrentTime);
+    XTestFakeKeyEvent(display, keypad1, False, CurrentTime);
+    XSync(display, False);
+    QTRY_COMPARE(pressed.count(), 2);
+    QCOMPARE(pressed.last().at(0).toInt(), int(Qt::Key_1)); // was dropped
+    QCOMPARE(pressed.last().at(2).toString(), QStringLiteral("1"));
 }
 
 QTEST_MAIN(TestX11KeyProbe)

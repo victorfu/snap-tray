@@ -3,11 +3,13 @@
 #include <QDebug>
 #include <QLibrary>
 #include <QElapsedTimer>
+#include <QHash>
 #include <QScopeGuard>
 #include <QSocketNotifier>
 
 #include <X11/XKBlib.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
 #include <X11/keysym.h>
 
@@ -39,6 +41,14 @@ constexpr KeysymKey kNamedKeysyms[] = {
     {XK_bracketright, Qt::Key_BracketRight}, {XK_semicolon, Qt::Key_Semicolon},
     {XK_apostrophe, Qt::Key_Apostrophe}, {XK_grave, Qt::Key_QuoteLeft}, {XK_backslash, Qt::Key_Backslash},
     {XK_comma, Qt::Key_Comma}, {XK_period, Qt::Key_Period}, {XK_slash, Qt::Key_Slash},
+    // The keypad: navigation without Num Lock, operators either way (PR #200 review).
+    {XK_KP_Home, Qt::Key_Home}, {XK_KP_End, Qt::Key_End}, {XK_KP_Left, Qt::Key_Left}, {XK_KP_Up, Qt::Key_Up},
+    {XK_KP_Right, Qt::Key_Right}, {XK_KP_Down, Qt::Key_Down}, {XK_KP_Page_Up, Qt::Key_PageUp},
+    {XK_KP_Page_Down, Qt::Key_PageDown}, {XK_KP_Insert, Qt::Key_Insert}, {XK_KP_Delete, Qt::Key_Delete},
+    {XK_KP_Begin, Qt::Key_Clear}, {XK_KP_Space, Qt::Key_Space}, {XK_KP_Tab, Qt::Key_Tab},
+    {XK_KP_Add, Qt::Key_Plus}, {XK_KP_Subtract, Qt::Key_Minus}, {XK_KP_Multiply, Qt::Key_Asterisk},
+    {XK_KP_Divide, Qt::Key_Slash}, {XK_KP_Decimal, Qt::Key_Period}, {XK_KP_Separator, Qt::Key_Comma},
+    {XK_KP_Equal, Qt::Key_Equal},
 };
 
 QString textFor(KeySym keysym);
@@ -152,6 +162,7 @@ public:
             m_xkbEventBase = -1;
         }
         syncState();
+        syncHeldModifierKeys();
         XFlush(m_display);
         m_notifier = new QSocketNotifier(ConnectionNumber(m_display), QSocketNotifier::Read);
         QObject::connect(m_notifier, &QSocketNotifier::activated, this, [this] { drainEvents(); });
@@ -159,6 +170,7 @@ public:
     }
 
     QString name() const override { return QStringLiteral("x11"); }
+    void poll() override { drainEvents(); }
 
 private:
     // Server time to an age in local milliseconds, as X11CursorProbe does:
@@ -193,6 +205,39 @@ private:
         m_heldMods = state.base_mods | state.latched_mods;
         m_lockedMods = state.locked_mods;
         m_group = state.group;
+    }
+
+    // The Qt key a key code is (for shortcut labels): its first level in the
+    // active layout, or in the first layout for one without Latin keys.
+    int keyOf(KeyCode code) const
+    {
+        int key = qtKeyFor(XkbKeycodeToKeysym(m_display, code, m_group, 0));
+        if (key == 0 && m_group != 0) key = qtKeyFor(XkbKeycodeToKeysym(m_display, code, 0, 0));
+        return key;
+    }
+
+    // Modifier keys already held when the probe opens (recording started
+    // with a hotkey while Ctrl was still down): they count until released
+    // (PR #200 review).
+    void syncHeldModifierKeys()
+    {
+        std::array<char, 32> keys{};
+        XQueryKeymap(m_display, keys.data());
+        for (int code = 0; code < int(keys.size()) * 8; ++code) {
+            if (!(keys[size_t(code / 8)] & (1 << (code % 8)))) continue;
+            if (const Qt::KeyboardModifier modifier = modifierFor(keyOf(KeyCode(code)))) {
+                m_heldModifierKeys.insert(KeyCode(code), modifier);
+            }
+        }
+    }
+
+    // The modifiers held now, from each held key on its own: releasing one
+    // Ctrl leaves the other one's Ctrl in place (PR #200 review).
+    Qt::KeyboardModifiers heldModifiers() const
+    {
+        Qt::KeyboardModifiers modifiers;
+        for (const Qt::KeyboardModifier modifier : m_heldModifierKeys) modifiers |= modifier;
+        return modifiers;
     }
 
     void drainEvents()
@@ -232,20 +277,25 @@ private:
             const bool down = cookie->evtype == XI_RawKeyPress;
             const KeyCode code = KeyCode(raw->detail);
             const bool repeat = raw->flags & XIKeyRepeat;
-            // The key itself (for shortcut labels): its first level in the
-            // active layout, or in the first layout for one without Latin keys.
-            const KeySym base = XkbKeycodeToKeysym(m_display, code, m_group, 0);
-            int key = qtKeyFor(base);
-            if (key == 0 && m_group != 0) key = qtKeyFor(XkbKeycodeToKeysym(m_display, code, 0, 0));
-            // What it types: with the state at this event, not the state now
-            // (Shift may be up again by the time a queued press is read).
-            const KeySym typed = down && !repeat ? typedKeysym(code) : NoSymbol;
+            int key = keyOf(code);
             if (const Qt::KeyboardModifier modifier = modifierFor(key)) {
-                m_modifiers.setFlag(modifier, down);
+                if (down) {
+                    m_heldModifierKeys.insert(code, modifier);
+                } else {
+                    m_heldModifierKeys.remove(code);
+                }
                 continue;
             }
-            if (!down || repeat || key == 0) continue;
-            emit keyPressed(key, m_modifiers, textFor(typed), ageOf(raw->time));
+            if (!down || repeat) continue;
+            // What it types: with the state at this event, not the state now
+            // (Shift may be up again by the time a queued press is read).
+            const KeySym typed = typedKeysym(code);
+            // A keypad key is what Num Lock makes it: 1, not End (PR #200 review).
+            if (IsKeypadKey(XkbKeycodeToKeysym(m_display, code, m_group, 0))) {
+                if (const int typedKey = qtKeyFor(typed)) key = typedKey;
+            }
+            if (key == 0) continue;
+            emit keyPressed(key, heldModifiers(), textFor(typed), ageOf(raw->time));
         }
     }
 
@@ -263,7 +313,7 @@ private:
                 return keysym;
             }
         }
-        return XkbKeycodeToKeysym(m_display, code, m_group, m_modifiers.testFlag(Qt::ShiftModifier) ? 1 : 0);
+        return XkbKeycodeToKeysym(m_display, code, m_group, heldModifiers().testFlag(Qt::ShiftModifier) ? 1 : 0);
     }
 
     Display* m_display = nullptr;
@@ -278,7 +328,7 @@ private:
     quint32 m_referenceServerMs = 0;
     QSocketNotifier* m_notifier = nullptr;
     int m_xiOpcode = 0;
-    Qt::KeyboardModifiers m_modifiers;
+    QHash<KeyCode, Qt::KeyboardModifier> m_heldModifierKeys;
 };
 
 } // namespace

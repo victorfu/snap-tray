@@ -7,6 +7,7 @@
 #include <QTimer>
 
 #include <functional>
+#include <limits>
 #include <memory>
 
 namespace SnapTray {
@@ -48,6 +49,8 @@ private:
     bool m_running = false;
     bool m_paused = false;
     qint64 m_floorMs = 0; // keys stay in order and after start/resume
+    // Keys pressed before this (media ms) were pressed while paused.
+    qint64 m_activeSinceMs = std::numeric_limits<qint64>::min();
 };
 
 } // namespace SnapTray

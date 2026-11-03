@@ -3,6 +3,9 @@
 #include <QImage>
 #include <QTemporaryDir>
 
+#include <utility>
+#include <vector>
+
 #include "recording/KeyOverlay.h"
 #include "recording/KeyTimeline.h"
 #include "recording/KeyTimelineRecorder.h"
@@ -17,11 +20,17 @@ public:
     QString name() const override { return QStringLiteral("fake"); }
     bool secureInputActive() const override { return secure; }
     bool detectsSecureInput() const override { return true; }
-    void press(int key, Qt::KeyboardModifiers modifiers = {}, const QString& text = {})
+    void press(int key, Qt::KeyboardModifiers modifiers = {}, const QString& text = {}, qint64 ageMs = 0)
     {
-        emit keyPressed(key, modifiers, text);
+        emit keyPressed(key, modifiers, text, ageMs);
+    }
+    // Presses the system has queued but the probe has not read yet.
+    void poll() override
+    {
+        for (const auto& [key, modifiers] : std::exchange(queued, {})) press(key, modifiers);
     }
     bool secure = false;
+    std::vector<std::pair<int, Qt::KeyboardModifiers>> queued;
 };
 
 KeyTimeline timelineOf(std::vector<KeyStroke> strokes)
@@ -44,6 +53,7 @@ private slots:
     void textOnlyFromAllKeysRecordings();
     void recorderRespectsModeSecureInputAndPause();
     void recorderOffWritesNothing();
+    void recorderDropsKeysPressedWhilePaused();
     void overlayGroupsAndCounts();
     void overlayTimingIsAFunctionOfTime();
     void overlayNeverReachesAcrossACut();
@@ -169,6 +179,38 @@ void TestKeyTimeline::recorderRespectsModeSecureInputAndPause()
     QCOMPARE(timeline->strokes[0].key, int(Qt::Key_C));
     QCOMPARE(timeline->strokes[1].tMs, 400);
     QCOMPARE(timeline->strokes[1].key, int(Qt::Key_S));
+}
+
+// PR #200 review: keys pressed while paused but read only after resume
+// (still queued, or delivered late) are not recorded.
+void TestKeyTimeline::recorderDropsKeysPressedWhilePaused()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("v.mp4.keys.jsonl"));
+    auto owned = std::make_unique<FakeKeyProbe>();
+    FakeKeyProbe* probe = owned.get();
+    qint64 now = 0;
+    KeyTimelineRecorder recorder(std::move(owned), [&now] { return now; }, KeyRecordingMode::AllKeys, path, false);
+    QVERIFY(recorder.start());
+    now = 100;
+    recorder.pause(); // media time stops at 100
+    probe->queued.push_back({Qt::Key_P, Qt::ControlModifier}); // still queued at resume
+    recorder.resume();
+    now = 150;
+    probe->press(Qt::Key_Q, Qt::ControlModifier, {}, 2000); // pressed while paused, read late
+    probe->press(Qt::Key_R, Qt::ControlModifier, {}, 50);   // pressed just as recording resumed
+    now = 200;
+    probe->press(Qt::Key_S, Qt::ControlModifier);
+    recorder.stop();
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const auto timeline = KeyTimeline::parse(file.readAll());
+    QVERIFY(timeline);
+    QCOMPARE(int(timeline->strokes.size()), 2);
+    QCOMPARE(timeline->strokes[0].key, int(Qt::Key_R));
+    QCOMPARE(timeline->strokes[0].tMs, 100);
+    QCOMPARE(timeline->strokes[1].key, int(Qt::Key_S));
+    QCOMPARE(timeline->strokes[1].tMs, 200);
 }
 
 void TestKeyTimeline::recorderOffWritesNothing()

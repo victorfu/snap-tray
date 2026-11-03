@@ -24,6 +24,9 @@ public:
     // Whether secureInputActive() means anything on this system.
     virtual bool detectsSecureInput() const { return false; }
     virtual QString name() const = 0;
+    // Reads, now, what the system has already queued, so the recorder can
+    // take it while it is still paused (PR #200 review). No-op by default.
+    virtual void poll() {}
 
 signals:
     // A key went down. `modifiers` are the ones held with it; `text` is what
