@@ -3827,6 +3827,16 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Chế độ chỉnh sửa: cắt, cắt khung và thêm hiệu ứng trong bản xem trước rồi lưu. Bản ghi có xem trước luôn được ghi trước dưới dạng MP4.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>Chọn vùng trước khi ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Kéo trên màn hình để chọn nội dung cần ghi. Chế độ chỉnh sửa vẫn ghi toàn màn hình và mở bản xem trước đã cắt theo vùng để bạn có thể thay đổi; chế độ nhanh chỉ ghi vùng đó.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -5242,6 +5252,21 @@ Kích thước tệp: %3</translation>
         <source>Edit mode only: quick mode keeps no editing tracks.</source>
         <translation>Chỉ ở chế độ chỉnh sửa: chế độ nhanh không giữ rãnh chỉnh sửa.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>Chọn vùng trước</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>Vẫn ghi toàn màn hình; bản xem trước mở ra đã cắt theo vùng.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>Chỉ ghi vùng đó.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -5274,6 +5299,11 @@ Kích thước tệp: %3</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>Không thể khôi phục: bản ghi bị gián đoạn trước khi lưu được phần phát được.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>đã ghi toàn màn hình; sẽ mở ra đã cắt theo vùng đã chọn</translation>
     </message>
 </context>
 <context>
@@ -5436,6 +5466,49 @@ Kích thước tệp: %3</translation>
         <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
         <source>Open in the preview</source>
         <translation>Đang mở trong bản xem trước</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>Tự do</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>Kéo để di chuyển hoặc vẽ lại</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>Kéo để chọn vùng cần ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>Tỷ lệ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>Toàn màn hình</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>Ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>Ghi vùng này</translation>
     </message>
 </context>
 </TS>

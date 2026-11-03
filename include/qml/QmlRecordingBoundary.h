@@ -84,6 +84,12 @@ public:
     void setExcludedFromCapture(bool excluded);
 
     /**
+     * @brief The id a capture engine excludes (macOS window number, else the
+     * native window id); 0 before show().
+     */
+    quintptr captureExclusionId() const;
+
+    /**
      * @brief Get the underlying QQuickView (for platform-specific operations).
      * Returns nullptr before show() is called.
      */

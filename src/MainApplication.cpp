@@ -13,6 +13,7 @@
 #include "qml/RecordingRecoveryViewModel.h"
 #include "qml/RecordingLibraryViewModel.h"
 #include "qml/QuickSaveAction.h"
+#include "qml/QmlRecordingAreaSelector.h"
 #include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
@@ -1082,6 +1083,8 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
 
     m_previewBackend = new RecordingPreviewBackend(videoPath, recordedAsIntermediate, this);
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
+    // The area chosen before recording (#194), also for a recovered recording.
+    m_previewBackend->setInitialCrop(m_recordingManager->previewInitialCrop());
 
     // The save handler opens a native dialog. Keep it out of the QML click/key
     // handler stack so preview deleteLater() cannot run during a nested dialog
@@ -1586,7 +1589,7 @@ void MainApplication::startScreenRecordingFlow(QScreen* preferredScreen)
     // Quick recording: one screen and no setup requested starts right away
     // with the last-used settings.
     if (sources.size() == 1 && !RecordingSettingsManager::instance().showSetupBeforeRecording()) {
-        m_recordingManager->startScreenRecording(sources.first().screen.data());
+        startRecordingOn(sources.first().screen.data());
         return;
     }
 
@@ -1636,7 +1639,36 @@ void MainApplication::onScreenPickerChosen(QScreen* screen)
         return;
     }
 
-    m_recordingManager->startScreenRecording(screen);
+    startRecordingOn(screen);
+}
+
+void MainApplication::startRecordingOn(QScreen* screen)
+{
+    if (!RecordingSettingsManager::instance().preselectArea() || !screen) {
+        m_recordingManager->startScreenRecording(screen);
+        return;
+    }
+    // Choose an area of this screen first (#194); the capture stays full
+    // screen in edit mode, where the area is the preview's initial crop.
+    if (m_areaSelector) {
+        m_areaSelector->close();
+        m_areaSelector->deleteLater();
+    }
+    auto* selector = new SnapTray::QmlRecordingAreaSelector(this);
+    m_areaSelector = selector;
+    const QPointer<QScreen> target(screen);
+    connect(selector, &SnapTray::QmlRecordingAreaSelector::areaChosen, this,
+        [this, selector, target](const QRect& area) {
+            selector->close();
+            selector->deleteLater();
+            if (!target) return;
+            m_recordingManager->startScreenRecording(target.data(), area);
+        });
+    connect(selector, &SnapTray::QmlRecordingAreaSelector::cancelled, this, [selector]() {
+        selector->close();
+        selector->deleteLater();
+    });
+    selector->start(screen);
 }
 
 void MainApplication::onScreenPickerCancelled()

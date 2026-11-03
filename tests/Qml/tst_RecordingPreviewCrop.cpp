@@ -34,6 +34,7 @@ private slots:
     void aspectPresetLocksAppliedCrop();
     void exactInputIsLegalized();
     void undoRedoCoversCropAndTrim();
+    void chosenAreaIsTheInitialCrop();
     void resetIsUndoable();
     void exportNeedsRoomForASecondFile();
     void exportRoomFollowsTheTrimmedLength();
@@ -286,6 +287,33 @@ void tst_RecordingPreviewCrop::exactInputIsLegalized()
              QSize(64, 64));
     QVERIFY(QRect(0, 0, 1920, 1080).contains(
         backend.legalCropForView(backend.legalViewRectForVideo(1900, 1000, 500, 500, content), content)));
+}
+
+// #194: the area chosen before recording opens as the crop; undo starts
+// there, and the crop can still be changed or cleared.
+void tst_RecordingPreviewCrop::chosenAreaIsTheInitialCrop()
+{
+    {
+        // Size unknown (no file to probe): nothing is applied.
+        RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+        backend.setInitialCrop(QRect(100, 60, 640, 360));
+        QVERIFY(!backend.hasCrop());
+    }
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.updateVideoSize(QSize(1920, 1080));
+    backend.updateDuration(10000);
+    backend.setInitialCrop(QRect());
+    QVERIFY(!backend.hasCrop());
+    // Legalized like any crop: even, inside the frame.
+    backend.setInitialCrop(QRect(101, 61, 641, 361));
+    QCOMPARE(backend.cropRect(), QRect(100, 60, 642, 362));
+    QVERIFY(!backend.canUndo());
+    backend.clearCrop();
+    QVERIFY(!backend.hasCrop());
+    QVERIFY(backend.canUndo());
+    backend.undo();
+    QCOMPARE(backend.cropRect(), QRect(100, 60, 642, 362));
+    QVERIFY(!backend.canUndo());
 }
 
 void tst_RecordingPreviewCrop::undoRedoCoversCropAndTrim()

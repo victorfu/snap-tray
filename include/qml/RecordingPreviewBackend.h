@@ -406,6 +406,9 @@ public:
     // Editable projects (#191). A project's source and sidecars are never
     // deleted by saving or closing; saving updates its recipe instead.
     void setProject(const SnapTray::RecordingProject& project);
+    // The area chosen before recording (#194), in video pixels: the crop the
+    // preview opens with. Undo starts from it; Reset Crop clears it.
+    void setInitialCrop(const QRect& videoRect);
     bool isProject() const { return m_project.has_value(); }
     QString projectDir() const { return m_project ? m_project->dir : QString(); }
     // Saving keeps (or updates) a project.

@@ -34,6 +34,7 @@
 class RecordingInitTask;
 namespace SnapTray {
 class QmlRecordingControlBar;
+class QmlRecordingBoundary;
 }
 class QmlCountdownOverlay;
 class NativeGifEncoder;
@@ -97,7 +98,10 @@ public:
     State state() const { return m_state; }
 
 public slots:
-    void startScreenRecording(QScreen* screen = nullptr);  // Record full screen using screen-first semantics
+    // Records full screen using screen-first semantics. `area` (#194, logical
+    // global coordinates on `screen`) is an area chosen beforehand: the
+    // preview's initial crop in edit mode, the recorded region in quick mode.
+    void startScreenRecording(QScreen* screen = nullptr, const QRect& area = QRect());
     void stopRecording();           // Stop and save recording
     void cancelRecording();         // Cancel without saving
     void pauseRecording();          // Pause recording
@@ -205,6 +209,9 @@ public:
     // The mode this recording was started in (#193): true = edit (opens the
     // preview), false = quick (saved right away).
     bool recordingOpensPreview() const { return m_startSettings.showPreview; }
+    // The preview's initial crop (#194) for the recording it opens, in video
+    // pixels (also for a recovered one); empty = none.
+    QRect previewInitialCrop() const { return m_session.initialCrop; }
 private:
 
     // Countdown methods
@@ -215,6 +222,14 @@ private:
 private:
     // Recording state
     QPointer<SnapTray::QmlRecordingControlBar> m_controlBar;
+    // The area chosen before recording (#194) and its frame on screen.
+    QRect m_preselectedArea;
+    QRect m_pendingInitialCrop;
+    QPointer<SnapTray::QmlRecordingBoundary> m_areaBoundary;
+    void showAreaBoundary();
+    void closeAreaBoundary();
+    // Tests run without the on-screen frame.
+    bool m_showAreaBoundary = true;
     QString m_tempVideoPath;
     std::unique_ptr<EncodingWorker> m_encodingWorker;
     // GIF/WebP keep the whole animation in memory until finish(); the disk

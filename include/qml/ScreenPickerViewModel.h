@@ -28,6 +28,7 @@ class ScreenPickerViewModel : public QObject
     Q_PROPERTY(bool editMode READ editMode WRITE setEditMode NOTIFY recordingModeChanged)
     Q_PROPERTY(bool recordingModeSupported READ recordingModeSupported CONSTANT)
     Q_PROPERTY(int quickSaveAction READ quickSaveAction WRITE setQuickSaveAction NOTIFY recordingModeChanged)
+    Q_PROPERTY(bool preselectArea READ preselectArea WRITE setPreselectArea NOTIFY recordingModeChanged)
     Q_PROPERTY(QString selectedDevice READ selectedDevice WRITE setSelectedDevice NOTIFY audioSettingsChanged)
     Q_PROPERTY(QVariantList inputDevices READ inputDevices NOTIFY devicesChanged)
     Q_PROPERTY(bool devicesLoaded READ devicesLoaded NOTIFY devicesChanged)
@@ -73,6 +74,9 @@ public:
     bool recordingModeSupported() const;
     int quickSaveAction() const;
     void setQuickSaveAction(int action);
+    // Choose an area before recording (#194).
+    bool preselectArea() const;
+    void setPreselectArea(bool value);
     QString audioNote() const;
     bool showSetupBeforeRecording() const;
     bool keyRecordingSupported() const;

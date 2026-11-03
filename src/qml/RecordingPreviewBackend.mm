@@ -1321,6 +1321,16 @@ void RecordingPreviewBackend::setProject(const SnapTray::RecordingProject& proje
     emit projectChanged();
 }
 
+void RecordingPreviewBackend::setInitialCrop(const QRect& videoRect)
+{
+    if (videoRect.isEmpty()) return;
+    // The player has not reported yet: the crop is checked against the file.
+    if (m_videoSize.isEmpty()) m_videoSize = sourceProbe().videoSize;
+    setCropRect(videoRect);
+    m_editHistory.reset(currentEditState());
+    emit editHistoryChanged();
+}
+
 bool RecordingPreviewBackend::keepsProject() const
 {
     return m_project.has_value() || RecordingSettingsManager::instance().keepProjects();

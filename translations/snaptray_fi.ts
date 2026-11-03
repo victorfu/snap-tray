@@ -3827,6 +3827,16 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Esikatseltavat tallenteet tallennetaan aina ensin MP4-muodossa.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>Valitse alue ennen tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Valitse tallennettava vetämällä näytön yli. Muokkaustila tallentaa silti koko näytön ja avaa esikatselun alueeseen rajattuna, joten voit muuttaa sitä; pikatila tallentaa vain alueen.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -5242,6 +5252,21 @@ Tiedoston koko: %3</translation>
         <source>Edit mode only: quick mode keeps no editing tracks.</source>
         <translation>Vain muokkaustilassa: pikatila ei säilytä muokkausraitoja.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>Valitse ensin alue</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>Koko näyttö tallennetaan silti; esikatselu avautuu alueeseen rajattuna.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>Vain alue tallennetaan.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -5274,6 +5299,11 @@ Tiedoston koko: %3</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>Ei palautettavissa: tallennus keskeytyi ennen kuin toistettavaa osaa tallentui.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>koko näyttö tallennettiin; avautuu valittuun alueeseen rajattuna</translation>
     </message>
 </context>
 <context>
@@ -5436,6 +5466,49 @@ Tiedoston koko: %3</translation>
         <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
         <source>Open in the preview</source>
         <translation>Auki esikatselussa</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>Vapaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>Siirrä tai piirrä uudelleen vetämällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>Valitse tallennettava alue vetämällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>Suhde %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>Koko näyttö</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>Tallenna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>Tallenna tämä alue</translation>
     </message>
 </context>
 </TS>

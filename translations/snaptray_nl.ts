@@ -3833,6 +3833,16 @@ Audio wordt niet ondersteund voor GIF-opnamen.</translation>
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Bewerkmodus: inkorten, bijsnijden en effecten toevoegen in het voorbeeld, daarna opslaan. Opnamen met voorbeeld worden altijd eerst als MP4 vastgelegd.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>Een gebied kiezen vóór het opnemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Sleep over het scherm om te kiezen wat je opneemt. De bewerkmodus neemt nog steeds het hele scherm op en opent het voorbeeld bijgesneden tot het gebied, zodat je het kunt wijzigen; de snelle modus neemt alleen het gebied op.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -5248,6 +5258,21 @@ Bestandsgrootte: %3</translation>
         <source>Edit mode only: quick mode keeps no editing tracks.</source>
         <translation>Alleen in bewerkmodus: de snelle modus bewaart geen bewerkingssporen.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>Eerst een gebied kiezen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>Het hele scherm wordt nog steeds opgenomen; het voorbeeld opent bijgesneden tot het gebied.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>Alleen het gebied wordt opgenomen.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -5280,6 +5305,11 @@ Bestandsgrootte: %3</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>Kan niet worden hersteld: de opname werd onderbroken voordat er een afspeelbaar deel was opgeslagen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>het hele scherm is opgenomen; het opent bijgesneden tot het gekozen gebied</translation>
     </message>
 </context>
 <context>
@@ -5442,6 +5472,49 @@ Bestandsgrootte: %3</translation>
         <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
         <source>Open in the preview</source>
         <translation>Geopend in het voorbeeld</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>Vrij</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>Sleep om te verplaatsen of opnieuw te tekenen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>Sleep om het op te nemen gebied te kiezen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>Verhouding %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>Volledig scherm</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Annuleren</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>Opnemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>Dit gebied opnemen</translation>
     </message>
 </context>
 </TS>

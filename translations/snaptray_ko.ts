@@ -3833,6 +3833,16 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>편집 모드: 미리보기에서 다듬기, 자르기, 효과 추가를 한 뒤 저장합니다. 미리보기 녹화는 항상 먼저 MP4로 녹화됩니다.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>녹화 전에 영역 선택</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>화면 위를 드래그하여 녹화할 대상을 고릅니다. 편집 모드는 계속 전체 화면을 녹화하고 영역으로 잘라 낸 미리보기를 열어 나중에 바꿀 수 있습니다. 빠른 모드는 영역만 녹화합니다.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -5248,6 +5258,21 @@ File size: %3</source>
         <source>Edit mode only: quick mode keeps no editing tracks.</source>
         <translation>편집 모드 전용: 빠른 모드는 편집용 트랙을 보관하지 않습니다.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>먼저 영역 선택</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>전체 화면은 계속 녹화되며, 미리보기는 영역으로 잘라 낸 상태로 열립니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>영역만 녹화됩니다.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -5280,6 +5305,11 @@ File size: %3</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>복구할 수 없음: 재생 가능한 부분이 저장되기 전에 녹화가 중단되었습니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>전체 화면이 녹화됨. 선택한 영역으로 잘라 낸 상태로 열립니다</translation>
     </message>
 </context>
 <context>
@@ -5442,6 +5472,49 @@ File size: %3</source>
         <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
         <source>Open in the preview</source>
         <translation>미리보기에서 열려 있음</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>자유</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>드래그하여 이동하거나 다시 그리기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>드래그하여 녹화할 영역 선택</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>비율 %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>전체 화면</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>녹화</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>이 영역 녹화</translation>
     </message>
 </context>
 </TS>

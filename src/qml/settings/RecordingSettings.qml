@@ -317,6 +317,15 @@ Flickable {
             onActivated: function(index) { settingsBackend.recordingQuickSaveAction = index }
         }
 
+        // An area chosen before recording (#194); off by default.
+        SettingsToggle {
+            objectName: "settingsPreselectArea"
+            label: qsTr("Choose an area before recording")
+            description: qsTr("Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.")
+            checked: settingsBackend.recordingPreselectArea
+            onToggled: function(checked) { settingsBackend.recordingPreselectArea = checked }
+        }
+
         // Editable projects (#191): off by default, the recording is private.
         SettingsToggle {
             objectName: "settingsKeepProjects"

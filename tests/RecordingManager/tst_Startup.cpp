@@ -11,6 +11,7 @@
 #include <QTimer>
 #include "RecordingManager.h"
 #include "settings/FileSettingsManager.h"
+#include "qml/RecordingRecoveryViewModel.h"
 #include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "RecordingInitTask.h"
@@ -76,6 +77,7 @@ private slots:
     void sessionManifestFollowsTheRecording();
     void staleCleanupSparesPendingRecoveries();
     void recoveredRecordingOpensInPreview();
+    void recoveredRecordingKeepsTheChosenArea();
     void interruptionsKeepTheRecording_data();
     void interruptionsKeepTheRecording();
     void concurrentStopsEndOnce();
@@ -1097,6 +1099,36 @@ void TestRecordingStartup::recoveredRecordingOpensInPreview()
     manager.onPreviewClosed(false);
     QVERIFY(SnapTray::RecordingSession::hasSession(video));
     QVERIFY(!RecordingManager::isSessionActive(video));
+}
+
+// #194 / #157: a recording made with an area chosen beforehand opens, after a
+// crash, with that area as its crop; the recovery list says the file is the
+// whole screen.
+void TestRecordingStartup::recoveredRecordingKeepsTheChosenArea()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_area.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = video;
+    info.frameSize = QSize(1920, 1080);
+    info.initialCrop = QRect(200, 100, 1280, 720);
+    QVERIFY(SnapTray::RecordingSession::write(info));
+    SnapTray::RecordingSession::Recoverable item;
+    item.info = *SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(video));
+    item.decodable = true;
+    item.complete = true;
+    QVERIFY(SnapTray::RecordingRecoveryViewModel::statusText(item).contains(QStringLiteral("whole screen")));
+
+    RecordingManager manager;
+    QVERIFY(manager.openRecoveredRecording(video));
+    QCOMPARE(manager.previewInitialCrop(), QRect(200, 100, 1280, 720));
+    manager.onPreviewClosed(false);
+    SnapTray::RecordingSession::discard(video);
 }
 
 void TestRecordingStartup::startFakeRecording(RecordingManager& manager,

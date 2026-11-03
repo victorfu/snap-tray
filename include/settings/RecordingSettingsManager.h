@@ -53,6 +53,11 @@ public:
     QJsonObject keyOverlay() const;
     void setKeyOverlay(const QJsonObject& value);
 
+    // Choose an area before each recording (#194); off by default (the
+    // whole screen, as before).
+    bool preselectArea() const;
+    void setPreselectArea(bool value);
+
     // Quick mode (#193, preview off): what happens once the file is saved.
     enum QuickSaveAction { QuickSaveNothing = 0, QuickSaveCopyFile = 1, QuickSaveShowInFolder = 2 };
     int quickSaveAction() const;
@@ -124,6 +129,7 @@ private:
     static constexpr const char* kKeyKeyOverlay = "recording/keyOverlay";
     static constexpr const char* kKeyKeepProjects = "recording/keepProjects";
     static constexpr const char* kKeyQuickSaveAction = "recording/quickSaveAction";
+    static constexpr const char* kKeyPreselectArea = "recording/preselectArea";
     static constexpr const char* kKeyProjectCleanupDays = "recording/projectCleanupDays";
     static constexpr const char* kKeyMp4ExportOptions = "recording/mp4ExportOptions";
     static constexpr const char* kKeyAppearance = "recording/appearance";
