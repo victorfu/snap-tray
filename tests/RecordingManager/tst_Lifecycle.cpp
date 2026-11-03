@@ -574,6 +574,11 @@ void TestRecordingManagerLifecycle::testSeparateTracksOnlyWithBothSources()
     m_manager->startAudioTracks();
     QVERIFY(engine->separateTracks());
     QVERIFY(SnapTray::AudioTracks::exist(video));
+    // The recording starts its pointer timeline right after the audio
+    // (startRecordingAfterCountdown): that must not close the tracks
+    // (PR #202 review).
+    m_manager->startCursorTimeline();
+    m_manager->dropCursorTimeline(true);
     engine->send(1000, -2000, 0);
     engine->send(3000, 4000, 10);
     m_manager->closeAudioTracks();
@@ -585,7 +590,7 @@ void TestRecordingManagerLifecycle::testSeparateTracksOnlyWithBothSources()
 
     // Dropped with the recording.
     m_manager->m_cursorSidecarVideo = video;
-    m_manager->dropCursorTimeline(true);
+    m_manager->dropRecordingSidecars(true);
     QVERIFY(!SnapTray::AudioTracks::exist(video));
     m_manager->m_audioEngine.reset();
     m_manager->m_session = {};

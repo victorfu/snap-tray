@@ -192,7 +192,12 @@ private:
     // The pointer sidecar (#159), next to the recording while it is previewed.
     qint64 mediaTimeMs();
     void startCursorTimeline();
+    // The pointer and key recorders only (restarted with the pointer timeline).
     void dropCursorTimeline(bool removeFile);
+    // Everything recorded beside the video, audio tracks included: only when
+    // the recording itself ends (PR #202 review).
+    void dropRecordingSidecars(bool removeFiles);
+    QString m_audioTracksVideo;
 public:
     // True while this recording writes a key sidecar (shown in the tray status).
     bool isRecordingKeys() const;
