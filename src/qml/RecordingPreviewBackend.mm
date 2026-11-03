@@ -66,6 +66,10 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     , m_videoPath(videoPath)
     , m_recordedAsIntermediate(recordedAsIntermediate)
 {
+    for (const auto signal : {&RecordingPreviewBackend::trimRangeChanged, &RecordingPreviewBackend::timelineChanged,
+                              &RecordingPreviewBackend::durationChanged}) {
+        connect(this, signal, this, &RecordingPreviewBackend::outputDurationChanged);
+    }
     m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
     if (auto cursor = SnapTray::CursorTimelineSidecar::read(videoPath)) {
         m_cursorTimeline = std::make_shared<const SnapTray::CursorTimeline>(std::move(*cursor));

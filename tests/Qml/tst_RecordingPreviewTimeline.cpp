@@ -175,9 +175,18 @@ void tst_RecordingPreviewTimeline::playbackFollowsTheEdit()
     QQuickView* view = openPreview(backend);
     QVERIFY(view);
     QTRY_VERIFY_WITH_TIMEOUT(backend.duration() > 0, 10000);
+    // The exported length follows cuts and speeds, not only the trim
+    // (PR #199 review): its notification fires for each.
+    QSignalSpy outputLength(&backend, &RecordingPreviewBackend::outputDurationChanged);
     QVERIFY(backend.splitAt(500));
     QVERIFY(backend.splitAt(1500));
     backend.setPartDeleted(1, true);
+    QVERIFY(outputLength.count() >= 1);
+    QCOMPARE(backend.trimmedDuration(), backend.duration() - 1000);
+    outputLength.clear();
+    backend.undo();
+    QVERIFY(outputLength.count() >= 1);
+    backend.redo();
     backend.setPartSpeed(2, 2.0);
     QCOMPARE(backend.playbackTarget(800), 1500);
     QCOMPARE(backend.playbackTarget(300), 300);
