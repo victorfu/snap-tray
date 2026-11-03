@@ -2830,6 +2830,76 @@ Boyut: %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut from %1 to %2</source>
+        <translation>%1 ile %2 arası kesildi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut Part</source>
+        <translation>Bölümü kes</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cuts and speed changes need GIF or WebP on this system</source>
+        <translation>Kesme ve hız değişiklikleri bu sistemde GIF veya WebP gerektirir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Exported: %1</source>
+        <translation>Dışa aktarılan: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How fast the part at the playhead plays in the export; changed parts are silent</source>
+        <translation>Oynatma konumundaki bölümün dışa aktarmada ne hızda oynatılacağı; değiştirilen bölümler sessizdir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Part</source>
+        <translation>Bölümü tut</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the part at the playhead out of the export (Delete)</source>
+        <translation>Oynatma konumundaki bölümü dışa aktarmaya dahil etme (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part from %1 to %2 at %3</source>
+        <translation>%1 ile %2 arası bölüm, %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part Speed: %1</source>
+        <translation>Bölüm hızı: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Put the part at the playhead back (Delete)</source>
+        <translation>Oynatma konumundaki bölümü geri al (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split</source>
+        <translation>Böl</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split at %1</source>
+        <translation>%1 konumunda bölme</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split the recording at the playhead (S)</source>
+        <translation>Kaydı oynatma konumunda böl (S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Too close to another split or an end</source>
+        <translation>Başka bir bölmeye veya uca çok yakın</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Shadow</source>
         <translation>Gölge</translation>
     </message>
@@ -2969,6 +3039,16 @@ Boyut: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>The image could not be read.</source>
         <translation>Resim okunamadı.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Kesme ve hız değişiklikleri bu sistemde henüz MP4'e uygulanamıyor. GIF veya WebP olarak dışa aktarın ya da MP4 için bunları kaldırın. Hiçbir şey dışa aktarılmadı.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Every part is cut out: there is nothing to export.</source>
+        <translation>Tüm bölümler kesildi: dışa aktarılacak bir şey yok.</translation>
     </message>
 </context>
 <context>

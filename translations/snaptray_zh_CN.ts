@@ -2827,6 +2827,76 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut from %1 to %2</source>
+        <translation>已剪掉 %1 到 %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut Part</source>
+        <translation>剪掉片段</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cuts and speed changes need GIF or WebP on this system</source>
+        <translation>此系统上的剪辑与变速需要使用 GIF 或 WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Exported: %1</source>
+        <translation>导出：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How fast the part at the playhead plays in the export; changed parts are silent</source>
+        <translation>播放位置所在片段在导出时的播放速度；变速的片段没有声音</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Part</source>
+        <translation>保留片段</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the part at the playhead out of the export (Delete)</source>
+        <translation>将播放位置所在片段排除在导出之外（Delete）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part from %1 to %2 at %3</source>
+        <translation>%1 到 %2 的片段（%3）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part Speed: %1</source>
+        <translation>片段速度：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Put the part at the playhead back (Delete)</source>
+        <translation>恢复播放位置所在片段（Delete）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split</source>
+        <translation>分割</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split at %1</source>
+        <translation>在 %1 分割</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split the recording at the playhead (S)</source>
+        <translation>在播放位置分割录制（S）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Too close to another split or an end</source>
+        <translation>离其他分割点或端点太近</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Shadow</source>
         <translation>阴影</translation>
     </message>
@@ -2966,6 +3036,16 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>The image could not be read.</source>
         <translation>无法读取该图片。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>此系统尚无法对 MP4 套用剪辑与变速。请导出为 GIF 或 WebP，或移除它们后再导出 MP4。未导出任何内容。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Every part is cut out: there is nothing to export.</source>
+        <translation>所有片段都已剪掉，没有可导出的内容。</translation>
     </message>
 </context>
 <context>

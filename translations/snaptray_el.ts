@@ -2830,6 +2830,76 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut from %1 to %2</source>
+        <translation>Αποκομμένο από %1 έως %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut Part</source>
+        <translation>Αποκοπή τμήματος</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cuts and speed changes need GIF or WebP on this system</source>
+        <translation>Οι περικοπές και οι αλλαγές ταχύτητας χρειάζονται GIF ή WebP σε αυτό το σύστημα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Exported: %1</source>
+        <translation>Εξαγωγή: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How fast the part at the playhead plays in the export; changed parts are silent</source>
+        <translation>Πόσο γρήγορα παίζει στην εξαγωγή το τμήμα στη θέση αναπαραγωγής· τα αλλαγμένα τμήματα είναι χωρίς ήχο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Part</source>
+        <translation>Διατήρηση τμήματος</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the part at the playhead out of the export (Delete)</source>
+        <translation>Παράλειψη του τμήματος στη θέση αναπαραγωγής από την εξαγωγή (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part from %1 to %2 at %3</source>
+        <translation>Τμήμα από %1 έως %2 με %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part Speed: %1</source>
+        <translation>Ταχύτητα τμήματος: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Put the part at the playhead back (Delete)</source>
+        <translation>Επαναφορά του τμήματος στη θέση αναπαραγωγής (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split</source>
+        <translation>Διαίρεση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split at %1</source>
+        <translation>Διαίρεση στο %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split the recording at the playhead (S)</source>
+        <translation>Διαίρεση της εγγραφής στη θέση αναπαραγωγής (S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Too close to another split or an end</source>
+        <translation>Πολύ κοντά σε άλλη διαίρεση ή σε άκρο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Shadow</source>
         <translation>Σκιά</translation>
     </message>
@@ -2969,6 +3039,16 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>The image could not be read.</source>
         <translation>Δεν ήταν δυνατή η ανάγνωση της εικόνας.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Οι περικοπές και οι αλλαγές ταχύτητας δεν εφαρμόζονται ακόμα σε MP4 σε αυτό το σύστημα. Εξαγάγετε ως GIF ή WebP ή αφαιρέστε τες για εξαγωγή MP4. Δεν εξήχθη τίποτα.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Every part is cut out: there is nothing to export.</source>
+        <translation>Όλα τα τμήματα έχουν αποκοπεί: δεν υπάρχει τίποτα για εξαγωγή.</translation>
     </message>
 </context>
 <context>

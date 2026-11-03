@@ -2830,6 +2830,76 @@ Tamanho: %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut from %1 to %2</source>
+        <translation>Cortado de %1 a %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut Part</source>
+        <translation>Cortar parte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cuts and speed changes need GIF or WebP on this system</source>
+        <translation>Cortes e alterações de velocidade requerem GIF ou WebP neste sistema</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Exported: %1</source>
+        <translation>Exportado: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How fast the part at the playhead plays in the export; changed parts are silent</source>
+        <translation>A velocidade da parte na posição de reprodução na exportação; as partes alteradas ficam sem som</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Part</source>
+        <translation>Manter parte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the part at the playhead out of the export (Delete)</source>
+        <translation>Deixar de fora da exportação a parte na posição de reprodução (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part from %1 to %2 at %3</source>
+        <translation>Parte de %1 a %2 a %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part Speed: %1</source>
+        <translation>Velocidade da parte: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Put the part at the playhead back (Delete)</source>
+        <translation>Repor a parte na posição de reprodução (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split</source>
+        <translation>Dividir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split at %1</source>
+        <translation>Divisão em %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split the recording at the playhead (S)</source>
+        <translation>Dividir a gravação na posição de reprodução (S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Too close to another split or an end</source>
+        <translation>Demasiado perto de outra divisão ou de uma extremidade</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Shadow</source>
         <translation>Sombra</translation>
     </message>
@@ -2969,6 +3039,16 @@ Tamanho: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>The image could not be read.</source>
         <translation>Não foi possível ler a imagem.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Os cortes e alterações de velocidade ainda não podem ser aplicados a MP4 neste sistema. Exporte como GIF ou WebP, ou remova-os para exportar MP4. Nada foi exportado.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Every part is cut out: there is nothing to export.</source>
+        <translation>Todas as partes foram cortadas: não há nada para exportar.</translation>
     </message>
 </context>
 <context>

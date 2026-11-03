@@ -66,6 +66,10 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     , m_videoPath(videoPath)
     , m_recordedAsIntermediate(recordedAsIntermediate)
 {
+    for (const auto signal : {&RecordingPreviewBackend::trimRangeChanged, &RecordingPreviewBackend::timelineChanged,
+                              &RecordingPreviewBackend::durationChanged}) {
+        connect(this, signal, this, &RecordingPreviewBackend::outputDurationChanged);
+    }
     m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
     if (auto cursor = SnapTray::CursorTimelineSidecar::read(videoPath)) {
         m_cursorTimeline = std::make_shared<const SnapTray::CursorTimeline>(std::move(*cursor));
@@ -85,13 +89,17 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::masksChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::appearanceChanged);
+    // The exported length and the cut availability follow the trim, duration and format.
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::timelineChanged);
+    connect(this, &RecordingPreviewBackend::trimRangeChanged, this, &RecordingPreviewBackend::timelineChanged);
+    connect(this, &RecordingPreviewBackend::durationChanged, this, &RecordingPreviewBackend::timelineChanged);
     m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(RecordingSettingsManager::instance().mp4ExportOptions());
     // The estimate follows everything that changes the exported picture or length.
     for (const auto signal : {&RecordingPreviewBackend::mp4OptionsChanged, &RecordingPreviewBackend::cropRectChanged,
                               &RecordingPreviewBackend::trimRangeChanged, &RecordingPreviewBackend::durationChanged,
                               &RecordingPreviewBackend::videoSizeChanged, &RecordingPreviewBackend::cursorEffectsChanged,
                               &RecordingPreviewBackend::zoomChanged, &RecordingPreviewBackend::masksChanged,
-                              &RecordingPreviewBackend::appearanceChanged}) {
+                              &RecordingPreviewBackend::appearanceChanged, &RecordingPreviewBackend::timelineChanged}) {
         connect(this, signal, this, &RecordingPreviewBackend::mp4EstimateChanged);
     }
 }
@@ -106,6 +114,8 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
     const auto cursor = drawCursor
         ? std::make_shared<SnapTray::CursorEffectRenderer>(*timeline, m_cursorEffects, effectsClipEnd())
         : std::shared_ptr<SnapTray::CursorEffectRenderer>();
+    // Nothing of the pointer reaches across a cut (#185).
+    if (cursor && hasTimelineEdits()) cursor->setTimeline(timelineMap());
     const auto zoom = zoomAvailable() && m_zoom.isActive() ? std::make_shared<SnapTray::ZoomTrack>(m_zoom)
                                                             : std::shared_ptr<SnapTray::ZoomTrack>();
     const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()
@@ -322,6 +332,7 @@ const RecordingPreviewBackend::Mp4Capabilities& RecordingPreviewBackend::mp4Capa
             capabilities.frameFilter = transcoder->supportsFrameFilter();
             capabilities.outputOptions = transcoder->supportsOutputOptions();
             capabilities.hevc = transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecHevc));
+            capabilities.segments = transcoder->supportsSegments();
         }
         m_mp4Capabilities = capabilities;
     }
@@ -1226,7 +1237,136 @@ bool RecordingPreviewBackend::hasTrim() const
 
 qint64 RecordingPreviewBackend::trimmedDuration() const
 {
+    // The exported length: cut-out parts and speed changes included (#185).
+    if (m_duration > 0 && !m_timeline.isEmpty()) return timelineMap().outputDurationMs();
     return trimEnd() - m_trimStart;
+}
+
+qint64 RecordingPreviewBackend::effectsClipEnd() const
+{
+    if (trimEnd() <= 0) return -1;
+    const SnapTray::TimelineMap map = timelineMap();
+    return map.isEmpty() ? trimEnd() : map.sourceEndMs();
+}
+
+SnapTray::TimelineMap RecordingPreviewBackend::timelineMap() const
+{
+    return m_timeline.map(m_trimStart, trimEnd());
+}
+
+bool RecordingPreviewBackend::hasTimelineEdits() const
+{
+    if (m_timeline.isEmpty() || m_duration <= 0) return false;
+    // Cutting the first or last part is still a change: the export starts or
+    // ends elsewhere than the trim says.
+    const SnapTray::TimelineMap map = timelineMap();
+    return !map.isPlainTrim() || map.sourceStartMs() != m_trimStart || map.sourceEndMs() != trimEnd();
+}
+
+bool RecordingPreviewBackend::needsSegments() const
+{
+    return hasTimelineEdits() && !timelineMap().isPlainTrim();
+}
+
+bool RecordingPreviewBackend::timelineEditsAvailable() const
+{
+    return m_selectedFormat != MP4 || mp4Capabilities().segments;
+}
+
+QVariantList RecordingPreviewBackend::timelineParts() const
+{
+    QVariantList list;
+    if (m_duration <= 0) return list;
+    for (int i = 0; i < int(m_timeline.parts.size()); ++i) {
+        const auto& part = m_timeline.parts[size_t(i)];
+        list.append(QVariantMap{{QStringLiteral("start"), m_timeline.partStartMs(i)},
+                                {QStringLiteral("end"), m_timeline.partEndMs(i, m_duration)},
+                                {QStringLiteral("deleted"), part.deleted},
+                                {QStringLiteral("speed"), part.speed}});
+    }
+    return list;
+}
+
+QVariantList RecordingPreviewBackend::timelineSplits() const
+{
+    QVariantList list;
+    for (const qint64 split : m_timeline.splits) list.append(split);
+    return list;
+}
+
+void RecordingPreviewBackend::editTimeline(const std::function<bool(SnapTray::TimelineEdit&)>& change, bool record)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::TimelineEdit timeline = m_timeline;
+    if (!change(timeline) || timeline == m_timeline) return;
+    m_timeline = timeline;
+    emit timelineChanged();
+    if (record) recordEdit();
+}
+
+bool RecordingPreviewBackend::splitAt(qint64 sourceMs)
+{
+    if (m_duration <= 0) return false;
+    bool split = false;
+    editTimeline([&](SnapTray::TimelineEdit& t) { return split = t.splitAt(sourceMs, m_duration); });
+    return split;
+}
+
+void RecordingPreviewBackend::removeSplit(int index)
+{
+    editTimeline([index](SnapTray::TimelineEdit& t) { return t.removeSplit(index); });
+}
+
+bool RecordingPreviewBackend::moveSplit(int index, qint64 sourceMs)
+{
+    if (m_duration <= 0) return false;
+    bool moved = false;
+    editTimeline([&](SnapTray::TimelineEdit& t) { return moved = t.moveSplit(index, sourceMs, m_duration); }, false);
+    return moved;
+}
+
+qint64 RecordingPreviewBackend::legalSplitPosition(int index, qint64 sourceMs) const
+{
+    if (m_duration <= 0 || index < 0 || index >= int(m_timeline.splits.size())) return -1;
+    const qint64 lower = m_timeline.partStartMs(index) + SnapTray::TimelineEdit::kMinPartMs;
+    const qint64 upper = m_timeline.partEndMs(index + 1, m_duration) - SnapTray::TimelineEdit::kMinPartMs;
+    return lower > upper ? -1 : qBound(lower, sourceMs, upper);
+}
+
+void RecordingPreviewBackend::commitTimelineEdit()
+{
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setPartDeleted(int part, bool deleted)
+{
+    const qint64 start = m_trimStart, end = trimEnd();
+    editTimeline([part, deleted, start, end](SnapTray::TimelineEdit& t) {
+        // Something must be left to export.
+        return t.setDeleted(part, deleted) && !t.map(start, end).isEmpty();
+    });
+}
+
+void RecordingPreviewBackend::setPartSpeed(int part, qreal speed)
+{
+    editTimeline([part, speed](SnapTray::TimelineEdit& t) { return t.setSpeed(part, speed); });
+}
+
+qint64 RecordingPreviewBackend::playbackTarget(qint64 positionMs) const
+{
+    if (m_timeline.isEmpty()) return positionMs;
+    return timelineMap().nextShownSourceMs(positionMs);
+}
+
+qreal RecordingPreviewBackend::playbackSpeedAt(qint64 positionMs) const
+{
+    return m_timeline.isEmpty() ? 1.0 : timelineMap().speedAt(positionMs);
+}
+
+qint64 RecordingPreviewBackend::outputTimeAt(qint64 sourceMs) const
+{
+    const auto out = timelineMap().sourceToOutput(sourceMs);
+    return out ? *out : -1;
 }
 
 void RecordingPreviewBackend::setSelectedFormat(int format)
@@ -1326,6 +1466,18 @@ void RecordingPreviewBackend::save()
         return;
     }
 
+    // Cuts are only kept out of the export by joining the kept parts. (Cutting
+    // only the first or last part is a trim, which every format can do.)
+    if (hasTimelineEdits() && timelineMap().isEmpty()) {
+        setErrorMessage(tr("Every part is cut out: there is nothing to export."));
+        return;
+    }
+    if (needsSegments() && !timelineEditsAvailable()) {
+        setErrorMessage(tr("Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF "
+                           "or WebP, or remove them to export MP4. Nothing was exported."));
+        return;
+    }
+
     // An export writes a second file next to the recording. Check the room
     // for it first (an unedited MP4 can be moved as is, so it needs none).
     // MP4 options that may change the stream need room for an export too.
@@ -1338,13 +1490,13 @@ void RecordingPreviewBackend::save()
     const bool mp4OptionsMayApply = m_selectedFormat == MP4
         && (sourceProbeReady() ? mp4OptionsActive() : effectiveMp4Options().mayChangeStream());
     const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || effectsActive()
-        || mp4OptionsMayApply;
+        || hasTimelineEdits() || mp4OptionsMayApply;
     // Only MP4 options, with the source not probed yet: whether they change
     // anything is not known here. The export job decides after its probe,
     // moving the recording if they do not and checking the room if they do,
     // so a save that only needs a move is never refused (PR #197 review).
     m_exportSpaceCheckDeferred = mp4OptionsMayApply && !sourceProbeReady() && m_selectedFormat == MP4
-        && !hasTrim() && !hasCrop() && !effectsActive();
+        && !hasTrim() && !hasCrop() && !effectsActive() && !hasTimelineEdits();
     if (writesNewFile && !m_exportSpaceCheckDeferred) {
         const QString directory = QFileInfo(m_videoPath).absolutePath();
         const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
@@ -1378,7 +1530,7 @@ void RecordingPreviewBackend::save()
     }
 
     // Drawing the pointer or a zoom is an edit: the unedited file cannot just be moved.
-    if (hasTrim() || hasCrop() || effectsActive()) {
+    if (hasTrim() || hasCrop() || effectsActive() || hasTimelineEdits()) {
         performTranscode(false);
         return;
     }
@@ -1754,6 +1906,7 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
     state.zoom = m_zoom;
     state.redaction = m_redaction;
     state.appearance = m_appearance;
+    state.timeline = m_timeline;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -1783,6 +1936,10 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         m_zoom = state.zoom;
         if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
         emit zoomChanged();
+    }
+    if (state.timeline != m_timeline) {
+        m_timeline = state.timeline;
+        emit timelineChanged();
     }
     if (state.appearance != m_appearance) {
         setAppearance(state.appearance);
@@ -1934,6 +2091,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                                               : std::function<void(QImage&, qint64)>();
     // The filter frames the picture (#184): frames come out at this size.
     const QSize framedSize = cursorFilter ? framedExportSize() : QSize();
+    // Cuts and speed changes (#185): frames are taken at output times.
+    const SnapTray::TimelineMap timeline = hasTimelineEdits() ? timelineMap() : SnapTray::TimelineMap();
     const int selectedFormat = static_cast<int>(format);
     const QString createPlayerError = tr("Failed to create video player for conversion");
     const QString loadVideoError = tr("Failed to load video for conversion");
@@ -1954,6 +2113,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              cropRect,
                              cursorFilter,
                              framedSize,
+                             timeline,
                              outputPath,
                              selectedFormat,
                              createPlayerError,
@@ -2114,8 +2274,15 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         }
         bool frameExtractionFailed = false;
 
+        const qint64 outputDurationMs = timeline.isEmpty() ? endMs - startMs : timeline.outputDurationMs();
         for (qint64 frameIndex = 0; ; ++frameIndex) {
-            const qint64 timeMs = startMs + frameIndex * 1000 / frameRateInt;
+            // The frame shown at this output time, from the source time the
+            // edit maps it to (a plain trim: start + output time).
+            const qint64 outputMs = frameIndex * 1000 / frameRateInt;
+            if (outputMs >= outputDurationMs) {
+                break;
+            }
+            const qint64 timeMs = timeline.isEmpty() ? startMs + outputMs : timeline.outputToSource(outputMs);
             if (timeMs >= endMs) {
                 break;
             }
@@ -2170,9 +2337,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                     ? gifEncoder->framesWritten()
                     : webpEncoder->framesWritten();
                 if (gifEncoder)
-                    gifEncoder->writeFrame(capturedFrame, timeMs - startMs);
+                    gifEncoder->writeFrame(capturedFrame, outputMs);
                 else if (webpEncoder)
-                    webpEncoder->writeFrame(capturedFrame, timeMs - startMs);
+                    webpEncoder->writeFrame(capturedFrame, outputMs);
 
                 const qint64 framesAfter = gifEncoder
                     ? gifEncoder->framesWritten()
@@ -2188,7 +2355,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                 break;
             }
 
-            int percent = static_cast<int>(((timeMs - startMs) * 100) / (endMs - startMs));
+            int percent = static_cast<int>((outputMs * 100) / qMax<qint64>(1, outputDurationMs));
             QCoreApplication* app = QCoreApplication::instance();
             if (app) {
                 QMetaObject::invokeMethod(app, [weakThis, isCurrent, cancelToken, percent]() {
@@ -2317,6 +2484,13 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     request.startMs = m_trimStart;
     request.endMs = m_trimEnd;
     request.cropRect = m_cropRect;
+    if (hasTimelineEdits()) {
+        // The kept range; joined parts when there is more than one.
+        const SnapTray::TimelineMap map = timelineMap();
+        request.startMs = map.sourceStartMs();
+        request.endMs = map.sourceEndMs();
+        if (!map.isPlainTrim()) request.segments = map.segments();
+    }
     if (effectsActive()) {
         // A snapshot: later changes in the preview do not reach this job.
         request.frameFilter = effectsFrameFilter();
@@ -2355,6 +2529,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         // would leave what they cover visible.
         // Nor with a size, frame rate or codec other than the one asked for.
         const bool unsupported = !transcoder || (request.frameFilter && !transcoder->supportsFrameFilter())
+            || (!request.segments.empty() && !transcoder->supportsSegments())
             || ((mp4Options.resolution != SnapTray::Mp4ExportOptions::Resolution::Original || mp4Options.frameRate > 0)
                 && !transcoder->supportsOutputOptions())
             || !transcoder->supportsVideoCodec(mp4Options.codecId());
@@ -2491,10 +2666,18 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             const qint64 rangeStartMs = qMax<qint64>(0, request.startMs);
             const qint64 rangeEndMs = request.endMs < 0 ? sourceProbe.durationMs
                                                         : qMin(request.endMs, sourceProbe.durationMs);
-            const qint64 audioCoverageMs = sourceProbe.hasAudio
-                ? qMax<qint64>(0, qMin(sourceProbe.audioEndMs, rangeEndMs)
-                                      - qMax(sourceProbe.audioStartMs, rangeStartMs))
-                : 0;
+            qint64 audioCoverageMs = 0;
+            if (sourceProbe.hasAudio && request.segments.empty()) {
+                audioCoverageMs = qMax<qint64>(0, qMin(sourceProbe.audioEndMs, rangeEndMs)
+                                                      - qMax(sourceProbe.audioStartMs, rangeStartMs));
+            } else if (sourceProbe.hasAudio) {
+                // Joined parts keep the audio of the parts at normal speed (#185).
+                for (const auto& segment : request.segments) {
+                    if (!qFuzzyCompare(segment.speed, 1.0)) continue;
+                    audioCoverageMs += qMax<qint64>(0, qMin(sourceProbe.audioEndMs, segment.endMs)
+                                                           - qMax(sourceProbe.audioStartMs, segment.startMs));
+                }
+            }
             const bool expectAudio = audioCoverageMs > kAudioCoverageToleranceMs;
             // The picture must be exactly what was asked for: a crop the
             // transcoder had to shrink or ignore is a different export (and

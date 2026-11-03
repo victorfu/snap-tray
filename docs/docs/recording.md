@@ -52,6 +52,18 @@ With a trim range, the start and end times under the timeline can be typed as `m
 
 Every applied crop and trim change can be undone (**Ctrl+Z**) and redone (**Ctrl+Shift+Z** or **Ctrl+Y**). Use ⟲ to go back to the unedited recording (also undoable), and ◧ or **\\** to compare with the original frame. The line under the timeline shows the original and output pixel sizes, the kept duration, and whether the chosen format has audio.
 
+## Cut parts out and change their speed
+
+The timeline can do more than trim the ends. In the preview:
+
+1. Move the playhead and click **Split** (or press **S**) to divide the recording there. Splits show as small bars on the timeline; drag one to move it, double-click it to join its two parts again.
+2. With the playhead in a part, **Cut Part** (or **Delete**) leaves it out of the export; the part is shaded on the timeline. **Keep Part** puts it back.
+3. **Part Speed** sets how fast a part plays in the export: 0.5×, 1×, 1.5×, 2× or 4×. The speed shows above the part.
+
+The preview plays the edit: cut parts are skipped and each part plays at its own speed. The time under the video shows the exported length. Cuts and speeds can be undone like other edits, and **Reset Crop and Trim** removes them.
+
+The export joins the kept parts in order. Pointer smoothing, motion blur and click highlights never reach across a cut, so a click in a cut part never shows. Audio is kept for parts at normal speed and stays in sync at every seam; **parts at another speed are silent** in this first version. Cutting only the first or last part works like a trim. On macOS and Windows, cuts and speed changes are available for GIF and WebP; MP4 there refuses to export them and says so.
+
 ## Disk space
 
 SnapTray checks the free space where the recording is written before it starts and every few seconds while it runs. The limits follow the recording: room to finish the file, a few seconds of recording, and, with preview on, room for an exported copy.

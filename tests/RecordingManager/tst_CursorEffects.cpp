@@ -64,6 +64,7 @@ private slots:
     void stillEndHoldsTheLastPosition();
     void hiddenRangesHidePointerAndRipples();
     void advancedEffectsDrawThroughCrop();
+    void nothingReachesAcrossACut();
 };
 
 void TestCursorEffects::settingsRoundTrip()
@@ -414,6 +415,28 @@ void TestCursorEffects::stillEndHoldsTheLastPosition()
     QCOMPARE(*renderer.pointerPosition(100), *CursorEffectRenderer(t, {}).pointerPosition(100));
     // Unknown clip end: off.
     QCOMPARE(*CursorEffectRenderer(t, s).pointerPosition(3100), QPointF(220, 50));
+    // With parts cut out (PR #199 review): the hold starts that long before
+    // the exported end, at a kept time, never in a cut part. Keep 0-1000 and
+    // 4000-5000 with a 1.5 s hold: the exported 2 s hold from output 500 ms,
+    // which shows source 500 ms (not 3500 ms, inside the cut).
+    {
+        CursorTimeline moving;
+        moving.info.frameSize = QSize(1000, 100);
+        for (qint64 ms = 0; ms <= 5000; ms += 100) moving.samples.push_back({ms, QPoint(int(ms / 10), 50), true, 0});
+        CursorEffectSettings hold;
+        hold.stillEndMs = 1500;
+        CursorEffectRenderer cut(moving, hold, 5000);
+        cut.setTimeline(TimelineMap({{0, 1000, 1.0}, {4000, 5000, 1.0}}));
+        QCOMPARE(*cut.pointerPosition(300), QPointF(30, 50));   // before the hold: moving
+        QCOMPARE(*cut.pointerPosition(600), QPointF(50, 50));   // held at source 500 ms
+        QCOMPARE(*cut.pointerPosition(4500), QPointF(50, 50));  // the last part too
+        QCOMPARE(*cut.pointerPosition(4999), QPointF(50, 50));
+        // Longer than everything kept: held at the first kept moment.
+        hold.stillEndMs = 3000;
+        CursorEffectRenderer allHeld(moving, hold, 5000);
+        allHeld.setTimeline(TimelineMap({{0, 1000, 1.0}, {4000, 5000, 1.0}}));
+        QCOMPARE(*allHeld.pointerPosition(4500), QPointF(0, 50));
+    }
     // A clip shorter than the interval (PR #196 review): the pointer stays at
     // its first sample instead of vanishing.
     CursorEffectSettings longHold;
@@ -462,6 +485,52 @@ void TestCursorEffects::advancedEffectsDrawThroughCrop()
     QImage cropped = base.copy(0, 0, 200, 100);
     renderer.paint(cropped, 120, {QRect(0, 0, 200, 100), QSize(400, 100), QSize(200, 100)});
     QCOMPARE(cropped, full.copy(0, 0, 200, 100));
+}
+
+void TestCursorEffects::nothingReachesAcrossACut()
+{
+    // Kept: 0-1000 and 2000-3000. In the cut part the pointer jumps to
+    // (150,50) at 1990 ms and clicks at 1950 ms.
+    CursorTimeline t;
+    t.info.frameSize = QSize(400, 100);
+    t.info.clicksAvailable = true;
+    t.samples = {{0, QPoint(20, 50), true, 0}, {1990, QPoint(150, 50), true, 0}};
+    t.buttons = {{1950, Qt::LeftButton, true, QPoint(20, 50), false},
+                 {1960, Qt::LeftButton, false, QPoint(20, 50), false}};
+    const TimelineMap kept({{0, 1000, 1.0}, {2000, 3000, 1.0}});
+    const CursorFrameMapping mapping{QRect(), QSize(400, 100), QSize(400, 100)};
+
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::High;
+    CursorEffectRenderer whole(t, s);
+    CursorEffectRenderer cut(t, s);
+    cut.setTimeline(kept);
+    // Without the cut the pointer would still be gliding over from (20,50).
+    QVERIFY(whole.pointerPosition(2010)->x() < 140.0);
+    QCOMPARE(*cut.pointerPosition(2010), QPointF(150, 50));
+
+    // The click in the cut part leaves no ripple after the cut.
+    CursorEffectSettings ripples;
+    ripples.showCursor = false;
+    ripples.clickRipple = true;
+    const QImage base = blank(QSize(400, 100));
+    QImage withoutCut = base, withCut = base;
+    CursorEffectRenderer(t, ripples).paint(withoutCut, 2050, mapping);
+    CursorEffectRenderer rippleCut(t, ripples);
+    rippleCut.setTimeline(kept);
+    rippleCut.paint(withCut, 2050, mapping);
+    QVERIFY(differingPixels(withoutCut, base) > 0);
+    QCOMPARE(differingPixels(withCut, base), 0);
+
+    // No motion blur trail from where the pointer was before the cut.
+    CursorEffectSettings blur;
+    blur.motionBlur = CursorEffectSettings::MotionBlur::High;
+    CursorEffectRenderer blurCut(t, blur);
+    blurCut.setTimeline(kept);
+    QImage sharp = base, blurred = base;
+    CursorEffectRenderer(t, {}).paint(sharp, 2005, mapping);
+    blurCut.paint(blurred, 2005, mapping);
+    QCOMPARE(blurred, sharp);
 }
 
 QTEST_MAIN(TestCursorEffects)

@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace SnapTray {
 
@@ -200,6 +201,30 @@ CursorEffectRenderer::CursorEffectRenderer(const CursorTimeline& timeline, const
 {
 }
 
+void CursorEffectRenderer::setTimeline(const TimelineMap& timeline)
+{
+    m_kept = timeline.segments();
+    m_map = timeline;
+}
+
+qint64 CursorEffectRenderer::partStart(qint64 ms) const
+{
+    if (m_kept.empty()) return std::numeric_limits<qint64>::min() / 2;
+    for (const auto& segment : m_kept) {
+        if (segment.contains(ms)) return segment.startMs;
+    }
+    return ms;
+}
+
+qint64 CursorEffectRenderer::partEnd(qint64 ms) const
+{
+    if (m_kept.empty()) return std::numeric_limits<qint64>::max() / 2;
+    for (const auto& segment : m_kept) {
+        if (segment.contains(ms)) return segment.endMs;
+    }
+    return ms;
+}
+
 double CursorEffectRenderer::smoothingTauMs(CursorEffectSettings::Smoothing smoothing)
 {
     for (const auto& entry : kSmoothing) {
@@ -219,7 +244,8 @@ QPointF CursorEffectRenderer::smoothedPosition(qint64 sourceMs, double tauMs) co
     // Exponential low-pass of the recorded (piecewise constant) path, in
     // closed form over a fixed window: a function of time only.
     const auto& samples = m_timeline.samples;
-    const double windowStart = double(sourceMs) - kSmoothingWindowTaus * tauMs;
+    // Never smooth toward where the pointer was in a part that is cut out.
+    const double windowStart = std::max(double(sourceMs) - kSmoothingWindowTaus * tauMs, double(partStart(sourceMs)));
     auto it = std::upper_bound(samples.begin(), samples.end(), sourceMs,
                                [](qint64 t, const CursorSample& s) { return t < s.tMs; });
     if (it == samples.begin()) return QPointF(samples.front().position);
@@ -248,18 +274,33 @@ qint64 CursorEffectRenderer::distanceToButtonEvent(qint64 sourceMs) const
     auto it = std::lower_bound(buttons.begin(), buttons.end(), sourceMs,
                                [](const CursorButtonEvent& e, qint64 t) { return e.tMs < t; });
     qint64 distance = std::numeric_limits<qint64>::max();
-    if (it != buttons.end()) distance = it->tMs - sourceMs;
-    if (it != buttons.begin()) distance = std::min(distance, sourceMs - (it - 1)->tMs);
+    // Only events in the shown part count.
+    if (it != buttons.end() && it->tMs < partEnd(sourceMs)) distance = it->tMs - sourceMs;
+    if (it != buttons.begin() && (it - 1)->tMs >= partStart(sourceMs)) {
+        distance = std::min(distance, sourceMs - (it - 1)->tMs);
+    }
     return distance;
 }
 
 qint64 CursorEffectRenderer::effectiveTime(qint64 sourceMs) const
 {
-    if (m_settings.stillEndMs <= 0 || m_clipEndMs < 0 || m_timeline.samples.empty()) return sourceMs;
+    if (m_settings.stillEndMs <= 0 || m_timeline.samples.empty()) return sourceMs;
+    const qint64 firstSample = m_timeline.samples.front().tMs;
+    if (!m_map.isEmpty()) {
+        // With parts cut out, "the end" is the exported end: the hold starts
+        // that long before it in output time, at a source time that is kept,
+        // never in a part that was cut (PR #199 review).
+        const auto outputMs = m_map.sourceToOutput(sourceMs);
+        if (!outputMs) return sourceMs; // cut out: never drawn
+        const qint64 holdFrom = std::max<qint64>(0, m_map.outputDurationMs() - m_settings.stillEndMs);
+        if (*outputMs < holdFrom) return sourceMs;
+        return std::max(m_map.outputToSource(holdFrom), firstSample);
+    }
+    if (m_clipEndMs < 0) return sourceMs;
     // A clip shorter than the still interval (Still End is remembered across
     // recordings) holds the pointer from its first sample, never from a time
     // before the timeline, where there is no pointer at all.
-    const qint64 freezeAt = std::max(m_clipEndMs - m_settings.stillEndMs, m_timeline.samples.front().tMs);
+    const qint64 freezeAt = std::max(m_clipEndMs - m_settings.stillEndMs, firstSample);
     return std::min(sourceMs, freezeAt);
 }
 
@@ -271,16 +312,19 @@ std::optional<QPointF> CursorEffectRenderer::pointerPosition(qint64 sourceMs) co
 
 qint64 CursorEffectRenderer::idleBefore(qint64 ms, qint64 limit) const
 {
-    qint64 idle = limit;
+    // A cut is a fresh start: the pointer shows from the start of its part.
+    qint64 idle = std::min(limit, ms - partStart(ms));
     const auto& samples = m_timeline.samples;
     auto it = std::upper_bound(samples.begin(), samples.end(), ms,
                                [](qint64 t, const CursorSample& s) { return t < s.tMs; });
-    // Walk back over the samples that can still matter: bounded by `limit`.
+    // Walk back over the samples that can still matter: bounded by `limit`
+    // and by the start of the shown part.
+    const qint64 from = partStart(ms);
     while (it != samples.begin()) {
         --it;
-        if (ms - it->tMs >= limit) break;
+        if (ms - it->tMs >= limit || it->tMs < from) break;
         if (it == samples.begin() || it->position != (it - 1)->position) {
-            idle = ms - it->tMs; // appeared or moved here
+            idle = std::min(idle, ms - it->tMs); // appeared or moved here
             break;
         }
     }
@@ -293,6 +337,8 @@ qint64 CursorEffectRenderer::idleBefore(qint64 ms, qint64 limit) const
 
 qint64 CursorEffectRenderer::idleAfter(qint64 ms, qint64 limit) const
 {
+    // Nothing after the end of this part is shown next.
+    limit = std::max<qint64>(0, std::min(limit, partEnd(ms) - ms));
     qint64 idle = limit;
     const auto& samples = m_timeline.samples;
     auto it = std::upper_bound(samples.begin(), samples.end(), ms,
@@ -306,7 +352,7 @@ qint64 CursorEffectRenderer::idleAfter(qint64 ms, qint64 limit) const
     const auto& buttons = m_timeline.buttons;
     auto b = std::upper_bound(buttons.begin(), buttons.end(), ms,
                               [](qint64 t, const CursorButtonEvent& e) { return t < e.tMs; });
-    if (b != buttons.end()) idle = std::min(idle, b->tMs - ms);
+    if (b != buttons.end() && b->tMs - ms < limit) idle = std::min(idle, b->tMs - ms);
     return std::max<qint64>(0, idle);
 }
 
@@ -373,7 +419,10 @@ void CursorEffectRenderer::paintRipples(QPainter& painter, qint64 sourceMs, cons
 {
     const double unit = m_timeline.info.pixelRatio * mapping.scale() * m_settings.scale;
     const auto& buttons = m_timeline.buttons;
-    auto it = std::lower_bound(buttons.begin(), buttons.end(), sourceMs - kRippleDurationMs + 1,
+    // A click in a part that is cut out never shows, not even as a ripple
+    // running on into the next part.
+    const qint64 from = std::max(sourceMs - kRippleDurationMs + 1, partStart(sourceMs));
+    auto it = std::lower_bound(buttons.begin(), buttons.end(), from,
                                [](const CursorButtonEvent& e, qint64 t) { return e.tMs < t; });
     for (; it != buttons.end() && it->tMs <= sourceMs; ++it) {
         if (!it->down || it->synthetic) continue;
@@ -409,6 +458,7 @@ void CursorEffectRenderer::paintPointer(QPainter& painter, qint64 sourceMs, cons
     if (const double window = blurWindowMs(); window > 0.0) {
         for (int k = kBlurSamples; k >= 1; --k) {
             const qint64 ghostMs = sourceMs - qint64(std::lround(window * k / kBlurSamples));
+            if (ghostMs < partStart(sourceMs)) continue; // no trail from before a cut
             const auto ghost = pointerPosition(ghostMs);
             if (!ghost) continue;
             const QPointF ghostAt = mapping.toOutput(*ghost);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "recording/CursorTimeline.h"
+#include "recording/TimelineEdit.h"
 
 #include <QJsonObject>
 #include <QPointF>
@@ -100,6 +101,11 @@ public:
     CursorEffectRenderer(const CursorTimeline& timeline, const CursorEffectSettings& settings,
                          qint64 clipEndMs = -1);
 
+    // The parts of the recording that are shown (#185): nothing reaches across
+    // a cut (no smoothing from, ripples of or blur toward cut-out time).
+    // Without one the whole recording is one part.
+    void setTimeline(const TimelineMap& timeline);
+
     // Where the pointer is drawn at sourceMs, in source video pixels; nullopt
     // when hidden or before the first sample.
     std::optional<QPointF> pointerPosition(qint64 sourceMs) const;
@@ -132,6 +138,11 @@ private:
     const CursorTimeline& m_timeline;
     CursorEffectSettings m_settings;
     qint64 m_clipEndMs = -1;
+    std::vector<TimelineSegment> m_kept; // empty = everything
+    TimelineMap m_map;                   // the same parts, for output times
+    // The start and end of the kept part showing ms (ms itself when cut out).
+    qint64 partStart(qint64 ms) const;
+    qint64 partEnd(qint64 ms) const;
 };
 
 } // namespace SnapTray

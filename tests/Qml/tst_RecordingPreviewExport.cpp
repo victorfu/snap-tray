@@ -429,6 +429,9 @@ private slots:
     void appearanceMatchesAcrossPreviewAndOutputs_data();
     void appearanceMatchesAcrossPreviewAndOutputs();
     void blurredBackgroundNeverShowsMaskedContent();
+    void cutsAndSpeedReachEveryFormat_data();
+    void cutsAndSpeedReachEveryFormat();
+    void cutsRefusedWhereMp4CannotJoin();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
@@ -2273,6 +2276,135 @@ void tst_RecordingPreviewExport::blurredBackgroundNeverShowsMaskedContent()
         QVERIFY2(c.red() < 80, qPrintable(QStringLiteral("%1 at %2,%3").arg(c.name()).arg(at.x()).arg(at.y())));
     }
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+void tst_RecordingPreviewExport::cutsAndSpeedReachEveryFormat_data()
+{
+    pointerMatchesAcrossPreviewAndOutputs_data();
+}
+
+// #185: the fixture is red 0-300, green 400-700, blue 800-1100 ms. Cutting
+// 300-800 out and playing 800-1200 at 2x leaves red, then blue, 500 ms long.
+void tst_RecordingPreviewExport::cutsAndSpeedReachEveryFormat()
+{
+    QFETCH(int, format);
+    const QSize sourceSize(64, 48);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    if (!backend.timelineEditsAvailable()) QSKIP("This platform's MP4 transcoder cannot join parts yet");
+    QVERIFY(backend.splitAt(300));
+    QVERIFY(backend.splitAt(800));
+    backend.setPartDeleted(1, true);
+    backend.setPartSpeed(2, 2.0);
+    QVERIFY(backend.hasTimelineEdits());
+    QCOMPARE(backend.outputDuration(), 300 + 200);
+    QCOMPARE(backend.outputTimeAt(900), 350);
+    QCOMPARE(backend.outputTimeAt(500), -1);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    // Edits during the export do not reach it.
+    backend.setPartDeleted(1, false);
+    QVERIFY(backend.timelineEdit().parts[1].deleted);
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+    const auto frameAt = [&](qint64 ms) -> QImage {
+        if (format == RecordingPreviewBackend::MP4) {
+            auto reader = IVideoFrameReader::create();
+            if (!reader || !reader->load(output)) return QImage();
+            return reader->frameAt(ms);
+        }
+        return animationFrameAt(output, ms);
+    };
+    if (format == RecordingPreviewBackend::MP4 && !IVideoFrameReader::create()) QSKIP("No MP4 frame reader here");
+    const QColor early = frameAt(100).pixelColor(32, 24);
+    const QColor late = frameAt(400).pixelColor(32, 24);
+    QVERIFY2(early.red() > 170 && early.green() < 90, qPrintable(early.name()));   // red, before the cut
+    QVERIFY2(late.blue() > 170 && late.green() < 90, qPrintable(late.name()));     // blue: green was cut out
+    qint64 durationMs = 0;
+    if (format == RecordingPreviewBackend::MP4) {
+        durationMs = IVideoTranscoder::create()->probe(output).durationMs;
+    } else {
+        QImageReader reader(output);
+        while (reader.canRead()) {
+            reader.read();
+            durationMs += qMax(reader.nextImageDelay(), 1);
+        }
+    }
+    QVERIFY2(qAbs(durationMs - 500) <= 120, qPrintable(QString::number(durationMs)));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+// A system whose MP4 export cannot join parts refuses instead of exporting
+// the cut-out content.
+void tst_RecordingPreviewExport::cutsRefusedWhereMp4CannotJoin()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    auto restore = qScopeGuard([]() { RecordingPreviewBackend::transcoderFactoryOverride() = {}; });
+    auto log = std::make_shared<FakeTranscodeLog>();
+    RecordingPreviewBackend::transcoderFactoryOverride() = [log]() -> std::unique_ptr<IVideoTranscoder> {
+        return std::make_unique<FakeTranscoder>(FakeTranscodeOutcome::Real, QString(), log);
+    };
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(kFrameSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QVERIFY(!backend.timelineEditsAvailable());
+    // The edit itself is allowed (GIF/WebP could export it).
+    QVERIFY(backend.splitAt(300));
+    QVERIFY(backend.splitAt(800));
+    backend.setPartDeleted(1, true);
+    QVERIFY(backend.needsSegments());
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QVERIFY(!backend.errorMessage().isEmpty());
+    QVERIFY(!backend.isProcessing());
+    QCOMPARE(savedSpy.count(), 0);
+    QCOMPARE(log->calls, 0);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QVERIFY(backend.timelineEditsAvailable());
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+
+    // Cutting only the first part is a trim: exported as one, even here,
+    // and never saved as the whole recording.
+    backend.clearError();
+    backend.setPartDeleted(1, false);
+    backend.setPartDeleted(0, true);
+    QVERIFY(backend.hasTimelineEdits());
+    QVERIFY(!backend.needsSegments());
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    QVERIFY(savedSpy.first().at(0).toString() != inputPath);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->lastRequest.startMs, 300);
+        QVERIFY(log->lastRequest.segments.empty());
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+
+    // Nothing left: refused, and the last kept part cannot be cut.
+    RecordingPreviewBackend other(inputPath);
+    other.updateDuration(kFrameCount * kFrameIntervalMs);
+    QVERIFY(other.splitAt(500));
+    other.setPartDeleted(0, true);
+    other.setPartDeleted(1, true);
+    QVERIFY(!other.timelineEdit().parts[1].deleted);
 }
 
 void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()

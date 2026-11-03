@@ -58,7 +58,9 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(qint64 trimStart READ trimStart WRITE setTrimStart NOTIFY trimRangeChanged)
     Q_PROPERTY(qint64 trimEnd READ trimEnd WRITE setTrimEnd NOTIFY trimRangeChanged)
     Q_PROPERTY(bool hasTrim READ hasTrim NOTIFY trimRangeChanged)
-    Q_PROPERTY(qint64 trimmedDuration READ trimmedDuration NOTIFY trimRangeChanged)
+    // The exported length: changes with the trim, the cut parts and speeds,
+    // and the recording's length (PR #199 review).
+    Q_PROPERTY(qint64 trimmedDuration READ trimmedDuration NOTIFY outputDurationChanged)
 
     // Crop (video pixels; empty = no crop)
     Q_PROPERTY(QRect cropRect READ cropRect NOTIFY cropRectChanged)
@@ -128,6 +130,14 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool masksAvailable READ masksAvailable NOTIFY masksChanged)
     Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
     Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
+
+    // Cuts and speed changes (#185): the parts between split points, in source
+    // time, each {start, end, deleted, speed}; and the exported length.
+    Q_PROPERTY(QVariantList timelineParts READ timelineParts NOTIFY timelineChanged)
+    Q_PROPERTY(QVariantList timelineSplits READ timelineSplits NOTIFY timelineChanged)
+    Q_PROPERTY(bool hasTimelineEdits READ hasTimelineEdits NOTIFY timelineChanged)
+    Q_PROPERTY(bool timelineEditsAvailable READ timelineEditsAvailable NOTIFY timelineChanged)
+    Q_PROPERTY(qint64 outputDuration READ outputDuration NOTIFY outputDurationChanged)
 
     // The frame around the export (#184): enum values in RecordingAppearance order.
     Q_PROPERTY(bool appearanceAvailable READ appearanceAvailable NOTIFY appearanceChanged)
@@ -320,7 +330,7 @@ public:
     Q_INVOKABLE bool setPointerHideRange(int index, qint64 startMs, qint64 endMs);
     // Where the exported clip ends in source time, for effects tied to the
     // end; -1 until the duration is known.
-    qint64 effectsClipEnd() const { return trimEnd() > 0 ? trimEnd() : -1; }
+    qint64 effectsClipEnd() const;
     void setClickRipple(bool value);
     const SnapTray::CursorTimeline* cursorTimeline() const { return m_cursorTimeline.get(); }
 
@@ -363,6 +373,38 @@ public:
     Q_INVOKABLE void setMaskStyle(int index, int style);
     // endMs -1 = to the end; false (nothing changes) when invalid.
     Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
+
+    // Cuts and speed changes (#185), undoable footage edits.
+    QVariantList timelineParts() const;
+    QVariantList timelineSplits() const;
+    // Something is cut out or plays at another speed inside the trim.
+    bool hasTimelineEdits() const;
+    // More than one kept part, or one at another speed: the export joins parts.
+    bool needsSegments() const;
+    // The selected format's export can join parts on this system.
+    bool timelineEditsAvailable() const;
+    qint64 outputDuration() const { return trimmedDuration(); }
+    // The kept parts inside the trim: the one source/output mapping.
+    SnapTray::TimelineMap timelineMap() const;
+    const SnapTray::TimelineEdit& timelineEdit() const { return m_timeline; }
+    Q_INVOKABLE int timelinePartAt(qint64 sourceMs) const { return m_timeline.partAt(sourceMs); }
+    // Split at the playhead; false when a part would get too short.
+    Q_INVOKABLE bool splitAt(qint64 sourceMs);
+    Q_INVOKABLE void removeSplit(int index);
+    // While dragging: moves without an undo step; commitTimelineEdit() records it.
+    Q_INVOKABLE bool moveSplit(int index, qint64 sourceMs);
+    // Where split `index` may be dragged to: `sourceMs` kept between its
+    // neighbours (each part at least TimelineEdit::kMinPartMs); -1 if none.
+    Q_INVOKABLE qint64 legalSplitPosition(int index, qint64 sourceMs) const;
+    Q_INVOKABLE void commitTimelineEdit();
+    Q_INVOKABLE void setPartDeleted(int part, bool deleted);
+    Q_INVOKABLE void setPartSpeed(int part, qreal speed);
+    // Playback follows the edit: where to continue from positionMs (itself
+    // when shown; the next kept part; -1 to start over), and how fast.
+    Q_INVOKABLE qint64 playbackTarget(qint64 positionMs) const;
+    Q_INVOKABLE qreal playbackSpeedAt(qint64 positionMs) const;
+    // The exported time a source time lands at (-1 when it is cut out).
+    Q_INVOKABLE qint64 outputTimeAt(qint64 sourceMs) const;
 
     // The frame around the export (#184); undoable, remembered as the last look.
     bool appearanceAvailable() const { return formatCanDrawEffects(); }
@@ -444,6 +486,7 @@ signals:
     void selectedPointerHideChanged();
     void mp4OptionsChanged();
     void appearanceChanged();
+    void timelineChanged();
     void appearancePreviewFrameChanged();
     void mp4EstimateChanged();
     void zoomChanged();
@@ -460,6 +503,7 @@ signals:
     void positionChanged();
     void stateChanged();
     void trimRangeChanged();
+    void outputDurationChanged();
     void formatChanged();
     void processingChanged();
     void processProgressChanged();
@@ -532,6 +576,7 @@ private:
         bool frameFilter = false;
         bool outputOptions = false;
         bool hevc = false;
+        bool segments = false;
     };
     mutable std::optional<Mp4Capabilities> m_mp4Capabilities;
     const Mp4Capabilities& mp4Capabilities() const;
@@ -545,6 +590,8 @@ private:
     const VideoFileProbe& sourceProbe() const;
     SnapTray::Mp4ExportOptions m_mp4Options;
     SnapTray::RecordingAppearance m_appearance;
+    SnapTray::TimelineEdit m_timeline;
+    void editTimeline(const std::function<bool(SnapTray::TimelineEdit&)>& change, bool record = true);
     QImage m_appearancePreviewFrame;
     // The video size the effects use (the pointer data's when the player has not said).
     QSize effectsVideoSize() const;

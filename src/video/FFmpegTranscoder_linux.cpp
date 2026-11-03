@@ -27,11 +27,13 @@ public:
     VideoFileProbe probe(const QString& path) override { return probeFile(path); }
     bool supportsFrameFilter() const override { return true; }
     bool supportsOutputOptions() const override { return true; }
+    bool supportsSegments() const override { return true; }
     bool supportsVideoCodec(const QString& codec) const override {
         return IVideoTranscoder::supportsVideoCodec(codec)
             || (codec == QLatin1String(kVideoCodecHevc) && FFmpegEncoder::isHevcAvailable());
     }
     VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback& progress) override {
+        if (!request.segments.empty()) return transcodeSegments(request, progress);
         VideoTranscodeResult result;
         auto fail = [&](const QString& message) { result.audioCopied = false; result.errorMessage = message; qWarning() << "FFmpeg export:" << message; return result; };
         if (sameFile(request.inputPath, request.outputPath)) return fail(QStringLiteral("Input and output paths must identify different files."));
@@ -256,6 +258,194 @@ public:
         if (progress && !progress(100)) return fail(QStringLiteral("Export cancelled."));
         if (!destination.commit()) return fail(destination.errorString());
         result.success = true; result.startMs = start; return result;
+    }
+
+private:
+    // #185: the kept parts joined, each at its speed. Video frames are placed
+    // at output times; audio is decoded and written again, from the source
+    // for parts at normal speed and as silence for the others, so every seam
+    // stays in sync (packet passthrough could not cut between AAC packets).
+    VideoTranscodeResult transcodeSegments(const VideoTranscodeRequest& request, const ProgressCallback& progress) {
+        VideoTranscodeResult result;
+        auto fail = [&](const QString& message) { result.audioCopied = false; result.errorMessage = message; qWarning() << "FFmpeg export:" << message; return result; };
+        if (sameFile(request.inputPath, request.outputPath)) return fail(QStringLiteral("Input and output paths must identify different files."));
+        const auto source = probe(request.inputPath);
+        if (!source.valid) return fail(QStringLiteral("Invalid input or trim range."));
+        std::vector<SnapTray::TimelineSegment> segments;
+        for (auto segment : request.segments) {
+            segment.endMs = qMin(segment.endMs, source.durationMs);
+            if (segment.endMs > segment.startMs && segment.startMs >= 0 && segment.speed > 0.0) segments.push_back(segment);
+        }
+        if (segments.empty()) return fail(QStringLiteral("Invalid input or trim range."));
+        std::vector<qint64> outStarts{0};
+        for (const auto& segment : segments) outStarts.push_back(outStarts.back() + segment.outputLengthMs());
+        const qint64 outDuration = outStarts.back();
+        if (outDuration <= 0) return fail(QStringLiteral("Invalid input or trim range."));
+
+        const QRect bounds(QPoint(), source.videoSize);
+        QRect crop = request.cropRect.isEmpty() ? bounds : request.cropRect.intersected(bounds);
+        crop.setWidth(crop.width() & ~1); crop.setHeight(crop.height() & ~1);
+        if (crop.width() < 2 || crop.height() < 2) return fail(QStringLiteral("Crop rectangle is outside the video."));
+        const int sourceFps = qBound(1, qRound(source.frameRate), 240);
+        const int fps = request.frameRate > 0 ? qMin(request.frameRate, sourceFps) : sourceFps;
+        if (!supportsVideoCodec(request.videoCodec))
+            return fail(QStringLiteral("Unsupported video codec: %1").arg(request.videoCodec));
+        const QSize filteredSize = request.frameFilter && !request.filterOutputSize.isEmpty()
+            ? request.filterOutputSize : crop.size();
+        QSize outputSize = request.outputSize.isEmpty() ? filteredSize : request.outputSize.boundedTo(filteredSize);
+        outputSize = QSize(qMax(2, outputSize.width() & ~1), qMax(2, outputSize.height() & ~1));
+        const qint64 interval = qMax<qint64>(1, qRound(1000.0 / fps));
+        const double exactOutInterval = 1000.0 / fps;
+
+        // Audio: only when a part at normal speed reaches the source audio.
+        bool withAudio = false;
+        if (source.hasAudio) {
+            for (const auto& segment : segments) {
+                withAudio = withAudio || (qFuzzyCompare(segment.speed, 1.0)
+                    && qMin(segment.endMs, source.audioEndMs) - qMax(segment.startMs, source.audioStartMs) > 0);
+            }
+        }
+        QTemporaryDir temporary(QFileInfo(request.outputPath).absolutePath() + QStringLiteral("/.snaptray-export-XXXXXX"));
+        if (!temporary.isValid()) return fail(QStringLiteral("Cannot create export staging directory."));
+        const QString staged = temporary.filePath("output.mp4");
+        FFmpegEncoder encoder;
+        encoder.setBitrate(request.videoBitrate > 0 ? request.videoBitrate
+            : SnapTray::VideoBitrate::forQuality(outputSize, fps, kDefaultTranscodeQuality));
+        encoder.setHevc(request.videoCodec == QLatin1String(kVideoCodecHevc));
+        constexpr int kAudioRate = 48000, kAudioChannels = 2, kAudioBits = 16;
+        constexpr int kAudioChunk = 4800; // 100 ms
+        AudioReader audio;
+        if (withAudio) {
+            if (!audio.load(request.inputPath)) return fail(QStringLiteral("Cannot read source audio: %1").arg(audio.error()));
+            encoder.setAudioFormat(kAudioRate, kAudioChannels, kAudioBits);
+        }
+        if (!encoder.start(staged, outputSize, fps)) return fail(encoder.lastError());
+        if (withAudio && !encoder.isAudioEnabled()) return fail(QStringLiteral("Cannot encode audio."));
+
+        // Audio follows the video as it is written, a part at a time.
+        qint64 audioOutFrame = 0;
+        const qint64 audioEndFrame = outDuration * kAudioRate / 1000;
+        auto writeAudioUntil = [&](qint64 outMs) -> bool {
+            if (!withAudio) return true;
+            const qint64 until = qMin(audioEndFrame, outMs * kAudioRate / 1000);
+            while (audioOutFrame < until) {
+                // The part this output sample belongs to.
+                size_t index = 0;
+                while (index + 1 < segments.size() && outStarts[index + 1] * kAudioRate / 1000 <= audioOutFrame) ++index;
+                const qint64 partEnd = qMin(until, outStarts[index + 1] * kAudioRate / 1000);
+                const int count = int(qMin<qint64>(kAudioChunk, partEnd - audioOutFrame));
+                if (count <= 0) break;
+                QByteArray pcm;
+                if (qFuzzyCompare(segments[index].speed, 1.0)) {
+                    const qint64 sourceFrame = segments[index].startMs * kAudioRate / 1000
+                        + (audioOutFrame - outStarts[index] * kAudioRate / 1000);
+                    pcm = audio.read(sourceFrame, count);
+                    if (pcm.isEmpty()) return false;
+                } else {
+                    pcm = QByteArray(count * kAudioChannels * (kAudioBits / 8), '\0'); // a sped-up part is silent
+                }
+                encoder.writeAudioSamples(pcm, audioOutFrame);
+                if (!encoder.isRunning()) return false;
+                audioOutFrame += count;
+            }
+            return true;
+        };
+
+        const auto toOutputSize = [&outputSize](QImage& image) {
+            if (image.size() != outputSize)
+                image = image.scaled(outputSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        };
+        FrameReader reader;
+        if (!reader.load(request.inputPath)) return fail(reader.lastError());
+        qint64 writtenOut = -1;
+        // The output clock, as on the plain path: the next frame is due one
+        // exact interval after the previous one was due, so a 1.5x part of a
+        // 30 fps recording keeps 30 fps, not every other frame (PR #199 review).
+        double nextDueOut = 0.0;
+        QImage lastImage, lastSource;
+        auto write = [&](qint64 outMs) -> bool {
+            encoder.writeFrame(lastImage, outMs);
+            writtenOut = outMs;
+            if (!encoder.isRunning()) return false;
+            return writeAudioUntil(outMs);
+        };
+        for (size_t index = 0; index < segments.size(); ++index) {
+            const auto& segment = segments[index];
+            const qint64 outStart = outStarts[index], outEnd = outStarts[index + 1];
+            auto toOut = [&](qint64 sourceMs) {
+                return outStart + qint64(std::llround(double(sourceMs - segment.startMs) / segment.speed));
+            };
+            bool first = true;
+            qint64 sourceTime = segment.startMs;
+            while (sourceTime < segment.endMs) {
+                const qint64 outTime = toOut(sourceTime);
+                if (progress && !progress(int(outTime * 85 / outDuration))) return fail(QStringLiteral("Export cancelled."));
+                const QImage image = reader.frameAt(sourceTime);
+                if (image.isNull()) return fail(reader.lastError());
+                const qint64 next = reader.nextTimestampMs();
+                if (next >= 0 && next <= sourceTime) return fail(QStringLiteral("Invalid source frame timing."));
+                const qint64 nextOut = next < 0 || next >= segment.endMs ? outEnd : toOut(next);
+                // Faster parts and lower rates drop frames closer than an
+                // interval; the first frame of a part and the last before a
+                // pause are always kept.
+                const bool keep = first || writtenOut < 0 || nextOut - outTime >= interval
+                    || outTime + 1 >= nextDueOut;
+                if (keep && outTime > writtenOut) {
+                    // On schedule: the next one is due an exact interval later.
+                    // Kept off schedule (a part's first frame, the last before a
+                    // pause) or fallen behind: the clock restarts from this frame.
+                    const bool onSchedule = outTime + 1 >= nextDueOut && outTime - nextDueOut <= exactOutInterval;
+                    nextDueOut = onSchedule ? nextDueOut + exactOutInterval : outTime + exactOutInterval;
+                    lastImage = crop == bounds ? image : image.copy(crop);
+                    lastSource = lastImage;
+                    if (request.frameFilter) {
+                        lastImage = lastSource.copy();
+                        request.frameFilter(lastImage, sourceTime);
+                    }
+                    toOutputSize(lastImage);
+                    if (!write(outTime)) return fail(encoder.lastError().isEmpty() ? audio.error() : encoder.lastError());
+                    // Effects move on over a still or slowed picture.
+                    if (request.frameFilter) {
+                        for (qint64 o = outTime + interval; nextOut - o >= interval / 2; o += interval) {
+                            if (progress && !progress(int(o * 85 / outDuration))) return fail(QStringLiteral("Export cancelled."));
+                            lastImage = lastSource.copy();
+                            request.frameFilter(lastImage, segment.startMs + qint64(std::llround(double(o - outStart) * segment.speed)));
+                            toOutputSize(lastImage);
+                            if (!write(o)) return fail(encoder.lastError().isEmpty() ? audio.error() : encoder.lastError());
+                        }
+                    }
+                }
+                first = false;
+                if (next < 0 || next >= segment.endMs) break;
+                sourceTime = next;
+            }
+        }
+        // Hold the last picture to the end, then the rest of the audio.
+        const qint64 finalTime = qMax<qint64>(0, outDuration - interval);
+        if (writtenOut < finalTime && !lastImage.isNull()) {
+            if (!write(finalTime)) return fail(encoder.lastError());
+        }
+        if (!writeAudioUntil(outDuration)) return fail(QStringLiteral("Cannot write audio: %1").arg(audio.error()));
+        encoder.finish();
+        if (!encoder.lastError().isEmpty()) return fail(encoder.lastError());
+        const auto verified = probe(staged);
+        if (!verified.valid || verified.videoSize != outputSize
+            || qAbs(verified.durationMs - outDuration) > qMax(100, 2000 / fps) || (withAudio && !verified.hasAudio))
+            return fail(QStringLiteral("Export validation failed."));
+        QSaveFile destination(request.outputPath);
+        QFile stagedFile(staged);
+        if (!stagedFile.open(QIODevice::ReadOnly) || !destination.open(QIODevice::WriteOnly)) return fail(QStringLiteral("Cannot open export destination."));
+        while (!stagedFile.atEnd()) {
+            const auto data = stagedFile.read(1024*1024);
+            if (data.isEmpty() || destination.write(data) != data.size()) return fail(QStringLiteral("Cannot write export destination."));
+            if (progress && !progress(99)) return fail(QStringLiteral("Export cancelled."));
+        }
+        if (progress && !progress(100)) return fail(QStringLiteral("Export cancelled."));
+        if (!destination.commit()) return fail(destination.errorString());
+        result.success = true;
+        result.audioCopied = withAudio;
+        result.startMs = segments.front().startMs;
+        return result;
     }
 };
 }
