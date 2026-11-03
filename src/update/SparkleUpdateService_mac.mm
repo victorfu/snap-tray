@@ -1,4 +1,6 @@
+#include "platform/MacDockPresence.h"
 #include "update/IUpdateService.h"
+#include "update/SparkleReadyToInstallRaise.h"
 #include "update/UpdateCoordinator.h"
 #include "update/UpdateServiceFactory.h"
 #include "update/UpdateSettingsManager.h"
@@ -13,7 +15,12 @@
 #import <objc/runtime.h>
 
 #include <QCoreApplication>
+#include <QDebug>
 #include <QMetaObject>
+
+#include <optional>
+
+static NSString* const kPendingUpdateDockBadge = @"1";
 
 static void notifySuccessfulUpdateCheck()
 {
@@ -22,16 +29,61 @@ static void notifySuccessfulUpdateCheck()
                               Qt::QueuedConnection);
 }
 
+static BOOL isUserInitiatedUpdate(id state)
+{
+    SEL selector = @selector(userInitiated);
+    return [state respondsToSelector:selector]
+        && ((BOOL(*)(id, SEL))objc_msgSend)(state, selector);
+}
+
 @interface SnapTraySparkleUpdaterDelegate : NSObject
 @end
 
-@implementation SnapTraySparkleUpdaterDelegate
+@implementation SnapTraySparkleUpdaterDelegate {
+    std::optional<SnapTray::DockPresenceClaim> _dockPresence;
+}
 
 - (void)updater:(id)updater didFinishLoadingAppcast:(id)appcast
 {
     (void)updater;
     (void)appcast;
     notifySuccessfulUpdateCheck();
+}
+
+// Sparkle 2.2+ shows scheduled update alerts of a dockless app behind other apps
+// and leaves reminders to the app. Follow Sparkle's background-app example: keep
+// SnapTray in the Dock, with a badge for scheduled updates, until the session ends.
+// https://sparkle-project.org/documentation/gentle-reminders/
+- (BOOL)supportsGentleScheduledUpdateReminders
+{
+    return YES;
+}
+
+- (void)standardUserDriverWillHandleShowingUpdate:(BOOL)handleShowingUpdate
+                                        forUpdate:(id)update
+                                            state:(id)state
+{
+    (void)handleShowingUpdate;
+    (void)update;
+
+    if (!_dockPresence) {
+        _dockPresence.emplace();
+    }
+    if (!isUserInitiatedUpdate(state)) {
+        NSApp.dockTile.badgeLabel = kPendingUpdateDockBadge;
+    }
+}
+
+- (void)standardUserDriverDidReceiveUserAttentionForUpdate:(id)update
+{
+    (void)update;
+    NSApp.dockTile.badgeLabel = nil;
+}
+
+- (void)standardUserDriverWillFinishUpdateSession
+{
+    NSApp.dockTile.badgeLabel = nil;
+    _dockPresence.reset();
 }
 
 @end
@@ -113,7 +165,7 @@ public:
             m_delegate = [[SnapTraySparkleUpdaterDelegate alloc] init];
             id controllerAlloc = ((id(*)(id, SEL))objc_msgSend)(controllerClass, allocSel);
             m_controller = ((id(*)(id, SEL, BOOL, id, id))objc_msgSend)(
-                controllerAlloc, initSel, NO, m_delegate, nil);
+                controllerAlloc, initSel, NO, m_delegate, m_delegate);
 
             if (m_controller == nil) {
                 m_lastError = QCoreApplication::translate(
@@ -125,6 +177,7 @@ public:
                 return false;
             }
 
+            installSparkleReadyToInstallRaise();
             applyUpdaterSettings();
             m_initialized = true;
         }
@@ -256,6 +309,53 @@ private:
 };
 
 } // namespace
+
+namespace {
+
+using ShowReadyToInstallFn = void (*)(id, SEL, id);
+// self, _cmd, and the install handler block.
+constexpr unsigned int kShowReadyToInstallArgumentCount = 3;
+ShowReadyToInstallFn originalShowReadyToInstall = nullptr;
+
+void showReadyToInstallInFront(id userDriver, SEL selector, id installUpdateHandler)
+{
+    originalShowReadyToInstall(userDriver, selector, installUpdateHandler);
+
+    // The user already chose to install, so show "Install and Relaunch" above the app
+    // they switched to during the download. Order it in without making it key: its
+    // default button would turn a Return meant for another app, or for a SnapTray
+    // capture in progress, into an immediate relaunch.
+    Class statusControllerClass = NSClassFromString(@"SUStatusController");
+    for (NSWindow* window in NSApp.windows) {
+        if ([window.windowController isKindOfClass:statusControllerClass]) {
+            [window orderFrontRegardless];
+        }
+    }
+}
+
+} // namespace
+
+bool installSparkleReadyToInstallRaise()
+{
+    if (originalShowReadyToInstall != nullptr) {
+        return true;
+    }
+
+    // Sparkle has no delegate callback for this step, so wrap the user driver method.
+    Method method = class_getInstanceMethod(NSClassFromString(@"SPUStandardUserDriver"),
+                                            @selector(showReadyToInstallAndRelaunch:));
+    if (method == nullptr
+        || method_getNumberOfArguments(method) != kShowReadyToInstallArgumentCount) {
+        qWarning() << "SparkleUpdateService: unexpected SPUStandardUserDriver; "
+                      "Ready to Install will not be brought forward";
+        return false;
+    }
+
+    originalShowReadyToInstall =
+        reinterpret_cast<ShowReadyToInstallFn>(method_getImplementation(method));
+    method_setImplementation(method, reinterpret_cast<IMP>(showReadyToInstallInFront));
+    return true;
+}
 
 std::unique_ptr<IUpdateService> createPlatformUpdateService(UpdateServiceKind kind,
                                                             InstallSource source)

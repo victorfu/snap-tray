@@ -274,17 +274,3 @@ void PlatformFeatures::activateApp()
         [NSApp activateIgnoringOtherApps:YES];
     }
 }
-
-void PlatformFeatures::setActivationPolicyRegular()
-{
-    @autoreleasepool {
-        [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-    }
-}
-
-void PlatformFeatures::setActivationPolicyAccessory()
-{
-    @autoreleasepool {
-        [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
-    }
-}

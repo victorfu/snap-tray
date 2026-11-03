@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Fixed
+
+- On macOS, SnapTray now shows in the Dock with a badge while an update is waiting, and the Ready to Install window comes to the front instead of staying behind other apps.
+
 ## [1.0.69] - 2026-10-24
 
 ### Added

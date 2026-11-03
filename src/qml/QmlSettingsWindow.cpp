@@ -160,12 +160,15 @@ void QmlSettingsWindow::ensureView()
     });
 
 #ifdef Q_OS_MACOS
-    // Revert to accessory (LSUIElement) mode when the window is dismissed.
-    connect(m_view, &QWindow::visibleChanged, this, [](bool visible) {
+    // Leave the Dock when the window is dismissed, unless an update session
+    // still holds Dock presence.
+    connect(m_view, &QWindow::visibleChanged, this, [this](bool visible) {
         if (!visible) {
             // Let Cocoa/Qt finish tearing down the key window and input session first.
-            QTimer::singleShot(0, QCoreApplication::instance(), []() {
-                PlatformFeatures::setActivationPolicyAccessory();
+            QTimer::singleShot(0, this, [this]() {
+                if (!isVisible()) {
+                    m_dockPresence.reset();
+                }
             });
         }
     });
@@ -180,10 +183,11 @@ void QmlSettingsWindow::show()
     }
 
 #ifdef Q_OS_MACOS
-    // Temporarily switch to regular activation policy so the window
-    // survives app-deactivation (LSUIElement apps hide all windows
-    // when another app comes to the foreground).
-    PlatformFeatures::setActivationPolicyRegular();
+    // Stay in the Dock while open so the window survives app-deactivation
+    // (LSUIElement apps hide all windows when another app comes to the foreground).
+    if (!m_dockPresence) {
+        m_dockPresence.emplace();
+    }
 #endif
 
     m_view->show();
