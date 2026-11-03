@@ -2706,10 +2706,20 @@ void RecordingManager::startAudioTracks()
 
 void RecordingManager::closeAudioTracks()
 {
+    // A track that stopped writing (a full disk) is shorter than the
+    // recording but still looks valid: the preview and exports would use it
+    // instead of the complete mixed track. The pair goes, so the recording
+    // keeps its own audio (PR #202 review).
+    const bool failed = (m_microphoneTrack && m_microphoneTrack->failed())
+        || (m_systemAudioTrack && m_systemAudioTrack->failed());
     if (m_microphoneTrack) m_microphoneTrack->close();
     if (m_systemAudioTrack) m_systemAudioTrack->close();
     m_microphoneTrack.reset();
     m_systemAudioTrack.reset();
+    if (failed && !m_audioTracksVideo.isEmpty()) {
+        qWarning() << "RecordingManager: a separate audio track could not be written; the mixed track is kept";
+        SnapTray::AudioTracks::remove(m_audioTracksVideo);
+    }
 }
 
 bool RecordingManager::isRecordingKeys() const

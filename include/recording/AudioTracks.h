@@ -48,6 +48,8 @@ public:
     void flush();
     void close();
     bool failed() const;
+    // Tests: as if a write had failed (a full disk).
+    void failForTests();
 
 private:
     mutable QMutex m_mutex;
