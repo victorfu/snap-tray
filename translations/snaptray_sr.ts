@@ -1981,6 +1981,11 @@ Size: %2</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Нема довољно слободног простора на диску за снимање у високом квалитету. Снима се у изабраном квалитету.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Снимци не могу да се чувају у фасцикли пројеката библиотеке снимака.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3431,6 +3436,16 @@ Size: %2</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Снимак пројекта није могао да се копира за чување. Ништа није сачувано.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Сачувано у %1, али пројекат није могао да се ажурира. Сачувај поново да би ове измене остале у пројекту.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Сачувано у %1, али снимак није могао да се задржи као пројекат за уређивање. И даље је отворен овде: сачувај поново или га затвори да би га одбацио.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3767,6 +3782,11 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Delete projects not changed for</source>
         <translation>Обриши пројекте који нису мењани</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Пројекти се чувају када чуваш из прегледа. Укључи Прикажи преглед да би их користио.</translation>
     </message>
 </context>
 <context>

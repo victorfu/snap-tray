@@ -2636,6 +2636,9 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
     QVERIFY(directory.isValid());
     SnapTray::RecordingProjects::setRootForTests(directory.filePath(QStringLiteral("projects")));
     auto& settings = RecordingSettingsManager::instance();
+    const QString backgroundPath = directory.filePath(QStringLiteral("background.png"));
+    const QJsonObject rememberedAppearance = settings.appearance();
+    auto restoreAppearance = qScopeGuard([&settings, rememberedAppearance]() { settings.setAppearance(rememberedAppearance); });
     const bool keptBefore = settings.keepProjects();
     auto restore = qScopeGuard([&settings, keptBefore]() {
         settings.setKeepProjects(keptBefore);
@@ -2688,13 +2691,34 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
         backend.updateVideoSize(kFrameSize);
         backend.updateDuration(duration);
         backend.setTrimStart(trimStart);
+        // A background image of its own, copied into the project (PR #203 review).
+        QImage background(16, 16, QImage::Format_RGB32);
+        background.fill(Qt::blue);
+        QVERIFY(background.save(backgroundPath));
+        backend.setAppearanceEnabled(true);
+        QVERIFY(backend.setAppearanceImage(QUrl::fromLocalFile(backgroundPath)));
+        QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
         QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        // Keeping fails (a full disk at the manifest): the file is saved, but
+        // nothing is deleted and the recording stays open (PR #203 review).
+        SnapTray::RecordingProjects::failNextManifestWriteForTests();
         backend.save();
         WAIT_FOR_EXPORT(backend, savedSpy, 30000);
         QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        saveAs(backend, savedSpy.first().at(0).toString(), QStringLiteral("failed-keep.mp4"));
+        QCOMPARE(closedSpy.count(), 0);
+        QVERIFY(backend.errorMessage().contains(QStringLiteral("editable project")));
+        QVERIFY(QFileInfo::exists(inputPath));
+        QVERIFY(QFileInfo::exists(sidecar));
+        QVERIFY(SnapTray::RecordingProjects::list().isEmpty());
+        // Saving again keeps it.
+        savedSpy.clear();
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 30000);
         const QString exported = savedSpy.first().at(0).toString();
         QVERIFY(exported != inputPath);
         saveAs(backend, exported, QStringLiteral("first.mp4"));
+        QCOMPARE(closedSpy.count(), 1);
     }
     QList<SnapTray::RecordingProject> projects = SnapTray::RecordingProjects::list();
     QCOMPARE(projects.size(), 1);
@@ -2708,20 +2732,44 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
     if (IVideoFrameReader::create()) QVERIFY(QFileInfo::exists(project.thumbnailPath()));
     QCOMPARE(project.savedPath, directory.filePath(QStringLiteral("first.mp4")));
     QCOMPARE(SnapTray::RecordingRecipe::editState(project.recipe)->trimStart, trimStart);
+    // The background is the project's own copy, so the original can go.
+    const QString ownedBackground = SnapTray::RecordingRecipe::editState(project.recipe)->appearance.imagePath;
+    QVERIFY2(SnapTray::RecordingProjects::contains(ownedBackground), qPrintable(ownedBackground));
+    QVERIFY(QFileInfo::exists(ownedBackground));
+    QVERIFY(QFile::remove(backgroundPath));
 
-    // Reopened: the edits come back, undo starts there, and saving updates it.
+    // Reopened: the edits come back once the player has reported the size
+    // and length (with their notifications, PR #203 review), undo starts
+    // there, and saving updates it.
     {
         RecordingPreviewBackend backend(project.videoPath(), true);
         QSignalSpy projectSpy(&backend, &RecordingPreviewBackend::projectChanged);
+        QSignalSpy sizeSpy(&backend, &RecordingPreviewBackend::videoSizeChanged);
         backend.setProject(project);
         QCOMPARE(projectSpy.count(), 1);
         QVERIFY(backend.isProject());
-        QCOMPARE(backend.trimStart(), trimStart);
-        QVERIFY(!backend.canUndo());
+        QCOMPARE(backend.trimStart(), qint64(0)); // waits for the player
         backend.updateVideoSize(kFrameSize);
         backend.updateDuration(duration);
+        QCOMPARE(sizeSpy.count(), 1);
+        QCOMPARE(backend.trimStart(), trimStart);
+        QVERIFY(!backend.canUndo());
+        QCOMPARE(backend.appearanceImagePath(), ownedBackground);
+
+        // Updating the project fails: the preview stays open with the edits.
+        backend.setTrimEnd(duration - 2 * kFrameIntervalMs);
+        QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
+        QSignalSpy failSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        SnapTray::RecordingProjects::failNextManifestWriteForTests();
+        backend.save();
+        WAIT_FOR_EXPORT(backend, failSpy, 30000);
+        saveAs(backend, failSpy.first().at(0).toString(), QStringLiteral("failed-update.mp4"));
+        QCOMPARE(closedSpy.count(), 0);
+        QVERIFY(backend.errorMessage().contains(QStringLiteral("could not be updated")));
+        QCOMPARE(SnapTray::RecordingProjects::load(project.dir)->savedPath, project.savedPath);
 
         // An unedited save is handed a copy: the project keeps its recording.
+        backend.setAppearanceEnabled(false); // a look Reset keeps
         backend.resetEdits();
         QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
         backend.save();

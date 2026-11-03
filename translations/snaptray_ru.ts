@@ -1981,6 +1981,11 @@ Size: %2</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Недостаточно свободного места на диске для записи в высоком качестве. Запись ведётся в выбранном качестве.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Записи нельзя сохранять в папку проектов библиотеки записей.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3431,6 +3436,16 @@ Size: %2</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Не удалось скопировать запись проекта для сохранения. Ничего не сохранено.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Сохранено в %1, но проект не удалось обновить. Сохраните ещё раз, чтобы оставить эти правки в проекте.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Сохранено в %1, но запись не удалось сохранить как редактируемый проект. Она всё ещё открыта здесь: сохраните ещё раз или закройте, чтобы отказаться от неё.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3767,6 +3782,11 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Delete projects not changed for</source>
         <translation>Удалять проекты без изменений в течение</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Проекты сохраняются при сохранении из предпросмотра. Включите «Показывать предпросмотр», чтобы использовать их.</translation>
     </message>
 </context>
 <context>

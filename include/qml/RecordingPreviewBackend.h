@@ -699,7 +699,15 @@ private:
     bool m_hasSeparateTracks = false;
     std::optional<SnapTray::RecordingProject> m_project;
     // After a save: keep this recording (or update the project) as a project.
-    void keepAsProject(const QString& savedPath);
+    // False when the project could not be kept or updated: the recording
+    // then stays open here (PR #203 review).
+    bool keepAsProject(const QString& savedPath);
+    // The recipe, with a background image copied into `projectDir`, so the
+    // project does not depend on a file elsewhere (PR #203 review).
+    QJsonObject recipeForProject(const QString& projectDir) const;
+    // A project's edits wait for the player's size and length (PR #203 review).
+    bool m_projectRecipePending = false;
+    void applyPendingProjectRecipe();
     SnapTray::AudioMixSettings m_audioMix;
     void editAudioMix(const std::function<void(SnapTray::AudioMixSettings&)>& change);
     // The preview plays the tracks mixed at m_audioMix (shared with the player's thread).

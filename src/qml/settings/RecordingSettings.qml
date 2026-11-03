@@ -291,7 +291,11 @@ Flickable {
             objectName: "settingsKeepProjects"
             label: qsTr("Keep editable projects")
             visible: !settingsBackend.recordingDirectMp4Only
-            description: qsTr("After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.")
+            // Projects are kept from the preview only (PR #203 review).
+            enabled: settingsBackend.recordingShowPreview
+            description: settingsBackend.recordingShowPreview
+                ? qsTr("After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.")
+                : qsTr("Projects are kept when you save from the preview. Turn on Show preview to use them.")
             checked: settingsBackend.recordingKeepProjects
             onToggled: function(checked) { settingsBackend.recordingKeepProjects = checked }
         }

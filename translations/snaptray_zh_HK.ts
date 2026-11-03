@@ -1975,6 +1975,11 @@ Size: %2</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>磁碟可用空間不足,無法以高畫質錄影。將改以所選畫質錄影。</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>不能將錄影儲存至錄影庫的項目資料夾。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3425,6 +3430,16 @@ Size: %2</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>無法複製項目的錄影以作儲存。未有儲存任何內容。</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>已儲存至 %1，但無法更新項目。請再次儲存，以便在項目中保留這些編輯。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>已儲存至 %1，但無法將錄影保留為可編輯項目。它仍在此處開啟：請再次儲存，或關閉以捨棄。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3761,6 +3776,11 @@ GIF 錄製不支援音訊。</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Delete projects not changed for</source>
         <translation>刪除未有變更超過以下時間的項目</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>從預覽中儲存時才會保留項目。要使用項目，請開啟「顯示預覽」。</translation>
     </message>
 </context>
 <context>

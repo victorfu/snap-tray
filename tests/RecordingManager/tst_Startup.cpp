@@ -11,6 +11,7 @@
 #include <QTimer>
 #include "RecordingManager.h"
 #include "settings/FileSettingsManager.h"
+#include "recording/RecordingProject.h"
 #include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "RecordingInitTask.h"
@@ -72,6 +73,7 @@ private slots:
     void sessionManifestFollowsTheRecording();
     void staleCleanupSparesPendingRecoveries();
     void recoveredRecordingOpensInPreview();
+    void savesNeverGoIntoTheProjectsFolder();
     void interruptionsKeepTheRecording_data();
     void interruptionsKeepTheRecording();
     void concurrentStopsEndOnce();
@@ -1000,6 +1002,21 @@ void TestRecordingStartup::recoveredRecordingOpensInPreview()
     manager.onPreviewClosed(false);
     QVERIFY(SnapTray::RecordingSession::hasSession(video));
     QVERIFY(!RecordingManager::isSessionActive(video));
+}
+
+// PR #203 review: a save (dialog or auto-save) into the Recording Library's
+// folder could replace a project's source recording; it is refused.
+void TestRecordingStartup::savesNeverGoIntoTheProjectsFolder()
+{
+    QTemporaryDir dir;
+    const QString root = dir.filePath(QStringLiteral("projects"));
+    SnapTray::RecordingProjects::setRootForTests(root);
+    auto reset = qScopeGuard([] { SnapTray::RecordingProjects::setRootForTests(QString()); });
+    QVERIFY(!RecordingManager::isAllowedSaveDestination(root + QStringLiteral("/20261103-1/recording.mp4")));
+    QVERIFY(!RecordingManager::isAllowedSaveDestination(root + QStringLiteral("/other.mp4")));
+    QVERIFY(!RecordingManager::isAllowedSaveDestination(QString()));
+    QVERIFY(RecordingManager::isAllowedSaveDestination(dir.filePath(QStringLiteral("saved.mp4"))));
+    QVERIFY(RecordingManager::isAllowedSaveDestination(root + QStringLiteral("-elsewhere/saved.mp4")));
 }
 
 void TestRecordingStartup::startFakeRecording(RecordingManager& manager,

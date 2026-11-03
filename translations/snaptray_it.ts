@@ -1981,6 +1981,11 @@ Dimensione: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Spazio su disco insufficiente per la registrazione in alta qualità. La registrazione userà la qualità selezionata.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Le registrazioni non possono essere salvate nella cartella dei progetti della Libreria registrazioni.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3431,6 +3436,16 @@ Dimensione: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Impossibile copiare la registrazione del progetto per il salvataggio. Non è stato salvato nulla.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Salvato in %1, ma non è stato possibile aggiornare il progetto. Salva di nuovo per mantenere queste modifiche nel progetto.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Salvato in %1, ma non è stato possibile conservare la registrazione come progetto modificabile. È ancora aperta qui: salva di nuovo o chiudila per scartarla.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3767,6 +3782,11 @@ L'audio non è supportato per le registrazioni GIF.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Delete projects not changed for</source>
         <translation>Elimina i progetti non modificati da</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>I progetti vengono conservati quando salvi dall'anteprima. Attiva Mostra anteprima per usarli.</translation>
     </message>
 </context>
 <context>

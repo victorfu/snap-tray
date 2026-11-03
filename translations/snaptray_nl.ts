@@ -1981,6 +1981,11 @@ Grootte: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Onvoldoende vrije schijfruimte voor opnemen in hoge kwaliteit. Er wordt opgenomen in de geselecteerde kwaliteit.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Opnamen kunnen niet worden opgeslagen in de projectmap van de opnamebibliotheek.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3431,6 +3436,16 @@ Grootte: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>De opname van het project kon niet worden gekopieerd om op te slaan. Er is niets opgeslagen.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Opgeslagen in %1, maar het project kon niet worden bijgewerkt. Sla opnieuw op om deze bewerkingen in het project te bewaren.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Opgeslagen in %1, maar de opname kon niet als bewerkbaar project worden bewaard. Ze is hier nog geopend: sla opnieuw op of sluit haar om haar te verwijderen.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3767,6 +3782,11 @@ Audio wordt niet ondersteund voor GIF-opnamen.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Delete projects not changed for</source>
         <translation>Projecten verwijderen die niet zijn gewijzigd in</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projecten worden bewaard wanneer je opslaat vanuit het voorbeeld. Zet Voorbeeld weergeven aan om ze te gebruiken.</translation>
     </message>
 </context>
 <context>

@@ -1,6 +1,7 @@
 #include "platform/CaptureExclusionPolicy.h"
 #include "platform/PlatformCapabilities.h"
 #include "RecordingManager.h"
+#include "recording/RecordingProject.h"
 #include "recording/ScreenSourceService.h"
 #include "recording/RecordingFileUtils.h"
 #include "recording/WindowTimelineSidecar.h"
@@ -1696,6 +1697,11 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
     return true;
 }
 
+bool RecordingManager::isAllowedSaveDestination(const QString& path)
+{
+    return !path.isEmpty() && !SnapTray::RecordingProjects::contains(path);
+}
+
 bool RecordingManager::openProjectRecording(const QString& videoPath)
 {
     if (m_state != State::Idle || !QFileInfo::exists(videoPath)) {
@@ -2387,6 +2393,8 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         // Try rename first. If path collides between render and rename, retry with a new unique path.
         const int maxAttempts = 100;
         int attempt = 0;
+        // Never into a kept project's folder (PR #203 review): ask instead.
+        if (!isAllowedSaveDestination(savePath)) attempt = maxAttempts;
         while (attempt < maxAttempts) {
             if (QFile::rename(tempOutputPath, savePath)) {
                 syncFile(savePath);
@@ -2411,7 +2419,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
             savePath = FilenameTemplateEngine::buildUniqueFilePath(
                 outputDir, templateValue, context, 100, &renderError);
         }
-        if (QFile::copy(tempOutputPath, savePath)) {
+        if (isAllowedSaveDestination(savePath) && QFile::copy(tempOutputPath, savePath)) {
             QFile::remove(tempOutputPath);
             syncFile(savePath);
             if (savedPath) *savedPath = savePath;
@@ -2451,6 +2459,18 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         QFile::remove(tempOutputPath);
         emit recordingCancelled();
         return SaveOutcome::Cancelled;
+    }
+    // A kept project's folder holds its source recording: a save there could
+    // replace it with an edited export, losing the original (PR #203 review).
+    if (!isAllowedSaveDestination(savePath)) {
+        qWarning() << "RecordingManager: refusing to save inside the projects folder:" << savePath;
+        keepSidecar = keepOnCancel;
+        emit recordingError(tr("Recordings cannot be saved in the Recording Library's project folder.")
+                            + QLatin1Char(' ')
+                            + (keepOnCancel ? tr("Your recording is kept; choose another location.")
+                                            : tr("The recording is kept at %1.")
+                                                  .arg(QDir::toNativeSeparators(tempOutputPath))));
+        return SaveOutcome::Failed;
     }
     // Move/rename the file to chosen location
     if (savePath != tempOutputPath) {

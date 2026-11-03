@@ -87,6 +87,9 @@ public:
     // recovery manifest; the project's files are never deleted from here.
     // False when a recording or preview is already open.
     bool openProjectRecording(const QString& videoPath);
+    // False for a path inside the Recording Library's project folder, where a
+    // save could replace a project's source recording (PR #203 review).
+    static bool isAllowedSaveDestination(const QString& path);
     // Scans the temp folder off the GUI thread; emits recoveriesFound.
     void scanForRecoveries();
     static bool isSessionActive(const QString& videoPath);
