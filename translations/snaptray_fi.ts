@@ -817,6 +817,41 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <source>recording keys</source>
         <translation>näppäimiä tallennetaan</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>Tallennekirjasto...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>Projekti ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>Tämän projektin tallenne puuttuu tai on vioittunut.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Copied</source>
+        <translation>Tallenne kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>Tallennettu kohteeseen %1 ja kopioitu: liitä se keskusteluun tai kansioon.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>edit mode</source>
+        <translation>muokkaustila</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>quick mode</source>
+        <translation>pikatila</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -1959,6 +1994,11 @@ Koko: %2</translation>
         <location filename="../src/RecordingManager.cpp" line="223" />
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Levytilaa ei ole tarpeeksi korkealaatuiseen tallennukseen. Tallennetaan valitulla laadulla.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Tallenteita ei voi tallentaa tallennekirjaston projektikansioon.</translation>
     </message>
 </context>
 <context>
@@ -3148,6 +3188,96 @@ Koko: %2</translation>
         <source>from %1 to %2</source>
         <translation>%1–%2</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Audio</source>
+        <translation>Ääni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the microphone out of the export</source>
+        <translation>Jätä mikrofoni pois viennistä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the system audio out of the export</source>
+        <translation>Jätä järjestelmän ääni pois viennistä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone and system audio volume, mute, and noise reduction</source>
+        <translation>Mikrofonin ja järjestelmän äänen voimakkuus, mykistys ja kohinanvaimennus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone volume in the export</source>
+        <translation>Mikrofonin voimakkuus viennissä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone: %1</source>
+        <translation>Mikrofoni: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mixing the two tracks is not supported for MP4 on this system yet</source>
+        <translation>Kahden raidan miksausta ei vielä tueta MP4:lle tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mute Microphone</source>
+        <translation>Mykistä mikrofoni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mute System Audio</source>
+        <translation>Mykistä järjestelmän ääni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Reduce Noise</source>
+        <translation>Vaimenna kohinaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>System Audio: %1</source>
+        <translation>Järjestelmän ääni: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>System audio volume in the export</source>
+        <translation>Järjestelmän äänen voimakkuus viennissä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Turn down hiss, hum and room noise between words on the microphone</source>
+        <translation>Vaimenna sihinää, huminaa ja huoneen kohinaa sanojen välissä mikrofonista</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Sulje tallentamatta (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>Suljetaanko tallentamatta muutoksia?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Projekti jää tallennekirjastoon sellaisena kuin se viimeksi tallennettiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>Jatka muokkausta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3314,6 +3444,21 @@ Koko: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Teksti- ja kuvapäällysteitä ei vielä voi piirtää MP4:ään tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista ne viedäksesi MP4:n. Mitään ei viety.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>Projektin tallennetta ei voitu kopioida tallennusta varten. Mitään ei tallennettu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Tallennettu kohteeseen %1, mutta projektia ei voitu päivittää. Tallenna uudelleen, jotta muokkaukset säilyvät projektissa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Tallennettu kohteeseen %1, mutta tallennetta ei voitu säilyttää muokattavana projektina. Se on yhä auki tässä: tallenna uudelleen tai hylkää se sulkemalla.</translation>
     </message>
 </context>
 <context>
@@ -3616,6 +3761,101 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>Vain pikanäppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>Ei koskaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>Säilytä muokattavat projektit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Tallennuksen jälkeen säilytä tallenne ja muokkauksesi, jotta voit muuttaa ja viedä sen uudelleen tallennekirjastosta. Projektit säilyttävät koko näytön tallenteen, sen osoittimen, näppäimet ja ääniraidat, myös sen, minkä sumensit tai rajasit pois, ja vievät levytilaa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>Poista projektit, joita ei ole muutettu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After recording</source>
+        <translation>Tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Muokkaa esikatselussa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Tallenna heti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Pikatila: tiedosto tallennetaan lopulliseen muotoonsa heti, kun lopetat, ilman esikatselua ja muokkausraitoja.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving</source>
+        <translation>Tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Älä tee mitään</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Kopioi tiedosto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Näytä kansiossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Esikatseltavat tallenteet tallennetaan aina ensin MP4-muodossa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>Valitse alue ennen tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Valitse tallennettava vetämällä näytön yli. Muokkaustila tallentaa silti koko näytön ja avaa esikatselun alueeseen rajattuna, joten voit muuttaa sitä; pikatila tallentaa vain alueen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projektit säilytetään, kun tallennat esikatselusta. Ota Näytä esikatselu käyttöön, jotta voit käyttää niitä.</translation>
     </message>
 </context>
 <context>
@@ -4982,6 +5222,71 @@ Tiedoston koko: %3</translation>
         <source>Record shortcut keys</source>
         <translation>Tallenna pikanäppäimet</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After recording</source>
+        <translation>Tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Muokkaa esikatselussa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Tallenna heti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Pikatila: tiedosto tallennetaan lopulliseen muotoonsa heti, kun lopetat, ilman esikatselua ja muokkausraitoja.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After saving</source>
+        <translation>Tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Älä tee mitään</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Kopioi tiedosto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Näytä kansiossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Osoittimen, ikkunoiden ja näppäinten raidat säilytetään muokkausta varten.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>Vain muokkaustilassa: pikatila ei säilytä muokkausraitoja.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>Valitse ensin alue</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>Koko näyttö tallennetaan silti; esikatselu avautuu alueeseen rajattuna.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>Vain alue tallennetaan.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -5014,6 +5319,11 @@ Tiedoston koko: %3</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>Ei palautettavissa: tallennus keskeytyi ennen kuin toistettavaa osaa tallentui.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>koko näyttö tallennettiin; avautuu valittuun alueeseen rajattuna</translation>
     </message>
 </context>
 <context>
@@ -5085,6 +5395,140 @@ Tiedoston koko: %3</translation>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Tallennus pysähtyi. %1 Kaikki tähän mennessä tallennettu säilyy.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>Tallennekirjasto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>Muokattavat projektit: %1 tällä tietokoneella</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>Ei muokattavia projekteja</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Uusien projektien säilytys on pois päältä. Projektit säilyttävät koko tallenteen, myös sen, minkä sumensit tai rajasit pois.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Projektit säilyttävät koko tallenteen, myös sen, minkä sumensit tai rajasit pois.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Ota Säilytä muokattavat projektit käyttöön kohdassa Asetukset &gt; Tallennus, niin voit muokata tallenteita uudelleen tallennuksen jälkeen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>Poistetaanko tämä projekti? Siitä tallentamasi tiedosto säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>Avaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>Avaa %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>Näytä kansiossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>Poista</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>Poista...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>Poista %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, luotu %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>Auki esikatselussa</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>Vapaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>Siirrä tai piirrä uudelleen vetämällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>Valitse tallennettava alue vetämällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>Suhde %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>Koko näyttö</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>Tallenna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>Tallenna tämä alue</translation>
     </message>
 </context>
 </TS>

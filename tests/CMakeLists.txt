@@ -394,6 +394,21 @@ add_test(NAME RecordingManager_OverlayTrack COMMAND RecordingManager_OverlayTrac
 set_tests_properties(RecordingManager_OverlayTrack PROPERTIES TIMEOUT 60 LABELS "unit"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(RecordingManager_AudioTracks RecordingManager/tst_AudioTracks.cpp)
+target_link_libraries(RecordingManager_AudioTracks PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_AudioTracks COMMAND RecordingManager_AudioTracks)
+set_tests_properties(RecordingManager_AudioTracks PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingArea RecordingManager/tst_RecordingArea.cpp)
+target_link_libraries(RecordingManager_RecordingArea PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingArea COMMAND RecordingManager_RecordingArea)
+set_tests_properties(RecordingManager_RecordingArea PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingProject RecordingManager/tst_RecordingProject.cpp)
+target_link_libraries(RecordingManager_RecordingProject PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingProject COMMAND RecordingManager_RecordingProject)
+set_tests_properties(RecordingManager_RecordingProject PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
 target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_CursorTimelineRecorder COMMAND RecordingManager_CursorTimelineRecorder)

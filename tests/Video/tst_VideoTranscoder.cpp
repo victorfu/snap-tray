@@ -6,6 +6,7 @@
 #include "video/IVideoTranscoder.h"
 #include "video/VideoTranscoderFaultInjection.h"
 #include "recording/Mp4ExportOptions.h"
+#include "recording/AudioTracks.h"
 #include "encoding/VideoBitrate.h"
 
 #include <QCryptographicHash>
@@ -354,6 +355,7 @@ private slots:
     void sizeEstimateAgainstActual();
     void segmentsStayInSync();
     void segmentsOfAVariableRateSource();
+    void separateTracksAreRemixed();
 
 private:
     std::unique_ptr<IVideoTranscoder> m_transcoder;
@@ -1292,6 +1294,69 @@ void tst_VideoTranscoder::segmentsOfAVariableRateSource()
     QVERIFY2(still.red() > 170 && still.green() < 90, qPrintable(still.name()));
     QVERIFY2(fast.green() > 120 && fast.red() < 90, qPrintable(fast.name()));
     QVERIFY2(last.blue() > 170 && last.green() < 90, qPrintable(last.name()));
+}
+
+// #189: the separate tracks next to a recording are mixed again at export.
+// The microphone track has the fixture's timed bursts, the system track a
+// steady low tone; muting the system leaves only the bursts, at their times.
+void tst_VideoTranscoder::separateTracksAreRemixed()
+{
+    if (!m_transcoder->supportsAudioMix()) QSKIP("This transcoder does not mix separate tracks");
+    const QString input = fixture(false);
+    QVERIFY2(!input.isEmpty() && !input.startsWith(QLatin1String("ERROR:")), qPrintable(input));
+    const QString video = m_dir.filePath(QStringLiteral("tracks.mp4"));
+    QVERIFY(QFile::copy(input, video));
+    const int frames = kFrameCount * kFrameIntervalMs * 48;
+    QByteArray mic(frames * 4, '\0'), system(frames * 4, '\0');
+    auto* m = reinterpret_cast<qint16*>(mic.data());
+    auto* s = reinterpret_cast<qint16*>(system.data());
+    for (int f = 0; f < frames; ++f) {
+        const double t = f / 48000.0;
+        const int ms = f / 48;
+        const bool burst = ms >= kPulseFirstMs && (ms - kPulseFirstMs) % kPulseSpacingMs < kPulseDurationMs
+            && (ms - kPulseFirstMs) / kPulseSpacingMs < kPulseCount;
+        const auto b = qint16(burst ? std::lround(16000 * std::sin(2 * M_PI * kPulseFrequencyHz * t)) : 0);
+        const auto low = qint16(std::lround(12000 * std::sin(2 * M_PI * 150.0 * t)));
+        m[2 * f] = m[2 * f + 1] = b;
+        s[2 * f] = s[2 * f + 1] = low;
+    }
+    {
+        SnapTray::AudioTrackWriter micTrack(SnapTray::AudioTracks::pathFor(video, SnapTray::AudioTracks::Track::Microphone));
+        SnapTray::AudioTrackWriter systemTrack(SnapTray::AudioTracks::pathFor(video, SnapTray::AudioTracks::Track::SystemAudio));
+        QVERIFY(micTrack.open() && systemTrack.open());
+        micTrack.write(mic, 0);
+        systemTrack.write(system, 0);
+    }
+    VideoTranscodeRequest request;
+    request.inputPath = video;
+    request.outputPath = m_dir.filePath(QStringLiteral("remixed.mp4"));
+    request.startMs = 300; // a trim moves the tracks with the video
+    request.audioTracksVideoPath = video;
+    request.audioMix.systemAudioMuted = true;
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    QVERIFY(result.audioCopied);
+    DecodedAudio output;
+    QString error;
+    QVERIFY2(decodeAudioTrack(request.outputPath, kAudioSampleRate, &output, &error), qPrintable(error));
+    const std::vector<double> onsets = pulseOnsetsMs(output);
+    std::vector<double> expected;
+    for (int i = 0; i < kPulseCount; ++i) {
+        const double at = kPulseFirstMs + i * kPulseSpacingMs - 300;
+        if (at >= 0 && at + kPulseDurationMs <= kFrameCount * kFrameIntervalMs - 300) expected.push_back(at);
+    }
+    const QString detail = QStringLiteral("expected [%1] actual [%2]").arg(describe(expected), describe(onsets));
+    QVERIFY2(onsets.size() == expected.size(), qPrintable(detail));
+    for (size_t i = 0; i < expected.size(); ++i) {
+        QVERIFY2(std::fabs(onsets[i] - expected[i]) <= kPulseAlignmentToleranceMs, qPrintable(detail));
+    }
+    // Between bursts: silence, the system tone is gone.
+    double between = 0.0;
+    // 160-260 ms of the output: after the burst at 100 ms, before the one at 300 ms.
+    const qint64 from = qMax<qint64>(0, 160 * 48 - output.firstFrame);
+    for (qint64 i = from; i < from + 4800 && i < qint64(output.mono.size()); ++i)
+        between = std::max(between, double(std::fabs(output.mono[size_t(i)])));
+    QVERIFY2(between < 0.02, qPrintable(QString::number(between)));
 }
 
 QTEST_MAIN(tst_VideoTranscoder)

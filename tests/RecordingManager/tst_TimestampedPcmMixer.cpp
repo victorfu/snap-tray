@@ -109,6 +109,7 @@ private slots:
     void multichannelInputUsesLayoutAgnosticAverage();
     void resamplingIsPartitionInvariant();
     void mixesSamplesWithSaturation();
+    void splitSourcesKeepEachSourceAlone();
     void alignsByTimestampAndFillsGaps();
     void trimsSameSourceOverlap();
     void pendingBufferIsCapped();
@@ -296,6 +297,34 @@ void tst_TimestampedPcmMixer::mixesSamplesWithSaturation()
 
     QCOMPARE(samples(join(result.output)),
              QList<qint16>({32767, -32768, 32767, -32768}));
+}
+
+// #189: with splitSources each chunk also carries each source alone, on the
+// same frames; the mixed PCM is unchanged.
+void tst_TimestampedPcmMixer::splitSourcesKeepEachSourceAlone()
+{
+    auto split = config(true, true);
+    split.splitSources = true;
+    TimestampedPcmMixer mixer(split);
+    const Pcm16Format stereo = format(48000, 2);
+    pushChunk(mixer, Source::Microphone, {pcm16({30000, -30000, 100, 200}), 0, stereo});
+    const auto result = pushChunk(mixer, Source::SystemAudio, {pcm16({10000, -10000, 1, -1}), 0, stereo});
+    QVERIFY(!result.output.isEmpty());
+    QByteArray mic, system;
+    for (const auto& chunk : result.output) {
+        QCOMPARE(chunk.microphonePcm.size(), chunk.pcm.size());
+        QCOMPARE(chunk.systemAudioPcm.size(), chunk.pcm.size());
+        mic += chunk.microphonePcm;
+        system += chunk.systemAudioPcm;
+    }
+    QCOMPARE(samples(join(result.output)), QList<qint16>({32767, -32768, 101, 199}));
+    QCOMPARE(samples(mic), QList<qint16>({30000, -30000, 100, 200}));
+    QCOMPARE(samples(system), QList<qint16>({10000, -10000, 1, -1}));
+    // Without it, nothing extra is carried.
+    TimestampedPcmMixer plain(config(true, true));
+    pushChunk(plain, Source::Microphone, {pcm16({1, 1}), 0, stereo});
+    const auto plainResult = pushChunk(plain, Source::SystemAudio, {pcm16({1, 1}), 0, stereo});
+    for (const auto& chunk : plainResult.output) QVERIFY(chunk.microphonePcm.isEmpty());
 }
 
 void tst_TimestampedPcmMixer::alignsByTimestampAndFillsGaps()

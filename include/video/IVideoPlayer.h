@@ -3,6 +3,7 @@
 
 #include <QImage>
 #include <QObject>
+#include <functional>
 #include <QSize>
 #include <QString>
 
@@ -48,6 +49,13 @@ public:
     // Looping control
     virtual void setLooping(bool loop) = 0;
     virtual bool isLooping() const = 0;
+
+    // Plays this audio instead of the file's track (#189: separate tracks
+    // mixed at the chosen volumes). Called off the GUI thread with 48 kHz
+    // stereo frames of the source timeline; returns PCM16 for them. Empty =
+    // the file's track. False where playback cannot use it.
+    using AudioSource = std::function<QByteArray(qint64 startFrame, int frames)>;
+    virtual bool setAudioSource(AudioSource source) { Q_UNUSED(source); return false; }
 
     // Playback rate control
     virtual void setPlaybackRate(float rate) = 0;  // 0.25 - 2.0

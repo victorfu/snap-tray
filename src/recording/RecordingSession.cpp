@@ -5,10 +5,12 @@
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
 #include "recording/KeyTimeline.h"
+#include "recording/AudioTracks.h"
 
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
@@ -59,6 +61,10 @@ bool write(const RecordingSessionInfo& info, QString* error)
     object[QStringLiteral("startedAt")] = info.startedAt.toUTC().toString(Qt::ISODateWithMs);
     object[QStringLiteral("updatedAt")] = info.updatedAt.toUTC().toString(Qt::ISODateWithMs);
     object[QStringLiteral("recordedMs")] = QString::number(info.recordedMs);
+    if (!info.initialCrop.isEmpty()) {
+        object[QStringLiteral("initialCrop")] = QJsonArray{info.initialCrop.x(), info.initialCrop.y(),
+                                                           info.initialCrop.width(), info.initialCrop.height()};
+    }
 
     // Write-and-rename: a crash leaves the old manifest or the new one, never half.
     QSaveFile file(manifestPathFor(info.videoPath));
@@ -124,6 +130,14 @@ std::optional<RecordingSessionInfo> read(const QString& manifestPath, QString* e
     info.startedAt = QDateTime::fromString(object.value(QStringLiteral("startedAt")).toString(), Qt::ISODateWithMs);
     info.updatedAt = QDateTime::fromString(object.value(QStringLiteral("updatedAt")).toString(), Qt::ISODateWithMs);
     info.recordedMs = object.value(QStringLiteral("recordedMs")).toString().toLongLong();
+    const QJsonArray crop = object.value(QStringLiteral("initialCrop")).toArray();
+    if (crop.size() == 4) {
+        const QRect rect(crop[0].toInt(), crop[1].toInt(), crop[2].toInt(), crop[3].toInt());
+        // Only what fits the recording it describes.
+        if (rect.isValid() && !info.frameSize.isEmpty() && QRect(QPoint(0, 0), info.frameSize).contains(rect)) {
+            info.initialCrop = rect;
+        }
+    }
     return info;
 }
 
@@ -143,6 +157,7 @@ void discard(const QString& videoPath)
     WindowTimelineSidecar::remove(videoPath);
     CursorTimelineSidecar::remove(videoPath);
     KeyTimelineSidecar::remove(videoPath);
+    AudioTracks::remove(videoPath);
     remove(videoPath);
 }
 

@@ -3,6 +3,7 @@
 #include "recording/PreviewEditHistory.h"
 #include "recording/CursorEffects.h"
 #include "recording/Mp4ExportOptions.h"
+#include "recording/RecordingProject.h"
 #include "video/IVideoTranscoder.h"
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
@@ -128,6 +129,23 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool masksAvailable READ masksAvailable NOTIFY masksChanged)
     Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
     Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
+
+    // Editable projects (#191): this preview edits a kept project.
+    Q_PROPERTY(bool isProject READ isProject NOTIFY projectChanged)
+    Q_PROPERTY(bool keepsProject READ keepsProject NOTIFY projectChanged)
+    // Edits not applied yet (an opened project's, the area chosen before
+    // recording): no Save until they are.
+    Q_PROPERTY(bool projectLoading READ projectLoading NOTIFY projectChanged)
+
+    // Separate microphone and system audio tracks (#189).
+    Q_PROPERTY(bool hasSeparateTracks READ hasSeparateTracks CONSTANT)
+    Q_PROPERTY(bool audioMixAvailable READ audioMixAvailable NOTIFY audioMixChanged)
+    Q_PROPERTY(qreal microphoneGainDb READ microphoneGainDb WRITE setMicrophoneGainDb NOTIFY audioMixChanged)
+    Q_PROPERTY(qreal systemAudioGainDb READ systemAudioGainDb WRITE setSystemAudioGainDb NOTIFY audioMixChanged)
+    Q_PROPERTY(bool microphoneMuted READ microphoneMuted WRITE setMicrophoneMuted NOTIFY audioMixChanged)
+    Q_PROPERTY(bool systemAudioMuted READ systemAudioMuted WRITE setSystemAudioMuted NOTIFY audioMixChanged)
+    Q_PROPERTY(bool microphoneNoiseReduction READ microphoneNoiseReduction WRITE setMicrophoneNoiseReduction
+                   NOTIFY audioMixChanged)
 
     // Text and image overlays (#188): [{kind, start, end, text, size, color,
     // background, align, opacity}], enums in OverlaySegment order.
@@ -388,6 +406,43 @@ public:
     // endMs -1 = to the end; false (nothing changes) when invalid.
     Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
 
+    // Editable projects (#191). A project's source and sidecars are never
+    // deleted by saving or closing; saving updates its recipe instead.
+    void setProject(const SnapTray::RecordingProject& project);
+    // The area chosen before recording (#194), in video pixels: the crop the
+    // preview opens with. Undo starts from it; Reset Crop clears it.
+    void setInitialCrop(const QRect& videoRect);
+private:
+    QRect m_pendingInitialCrop;
+    void applyPendingInitialCrop();
+public:
+    bool isProject() const { return m_project.has_value(); }
+    // Edits waiting for the player's size (a project's recipe, an area chosen
+    // before recording): no Save until they are applied.
+    bool projectLoading() const { return m_projectRecipePending || !m_pendingInitialCrop.isEmpty(); }
+    QString projectDir() const { return m_project ? m_project->dir : QString(); }
+    // Saving keeps (or updates) a project.
+    bool keepsProject() const;
+    // The edits and export choices, for a project.
+    QJsonObject currentRecipe() const;
+
+    // Separate tracks (#189), undoable; only for recordings made with them,
+    // and only for MP4 (GIF and WebP are silent) where the export can mix.
+    bool hasSeparateTracks() const { return m_hasSeparateTracks; }
+    bool audioMixAvailable() const;
+    bool audioMixActive() const { return audioMixAvailable() && !m_audioMix.isNeutral(); }
+    SnapTray::AudioMixSettings audioMix() const { return m_audioMix; }
+    qreal microphoneGainDb() const { return m_audioMix.microphoneGainDb; }
+    void setMicrophoneGainDb(qreal db);
+    qreal systemAudioGainDb() const { return m_audioMix.systemAudioGainDb; }
+    void setSystemAudioGainDb(qreal db);
+    bool microphoneMuted() const { return m_audioMix.microphoneMuted; }
+    void setMicrophoneMuted(bool value);
+    bool systemAudioMuted() const { return m_audioMix.systemAudioMuted; }
+    void setSystemAudioMuted(bool value);
+    bool microphoneNoiseReduction() const { return m_audioMix.microphoneNoiseReduction; }
+    void setMicrophoneNoiseReduction(bool value);
+
     // Text and image overlays (#188), undoable; drawn where masks are.
     bool overlaysAvailable() const { return formatCanDrawEffects(); }
     QVariantList overlays() const;
@@ -546,6 +601,8 @@ signals:
     void timelineChanged();
     void keyOverlayChanged();
     void overlaysChanged();
+    void audioMixChanged();
+    void projectChanged();
     void selectedOverlayChanged();
     void appearancePreviewFrameChanged();
     void mp4EstimateChanged();
@@ -636,6 +693,7 @@ private:
         bool outputOptions = false;
         bool hevc = false;
         bool segments = false;
+        bool audioMix = false;
     };
     mutable std::optional<Mp4Capabilities> m_mp4Capabilities;
     const Mp4Capabilities& mp4Capabilities() const;
@@ -653,6 +711,32 @@ private:
     std::shared_ptr<const SnapTray::KeyTimeline> m_keyTimeline;
     SnapTray::KeyOverlaySettings m_keyOverlay;
     SnapTray::OverlayTrack m_overlays;
+    bool m_hasSeparateTracks = false;
+    std::optional<SnapTray::RecordingProject> m_project;
+    // After a save: keep this recording (or update the project) as a project.
+    // False when the project could not be kept or updated: the recording
+    // then stays open here (PR #203 review).
+    bool keepAsProject(const QString& savedPath);
+    // The recipe, with a background image copied into `projectDir`, so the
+    // project does not depend on a file elsewhere (PR #203 review).
+    // A new image gets a new name; the old one stays until the manifest that
+    // stops using it is written (PR #203 review). `copied` names a file this
+    // call created, to remove if that write fails.
+    QJsonObject recipeForProject(const QString& projectDir, QString* copied = nullptr) const;
+    // Background images in `projectDir` the recipe no longer uses.
+    static void removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe);
+    // A project's edits wait for the player's size and length (PR #203 review).
+    bool m_projectRecipePending = false;
+    // Applying a project's recipe: its looks are not remembered as defaults.
+    bool m_restoringProject = false;
+    // Remembers the frame for the next recording, never a project-owned image.
+    void rememberAppearance(const SnapTray::RecordingAppearance& appearance);
+    void applyPendingProjectRecipe();
+    SnapTray::AudioMixSettings m_audioMix;
+    void editAudioMix(const std::function<void(SnapTray::AudioMixSettings&)>& change);
+    // The preview plays the tracks mixed at m_audioMix (shared with the player's thread).
+    struct PreviewAudio;
+    std::shared_ptr<PreviewAudio> m_previewAudio;
     int m_selectedOverlay = -1;
     void editOverlays(const std::function<void(SnapTray::OverlayTrack&)>& change);
     void editKeyOverlay(const std::function<void(SnapTray::KeyOverlaySettings&)>& change);
