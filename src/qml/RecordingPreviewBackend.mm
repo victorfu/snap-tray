@@ -1374,6 +1374,23 @@ void RecordingPreviewBackend::applyPendingProjectRecipe()
     emit projectChanged(); // Save is possible now
 }
 
+void RecordingPreviewBackend::setInitialCrop(const QRect& videoRect)
+{
+    if (videoRect.isEmpty()) return;
+    // Checked against the picture once the player has reported its size
+    // (the source is never probed on the GUI thread).
+    m_pendingInitialCrop = videoRect;
+    applyPendingInitialCrop();
+}
+
+void RecordingPreviewBackend::applyPendingInitialCrop()
+{
+    if (m_pendingInitialCrop.isEmpty() || m_videoSize.isEmpty()) return;
+    setCropRect(std::exchange(m_pendingInitialCrop, QRect()));
+    m_editHistory.reset(currentEditState());
+    emit editHistoryChanged();
+}
+
 bool RecordingPreviewBackend::keepsProject() const
 {
     return m_project.has_value() || RecordingSettingsManager::instance().keepProjects();
@@ -2271,6 +2288,7 @@ void RecordingPreviewBackend::updateVideoSize(const QSize &size)
     m_videoSize = size;
     emit videoSizeChanged();
     applyPendingProjectRecipe();
+    applyPendingInitialCrop();
     if (m_windowTimeline && m_windowTimeline->frameSize() != size) {
         qWarning() << "RecordingPreviewBackend: window timeline frame size" << m_windowTimeline->frameSize()
                    << "does not match the video" << size << "- snapping disabled";

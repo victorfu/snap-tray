@@ -6,6 +6,8 @@
 #include <QScreen>
 #include <QQuickItem>
 #include <QQuickView>
+#include <QQuickWindow>
+#include <QtMath>
 #include <QThread>
 #include <QScopeGuard>
 
@@ -13,6 +15,10 @@
 #include "qml/QmlDialog.h"
 #include "qml/RecordingRecoveryViewModel.h"
 #include "qml/RecordingLibraryViewModel.h"
+#include "qml/QuickSaveAction.h"
+#include "qml/QmlRecordingAreaSelector.h"
+#include <QClipboard>
+#include <QMimeData>
 #include "recording/RecordingProject.h"
 #include <QTemporaryDir>
 #include "qml/ScreenPickerViewModel.h"
@@ -118,6 +124,10 @@ private slots:
     void recoveryDialogLists();
     void recoveryDialogScrollsManyRecordings();
     void libraryListsOpensAndDeletesProjects();
+    void recordingModeIsTheSameSettingEverywhere();
+    void setupFitsAShortScreen();
+    void quickSaveActionsDoWhatTheySay();
+    void areaSelectorChoosesAnAreaOfOneScreen();
 
 private:
     std::shared_ptr<FakeEngineState> m_engineState;
@@ -693,6 +703,247 @@ void TestRecordingSetup::libraryListsOpensAndDeletesProjects()
     QVERIFY(QFileInfo::exists(dirs.last()));
     viewModel->setOpenProjectDir(QString());
     QTRY_COMPARE(buttons("libraryDeleteButton").size(), 1);
+}
+
+void TestRecordingSetup::recordingModeIsTheSameSettingEverywhere()
+{
+    // #193: the setup's mode is Settings > Recording's "After recording"
+    // (showPreview); switching it changes what the setup says about audio.
+    auto& settings = RecordingSettingsManager::instance();
+    const int actionBefore = settings.quickSaveAction();
+    auto restore = qScopeGuard([&settings, actionBefore] {
+        settings.setShowPreview(true);
+        settings.setOutputFormat(0);
+        settings.setQuickSaveAction(actionBefore);
+    });
+    QScreen* primaryScreen = QGuiApplication::primaryScreen();
+    if (!primaryScreen) QSKIP("No screen available");
+    SnapTray::ScreenSource source;
+    source.id = QStringLiteral("screen-a");
+    source.name = QStringLiteral("Display A");
+    source.screen = primaryScreen;
+    auto* viewModel = new SnapTray::ScreenPickerViewModel({source});
+    viewModel->setAudioEngineFactory(factory());
+    if (!viewModel->recordingModeSupported()) {
+        QVERIFY(!viewModel->editMode()); // direct MP4 only: always quick
+        delete viewModel;
+        QSKIP("This platform records direct MP4 only");
+    }
+    settings.setOutputFormat(1); // GIF: audio only in edit mode
+    QVERIFY(viewModel->editMode());
+    QVERIFY(viewModel->outputHasAudio());
+    const QString editSummary = viewModel->outputSummary();
+
+    SnapTray::QmlDialog dialog(QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/ScreenPickerDialog.qml")),
+                               viewModel, QStringLiteral("viewModel"));
+    viewModel->setParent(&dialog);
+    dialog.showCenteredOnScreen(primaryScreen);
+    QQuickView* view = nullptr;
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
+            view = candidate;
+    }
+    QVERIFY(view);
+    const auto find = [view](const char* name) {
+        return view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(name));
+    };
+    QVERIFY(find("setupRecordingMode") && find("setupRecordingMode")->isVisible());
+    QCOMPARE(find("setupRecordingMode")->property("currentIndex").toInt(), 0);
+    QVERIFY(!find("setupQuickSaveAction")->isVisible());
+
+    QSignalSpy changed(viewModel, &SnapTray::ScreenPickerViewModel::recordingModeChanged);
+    QMetaObject::invokeMethod(find("setupRecordingMode"), "activated", Q_ARG(int, 1));
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(!settings.showPreview());
+    QVERIFY(!viewModel->editMode());
+    // Quick GIF: no sound, a different summary, no key tracks.
+    QVERIFY(!viewModel->outputHasAudio());
+    QVERIFY(viewModel->outputSummary() != editSummary);
+    QTRY_VERIFY(find("setupQuickSaveAction")->isVisible());
+    QVERIFY(!find("setupMicrophoneToggle")->isEnabled());
+    QVERIFY(!find("setupRecordKeysToggle")->isEnabled());
+    QMetaObject::invokeMethod(find("setupQuickSaveAction"), "activated", Q_ARG(int, 2));
+    QCOMPARE(settings.quickSaveAction(), int(RecordingSettingsManager::QuickSaveShowInFolder));
+
+    // Changed elsewhere (Settings): a new setup shows it.
+    settings.setShowPreview(true);
+    SnapTray::ScreenPickerViewModel again({source});
+    QVERIFY(again.editMode());
+    QCOMPARE(again.quickSaveAction(), int(RecordingSettingsManager::QuickSaveShowInFolder));
+    // Out-of-range values read as "do nothing".
+    settings.setQuickSaveAction(7);
+    QCOMPARE(settings.quickSaveAction(), int(RecordingSettingsManager::QuickSaveNothing));
+}
+
+// PR #204 review: with every option shown the setup was taller than a short
+// screen, pushing Start/Cancel off it. It is bounded by the screen and scrolls.
+void TestRecordingSetup::setupFitsAShortScreen()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("No screen available");
+    auto& settings = RecordingSettingsManager::instance();
+    auto restore = qScopeGuard([&settings] {
+        settings.setAudioEnabled(false);
+        settings.setKeyRecordingMode(0);
+    });
+    settings.setShowPreview(true);
+    settings.setAudioEnabled(true);
+    settings.setAudioSource(SnapTray::kAudioSourceMicrophone);
+    SnapTray::ScreenSource source;
+    source.id = QStringLiteral("screen-a");
+    source.name = QStringLiteral("Display A");
+    source.screen = screen;
+    auto* viewModel = new SnapTray::ScreenPickerViewModel({source});
+    viewModel->setAudioEngineFactory(factory());
+    if (viewModel->keyRecordingSupported()) viewModel->setRecordTypedText(true);
+    SnapTray::QmlDialog dialog(QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/ScreenPickerDialog.qml")),
+                               viewModel, QStringLiteral("viewModel"));
+    viewModel->setParent(&dialog);
+    dialog.showCenteredOnScreen(screen);
+    QQuickView* view = nullptr;
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
+            view = candidate;
+    }
+    QVERIFY(view);
+    QTRY_VERIFY(viewModel->devicesLoaded());
+    // A short screen, shorter than the setup on every system (macOS has no
+    // key options, so its setup is shorter than Linux's).
+    constexpr int kShortScreen = 360;
+    view->rootObject()->setProperty("availableScreenHeight", kShortScreen);
+    QTRY_VERIFY(view->height() > 0 && qAbs(view->height() - view->rootObject()->height()) < 1);
+    QVERIFY2(view->height() <= kShortScreen,
+             qPrintable(QStringLiteral("%1 > %2").arg(view->height()).arg(kShortScreen)));
+    auto* scroller = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("setupScroller"));
+    QVERIFY(scroller);
+    auto* start = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("setupStartButton"));
+    QVERIFY(start && start->isVisible());
+    // Start and Cancel stay in the window (after the layout settles).
+    QTRY_VERIFY2(start->mapRectToScene(QRectF(0, 0, start->width(), start->height())).bottom() <= view->height(),
+                 qPrintable(QString::number(start->mapRectToScene(QRectF(0, 0, start->width(), start->height())).bottom())));
+    // Everything does not fit: the rest scrolls into view.
+    QVERIFY(scroller->property("contentHeight").toReal() > scroller->height());
+    scroller->setProperty("contentY", scroller->property("contentHeight").toReal() - scroller->height());
+    auto* last = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("setupShowBeforeRecordingToggle"));
+    QVERIFY(last);
+    const QRectF lastRect = last->mapRectToItem(scroller, QRectF(0, 0, last->width(), last->height()));
+    QVERIFY(lastRect.bottom() <= scroller->height() + 1);
+}
+
+void TestRecordingSetup::quickSaveActionsDoWhatTheySay()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("saved.mp4"));
+    {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    QList<QUrl> opened;
+    const auto openUrl = [&opened](const QUrl& url) {
+        opened.append(url);
+        return true;
+    };
+    QVERIFY(!SnapTray::QuickSaveAction::apply(RecordingSettingsManager::QuickSaveNothing, path, openUrl));
+    QVERIFY(opened.isEmpty());
+    QVERIFY(SnapTray::QuickSaveAction::apply(RecordingSettingsManager::QuickSaveShowInFolder, path, openUrl));
+    QCOMPARE(opened.size(), 1);
+    QCOMPARE(opened.first(), QUrl::fromLocalFile(QFileInfo(path).absolutePath()));
+    // A file that is gone: nothing is opened or copied.
+    QVERIFY(!SnapTray::QuickSaveAction::apply(RecordingSettingsManager::QuickSaveShowInFolder,
+                                              dir.filePath(QStringLiteral("missing.mp4")), openUrl));
+    QCOMPARE(opened.size(), 1);
+
+    std::unique_ptr<QMimeData> data(SnapTray::QuickSaveAction::fileMimeData(path));
+    QCOMPARE(data->urls(), QList<QUrl>{QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath())});
+    QCOMPARE(data->text(), QFileInfo(path).absoluteFilePath());
+    QVERIFY(SnapTray::QuickSaveAction::apply(RecordingSettingsManager::QuickSaveCopyFile, path, openUrl));
+    const QMimeData* copied = QGuiApplication::clipboard()->mimeData();
+    QVERIFY(copied);
+    if (copied->hasUrls()) {
+        QCOMPARE(copied->urls().first(), QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath()));
+    } else {
+        // Some offscreen/X11 test clipboards keep only the text.
+        QCOMPARE(copied->text(), QFileInfo(path).absoluteFilePath());
+    }
+}
+
+void TestRecordingSetup::areaSelectorChoosesAnAreaOfOneScreen()
+{
+    // #194: a recording-only overlay on one screen; the area is reported in
+    // global logical coordinates and never smaller than 64 video pixels.
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("No screen available");
+    SnapTray::QmlRecordingAreaSelector selector;
+    QSignalSpy chosen(&selector, &SnapTray::QmlRecordingAreaSelector::areaChosen);
+    QSignalSpy cancelled(&selector, &SnapTray::QmlRecordingAreaSelector::cancelled);
+    selector.start(screen);
+    QQuickItem* root = selector.rootItem();
+    QVERIFY(root);
+    QTRY_VERIFY(root->width() > 0);
+    const qreal dpr = screen->devicePixelRatio();
+    QCOMPARE(root->property("minSide").toInt(), qCeil(64 / dpr));
+    QVERIFY(root->findChild<QQuickItem*>(QStringLiteral("areaToolbar")));
+
+    // Nothing drawn: Record does nothing.
+    QMetaObject::invokeMethod(root, "confirm");
+    QCOMPARE(chosen.count(), 0);
+    QMetaObject::invokeMethod(root, "drawTo", Q_ARG(QVariant, 10), Q_ARG(QVariant, 20), Q_ARG(QVariant, 330),
+                              Q_ARG(QVariant, 200));
+    QVERIFY(root->property("hasSelection").toBool());
+    QMetaObject::invokeMethod(root, "confirm");
+    QCOMPARE(chosen.count(), 1);
+    // Global: from where the overlay window is.
+    const QPoint origin = root->window()->position();
+    QCOMPARE(chosen.last().first().toRect(), QRect(origin + QPoint(10, 20), QSize(320, 180)));
+
+    // A ratio fits inside the drawn area.
+    QMetaObject::invokeMethod(root, "applyRatio", Q_ARG(QVariant, 3)); // 1:1
+    QCOMPARE(root->property("selW").toReal(), root->property("selH").toReal());
+    QCOMPARE(root->property("selH").toReal(), 180.0);
+    // Drawn past the edge: kept on this screen.
+    QMetaObject::invokeMethod(root, "applyRatio", Q_ARG(QVariant, 0));
+    QMetaObject::invokeMethod(root, "drawTo", Q_ARG(QVariant, root->width() - 50), Q_ARG(QVariant, 10),
+                              Q_ARG(QVariant, root->width() + 500), Q_ARG(QVariant, 300));
+    QCOMPARE(root->property("selX").toReal() + root->property("selW").toReal(), root->width());
+    // Too small to record: no area.
+    QMetaObject::invokeMethod(root, "drawTo", Q_ARG(QVariant, 0), Q_ARG(QVariant, 0), Q_ARG(QVariant, 5),
+                              Q_ARG(QVariant, 5));
+    QVERIFY(!root->property("hasSelection").toBool());
+    // Full Screen is the whole screen.
+    QMetaObject::invokeMethod(root, "chooseFullScreen");
+    QCOMPARE(chosen.last().first().toRect(), screen->geometry());
+    // Esc cancels.
+    QQuickWindow* window = root->window();
+    QVERIFY(window);
+    root->forceActiveFocus();
+    QTest::keyClick(window, Qt::Key_Escape);
+    QTRY_COMPARE(cancelled.count(), 1);
+    selector.close();
+    QVERIFY(!selector.rootItem());
+    QTest::qWait(50);
+    QCOMPARE(cancelled.count(), 1); // closing it ourselves is not a cancel
+
+    // A narrow screen (a portrait display at 200%): the toolbar wraps and
+    // Record stays on screen (PR #205 review).
+    selector.start(screen);
+    root = selector.rootItem();
+    QVERIFY(root);
+    constexpr int kNarrow = 720;
+    root->window()->showNormal();
+    root->window()->resize(kNarrow, 600);
+    QTRY_COMPARE(int(root->width()), kNarrow);
+    QQuickItem* record = root->findChild<QQuickItem*>(QStringLiteral("areaRecordButton"));
+    QVERIFY(record);
+    QTRY_VERIFY(record->mapRectToScene(QRectF(0, 0, record->width(), record->height())).right() <= kNarrow);
+    QVERIFY(record->mapRectToScene(QRectF(0, 0, record->width(), record->height())).left() >= 0);
+
+    // Closed by the window manager (Alt+F4): the setup is cancelled, once.
+    root->window()->close();
+    QTRY_COMPARE(cancelled.count(), 2);
+    selector.close();
+    QTest::qWait(50);
+    QCOMPARE(cancelled.count(), 2);
 }
 
 void TestRecordingSetup::lostMicrophoneEndsTheTest_data()

@@ -23,12 +23,17 @@ class ScreenPickerViewModel : public QObject
     Q_PROPERTY(bool microphoneEnabled READ microphoneEnabled WRITE setMicrophoneEnabled NOTIFY audioSettingsChanged)
     Q_PROPERTY(bool systemAudioEnabled READ systemAudioEnabled WRITE setSystemAudioEnabled NOTIFY audioSettingsChanged)
     Q_PROPERTY(bool systemAudioSupported READ systemAudioSupported NOTIFY devicesChanged)
-    Q_PROPERTY(bool outputHasAudio READ outputHasAudio CONSTANT)
+    Q_PROPERTY(bool outputHasAudio READ outputHasAudio NOTIFY recordingModeChanged)
+    // Quick or edit mode (#193): the same setting as Settings > Recording.
+    Q_PROPERTY(bool editMode READ editMode WRITE setEditMode NOTIFY recordingModeChanged)
+    Q_PROPERTY(bool recordingModeSupported READ recordingModeSupported CONSTANT)
+    Q_PROPERTY(int quickSaveAction READ quickSaveAction WRITE setQuickSaveAction NOTIFY recordingModeChanged)
+    Q_PROPERTY(bool preselectArea READ preselectArea WRITE setPreselectArea NOTIFY recordingModeChanged)
     Q_PROPERTY(QString selectedDevice READ selectedDevice WRITE setSelectedDevice NOTIFY audioSettingsChanged)
     Q_PROPERTY(QVariantList inputDevices READ inputDevices NOTIFY devicesChanged)
     Q_PROPERTY(bool devicesLoaded READ devicesLoaded NOTIFY devicesChanged)
-    Q_PROPERTY(QString outputSummary READ outputSummary CONSTANT)
-    Q_PROPERTY(QString audioNote READ audioNote CONSTANT)
+    Q_PROPERTY(QString outputSummary READ outputSummary NOTIFY recordingModeChanged)
+    Q_PROPERTY(QString audioNote READ audioNote NOTIFY recordingModeChanged)
     Q_PROPERTY(bool showSetupBeforeRecording READ showSetupBeforeRecording WRITE setShowSetupBeforeRecording NOTIFY showSetupBeforeRecordingChanged)
     // Keys for shortcut hints (#187): off by default; typed text needs its own switch.
     Q_PROPERTY(bool keyRecordingSupported READ keyRecordingSupported CONSTANT)
@@ -62,6 +67,16 @@ public:
     QVariantList inputDevices() const { return m_inputDevices; }
     bool devicesLoaded() const { return m_devicesLoaded; }
     QString outputSummary() const;
+    // Edit mode opens the preview after recording; quick mode saves right
+    // away. Where the platform records direct MP4 only, it is always quick.
+    bool editMode() const;
+    void setEditMode(bool edit);
+    bool recordingModeSupported() const;
+    int quickSaveAction() const;
+    void setQuickSaveAction(int action);
+    // Choose an area before recording (#194).
+    bool preselectArea() const;
+    void setPreselectArea(bool value);
     QString audioNote() const;
     bool showSetupBeforeRecording() const;
     bool keyRecordingSupported() const;
@@ -93,6 +108,7 @@ signals:
     void devicesChanged();
     void showSetupBeforeRecordingChanged();
     void keyRecordingChanged();
+    void recordingModeChanged();
     void microphoneTestChanged();
     void microphoneLevelChanged();
 

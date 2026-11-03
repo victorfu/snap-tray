@@ -903,6 +903,26 @@ File size: %3</source>
         <source>This project's recording is missing or damaged.</source>
         <translation>การบันทึกของโปรเจกต์นี้หายไปหรือเสียหาย</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Copied</source>
+        <translation>คัดลอกการบันทึกแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>บันทึกไปที่ %1 และคัดลอกแล้ว: วางลงในแชตหรือโฟลเดอร์ได้</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>edit mode</source>
+        <translation>โหมดแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>quick mode</source>
+        <translation>โหมดด่วน</translation>
+    </message>
 </context>
 <context>
     <name>MultiRegionListPanel</name>
@@ -3647,6 +3667,61 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After recording</source>
+        <translation>หลังการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>แก้ไขในหน้าตัวอย่าง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Save right away</source>
+        <translation>บันทึกทันที</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>โหมดด่วน: ไฟล์จะถูกบันทึกในรูปแบบสุดท้ายทันทีที่คุณหยุด โดยไม่มีหน้าตัวอย่างและไม่มีแทร็กสำหรับแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving</source>
+        <translation>หลังจากบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>ไม่ต้องทำอะไร</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>คัดลอกไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>แสดงในโฟลเดอร์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>โหมดแก้ไข: ตัด ครอป และเพิ่มเอฟเฟกต์ในหน้าตัวอย่าง แล้วจึงบันทึก การบันทึกที่มีหน้าตัวอย่างจะถูกบันทึกเป็น MP4 ก่อนเสมอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>เลือกพื้นที่ก่อนบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>ลากบนหน้าจอเพื่อเลือกสิ่งที่จะบันทึก โหมดแก้ไขยังคงบันทึกทั้งหน้าจอและเปิดหน้าตัวอย่างที่ครอปตามพื้นที่ จึงเปลี่ยนได้ภายหลัง ส่วนโหมดด่วนจะบันทึกเฉพาะพื้นที่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>โปรเจกต์จะถูกเก็บเมื่อคุณบันทึกจากหน้าตัวอย่าง เปิด แสดงตัวอย่าง เพื่อใช้งาน</translation>
     </message>
@@ -4919,6 +4994,71 @@ English is always included and cannot be removed.</source>
         <source>Record shortcut keys</source>
         <translation>บันทึกปุ่มลัด</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After recording</source>
+        <translation>หลังการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>แก้ไขในหน้าตัวอย่าง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Save right away</source>
+        <translation>บันทึกทันที</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>โหมดด่วน: ไฟล์จะถูกบันทึกในรูปแบบสุดท้ายทันทีที่คุณหยุด โดยไม่มีหน้าตัวอย่างและไม่มีแทร็กสำหรับแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After saving</source>
+        <translation>หลังจากบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>ไม่ต้องทำอะไร</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>คัดลอกไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>แสดงในโฟลเดอร์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>โหมดแก้ไข: ตัด ครอป และเพิ่มเอฟเฟกต์ในหน้าตัวอย่าง แล้วจึงบันทึก แทร็กตัวชี้ หน้าต่าง และปุ่มจะถูกเก็บไว้สำหรับแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>เฉพาะโหมดแก้ไข: โหมดด่วนจะไม่เก็บแทร็กสำหรับแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>เลือกพื้นที่ก่อน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>ยังคงบันทึกทั้งหน้าจอ หน้าตัวอย่างจะเปิดโดยครอปตามพื้นที่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>บันทึกเฉพาะพื้นที่</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -4951,6 +5091,11 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>กู้คืนไม่ได้: การบันทึกถูกขัดจังหวะก่อนบันทึกส่วนที่เล่นได้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>บันทึกทั้งหน้าจอไว้ เปิดโดยครอปตามพื้นที่ที่เลือก</translation>
     </message>
 </context>
 <context>
@@ -5113,6 +5258,49 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
         <source>Open in the preview</source>
         <translation>เปิดอยู่ในหน้าตัวอย่าง</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>อิสระ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>ลากเพื่อย้ายหรือวาดใหม่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>ลากเพื่อเลือกพื้นที่ที่จะบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>อัตราส่วน %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>เต็มหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>บันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>บันทึกพื้นที่นี้</translation>
     </message>
 </context>
 </TS>

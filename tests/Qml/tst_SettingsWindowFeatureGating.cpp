@@ -2,6 +2,7 @@
 
 #include "qml/SettingsBackend.h"
 #include "settings/Settings.h"
+#include "settings/RecordingSettingsManager.h"
 
 #include <QAccessible>
 #include <QHash>
@@ -38,6 +39,7 @@ private slots:
     void cliOperationCompletionRestoresControls();
     void sidebarModelHidesUnsupportedPages();
     void filesPageShowsRememberLastFolderOnAllPlatforms();
+    void recordingModeFollowsTheSetup();
 
 private:
     QHash<QString, SettingSnapshot> m_settingSnapshots;
@@ -180,6 +182,26 @@ void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatf
                  .value(QStringLiteral("files/useLastScreenshotSaveLocation"))
                  .toBool(),
              true);
+}
+
+void tst_SettingsWindowFeatureGating::recordingModeFollowsTheSetup()
+{
+    // #193: the recording setup can switch the mode while the (kept)
+    // settings window is closed; showing it again re-reads it.
+    auto& recording = RecordingSettingsManager::instance();
+    const bool before = recording.showPreview();
+    auto restore = qScopeGuard([&recording, before] { recording.setShowPreview(before); });
+    recording.setShowPreview(true);
+    SnapTray::SettingsBackend backend;
+    if (backend.recordingDirectMp4Only()) QSKIP("This platform records direct MP4 only");
+    QVERIFY(backend.recordingShowPreview());
+    QSignalSpy changed(&backend, &SnapTray::SettingsBackend::recordingShowPreviewChanged);
+    recording.setShowPreview(false); // what the setup does
+    backend.refreshRecordingMode();
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(!backend.recordingShowPreview());
+    backend.refreshRecordingMode(); // unchanged: no signal
+    QCOMPARE(changed.count(), 1);
 }
 
 QTEST_MAIN(tst_SettingsWindowFeatureGating)

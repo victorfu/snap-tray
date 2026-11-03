@@ -11,6 +11,7 @@
 #include <QTimer>
 #include "RecordingManager.h"
 #include "settings/FileSettingsManager.h"
+#include "qml/RecordingRecoveryViewModel.h"
 #include "recording/RecordingProject.h"
 #include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
@@ -69,10 +70,15 @@ private slots:
     void sessionClockFollowsRecordingLifecycle();
     void sustainedFrameLossWarnsOnce();
     void startRefusedWhenDiskIsFull();
+    void diskSamplesWarnAndStopSafely_data();
     void diskSamplesWarnAndStopSafely();
+    void finishedRecordingStaysRecoverable_data();
+    void finishedRecordingStaysRecoverable();
+    void quickModeSavesAndReportsTheFile();
     void sessionManifestFollowsTheRecording();
     void staleCleanupSparesPendingRecoveries();
     void recoveredRecordingOpensInPreview();
+    void recoveredRecordingKeepsTheChosenArea();
     void savesNeverGoIntoTheProjectsFolder();
     void interruptionsKeepTheRecording_data();
     void interruptionsKeepTheRecording();
@@ -852,10 +858,19 @@ void TestRecordingStartup::startRefusedWhenDiskIsFull()
     unknown.cancelRecording();
 }
 
+void TestRecordingStartup::diskSamplesWarnAndStopSafely_data()
+{
+    // #193: quick (preview off) and edit (preview on) mode alike.
+    QTest::addColumn<bool>("editMode");
+    QTest::newRow("quick mode") << false;
+    QTest::newRow("edit mode") << true;
+}
+
 void TestRecordingStartup::diskSamplesWarnAndStopSafely()
 {
+    QFETCH(bool, editMode);
     RecordingSettingsManager::instance().setAudioEnabled(false);
-    RecordingSettingsManager::instance().setShowPreview(false);
+    RecordingSettingsManager::instance().setShowPreview(editMode);
     RecordingManager manager;
     prepare(manager);
     auto encoderState = std::make_shared<AudioEncoderTestState>();
@@ -876,6 +891,7 @@ void TestRecordingStartup::diskSamplesWarnAndStopSafely()
     manager.m_recordingFilePath = QStringLiteral("unused-disk-test.mp4");
     manager.onInitializationComplete(task, manager.m_initGeneration);
     QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    QCOMPARE(manager.recordingOpensPreview(), editMode);
     QVERIFY(manager.m_diskTimer);  // monitoring runs while recording
 
     constexpr qint64 kMiB = 1024 * 1024;
@@ -943,6 +959,89 @@ void TestRecordingStartup::sessionManifestFollowsTheRecording()
     QVERIFY(!SnapTray::RecordingSession::hasSession(video));
 }
 
+void TestRecordingStartup::finishedRecordingStaysRecoverable_data()
+{
+    QTest::addColumn<bool>("editMode");
+    QTest::newRow("quick mode") << false;
+    QTest::newRow("edit mode") << true;
+}
+
+// #193 / #157: a finished recording keeps its manifest, locked, until the
+// preview (edit) or the save dialog (quick) is done with it, so a crash at
+// that point leaves it to be recovered.
+void TestRecordingStartup::finishedRecordingStaysRecoverable()
+{
+    QFETCH(bool, editMode);
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_m.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    RecordingManager manager;
+    manager.m_startSettings.showPreview = editMode;
+    manager.beginSession(video, QSize(16, 16), false);
+    manager.m_state = RecordingManager::State::Encoding;
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    manager.onEncodingFinished(true, video);
+    QVERIFY(SnapTray::RecordingSession::hasSession(video));
+    QVERIFY(RecordingManager::isSessionActive(video));
+    QCOMPARE(SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(video))->state,
+             SnapTray::RecordingSessionInfo::State::Finished);
+    if (editMode) {
+        QTRY_COMPARE(preview.count(), 1);
+        QCOMPARE(manager.state(), RecordingManager::State::Previewing);
+        // Quitting with the preview open keeps it for the next launch.
+        manager.onPreviewClosed(false);
+        QVERIFY(SnapTray::RecordingSession::hasSession(video));
+    } else {
+        // The save dialog owns it now (queued, not run here).
+        QCOMPARE(manager.state(), RecordingManager::State::Idle);
+        QCOMPARE(preview.count(), 0);
+    }
+    SnapTray::RecordingSession::discard(video);
+}
+
+// #193: quick mode saves the file without a preview and reports where it went.
+void TestRecordingStartup::quickModeSavesAndReportsTheFile()
+{
+    QTemporaryDir dir;
+    QTemporaryDir out;
+    auto& files = FileSettingsManager::instance();
+    const bool autoSave = files.loadAutoSaveRecordings();
+    const QString path = files.loadRecordingPath();
+    auto restore = qScopeGuard([&files, autoSave, path] {
+        files.saveAutoSaveRecordings(autoSave);
+        files.saveRecordingPath(path);
+    });
+    files.saveAutoSaveRecordings(true);
+    files.saveRecordingPath(out.path());
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_q193.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    RecordingManager manager;
+    manager.m_startSettings.showPreview = false;
+    manager.beginSession(video, QSize(16, 16), false);
+    manager.m_state = RecordingManager::State::Encoding;
+    QSignalSpy quick(&manager, &RecordingManager::quickRecordingSaved);
+    QSignalSpy stopped(&manager, &RecordingManager::recordingStopped);
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    manager.onEncodingFinished(true, video);
+    QTRY_COMPARE(quick.count(), 1);
+    const QString saved = quick.first().first().toString();
+    QVERIFY(saved.startsWith(out.path()));
+    QVERIFY(QFileInfo::exists(saved));
+    QVERIFY(!QFileInfo::exists(video));
+    QCOMPARE(stopped.count(), 1);
+    QCOMPARE(preview.count(), 0);
+    // Saved: nothing left to recover.
+    QVERIFY(!SnapTray::RecordingSession::hasSession(video));
+}
+
 void TestRecordingStartup::staleCleanupSparesPendingRecoveries()
 {
     const QDir temp(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
@@ -1004,6 +1103,36 @@ void TestRecordingStartup::recoveredRecordingOpensInPreview()
     QVERIFY(!RecordingManager::isSessionActive(video));
 }
 
+// #194 / #157: a recording made with an area chosen beforehand opens, after a
+// crash, with that area as its crop; the recovery list says the file is the
+// whole screen.
+void TestRecordingStartup::recoveredRecordingKeepsTheChosenArea()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_area.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = video;
+    info.frameSize = QSize(1920, 1080);
+    info.initialCrop = QRect(200, 100, 1280, 720);
+    QVERIFY(SnapTray::RecordingSession::write(info));
+    SnapTray::RecordingSession::Recoverable item;
+    item.info = *SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(video));
+    item.decodable = true;
+    item.complete = true;
+    QVERIFY(SnapTray::RecordingRecoveryViewModel::statusText(item).contains(QStringLiteral("whole screen")));
+
+    RecordingManager manager;
+    QVERIFY(manager.openRecoveredRecording(video));
+    QCOMPARE(manager.previewInitialCrop(), QRect(200, 100, 1280, 720));
+    manager.onPreviewClosed(false);
+    SnapTray::RecordingSession::discard(video);
+}
+
 // PR #203 review: a save (dialog or auto-save) into the Recording Library's
 // folder could replace a project's source recording; it is refused.
 void TestRecordingStartup::savesNeverGoIntoTheProjectsFolder()
@@ -1045,18 +1174,26 @@ void TestRecordingStartup::startFakeRecording(RecordingManager& manager,
 void TestRecordingStartup::interruptionsKeepTheRecording_data()
 {
     QTest::addColumn<int>("cause");
-    QTest::newRow("screen removed (async backends)") << 0;
-    QTest::newRow("screen gone (polling backends)") << 1;
-    QTest::newRow("screen geometry changed") << 2;
-    QTest::newRow("screen scale changed") << 3;
-    QTest::newRow("disk almost full") << 4;
+    QTest::addColumn<bool>("editMode");
+    // #193: every cause in quick and edit mode.
+    for (const bool edit : {true, false}) {
+        const char* mode = edit ? "edit" : "quick";
+        QTest::addRow("screen removed (async backends), %s", mode) << 0 << edit;
+        QTest::addRow("screen gone (polling backends), %s", mode) << 1 << edit;
+        QTest::addRow("screen geometry changed, %s", mode) << 2 << edit;
+        QTest::addRow("screen scale changed, %s", mode) << 3 << edit;
+        QTest::addRow("disk almost full, %s", mode) << 4 << edit;
+    }
 }
 
 void TestRecordingStartup::interruptionsKeepTheRecording()
 {
     QFETCH(int, cause);
+    QFETCH(bool, editMode);
+    RecordingSettingsManager::instance().setShowPreview(editMode);
     RecordingManager manager;
     startFakeRecording(manager, std::make_shared<AudioEncoderTestState>());
+    QCOMPARE(manager.recordingOpensPreview(), editMode);
     QSignalSpy interrupted(&manager, &RecordingManager::recordingInterrupted);
     QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
     QSignalSpy cancelled(&manager, &RecordingManager::recordingCancelled);

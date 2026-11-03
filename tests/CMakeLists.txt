@@ -399,6 +399,11 @@ target_link_libraries(RecordingManager_AudioTracks PRIVATE snaptray_core Qt6::Te
 add_test(NAME RecordingManager_AudioTracks COMMAND RecordingManager_AudioTracks)
 set_tests_properties(RecordingManager_AudioTracks PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_RecordingArea RecordingManager/tst_RecordingArea.cpp)
+target_link_libraries(RecordingManager_RecordingArea PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingArea COMMAND RecordingManager_RecordingArea)
+set_tests_properties(RecordingManager_RecordingArea PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RecordingManager_RecordingProject RecordingManager/tst_RecordingProject.cpp)
 target_link_libraries(RecordingManager_RecordingProject PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_RecordingProject COMMAND RecordingManager_RecordingProject)

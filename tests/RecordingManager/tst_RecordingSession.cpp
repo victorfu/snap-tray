@@ -49,6 +49,7 @@ class TestRecordingSession : public QObject
 
 private slots:
     void manifestRoundTrip();
+    void manifestKeepsTheChosenArea();
     void unreadableManifestsAreReported();
     void manifestCannotPointElsewhere();
     void scanTrustsTheFileNotTheManifest();
@@ -334,6 +335,23 @@ void TestRecordingSession::finishedAnimationsAreRecoverable()
             QCOMPARE(item.durationMs, qint64(600));
         }
     }
+}
+
+// #194: the area chosen before recording survives a crash, and a damaged
+// value never becomes a crop outside the recording.
+void TestRecordingSession::manifestKeepsTheChosenArea()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_area.mp4"));
+    auto info = sessionFor(video);
+    QVERIFY(Session::write(info));
+    QVERIFY(Session::read(Session::manifestPathFor(video))->initialCrop.isEmpty()); // none by default
+    info.initialCrop = QRect(200, 100, 1280, 720);
+    QVERIFY(Session::write(info));
+    QCOMPARE(Session::read(Session::manifestPathFor(video))->initialCrop, QRect(200, 100, 1280, 720));
+    info.initialCrop = QRect(1000, 600, 1280, 720); // past the 1920x1080 frame
+    QVERIFY(Session::write(info));
+    QVERIFY(Session::read(Session::manifestPathFor(video))->initialCrop.isEmpty());
 }
 
 QTEST_MAIN(TestRecordingSession)
