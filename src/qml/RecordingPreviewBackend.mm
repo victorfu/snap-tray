@@ -67,7 +67,8 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
         m_cursorTimeline = std::make_shared<const SnapTray::CursorTimeline>(std::move(*cursor));
     }
     // The pointer look the user chose last time; undo starts from it.
-    m_cursorEffects = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects());
+    m_cursorEffects = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects())
+                          .preferences();
     m_editHistory.reset(currentEditState());
     // Availability depends on the format (MP4 needs a capable transcoder).
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::cursorEffectsChanged);
@@ -82,8 +83,9 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
     const QRectF bounds = m_cropRect.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(videoSize)) : QRectF(m_cropRect);
     const auto timeline = m_cursorTimeline;
     const bool drawCursor = cursorEffectsActive();
-    const auto cursor = drawCursor ? std::make_shared<SnapTray::CursorEffectRenderer>(*timeline, m_cursorEffects)
-                                   : std::shared_ptr<SnapTray::CursorEffectRenderer>();
+    const auto cursor = drawCursor
+        ? std::make_shared<SnapTray::CursorEffectRenderer>(*timeline, m_cursorEffects, effectsClipEnd())
+        : std::shared_ptr<SnapTray::CursorEffectRenderer>();
     const auto zoom = zoomAvailable() && m_zoom.isActive() ? std::make_shared<SnapTray::ZoomTrack>(m_zoom)
                                                             : std::shared_ptr<SnapTray::ZoomTrack>();
     const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()
@@ -158,6 +160,7 @@ void RecordingPreviewBackend::setCursorEffects(const SnapTray::CursorEffectSetti
 {
     if (m_cursorEffects == settings) return;
     m_cursorEffects = settings;
+    if (m_selectedPointerHide >= int(m_cursorEffects.hiddenRanges.size())) setSelectedPointerHide(-1);
     emit cursorEffectsChanged();
 }
 
@@ -168,7 +171,8 @@ void RecordingPreviewBackend::editCursorEffects(const std::function<void(SnapTra
     auto settings = m_cursorEffects;
     change(settings);
     if (settings == m_cursorEffects) return;
-    RecordingSettingsManager::instance().setPointerEffects(settings.toJson());
+    // Hidden ranges belong to this recording; the look carries over.
+    RecordingSettingsManager::instance().setPointerEffects(settings.preferences().toJson());
     setCursorEffects(settings);
     recordEdit();
 }
@@ -194,6 +198,93 @@ void RecordingPreviewBackend::setCursorSmoothing(int value)
 void RecordingPreviewBackend::setClickRipple(bool value)
 {
     editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.clickRipple = value; });
+}
+
+void RecordingPreviewBackend::setCursorIdleHide(int ms)
+{
+    const qint64 clamped = std::clamp<qint64>(ms, 0, SnapTray::CursorEffectSettings::kMaxIdleHideMs);
+    editCursorEffects([clamped](SnapTray::CursorEffectSettings& s) { s.idleHideMs = clamped; });
+}
+
+void RecordingPreviewBackend::setCursorMotionBlur(int level)
+{
+    const int clamped = qBound(0, level, int(SnapTray::CursorEffectSettings::MotionBlur::High));
+    editCursorEffects([clamped](SnapTray::CursorEffectSettings& s) {
+        s.motionBlur = SnapTray::CursorEffectSettings::MotionBlur(clamped);
+    });
+}
+
+void RecordingPreviewBackend::setCursorStillEnd(int ms)
+{
+    const qint64 clamped = std::clamp<qint64>(ms, 0, SnapTray::CursorEffectSettings::kMaxStillEndMs);
+    editCursorEffects([clamped](SnapTray::CursorEffectSettings& s) { s.stillEndMs = clamped; });
+}
+
+QVariantList RecordingPreviewBackend::pointerHiddenRanges() const
+{
+    QVariantList list;
+    for (const auto& range : m_cursorEffects.hiddenRanges) {
+        list.append(QVariantMap{{QStringLiteral("start"), range.startMs}, {QStringLiteral("end"), range.endMs}});
+    }
+    return list;
+}
+
+void RecordingPreviewBackend::setSelectedPointerHide(int index)
+{
+    index = index >= 0 && index < int(m_cursorEffects.hiddenRanges.size()) ? index : -1;
+    if (m_selectedPointerHide == index) return;
+    m_selectedPointerHide = index;
+    emit selectedPointerHideChanged();
+}
+
+namespace {
+int hiddenRangeIndexAt(const SnapTray::CursorEffectSettings& settings, qint64 ms)
+{
+    for (int i = 0; i < int(settings.hiddenRanges.size()); ++i) {
+        if (settings.hiddenRanges[i].contains(ms)) return i;
+    }
+    return -1;
+}
+} // namespace
+
+int RecordingPreviewBackend::addPointerHideAt(qint64 positionMs)
+{
+    constexpr qint64 kNewHiddenRangeMs = 2000;
+    if (isProcessing() || !cursorEffectsAvailable()) return -1;
+    const qint64 end = m_duration > 0 ? m_duration : positionMs + kNewHiddenRangeMs;
+    const qint64 start = std::clamp<qint64>(positionMs, 0, end);
+    const qint64 rangeEnd = qMin(end, start + kNewHiddenRangeMs); // not std::min: windows.h defines min
+    if (rangeEnd - start < SnapTray::CursorEffectSettings::kMinHiddenRangeMs) return -1;
+    editCursorEffects([start, rangeEnd](SnapTray::CursorEffectSettings& s) {
+        auto ranges = s.hiddenRanges;
+        ranges.push_back({start, rangeEnd});
+        s.hiddenRanges = SnapTray::CursorEffectSettings::normalizedRanges(std::move(ranges));
+    });
+    const int index = hiddenRangeIndexAt(m_cursorEffects, start);
+    setSelectedPointerHide(index);
+    return index;
+}
+
+void RecordingPreviewBackend::removePointerHide(int index)
+{
+    editCursorEffects([index](SnapTray::CursorEffectSettings& s) {
+        if (index >= 0 && index < int(s.hiddenRanges.size())) s.hiddenRanges.erase(s.hiddenRanges.begin() + index);
+    });
+    setSelectedPointerHide(-1);
+}
+
+bool RecordingPreviewBackend::setPointerHideRange(int index, qint64 startMs, qint64 endMs)
+{
+    if (isProcessing() || index < 0 || index >= int(m_cursorEffects.hiddenRanges.size())) return false;
+    if (startMs < 0 || endMs - startMs < SnapTray::CursorEffectSettings::kMinHiddenRangeMs) return false;
+    if (m_duration > 0 && (startMs >= m_duration || endMs > m_duration)) return false;
+    editCursorEffects([index, startMs, endMs](SnapTray::CursorEffectSettings& s) {
+        auto ranges = s.hiddenRanges;
+        ranges[index] = {startMs, endMs};
+        s.hiddenRanges = SnapTray::CursorEffectSettings::normalizedRanges(std::move(ranges));
+    });
+    setSelectedPointerHide(hiddenRangeIndexAt(m_cursorEffects, startMs));
+    return true;
 }
 
 bool RecordingPreviewBackend::effectsActive() const
@@ -1304,7 +1395,7 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
     }
     if (state.cursor != m_cursorEffects) {
         setCursorEffects(state.cursor);
-        RecordingSettingsManager::instance().setPointerEffects(state.cursor.toJson());
+        RecordingSettingsManager::instance().setPointerEffects(state.cursor.preferences().toJson());
     }
     emit editHistoryChanged();
 }

@@ -102,6 +102,14 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(qreal cursorScale READ cursorScale WRITE setCursorScale NOTIFY cursorEffectsChanged)
     Q_PROPERTY(int cursorSmoothing READ cursorSmoothing WRITE setCursorSmoothing NOTIFY cursorEffectsChanged)
     Q_PROPERTY(bool clickRipple READ clickRipple WRITE setClickRipple NOTIFY cursorEffectsChanged)
+    // #186: idle hiding and "still end" in ms (0 = off), motion blur level,
+    // and the time ranges without a pointer.
+    Q_PROPERTY(int cursorIdleHide READ cursorIdleHide WRITE setCursorIdleHide NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(int cursorMotionBlur READ cursorMotionBlur WRITE setCursorMotionBlur NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(int cursorStillEnd READ cursorStillEnd WRITE setCursorStillEnd NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(QVariantList pointerHiddenRanges READ pointerHiddenRanges NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(int selectedPointerHide READ selectedPointerHide WRITE setSelectedPointerHide
+                   NOTIFY selectedPointerHideChanged)
 
     // Zoom and pan (#161).
     Q_PROPERTY(bool zoomAvailable READ zoomAvailable NOTIFY zoomChanged)
@@ -255,6 +263,24 @@ public:
     int cursorSmoothing() const { return int(m_cursorEffects.smoothing); }
     void setCursorSmoothing(int value);
     bool clickRipple() const { return m_cursorEffects.clickRipple; }
+    int cursorIdleHide() const { return int(m_cursorEffects.idleHideMs); }
+    void setCursorIdleHide(int ms);
+    int cursorMotionBlur() const { return int(m_cursorEffects.motionBlur); }
+    void setCursorMotionBlur(int level);
+    int cursorStillEnd() const { return int(m_cursorEffects.stillEndMs); }
+    void setCursorStillEnd(int ms);
+    QVariantList pointerHiddenRanges() const;
+    int selectedPointerHide() const { return m_selectedPointerHide; }
+    void setSelectedPointerHide(int index);
+    // Hides the pointer for a while from positionMs; returns the index of the
+    // range that now covers positionMs (ranges merge), or -1.
+    Q_INVOKABLE int addPointerHideAt(qint64 positionMs);
+    Q_INVOKABLE void removePointerHide(int index);
+    // False (nothing changes) when invalid; the range may merge with a neighbour.
+    Q_INVOKABLE bool setPointerHideRange(int index, qint64 startMs, qint64 endMs);
+    // Where the exported clip ends in source time, for effects tied to the
+    // end; -1 until the duration is known.
+    qint64 effectsClipEnd() const { return trimEnd() > 0 ? trimEnd() : -1; }
     void setClickRipple(bool value);
     const SnapTray::CursorTimeline* cursorTimeline() const { return m_cursorTimeline.get(); }
 
@@ -312,6 +338,7 @@ signals:
     void selectedMaskChanged();
     void windowTimelineChanged();
     void cursorEffectsChanged();
+    void selectedPointerHideChanged();
     void zoomChanged();
     void selectedZoomChanged();
     // External interface consumed by MainApplication. `outputSize` is the
@@ -392,6 +419,7 @@ private:
     std::optional<SnapTray::WindowTimeline> m_windowTimeline;
     std::shared_ptr<const SnapTray::CursorTimeline> m_cursorTimeline;
     SnapTray::CursorEffectSettings m_cursorEffects;
+    int m_selectedPointerHide = -1;
     mutable std::optional<bool> m_mp4FrameFilterSupported;
     void setCursorEffects(const SnapTray::CursorEffectSettings& settings);
     // Draws the current zoom and pointer effects on an output frame

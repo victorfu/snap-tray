@@ -44,6 +44,25 @@ Item {
     readonly property var pointerScales: [1.0, 1.5, 2.0, 3.0]
     readonly property var pointerSmoothingLabels: [qsTr("Smooth: Off"), qsTr("Smooth: Low"),
                                                    qsTr("Smooth: Medium"), qsTr("Smooth: High")]
+    // #186: choices in ms (0 = off) and blur levels in backend order.
+    readonly property var pointerIdleChoices: [0, 1000, 2000, 5000]
+    readonly property var pointerStillEndChoices: [0, 500, 1000, 2000]
+    readonly property var pointerBlurLabels: [qsTr("Motion Blur: Off"), qsTr("Motion Blur: Low"),
+                                              qsTr("Motion Blur: Medium"), qsTr("Motion Blur: High")]
+    // The pointer options panel replaces the format row while open.
+    property bool pointerOptionsOpen: false
+    readonly property var selectedPointerHideData: backend.selectedPointerHide >= 0
+        ? backend.pointerHiddenRanges[backend.selectedPointerHide] : null
+    function nextChoice(choices, current) {
+        for (let i = 0; i < choices.length; ++i) {
+            if (choices[i] > current)
+                return choices[i]
+        }
+        return choices[0]
+    }
+    function secondsLabel(ms) {
+        return Number(ms / 1000).toLocaleString(Qt.locale(), "f", ms % 1000 ? 1 : 0)
+    }
     // Zoom (#161): what the preview shows, the same viewport the export uses.
     // Identity while editing the crop or comparing with the original.
     readonly property rect zoomTarget: backend.hasCrop ? backend.cropRectInView(videoPlayer.contentRect)
@@ -137,6 +156,9 @@ Item {
             return
         if (maskPanel.visible && !maskPanel.wholeRecording && !root.commitPendingRange(maskStartField, maskEndField,
                 (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
+            return
+        if (pointerHidePanel.visible && !root.commitPendingRange(pointerHideStartField, pointerHideEndField,
+                (start, end) => backend.setPointerHideRange(backend.selectedPointerHide, start, end)))
             return
         if (cropOverlay.editing && !root.applyCropWithPendingInput())
             return
@@ -784,10 +806,50 @@ Item {
                             const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
                             const next = root.nextMaskAt(ms, backend.selectedMask, parent.index)
                             backend.selectedZoom = -1
+                            backend.selectedPointerHide = -1
+                            root.pointerOptionsOpen = false
                             backend.selectedMask = next
                             if (next >= 0) {
                                 videoPlayer.pause()
                                 videoPlayer.seek(backend.masks[next].start)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Ranges without a pointer (#186), just below the track.
+            Repeater {
+                model: backend.pointerHiddenRanges
+                Rectangle {
+                    required property int index
+                    required property var modelData
+                    objectName: "previewPointerHideSegment" + index
+                    readonly property bool selected: backend.selectedPointerHide === index
+                    x: timelineArea.posToX(modelData.start)
+                    y: timelineArea.trackY + timelineArea.trackHeight + 6
+                    z: 2
+                    width: Math.max(4, timelineArea.posToX(modelData.end) - x)
+                    height: 4
+                    radius: 2
+                    color: root.textSecondary
+                    opacity: !backend.cursorEffectsAvailable ? 0.25 : selected ? 0.95 : 0.5
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Pointer hidden from %1 to %2").arg(backend.formatPreciseTime(modelData.start))
+                                         .arg(backend.formatPreciseTime(modelData.end))
+                    Accessible.onPressAction: backend.selectedPointerHide = index
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -2
+                        cursorShape: CursorTokens.clickable
+                        onClicked: {
+                            backend.selectedZoom = -1
+                            backend.selectedMask = -1
+                            root.pointerOptionsOpen = false
+                            backend.selectedPointerHide = parent.selected ? -1 : parent.index
+                            if (backend.selectedPointerHide >= 0) {
+                                videoPlayer.pause()
+                                videoPlayer.seek(parent.modelData.start)
                             }
                         }
                     }
@@ -825,6 +887,8 @@ Item {
                         cursorShape: CursorTokens.clickable
                         onClicked: {
                             backend.selectedMask = -1
+                            backend.selectedPointerHide = -1
+                            root.pointerOptionsOpen = false
                             backend.selectedZoom = parent.selected ? -1 : parent.index
                             if (backend.selectedZoom >= 0) {
                                 videoPlayer.pause()
@@ -1021,6 +1085,8 @@ Item {
             Layout.preferredHeight: Math.max(formatRow.height,
                                              zoomPanel.visible ? zoomPanel.height : 0,
                                              maskPanel.visible ? maskPanel.height : 0,
+                                             pointerPanel.visible ? pointerPanel.height : 0,
+                                             pointerHidePanel.visible ? pointerHidePanel.height : 0,
                                              cropPanel.visible ? cropPanel.height : 0,
                                              ComponentTokens.recordingPreviewControlButtonHeight)
                                     + SemanticTokens.spacing16
@@ -1031,7 +1097,8 @@ Item {
                 width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing8
                 readonly property bool shown: !cropOverlay.editing && !(backend.selectedZoom >= 0)
-                                              && !(backend.selectedMask >= 0)
+                                              && !(backend.selectedMask >= 0) && !pointerPanel.visible
+                                              && !pointerHidePanel.visible
                 opacity: shown ? 1 : 0
                 enabled: shown
                 Accessible.ignored: !shown
@@ -1097,6 +1164,21 @@ Item {
                     selected: backend.clickRipple && backend.clickEffectsAvailable
                     onClicked: backend.clickRipple = !backend.clickRipple
                 }
+                SegmentButton {
+                    objectName: "previewPointerOptions"
+                    visible: backend.hasPointerData
+                    enabled: backend.cursorEffectsAvailable && backend.showCursor
+                    minimumButtonWidth: 0
+                    text: qsTr("Pointer Options")
+                    tooltipText: qsTr("Hide when idle, motion blur, a still ending and time ranges without a pointer")
+                    selected: backend.cursorIdleHide > 0 || backend.cursorMotionBlur > 0
+                              || backend.cursorStillEnd > 0 || backend.pointerHiddenRanges.length > 0
+                    onClicked: {
+                        backend.selectedZoom = -1
+                        backend.selectedMask = -1
+                        root.pointerOptionsOpen = true
+                    }
+                }
 
                 // Zoom and pan.
                 Item {
@@ -1144,6 +1226,7 @@ Item {
                     onClicked: {
                         videoPlayer.pause()
                         backend.selectedZoom = -1
+                        backend.selectedPointerHide = -1
                         backend.addMask()
                     }
                 }
@@ -1238,6 +1321,130 @@ Item {
                         if (maskPanel.wholeRecording || root.commitPendingRange(maskStartField, maskEndField,
                                 (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
                             backend.selectedMask = -1
+                    }
+                }
+            }
+
+            // More pointer effects (#186), in place of the format buttons.
+            Flow {
+                id: pointerPanel
+                objectName: "previewPointerPanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: root.pointerOptionsOpen && backend.cursorEffectsAvailable && backend.showCursor
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0)
+                         && !(backend.selectedZoom >= 0) && !cropOverlay.editing
+
+                SegmentButton {
+                    objectName: "previewPointerIdle"
+                    minimumButtonWidth: 0
+                    text: backend.cursorIdleHide > 0
+                        ? qsTr("Hide When Idle: %1 s").arg(root.secondsLabel(backend.cursorIdleHide))
+                        : qsTr("Hide When Idle: Off")
+                    tooltipText: qsTr("Fade the pointer out when it stops moving; it comes back before it moves or clicks")
+                    selected: backend.cursorIdleHide > 0
+                    onClicked: backend.cursorIdleHide = root.nextChoice(root.pointerIdleChoices, backend.cursorIdleHide)
+                }
+                SegmentButton {
+                    objectName: "previewPointerBlur"
+                    minimumButtonWidth: 0
+                    text: root.pointerBlurLabels[backend.cursorMotionBlur]
+                    tooltipText: qsTr("A short trail behind a fast-moving pointer")
+                    selected: backend.cursorMotionBlur > 0
+                    onClicked: backend.cursorMotionBlur = (backend.cursorMotionBlur + 1) % root.pointerBlurLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewPointerStillEnd"
+                    minimumButtonWidth: 0
+                    text: backend.cursorStillEnd > 0
+                        ? qsTr("Still End: %1 s").arg(root.secondsLabel(backend.cursorStillEnd))
+                        : qsTr("Still End: Off")
+                    tooltipText: qsTr("Keep the pointer still at the end, so moving to stop the recording is not shown")
+                    selected: backend.cursorStillEnd > 0
+                    onClicked: backend.cursorStillEnd = root.nextChoice(root.pointerStillEndChoices, backend.cursorStillEnd)
+                }
+                SegmentButton {
+                    objectName: "previewPointerHideHere"
+                    minimumButtonWidth: 0
+                    text: qsTr("Hide Pointer Here")
+                    tooltipText: qsTr("Hide the pointer for a while from the playhead")
+                    onClicked: {
+                        videoPlayer.pause()
+                        if (backend.addPointerHideAt(videoPlayer.position) < 0)
+                            root.showButtonTooltip(qsTr("No room for a hidden range here"), this, true)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewPointerOptionsDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Back to the export options")
+                    onClicked: root.pointerOptionsOpen = false
+                }
+            }
+
+            // Editing one range without a pointer, in place of the format buttons.
+            Flow {
+                id: pointerHidePanel
+                objectName: "previewPointerHidePanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: backend.selectedPointerHide >= 0 && !(backend.selectedMask >= 0)
+                         && !(backend.selectedZoom >= 0) && !cropOverlay.editing
+
+                Connections {
+                    target: root.previewBackend
+                    function onSelectedPointerHideChanged() {
+                        pointerHideStartField.discardEdit()
+                        pointerHideEndField.discardEdit()
+                    }
+                }
+
+                Text {
+                    height: ComponentTokens.recordingPreviewControlButtonHeight
+                    verticalAlignment: Text.AlignVCenter
+                    text: qsTr("No pointer")
+                    color: root.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeSmall
+                }
+                TimeField {
+                    id: pointerHideStartField
+                    objectName: "previewPointerHideStartField"
+                    accessibleName: qsTr("Hidden pointer start")
+                    timeMs: root.selectedPointerHideData ? root.selectedPointerHideData.start : 0
+                    onCommitted: function(ms) {
+                        invalid = !backend.setPointerHideRange(backend.selectedPointerHide, ms,
+                                                               root.selectedPointerHideData.end)
+                    }
+                }
+                TimeField {
+                    id: pointerHideEndField
+                    objectName: "previewPointerHideEndField"
+                    accessibleName: qsTr("Hidden pointer end")
+                    timeMs: root.selectedPointerHideData ? root.selectedPointerHideData.end : 0
+                    onCommitted: function(ms) {
+                        invalid = !backend.setPointerHideRange(backend.selectedPointerHide,
+                                                               root.selectedPointerHideData.start, ms)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewPointerHideDelete"
+                    minimumButtonWidth: 0
+                    text: qsTr("Delete")
+                    tooltipText: qsTr("Show the pointer here again")
+                    onClicked: backend.removePointerHide(backend.selectedPointerHide)
+                }
+                SegmentButton {
+                    objectName: "previewPointerHideDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Finish editing this range")
+                    onClicked: {
+                        if (root.commitPendingRange(pointerHideStartField, pointerHideEndField,
+                                (start, end) => backend.setPointerHideRange(backend.selectedPointerHide, start, end)))
+                            backend.selectedPointerHide = -1
                     }
                 }
             }

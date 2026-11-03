@@ -1,5 +1,6 @@
 #include "recording/CursorEffects.h"
 
+#include <QJsonArray>
 #include <QPainter>
 #include <QPainterPath>
 #include <QtMath>
@@ -23,6 +24,24 @@ constexpr SmoothingTau kSmoothing[] = {
     {CursorEffectSettings::Smoothing::Medium, "medium", 80.0},
     {CursorEffectSettings::Smoothing::High, "high", 140.0},
 };
+
+struct MotionBlurLevel {
+    CursorEffectSettings::MotionBlur blur;
+    const char* name;
+    double windowFraction; // of kMaxBlurWindowMs
+};
+
+constexpr MotionBlurLevel kMotionBlur[] = {
+    {CursorEffectSettings::MotionBlur::Off, "off", 0.0},
+    {CursorEffectSettings::MotionBlur::Low, "low", 0.33},
+    {CursorEffectSettings::MotionBlur::Medium, "medium", 0.66},
+    {CursorEffectSettings::MotionBlur::High, "high", 1.0},
+};
+
+// The oldest ghost image is drawn this opaque; nearer ones more.
+constexpr double kBlurGhostAlpha = 0.5;
+// Ghosts closer than this to the pointer (output pixels) add nothing.
+constexpr double kBlurMinDistancePx = 1.0;
 
 // The filter looks this many time constants back; older positions weigh
 // less than e^-6 (0.25 %).
@@ -58,7 +77,8 @@ QPainterPath defaultArrow()
 bool CursorEffectSettings::operator==(const CursorEffectSettings& o) const
 {
     return showCursor == o.showCursor && qFuzzyCompare(scale, o.scale) && smoothing == o.smoothing
-        && clickRipple == o.clickRipple;
+        && clickRipple == o.clickRipple && idleHideMs == o.idleHideMs && motionBlur == o.motionBlur
+        && stillEndMs == o.stillEndMs && hiddenRanges == o.hiddenRanges;
 }
 
 QJsonObject CursorEffectSettings::toJson() const
@@ -67,10 +87,55 @@ QJsonObject CursorEffectSettings::toJson() const
     for (const auto& entry : kSmoothing) {
         if (entry.smoothing == smoothing) smoothingName = entry.name;
     }
-    return {{QStringLiteral("showCursor"), showCursor},
-            {QStringLiteral("scale"), scale},
-            {QStringLiteral("smoothing"), QLatin1String(smoothingName)},
-            {QStringLiteral("clickRipple"), clickRipple}};
+    const char* blurName = "off";
+    for (const auto& entry : kMotionBlur) {
+        if (entry.blur == motionBlur) blurName = entry.name;
+    }
+    QJsonArray ranges;
+    for (const auto& range : hiddenRanges) ranges.append(QJsonArray{double(range.startMs), double(range.endMs)});
+    QJsonObject json{{QStringLiteral("showCursor"), showCursor},
+                     {QStringLiteral("scale"), scale},
+                     {QStringLiteral("smoothing"), QLatin1String(smoothingName)},
+                     {QStringLiteral("clickRipple"), clickRipple},
+                     {QStringLiteral("idleHideMs"), double(idleHideMs)},
+                     {QStringLiteral("motionBlur"), QLatin1String(blurName)},
+                     {QStringLiteral("stillEndMs"), double(stillEndMs)}};
+    if (!ranges.isEmpty()) json.insert(QStringLiteral("hiddenRanges"), ranges);
+    return json;
+}
+
+CursorEffectSettings CursorEffectSettings::preferences() const
+{
+    CursorEffectSettings copy = *this;
+    copy.hiddenRanges.clear();
+    return copy;
+}
+
+bool CursorEffectSettings::hiddenAt(qint64 sourceMs) const
+{
+    auto it = std::upper_bound(hiddenRanges.begin(), hiddenRanges.end(), sourceMs,
+                               [](qint64 t, const CursorHiddenRange& r) { return t < r.startMs; });
+    return it != hiddenRanges.begin() && (it - 1)->contains(sourceMs);
+}
+
+std::vector<CursorHiddenRange> CursorEffectSettings::normalizedRanges(std::vector<CursorHiddenRange> ranges)
+{
+    ranges.erase(std::remove_if(ranges.begin(), ranges.end(),
+                                [](const CursorHiddenRange& r) {
+                                    return r.startMs < 0 || r.endMs - r.startMs < kMinHiddenRangeMs;
+                                }),
+                 ranges.end());
+    std::sort(ranges.begin(), ranges.end(),
+              [](const CursorHiddenRange& a, const CursorHiddenRange& b) { return a.startMs < b.startMs; });
+    std::vector<CursorHiddenRange> merged;
+    for (const auto& range : ranges) {
+        if (!merged.empty() && range.startMs <= merged.back().endMs) {
+            merged.back().endMs = std::max(merged.back().endMs, range.endMs);
+        } else {
+            merged.push_back(range);
+        }
+    }
+    return merged;
 }
 
 CursorEffectSettings CursorEffectSettings::fromJson(const QJsonObject& json)
@@ -83,6 +148,20 @@ CursorEffectSettings CursorEffectSettings::fromJson(const QJsonObject& json)
         if (smoothing == QLatin1String(entry.name)) settings.smoothing = entry.smoothing;
     }
     settings.clickRipple = json.value(QStringLiteral("clickRipple")).toBool(settings.clickRipple);
+    settings.idleHideMs = std::clamp(qint64(json.value(QStringLiteral("idleHideMs")).toDouble(0.0)), qint64(0),
+                                     kMaxIdleHideMs);
+    const QString blur = json.value(QStringLiteral("motionBlur")).toString();
+    for (const auto& entry : kMotionBlur) {
+        if (blur == QLatin1String(entry.name)) settings.motionBlur = entry.blur;
+    }
+    settings.stillEndMs = std::clamp(qint64(json.value(QStringLiteral("stillEndMs")).toDouble(0.0)), qint64(0),
+                                     kMaxStillEndMs);
+    std::vector<CursorHiddenRange> ranges;
+    for (const auto& value : json.value(QStringLiteral("hiddenRanges")).toArray()) {
+        const QJsonArray pair = value.toArray();
+        if (pair.size() == 2) ranges.push_back({qint64(pair.at(0).toDouble(-1)), qint64(pair.at(1).toDouble(-1))});
+    }
+    settings.hiddenRanges = normalizedRanges(std::move(ranges));
     return settings;
 }
 
@@ -113,9 +192,11 @@ double CursorFrameMapping::scale() const
     return crop.isEmpty() ? 1.0 : double(outputSize.width()) / crop.width();
 }
 
-CursorEffectRenderer::CursorEffectRenderer(const CursorTimeline& timeline, const CursorEffectSettings& settings)
+CursorEffectRenderer::CursorEffectRenderer(const CursorTimeline& timeline, const CursorEffectSettings& settings,
+                                           qint64 clipEndMs)
     : m_timeline(timeline)
     , m_settings(settings)
+    , m_clipEndMs(clipEndMs)
 {
 }
 
@@ -172,7 +253,87 @@ qint64 CursorEffectRenderer::distanceToButtonEvent(qint64 sourceMs) const
     return distance;
 }
 
+qint64 CursorEffectRenderer::effectiveTime(qint64 sourceMs) const
+{
+    if (m_settings.stillEndMs <= 0 || m_clipEndMs < 0 || m_timeline.samples.empty()) return sourceMs;
+    // A clip shorter than the still interval (Still End is remembered across
+    // recordings) holds the pointer from its first sample, never from a time
+    // before the timeline, where there is no pointer at all.
+    const qint64 freezeAt = std::max(m_clipEndMs - m_settings.stillEndMs, m_timeline.samples.front().tMs);
+    return std::min(sourceMs, freezeAt);
+}
+
 std::optional<QPointF> CursorEffectRenderer::pointerPosition(qint64 sourceMs) const
+{
+    if (m_settings.hiddenAt(sourceMs)) return std::nullopt;
+    return positionAt(effectiveTime(sourceMs));
+}
+
+qint64 CursorEffectRenderer::idleBefore(qint64 ms, qint64 limit) const
+{
+    qint64 idle = limit;
+    const auto& samples = m_timeline.samples;
+    auto it = std::upper_bound(samples.begin(), samples.end(), ms,
+                               [](qint64 t, const CursorSample& s) { return t < s.tMs; });
+    // Walk back over the samples that can still matter: bounded by `limit`.
+    while (it != samples.begin()) {
+        --it;
+        if (ms - it->tMs >= limit) break;
+        if (it == samples.begin() || it->position != (it - 1)->position) {
+            idle = ms - it->tMs; // appeared or moved here
+            break;
+        }
+    }
+    const auto& buttons = m_timeline.buttons;
+    auto b = std::upper_bound(buttons.begin(), buttons.end(), ms,
+                              [](qint64 t, const CursorButtonEvent& e) { return t < e.tMs; });
+    if (b != buttons.begin()) idle = std::min(idle, ms - (b - 1)->tMs);
+    return std::max<qint64>(0, idle);
+}
+
+qint64 CursorEffectRenderer::idleAfter(qint64 ms, qint64 limit) const
+{
+    qint64 idle = limit;
+    const auto& samples = m_timeline.samples;
+    auto it = std::upper_bound(samples.begin(), samples.end(), ms,
+                               [](qint64 t, const CursorSample& s) { return t < s.tMs; });
+    for (; it != samples.end() && it->tMs - ms < limit; ++it) {
+        if (it != samples.begin() && it->position != (it - 1)->position) {
+            idle = it->tMs - ms;
+            break;
+        }
+    }
+    const auto& buttons = m_timeline.buttons;
+    auto b = std::upper_bound(buttons.begin(), buttons.end(), ms,
+                              [](qint64 t, const CursorButtonEvent& e) { return t < e.tMs; });
+    if (b != buttons.end()) idle = std::min(idle, b->tMs - ms);
+    return std::max<qint64>(0, idle);
+}
+
+double CursorEffectRenderer::pointerOpacity(qint64 sourceMs) const
+{
+    const qint64 hideAfter = m_settings.idleHideMs;
+    if (hideAfter <= 0) return 1.0;
+    const qint64 frozenAt = effectiveTime(sourceMs);
+    // Once the pointer is held still for the clip end, movement after that
+    // point is not shown, so it neither wakes the pointer nor keeps it awake.
+    const qint64 sinceActivity = idleBefore(frozenAt, hideAfter + kIdleFadeMs) + (sourceMs - frozenAt);
+    qint64 untilActivity = frozenAt < sourceMs ? kIdleFadeMs : idleAfter(sourceMs, kIdleFadeMs);
+    if (sourceMs + untilActivity > effectiveTime(sourceMs + untilActivity)) untilActivity = kIdleFadeMs; // not shown
+    const double fadingOut = std::clamp(double(sinceActivity - hideAfter) / kIdleFadeMs, 0.0, 1.0);
+    const double fadingIn = 1.0 - std::clamp(double(untilActivity) / kIdleFadeMs, 0.0, 1.0);
+    return std::max(1.0 - fadingOut, fadingIn);
+}
+
+double CursorEffectRenderer::blurWindowMs() const
+{
+    for (const auto& entry : kMotionBlur) {
+        if (entry.blur == m_settings.motionBlur) return entry.windowFraction * kMaxBlurWindowMs;
+    }
+    return 0.0;
+}
+
+std::optional<QPointF> CursorEffectRenderer::positionAt(qint64 sourceMs) const
 {
     const CursorSample* sample = m_timeline.sampleAt(sourceMs);
     if (!sample || sourceMs < m_timeline.samples.front().tMs || !sample->visible) return std::nullopt;
@@ -198,6 +359,11 @@ void CursorEffectRenderer::paint(QPainter& painter, qint64 sourceMs, const Curso
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    // A hidden range hides the click highlights too: nothing of the pointer shows there.
+    if (m_settings.hiddenAt(sourceMs)) {
+        painter.restore();
+        return;
+    }
     if (m_settings.clickRipple && m_timeline.info.clicksAvailable) paintRipples(painter, sourceMs, mapping);
     if (m_settings.showCursor) paintPointer(painter, sourceMs, mapping);
     painter.restore();
@@ -230,10 +396,36 @@ void CursorEffectRenderer::paintPointer(QPainter& painter, qint64 sourceMs, cons
 {
     const auto position = pointerPosition(sourceMs);
     if (!position) return;
+    const double opacity = pointerOpacity(sourceMs);
+    if (opacity <= 0.0) return;
+    const qint64 shownMs = effectiveTime(sourceMs);
     const QPointF at = mapping.toOutput(*position);
     const double scale = mapping.scale() * m_settings.scale;
-    const CursorSample* sample = m_timeline.sampleAt(sourceMs);
+    const CursorSample* sample = m_timeline.sampleAt(shownMs);
     const CursorShape* shape = sample ? m_timeline.shape(sample->shapeId) : nullptr;
+    const double baseOpacity = painter.opacity();
+    // Motion blur: fainter copies where the pointer was a moment before, at
+    // fixed time offsets, so a frame never depends on what was drawn before.
+    if (const double window = blurWindowMs(); window > 0.0) {
+        for (int k = kBlurSamples; k >= 1; --k) {
+            const qint64 ghostMs = sourceMs - qint64(std::lround(window * k / kBlurSamples));
+            const auto ghost = pointerPosition(ghostMs);
+            if (!ghost) continue;
+            const QPointF ghostAt = mapping.toOutput(*ghost);
+            if (QLineF(ghostAt, at).length() < kBlurMinDistancePx) continue;
+            const double fade = kBlurGhostAlpha * (1.0 - double(k - 1) / kBlurSamples);
+            painter.setOpacity(baseOpacity * opacity * fade * pointerOpacity(ghostMs));
+            drawPointerAt(painter, ghostAt, shape, scale);
+        }
+    }
+    painter.setOpacity(baseOpacity * opacity);
+    drawPointerAt(painter, at, shape, scale);
+    painter.setOpacity(baseOpacity);
+}
+
+void CursorEffectRenderer::drawPointerAt(QPainter& painter, const QPointF& at, const CursorShape* shape,
+                                         double scale) const
+{
     if (shape) {
         // Shape images are in recorded (video) pixels; the hotspot stays on the point.
         const QRectF target(at - QPointF(shape->hotspot) * scale, QSizeF(shape->image.size()) * scale);

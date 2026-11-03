@@ -88,8 +88,13 @@ When a recording has this record, the preview shows pointer controls next to the
 - **Size** (1×, 1.5×, 2×, 3×): draw the pointer larger.
 - **Smooth** (Off, Low, Medium, High): smooth out a shaky path. Clicks always stay exactly where and when they happened. Off by default.
 - **Clicks**: show a brief ring where each click happened. Needs recorded clicks (Linux).
+- **Pointer Options** opens more effects, all off by default:
+  - **Hide When Idle** (1 s, 2 s, 5 s): fade the pointer out once it has not moved for that long. It fades back in just before it moves or clicks, so it is always visible at a click, and click rings are never hidden.
+  - **Motion Blur** (Low, Medium, High): a short trail behind a fast-moving pointer. A resting pointer is drawn sharp.
+  - **Still End** (0.5 s, 1 s, 2 s): hold the pointer still for the last moments of the exported clip, so moving to the stop button is not shown. It follows the trim end.
+  - **Hide Pointer Here** hides the pointer (and click rings) for two seconds from the playhead. Hidden ranges are shown as grey bars under the timeline; click one to type its start and end, or delete it.
 
-Your last choices are remembered, and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. On macOS and Windows, pointer effects are available for GIF and WebP exports; MP4 exports there do not draw them yet, and the preview says so.
+Your last choices are remembered (hidden ranges belong to one recording and are not), and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. On macOS and Windows, pointer effects are available for GIF and WebP exports; MP4 exports there do not draw them yet, and the preview says so.
 
 ### Zoom and pan
 
