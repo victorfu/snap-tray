@@ -131,7 +131,10 @@ RecordingAppearance RecordingAppearance::fromBeautify(const BeautifySettings& se
     RecordingAppearance a;
     if (settings.backgroundType == BeautifyBackgroundType::Solid) {
         a.background = Background::Solid;
-        a.solidColor = settings.backgroundColor;
+        // Screenshot Beautify allows a translucent color; a video frame has
+        // nothing behind it, so the frame's color is always opaque (PR #198 review).
+        a.solidColor = settings.backgroundColor.toRgb();
+        a.solidColor.setAlpha(255);
     }
     const auto presets = beautifyPresets();
     for (int i = 0; i < presets.size(); ++i) {
@@ -223,10 +226,11 @@ RecordingAppearanceRenderer::RecordingAppearanceRenderer(const RecordingAppearan
 void RecordingAppearanceRenderer::drawBackground(QPainter& painter, const QImage& blurSource) const
 {
     const QRect all(QPoint(0, 0), m_outputSize);
+    // An opaque base under every background: a transparent image or a
+    // translucent color must not show whatever the new frame's memory held
+    // (PR #198 review).
+    painter.fillRect(all, Qt::black);
     if (m_appearance.background == RecordingAppearance::Background::Image && !m_backgroundImage.isNull()) {
-        // An opaque base first: a transparent image (a PNG) must not show
-        // whatever the new frame's memory held (PR #198 review).
-        painter.fillRect(all, Qt::black);
         drawCover(painter, all, m_backgroundImage);
         return;
     }

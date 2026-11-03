@@ -51,6 +51,7 @@ private slots:
     void previewLeavesThePictureClear();
     void jsonRoundTrip();
     void fromBeautify();
+    void translucentColorsRenderOpaque();
     void costAt4K();
 };
 
@@ -149,6 +150,28 @@ void TestRecordingAppearance::blurredBackgroundComesFromTheGivenSource()
     // Without a separate source the picture itself is used.
     const QColor fromPicture = renderer.compose(picture).pixelColor(3, 3);
     QVERIFY2(fromPicture.red() > 120 && fromPicture.green() < 40, qPrintable(fromPicture.name()));
+}
+
+// PR #198 review: screenshot Beautify allows a translucent solid color. The
+// frame takes it opaque, and any background is drawn over an opaque base, so
+// the padding never shows uninitialized pixels.
+void TestRecordingAppearance::translucentColorsRenderOpaque()
+{
+    BeautifySettings beautify;
+    beautify.backgroundType = BeautifyBackgroundType::Solid;
+    beautify.backgroundColor = QColor(200, 40, 40, 60);
+    const RecordingAppearance imported = RecordingAppearance::fromBeautify(beautify);
+    QCOMPARE(imported.solidColor.alpha(), 255);
+    QCOMPARE(imported.solidColor.rgb(), QColor(200, 40, 40).rgb());
+
+    RecordingAppearance clear = solidWhite();
+    clear.solidColor = QColor(0, 0, 0, 0); // set directly, not through the importers
+    const QSize size(200, 100);
+    for (int run = 0; run < 3; ++run) {
+        const QImage out = RecordingAppearanceRenderer(clear, size).compose(filled(size, Qt::white));
+        QCOMPARE(out.pixelColor(2, 2), QColor(Qt::black));
+        QCOMPARE(out.pixelColor(out.width() - 3, out.height() - 3), QColor(Qt::black));
+    }
 }
 
 void TestRecordingAppearance::imageBackgroundAndFallback()
