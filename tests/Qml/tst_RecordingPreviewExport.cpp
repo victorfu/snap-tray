@@ -413,6 +413,7 @@ private slots:
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs_data();
     void mp4OptionsReachTheOutput();
     void mp4OptionsMatchingTheSourceKeepTheFastPath();
+    void sourceProbeNeverBlocksTheGuiThread();
     void mp4OptionsTurnAnUneditedSaveIntoAnExport_data();
     void mp4OptionsTurnAnUneditedSaveIntoAnExport();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
@@ -1190,8 +1191,29 @@ void tst_RecordingPreviewExport::smartSaveMovesRecordingNotRecordedAsIntermediat
     QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
     QVERIFY(QFileInfo::exists(noiseInputPath));
     QVERIFY(backend.errorMessage().isEmpty());
-    std::lock_guard<std::mutex> lock(log->mutex);
-    QCOMPARE(log->calls, 0);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->calls, 0);
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+
+    // PR #197 review: an explicit quality is honoured. The noise fixture is
+    // above Low's target, so choosing Low re-encodes it.
+    const QJsonObject rememberedOptions = RecordingSettingsManager::instance().mp4ExportOptions();
+    auto restoreOptions = qScopeGuard([rememberedOptions]() {
+        RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
+    });
+    backend.setMp4Quality(int(SnapTray::Mp4ExportOptions::Quality::Low));
+    savedSpy.clear();
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QTRY_COMPARE(savedSpy.count(), 1);
+    QVERIFY(savedSpy.first().at(0).toString() != noiseInputPath);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->calls, 1);
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
 }
 
 void tst_RecordingPreviewExport::failedSmartSaveReencodeSavesOriginal()
@@ -1865,6 +1887,7 @@ void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);
     backend.updateVideoSize(sourceSize);
     backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QTRY_VERIFY(backend.sourceProbeReady()); // probed off the GUI thread
     if (!backend.mp4OutputOptionsAvailable() || !backend.cursorEffectsAvailable()) {
         QSKIP("This platform's MP4 transcoder cannot change size and frame rate yet");
     }
@@ -1919,6 +1942,39 @@ void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
 
 // Options that change nothing for this recording (no smaller size, no lower
 // frame rate, H.264) keep an unedited recording on the move-as-is path.
+// PR #197 review: the MP4 options and estimate read the source's probe, which
+// can scan a whole file (Windows reads every audio packet). It runs off the
+// GUI thread: the getters answer at once and update when the probe is ready.
+void tst_RecordingPreviewExport::sourceProbeNeverBlocksTheGuiThread()
+{
+    auto gate = std::make_shared<ExportGate>();
+    gate->blockProbe = true;
+    auto restore = qScopeGuard([gate]() {
+        gate->resumeProbe.release();
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    });
+    RecordingPreviewBackend::transcoderFactoryOverride() = [gate]() -> std::unique_ptr<IVideoTranscoder> {
+        return std::make_unique<GatedTranscoder>(gate);
+    };
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QSignalSpy estimate(&backend, &RecordingPreviewBackend::mp4EstimateChanged);
+    QElapsedTimer timer;
+    timer.start();
+    QVERIFY(!backend.sourceProbeReady());
+    (void)backend.mp4OptionsActive();
+    (void)backend.mp4EstimatedBytes();
+    (void)backend.mp4SourceFrameRate();
+    QVERIFY(timer.elapsed() < 1000); // the probe is still held at the gate
+    QVERIFY(gate->probeEntered.tryAcquire(1, kExportGateTimeoutMs));
+    QVERIFY(!backend.sourceProbeReady());
+    gate->resumeProbe.release();
+    QTRY_VERIFY(backend.sourceProbeReady());
+    QVERIFY(estimate.count() >= 1);
+    QCOMPARE(backend.mp4SourceFrameRate(), 10);
+    QVERIFY(!gate->timedOut.load());
+}
+
 void tst_RecordingPreviewExport::mp4OptionsMatchingTheSourceKeepTheFastPath()
 {
     const QSize sourceSize(160, 120);
@@ -1940,6 +1996,7 @@ void tst_RecordingPreviewExport::mp4OptionsMatchingTheSourceKeepTheFastPath()
     backend.updateDuration(kFrameCount * kFrameIntervalMs);
     backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::P720)); // larger than the source
     backend.setMp4FrameRate(60);                                                  // above the source's rate
+    QTRY_VERIFY(backend.sourceProbeReady());
     QVERIFY(!backend.mp4OptionsActive());
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
