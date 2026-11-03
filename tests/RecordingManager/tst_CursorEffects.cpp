@@ -415,6 +415,28 @@ void TestCursorEffects::stillEndHoldsTheLastPosition()
     QCOMPARE(*renderer.pointerPosition(100), *CursorEffectRenderer(t, {}).pointerPosition(100));
     // Unknown clip end: off.
     QCOMPARE(*CursorEffectRenderer(t, s).pointerPosition(3100), QPointF(220, 50));
+    // With parts cut out (PR #199 review): the hold starts that long before
+    // the exported end, at a kept time, never in a cut part. Keep 0-1000 and
+    // 4000-5000 with a 1.5 s hold: the exported 2 s hold from output 500 ms,
+    // which shows source 500 ms (not 3500 ms, inside the cut).
+    {
+        CursorTimeline moving;
+        moving.info.frameSize = QSize(1000, 100);
+        for (qint64 ms = 0; ms <= 5000; ms += 100) moving.samples.push_back({ms, QPoint(int(ms / 10), 50), true, 0});
+        CursorEffectSettings hold;
+        hold.stillEndMs = 1500;
+        CursorEffectRenderer cut(moving, hold, 5000);
+        cut.setTimeline(TimelineMap({{0, 1000, 1.0}, {4000, 5000, 1.0}}));
+        QCOMPARE(*cut.pointerPosition(300), QPointF(30, 50));   // before the hold: moving
+        QCOMPARE(*cut.pointerPosition(600), QPointF(50, 50));   // held at source 500 ms
+        QCOMPARE(*cut.pointerPosition(4500), QPointF(50, 50));  // the last part too
+        QCOMPARE(*cut.pointerPosition(4999), QPointF(50, 50));
+        // Longer than everything kept: held at the first kept moment.
+        hold.stillEndMs = 3000;
+        CursorEffectRenderer allHeld(moving, hold, 5000);
+        allHeld.setTimeline(TimelineMap({{0, 1000, 1.0}, {4000, 5000, 1.0}}));
+        QCOMPARE(*allHeld.pointerPosition(4500), QPointF(0, 50));
+    }
     // A clip shorter than the interval (PR #196 review): the pointer stays at
     // its first sample instead of vanishing.
     CursorEffectSettings longHold;

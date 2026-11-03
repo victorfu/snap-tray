@@ -155,7 +155,9 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         keys = std::shared_ptr<SnapTray::KeyOverlayRenderer>(
             new SnapTray::KeyOverlayRenderer(*m_keyTimeline, m_keyOverlay),
             [held = m_keyTimeline](SnapTray::KeyOverlayRenderer* renderer) { delete renderer; });
-        if (hasTimelineEdits()) keys->setTimeline(timelineMap());
+        // Always the trimmed range (PR #200 review): a key pressed before the
+        // trim start must not show in the first hint, even without cuts.
+        keys->setTimeline(timelineMap());
     }
     // Text and image overlays (#188): on top, inside the frame.
     const auto overlays = m_overlays.isEmpty() || !overlaysAvailable()
@@ -376,13 +378,34 @@ const RecordingPreviewBackend::Mp4Capabilities& RecordingPreviewBackend::mp4Capa
 
 const VideoFileProbe& RecordingPreviewBackend::sourceProbe() const
 {
-    if (!m_sourceProbe) {
+    static const VideoFileProbe kNotYetProbed;
+    if (m_sourceProbe) return *m_sourceProbe;
+    if (!m_sourceProbePending) {
+        m_sourceProbePending = true;
         const auto factory = transcoderFactoryOverride() ? transcoderFactoryOverride()
                                                          : TranscoderFactory(&IVideoTranscoder::create);
-        const auto transcoder = factory ? factory() : nullptr;
-        m_sourceProbe = transcoder ? transcoder->probe(m_videoPath) : VideoFileProbe();
+        const QString path = m_videoPath;
+        const QPointer<RecordingPreviewBackend> weakThis(const_cast<RecordingPreviewBackend*>(this));
+        (void)QtConcurrent::run([factory, path, weakThis]() {
+            const auto transcoder = factory ? factory() : nullptr;
+            const VideoFileProbe probe = transcoder ? transcoder->probe(path) : VideoFileProbe();
+            if (QCoreApplication* app = QCoreApplication::instance()) {
+                QMetaObject::invokeMethod(app, [weakThis, probe]() {
+                    if (!weakThis) return;
+                    weakThis->m_sourceProbe = probe;
+                    weakThis->m_sourceProbePending = false;
+                    emit weakThis->mp4EstimateChanged();
+                }, Qt::QueuedConnection);
+            }
+        });
     }
-    return *m_sourceProbe;
+    return kNotYetProbed;
+}
+
+bool RecordingPreviewBackend::sourceProbeReady() const
+{
+    (void)sourceProbe();
+    return m_sourceProbe.has_value();
 }
 
 bool RecordingPreviewBackend::formatCanDrawEffects() const
@@ -805,6 +828,9 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
     });
     connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
     connect(this, &RecordingPreviewBackend::appearanceChanged, player, &VideoPlaybackItem::reprocessFrame);
+    // The blurred background is made from the cropped picture: a new crop
+    // (also undo or clear) needs it again, even while paused (PR #198 review).
+    connect(this, &RecordingPreviewBackend::cropRectChanged, player, &VideoPlaybackItem::reprocessFrame);
     // Separate tracks (#189): the preview hears the new mix as it is set.
     if (m_hasSeparateTracks) {
         m_previewAudio = std::make_shared<PreviewAudio>(m_videoPath, m_audioMix);
@@ -1302,23 +1328,30 @@ bool RecordingPreviewBackend::timelineEditsAvailable() const
 void RecordingPreviewBackend::setProject(const SnapTray::RecordingProject& project)
 {
     m_project = project;
-    // The player has not reported yet: the recipe needs the size and length.
-    const VideoFileProbe& probe = sourceProbe();
-    if (m_videoSize.isEmpty()) m_videoSize = probe.videoSize;
-    if (m_duration <= 0) m_duration = probe.durationMs;
-    if (const auto state = SnapTray::RecordingRecipe::editState(project.recipe)) {
-        applyEditState(*state);
-    }
     const QJsonObject choices = SnapTray::RecordingRecipe::exportChoices(project.recipe);
     if (choices.contains(QStringLiteral("format"))) setSelectedFormat(choices.value(QStringLiteral("format")).toInt(MP4));
     if (choices.contains(QStringLiteral("mp4"))) {
         m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(choices.value(QStringLiteral("mp4")).toObject());
         emit mp4OptionsChanged();
     }
+    emit projectChanged();
+    // The edits need the picture's size and length: they are applied once
+    // the player has reported both, through the same notifying updates as
+    // any recording (PR #203 review).
+    m_projectRecipePending = true;
+    applyPendingProjectRecipe();
+}
+
+void RecordingPreviewBackend::applyPendingProjectRecipe()
+{
+    if (!m_projectRecipePending || !m_project || m_videoSize.isEmpty() || m_duration <= 0) return;
+    m_projectRecipePending = false;
+    if (const auto state = SnapTray::RecordingRecipe::editState(m_project->recipe)) {
+        applyEditState(*state);
+    }
     // Undo starts from the project as it was saved.
     m_editHistory.reset(currentEditState());
     emit editHistoryChanged();
-    emit projectChanged();
 }
 
 bool RecordingPreviewBackend::keepsProject() const
@@ -1337,11 +1370,31 @@ namespace {
 const QSize kProjectThumbnailSize(320, 180);
 }
 
-void RecordingPreviewBackend::keepAsProject(const QString& savedPath)
+QJsonObject RecordingPreviewBackend::recipeForProject(const QString& projectDir) const
+{
+    QJsonObject recipe = currentRecipe();
+    const QString image = m_appearance.imagePath;
+    if (image.isEmpty() || !QFileInfo::exists(image)) return recipe;
+    const QString owned = QDir(projectDir).filePath(QStringLiteral("background.") + QFileInfo(image).suffix());
+    const auto same = [](const QString& a, const QString& b) {
+        return QFileInfo(a).absoluteFilePath() == QFileInfo(b).absoluteFilePath();
+    };
+    if (!same(image, owned)) {
+        QFile::remove(owned);
+        if (!QFile::copy(image, owned)) return recipe; // keeps the outside path
+    }
+    QJsonObject edit = recipe.value(QStringLiteral("edit")).toObject();
+    QJsonObject appearance = edit.value(QStringLiteral("appearance")).toObject();
+    appearance.insert(QStringLiteral("imagePath"), owned);
+    edit.insert(QStringLiteral("appearance"), appearance);
+    recipe.insert(QStringLiteral("edit"), edit);
+    return recipe;
+}
+
+bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
 {
     if (m_project) {
-        SnapTray::RecordingProjects::update(*m_project, currentRecipe(), savedPath);
-        return;
+        return SnapTray::RecordingProjects::update(*m_project, recipeForProject(m_project->dir), savedPath);
     }
     // A small picture for the library, from the first frame shown.
     QImage thumbnail;
@@ -1350,12 +1403,17 @@ void RecordingPreviewBackend::keepAsProject(const QString& savedPath)
         if (!frame.isNull()) thumbnail = frame.scaled(kProjectThumbnailSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
     // Moved with its sidecars; the caller then removes whatever is left.
-    if (!SnapTray::RecordingProjects::create(m_videoPath, false, currentRecipe(), thumbnail, m_duration, savedPath)) {
+    auto project = SnapTray::RecordingProjects::create(m_videoPath, false, currentRecipe(), thumbnail, m_duration, savedPath);
+    if (!project) {
         qWarning() << "RecordingPreviewBackend: the recording could not be kept as a project";
-        return;
+        return false;
     }
+    // Its own copy of a background image, now that the folder exists.
+    const QJsonObject recipe = recipeForProject(project->dir);
+    if (recipe != project->recipe) SnapTray::RecordingProjects::update(*project, recipe, savedPath);
     const int days = RecordingSettingsManager::instance().projectCleanupDays();
     SnapTray::RecordingProjects::removeOlderThan(days);
+    return true;
 }
 
 bool RecordingPreviewBackend::audioMixAvailable() const
@@ -1680,6 +1738,14 @@ bool RecordingPreviewBackend::moveSplit(int index, qint64 sourceMs)
     return moved;
 }
 
+qint64 RecordingPreviewBackend::legalSplitPosition(int index, qint64 sourceMs) const
+{
+    if (m_duration <= 0 || index < 0 || index >= int(m_timeline.splits.size())) return -1;
+    const qint64 lower = m_timeline.partStartMs(index) + SnapTray::TimelineEdit::kMinPartMs;
+    const qint64 upper = m_timeline.partEndMs(index + 1, m_duration) - SnapTray::TimelineEdit::kMinPartMs;
+    return lower > upper ? -1 : qBound(lower, sourceMs, upper);
+}
+
 void RecordingPreviewBackend::commitTimelineEdit()
 {
     recordEdit();
@@ -1765,6 +1831,7 @@ void RecordingPreviewBackend::updateDuration(qint64 ms)
         // If trimEnd was -1 (unset), it now means the full duration
         emit durationChanged();
         emit trimRangeChanged();
+        applyPendingProjectRecipe();
     }
 }
 
@@ -1960,7 +2027,15 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
     if (outcome == SaveOutcome::Saved && m_project) {
         // A project keeps its source; the save updates its recipe. The save
         // dialog took the export (or the copy) as with any save.
-        keepAsProject(savedPath);
+        if (!keepAsProject(savedPath)) {
+            // The file is saved, but the project still has the old edits:
+            // stay open so they are not lost (PR #203 review).
+            finishProcessing();
+            m_canRetrySave = true;
+            setErrorMessage(tr("Saved to %1, but the project could not be updated. Save again to keep these "
+                               "edits in the project.").arg(QDir::toNativeSeparators(savedPath)));
+            return;
+        }
         finishProcessing();
         m_saved = true;
         close();
@@ -1977,7 +2052,16 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
         const bool savedOverSource = !savedPath.isEmpty() && samePath(savedPath, m_videoPath);
         // Kept as a project (#191): the source and its sidecars move into it
         // (an unedited save was handed a copy, so the source is still here).
-        if (keepsProject() && !savedOverSource) keepAsProject(savedPath);
+        // When that fails nothing is deleted: the recording stays open
+        // here, so it is not lost with the project (PR #203 review).
+        if (keepsProject() && !savedOverSource && !keepAsProject(savedPath)) {
+            finishProcessing();
+            m_canRetrySave = true;
+            setErrorMessage(tr("Saved to %1, but the recording could not be kept as an editable project. "
+                               "It is still open here: save again, or close it to discard it.")
+                                .arg(QDir::toNativeSeparators(savedPath)));
+            return;
+        }
         if (derived && !savedOverSource) {
             QFile::remove(m_videoPath);
         }
@@ -2122,6 +2206,7 @@ void RecordingPreviewBackend::updateVideoSize(const QSize &size)
     }
     m_videoSize = size;
     emit videoSizeChanged();
+    applyPendingProjectRecipe();
     if (m_windowTimeline && m_windowTimeline->frameSize() != size) {
         qWarning() << "RecordingPreviewBackend: window timeline frame size" << m_windowTimeline->frameSize()
                    << "does not match the video" << size << "- snapping disabled";
@@ -2943,7 +3028,8 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             moveInstead = smartSave;
             moveReason = "no transcoder on this platform";
             if (!moveInstead) result.errorMessage = unsupportedError;
-        } else if (smartSave && !recordedAsIntermediate && !mp4Options.mayChangeStream()) {
+        } else if (smartSave && !recordedAsIntermediate && !mp4Options.mayChangeStream()
+                   && mp4Options.quality == SnapTray::Mp4ExportOptions::Quality::Default) {
             // Already encoded at the user's quality; a re-encode would only lose detail.
             moveInstead = true;
             moveReason = "not an intermediate: recorded at the selected quality; saving as recorded";
@@ -2958,7 +3044,10 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                                             sourceProbe.frameRate, sourceProbe.videoCodec)) {
                 smartSave = false;
             }
-            if (smartSave && !recordedAsIntermediate) {
+            // An explicit quality is judged by its bitrate like an intermediate:
+            // Low re-encodes a recording above Low's target (PR #197 review).
+            if (smartSave && !recordedAsIntermediate
+                && mp4Options.quality == SnapTray::Mp4ExportOptions::Quality::Default) {
                 moveInstead = true;
                 moveReason = "not an intermediate: recorded at the selected quality; saving as recorded";
             } else if (smartSave && !sourceProbe.valid) {

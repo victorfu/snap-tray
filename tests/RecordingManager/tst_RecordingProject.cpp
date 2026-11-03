@@ -27,6 +27,7 @@ private slots:
     void createMovesTheRecordingAndSidecars();
     void createCanCopy();
     void createFailsCleanly();
+    void failedCreateNeverLosesTheSource();
     void loadRejectsDamagedProjects();
     void updateKeepsTheSourceAndBumpsModified();
     void listIsNewestFirst();
@@ -201,6 +202,25 @@ void tst_RecordingProject::createFailsCleanly()
     QVERIFY(!RecordingProjects::create(QDir(m_dir.path()).filePath(QStringLiteral("missing.mp4")), false, {}, {}, 0, {})
                  .has_value());
     QVERIFY(RecordingProjects::list().isEmpty());
+}
+
+// PR #203 review: a failure after the recording was moved (a full disk at
+// the manifest) moves everything back instead of deleting the only copy.
+void tst_RecordingProject::failedCreateNeverLosesTheSource()
+{
+    const QString source = writeRecording(QStringLiteral("SnapTray_Recording_keep.mp4"), true);
+    QVERIFY(!source.isEmpty());
+    RecordingProjects::failNextManifestWriteForTests();
+    QVERIFY(!RecordingProjects::create(source, false, {}, {}, 1000, {}).has_value());
+    QVERIFY(QFileInfo::exists(source));
+    QCOMPARE(QFileInfo(source).size(), qint64(1024));
+    for (const QString& suffix : RecordingProjects::sidecarSuffixes()) {
+        QVERIFY2(QFileInfo::exists(source + suffix), qPrintable(suffix));
+    }
+    QVERIFY(QDir(m_root).entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty());
+    QVERIFY(RecordingProjects::list().isEmpty());
+    // The next try works.
+    QVERIFY(RecordingProjects::create(source, false, {}, {}, 1000, {}).has_value());
 }
 
 void tst_RecordingProject::loadRejectsDamagedProjects()

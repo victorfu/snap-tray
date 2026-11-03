@@ -1995,6 +1995,11 @@ Boyut: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Yüksek kaliteli kayıt için yeterli boş disk alanı yok. Bunun yerine seçilen kalitede kaydediliyor.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Kayıtlar Kayıt Kitaplığı'nın proje klasörüne kaydedilemez.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3445,6 +3450,16 @@ Boyut: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Projenin kaydı kaydetmek için kopyalanamadı. Hiçbir şey kaydedilmedi.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>%1 konumuna kaydedildi ancak proje güncellenemedi. Bu düzenlemeleri projede tutmak için yeniden kaydedin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>%1 konumuna kaydedildi ancak kayıt düzenlenebilir proje olarak saklanamadı. Hâlâ burada açık: yeniden kaydedin veya atmak için kapatın.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3826,6 +3841,11 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Düzenleme modu: önizlemede kırpın, kesin ve efekt ekleyin, ardından kaydedin. Önizlemeli kayıtlar her zaman önce MP4 olarak alınır.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projeler önizlemeden kaydettiğinizde saklanır. Kullanmak için Önizlemeyi göster seçeneğini açın.</translation>
     </message>
 </context>
 <context>

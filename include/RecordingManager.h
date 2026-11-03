@@ -87,6 +87,9 @@ public:
     // recovery manifest; the project's files are never deleted from here.
     // False when a recording or preview is already open.
     bool openProjectRecording(const QString& videoPath);
+    // False for a path inside the Recording Library's project folder, where a
+    // save could replace a project's source recording (PR #203 review).
+    static bool isAllowedSaveDestination(const QString& path);
     // Scans the temp folder off the GUI thread; emits recoveriesFound.
     void scanForRecoveries();
     static bool isSessionActive(const QString& videoPath);
@@ -198,7 +201,12 @@ private:
     // The pointer sidecar (#159), next to the recording while it is previewed.
     qint64 mediaTimeMs();
     void startCursorTimeline();
+    // The pointer and key recorders only (restarted with the pointer timeline).
     void dropCursorTimeline(bool removeFile);
+    // Everything recorded beside the video, audio tracks included: only when
+    // the recording itself ends (PR #202 review).
+    void dropRecordingSidecars(bool removeFiles);
+    QString m_audioTracksVideo;
 public:
     // True while this recording writes a key sidecar (shown in the tray status).
     bool isRecordingKeys() const;

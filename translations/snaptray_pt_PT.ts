@@ -1995,6 +1995,11 @@ Tamanho: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Não há espaço livre suficiente no disco para gravar em alta qualidade. A gravação será feita na qualidade selecionada.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Não é possível guardar gravações na pasta de projetos da Biblioteca de gravações.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3445,6 +3450,16 @@ Tamanho: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Não foi possível copiar a gravação do projeto para guardar. Nada foi guardado.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Guardado em %1, mas não foi possível atualizar o projeto. Guarde novamente para manter estas edições no projeto.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Guardado em %1, mas não foi possível manter a gravação como projeto editável. Continua aberta aqui: guarde novamente ou feche-a para a descartar.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3826,6 +3841,11 @@ Ideal para clipes curtos e partilha na web.
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Modo de edição: corte, recorte e adicione efeitos na pré-visualização e depois guarde. As gravações com pré-visualização são sempre captadas primeiro em MP4.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Os projetos são mantidos quando guarda a partir da pré-visualização. Ative Mostrar pré-visualização para os usar.</translation>
     </message>
 </context>
 <context>

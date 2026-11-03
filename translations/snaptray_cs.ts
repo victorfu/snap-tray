@@ -2001,6 +2001,11 @@ Velikost: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Nedostatek volného místa na disku pro nahrávání ve vysoké kvalitě. Nahrává se ve zvolené kvalitě.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Záznamy nelze ukládat do složky projektů knihovny záznamů.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3451,6 +3456,16 @@ Velikost: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Záznam projektu se nepodařilo zkopírovat pro uložení. Nic nebylo uloženo.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Uloženo do %1, ale projekt se nepodařilo aktualizovat. Uložte znovu, abyste tyto úpravy v projektu zachovali.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Uloženo do %1, ale záznam se nepodařilo uchovat jako upravitelný projekt. Je stále otevřený zde: uložte znovu, nebo ho zavřením zahoďte.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3832,6 +3847,11 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Režim úprav: v náhledu ořízněte, zkraťte a přidejte efekty, pak uložte. Záznamy s náhledem se vždy nejprve pořizují jako MP4.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projekty se uchovávají při ukládání z náhledu. Pro jejich použití zapněte Zobrazit náhled.</translation>
     </message>
 </context>
 <context>

@@ -1995,6 +1995,11 @@ Dydis: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Nepakanka laisvos vietos diske aukštos kokybės įrašymui. Įrašoma pasirinkta kokybe.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Įrašų negalima išsaugoti įrašų bibliotekos projektų aplanke.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3445,6 +3450,16 @@ Dydis: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Nepavyko nukopijuoti projekto įrašo išsaugojimui. Niekas neišsaugota.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Išsaugota į %1, bet projekto atnaujinti nepavyko. Išsaugokite dar kartą, kad šie pakeitimai liktų projekte.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Išsaugota į %1, bet įrašo nepavyko išsaugoti kaip redaguojamo projekto. Jis vis dar atidarytas čia: išsaugokite dar kartą arba uždarykite, kad atmestumėte.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3826,6 +3841,11 @@ GIF įrašuose garsas nepalaikomas.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Redagavimo režimas: peržiūroje apkarpykite, apkirpkite ir pridėkite efektų, tada išsaugokite. Įrašai su peržiūra visada pirmiausia įrašomi MP4 formatu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projektai išsaugomi, kai įrašote iš peržiūros. Norėdami juos naudoti, įjunkite Rodyti peržiūrą.</translation>
     </message>
 </context>
 <context>

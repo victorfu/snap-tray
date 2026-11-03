@@ -1995,6 +1995,11 @@ Storlek: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Inte tillräckligt med ledigt diskutrymme för inspelning i hög kvalitet. Spelar in i vald kvalitet i stället.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Inspelningar kan inte sparas i inspelningsbibliotekets projektmapp.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3445,6 +3450,16 @@ Storlek: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Projektets inspelning kunde inte kopieras för att sparas. Inget sparades.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Sparad i %1, men projektet kunde inte uppdateras. Spara igen för att behålla ändringarna i projektet.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Sparad i %1, men inspelningen kunde inte behållas som ett redigerbart projekt. Den är fortfarande öppen här: spara igen eller stäng den för att kasta den.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3826,6 +3841,11 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Redigeringsläge: trimma, beskär och lägg till effekter i förhandsvisningen och spara sedan. Inspelningar med förhandsvisning spelas alltid in som MP4 först.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projekt behålls när du sparar från förhandsvisningen. Slå på Visa förhandsvisning för att använda dem.</translation>
     </message>
 </context>
 <context>

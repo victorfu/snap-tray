@@ -2001,6 +2001,11 @@ Size: %2</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>고화질 녹화를 위한 디스크 여유 공간이 부족합니다. 선택한 화질로 녹화합니다.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>녹화 보관함의 프로젝트 폴더에는 녹화를 저장할 수 없습니다.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3451,6 +3456,16 @@ Size: %2</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>저장하기 위해 프로젝트 녹화를 복사하지 못했습니다. 아무것도 저장되지 않았습니다.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>%1에 저장했지만 프로젝트를 업데이트하지 못했습니다. 이 편집 내용을 프로젝트에 남기려면 다시 저장하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>%1에 저장했지만 녹화를 편집 가능한 프로젝트로 보관하지 못했습니다. 아직 여기에 열려 있습니다. 다시 저장하거나 닫아서 버리세요.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3832,6 +3847,11 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>편집 모드: 미리보기에서 다듬기, 자르기, 효과 추가를 한 뒤 저장합니다. 미리보기 녹화는 항상 먼저 MP4로 녹화됩니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>프로젝트는 미리보기에서 저장할 때 보관됩니다. 사용하려면 미리보기 표시를 켜세요.</translation>
     </message>
 </context>
 <context>

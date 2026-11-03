@@ -1995,6 +1995,11 @@ Size: %2</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Δεν υπάρχει αρκετός ελεύθερος χώρος στον δίσκο για εγγραφή υψηλής ποιότητας. Η εγγραφή γίνεται στην επιλεγμένη ποιότητα.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Οι εγγραφές δεν μπορούν να αποθηκευτούν στον φάκελο έργων της Βιβλιοθήκης εγγραφών.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3445,6 +3450,16 @@ Size: %2</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Δεν ήταν δυνατή η αντιγραφή της εγγραφής του έργου για αποθήκευση. Δεν αποθηκεύτηκε τίποτα.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Αποθηκεύτηκε στο %1, αλλά το έργο δεν ενημερώθηκε. Αποθηκεύστε ξανά για να κρατήσετε αυτές τις αλλαγές στο έργο.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Αποθηκεύτηκε στο %1, αλλά η εγγραφή δεν διατηρήθηκε ως επεξεργάσιμο έργο. Είναι ακόμη ανοιχτή εδώ: αποθηκεύστε ξανά ή κλείστε την για να απορριφθεί.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3826,6 +3841,11 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Λειτουργία επεξεργασίας: περικοπή, κάδρο και εφέ στην προεπισκόπηση, μετά αποθήκευση. Οι εγγραφές με προεπισκόπηση καταγράφονται πάντα πρώτα ως MP4.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Τα έργα διατηρούνται όταν αποθηκεύετε από την προεπισκόπηση. Ενεργοποιήστε την Εμφάνιση προεπισκόπησης για να τα χρησιμοποιήσετε.</translation>
     </message>
 </context>
 <context>

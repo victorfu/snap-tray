@@ -1995,6 +1995,11 @@ Kích thước: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Không đủ dung lượng đĩa trống để ghi ở chất lượng cao. Sẽ ghi ở chất lượng đã chọn.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Không thể lưu bản ghi vào thư mục dự án của Thư viện bản ghi.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3445,6 +3450,16 @@ Kích thước: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Không thể sao chép bản ghi của dự án để lưu. Chưa có gì được lưu.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Đã lưu vào %1 nhưng không thể cập nhật dự án. Hãy lưu lại để giữ các chỉnh sửa này trong dự án.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Đã lưu vào %1 nhưng không thể giữ bản ghi thành dự án có thể chỉnh sửa. Bản ghi vẫn đang mở ở đây: hãy lưu lại hoặc đóng để bỏ.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3826,6 +3841,11 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Chế độ chỉnh sửa: cắt, cắt khung và thêm hiệu ứng trong bản xem trước rồi lưu. Bản ghi có xem trước luôn được ghi trước dưới dạng MP4.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Dự án được giữ khi bạn lưu từ bản xem trước. Hãy bật Hiện bản xem trước để dùng.</translation>
     </message>
 </context>
 <context>

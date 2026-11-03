@@ -2001,6 +2001,11 @@ Taille : %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Espace disque insuffisant pour un enregistrement en haute qualité. L'enregistrement se fera à la qualité sélectionnée.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Les enregistrements ne peuvent pas être enregistrés dans le dossier des projets de la bibliothèque d'enregistrements.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3451,6 +3456,16 @@ Taille : %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>L'enregistrement du projet n'a pas pu être copié pour l'enregistrement. Rien n'a été enregistré.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Enregistré dans %1, mais le projet n'a pas pu être mis à jour. Enregistrez de nouveau pour conserver ces modifications dans le projet.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Enregistré dans %1, mais l'enregistrement n'a pas pu être conservé comme projet modifiable. Il est toujours ouvert ici : enregistrez de nouveau ou fermez-le pour l'abandonner.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3832,6 +3847,11 @@ L'audio n'est pas pris en charge pour les enregistrements GIF.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Mode modification : coupez, recadrez et ajoutez des effets dans l'aperçu, puis enregistrez. Les enregistrements avec aperçu sont toujours capturés d'abord en MP4.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Les projets sont conservés quand vous enregistrez depuis l'aperçu. Activez Afficher l'aperçu pour les utiliser.</translation>
     </message>
 </context>
 <context>

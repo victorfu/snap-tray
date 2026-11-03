@@ -1995,6 +1995,11 @@ Koko: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Levytilaa ei ole tarpeeksi korkealaatuiseen tallennukseen. Tallennetaan valitulla laadulla.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Tallenteita ei voi tallentaa tallennekirjaston projektikansioon.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3445,6 +3450,16 @@ Koko: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Projektin tallennetta ei voitu kopioida tallennusta varten. Mitään ei tallennettu.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Tallennettu kohteeseen %1, mutta projektia ei voitu päivittää. Tallenna uudelleen, jotta muokkaukset säilyvät projektissa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Tallennettu kohteeseen %1, mutta tallennetta ei voitu säilyttää muokattavana projektina. Se on yhä auki tässä: tallenna uudelleen tai hylkää se sulkemalla.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3826,6 +3841,11 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Esikatseltavat tallenteet tallennetaan aina ensin MP4-muodossa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projektit säilytetään, kun tallennat esikatselusta. Ota Näytä esikatselu käyttöön, jotta voit käyttää niitä.</translation>
     </message>
 </context>
 <context>

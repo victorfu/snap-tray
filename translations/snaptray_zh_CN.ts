@@ -1992,6 +1992,11 @@ Size: %2</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>磁盘可用空间不足,无法以高画质录制。将改用所选画质录制。</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>不能将录制内容保存到录制库的项目文件夹中。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3442,6 +3447,16 @@ Size: %2</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>无法复制项目的录制内容以进行保存。未保存任何内容。</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>已保存到 %1，但无法更新项目。请再次保存，以便在项目中保留这些编辑。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>已保存到 %1，但无法将录制内容保留为可编辑项目。它仍在此处打开：请再次保存，或关闭以丢弃。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3823,6 +3838,11 @@ GIF 录制不支持音频。</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>编辑模式：在预览中修剪、裁切并添加效果，然后保存。有预览的录制总是先以 MP4 录制。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>从预览中保存时才会保留项目。要使用项目，请打开“显示预览”。</translation>
     </message>
 </context>
 <context>
