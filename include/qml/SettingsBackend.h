@@ -74,6 +74,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool recordingShowSetup READ recordingShowSetup WRITE setRecordingShowSetup NOTIFY recordingShowSetupChanged)
     Q_PROPERTY(int recordingKeyMode READ recordingKeyMode WRITE setRecordingKeyMode NOTIFY recordingKeyModeChanged)
     Q_PROPERTY(bool recordingKeysSupported READ recordingKeysSupported CONSTANT)
+    Q_PROPERTY(bool recordingPreselectArea READ recordingPreselectArea WRITE setRecordingPreselectArea NOTIFY recordingPreselectAreaChanged)
     Q_PROPERTY(int recordingQuickSaveAction READ recordingQuickSaveAction WRITE setRecordingQuickSaveAction NOTIFY recordingQuickSaveActionChanged)
     Q_PROPERTY(bool recordingKeepProjects READ recordingKeepProjects WRITE setRecordingKeepProjects NOTIFY recordingKeepProjectsChanged)
     Q_PROPERTY(int recordingProjectCleanupDays READ recordingProjectCleanupDays WRITE setRecordingProjectCleanupDays NOTIFY recordingProjectCleanupDaysChanged)
@@ -204,6 +205,8 @@ public:
     int recordingKeyMode() const;
     void setRecordingKeyMode(int mode);
     bool recordingKeysSupported() const;
+    bool recordingPreselectArea() const;
+    void setRecordingPreselectArea(bool value);
     int recordingQuickSaveAction() const;
     void setRecordingQuickSaveAction(int action);
     // Re-reads what the recording setup can also change (#193).
@@ -343,6 +346,7 @@ signals:
     void recordingKeyModeChanged();
     void recordingKeepProjectsChanged();
     void recordingQuickSaveActionChanged();
+    void recordingPreselectAreaChanged();
     void recordingProjectCleanupDaysChanged();
     void recordingAudioEnabledChanged();
     void recordingAudioSourceChanged();

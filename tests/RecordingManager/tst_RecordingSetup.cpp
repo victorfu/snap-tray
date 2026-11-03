@@ -6,6 +6,8 @@
 #include <QScreen>
 #include <QQuickItem>
 #include <QQuickView>
+#include <QQuickWindow>
+#include <QtMath>
 #include <QThread>
 #include <QScopeGuard>
 
@@ -14,6 +16,7 @@
 #include "qml/RecordingRecoveryViewModel.h"
 #include "qml/RecordingLibraryViewModel.h"
 #include "qml/QuickSaveAction.h"
+#include "qml/QmlRecordingAreaSelector.h"
 #include <QClipboard>
 #include <QMimeData>
 #include "recording/RecordingProject.h"
@@ -124,6 +127,7 @@ private slots:
     void recordingModeIsTheSameSettingEverywhere();
     void setupFitsAShortScreen();
     void quickSaveActionsDoWhatTheySay();
+    void areaSelectorChoosesAnAreaOfOneScreen();
 
 private:
     std::shared_ptr<FakeEngineState> m_engineState;
@@ -862,6 +866,84 @@ void TestRecordingSetup::quickSaveActionsDoWhatTheySay()
         // Some offscreen/X11 test clipboards keep only the text.
         QCOMPARE(copied->text(), QFileInfo(path).absoluteFilePath());
     }
+}
+
+void TestRecordingSetup::areaSelectorChoosesAnAreaOfOneScreen()
+{
+    // #194: a recording-only overlay on one screen; the area is reported in
+    // global logical coordinates and never smaller than 64 video pixels.
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("No screen available");
+    SnapTray::QmlRecordingAreaSelector selector;
+    QSignalSpy chosen(&selector, &SnapTray::QmlRecordingAreaSelector::areaChosen);
+    QSignalSpy cancelled(&selector, &SnapTray::QmlRecordingAreaSelector::cancelled);
+    selector.start(screen);
+    QQuickItem* root = selector.rootItem();
+    QVERIFY(root);
+    QTRY_VERIFY(root->width() > 0);
+    const qreal dpr = screen->devicePixelRatio();
+    QCOMPARE(root->property("minSide").toInt(), qCeil(64 / dpr));
+    QVERIFY(root->findChild<QQuickItem*>(QStringLiteral("areaToolbar")));
+
+    // Nothing drawn: Record does nothing.
+    QMetaObject::invokeMethod(root, "confirm");
+    QCOMPARE(chosen.count(), 0);
+    QMetaObject::invokeMethod(root, "drawTo", Q_ARG(QVariant, 10), Q_ARG(QVariant, 20), Q_ARG(QVariant, 330),
+                              Q_ARG(QVariant, 200));
+    QVERIFY(root->property("hasSelection").toBool());
+    QMetaObject::invokeMethod(root, "confirm");
+    QCOMPARE(chosen.count(), 1);
+    // Global: from where the overlay window is.
+    const QPoint origin = root->window()->position();
+    QCOMPARE(chosen.last().first().toRect(), QRect(origin + QPoint(10, 20), QSize(320, 180)));
+
+    // A ratio fits inside the drawn area.
+    QMetaObject::invokeMethod(root, "applyRatio", Q_ARG(QVariant, 3)); // 1:1
+    QCOMPARE(root->property("selW").toReal(), root->property("selH").toReal());
+    QCOMPARE(root->property("selH").toReal(), 180.0);
+    // Drawn past the edge: kept on this screen.
+    QMetaObject::invokeMethod(root, "applyRatio", Q_ARG(QVariant, 0));
+    QMetaObject::invokeMethod(root, "drawTo", Q_ARG(QVariant, root->width() - 50), Q_ARG(QVariant, 10),
+                              Q_ARG(QVariant, root->width() + 500), Q_ARG(QVariant, 300));
+    QCOMPARE(root->property("selX").toReal() + root->property("selW").toReal(), root->width());
+    // Too small to record: no area.
+    QMetaObject::invokeMethod(root, "drawTo", Q_ARG(QVariant, 0), Q_ARG(QVariant, 0), Q_ARG(QVariant, 5),
+                              Q_ARG(QVariant, 5));
+    QVERIFY(!root->property("hasSelection").toBool());
+    // Full Screen is the whole screen.
+    QMetaObject::invokeMethod(root, "chooseFullScreen");
+    QCOMPARE(chosen.last().first().toRect(), screen->geometry());
+    // Esc cancels.
+    QQuickWindow* window = root->window();
+    QVERIFY(window);
+    root->forceActiveFocus();
+    QTest::keyClick(window, Qt::Key_Escape);
+    QTRY_COMPARE(cancelled.count(), 1);
+    selector.close();
+    QVERIFY(!selector.rootItem());
+    QTest::qWait(50);
+    QCOMPARE(cancelled.count(), 1); // closing it ourselves is not a cancel
+
+    // A narrow screen (a portrait display at 200%): the toolbar wraps and
+    // Record stays on screen (PR #205 review).
+    selector.start(screen);
+    root = selector.rootItem();
+    QVERIFY(root);
+    constexpr int kNarrow = 720;
+    root->window()->showNormal();
+    root->window()->resize(kNarrow, 600);
+    QTRY_COMPARE(int(root->width()), kNarrow);
+    QQuickItem* record = root->findChild<QQuickItem*>(QStringLiteral("areaRecordButton"));
+    QVERIFY(record);
+    QTRY_VERIFY(record->mapRectToScene(QRectF(0, 0, record->width(), record->height())).right() <= kNarrow);
+    QVERIFY(record->mapRectToScene(QRectF(0, 0, record->width(), record->height())).left() >= 0);
+
+    // Closed by the window manager (Alt+F4): the setup is cancelled, once.
+    root->window()->close();
+    QTRY_COMPARE(cancelled.count(), 2);
+    selector.close();
+    QTest::qWait(50);
+    QCOMPARE(cancelled.count(), 2);
 }
 
 void TestRecordingSetup::lostMicrophoneEndsTheTest_data()

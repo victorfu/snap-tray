@@ -174,6 +174,18 @@ void ScreenPickerViewModel::setQuickSaveAction(int action)
     emit recordingModeChanged();
 }
 
+bool ScreenPickerViewModel::preselectArea() const
+{
+    return RecordingSettingsManager::instance().preselectArea();
+}
+
+void ScreenPickerViewModel::setPreselectArea(bool value)
+{
+    if (preselectArea() == value) return;
+    RecordingSettingsManager::instance().setPreselectArea(value);
+    emit recordingModeChanged();
+}
+
 QString ScreenPickerViewModel::outputSummary() const
 {
     const auto& settings = RecordingSettingsManager::instance();

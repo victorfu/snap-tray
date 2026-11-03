@@ -761,6 +761,18 @@ bool SettingsBackend::recordingKeysSupported() const
     return SnapTray::keyRecordingSupported();
 }
 
+bool SettingsBackend::recordingPreselectArea() const
+{
+    return RecordingSettingsManager::instance().preselectArea();
+}
+
+void SettingsBackend::setRecordingPreselectArea(bool value)
+{
+    if (recordingPreselectArea() == value) return;
+    RecordingSettingsManager::instance().setPreselectArea(value);
+    emit recordingPreselectAreaChanged();
+}
+
 int SettingsBackend::recordingQuickSaveAction() const
 {
     return RecordingSettingsManager::instance().quickSaveAction();
@@ -781,6 +793,7 @@ void SettingsBackend::refreshRecordingMode()
         emit recordingShowPreviewChanged();
     }
     emit recordingQuickSaveActionChanged();
+    emit recordingPreselectAreaChanged();
     emit recordingKeyModeChanged();
 }
 

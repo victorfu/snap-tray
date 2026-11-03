@@ -3844,6 +3844,16 @@ GIF įrašuose garsas nepalaikomas.</translation>
     </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>Prieš įrašant pasirinkti sritį</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Vilkite per ekraną, kad pasirinktumėte, ką įrašyti. Redagavimo režimas vis tiek įrašo visą ekraną ir atveria peržiūrą apkirptą pagal sritį, kad galėtumėte ją pakeisti; greitasis režimas įrašo tik sritį.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>Projektai išsaugomi, kai įrašote iš peržiūros. Norėdami juos naudoti, įjunkite Rodyti peržiūrą.</translation>
     </message>
@@ -5262,6 +5272,21 @@ Failo dydis: %3</translation>
         <source>Edit mode only: quick mode keeps no editing tracks.</source>
         <translation>Tik redagavimo režimu: greitasis režimas nepalieka redagavimo takelių.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>Pirmiausia pasirinkti sritį</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>Vis tiek įrašomas visas ekranas; peržiūra atsiveria apkirpta pagal sritį.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>Įrašoma tik sritis.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -5294,6 +5319,11 @@ Failo dydis: %3</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>Neatkuriama: įrašymas nutrūko prieš išsaugant bet kokią atkuriamą dalį.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>įrašytas visas ekranas; atsivers apkirptas pagal pasirinktą sritį</translation>
     </message>
 </context>
 <context>
@@ -5456,6 +5486,49 @@ Failo dydis: %3</translation>
         <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
         <source>Open in the preview</source>
         <translation>Atidaryta peržiūroje</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>Laisvai</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>Vilkite, kad perkeltumėte ar nubrėžtumėte iš naujo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>Vilkite, kad pasirinktumėte įrašomą sritį</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>Santykis %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>Visas ekranas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Atšaukti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>Įrašyti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>Įrašyti šią sritį</translation>
     </message>
 </context>
 </TS>

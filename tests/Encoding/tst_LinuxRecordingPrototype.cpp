@@ -19,6 +19,8 @@
 #include <QPainter>
 #include <QTimer>
 #include "qml/QmlRecordingControlBar.h"
+#include "qml/QmlRecordingBoundary.h"
+#include "recording/RecordingSession.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
@@ -35,6 +37,8 @@ private slots:
     void benchmark4K();
     void mainRecordingFlowSavesSilentMp4();
     void mainRecordingFlowRequestsPreview();
+    void chosenAreaQuickModeRecordsTheArea();
+    void chosenAreaEditModeRecordsTheScreenAndCrops();
 };
 
 void TestLinuxRecordingPrototype::captureFullScreen()
@@ -207,6 +211,92 @@ void TestLinuxRecordingPrototype::mainRecordingFlowRequestsPreview()
     manager.cancelRecording();
     QFile::remove(path);
     SnapTray::CursorTimelineSidecar::remove(path);
+}
+
+// #194, quick mode: the chosen area is the recorded region, so the saved
+// file is exactly that area.
+void TestLinuxRecordingPrototype::chosenAreaQuickModeRecordsTheArea()
+{
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != "1") QSKIP("Requires isolated display");
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = RecordingSettingsManager::instance();
+    settings.setShowPreview(false); settings.setAudioEnabled(false); settings.setOutputFormat(0);
+    settings.setCountdownEnabled(false); settings.setFrameRate(30);
+    auto& files = FileSettingsManager::instance();
+    files.saveRecordingPath(dir.path());
+    files.saveAutoSaveRecordings(true);
+    RecordingManager manager;
+    QSignalSpy errors(&manager, &RecordingManager::recordingError), started(&manager, &RecordingManager::recordingStarted),
+        stopped(&manager, &RecordingManager::recordingStopped);
+    // Odd sizes: the recorded region grows to even pixels, and the frame
+    // goes around that region, never into it (PR #205 review).
+    const QRect area(100, 60, 641, 361);
+    manager.startScreenRecording(QGuiApplication::primaryScreen(), area);
+    QTRY_VERIFY_WITH_TIMEOUT(!started.isEmpty() || !errors.isEmpty(), 10000);
+    QVERIFY2(errors.isEmpty(), errors.isEmpty() ? "" : qPrintable(errors.first().first().toString()));
+    const QRect region = manager.m_recordingRegion;
+    QVERIFY(region.contains(area));
+    QCOMPARE(region.width() % 2, 0);
+    QCOMPARE(region.height() % 2, 0);
+    QVERIFY(manager.m_areaBoundary); // its frame, just outside the region
+    QCOMPARE(manager.m_areaBoundary->region(), region);
+    manager.pauseRecording();
+    QCOMPARE(manager.m_areaBoundary->borderMode(), SnapTray::QmlRecordingBoundary::BorderMode::Paused);
+    manager.resumeRecording();
+    QTest::qWait(500);
+    manager.stopRecording();
+    QTRY_VERIFY_WITH_TIMEOUT(!stopped.isEmpty() || !errors.isEmpty(), 20000);
+    QVERIFY(errors.isEmpty());
+    QVERIFY(!manager.m_areaBoundary);
+    QVERIFY(manager.previewInitialCrop().isEmpty());
+    const QString path = stopped.first().first().toString();
+    AVFormatContext* format = nullptr;
+    QCOMPARE(avformat_open_input(&format, QFile::encodeName(path).constData(), nullptr, nullptr), 0);
+    auto closeFormat = qScopeGuard([&] { avformat_close_input(&format); });
+    QVERIFY(avformat_find_stream_info(format, nullptr) >= 0);
+    QCOMPARE(format->streams[0]->codecpar->width, region.width());
+    QCOMPARE(format->streams[0]->codecpar->height, region.height());
+}
+
+// #194, edit mode: the whole screen is recorded; the area is the preview's
+// initial crop, in the manifest as well (recovery opens with it).
+void TestLinuxRecordingPrototype::chosenAreaEditModeRecordsTheScreenAndCrops()
+{
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != "1") QSKIP("Requires isolated display");
+    auto& settings = RecordingSettingsManager::instance();
+    settings.setShowPreview(true); settings.setAudioEnabled(false); settings.setOutputFormat(0);
+    settings.setCountdownEnabled(false); settings.setFrameRate(30);
+    RecordingManager manager;
+    QSignalSpy errors(&manager, &RecordingManager::recordingError), started(&manager, &RecordingManager::recordingStarted),
+        preview(&manager, &RecordingManager::previewRequested);
+    const QRect area(100, 60, 640, 360);
+    manager.startScreenRecording(QGuiApplication::primaryScreen(), area);
+    QTRY_VERIFY_WITH_TIMEOUT(!started.isEmpty() || !errors.isEmpty(), 10000);
+    QVERIFY(errors.isEmpty());
+    QCOMPARE(manager.m_recordingRegion, QGuiApplication::primaryScreen()->geometry());
+    // X11 cannot leave a frame out of the full-screen capture: none is shown,
+    // so a later crop change never reveals one (PR #205 review).
+    QVERIFY(!manager.m_areaBoundary);
+    QCOMPARE(manager.m_session.initialCrop, area); // 1x: video pixels = logical
+    const auto manifest = SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(manager.m_session.videoPath));
+    QVERIFY(manifest);
+    QCOMPARE(manifest->initialCrop, area);
+    QTest::qWait(300);
+    manager.stopRecording();
+    QTRY_VERIFY_WITH_TIMEOUT(!preview.isEmpty() || !errors.isEmpty(), 20000);
+    QVERIFY(errors.isEmpty());
+    QVERIFY(!manager.m_areaBoundary);
+    QCOMPARE(manager.previewInitialCrop(), area);
+    const QString path = preview.first().first().toString();
+    AVFormatContext* format = nullptr;
+    QCOMPARE(avformat_open_input(&format, QFile::encodeName(path).constData(), nullptr, nullptr), 0);
+    auto closeFormat = qScopeGuard([&] { avformat_close_input(&format); });
+    QVERIFY(avformat_find_stream_info(format, nullptr) >= 0);
+    QCOMPARE(format->streams[0]->codecpar->width, QGuiApplication::primaryScreen()->size().width());
+    manager.cancelRecording();
+    manager.onPreviewClosed(false);
+    SnapTray::RecordingSession::discard(path);
 }
 
 void TestLinuxRecordingPrototype::captureContinuesWhileGuiBlocked()

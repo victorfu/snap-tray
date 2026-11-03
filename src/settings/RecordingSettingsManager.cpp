@@ -154,6 +154,18 @@ void RecordingSettingsManager::setKeyRecordingMode(int value)
     settings.setValue(kKeyKeyRecordingMode, qBound(0, value, 2));
 }
 
+bool RecordingSettingsManager::preselectArea() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyPreselectArea, false).toBool();
+}
+
+void RecordingSettingsManager::setPreselectArea(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyPreselectArea, value);
+}
+
 int RecordingSettingsManager::quickSaveAction() const
 {
     auto settings = SnapTray::getSettings();

@@ -361,6 +361,7 @@ add_library(snaptray_core STATIC
     src/recording/OverlayTrack.cpp
     src/recording/AudioTracks.cpp
     src/recording/RecordingProject.cpp
+    src/recording/RecordingArea.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -1031,6 +1032,7 @@ set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_
 set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
 set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOURCE_ALIAS components/Countdown.qml)
+set_source_files_properties(src/qml/components/RecordingAreaSelector.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingAreaSelector.qml)
 set_source_files_properties(src/qml/components/RecordingTooltip.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingTooltip.qml)
 set_source_files_properties(src/qml/components/GlassSurface.qml PROPERTIES QT_RESOURCE_ALIAS components/GlassSurface.qml)
 set_source_files_properties(src/qml/components/ToolbarButton.qml PROPERTIES QT_RESOURCE_ALIAS components/ToolbarButton.qml)
@@ -1139,6 +1141,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/Badge.qml
         src/qml/components/RecordingBoundary.qml
         src/qml/components/Countdown.qml
+        src/qml/components/RecordingAreaSelector.qml
         src/qml/components/RecordingTooltip.qml
         src/qml/components/GlassSurface.qml
         src/qml/components/ToolbarButton.qml
@@ -1262,6 +1265,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/RecordingLibraryViewModel.cpp
         src/qml/QuickSaveAction.cpp
         include/qml/QuickSaveAction.h
+        src/qml/QmlRecordingAreaSelector.cpp
+        include/qml/QmlRecordingAreaSelector.h
         include/qml/RecordingLibraryViewModel.h
         src/qml/OCRResultViewModel.cpp
         include/qml/OCRResultViewModel.h

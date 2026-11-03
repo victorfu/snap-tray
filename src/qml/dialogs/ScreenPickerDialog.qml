@@ -158,6 +158,17 @@ DialogBase {
                     }
 
                     SettingsToggle {
+                        objectName: "setupPreselectAreaToggle"
+                        width: parent.width
+                        label: qsTr("Choose an area first")
+                        description: root.viewModel && root.viewModel.editMode
+                            ? qsTr("The whole screen is still recorded; the preview opens cropped to the area.")
+                            : qsTr("Only the area is recorded.")
+                        checked: root.viewModel ? root.viewModel.preselectArea : false
+                        onToggled: function(checked) { root.viewModel.preselectArea = checked }
+                    }
+
+                    SettingsToggle {
                         objectName: "setupMicrophoneToggle"
                         width: parent.width
                         label: qsTr("Microphone")
