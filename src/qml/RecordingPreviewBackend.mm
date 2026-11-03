@@ -32,6 +32,7 @@
 #include <QGuiApplication>
 #include <QPainter>
 #include <QPointer>
+#include <utility>
 #include <QQmlContext>
 #include <QQuickView>
 #include <QTimer>
@@ -1486,7 +1487,13 @@ void RecordingPreviewBackend::save()
         && (sourceProbeReady() ? mp4OptionsActive() : effectiveMp4Options().mayChangeStream());
     const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || effectsActive()
         || hasTimelineEdits() || mp4OptionsMayApply;
-    if (writesNewFile) {
+    // Only MP4 options, with the source not probed yet: whether they change
+    // anything is not known here. The export job decides after its probe,
+    // moving the recording if they do not and checking the room if they do,
+    // so a save that only needs a move is never refused (PR #197 review).
+    m_exportSpaceCheckDeferred = mp4OptionsMayApply && !sourceProbeReady() && m_selectedFormat == MP4
+        && !hasTrim() && !hasCrop() && !effectsActive() && !hasTimelineEdits();
+    if (writesNewFile && !m_exportSpaceCheckDeferred) {
         const QString directory = QFileInfo(m_videoPath).absolutePath();
         const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
                                                             : QStorageInfo(directory).bytesAvailable();
@@ -2495,6 +2502,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     // A snapshot, like the effects: changes in the preview do not reach this job.
     const SnapTray::Mp4ExportOptions mp4Options = effectiveMp4Options();
     const bool recordedAsIntermediate = m_recordedAsIntermediate;
+    const bool checkExportSpace = std::exchange(m_exportSpaceCheckDeferred, false);
     const TranscoderFactory createTranscoder = transcoderFactoryOverride()
         ? transcoderFactoryOverride()
         : TranscoderFactory(&IVideoTranscoder::create);
@@ -2502,7 +2510,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
 
     (void)QtConcurrent::run([weakThis, request, outputPath, croppedSize, unsupportedError, failedTemplate,
                              keptMessage, cancelToken, createTranscoder, smartSave, outputQuality,
-                             mp4Options, recordedAsIntermediate]() mutable {
+                             mp4Options, recordedAsIntermediate, checkExportSpace]() mutable {
         // Queued onto the GUI thread; never blocks, so it is safe from the
         // transcoder's worker threads (see IVideoTranscoder::ProgressCallback).
         auto post = [](auto fn) {
@@ -2545,6 +2553,30 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                                                                        : request.cropRect.size(),
                                             sourceProbe.frameRate, sourceProbe.videoCodec)) {
                 smartSave = false;
+                // The room check Save left to this job: the options do change
+                // the stream, so this is an export (PR #197 review).
+                if (checkExportSpace) {
+                    const QString directory = QFileInfo(request.inputPath).absolutePath();
+                    const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
+                                                                        : QStorageInfo(directory).bytesAvailable();
+                    const qint64 needed = SnapTray::DiskSpaceGuard::kFloorBytes
+                        + qMax<qint64>(0, QFileInfo(request.inputPath).size());
+                    if (freeBytes >= 0 && freeBytes < needed) {
+                        qWarning() << "RecordingPreviewBackend: not enough space to export:" << freeBytes << "<" << needed;
+                        const QString message = tr("Not enough free disk space to export (%1 free, about %2 needed). "
+                                                   "Free up space and try again; your recording is kept.")
+                                                    .arg(QLocale().formattedDataSize(freeBytes),
+                                                         QLocale().formattedDataSize(needed));
+                        post([weakThis, message, cancelToken]() {
+                            if (!weakThis) return;
+                            weakThis->finishProcessing();
+                            if (cancelToken->load()) return;
+                            weakThis->m_canRetrySave = true;
+                            weakThis->setErrorMessage(message);
+                        });
+                        return;
+                    }
+                }
             }
             // An explicit quality is judged by its bitrate like an intermediate:
             // Low re-encodes a recording above Low's target (PR #197 review).
