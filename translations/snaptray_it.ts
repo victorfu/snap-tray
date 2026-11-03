@@ -2469,6 +2469,121 @@ Dimensione: %2</translation>
         <source>Dismiss Error</source>
         <translation>Chiudi errore</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Off</source>
+        <translation>Sfocatura movimento: No</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Low</source>
+        <translation>Sfocatura movimento: Bassa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Medium</source>
+        <translation>Sfocatura movimento: Media</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: High</source>
+        <translation>Sfocatura movimento: Alta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer hidden from %1 to %2</source>
+        <translation>Puntatore nascosto da %1 a %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Options</source>
+        <translation>Opzioni puntatore</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide when idle, motion blur, a still ending and time ranges without a pointer</source>
+        <translation>Nascondi se inattivo, sfocatura movimento, finale fermo e intervalli senza puntatore</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide When Idle: %1 s</source>
+        <translation>Nascondi se inattivo: %1 s</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide When Idle: Off</source>
+        <translation>Nascondi se inattivo: No</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
+        <translation>Dissolvi il puntatore quando si ferma; ricompare prima che si muova o faccia clic</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A short trail behind a fast-moving pointer</source>
+        <translation>Una breve scia dietro un puntatore veloce</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Still End: %1 s</source>
+        <translation>Finale fermo: %1 s</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Still End: Off</source>
+        <translation>Finale fermo: No</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
+        <translation>Tieni fermo il puntatore alla fine, così non si vede il movimento per fermare la registrazione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Pointer Here</source>
+        <translation>Nascondi puntatore qui</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the pointer for a while from the playhead</source>
+        <translation>Nascondi il puntatore per un po' dalla testina di riproduzione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a hidden range here</source>
+        <translation>Non c'è spazio per un intervallo nascosto qui</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Back to the export options</source>
+        <translation>Torna alle opzioni di esportazione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No pointer</source>
+        <translation>Nessun puntatore</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hidden pointer start</source>
+        <translation>Inizio puntatore nascosto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hidden pointer end</source>
+        <translation>Fine puntatore nascosto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the pointer here again</source>
+        <translation>Mostra di nuovo il puntatore qui</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Finish editing this range</source>
+        <translation>Termina la modifica di questo intervallo</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

@@ -56,6 +56,14 @@ private slots:
     void hiddenAndBeforeFirstSample();
     void disabledDrawsNothing();
     void costAt4K();
+    void advancedSettingsRoundTrip();
+    void hiddenRangesNormalize();
+    void idleHideFadesAndWakesBeforeActivity();
+    void idleHideKeepsClicksVisible();
+    void motionBlurTrailsOnlyAMovingPointer();
+    void stillEndHoldsTheLastPosition();
+    void hiddenRangesHidePointerAndRipples();
+    void advancedEffectsDrawThroughCrop();
 };
 
 void TestCursorEffects::settingsRoundTrip()
@@ -237,7 +245,10 @@ void TestCursorEffects::costAt4K()
     s.scale = 2.0;
     s.smoothing = CursorEffectSettings::Smoothing::High;
     s.clickRipple = true;
-    CursorEffectRenderer renderer(t, s);
+    s.motionBlur = CursorEffectSettings::MotionBlur::High; // the most draws per frame
+    s.idleHideMs = 1000;
+    s.stillEndMs = 500;
+    CursorEffectRenderer renderer(t, s, 9600);
     QImage frame(3840, 2160, QImage::Format_RGB32);
     frame.fill(Qt::gray);
     constexpr int kFrames = 60;
@@ -250,6 +261,197 @@ void TestCursorEffects::costAt4K()
     qInfo("pointer effects on a 4K frame: %.2f ms per frame", msPerFrame);
     // Small next to decoding and encoding a 4K frame; a loose bound for slow CI.
     QVERIFY(msPerFrame < 25.0);
+}
+
+namespace {
+
+// Moves right 10 px every 16 ms until 160 ms, rests until 3000 ms, then
+// moves again; a click at 2000 ms.
+CursorTimeline restingTimeline()
+{
+    CursorTimeline t;
+    t.info.frameSize = QSize(400, 100);
+    t.info.clicksAvailable = true;
+    for (int i = 0; i <= 10; ++i) t.samples.push_back({i * 16, QPoint(20 + i * 10, 50), true, 0});
+    t.samples.push_back({3000, QPoint(200, 50), true, 0});
+    t.samples.push_back({3016, QPoint(220, 50), true, 0});
+    return t;
+}
+
+} // namespace
+
+void TestCursorEffects::advancedSettingsRoundTrip()
+{
+    CursorEffectSettings s;
+    s.idleHideMs = 2000;
+    s.motionBlur = CursorEffectSettings::MotionBlur::Medium;
+    s.stillEndMs = 500;
+    s.hiddenRanges = {{100, 400}, {1000, 2500}};
+    QCOMPARE(CursorEffectSettings::fromJson(s.toJson()), s);
+    // Older recipes (no #186 keys) keep every new effect off.
+    const auto older = CursorEffectSettings::fromJson({{QStringLiteral("showCursor"), true}});
+    QCOMPARE(older.idleHideMs, 0);
+    QCOMPARE(older.motionBlur, CursorEffectSettings::MotionBlur::Off);
+    QCOMPARE(older.stillEndMs, 0);
+    QVERIFY(older.hiddenRanges.empty());
+    // Out of range is clamped.
+    const auto clamped = CursorEffectSettings::fromJson(
+        {{QStringLiteral("idleHideMs"), -5.0}, {QStringLiteral("stillEndMs"), 1e9}});
+    QCOMPARE(clamped.idleHideMs, 0);
+    QCOMPARE(clamped.stillEndMs, CursorEffectSettings::kMaxStillEndMs);
+    // Remembered preferences never carry one recording's ranges.
+    QVERIFY(s.preferences().hiddenRanges.empty());
+    QCOMPARE(s.preferences().idleHideMs, 2000);
+    QVERIFY(!s.preferences().toJson().contains(QStringLiteral("hiddenRanges")));
+}
+
+void TestCursorEffects::hiddenRangesNormalize()
+{
+    const auto ranges = CursorEffectSettings::normalizedRanges(
+        {{500, 900}, {100, 300}, {250, 400}, {2000, 2050}, {-10, 50}, {900, 1000}});
+    // Sorted, overlapping and touching merged, too short or negative dropped.
+    QCOMPARE(int(ranges.size()), 2);
+    QCOMPARE(ranges[0], (CursorHiddenRange{100, 400}));
+    QCOMPARE(ranges[1], (CursorHiddenRange{500, 1000}));
+    CursorEffectSettings s;
+    s.hiddenRanges = ranges;
+    QVERIFY(s.hiddenAt(100));
+    QVERIFY(!s.hiddenAt(400)); // end is exclusive
+    QVERIFY(s.hiddenAt(999));
+    QVERIFY(!s.hiddenAt(1000));
+    QVERIFY(!s.hiddenAt(450));
+}
+
+void TestCursorEffects::idleHideFadesAndWakesBeforeActivity()
+{
+    CursorTimeline t = restingTimeline();
+    t.buttons.clear();
+    CursorEffectSettings s;
+    s.idleHideMs = 1000;
+    const CursorEffectRenderer renderer(t, s);
+    QCOMPARE(renderer.pointerOpacity(100), 1.0);
+    // Last movement at 160 ms: visible for 1 s, then a 250 ms fade.
+    QCOMPARE(renderer.pointerOpacity(1160), 1.0);
+    QVERIFY(qAbs(renderer.pointerOpacity(1160 + CursorEffectRenderer::kIdleFadeMs / 2) - 0.5) < 0.01);
+    QCOMPARE(renderer.pointerOpacity(1500), 0.0);
+    // Back in before it moves at 3000 ms, fully there when it does.
+    QCOMPARE(renderer.pointerOpacity(3000 - CursorEffectRenderer::kIdleFadeMs), 0.0);
+    QVERIFY(qAbs(renderer.pointerOpacity(3000 - CursorEffectRenderer::kIdleFadeMs / 2) - 0.5) < 0.01);
+    QCOMPARE(renderer.pointerOpacity(3000), 1.0);
+    // A function of time only: any order, any renderer, same answer.
+    const double a = renderer.pointerOpacity(1200);
+    renderer.pointerOpacity(5000);
+    renderer.pointerOpacity(0);
+    QCOMPARE(renderer.pointerOpacity(1200), a);
+    QCOMPARE(CursorEffectRenderer(t, s).pointerOpacity(1200), a);
+    // Hidden pointers are not drawn.
+    const QImage base = blank(QSize(400, 100));
+    QImage frame = base;
+    renderer.paint(frame, 2000, {QRect(), QSize(400, 100), QSize(400, 100)});
+    QCOMPARE(frame, base);
+    // Off: always fully visible.
+    QCOMPARE(CursorEffectRenderer(t, {}).pointerOpacity(2000), 1.0);
+}
+
+void TestCursorEffects::idleHideKeepsClicksVisible()
+{
+    CursorTimeline t = restingTimeline();
+    t.buttons = {{2000, Qt::LeftButton, true, QPoint(120, 50), false},
+                 {2040, Qt::LeftButton, false, QPoint(120, 50), false}};
+    CursorEffectSettings s;
+    s.idleHideMs = 1000;
+    s.clickRipple = true;
+    const CursorEffectRenderer renderer(t, s);
+    // A click is activity: the pointer is there at the press without moving.
+    QCOMPARE(renderer.pointerOpacity(2000), 1.0);
+    QVERIFY(renderer.pointerOpacity(2000 - CursorEffectRenderer::kIdleFadeMs / 2) > 0.0);
+    // Ripples are drawn whatever the pointer's opacity.
+    CursorEffectSettings ripplesOnly = s;
+    ripplesOnly.showCursor = false;
+    const QImage base = blank(QSize(400, 100));
+    QImage frame = base;
+    CursorEffectRenderer(t, ripplesOnly).paint(frame, 2100, {QRect(), QSize(400, 100), QSize(400, 100)});
+    QVERIFY(differingPixels(frame, base) > 0);
+}
+
+void TestCursorEffects::motionBlurTrailsOnlyAMovingPointer()
+{
+    const CursorTimeline t = restingTimeline();
+    const CursorFrameMapping mapping{QRect(), QSize(400, 100), QSize(400, 100)};
+    CursorEffectSettings blurred;
+    blurred.motionBlur = CursorEffectSettings::MotionBlur::High;
+    const QImage base = blank(QSize(400, 100));
+    QImage sharp = base, trail = base;
+    CursorEffectRenderer(t, {}).paint(sharp, 120, mapping);
+    CursorEffectRenderer renderer(t, blurred);
+    renderer.paint(trail, 120, mapping);
+    // Moving: ghosts behind (left of) the pointer at x=95.
+    QVERIFY(differingPixels(trail, base) > differingPixels(sharp, base));
+    bool ghostLeft = false;
+    for (int x = 40; x < 90; ++x) ghostLeft |= trail.pixel(x, 60) != base.pixel(x, 60);
+    QVERIFY(ghostLeft);
+    // Resting: exactly the sharp pointer.
+    QImage restingSharp = base, restingBlur = base;
+    CursorEffectRenderer(t, {}).paint(restingSharp, 1000, mapping);
+    renderer.paint(restingBlur, 1000, mapping);
+    QCOMPARE(restingBlur, restingSharp);
+    // Same time, same pixels, whatever was drawn before.
+    renderer.paint(restingBlur, 5000, mapping);
+    QImage again = base;
+    renderer.paint(again, 120, mapping);
+    QCOMPARE(again, trail);
+}
+
+void TestCursorEffects::stillEndHoldsTheLastPosition()
+{
+    const CursorTimeline t = restingTimeline();
+    CursorEffectSettings s;
+    s.stillEndMs = 500;
+    // The clip ends at 3200 ms: from 2700 ms the pointer stays where it was.
+    const CursorEffectRenderer renderer(t, s, 3200);
+    QCOMPARE(*renderer.pointerPosition(3100), QPointF(120, 50));
+    QCOMPARE(*renderer.pointerPosition(2700), QPointF(120, 50));
+    QCOMPARE(*renderer.pointerPosition(100), *CursorEffectRenderer(t, {}).pointerPosition(100));
+    // Unknown clip end: off.
+    QCOMPARE(*CursorEffectRenderer(t, s).pointerPosition(3100), QPointF(220, 50));
+    // With idle hiding, the movement after the hold does not wake the pointer.
+    s.idleHideMs = 1000;
+    const CursorEffectRenderer idle(t, s, 3200);
+    QCOMPARE(idle.pointerOpacity(3100), 0.0);
+    QCOMPARE(idle.pointerOpacity(2700 - CursorEffectRenderer::kIdleFadeMs / 2), 0.0);
+}
+
+void TestCursorEffects::hiddenRangesHidePointerAndRipples()
+{
+    CursorTimeline t = timeline();
+    CursorEffectSettings s;
+    s.clickRipple = true;
+    s.hiddenRanges = {{250, 500}};
+    const CursorEffectRenderer renderer(t, s);
+    QVERIFY(renderer.pointerPosition(200));
+    QVERIFY(!renderer.pointerPosition(300));
+    QVERIFY(renderer.pointerPosition(500));
+    const QImage base = blank();
+    QImage frame = base;
+    renderer.paint(frame, 400, {QRect(), QSize(200, 100), QSize(200, 100)});
+    QCOMPARE(frame, base);
+}
+
+void TestCursorEffects::advancedEffectsDrawThroughCrop()
+{
+    // Blur and idle hiding go through the same crop mapping as the pointer:
+    // the cropped frame equals the matching part of the full frame.
+    const CursorTimeline t = restingTimeline();
+    CursorEffectSettings s;
+    s.motionBlur = CursorEffectSettings::MotionBlur::High;
+    s.idleHideMs = 1000;
+    const CursorEffectRenderer renderer(t, s);
+    const QImage base = blank(QSize(400, 100));
+    QImage full = base;
+    renderer.paint(full, 120, {QRect(), QSize(400, 100), QSize(400, 100)});
+    QImage cropped = base.copy(0, 0, 200, 100);
+    renderer.paint(cropped, 120, {QRect(0, 0, 200, 100), QSize(400, 100), QSize(200, 100)});
+    QCOMPARE(cropped, full.copy(0, 0, 200, 100));
 }
 
 QTEST_MAIN(TestCursorEffects)

@@ -2469,6 +2469,121 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>오류 닫기</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Off</source>
+        <translation>모션 블러: 끔</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Low</source>
+        <translation>모션 블러: 낮음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Medium</source>
+        <translation>모션 블러: 보통</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: High</source>
+        <translation>모션 블러: 높음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer hidden from %1 to %2</source>
+        <translation>%1부터 %2까지 포인터 숨김</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Options</source>
+        <translation>포인터 옵션</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide when idle, motion blur, a still ending and time ranges without a pointer</source>
+        <translation>유휴 시 숨기기, 모션 블러, 끝부분 고정, 포인터 없는 구간</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide When Idle: %1 s</source>
+        <translation>유휴 시 숨기기: %1초</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide When Idle: Off</source>
+        <translation>유휴 시 숨기기: 끔</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
+        <translation>포인터가 멈추면 서서히 숨기고, 움직이거나 클릭하기 전에 다시 표시합니다</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A short trail behind a fast-moving pointer</source>
+        <translation>빠르게 움직이는 포인터 뒤에 짧은 잔상을 남깁니다</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Still End: %1 s</source>
+        <translation>끝부분 고정: %1초</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Still End: Off</source>
+        <translation>끝부분 고정: 끔</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
+        <translation>끝부분에서 포인터를 고정해 녹화를 멈추러 가는 움직임이 보이지 않게 합니다</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Pointer Here</source>
+        <translation>여기서 포인터 숨기기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the pointer for a while from the playhead</source>
+        <translation>재생 위치부터 잠시 포인터를 숨깁니다</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a hidden range here</source>
+        <translation>여기에는 숨김 구간을 추가할 공간이 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Back to the export options</source>
+        <translation>내보내기 옵션으로 돌아가기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No pointer</source>
+        <translation>포인터 없음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hidden pointer start</source>
+        <translation>포인터 숨김 시작</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hidden pointer end</source>
+        <translation>포인터 숨김 끝</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the pointer here again</source>
+        <translation>여기서 포인터를 다시 표시합니다</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Finish editing this range</source>
+        <translation>이 구간 편집을 마칩니다</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

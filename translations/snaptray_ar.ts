@@ -2463,6 +2463,121 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>إغلاق الخطأ</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Off</source>
+        <translation>ضبابية الحركة: إيقاف</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Low</source>
+        <translation>ضبابية الحركة: منخفضة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Medium</source>
+        <translation>ضبابية الحركة: متوسطة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: High</source>
+        <translation>ضبابية الحركة: عالية</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer hidden from %1 to %2</source>
+        <translation>المؤشر مخفي من %1 إلى %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Options</source>
+        <translation>خيارات المؤشر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide when idle, motion blur, a still ending and time ranges without a pointer</source>
+        <translation>إخفاء عند الخمول، ضبابية الحركة، نهاية ثابتة، وفترات زمنية بدون مؤشر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide When Idle: %1 s</source>
+        <translation>إخفاء عند الخمول: %1 ث</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide When Idle: Off</source>
+        <translation>إخفاء عند الخمول: إيقاف</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
+        <translation>إخفاء المؤشر تدريجيًا عندما يتوقف عن الحركة؛ يعود قبل أن يتحرك أو ينقر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A short trail behind a fast-moving pointer</source>
+        <translation>أثر قصير خلف المؤشر السريع الحركة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Still End: %1 s</source>
+        <translation>نهاية ثابتة: %1 ث</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Still End: Off</source>
+        <translation>نهاية ثابتة: إيقاف</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
+        <translation>إبقاء المؤشر ثابتًا في النهاية حتى لا تظهر حركته لإيقاف التسجيل</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Pointer Here</source>
+        <translation>إخفاء المؤشر هنا</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the pointer for a while from the playhead</source>
+        <translation>إخفاء المؤشر لفترة بدءًا من موضع التشغيل</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a hidden range here</source>
+        <translation>لا توجد مساحة لفترة مخفية هنا</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Back to the export options</source>
+        <translation>العودة إلى خيارات التصدير</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No pointer</source>
+        <translation>بدون مؤشر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hidden pointer start</source>
+        <translation>بداية إخفاء المؤشر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hidden pointer end</source>
+        <translation>نهاية إخفاء المؤشر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the pointer here again</source>
+        <translation>إظهار المؤشر هنا مجددًا</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Finish editing this range</source>
+        <translation>إنهاء تحرير هذه الفترة</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

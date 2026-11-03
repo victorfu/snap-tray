@@ -2460,6 +2460,121 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>关闭错误提示</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Off</source>
+        <translation>动态模糊：关</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Low</source>
+        <translation>动态模糊：低</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: Medium</source>
+        <translation>动态模糊：中</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Motion Blur: High</source>
+        <translation>动态模糊：高</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer hidden from %1 to %2</source>
+        <translation>从 %1 到 %2 隐藏指针</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pointer Options</source>
+        <translation>指针选项</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide when idle, motion blur, a still ending and time ranges without a pointer</source>
+        <translation>闲置时隐藏、动态模糊、结尾停止移动，以及不显示指针的时间区段</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide When Idle: %1 s</source>
+        <translation>闲置时隐藏：%1 秒</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide When Idle: Off</source>
+        <translation>闲置时隐藏：关</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
+        <translation>指针停止移动时淡出；在移动或点击之前重新出现</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A short trail behind a fast-moving pointer</source>
+        <translation>快速移动的指针后方留下短暂拖影</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Still End: %1 s</source>
+        <translation>结尾停止移动：%1 秒</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Still End: Off</source>
+        <translation>结尾停止移动：关</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
+        <translation>结尾时指针保持不动，避免拍到移去停止录制的动作</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide Pointer Here</source>
+        <translation>在此隐藏指针</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hide the pointer for a while from the playhead</source>
+        <translation>从播放位置起隐藏指针一段时间</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a hidden range here</source>
+        <translation>此处没有空间加入隐藏区段</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Back to the export options</source>
+        <translation>返回导出选项</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No pointer</source>
+        <translation>不显示指针</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hidden pointer start</source>
+        <translation>隐藏指针开始</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Hidden pointer end</source>
+        <translation>隐藏指针结束</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the pointer here again</source>
+        <translation>在此重新显示指针</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Finish editing this range</source>
+        <translation>完成编辑此区段</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

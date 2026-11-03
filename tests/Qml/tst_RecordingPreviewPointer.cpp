@@ -5,8 +5,11 @@
 #include <QQuickView>
 #include <QTemporaryDir>
 
+#include <functional>
+
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/CursorTimeline.h"
+#include "settings/RecordingSettingsManager.h"
 
 // The preview's pointer controls (#160) against the real QML.
 class tst_RecordingPreviewPointer : public QObject
@@ -17,6 +20,7 @@ private slots:
     void controlsFollowThePointerData();
     void controlsHiddenWithoutPointerData();
     void overlayFollowsEachFrameTime();
+    void advancedPointerOptions();
 
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
@@ -93,6 +97,83 @@ void tst_RecordingPreviewPointer::controlsFollowThePointerData()
     QCOMPARE(backend.cursorSmoothing(), 0);
     backend.undo();
     QCOMPARE(backend.cursorScale(), before);
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewPointer::advancedPointerOptions()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString video = dir.filePath(QStringLiteral("missing.mp4"));
+    {
+        SnapTray::CursorTimelineWriter writer(SnapTray::CursorTimelineSidecar::pathFor(video));
+        SnapTray::CursorTimelineInfo info;
+        info.frameSize = QSize(320, 240);
+        QVERIFY(writer.open(info));
+        writer.addSample({0, QPoint(10, 10), true, 0});
+        QVERIFY(writer.finish());
+    }
+    RecordingPreviewBackend backend(video);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    if (!backend.cursorEffectsAvailable()) {
+        backend.requestDiscard();
+        QSKIP("This platform's MP4 transcoder cannot draw pointer effects yet");
+    }
+    QQuickItem* open = item(view, "previewPointerOptions");
+    QQuickItem* panel = item(view, "previewPointerPanel");
+    QQuickItem* formatRow = item(view, "previewFormatRow");
+    QVERIFY(open && panel && formatRow);
+    QVERIFY(!panel->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(open, "clicked"));
+    QTRY_VERIFY(panel->isVisible());
+    QVERIFY(!formatRow->isEnabled());
+
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerIdle"), "clicked"));
+    QCOMPARE(backend.cursorIdleHide(), 1000);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerBlur"), "clicked"));
+    QCOMPARE(backend.cursorMotionBlur(), 1);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerStillEnd"), "clicked"));
+    QCOMPARE(backend.cursorStillEnd(), 500);
+
+    // A hidden range at the playhead opens its own editor.
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerHideHere"), "clicked"));
+    QCOMPARE(backend.pointerHiddenRanges().size(), 1);
+    QCOMPARE(backend.selectedPointerHide(), 0);
+    QQuickItem* hidePanel = item(view, "previewPointerHidePanel");
+    QVERIFY(hidePanel);
+    QTRY_VERIFY(hidePanel->isVisible());
+    QVERIFY(!panel->isVisible());
+    // Repeater delegates are only reachable through the visual tree.
+    std::function<QQuickItem*(QQuickItem*)> walk = [&walk](QQuickItem* node) -> QQuickItem* {
+        if (node->objectName() == QLatin1String("previewPointerHideSegment0")) return node;
+        for (QQuickItem* child : node->childItems()) {
+            if (QQuickItem* found = walk(child)) return found;
+        }
+        return nullptr;
+    };
+    QTRY_VERIFY(walk(view->contentItem()));
+    QVERIFY(backend.setPointerHideRange(0, 500, 1500));
+    QVERIFY(!backend.setPointerHideRange(0, 500, 520)); // shorter than the minimum
+    QCOMPARE(backend.pointerHiddenRanges().first().toMap().value(QStringLiteral("start")).toLongLong(), 500);
+
+    // The look is remembered for the next recording; the ranges are not.
+    const auto remembered = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects());
+    QCOMPARE(remembered.idleHideMs, 1000);
+    QVERIFY(remembered.hiddenRanges.empty());
+
+    // Undo walks back the range edit, then the new range.
+    backend.undo();
+    QCOMPARE(backend.pointerHiddenRanges().first().toMap().value(QStringLiteral("start")).toLongLong(), 0);
+    backend.undo();
+    QVERIFY(backend.pointerHiddenRanges().isEmpty());
+    QCOMPARE(backend.selectedPointerHide(), -1);
+    QTRY_VERIFY(!hidePanel->isVisible());
+
+    // Leave the remembered look as other tests expect it.
+    backend.setCursorIdleHide(0);
+    backend.setCursorMotionBlur(0);
+    backend.setCursorStillEnd(0);
     backend.requestDiscard();
 }
 
