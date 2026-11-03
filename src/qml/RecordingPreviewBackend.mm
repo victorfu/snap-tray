@@ -15,11 +15,14 @@
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
 #include "recording/KeyTimeline.h"
+#include "recording/AudioTracks.h"
 
 #include <QCloseEvent>
 #include "recording/DiskSpaceGuard.h"
 #include "recording/RecordingSession.h"
 #include <QLocale>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QStorageInfo>
 #include <cmath>
 #include <QCoreApplication>
@@ -55,6 +58,15 @@ constexpr int kVideoLoadTimeoutMs = 5000;
 constexpr int kFrameExtractionTimeoutMs = 5000;
 }
 
+struct RecordingPreviewBackend::PreviewAudio {
+    QMutex mutex;
+    SnapTray::AudioTrackMixer mixer;
+    PreviewAudio(const QString& videoPath, const SnapTray::AudioMixSettings& settings)
+        : mixer(videoPath, settings)
+    {
+    }
+};
+
 RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObject *parent)
     : RecordingPreviewBackend(videoPath, true, parent)
 {
@@ -73,6 +85,8 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     // The pointer look the user chose last time; undo starts from it.
     m_cursorEffects = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects())
                           .preferences();
+    // Separate tracks (#189): only a recording made with both sources has them.
+    m_hasSeparateTracks = SnapTray::AudioTracks::exist(videoPath);
     // Shortcut hints (#187): only for a recording made with keys switched on.
     if (auto keys = SnapTray::KeyTimelineSidecar::read(videoPath)) {
         m_keyTimeline = std::make_shared<const SnapTray::KeyTimeline>(std::move(*keys));
@@ -92,6 +106,7 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::appearanceChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::keyOverlayChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::overlaysChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::audioMixChanged);
     // The exported length and the cut availability follow the trim, duration and format.
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::timelineChanged);
     connect(this, &RecordingPreviewBackend::trimRangeChanged, this, &RecordingPreviewBackend::timelineChanged);
@@ -350,6 +365,7 @@ const RecordingPreviewBackend::Mp4Capabilities& RecordingPreviewBackend::mp4Capa
             capabilities.outputOptions = transcoder->supportsOutputOptions();
             capabilities.hevc = transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecHevc));
             capabilities.segments = transcoder->supportsSegments();
+            capabilities.audioMix = transcoder->supportsAudioMix();
         }
         m_mp4Capabilities = capabilities;
     }
@@ -787,6 +803,24 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
     });
     connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
     connect(this, &RecordingPreviewBackend::appearanceChanged, player, &VideoPlaybackItem::reprocessFrame);
+    // Separate tracks (#189): the preview hears the new mix as it is set.
+    if (m_hasSeparateTracks) {
+        m_previewAudio = std::make_shared<PreviewAudio>(m_videoPath, m_audioMix);
+        if (m_previewAudio->mixer.isValid()) {
+            std::weak_ptr<PreviewAudio> weakAudio = m_previewAudio;
+            player->setAudioSource([weakAudio](qint64 startFrame, int frames) {
+                const auto audio = weakAudio.lock();
+                if (!audio) return QByteArray(qMax(0, frames) * SnapTray::AudioTracks::kBytesPerFrame, '\0');
+                QMutexLocker lock(&audio->mutex);
+                return audio->mixer.read(startFrame, frames);
+            });
+            const auto audio = m_previewAudio;
+            connect(this, &RecordingPreviewBackend::audioMixChanged, this, [this, audio] {
+                QMutexLocker lock(&audio->mutex);
+                audio->mixer.setSettings(m_audioMix);
+            });
+        }
+    }
 }
 
 bool RecordingPreviewBackend::zoomAvailable() const
@@ -1263,6 +1297,49 @@ bool RecordingPreviewBackend::timelineEditsAvailable() const
     return m_selectedFormat != MP4 || mp4Capabilities().segments;
 }
 
+bool RecordingPreviewBackend::audioMixAvailable() const
+{
+    return m_hasSeparateTracks && m_selectedFormat == MP4 && mp4Capabilities().audioMix;
+}
+
+void RecordingPreviewBackend::editAudioMix(const std::function<void(SnapTray::AudioMixSettings&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::AudioMixSettings mix = m_audioMix;
+    change(mix);
+    if (mix == m_audioMix) return;
+    m_audioMix = mix;
+    emit audioMixChanged();
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setMicrophoneGainDb(qreal db)
+{
+    const double clamped = qBound(SnapTray::AudioMixSettings::kMinGainDb, double(db), SnapTray::AudioMixSettings::kMaxGainDb);
+    editAudioMix([clamped](SnapTray::AudioMixSettings& m) { m.microphoneGainDb = clamped; });
+}
+
+void RecordingPreviewBackend::setSystemAudioGainDb(qreal db)
+{
+    const double clamped = qBound(SnapTray::AudioMixSettings::kMinGainDb, double(db), SnapTray::AudioMixSettings::kMaxGainDb);
+    editAudioMix([clamped](SnapTray::AudioMixSettings& m) { m.systemAudioGainDb = clamped; });
+}
+
+void RecordingPreviewBackend::setMicrophoneMuted(bool value)
+{
+    editAudioMix([value](SnapTray::AudioMixSettings& m) { m.microphoneMuted = value; });
+}
+
+void RecordingPreviewBackend::setSystemAudioMuted(bool value)
+{
+    editAudioMix([value](SnapTray::AudioMixSettings& m) { m.systemAudioMuted = value; });
+}
+
+void RecordingPreviewBackend::setMicrophoneNoiseReduction(bool value)
+{
+    editAudioMix([value](SnapTray::AudioMixSettings& m) { m.microphoneNoiseReduction = value; });
+}
+
 QVariantList RecordingPreviewBackend::overlays() const
 {
     QVariantList list;
@@ -1702,7 +1779,7 @@ void RecordingPreviewBackend::save()
     // source off the GUI thread.
     const bool mp4OptionsMayApply = m_selectedFormat == MP4 && effectiveMp4Options().mayChangeStream();
     const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || effectsActive()
-        || hasTimelineEdits() || mp4OptionsMayApply;
+        || hasTimelineEdits() || mp4OptionsMayApply || audioMixActive();
     if (writesNewFile) {
         const QString directory = QFileInfo(m_videoPath).absolutePath();
         const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
@@ -1736,7 +1813,8 @@ void RecordingPreviewBackend::save()
     }
 
     // Drawing the pointer or a zoom is an edit: the unedited file cannot just be moved.
-    if (hasTrim() || hasCrop() || effectsActive() || hasTimelineEdits()) {
+    // So is a new mix of the separate audio tracks (#189).
+    if (hasTrim() || hasCrop() || effectsActive() || hasTimelineEdits() || audioMixActive()) {
         performTranscode(false);
         return;
     }
@@ -1815,6 +1893,7 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
         SnapTray::WindowTimelineSidecar::remove(m_videoPath);
         SnapTray::CursorTimelineSidecar::remove(m_videoPath);
         SnapTray::KeyTimelineSidecar::remove(m_videoPath);
+        SnapTray::AudioTracks::remove(m_videoPath);
         SnapTray::RecordingSession::remove(m_videoPath);
         finishProcessing();
         m_saved = true;
@@ -2116,6 +2195,7 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
     state.timeline = m_timeline;
     state.keys = m_keyOverlay;
     state.overlays = m_overlays;
+    state.audio = m_audioMix;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -2145,6 +2225,10 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         m_zoom = state.zoom;
         if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
         emit zoomChanged();
+    }
+    if (state.audio != m_audioMix) {
+        m_audioMix = state.audio;
+        emit audioMixChanged();
     }
     if (state.overlays != m_overlays) {
         m_overlays = state.overlays;
@@ -2207,6 +2291,7 @@ void RecordingPreviewBackend::resetEdits()
     unedited.appearance = m_appearance;
     unedited.keys = m_keyOverlay;
     unedited.overlays = m_overlays;
+    unedited.audio = m_audioMix;
     applyEditState(unedited);
     recordEdit();
 }
@@ -2705,6 +2790,10 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     request.startMs = m_trimStart;
     request.endMs = m_trimEnd;
     request.cropRect = m_cropRect;
+    if (audioMixActive()) {
+        request.audioTracksVideoPath = m_videoPath;
+        request.audioMix = m_audioMix;
+    }
     if (hasTimelineEdits()) {
         // The kept range; joined parts when there is more than one.
         const SnapTray::TimelineMap map = timelineMap();
@@ -2750,6 +2839,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         // Nor with a size, frame rate or codec other than the one asked for.
         const bool unsupported = !transcoder || (request.frameFilter && !transcoder->supportsFrameFilter())
             || (!request.segments.empty() && !transcoder->supportsSegments())
+            || (!request.audioTracksVideoPath.isEmpty() && !transcoder->supportsAudioMix())
             || ((mp4Options.resolution != SnapTray::Mp4ExportOptions::Resolution::Original || mp4Options.frameRate > 0)
                 && !transcoder->supportsOutputOptions())
             || !transcoder->supportsVideoCodec(mp4Options.codecId());

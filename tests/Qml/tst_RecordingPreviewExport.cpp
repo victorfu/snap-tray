@@ -16,6 +16,7 @@
 #include "qml/RecordingOverlayItem.h"
 #include "recording/KeyTimeline.h"
 #include "recording/OverlayTrack.h"
+#include "recording/AudioTracks.h"
 #include "video/IVideoFrameReader.h"
 #include <QPainter>
 #include "video/IVideoTranscoder.h"
@@ -430,6 +431,7 @@ private slots:
     void keyHintsMatchAcrossPreviewAndOutputs();
     void overlaysMatchAcrossPreviewAndOutputs_data();
     void overlaysMatchAcrossPreviewAndOutputs();
+    void separateTracksAreMixedOnlyWhenChanged();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
@@ -2468,6 +2470,101 @@ void tst_RecordingPreviewExport::overlaysMatchAcrossPreviewAndOutputs()
     const QImage later = format == RecordingPreviewBackend::MP4 ? QImage() : animationFrameAt(output, 1100);
     if (!later.isNull()) QVERIFY(whiteBox(later, textArea).isEmpty());
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+namespace {
+// The native transcoder with its own abilities, remembering the last request.
+class LoggingTranscoder : public IVideoTranscoder
+{
+public:
+    explicit LoggingTranscoder(std::shared_ptr<FakeTranscodeLog> log) : m_log(std::move(log)), m_real(IVideoTranscoder::create()) {}
+    VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback& progress) override
+    {
+        {
+            std::lock_guard<std::mutex> lock(m_log->mutex);
+            ++m_log->calls;
+            m_log->lastRequest = request;
+        }
+        return m_real->transcode(request, progress);
+    }
+    VideoFileProbe probe(const QString& filePath) override { return m_real->probe(filePath); }
+    bool supportsFrameFilter() const override { return m_real->supportsFrameFilter(); }
+    bool supportsAudioMix() const override { return m_real->supportsAudioMix(); }
+
+private:
+    std::shared_ptr<FakeTranscodeLog> m_log;
+    std::unique_ptr<IVideoTranscoder> m_real;
+};
+} // namespace
+
+// #189: with the tracks untouched an unedited recording is still moved as is
+// (its mixed track is the recorded mix); a changed mix is an export that
+// hands the tracks to the transcoder.
+void tst_RecordingPreviewExport::separateTracksAreMixedOnlyWhenChanged()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    {
+        RecordingPreviewBackend withoutTracks(inputPath);
+        QVERIFY(!withoutTracks.hasSeparateTracks());
+        QVERIFY(!withoutTracks.audioMixAvailable());
+    }
+    const QByteArray silence(kFrameCount * kFrameIntervalMs * 48 * 4, '\0');
+    for (const auto track : {SnapTray::AudioTracks::Track::Microphone, SnapTray::AudioTracks::Track::SystemAudio}) {
+        SnapTray::AudioTrackWriter writer(SnapTray::AudioTracks::pathFor(inputPath, track));
+        QVERIFY(writer.open());
+        writer.write(silence, 0);
+    }
+    auto log = std::make_shared<FakeTranscodeLog>();
+    auto restore = qScopeGuard([]() {
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+        RecordingPreviewBackend::outputQualityOverride() = {};
+    });
+    RecordingPreviewBackend::transcoderFactoryOverride() = [log]() -> std::unique_ptr<IVideoTranscoder> {
+        return std::make_unique<LoggingTranscoder>(log);
+    };
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; }; // any recording meets it
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(kFrameSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QVERIFY(backend.hasSeparateTracks());
+    // Where MP4 cannot mix the tracks, nothing changes: the file is moved.
+    if (!backend.audioMixAvailable()) {
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+        QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+        QSKIP("This MP4 transcoder cannot mix separate tracks");
+    }
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QCOMPARE(savedSpy.count(), 1);
+    QCOMPARE(savedSpy.first().at(0).toString(), inputPath); // neutral: moved as is
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+
+    backend.setSystemAudioMuted(true);
+    QVERIFY(backend.audioMixActive());
+    savedSpy.clear();
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    QVERIFY(savedSpy.first().at(0).toString() != inputPath);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->lastRequest.audioTracksVideoPath, inputPath);
+        QVERIFY(log->lastRequest.audioMix.systemAudioMuted);
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+    // The tracks go with the recording once the export is saved.
+    QVERIFY(!SnapTray::AudioTracks::exist(inputPath));
 }
 
 void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()

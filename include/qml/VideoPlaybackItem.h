@@ -2,6 +2,7 @@
 
 #include <QQuickPaintedItem>
 #include <functional>
+#include <QByteArray>
 #include <QImage>
 #include <QSize>
 #include <QRectF>
@@ -88,6 +89,8 @@ public:
     // export hides. The raw frame is kept; reprocessFrame() redoes the shown one.
     using FrameProcessor = std::function<void(QImage& frame, qint64 positionMs)>;
     void setFrameProcessor(FrameProcessor processor);
+    // #189: audio to play instead of the file's track; false where unsupported.
+    bool setAudioSource(std::function<QByteArray(qint64 startFrame, int frames)> source);
     void reprocessFrame();
 
 signals:

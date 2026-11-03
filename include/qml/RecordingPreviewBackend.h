@@ -129,6 +129,16 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
     Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
 
+    // Separate microphone and system audio tracks (#189).
+    Q_PROPERTY(bool hasSeparateTracks READ hasSeparateTracks CONSTANT)
+    Q_PROPERTY(bool audioMixAvailable READ audioMixAvailable NOTIFY audioMixChanged)
+    Q_PROPERTY(qreal microphoneGainDb READ microphoneGainDb WRITE setMicrophoneGainDb NOTIFY audioMixChanged)
+    Q_PROPERTY(qreal systemAudioGainDb READ systemAudioGainDb WRITE setSystemAudioGainDb NOTIFY audioMixChanged)
+    Q_PROPERTY(bool microphoneMuted READ microphoneMuted WRITE setMicrophoneMuted NOTIFY audioMixChanged)
+    Q_PROPERTY(bool systemAudioMuted READ systemAudioMuted WRITE setSystemAudioMuted NOTIFY audioMixChanged)
+    Q_PROPERTY(bool microphoneNoiseReduction READ microphoneNoiseReduction WRITE setMicrophoneNoiseReduction
+                   NOTIFY audioMixChanged)
+
     // Text and image overlays (#188): [{kind, start, end, text, size, color,
     // background, align, opacity}], enums in OverlaySegment order.
     Q_PROPERTY(bool overlaysAvailable READ overlaysAvailable NOTIFY overlaysChanged)
@@ -388,6 +398,23 @@ public:
     // endMs -1 = to the end; false (nothing changes) when invalid.
     Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
 
+    // Separate tracks (#189), undoable; only for recordings made with them,
+    // and only for MP4 (GIF and WebP are silent) where the export can mix.
+    bool hasSeparateTracks() const { return m_hasSeparateTracks; }
+    bool audioMixAvailable() const;
+    bool audioMixActive() const { return audioMixAvailable() && !m_audioMix.isNeutral(); }
+    SnapTray::AudioMixSettings audioMix() const { return m_audioMix; }
+    qreal microphoneGainDb() const { return m_audioMix.microphoneGainDb; }
+    void setMicrophoneGainDb(qreal db);
+    qreal systemAudioGainDb() const { return m_audioMix.systemAudioGainDb; }
+    void setSystemAudioGainDb(qreal db);
+    bool microphoneMuted() const { return m_audioMix.microphoneMuted; }
+    void setMicrophoneMuted(bool value);
+    bool systemAudioMuted() const { return m_audioMix.systemAudioMuted; }
+    void setSystemAudioMuted(bool value);
+    bool microphoneNoiseReduction() const { return m_audioMix.microphoneNoiseReduction; }
+    void setMicrophoneNoiseReduction(bool value);
+
     // Text and image overlays (#188), undoable; drawn where masks are.
     bool overlaysAvailable() const { return formatCanDrawEffects(); }
     QVariantList overlays() const;
@@ -541,6 +568,7 @@ signals:
     void timelineChanged();
     void keyOverlayChanged();
     void overlaysChanged();
+    void audioMixChanged();
     void selectedOverlayChanged();
     void appearancePreviewFrameChanged();
     void mp4EstimateChanged();
@@ -631,6 +659,7 @@ private:
         bool outputOptions = false;
         bool hevc = false;
         bool segments = false;
+        bool audioMix = false;
     };
     mutable std::optional<Mp4Capabilities> m_mp4Capabilities;
     const Mp4Capabilities& mp4Capabilities() const;
@@ -643,6 +672,12 @@ private:
     std::shared_ptr<const SnapTray::KeyTimeline> m_keyTimeline;
     SnapTray::KeyOverlaySettings m_keyOverlay;
     SnapTray::OverlayTrack m_overlays;
+    bool m_hasSeparateTracks = false;
+    SnapTray::AudioMixSettings m_audioMix;
+    void editAudioMix(const std::function<void(SnapTray::AudioMixSettings&)>& change);
+    // The preview plays the tracks mixed at m_audioMix (shared with the player's thread).
+    struct PreviewAudio;
+    std::shared_ptr<PreviewAudio> m_previewAudio;
     int m_selectedOverlay = -1;
     void editOverlays(const std::function<void(SnapTray::OverlayTrack&)>& change);
     void editKeyOverlay(const std::function<void(SnapTray::KeyOverlaySettings&)>& change);

@@ -28,6 +28,7 @@
 #include "recording/WindowTimelineRecorder.h"
 #include "recording/CursorTimelineRecorder.h"
 #include "recording/KeyTimelineRecorder.h"
+#include "recording/AudioTracks.h"
 #include "utils/ResourceCleanupHelper.h"
 
 class RecordingInitTask;
@@ -354,6 +355,11 @@ private:
     std::unique_ptr<SnapTray::CursorTimelineRecorder> m_cursorRecorder;
     // Keys for shortcut hints (#187), only when switched on before recording.
     std::unique_ptr<SnapTray::KeyTimelineRecorder> m_keyRecorder;
+    // Separate microphone and system audio tracks (#189), with both sources.
+    std::shared_ptr<SnapTray::AudioTrackWriter> m_microphoneTrack;
+    std::shared_ptr<SnapTray::AudioTrackWriter> m_systemAudioTrack;
+    void startAudioTracks();
+    void closeAudioTracks();
     std::function<std::unique_ptr<SnapTray::KeyProbe>()> m_createKeyProbe = &SnapTray::createKeyProbe;
     void startKeyTimeline();
     QString m_cursorSidecarVideo;

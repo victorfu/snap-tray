@@ -8,6 +8,7 @@
 #include "recording/TimelineEdit.h"
 #include "recording/KeyOverlay.h"
 #include "recording/OverlayTrack.h"
+#include "recording/AudioTracks.h"
 
 #include <QRect>
 #include <QVector>
@@ -38,13 +39,15 @@ struct PreviewEditState {
     KeyOverlaySettings keys;
     // Text and image overlays (#188), undoable; kept by "Reset Crop and Trim".
     OverlayTrack overlays;
+    // Separate tracks mixed after recording (#189); kept by "Reset Crop and Trim".
+    AudioMixSettings audio;
 
     bool operator==(const PreviewEditState& other) const
     {
         return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd
             && cursor == other.cursor && zoom == other.zoom && redaction == other.redaction
             && appearance == other.appearance && timeline == other.timeline && keys == other.keys
-            && overlays == other.overlays;
+            && overlays == other.overlays && audio == other.audio;
     }
     bool operator!=(const PreviewEditState& other) const { return !(*this == other); }
     bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1 && timeline.isEmpty(); }

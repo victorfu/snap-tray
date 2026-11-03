@@ -5,6 +5,7 @@
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
 #include "recording/KeyTimeline.h"
+#include "recording/AudioTracks.h"
 
 #include <QDir>
 #include <QFile>
@@ -143,6 +144,7 @@ void discard(const QString& videoPath)
     WindowTimelineSidecar::remove(videoPath);
     CursorTimelineSidecar::remove(videoPath);
     KeyTimelineSidecar::remove(videoPath);
+    AudioTracks::remove(videoPath);
     remove(videoPath);
 }
 

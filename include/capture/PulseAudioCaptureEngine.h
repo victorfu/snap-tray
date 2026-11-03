@@ -9,6 +9,7 @@ public:
     ~PulseAudioCaptureEngine() override;
     bool setAudioSource(AudioSource source) override;
     AudioSource audioSource() const override { return m_source; }
+    bool supportsSeparateTracks() const override { return true; }
     bool setDevice(const QString& id) override;
     AudioFormat audioFormat() const override { return m_format; }
     QList<AudioDevice> availableInputDevices() const override;

@@ -28,12 +28,14 @@ public:
     bool supportsFrameFilter() const override { return true; }
     bool supportsOutputOptions() const override { return true; }
     bool supportsSegments() const override { return true; }
+    bool supportsAudioMix() const override { return true; }
     bool supportsVideoCodec(const QString& codec) const override {
         return IVideoTranscoder::supportsVideoCodec(codec)
             || (codec == QLatin1String(kVideoCodecHevc) && FFmpegEncoder::isHevcAvailable());
     }
     VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback& progress) override {
-        if (!request.segments.empty()) return transcodeSegments(request, progress);
+        // Joined parts (#185) and remixed tracks (#189) both rebuild the audio.
+        if (!request.segments.empty() || !request.audioTracksVideoPath.isEmpty()) return transcodeSegments(request, progress);
         VideoTranscodeResult result;
         auto fail = [&](const QString& message) { result.audioCopied = false; result.errorMessage = message; qWarning() << "FFmpeg export:" << message; return result; };
         if (sameFile(request.inputPath, request.outputPath)) return fail(QStringLiteral("Input and output paths must identify different files."));
@@ -260,7 +262,11 @@ private:
         const auto source = probe(request.inputPath);
         if (!source.valid) return fail(QStringLiteral("Invalid input or trim range."));
         std::vector<SnapTray::TimelineSegment> segments;
-        for (auto segment : request.segments) {
+        std::vector<SnapTray::TimelineSegment> requested = request.segments;
+        if (requested.empty()) {
+            requested.push_back({request.startMs, request.endMs < 0 ? source.durationMs : request.endMs, 1.0});
+        }
+        for (auto segment : requested) {
             segment.endMs = qMin(segment.endMs, source.durationMs);
             if (segment.endMs > segment.startMs && segment.startMs >= 0 && segment.speed > 0.0) segments.push_back(segment);
         }
@@ -284,9 +290,17 @@ private:
         outputSize = QSize(qMax(2, outputSize.width() & ~1), qMax(2, outputSize.height() & ~1));
         const qint64 interval = qMax<qint64>(1, qRound(1000.0 / fps));
 
-        // Audio: only when a part at normal speed reaches the source audio.
+        // Audio: only when a part at normal speed reaches the source audio
+        // (or, remixing separate tracks, any part at normal speed).
+        std::unique_ptr<SnapTray::AudioTrackMixer> tracks;
+        if (!request.audioTracksVideoPath.isEmpty()) {
+            tracks = std::make_unique<SnapTray::AudioTrackMixer>(request.audioTracksVideoPath, request.audioMix);
+            if (!tracks->isValid()) return fail(QStringLiteral("Cannot read the separate audio tracks."));
+        }
         bool withAudio = false;
-        if (source.hasAudio) {
+        if (tracks) {
+            for (const auto& segment : segments) withAudio = withAudio || qFuzzyCompare(segment.speed, 1.0);
+        } else if (source.hasAudio) {
             for (const auto& segment : segments) {
                 withAudio = withAudio || (qFuzzyCompare(segment.speed, 1.0)
                     && qMin(segment.endMs, source.audioEndMs) - qMax(segment.startMs, source.audioStartMs) > 0);
@@ -303,7 +317,8 @@ private:
         constexpr int kAudioChunk = 4800; // 100 ms
         AudioReader audio;
         if (withAudio) {
-            if (!audio.load(request.inputPath)) return fail(QStringLiteral("Cannot read source audio: %1").arg(audio.error()));
+            if (!tracks && !audio.load(request.inputPath))
+                return fail(QStringLiteral("Cannot read source audio: %1").arg(audio.error()));
             encoder.setAudioFormat(kAudioRate, kAudioChannels, kAudioBits);
         }
         if (!encoder.start(staged, outputSize, fps)) return fail(encoder.lastError());
@@ -326,7 +341,7 @@ private:
                 if (qFuzzyCompare(segments[index].speed, 1.0)) {
                     const qint64 sourceFrame = segments[index].startMs * kAudioRate / 1000
                         + (audioOutFrame - outStarts[index] * kAudioRate / 1000);
-                    pcm = audio.read(sourceFrame, count);
+                    pcm = tracks ? tracks->read(sourceFrame, count) : audio.read(sourceFrame, count);
                     if (pcm.isEmpty()) return false;
                 } else {
                     pcm = QByteArray(count * kAudioChannels * (kAudioBits / 8), '\0'); // a sped-up part is silent

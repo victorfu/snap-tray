@@ -1357,6 +1357,7 @@ void RecordingManager::startRecordingAfterCountdown()
 
     // Start audio capture here to synchronize with video timer
     if (m_audioEngine) {
+        startAudioTracks();
         if (m_audioEngine->start()) {
             transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Active);
         } else {
@@ -2331,6 +2332,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
             SnapTray::WindowTimelineSidecar::remove(tempOutputPath);
             SnapTray::CursorTimelineSidecar::remove(tempOutputPath);
             SnapTray::KeyTimelineSidecar::remove(tempOutputPath);
+            SnapTray::AudioTracks::remove(tempOutputPath);
         }
     });
 
@@ -2637,6 +2639,47 @@ void RecordingManager::startKeyTimeline()
     }
 }
 
+void RecordingManager::startAudioTracks()
+{
+    closeAudioTracks();
+    // Only a previewed recording with both sources has two tracks to keep apart.
+    if (!m_audioEngine || !m_startSettings.showPreview || m_session.videoPath.isEmpty()
+        || m_audioEngine->audioSource() != IAudioCaptureEngine::AudioSource::Both
+        || !m_audioEngine->supportsSeparateTracks()) {
+        if (m_audioEngine) m_audioEngine->setSeparateTracks(false);
+        return;
+    }
+    using SnapTray::AudioTracks::Track;
+    auto microphone = std::make_shared<SnapTray::AudioTrackWriter>(
+        SnapTray::AudioTracks::pathFor(m_session.videoPath, Track::Microphone));
+    auto system = std::make_shared<SnapTray::AudioTrackWriter>(
+        SnapTray::AudioTracks::pathFor(m_session.videoPath, Track::SystemAudio));
+    if (!microphone->open() || !system->open()) {
+        qWarning() << "RecordingManager: separate audio tracks not written; the mixed track is kept";
+        SnapTray::AudioTracks::remove(m_session.videoPath);
+        m_audioEngine->setSeparateTracks(false);
+        return;
+    }
+    m_microphoneTrack = microphone;
+    m_systemAudioTrack = system;
+    m_audioEngine->setSeparateTracks(true);
+    // On the capture thread, like the mixed track.
+    connect(m_audioEngine.get(), &IAudioCaptureEngine::sourceAudioReady, m_audioEngine.get(),
+            [microphone, system](const QByteArray& mic, const QByteArray& sys, qint64 startFrame) {
+                microphone->write(mic, startFrame);
+                system->write(sys, startFrame);
+            },
+            Qt::DirectConnection);
+}
+
+void RecordingManager::closeAudioTracks()
+{
+    if (m_microphoneTrack) m_microphoneTrack->close();
+    if (m_systemAudioTrack) m_systemAudioTrack->close();
+    m_microphoneTrack.reset();
+    m_systemAudioTrack.reset();
+}
+
 bool RecordingManager::isRecordingKeys() const
 {
     return m_keyRecorder != nullptr;
@@ -2652,9 +2695,11 @@ void RecordingManager::dropCursorTimeline(bool removeFile)
         m_keyRecorder->stop();
         m_keyRecorder.reset();
     }
+    closeAudioTracks();
     if (removeFile && !m_cursorSidecarVideo.isEmpty()) {
         SnapTray::CursorTimelineSidecar::remove(m_cursorSidecarVideo);
         SnapTray::KeyTimelineSidecar::remove(m_cursorSidecarVideo);
+        SnapTray::AudioTracks::remove(m_cursorSidecarVideo);
     }
     m_cursorSidecarVideo.clear();
 }
@@ -2669,7 +2714,9 @@ void RecordingManager::cleanupStaleTempFiles()
     filters << "SnapTray_Recording_*.mp4" << "SnapTray_Recording_*.gif" << "SnapTray_Recording_*.webp"
             << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::WindowTimelineSidecar::kSuffix)
             << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::CursorTimelineSidecar::kSuffix)
-            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix);
+            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix)
+            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::AudioTracks::kMicrophoneSuffix)
+            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::AudioTracks::kSystemAudioSuffix);
 
     QFileInfoList files = dir.entryInfoList(filters, QDir::Files);
     QDateTime threshold = QDateTime::currentDateTime().addDays(-1);
@@ -2681,7 +2728,8 @@ void RecordingManager::cleanupStaleTempFiles()
         // A sidecar belongs to the video its name extends.
         QString owner = file.absoluteFilePath();
         for (const char* suffix : {SnapTray::WindowTimelineSidecar::kSuffix, SnapTray::CursorTimelineSidecar::kSuffix,
-                                   SnapTray::KeyTimelineSidecar::kSuffix}) {
+                                   SnapTray::KeyTimelineSidecar::kSuffix, SnapTray::AudioTracks::kMicrophoneSuffix,
+                                   SnapTray::AudioTracks::kSystemAudioSuffix}) {
             if (owner.endsWith(QLatin1String(suffix))) {
                 owner.chop(int(qstrlen(suffix)));
                 break;

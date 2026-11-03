@@ -57,6 +57,12 @@ Item {
     readonly property var overlayColors: ["#ffffff", "#000000", "#ffd60a", "#ff453a", "#0a84ff"]
     readonly property var overlayBackgroundLabels: [qsTr("No Background"), qsTr("Dark Background"), qsTr("Light Background")]
     readonly property var overlayAlignLabels: [qsTr("Align Left"), qsTr("Align Center"), qsTr("Align Right")]
+    // Separate audio tracks (#189).
+    property bool audioOpen: false
+    readonly property var audioGainChoices: [-12, -6, 0, 6]
+    function gainLabel(db) {
+        return (db > 0 ? "+" : "") + Number(db).toLocaleString(Qt.locale(), "f", 0) + " dB"
+    }
     // Shortcut hints (#187), in KeyOverlaySettings order.
     property bool keysOpen: false
     readonly property var keyPositionLabels: [qsTr("Bottom"), qsTr("Bottom Left"), qsTr("Bottom Right"), qsTr("Top")]
@@ -1423,6 +1429,7 @@ Item {
                                              mp4Panel.visible ? mp4Panel.height : 0,
                                              appearancePanel.visible ? appearancePanel.height : 0,
                                              keysPanel.visible ? keysPanel.height : 0,
+                                             audioPanel.visible ? audioPanel.height : 0,
                                              overlayPanel.visible ? overlayPanel.height : 0,
                                              pointerHidePanel.visible ? pointerHidePanel.height : 0,
                                              cropPanel.visible ? cropPanel.height : 0,
@@ -1437,7 +1444,7 @@ Item {
                 readonly property bool shown: !cropOverlay.editing && !(backend.selectedZoom >= 0)
                                               && !(backend.selectedMask >= 0) && !pointerPanel.visible
                                               && !pointerHidePanel.visible && !mp4Panel.visible
-                                              && !appearancePanel.visible && !keysPanel.visible
+                                              && !appearancePanel.visible && !keysPanel.visible && !audioPanel.visible
                                               && !overlayPanel.visible
                 opacity: shown ? 1 : 0
                 enabled: shown
@@ -1472,6 +1479,7 @@ Item {
                     onClicked: {
                         root.pointerOptionsOpen = false
                         root.appearanceOpen = false
+                        root.audioOpen = false
                         root.keysOpen = false
                         root.mp4OptionsOpen = true
                     }
@@ -1533,6 +1541,7 @@ Item {
                         backend.selectedMask = -1
                         root.mp4OptionsOpen = false
                         root.appearanceOpen = false
+                        root.audioOpen = false
                         root.keysOpen = false
                         root.pointerOptionsOpen = true
                     }
@@ -1659,6 +1668,25 @@ Item {
                     onClicked: backend.setPartSpeed(root.playheadPart, root.nextPartSpeed(root.playheadPartData.speed))
                 }
                 SegmentButton {
+                    objectName: "previewAudioOptions"
+                    visible: backend.hasSeparateTracks && backend.selectedFormat === 0
+                    enabled: backend.audioMixAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Audio")
+                    tooltipText: backend.audioMixAvailable
+                        ? qsTr("Microphone and system audio volume, mute, and noise reduction")
+                        : qsTr("Mixing the two tracks is not supported for MP4 on this system yet")
+                    selected: backend.audioMixAvailable && (backend.microphoneGainDb !== 0 || backend.systemAudioGainDb !== 0
+                              || backend.microphoneMuted || backend.systemAudioMuted || backend.microphoneNoiseReduction)
+                    onClicked: {
+                        root.pointerOptionsOpen = false
+                        root.mp4OptionsOpen = false
+                        root.appearanceOpen = false
+                        root.keysOpen = false
+                        root.audioOpen = true
+                    }
+                }
+                SegmentButton {
                     objectName: "previewKeyOptions"
                     visible: backend.hasKeyData
                     enabled: backend.keyOverlayAvailable
@@ -1671,6 +1699,7 @@ Item {
                     onClicked: {
                         root.pointerOptionsOpen = false
                         root.mp4OptionsOpen = false
+                        root.audioOpen = false
                         root.appearanceOpen = false
                         root.keysOpen = true
                     }
@@ -1687,6 +1716,7 @@ Item {
                     onClicked: {
                         root.pointerOptionsOpen = false
                         root.mp4OptionsOpen = false
+                        root.audioOpen = false
                         root.keysOpen = false
                         root.appearanceOpen = true
                     }
@@ -2009,6 +2039,67 @@ Item {
                                 (start, end) => backend.setOverlayRange(backend.selectedOverlay, start, end)))
                             backend.selectedOverlay = -1
                     }
+                }
+            }
+
+            // The two audio tracks (#189), in place of the format buttons.
+            Flow {
+                id: audioPanel
+                objectName: "previewAudioPanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: root.audioOpen && backend.audioMixAvailable && !cropOverlay.editing
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
+                         && !(backend.selectedZoom >= 0)
+
+                SegmentButton {
+                    objectName: "previewMicrophoneGain"
+                    enabled: !backend.microphoneMuted
+                    minimumButtonWidth: 0
+                    text: qsTr("Microphone: %1").arg(root.gainLabel(backend.microphoneGainDb))
+                    tooltipText: qsTr("Microphone volume in the export")
+                    onClicked: backend.microphoneGainDb = root.nextChoice(root.audioGainChoices, backend.microphoneGainDb)
+                }
+                SegmentButton {
+                    objectName: "previewMicrophoneMute"
+                    minimumButtonWidth: 0
+                    text: qsTr("Mute Microphone")
+                    tooltipText: qsTr("Leave the microphone out of the export")
+                    selected: backend.microphoneMuted
+                    onClicked: backend.microphoneMuted = !backend.microphoneMuted
+                }
+                SegmentButton {
+                    objectName: "previewNoiseReduction"
+                    enabled: !backend.microphoneMuted
+                    minimumButtonWidth: 0
+                    text: qsTr("Reduce Noise")
+                    tooltipText: qsTr("Turn down hiss, hum and room noise between words on the microphone")
+                    selected: backend.microphoneNoiseReduction
+                    onClicked: backend.microphoneNoiseReduction = !backend.microphoneNoiseReduction
+                }
+                SegmentButton {
+                    objectName: "previewSystemAudioGain"
+                    enabled: !backend.systemAudioMuted
+                    minimumButtonWidth: 0
+                    text: qsTr("System Audio: %1").arg(root.gainLabel(backend.systemAudioGainDb))
+                    tooltipText: qsTr("System audio volume in the export")
+                    onClicked: backend.systemAudioGainDb = root.nextChoice(root.audioGainChoices, backend.systemAudioGainDb)
+                }
+                SegmentButton {
+                    objectName: "previewSystemAudioMute"
+                    minimumButtonWidth: 0
+                    text: qsTr("Mute System Audio")
+                    tooltipText: qsTr("Leave the system audio out of the export")
+                    selected: backend.systemAudioMuted
+                    onClicked: backend.systemAudioMuted = !backend.systemAudioMuted
+                }
+                SegmentButton {
+                    objectName: "previewAudioDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Back to the export options")
+                    onClicked: root.audioOpen = false
                 }
             }
 

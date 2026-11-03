@@ -210,6 +210,17 @@ Audio capture is available for MP4 recordings when supported by the current plat
 
 GIF and WebP exports are silent.
 
+### Microphone and system audio after recording
+
+When a recording that opens in the preview has both the microphone and system audio, SnapTray also keeps each of them on its own next to the temporary recording, on the same timeline as the video. The video still has the usual mixed sound, so nothing changes unless you want it to.
+
+In the preview, **Audio** (MP4) sets each one for the export:
+
+- **Microphone** and **System Audio** volume (−12, −6, 0, +6 dB), and **Mute** for either.
+- **Reduce Noise** turns down hiss, hum and room noise between words on the microphone (a high-pass filter and a soft noise gate). It uses very little processor time.
+
+The preview plays the new mix as you change it. With everything at 0 dB and nothing muted, the recording is saved as recorded. A changed mix re-encodes the sound, and stays in sync with the video, cuts and speed changes included (parts at another speed stay silent). The two tracks are deleted with the temporary recording, and crash recovery keeps them with the recording it recovers. Recordings with only one source, or made before this, have just the mixed sound and no Audio button. Separate tracks are recorded on Linux for now; on macOS and Windows recordings keep the mixed sound only.
+
 ### Check audio before you record
 
 Turn on **Show setup before recording** in Settings > Recording to see a short setup each time you record. On setups with more than one display it appears anyway when you pick the screen. It shows the screen, the microphone and its input device, system audio, and a summary of the output format, preview, and countdown. Changes are saved, so later quick recordings use them.

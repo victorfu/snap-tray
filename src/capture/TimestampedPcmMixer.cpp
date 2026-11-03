@@ -703,6 +703,10 @@ public:
             chunk.startFrame = outputCursor;
             chunk.pcm.reserve(static_cast<qsizetype>(
                 frames * kOutputChannels * kBytesPerPcm16Sample));
+            if (config.splitSources) {
+                chunk.microphonePcm.reserve(chunk.pcm.capacity());
+                chunk.systemAudioPcm.reserve(chunk.pcm.capacity());
+            }
 
             for (qint64 offset = 0; offset < frames; ++offset) {
                 const qint64 frame = outputCursor + offset;
@@ -720,6 +724,10 @@ public:
                     appendLittleEndianSample(
                         chunk.pcm,
                         clampPcm16(static_cast<qint64>(mic) + system));
+                    if (config.splitSources) {
+                        appendLittleEndianSample(chunk.microphonePcm, mic);
+                        appendLittleEndianSample(chunk.systemAudioPcm, system);
+                    }
                 }
 
                 if (micActive && !micPresent[0]) {

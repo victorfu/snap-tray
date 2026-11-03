@@ -359,6 +359,7 @@ add_library(snaptray_core STATIC
     src/recording/KeyTimeline.cpp
     src/recording/KeyOverlay.cpp
     src/recording/OverlayTrack.cpp
+    src/recording/AudioTracks.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
