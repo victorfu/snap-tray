@@ -2815,6 +2815,76 @@ English is always included and cannot be removed.</source>
         <source>Use an image file as the background</source>
         <translation>ใช้ไฟล์รูปภาพเป็นพื้นหลัง</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut from %1 to %2</source>
+        <translation>ตัดออกตั้งแต่ %1 ถึง %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cut Part</source>
+        <translation>ตัดส่วนนี้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cuts and speed changes need GIF or WebP on this system</source>
+        <translation>ระบบนี้ต้องใช้ GIF หรือ WebP สำหรับการตัดและการเปลี่ยนความเร็ว</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Exported: %1</source>
+        <translation>ส่งออก: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How fast the part at the playhead plays in the export; changed parts are silent</source>
+        <translation>ความเร็วที่ส่วนตรงตำแหน่งเล่นจะเล่นในไฟล์ส่งออก ส่วนที่เปลี่ยนจะไม่มีเสียง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Part</source>
+        <translation>เก็บส่วนนี้ไว้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the part at the playhead out of the export (Delete)</source>
+        <translation>ไม่รวมส่วนตรงตำแหน่งเล่นในไฟล์ส่งออก (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part from %1 to %2 at %3</source>
+        <translation>ส่วนตั้งแต่ %1 ถึง %2 ที่ %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Part Speed: %1</source>
+        <translation>ความเร็วส่วน: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Put the part at the playhead back (Delete)</source>
+        <translation>นำส่วนตรงตำแหน่งเล่นกลับมา (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split</source>
+        <translation>แบ่ง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split at %1</source>
+        <translation>แบ่งที่ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Split the recording at the playhead (S)</source>
+        <translation>แบ่งการบันทึกที่ตำแหน่งเล่น (S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Too close to another split or an end</source>
+        <translation>ใกล้จุดแบ่งอื่นหรือปลายเกินไป</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2896,6 +2966,16 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>The image could not be read.</source>
         <translation>ไม่สามารถอ่านรูปภาพได้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>ระบบนี้ยังใช้การตัดและการเปลี่ยนความเร็วกับ MP4 ไม่ได้ ส่งออกเป็น GIF หรือ WebP หรือเอาออกเพื่อส่งออก MP4 ยังไม่มีการส่งออกใด ๆ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Every part is cut out: there is nothing to export.</source>
+        <translation>ทุกส่วนถูกตัดออกแล้ว จึงไม่มีอะไรให้ส่งออก</translation>
     </message>
 </context>
 <context>

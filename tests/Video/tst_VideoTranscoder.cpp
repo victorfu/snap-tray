@@ -9,6 +9,7 @@
 #include "encoding/VideoBitrate.h"
 
 #include <QCryptographicHash>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QPainter>
@@ -349,6 +350,8 @@ private slots:
     void outputOptionsScaleAndLowerTheFrameRate();
     void hevcOutput();
     void sizeEstimateAgainstActual();
+    void segmentsStayInSync();
+    void segmentsOfAVariableRateSource();
 
 private:
     std::unique_ptr<IVideoTranscoder> m_transcoder;
@@ -1100,6 +1103,101 @@ void tst_VideoTranscoder::sizeEstimateAgainstActual()
         QVERIFY(actual > 0);
         QVERIFY2(actual <= estimate * 2, "far above the estimate");
     }
+}
+
+// #185: parts joined at cuts, one at twice the speed. Bursts in the kept
+// normal-speed parts land at their output times, each with its marker frame;
+// the fast part is silent; nothing drifts across the seams.
+void tst_VideoTranscoder::segmentsStayInSync()
+{
+    if (!m_transcoder->supportsSegments()) QSKIP("This transcoder does not join parts");
+    const QString input = fixture(true);
+    if (input.isEmpty()) QSKIP("AAC encoding unavailable");
+    QVERIFY2(!input.startsWith(QLatin1String("ERROR:")), qPrintable(input));
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = m_dir.filePath(QStringLiteral("segments.mp4"));
+    // Kept: 0-700 (1x), 1100-1500 (2x), 1500-2000 (1x) = 700 + 200 + 500 ms.
+    request.segments = {{0, 700, 1.0}, {1100, 1500, 2.0}, {1500, 2000, 1.0}};
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    QVERIFY(result.audioCopied);
+    const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
+    QVERIFY(probe.valid);
+    QVERIFY2(qAbs(probe.durationMs - 1400) <= kDurationToleranceMs, qPrintable(QString::number(probe.durationMs)));
+    QVERIFY(probe.hasAudio);
+
+    DecodedAudio output;
+    QString error;
+    QVERIFY2(decodeAudioTrack(request.outputPath, kAudioSampleRate, &output, &error), qPrintable(error));
+    const std::vector<double> audioOnsets = pulseOnsetsMs(output);
+    // Source bursts 200, 400, 600 | (1200, 1400 in the fast part: silent) | 1600, 1800.
+    const std::vector<double> expected{200, 400, 600, 700 + 200 + 100, 700 + 200 + 300};
+    QString detail = QStringLiteral("expected [%1] actual [%2]").arg(describe(expected), describe(audioOnsets));
+    QVERIFY2(audioOnsets.size() == expected.size(), qPrintable(detail));
+    for (size_t i = 0; i < expected.size(); ++i) {
+        QVERIFY2(std::fabs(audioOnsets[i] - expected[i]) <= kPulseAlignmentToleranceMs, qPrintable(detail));
+    }
+    // Every burst still starts with its marker frame.
+    const QPoint markerPoint(kSourceSize.width() * 3 / 4, kSourceSize.height() * 3 / 4);
+    const std::vector<double> videoOnsets = markerOnsetsMs(request.outputPath, markerPoint, probe.durationMs, &error);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    detail = QStringLiteral("audio [%1] video [%2]").arg(describe(audioOnsets), describe(videoOnsets));
+    for (const double onset : audioOnsets) {
+        const bool matched = std::any_of(videoOnsets.begin(), videoOnsets.end(),
+                                         [onset](double v) { return std::fabs(v - onset) <= kAvSyncToleranceMs; });
+        QVERIFY2(matched, qPrintable(detail));
+    }
+}
+
+// #185 on a variable-frame-rate source with a long still stretch: the map is
+// in time, not frames, so each output time shows the frame the source shows.
+void tst_VideoTranscoder::segmentsOfAVariableRateSource()
+{
+    if (!m_transcoder->supportsSegments()) QSKIP("This transcoder does not join parts");
+    const QString input = m_dir.filePath(QStringLiteral("vfr.mp4"));
+    {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder);
+        QVERIFY2(encoder->start(input, kSourceSize, kFrameRate), qPrintable(encoder->lastError()));
+        // Red at 0-200, nothing new until green at 1000, blue from 1400.
+        const struct { qint64 ms; QColor color; } frames[] = {
+            {0, Qt::red}, {100, Qt::red}, {200, Qt::red}, {1000, Qt::green}, {1100, Qt::green},
+            {1400, Qt::blue}, {1500, Qt::blue}, {1600, Qt::blue}};
+        for (const auto& f : frames) {
+            QImage image(kSourceSize, QImage::Format_ARGB32);
+            image.fill(f.color);
+            const qint64 before = encoder->framesWritten();
+            QElapsedTimer wait;
+            wait.start();
+            do {
+                encoder->writeFrame(image, f.ms);
+                if (encoder->framesWritten() != before) break;
+                QTest::qWait(5);
+            } while (wait.elapsed() < 2000);
+        }
+        encoder->finish();
+        QVERIFY2(encoder->lastError().isEmpty(), qPrintable(encoder->lastError()));
+    }
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = m_dir.filePath(QStringLiteral("vfr-segments.mp4"));
+    // 100-700 (still red) | 1050-1450 at 2x (green, then blue at 1400 -> out 775).
+    request.segments = {{100, 700, 1.0}, {1050, 1450, 2.0}};
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
+    QVERIFY2(qAbs(probe.durationMs - 800) <= kDurationToleranceMs, qPrintable(QString::number(probe.durationMs)));
+    auto reader = IVideoFrameReader::create();
+    if (!reader) QSKIP("No frame reader to inspect the output here");
+    QVERIFY2(reader->load(request.outputPath), qPrintable(reader->lastError()));
+    const QPoint centre = QRect(QPoint(0, 0), kSourceSize).center();
+    const QColor still = reader->frameAt(500).pixelColor(centre);
+    const QColor fast = reader->frameAt(650).pixelColor(centre);
+    const QColor last = reader->frameAt(790).pixelColor(centre);
+    QVERIFY2(still.red() > 170 && still.green() < 90, qPrintable(still.name()));
+    QVERIFY2(fast.green() > 120 && fast.red() < 90, qPrintable(fast.name()));
+    QVERIFY2(last.blue() > 170 && last.green() < 90, qPrintable(last.name()));
 }
 
 QTEST_MAIN(tst_VideoTranscoder)

@@ -5,6 +5,7 @@
 #include "recording/ZoomTrack.h"
 #include "recording/RedactionTrack.h"
 #include "recording/RecordingAppearance.h"
+#include "recording/TimelineEdit.h"
 
 #include <QRect>
 #include <QVector>
@@ -29,15 +30,17 @@ struct PreviewEditState {
     RedactionTrack redaction;
     // The frame around the export (#184): a look, kept by "Reset Crop and Trim".
     RecordingAppearance appearance;
+    // Cut-out parts and speed changes inside the trim (#185): footage edits.
+    TimelineEdit timeline;
 
     bool operator==(const PreviewEditState& other) const
     {
         return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd
             && cursor == other.cursor && zoom == other.zoom && redaction == other.redaction
-            && appearance == other.appearance;
+            && appearance == other.appearance && timeline == other.timeline;
     }
     bool operator!=(const PreviewEditState& other) const { return !(*this == other); }
-    bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1; }
+    bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1 && timeline.isEmpty(); }
 };
 
 // Session-only undo/redo for preview edits. Each record() is one undo step;

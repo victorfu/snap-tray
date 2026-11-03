@@ -64,6 +64,7 @@ private slots:
     void stillEndHoldsTheLastPosition();
     void hiddenRangesHidePointerAndRipples();
     void advancedEffectsDrawThroughCrop();
+    void nothingReachesAcrossACut();
 };
 
 void TestCursorEffects::settingsRoundTrip()
@@ -452,6 +453,52 @@ void TestCursorEffects::advancedEffectsDrawThroughCrop()
     QImage cropped = base.copy(0, 0, 200, 100);
     renderer.paint(cropped, 120, {QRect(0, 0, 200, 100), QSize(400, 100), QSize(200, 100)});
     QCOMPARE(cropped, full.copy(0, 0, 200, 100));
+}
+
+void TestCursorEffects::nothingReachesAcrossACut()
+{
+    // Kept: 0-1000 and 2000-3000. In the cut part the pointer jumps to
+    // (150,50) at 1990 ms and clicks at 1950 ms.
+    CursorTimeline t;
+    t.info.frameSize = QSize(400, 100);
+    t.info.clicksAvailable = true;
+    t.samples = {{0, QPoint(20, 50), true, 0}, {1990, QPoint(150, 50), true, 0}};
+    t.buttons = {{1950, Qt::LeftButton, true, QPoint(20, 50), false},
+                 {1960, Qt::LeftButton, false, QPoint(20, 50), false}};
+    const TimelineMap kept({{0, 1000, 1.0}, {2000, 3000, 1.0}});
+    const CursorFrameMapping mapping{QRect(), QSize(400, 100), QSize(400, 100)};
+
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::High;
+    CursorEffectRenderer whole(t, s);
+    CursorEffectRenderer cut(t, s);
+    cut.setTimeline(kept);
+    // Without the cut the pointer would still be gliding over from (20,50).
+    QVERIFY(whole.pointerPosition(2010)->x() < 140.0);
+    QCOMPARE(*cut.pointerPosition(2010), QPointF(150, 50));
+
+    // The click in the cut part leaves no ripple after the cut.
+    CursorEffectSettings ripples;
+    ripples.showCursor = false;
+    ripples.clickRipple = true;
+    const QImage base = blank(QSize(400, 100));
+    QImage withoutCut = base, withCut = base;
+    CursorEffectRenderer(t, ripples).paint(withoutCut, 2050, mapping);
+    CursorEffectRenderer rippleCut(t, ripples);
+    rippleCut.setTimeline(kept);
+    rippleCut.paint(withCut, 2050, mapping);
+    QVERIFY(differingPixels(withoutCut, base) > 0);
+    QCOMPARE(differingPixels(withCut, base), 0);
+
+    // No motion blur trail from where the pointer was before the cut.
+    CursorEffectSettings blur;
+    blur.motionBlur = CursorEffectSettings::MotionBlur::High;
+    CursorEffectRenderer blurCut(t, blur);
+    blurCut.setTimeline(kept);
+    QImage sharp = base, blurred = base;
+    CursorEffectRenderer(t, {}).paint(sharp, 2005, mapping);
+    blurCut.paint(blurred, 2005, mapping);
+    QCOMPARE(blurred, sharp);
 }
 
 QTEST_MAIN(TestCursorEffects)

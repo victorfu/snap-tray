@@ -27,6 +27,7 @@ void RecordingCursorOverlay::setBackend(QObject* object)
         connect(m_backend, &RecordingPreviewBackend::videoSizeChanged, this, [this] { update(); });
         // "Still end" depends on where the clip ends.
         connect(m_backend, &RecordingPreviewBackend::trimRangeChanged, this, [this] { update(); });
+        connect(m_backend, &RecordingPreviewBackend::timelineChanged, this, [this] { update(); });
     }
     emit backendChanged();
     update();
@@ -59,8 +60,9 @@ void RecordingCursorOverlay::paint(QPainter* painter)
     painter->setClipRect(m_contentRect);
     painter->translate(m_contentRect.topLeft());
     painter->scale(m_contentRect.width() / videoSize.width(), m_contentRect.height() / videoSize.height());
-    const SnapTray::CursorEffectRenderer renderer(*m_backend->cursorTimeline(), m_backend->cursorEffects(),
-                                                  m_backend->effectsClipEnd());
+    SnapTray::CursorEffectRenderer renderer(*m_backend->cursorTimeline(), m_backend->cursorEffects(),
+                                            m_backend->effectsClipEnd());
+    if (m_backend->hasTimelineEdits()) renderer.setTimeline(m_backend->timelineMap());
     renderer.paint(*painter, m_position, {QRect(), videoSize, videoSize});
     painter->restore();
 }

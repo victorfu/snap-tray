@@ -16,4 +16,6 @@ QtObject {
     // Moving and resizing a rectangle on the video (a mask).
     readonly property int moveItem: Qt.SizeAllCursor
     readonly property int resizeDiagonal: Qt.SizeFDiagCursor
+    // Moving a split point along the recording timeline.
+    readonly property int resizeHorizontal: Qt.SizeHorCursor
 }

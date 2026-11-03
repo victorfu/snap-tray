@@ -151,6 +151,28 @@ Item {
 
     readonly property var speedOptions: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
     property int speedIndex: 3
+    // Cuts and speed changes (#185): the part under the playhead and the
+    // speeds a part can have, in TimelineEdit order.
+    readonly property var partSpeeds: [0.5, 1.0, 1.5, 2.0, 4.0]
+    readonly property int playheadPart: {
+        void backend.timelineParts
+        return backend.timelinePartAt(videoPlayer.position)
+    }
+    readonly property var playheadPartData: backend.timelineParts.length > root.playheadPart
+        ? backend.timelineParts[root.playheadPart] : null
+    function speedLabel(speed) {
+        return Number(speed).toLocaleString(Qt.locale(), "f", speed % 1 ? 1 : 0) + "×"
+    }
+    // The preview plays the edit: the chosen preview speed times the part's.
+    function applyPlaybackRate() {
+        const rate = root.speedOptions[root.speedIndex] * backend.playbackSpeedAt(videoPlayer.position)
+        if (videoPlayer.playbackRate !== rate)
+            videoPlayer.playbackRate = rate
+    }
+    function nextPartSpeed(current) {
+        const at = root.partSpeeds.indexOf(current)
+        return root.partSpeeds[(at + 1) % root.partSpeeds.length]
+    }
     property string activeTooltipText: ""
     property rect activeTooltipAnchor: Qt.rect(0, 0, 0, 0)
     property bool activeTooltipPreferAbove: true
@@ -435,6 +457,16 @@ Item {
                     onPositionChanged: function(positionMs) {
                         backend.updatePosition(positionMs)
                         root.refreshWindowHover()
+                        // Cut-out parts are skipped while playing, and each
+                        // part plays at its own speed (#185).
+                        if (videoPlayer.playing && backend.hasTimelineEdits && !root.isScrubbing) {
+                            const target = backend.playbackTarget(positionMs)
+                            if (target < 0)
+                                videoPlayer.seek(Math.max(0, backend.playbackTarget(backend.trimStart)))
+                            else if (target !== positionMs)
+                                videoPlayer.seek(target)
+                        }
+                        root.applyPlaybackRate()
                     }
                     onStateChanged: backend.updatePlayingState(videoPlayer.playing)
                     onErrorOccurred: function(message) { backend.reportPlaybackError(message) }
@@ -842,6 +874,80 @@ Item {
                 height: trackRect.height + 12
                 radius: 2
                 color: root.isDraggingTrimEnd ? root.accentHover : root.accent
+            }
+
+            // Cut-out parts are shaded over the track, parts at another speed
+            // are labelled (#185).
+            Repeater {
+                model: backend.timelineParts
+                Item {
+                    required property int index
+                    required property var modelData
+                    objectName: "previewTimelinePart" + index
+                    x: timelineArea.posToX(modelData.start)
+                    y: trackRect.y - 4
+                    width: Math.max(1, timelineArea.posToX(modelData.end) - x)
+                    height: trackRect.height + 8
+                    z: 1
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: parent.modelData.deleted
+                        color: root.trimOverlayColor
+                        border.width: 1
+                        border.color: root.textSecondary
+                        radius: 2
+                    }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.top
+                        visible: !parent.modelData.deleted && parent.modelData.speed !== 1 && parent.width > 16
+                        text: root.speedLabel(parent.modelData.speed)
+                        color: root.accent
+                        font.pixelSize: SemanticTokens.fontSizeCaption
+                        font.weight: SemanticTokens.fontWeightMedium
+                    }
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: modelData.deleted
+                        ? qsTr("Cut from %1 to %2").arg(backend.formatPreciseTime(modelData.start))
+                                                   .arg(backend.formatPreciseTime(modelData.end))
+                        : qsTr("Part from %1 to %2 at %3").arg(backend.formatPreciseTime(modelData.start))
+                                                          .arg(backend.formatPreciseTime(modelData.end))
+                                                          .arg(root.speedLabel(modelData.speed))
+                }
+            }
+
+            // Split points; drag to move one, double-click to join its parts.
+            Repeater {
+                model: backend.timelineSplits
+                Rectangle {
+                    required property int index
+                    required property var modelData
+                    objectName: "previewTimelineSplit" + index
+                    x: timelineArea.posToX(modelData) - width / 2
+                    y: trackRect.y - 7
+                    width: 3
+                    height: trackRect.height + 14
+                    radius: 1
+                    z: 3
+                    color: root.textPrimary
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Split at %1").arg(backend.formatPreciseTime(modelData))
+                    Accessible.onPressAction: backend.removeSplit(index)
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        cursorShape: CursorTokens.resizeHorizontal
+                        property bool moved: false
+                        onPressed: { moved = false; videoPlayer.pause() }
+                        onPositionChanged: function(mouse) {
+                            const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
+                            if (backend.moveSplit(parent.index, ms)) moved = true
+                        }
+                        onReleased: if (moved) backend.commitTimelineEdit()
+                        onCanceled: if (moved) backend.commitTimelineEdit()
+                        onDoubleClicked: backend.removeSplit(parent.index)
+                    }
+                }
             }
 
             // Masks just above the track; click one to edit it.
@@ -1318,6 +1424,43 @@ Item {
                         backend.selectedPointerHide = -1
                         backend.addMask()
                     }
+                }
+                // Cuts and speed changes (#185), at the playhead.
+                SegmentButton {
+                    objectName: "previewSplit"
+                    enabled: backend.timelineEditsAvailable && videoPlayer.duration > 0
+                    minimumButtonWidth: 0
+                    text: qsTr("Split")
+                    tooltipText: backend.timelineEditsAvailable
+                        ? qsTr("Split the recording at the playhead (S)")
+                        : qsTr("Cuts and speed changes need GIF or WebP on this system")
+                    onClicked: {
+                        videoPlayer.pause()
+                        if (!backend.splitAt(videoPlayer.position))
+                            root.showButtonTooltip(qsTr("Too close to another split or an end"), this, true)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewPartCut"
+                    enabled: backend.timelineEditsAvailable && root.playheadPartData !== null
+                             && backend.timelineParts.length > 1
+                    minimumButtonWidth: 0
+                    text: root.playheadPartData && root.playheadPartData.deleted ? qsTr("Keep Part") : qsTr("Cut Part")
+                    tooltipText: root.playheadPartData && root.playheadPartData.deleted
+                        ? qsTr("Put the part at the playhead back (Delete)")
+                        : qsTr("Leave the part at the playhead out of the export (Delete)")
+                    selected: root.playheadPartData !== null && root.playheadPartData.deleted
+                    onClicked: backend.setPartDeleted(root.playheadPart, !root.playheadPartData.deleted)
+                }
+                SegmentButton {
+                    objectName: "previewPartSpeed"
+                    enabled: backend.timelineEditsAvailable && root.playheadPartData !== null
+                             && !root.playheadPartData.deleted
+                    minimumButtonWidth: 0
+                    text: qsTr("Part Speed: %1").arg(root.speedLabel(root.playheadPartData ? root.playheadPartData.speed : 1))
+                    tooltipText: qsTr("How fast the part at the playhead plays in the export; changed parts are silent")
+                    selected: root.playheadPartData !== null && root.playheadPartData.speed !== 1
+                    onClicked: backend.setPartSpeed(root.playheadPart, root.nextPartSpeed(root.playheadPartData.speed))
                 }
                 SegmentButton {
                     objectName: "previewAppearanceOptions"
@@ -1971,6 +2114,7 @@ Item {
 
                 Text {
                     text: backend.formatTime(videoPlayer.position) + " / " + backend.formatTime(videoPlayer.duration)
+                          + (backend.hasTimelineEdits ? "  ·  " + qsTr("Exported: %1").arg(backend.formatTime(backend.outputDuration)) : "")
                     font.pixelSize: SemanticTokens.fontSizeCaption
                     font.family: SemanticTokens.fontFamily
                     font.weight: SemanticTokens.fontWeightMedium
@@ -1983,7 +2127,7 @@ Item {
                     tooltipText: qsTr("Playback Speed: %1x").arg(root.speedOptions[root.speedIndex])
                     onClicked: {
                         root.speedIndex = (root.speedIndex + 1) % root.speedOptions.length
-                        videoPlayer.playbackRate = root.speedOptions[root.speedIndex]
+                        root.applyPlaybackRate()
                     }
                 }
 
@@ -2519,19 +2663,31 @@ Item {
             if (event.modifiers & Qt.ControlModifier) {
                 root.saveWithCrop()
                 event.accepted = true
+            } else if (!event.modifiers && backend.timelineEditsAvailable) {
+                videoPlayer.pause()
+                backend.splitAt(videoPlayer.position)
+                event.accepted = true
+            }
+            break
+        case Qt.Key_Delete:
+        case Qt.Key_Backspace:
+            if (backend.timelineEditsAvailable && root.playheadPartData !== null && backend.timelineParts.length > 1
+                    && !(backend.selectedMask >= 0) && !(backend.selectedZoom >= 0)) {
+                backend.setPartDeleted(root.playheadPart, !root.playheadPartData.deleted)
+                event.accepted = true
             }
             break
         case Qt.Key_BracketLeft:
             if (root.speedIndex > 0) {
                 root.speedIndex--
-                videoPlayer.playbackRate = root.speedOptions[root.speedIndex]
+                root.applyPlaybackRate()
             }
             event.accepted = true
             break
         case Qt.Key_BracketRight:
             if (root.speedIndex < root.speedOptions.length - 1) {
                 root.speedIndex++
-                videoPlayer.playbackRate = root.speedOptions[root.speedIndex]
+                root.applyPlaybackRate()
             }
             event.accepted = true
             break

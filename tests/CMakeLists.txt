@@ -377,6 +377,11 @@ add_test(NAME RecordingManager_RecordingAppearance COMMAND RecordingManager_Reco
 set_tests_properties(RecordingManager_RecordingAppearance PROPERTIES TIMEOUT 120 LABELS "unit"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(RecordingManager_TimelineEdit RecordingManager/tst_TimelineEdit.cpp)
+target_link_libraries(RecordingManager_TimelineEdit PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_TimelineEdit COMMAND RecordingManager_TimelineEdit)
+set_tests_properties(RecordingManager_TimelineEdit PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
 target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_CursorTimelineRecorder COMMAND RecordingManager_CursorTimelineRecorder)
@@ -455,6 +460,11 @@ if(APPLE OR WIN32 OR SNAPTRAY_ENABLE_LINUX_RECORDING)
     target_sources(Qml_RecordingPreviewAppearance PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
     add_test(NAME Qml_RecordingPreviewAppearance COMMAND Qml_RecordingPreviewAppearance)
     set_tests_properties(Qml_RecordingPreviewAppearance PROPERTIES TIMEOUT 60 LABELS "integration")
+    add_executable(Qml_RecordingPreviewTimeline Qml/tst_RecordingPreviewTimeline.cpp)
+    target_link_libraries(Qml_RecordingPreviewTimeline PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+    target_sources(Qml_RecordingPreviewTimeline PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+    add_test(NAME Qml_RecordingPreviewTimeline COMMAND Qml_RecordingPreviewTimeline)
+    set_tests_properties(Qml_RecordingPreviewTimeline PROPERTIES TIMEOUT 60 LABELS "integration")
     add_executable(Qml_RecordingPreviewMasks Qml/tst_RecordingPreviewMasks.cpp)
     target_link_libraries(Qml_RecordingPreviewMasks PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
     target_sources(Qml_RecordingPreviewMasks PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
