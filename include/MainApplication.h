@@ -33,6 +33,7 @@ class QmlSettingsWindow;
 class QmlHistoryWindow;
 class QmlDialog;
 class ScreenPickerViewModel;
+class QmlRecordingAreaSelector;
 }
 
 class MainApplication : public QObject
@@ -91,6 +92,8 @@ private:
     void updatePinsVisibilityActionText();
     void updateRecordingActionText();
     void showRecoveryDialog();
+    void showRecordingLibrary();
+    void openRecordingProject(const QString& projectDir);
     void updateRecoveryAction();
     bool acceptRecordingHotkey(SnapTray::HotkeyAction action);
     SnapTray::QmlSettingsWindow* ensureSettingsWindow();
@@ -98,6 +101,12 @@ private:
     void attachScreenPicker(SnapTray::QmlDialog* dialog,
                             SnapTray::ScreenPickerViewModel* viewModel);
     void onScreenPickerChosen(QScreen* screen);
+    // Starts recording `screen`, after choosing an area when that is on (#194).
+    void startRecordingOn(QScreen* screen);
+    // The recording setup is on screen: the screen picker, or the area
+    // selector after it (#194). Captures and other overlays wait.
+    bool recordingSetupActive() const;
+    void closeAreaSelector();
     void onScreenPickerCancelled();
     void onScreenPickerClosed(SnapTray::QmlDialog* dialog);
     void closeScreenPicker();
@@ -126,11 +135,14 @@ private:
     QAction *m_copyRecordingDiagnosticsAction = nullptr;
     QAction *m_recoverRecordingsAction = nullptr;
     QPointer<SnapTray::QmlDialog> m_recoveryDialog;
+    QAction *m_recordingLibraryAction = nullptr;
+    QPointer<SnapTray::QmlDialog> m_libraryDialog;
     QStringList m_recoverablePaths;  // left-behind recordings still offered
     QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;
     QPointer<SnapTray::QmlDialog> m_screenPickerDialog;
+    QPointer<SnapTray::QmlRecordingAreaSelector> m_areaSelector;
     QPointer<SnapTray::ScreenPickerViewModel> m_screenPickerViewModel;
     RecordingPreviewBackend *m_previewBackend = nullptr;
     // Tray artwork without a recording badge, and the state currently shown on it.

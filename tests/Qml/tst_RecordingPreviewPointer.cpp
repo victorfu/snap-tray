@@ -10,6 +10,7 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/CursorTimeline.h"
 #include "recording/KeyTimeline.h"
+#include "recording/AudioTracks.h"
 #include "settings/RecordingSettingsManager.h"
 
 // The preview's pointer controls (#160) against the real QML.
@@ -23,6 +24,8 @@ private slots:
     void overlayFollowsEachFrameTime();
     void advancedPointerOptions();
     void keysPanelEditsTheHints();
+    void overlayPanelEditsText();
+    void audioPanelMixesTheTracks();
 
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
@@ -234,6 +237,108 @@ void tst_RecordingPreviewPointer::keysPanelEditsTheHints()
     QVERIFY(backend.keyOverlayEnabled());
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysDone"), "clicked"));
     QTRY_VERIFY(!panel->isVisible());
+    backend.requestDiscard();
+}
+
+// #188: Add Text opens its editor; typing, size, colour and deleting reach
+// the backend, undoably; Done closes it.
+void tst_RecordingPreviewPointer::overlayPanelEditsText()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QQuickItem* addText = item(view, "previewAddText");
+    QQuickItem* panel = item(view, "previewOverlayPanel");
+    QVERIFY(addText && panel);
+    QVERIFY(addText->isEnabled());
+    QVERIFY(QMetaObject::invokeMethod(addText, "clicked"));
+    QCOMPARE(backend.selectedOverlay(), 0);
+    QTRY_VERIFY(panel->isVisible());
+    QQuickItem* field = item(view, "previewOverlayText");
+    QVERIFY(field && field->isVisible());
+    QCOMPARE(field->property("text").toString(), backend.overlayTrack().segments[0].text);
+    // Typing: the field is a text entry, so preview shortcuts stay off.
+    view->requestActivate();
+    QVERIFY(QTest::qWaitForWindowActive(view));
+    field->forceActiveFocus();
+    QTRY_VERIFY(field->hasActiveFocus());
+    QTest::keyClick(view, Qt::Key_A, Qt::ControlModifier); // select all
+    for (const QChar c : QStringLiteral("Step 1")) QTest::keyClick(view, c.toLatin1());
+    QTRY_COMPARE(backend.overlayTrack().segments[0].text, QStringLiteral("Step 1"));
+    QTRY_VERIFY(view->rootObject()->property("textEntryActive").toBool());
+    QTest::keyClick(view, Qt::Key_Return);
+    for (const QChar c : QStringLiteral("<b>Step 2</b>")) QTest::keyClick(view, c.toLatin1());
+    const QString caption = QStringLiteral("Step 1\n<b>Step 2</b>");
+    QTRY_COMPARE(backend.overlayTrack().segments[0].text, caption);
+    QCOMPARE(field->property("text").toString(), caption);
+    // Editing keys must not delete the selected overlay or discard the preview.
+    QTest::keyClick(view, Qt::Key_Home, Qt::ControlModifier);
+    QTest::keyClick(view, Qt::Key_Backspace);
+    QCOMPARE(backend.selectedOverlay(), 0);
+    QCOMPARE(backend.overlayTrack().segments[0].text, caption);
+    QTest::keyClick(view, Qt::Key_Escape);
+    QTRY_VERIFY(!view->rootObject()->property("textEntryActive").toBool());
+    QVERIFY(!backend.discardConfirmationPending());
+    const double size = backend.overlayTrack().segments[0].size;
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayLarger"), "clicked"));
+    QVERIFY(backend.overlayTrack().segments[0].size > size);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayBackground"), "clicked"));
+    QCOMPARE(int(backend.overlayTrack().segments[0].background), 2);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayWhole"), "clicked"));
+    QCOMPARE(backend.overlayTrack().segments[0].endMs, -1);
+    backend.undo();
+    QVERIFY(backend.overlayTrack().segments[0].endMs >= 0);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayDelete"), "clicked"));
+    QVERIFY(backend.overlayTrack().isEmpty());
+    QTRY_VERIFY(!panel->isVisible());
+    backend.undo();
+    QCOMPARE(int(backend.overlayTrack().segments.size()), 1);
+    backend.requestDiscard();
+}
+
+// #189: the Audio button shows only for MP4 of a recording with separate
+// tracks; its panel sets each track, undoably.
+void tst_RecordingPreviewPointer::audioPanelMixesTheTracks()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString video = dir.filePath(QStringLiteral("missing.mp4"));
+    for (const auto track : {SnapTray::AudioTracks::Track::Microphone, SnapTray::AudioTracks::Track::SystemAudio}) {
+        SnapTray::AudioTrackWriter writer(SnapTray::AudioTracks::pathFor(video, track));
+        QVERIFY(writer.open());
+    }
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QVERIFY(backend.hasSeparateTracks());
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QQuickItem* audio = item(view, "previewAudioOptions");
+    QQuickItem* panel = item(view, "previewAudioPanel");
+    QVERIFY(audio && panel);
+    QTRY_VERIFY(audio->isVisible());
+    if (!backend.audioMixAvailable()) {
+        QVERIFY(!audio->isEnabled());
+        backend.requestDiscard();
+        QSKIP("This MP4 transcoder cannot mix separate tracks");
+    }
+    QVERIFY(QMetaObject::invokeMethod(audio, "clicked"));
+    QTRY_VERIFY(panel->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMicrophoneGain"), "clicked"));
+    QCOMPARE(backend.microphoneGainDb(), 6.0);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewSystemAudioMute"), "clicked"));
+    QVERIFY(backend.systemAudioMuted());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewNoiseReduction"), "clicked"));
+    QVERIFY(backend.microphoneNoiseReduction());
+    QVERIFY(backend.audioMixActive());
+    backend.undo();
+    QVERIFY(!backend.microphoneNoiseReduction());
+    // GIF and WebP are silent: no audio controls there.
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QTRY_VERIFY(!audio->isVisible());
+    QVERIFY(!backend.audioMixAvailable());
     backend.requestDiscard();
 }
 

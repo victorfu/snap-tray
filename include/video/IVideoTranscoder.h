@@ -9,6 +9,7 @@ class QImage;
 #include <memory>
 #include <vector>
 
+#include "recording/AudioTracks.h"
 #include "recording/TimelineEdit.h"
 
 // Quality used for preview edits; the quality the preview has always exported at.
@@ -45,6 +46,11 @@ struct VideoTranscodeRequest {
     // startMs..endMs at normal speed. Audio is kept for parts at normal speed
     // and silent for the others; the result stays in sync at every seam.
     std::vector<SnapTray::TimelineSegment> segments;
+    // #189: mix the separate tracks recorded next to this video at these
+    // settings, instead of copying its mixed track. Empty = as recorded.
+    // Only for transcoders whose supportsAudioMix() is true.
+    QString audioTracksVideoPath;
+    SnapTray::AudioMixSettings audioMix;
     // Draws on each output frame (already cropped, RGB32) before it is
     // encoded; sourceMs is the frame's time in the input. Empty = none.
     // Only for transcoders whose supportsFrameFilter() is true.
@@ -109,6 +115,8 @@ public:
     virtual bool supportsOutputOptions() const { return false; }
     // True when transcode() joins VideoTranscodeRequest::segments (#185).
     virtual bool supportsSegments() const { return false; }
+    // True when transcode() mixes VideoTranscodeRequest::audioTracksVideoPath (#189).
+    virtual bool supportsAudioMix() const { return false; }
     // True when transcode() can write videoCodec (H.264 is always supported).
     virtual bool supportsVideoCodec(const QString& codec) const
     {

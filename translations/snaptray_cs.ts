@@ -823,6 +823,41 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <source>recording keys</source>
         <translation>nahrávají se klávesy</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>Knihovna záznamů...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>Projekt není k dispozici</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>Záznam tohoto projektu chybí nebo je poškozený.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Copied</source>
+        <translation>Záznam zkopírován</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>Uloženo do %1 a zkopírováno: vložte ho do chatu nebo složky.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>edit mode</source>
+        <translation>režim úprav</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>quick mode</source>
+        <translation>rychlý režim</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -1966,6 +2001,11 @@ Velikost: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Nedostatek volného místa na disku pro nahrávání ve vysoké kvalitě. Nahrává se ve zvolené kvalitě.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Záznamy nelze ukládat do složky projektů knihovny záznamů.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3009,6 +3049,241 @@ Velikost: %2</translation>
         <source>Shadow</source>
         <translation>Stín</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A box behind the text, so it reads on any picture</source>
+        <translation>Rámeček za textem, aby byl čitelný na jakémkoli obraze</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A title or caption at the playhead</source>
+        <translation>Titulek nebo popisek u přehrávací hlavy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Image</source>
+        <translation>Přidat obrázek</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Text</source>
+        <translation>Přidat text</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Center</source>
+        <translation>Zarovnat na střed</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Left</source>
+        <translation>Zarovnat vlevo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Right</source>
+        <translation>Zarovnat vpravo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>An image such as a logo, for the whole recording</source>
+        <translation>Obrázek, například logo, po celou nahrávku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark Background</source>
+        <translation>Tmavé pozadí</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this overlay</source>
+        <translation>Smazat tento překryv</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Přetažením překryv přesunete, za roh změníte jeho velikost. Hotovo úpravy ukončí.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How lines line up</source>
+        <translation>Jak se řádky zarovnají</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How see-through the image is</source>
+        <translation>Jak průhledný obrázek je</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image overlay</source>
+        <translation>Obrázkový překryv</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Larger</source>
+        <translation>Větší</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light Background</source>
+        <translation>Světlé pozadí</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No Background</source>
+        <translation>Bez pozadí</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Opacity: %1%</source>
+        <translation>Krytí: %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay end</source>
+        <translation>Konec překryvu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay start</source>
+        <translation>Začátek překryvu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay text</source>
+        <translation>Text překryvu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlays need GIF or WebP on this system</source>
+        <translation>Překryvy v tomto systému vyžadují GIF nebo WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected overlay</source>
+        <translation>Vybraný překryv</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show it for the whole recording, or only for a time range</source>
+        <translation>Zobrazit po celou nahrávku, nebo jen v časovém úseku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller</source>
+        <translation>Menší</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text</source>
+        <translation>Text</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text colour %1</source>
+        <translation>Barva textu %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text overlay "%1"</source>
+        <translation>Textový překryv „%1“</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>from %1 to %2</source>
+        <translation>od %1 do %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Audio</source>
+        <translation>Zvuk</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the microphone out of the export</source>
+        <translation>Vynechat mikrofon z exportu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the system audio out of the export</source>
+        <translation>Vynechat zvuk systému z exportu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone and system audio volume, mute, and noise reduction</source>
+        <translation>Hlasitost mikrofonu a zvuku systému, ztlumení a potlačení šumu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone volume in the export</source>
+        <translation>Hlasitost mikrofonu v exportu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone: %1</source>
+        <translation>Mikrofon: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mixing the two tracks is not supported for MP4 on this system yet</source>
+        <translation>Míchání obou stop zatím v tomto systému pro MP4 není podporováno</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mute Microphone</source>
+        <translation>Ztlumit mikrofon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mute System Audio</source>
+        <translation>Ztlumit zvuk systému</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Reduce Noise</source>
+        <translation>Potlačit šum</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>System Audio: %1</source>
+        <translation>Zvuk systému: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>System audio volume in the export</source>
+        <translation>Hlasitost zvuku systému v exportu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Turn down hiss, hum and room noise between words on the microphone</source>
+        <translation>Ztlumit syčení, brum a hluk místnosti mezi slovy na mikrofonu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Zavřít bez uložení (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>Zavřít bez uložení změn?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Projekt zůstane v knihovně záznamů tak, jak byl naposledy uložen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>Pokračovat v úpravách</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>Zavřít</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3155,6 +3430,41 @@ Velikost: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>Všechny části jsou vystřižené: není co exportovat.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
+        <translation>Obrázky (*.png *.svg *.jpg *.jpeg *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Image</source>
+        <translation>Vybrat obrázek</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Title</source>
+        <translation>Titulek</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Textové a obrázkové překryvy zatím v tomto systému nelze vykreslit do MP4. Exportujte jako GIF nebo WebP, nebo je odeberte a exportujte MP4. Nic nebylo exportováno.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>Záznam projektu se nepodařilo zkopírovat pro uložení. Nic nebylo uloženo.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Uloženo do %1, ale projekt se nepodařilo aktualizovat. Uložte znovu, abyste tyto úpravy v projektu zachovali.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Uloženo do %1, ale záznam se nepodařilo uchovat jako upravitelný projekt. Je stále otevřený zde: uložte znovu, nebo ho zavřením zahoďte.</translation>
     </message>
 </context>
 <context>
@@ -3457,6 +3767,101 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>Jen zkratky</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>Nikdy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 dní</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 dní</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 dní</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>Uchovávat upravitelné projekty</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Po uložení ponechat záznam a vaše úpravy, abyste ho mohli z knihovny záznamů znovu změnit a exportovat. Projekty uchovávají celý záznam obrazovky, jeho ukazatel, klávesy a zvukové stopy, včetně všeho, co jste rozmazali nebo ořízli, a zabírají místo na disku.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>Mazat projekty nezměněné po dobu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After recording</source>
+        <translation>Po nahrávání</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Upravit v náhledu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Uložit hned</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Rychlý režim: soubor se uloží ve výsledném formátu hned po zastavení, bez náhledu a bez stop pro úpravy.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving</source>
+        <translation>Po uložení</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Nic nedělat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Zkopírovat soubor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Zobrazit ve složce</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>Režim úprav: v náhledu ořízněte, zkraťte a přidejte efekty, pak uložte. Záznamy s náhledem se vždy nejprve pořizují jako MP4.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>Vybrat oblast před nahráváním</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Tažením přes obrazovku vyberte, co nahrát. Režim úprav i tak nahrává celou obrazovku a otevře náhled oříznutý na oblast, takže ji můžete změnit; rychlý režim nahrává jen oblast.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projekty se uchovávají při ukládání z náhledu. Pro jejich použití zapněte Zobrazit náhled.</translation>
     </message>
 </context>
 <context>
@@ -4823,6 +5228,71 @@ Velikost souboru: %3</translation>
         <source>Record shortcut keys</source>
         <translation>Nahrávat klávesové zkratky</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After recording</source>
+        <translation>Po nahrávání</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Upravit v náhledu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Uložit hned</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Rychlý režim: soubor se uloží ve výsledném formátu hned po zastavení, bez náhledu a bez stop pro úpravy.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After saving</source>
+        <translation>Po uložení</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Nic nedělat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Zkopírovat soubor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Zobrazit ve složce</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>Režim úprav: v náhledu ořízněte, zkraťte a přidejte efekty, pak uložte. Stopy ukazatele, oken a kláves zůstanou pro úpravy.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>Pouze v režimu úprav: rychlý režim neuchovává stopy pro úpravy.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>Nejprve vybrat oblast</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>Nahrává se stále celá obrazovka; náhled se otevře oříznutý na oblast.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>Nahrává se jen oblast.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -4855,6 +5325,11 @@ Velikost souboru: %3</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>Nelze obnovit: nahrávání bylo přerušeno dřív, než se uložila přehratelná část.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>nahrávala se celá obrazovka; otevře se oříznutý na zvolenou oblast</translation>
     </message>
 </context>
 <context>
@@ -4926,6 +5401,140 @@ Velikost souboru: %3</translation>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Nahrávání se zastavilo. %1 Vše, co bylo dosud nahráno, zůstává zachováno.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>Knihovna záznamů</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>Upravitelné projekty: %1 v tomto počítači</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>Žádné upravitelné projekty</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Uchovávání nových projektů je vypnuté. Projekty uchovávají celý záznam včetně všeho, co jste rozmazali nebo ořízli.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Projekty uchovávají celý záznam včetně všeho, co jste rozmazali nebo ořízli.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Zapněte Uchovávat upravitelné projekty v Nastavení &gt; Nahrávání, abyste mohli záznamy po uložení znovu upravit.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>Smazat tento projekt? Soubor, který jste z něj uložili, zůstane.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>Otevřít</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>Otevřít %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>Zobrazit ve složce</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>Smazat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>Smazat...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>Smazat %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>Zavřít</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, vytvořeno %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>Otevřeno v náhledu</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>Volně</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>Tažením přesunete nebo nakreslíte znovu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>Tažením vyberte oblast k nahrání</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>Poměr %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>Celá obrazovka</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>Nahrát</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>Nahrát tuto oblast</translation>
     </message>
 </context>
 </TS>

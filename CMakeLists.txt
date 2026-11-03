@@ -358,6 +358,10 @@ add_library(snaptray_core STATIC
     src/recording/TimelineEdit.cpp
     src/recording/KeyTimeline.cpp
     src/recording/KeyOverlay.cpp
+    src/recording/OverlayTrack.cpp
+    src/recording/AudioTracks.cpp
+    src/recording/RecordingProject.cpp
+    src/recording/RecordingArea.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -1028,6 +1032,7 @@ set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_
 set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
 set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOURCE_ALIAS components/Countdown.qml)
+set_source_files_properties(src/qml/components/RecordingAreaSelector.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingAreaSelector.qml)
 set_source_files_properties(src/qml/components/RecordingTooltip.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingTooltip.qml)
 set_source_files_properties(src/qml/components/GlassSurface.qml PROPERTIES QT_RESOURCE_ALIAS components/GlassSurface.qml)
 set_source_files_properties(src/qml/components/ToolbarButton.qml PROPERTIES QT_RESOURCE_ALIAS components/ToolbarButton.qml)
@@ -1086,6 +1091,7 @@ set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOU
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
 set_source_files_properties(src/qml/dialogs/RecordingRecoveryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingRecoveryDialog.qml)
+set_source_files_properties(src/qml/dialogs/RecordingLibraryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingLibraryDialog.qml)
 
 # Recording preview
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
@@ -1135,6 +1141,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/Badge.qml
         src/qml/components/RecordingBoundary.qml
         src/qml/components/Countdown.qml
+        src/qml/components/RecordingAreaSelector.qml
         src/qml/components/RecordingTooltip.qml
         src/qml/components/GlassSurface.qml
         src/qml/components/ToolbarButton.qml
@@ -1180,6 +1187,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/QRCodeResultDialog.qml
         src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/dialogs/RecordingRecoveryDialog.qml
+        src/qml/dialogs/RecordingLibraryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolbarOverflowMenu.qml
         src/qml/toolbar/ToolOptionsStrip.qml
@@ -1229,6 +1237,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/RecordingAppearanceOverlay.h
         src/qml/RecordingKeyOverlay.cpp
         include/qml/RecordingKeyOverlay.h
+        src/qml/RecordingOverlayItem.cpp
+        include/qml/RecordingOverlayItem.h
         src/qml/SvgIconItem.cpp
         include/qml/SvgIconItem.h
         include/qml/RecordingPreviewBackend.h
@@ -1252,6 +1262,12 @@ qt_add_qml_module(snaptray_qml
         include/qml/ScreenPickerViewModel.h
         src/qml/RecordingRecoveryViewModel.cpp
         include/qml/RecordingRecoveryViewModel.h
+        src/qml/RecordingLibraryViewModel.cpp
+        src/qml/QuickSaveAction.cpp
+        include/qml/QuickSaveAction.h
+        src/qml/QmlRecordingAreaSelector.cpp
+        include/qml/QmlRecordingAreaSelector.h
+        include/qml/RecordingLibraryViewModel.h
         src/qml/OCRResultViewModel.cpp
         include/qml/OCRResultViewModel.h
         src/qml/UpdateDialogViewModel.cpp

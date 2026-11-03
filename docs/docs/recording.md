@@ -27,7 +27,34 @@ While recording, the tray menu also offers Pause/Resume Recording and, on macOS 
 1. Choose the screen to record when prompted on multi-display setups.
 2. Recording starts immediately on the selected screen.
 3. Use the floating control bar to monitor duration, pause or resume, and stop recording. While paused, the bar shows "Paused" and the time stops. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
-4. Click Stop to open the preview (or to save directly when preview is off).
+4. Click Stop to open the preview in edit mode, or to save the file right away in quick mode.
+
+## Choosing an area before recording
+
+Turn on **Choose an area before recording** in Settings > Recording (or **Choose an area first** in the recording setup) to pick what to record before it starts. It is off by default: recording starts on the whole screen, as before.
+
+After you choose the screen, it dims: drag to draw the area, drag inside it to move it, and pick a ratio (Free, 16:9, 4:3, 1:1, 9:16) if you need one. The label shows the size in video pixels; an area is at least 64 pixels on each side and stays on one screen. **Record** (or **Enter**, or a double-click) starts, **Full Screen** records the whole screen, and **Cancel** (or **Esc**) does not record.
+
+- **Edit mode** still records the whole screen. The preview opens cropped to the area, so you can move or resize the crop, undo back to it, or reset it to see everything. A recording recovered after a crash opens with the same crop, and the recovery list says that the file holds the whole screen.
+- **Quick mode** records only the area, because there is no preview to crop in afterwards.
+
+While recording, a frame around the area shows what is being recorded, amber while paused. It is left out of the recording on macOS and Windows. On Linux X11 the capture cannot leave it out, so it is shown only in quick mode, just outside the recorded area; in edit mode, where the whole screen is recorded, no frame is shown, so changing the crop later never reveals one. While the area is being chosen, screenshots, Screen Canvas and pins wait until it is done or cancelled.
+
+The temporary recording in edit mode, and a recording waiting for recovery, contain the whole screen, including what is outside the area, until they are saved or discarded.
+
+## Quick mode and edit mode
+
+**After recording** in the recording setup and in Settings > Recording chooses what Stop does. Both places change the same setting.
+
+| | Edit mode (**Edit in the preview**) | Quick mode (**Save right away**) |
+| --- | --- | --- |
+| After Stop | The preview opens: trim, crop, cut, zoom, mask, add effects, then save | The save dialog opens, or the file is saved automatically when auto-save is on |
+| Recorded as | MP4 at high quality, converted to your format and quality when you save | Your output format and quality directly |
+| Audio | Recorded, also for GIF and WebP exports (which stay silent) | MP4 only; GIF and WebP have no sound |
+| Pointer, window and key tracks | Kept with the temporary recording for editing | Not recorded |
+| After saving | The preview closes (or keeps an editable project, if that is on) | Optionally **Copy the file** to paste it into a chat or folder, or **Show in folder** |
+
+Quick mode behaves exactly like the former "Show preview" off. The tray tooltip says which mode the current recording uses. Disk space monitoring, stopping safely when the disk is nearly full, and recovering a recording after a crash work the same in both modes. On a system that records MP4 directly without a preview, recording is always in quick mode.
 
 In the preview, the trash button, **Esc**, and the window's close button ask before deleting the recording. **Esc** or **Enter** on that question keeps the recording; press **Tab** to move to Discard. While you are drawing a crop, **Esc** only cancels the crop.
 
@@ -141,6 +168,16 @@ Masks are burned into the exported MP4, GIF or WebP, and the preview shows them 
 
 **Masks are only in the exported file.** The unmasked recording is a temporary file: it stays available in the preview until you save (also after Cancel or a failed save), and once the masked export is saved, SnapTray deletes it. If you need an unmasked copy too, save once without masks first. SnapTray never uploads recordings. If the selected format cannot draw masks on your system (MP4 on macOS and Windows for now), SnapTray refuses to export and says so, instead of saving a file without the masks. Masks are not tracked automatically: if the content moves, add masks for each time range.
 
+### Text and images
+
+**Add Text** puts a title or caption on the video for three seconds from the playhead; **Add Image** adds a picture file (PNG, SVG, JPEG, WebP), such as a logo, for the whole recording. Overlays appear as bars at the bottom of the timeline; click one to edit it:
+
+- Text: type it in the box (several lines are fine), make it smaller or larger, pick a colour, a dark or light box behind it, and the alignment.
+- Image: smaller or larger, and its opacity.
+- Both: drag it on the video to move it, drag its corner to resize it, show it for the whole recording or type a start and end time, or delete it. Overlays fade in and out.
+
+Overlays sit on the exported picture: they keep their place through a crop and do not zoom with it, and masks never cover them. An image is read once when you add it, so deleting or moving the file afterwards does not affect the export. Overlays can be undone like other edits; **Reset Crop and Trim** keeps them. Like masks, they are drawn for MP4 on Linux and for GIF and WebP everywhere; elsewhere SnapTray refuses to export MP4 without them and says so. The watermark from Settings is still added while recording, as before; overlays do not replace it.
+
 ### A frame around the video
 
 **Frame** in the preview puts the exported video on a background, like Beautify does for screenshots. The first time it starts from your screenshot Beautify look (switched off); after that, your last frame for recordings is remembered. It can be undone like other edits, and **Reset Crop and Trim** keeps it.
@@ -156,6 +193,12 @@ The frame makes the exported file larger than the cropped picture by the padding
 SnapTray keeps a small record next to each recording until it is saved or discarded. If SnapTray stops before that (a crash, power loss, or quitting with an unsaved preview open), the next start shows a notice, and **Recover Recordings** in the tray menu lists what was left. Each entry shows when it was recorded, how much of it can be played, and whether audio that should be there is missing. **Recover** opens it in the preview so you can save it; **Discard** deletes it; **Later** keeps it for next time. Files waiting here are never removed by SnapTray's routine clean-up of old temporary files.
 
 On Linux, recordings are written in fragments, so an interrupted recording can usually be recovered up to its last fragment (about every two seconds of video). This depends on the disk and when the system last wrote to it, so it is not a guarantee. On macOS and Windows an interrupted recording cannot be played yet and is listed only so you can discard it; a recording that finished normally but was never saved can be recovered on every platform.
+
+## Editable projects
+
+Normally the recording is deleted once its file is saved. Turn on **Keep editable projects** in Settings > Recording (off by default) to keep it with your edits instead: crop, trim, cut parts and speeds, pointer, zoom, masks, frame, shortcut hints, text and images, the audio mix, and the export format and MP4 options. **Recording Library** in the tray menu lists the kept projects with a thumbnail, length, size and date. **Open** brings one back into the preview with every edit as you left it; saving again exports a new file and updates the project. Closing a project without saving keeps it as it was last saved. Projects are kept when you save from the preview, so the setting needs **Show preview**. A background image used by the frame is copied into the project. If a project cannot be kept or updated (for example, the disk is full), the saved file stays and the recording stays open in the preview, so nothing is lost; save again to retry. Saving into the Recording Library's own folder is refused.
+
+A project holds the **full screen recording**, including anything you blurred, masked or cropped out, plus its pointer, keys and separate audio tracks, so it uses disk space and contains what the saved file leaves out. It stays on this computer in SnapTray's app data folder and is never uploaded. **Delete...** in the library removes a project (the file you saved from it stays), and **Delete projects not changed for** removes old ones automatically after 7, 30 or 90 days. Projects are separate from recordings waiting for recovery; neither one ever removes the other's files.
 
 ## When recording can't keep up
 
@@ -199,6 +242,17 @@ Audio capture is available for MP4 recordings when supported by the current plat
 - Mixed capture
 
 GIF and WebP exports are silent.
+
+### Microphone and system audio after recording
+
+When a recording that opens in the preview has both the microphone and system audio, SnapTray also keeps each of them on its own next to the temporary recording, on the same timeline as the video. The video still has the usual mixed sound, so nothing changes unless you want it to.
+
+In the preview, **Audio** (MP4) sets each one for the export:
+
+- **Microphone** and **System Audio** volume (−12, −6, 0, +6 dB), and **Mute** for either.
+- **Reduce Noise** turns down hiss, hum and room noise between words on the microphone (a high-pass filter and a soft noise gate). It uses very little processor time.
+
+The preview plays the new mix as you change it. With everything at 0 dB and nothing muted, the recording is saved as recorded. A changed mix re-encodes the sound, and stays in sync with the video, cuts and speed changes included (parts at another speed stay silent). The two tracks are deleted with the temporary recording, and crash recovery keeps them with the recording it recovers. Recordings with only one source, or made before this, have just the mixed sound and no Audio button. Separate tracks are recorded on Linux for now; on macOS and Windows recordings keep the mixed sound only.
 
 ### Check audio before you record
 

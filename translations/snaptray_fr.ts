@@ -823,6 +823,41 @@ Jetons de date : {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} ou {date}</translation
         <source>recording keys</source>
         <translation>touches enregistrées</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>Bibliothèque d'enregistrements...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>Projet indisponible</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>L'enregistrement de ce projet est manquant ou endommagé.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Copied</source>
+        <translation>Enregistrement copié</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>Enregistré dans %1 et copié : collez-le dans une discussion ou un dossier.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>edit mode</source>
+        <translation>mode modification</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>quick mode</source>
+        <translation>mode rapide</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -1966,6 +2001,11 @@ Taille : %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Espace disque insuffisant pour un enregistrement en haute qualité. L'enregistrement se fera à la qualité sélectionnée.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Les enregistrements ne peuvent pas être enregistrés dans le dossier des projets de la bibliothèque d'enregistrements.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3009,6 +3049,241 @@ Taille : %2</translation>
         <source>Shadow</source>
         <translation>Ombre</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A box behind the text, so it reads on any picture</source>
+        <translation>Un cadre derrière le texte, lisible sur n'importe quelle image</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A title or caption at the playhead</source>
+        <translation>Un titre ou une légende à la tête de lecture</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Image</source>
+        <translation>Ajouter une image</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Text</source>
+        <translation>Ajouter du texte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Center</source>
+        <translation>Centrer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Left</source>
+        <translation>Aligner à gauche</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Right</source>
+        <translation>Aligner à droite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>An image such as a logo, for the whole recording</source>
+        <translation>Une image, comme un logo, pour tout l'enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark Background</source>
+        <translation>Fond sombre</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this overlay</source>
+        <translation>Supprimer cette superposition</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Faites glisser la superposition pour la déplacer, ou son coin pour la redimensionner. Terminé finit la modification.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How lines line up</source>
+        <translation>Alignement des lignes</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How see-through the image is</source>
+        <translation>Transparence de l'image</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image overlay</source>
+        <translation>Superposition d'image</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Larger</source>
+        <translation>Plus grand</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light Background</source>
+        <translation>Fond clair</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No Background</source>
+        <translation>Sans fond</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Opacity: %1%</source>
+        <translation>Opacité : %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay end</source>
+        <translation>Fin de la superposition</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay start</source>
+        <translation>Début de la superposition</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay text</source>
+        <translation>Texte de la superposition</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlays need GIF or WebP on this system</source>
+        <translation>Les superpositions nécessitent GIF ou WebP sur ce système</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected overlay</source>
+        <translation>Superposition sélectionnée</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show it for the whole recording, or only for a time range</source>
+        <translation>L'afficher pendant tout l'enregistrement, ou seulement sur une plage</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller</source>
+        <translation>Plus petit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text</source>
+        <translation>Texte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text colour %1</source>
+        <translation>Couleur du texte %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text overlay "%1"</source>
+        <translation>Superposition de texte « %1 »</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>from %1 to %2</source>
+        <translation>de %1 à %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Audio</source>
+        <translation>Audio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the microphone out of the export</source>
+        <translation>Retirer le micro de l'export</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Leave the system audio out of the export</source>
+        <translation>Retirer le son du système de l'export</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone and system audio volume, mute, and noise reduction</source>
+        <translation>Volume du micro et du son du système, coupure et réduction du bruit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone volume in the export</source>
+        <translation>Volume du micro dans l'export</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Microphone: %1</source>
+        <translation>Micro : %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mixing the two tracks is not supported for MP4 on this system yet</source>
+        <translation>Le mixage des deux pistes n'est pas encore pris en charge pour le MP4 sur ce système</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mute Microphone</source>
+        <translation>Couper le micro</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mute System Audio</source>
+        <translation>Couper le son du système</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Reduce Noise</source>
+        <translation>Réduire le bruit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>System Audio: %1</source>
+        <translation>Son du système : %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>System audio volume in the export</source>
+        <translation>Volume du son du système dans l'export</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Turn down hiss, hum and room noise between words on the microphone</source>
+        <translation>Atténuer le souffle, le ronflement et le bruit de la pièce entre les mots au micro</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Fermer sans enregistrer (Échap)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>Fermer sans enregistrer vos modifications ?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Le projet reste dans la bibliothèque d'enregistrements tel qu'il a été enregistré la dernière fois.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>Continuer la modification</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>Fermer</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3155,6 +3430,41 @@ Taille : %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>Toutes les parties sont coupées : il n'y a rien à exporter.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
+        <translation>Images (*.png *.svg *.jpg *.jpeg *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Image</source>
+        <translation>Choisir une image</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Title</source>
+        <translation>Titre</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Les superpositions de texte et d'image ne peuvent pas encore être dessinées dans un MP4 sur ce système. Exportez en GIF ou WebP, ou retirez-les pour exporter en MP4. Rien n'a été exporté.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>L'enregistrement du projet n'a pas pu être copié pour l'enregistrement. Rien n'a été enregistré.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Enregistré dans %1, mais le projet n'a pas pu être mis à jour. Enregistrez de nouveau pour conserver ces modifications dans le projet.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Enregistré dans %1, mais l'enregistrement n'a pas pu être conservé comme projet modifiable. Il est toujours ouvert ici : enregistrez de nouveau ou fermez-le pour l'abandonner.</translation>
     </message>
 </context>
 <context>
@@ -3457,6 +3767,101 @@ L'audio n'est pas pris en charge pour les enregistrements GIF.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>Raccourcis seulement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>Jamais</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 jours</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 jours</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 jours</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>Conserver les projets modifiables</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Après l'enregistrement, conserver la vidéo et vos modifications pour la modifier et l'exporter de nouveau depuis la bibliothèque d'enregistrements. Les projets conservent l'enregistrement complet de l'écran, son pointeur, ses touches et ses pistes audio, y compris ce que vous avez flouté ou recadré, et occupent de l'espace disque.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>Supprimer les projets non modifiés depuis</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After recording</source>
+        <translation>Après l'enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Modifier dans l'aperçu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Enregistrer tout de suite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Mode rapide : le fichier est enregistré dans son format final dès l'arrêt, sans aperçu ni pistes de modification.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving</source>
+        <translation>Après l'enregistrement du fichier</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Ne rien faire</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Copier le fichier</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Afficher dans le dossier</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>Mode modification : coupez, recadrez et ajoutez des effets dans l'aperçu, puis enregistrez. Les enregistrements avec aperçu sont toujours capturés d'abord en MP4.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>Choisir une zone avant l'enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Faites glisser sur l'écran pour choisir ce qui sera enregistré. Le mode modification enregistre toujours l'écran entier et ouvre l'aperçu recadré sur la zone, que vous pouvez modifier ; le mode rapide n'enregistre que la zone.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Les projets sont conservés quand vous enregistrez depuis l'aperçu. Activez Afficher l'aperçu pour les utiliser.</translation>
     </message>
 </context>
 <context>
@@ -4823,6 +5228,71 @@ Taille du fichier : %3</translation>
         <source>Record shortcut keys</source>
         <translation>Enregistrer les raccourcis clavier</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After recording</source>
+        <translation>Après l'enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Modifier dans l'aperçu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Enregistrer tout de suite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Mode rapide : le fichier est enregistré dans son format final dès l'arrêt, sans aperçu ni pistes de modification.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After saving</source>
+        <translation>Après l'enregistrement du fichier</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Ne rien faire</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Copier le fichier</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Afficher dans le dossier</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>Mode modification : coupez, recadrez et ajoutez des effets dans l'aperçu, puis enregistrez. Les pistes du pointeur, des fenêtres et des touches sont conservées pour la modification.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>Mode modification uniquement : le mode rapide ne conserve aucune piste de modification.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>Choisir d'abord une zone</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>L'écran entier est toujours enregistré ; l'aperçu s'ouvre recadré sur la zone.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>Seule la zone est enregistrée.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -4855,6 +5325,11 @@ Taille du fichier : %3</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>Irrécupérable : l’enregistrement a été interrompu avant qu’une partie lisible soit sauvegardée.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>l'écran entier a été enregistré ; il s'ouvre recadré sur la zone choisie</translation>
     </message>
 </context>
 <context>
@@ -4926,6 +5401,140 @@ Taille du fichier : %3</translation>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Enregistrement arrêté. %1 Tout ce qui a été enregistré jusqu’ici est conservé.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>Bibliothèque d'enregistrements</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>Projets modifiables : %1 sur cet ordinateur</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>Aucun projet modifiable</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>La conservation des nouveaux projets est désactivée. Les projets conservent l'enregistrement complet, y compris ce que vous avez flouté ou recadré.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Les projets conservent l'enregistrement complet, y compris ce que vous avez flouté ou recadré.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Activez Conserver les projets modifiables dans Réglages &gt; Enregistrement pour modifier de nouveau les enregistrements après les avoir enregistrés.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>Supprimer ce projet ? Le fichier que vous en avez enregistré est conservé.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>Ouvrir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>Ouvrir %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>Afficher dans le dossier</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>Supprimer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>Supprimer...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>Supprimer %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>Fermer</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, créé le %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>Ouvert dans l'aperçu</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>Libre</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>Faites glisser pour déplacer ou redessiner</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>Faites glisser pour choisir la zone à enregistrer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>Format %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>Plein écran</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>Enregistrer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>Enregistrer cette zone</translation>
     </message>
 </context>
 </TS>

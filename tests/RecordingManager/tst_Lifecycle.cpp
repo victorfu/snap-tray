@@ -2,6 +2,9 @@
 #include <QSignalSpy>
 
 #include "RecordingManager.h"
+#include "capture/IAudioCaptureEngine.h"
+#include "recording/AudioTracks.h"
+#include <QtEndian>
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
 #include <QFile>
@@ -56,6 +59,7 @@ private slots:
     void testCursorTimelineFollowsTheRecording();
     void testCursorPauseIsStampedAtTheBoundary();
     void testKeyTimelineOnlyWhenSwitchedOn();
+    void testSeparateTracksOnlyWithBothSources();
     void testCursorTimelineOutcome_data();
     void testCursorTimelineOutcome();
     void intermediateQualityFollowsFreeSpace_data();
@@ -511,6 +515,97 @@ void TestRecordingManagerLifecycle::testKeyTimelineOnlyWhenSwitchedOn()
     // Cancelling deletes the recording, and the key sidecar with it.
     m_manager->cancelRecording();
     QVERIFY(!QFile::exists(SnapTray::KeyTimelineSidecar::pathFor(video)));
+    m_manager->m_session = {};
+}
+
+namespace {
+class TrackAudioEngine final : public IAudioCaptureEngine
+{
+public:
+    bool setAudioSource(AudioSource source) override { m_source = source; return true; }
+    AudioSource audioSource() const override { return m_source; }
+    bool setDevice(const QString&) override { return true; }
+    AudioFormat audioFormat() const override { return {}; }
+    QList<AudioDevice> availableInputDevices() const override { return {}; }
+    QString defaultInputDevice() const override { return {}; }
+    bool start() override { return true; }
+    void stop() override {}
+    void pause() override {}
+    void resume() override {}
+    bool isRunning() const override { return true; }
+    bool isPaused() const override { return false; }
+    QString engineName() const override { return "test"; }
+    bool isAvailable() const override { return true; }
+    bool isSystemAudioSupported() const override { return true; }
+    bool supportsSeparateTracks() const override { return true; }
+    bool separateTracks() const { return m_separateTracks; }
+    void send(qint16 mic, qint16 system, qint64 frame)
+    {
+        QByteArray a(4, '\0'), b(4, '\0');
+        qToLittleEndian<qint16>(mic, a.data());
+        qToLittleEndian<qint16>(system, b.data());
+        emit sourceAudioReady(a, b, frame);
+    }
+};
+} // namespace
+
+// #189: two tracks are written only for a previewed recording with both
+// sources, on the mixed track's frames, and go with the recording.
+void TestRecordingManagerLifecycle::testSeparateTracksOnlyWithBothSources()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_a.mp4"));
+    m_manager->m_session.videoPath = video;
+    m_manager->m_startSettings.showPreview = true;
+    auto* engine = new TrackAudioEngine;
+    m_manager->m_audioEngine = AudioEnginePtr(engine);
+
+    engine->setAudioSource(IAudioCaptureEngine::AudioSource::Microphone);
+    m_manager->startAudioTracks();
+    QVERIFY(!engine->separateTracks());
+    QVERIFY(!QFile::exists(SnapTray::AudioTracks::pathFor(video, SnapTray::AudioTracks::Track::Microphone)));
+
+    engine->setAudioSource(IAudioCaptureEngine::AudioSource::Both);
+    m_manager->m_startSettings.showPreview = false; // no preview: nobody would mix them
+    m_manager->startAudioTracks();
+    QVERIFY(!engine->separateTracks());
+
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->startAudioTracks();
+    QVERIFY(engine->separateTracks());
+    QVERIFY(SnapTray::AudioTracks::exist(video));
+    // The recording starts its pointer timeline right after the audio
+    // (startRecordingAfterCountdown): that must not close the tracks
+    // (PR #202 review).
+    m_manager->startCursorTimeline();
+    m_manager->dropCursorTimeline(true);
+    engine->send(1000, -2000, 0);
+    engine->send(3000, 4000, 10);
+    m_manager->closeAudioTracks();
+    SnapTray::AudioTrackReader mic;
+    QVERIFY(mic.open(SnapTray::AudioTracks::pathFor(video, SnapTray::AudioTracks::Track::Microphone)));
+    QCOMPARE(mic.frames(), 11);
+    const QByteArray at10 = mic.read(10, 1);
+    QCOMPARE(qFromLittleEndian<qint16>(at10.constData()), qint16(3000));
+
+    // Dropped with the recording.
+    m_manager->m_cursorSidecarVideo = video;
+    m_manager->dropRecordingSidecars(true);
+    QVERIFY(!SnapTray::AudioTracks::exist(video));
+
+    // A finished recording keeps its tracks for the preview...
+    m_manager->startAudioTracks();
+    engine->send(1000, -2000, 0);
+    m_manager->dropRecordingSidecars(false);
+    QVERIFY(SnapTray::AudioTracks::exist(video));
+    // ...unless one stopped writing during the recording (PR #202 review):
+    // then it keeps no tracks, only its own complete mixed audio.
+    m_manager->startAudioTracks();
+    engine->send(1000, -2000, 0);
+    m_manager->m_systemAudioTrack->failForTests();
+    m_manager->dropRecordingSidecars(false);
+    QVERIFY(!SnapTray::AudioTracks::exist(video));
+    m_manager->m_audioEngine.reset();
     m_manager->m_session = {};
 }
 

@@ -199,6 +199,14 @@ signals:
     void audioDataReady(const QByteArray &data, qint64 startFrame);
 
     /**
+     * @brief Each source on its own (#189), when separate tracks were asked
+     *        for and the engine supports them: the same frames as the
+     *        audioDataReady() chunk at startFrame, silence where a source has
+     *        nothing. Emitted on the capture thread, right after it.
+     */
+    void sourceAudioReady(const QByteArray &microphone, const QByteArray &systemAudio, qint64 startFrame);
+
+    /**
      * @brief Emitted when an error occurs
      * @param message Error description
      */
@@ -232,7 +240,14 @@ signals:
      */
     void levelChanged(float level);
 
+public:
+    // Separate tracks (#189): set before start(); only engines that return
+    // true from supportsSeparateTracks() emit sourceAudioReady().
+    virtual bool supportsSeparateTracks() const { return false; }
+    void setSeparateTracks(bool enabled) { m_separateTracks = enabled; }
+
 protected:
+    bool m_separateTracks = false;
     AudioSource m_source = AudioSource::None;
     AudioFormat m_format;
     QString m_deviceId;
