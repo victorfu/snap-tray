@@ -2,6 +2,8 @@
 
 #include "recording/PreviewEditHistory.h"
 #include "recording/CursorEffects.h"
+#include "recording/Mp4ExportOptions.h"
+#include "video/IVideoTranscoder.h"
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
 #include "recording/WindowTimeline.h"
@@ -123,6 +125,22 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool masksAvailable READ masksAvailable NOTIFY masksChanged)
     Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
     Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
+
+    // MP4 export options (#190): enum values in Mp4ExportOptions order.
+    Q_PROPERTY(int mp4Resolution READ mp4Resolution WRITE setMp4Resolution NOTIFY mp4OptionsChanged)
+    Q_PROPERTY(int mp4CustomWidth READ mp4CustomWidth WRITE setMp4CustomWidth NOTIFY mp4OptionsChanged)
+    Q_PROPERTY(int mp4FrameRate READ mp4FrameRate WRITE setMp4FrameRate NOTIFY mp4OptionsChanged)
+    Q_PROPERTY(int mp4Quality READ mp4Quality WRITE setMp4Quality NOTIFY mp4OptionsChanged)
+    Q_PROPERTY(int mp4Codec READ mp4Codec WRITE setMp4Codec NOTIFY mp4OptionsChanged)
+    // What this system's MP4 export can change: size and frame rate, HEVC.
+    Q_PROPERTY(bool mp4OutputOptionsAvailable READ mp4OutputOptionsAvailable NOTIFY mp4OptionsChanged)
+    Q_PROPERTY(bool mp4HevcAvailable READ mp4HevcAvailable NOTIFY mp4OptionsChanged)
+    Q_PROPERTY(bool mp4OptionsActive READ mp4OptionsActive NOTIFY mp4EstimateChanged)
+    Q_PROPERTY(QSize mp4OutputSize READ mp4OutputSize NOTIFY mp4EstimateChanged)
+    Q_PROPERTY(int mp4OutputFrameRate READ mp4OutputFrameRate NOTIFY mp4EstimateChanged)
+    Q_PROPERTY(int mp4SourceFrameRate READ mp4SourceFrameRate NOTIFY mp4EstimateChanged)
+    Q_PROPERTY(qint64 mp4EstimatedBytes READ mp4EstimatedBytes NOTIFY mp4EstimateChanged)
+    Q_PROPERTY(QString mp4EstimateText READ mp4EstimateText NOTIFY mp4EstimateChanged)
 
     // True while the "discard this recording?" confirmation is shown.
     Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending NOTIFY discardConfirmationChanged)
@@ -324,6 +342,33 @@ public:
     // endMs -1 = to the end; false (nothing changes) when invalid.
     Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
 
+    // MP4 export options (#190). Saved as the last choice; not edits, so
+    // undo does not cover them (like the format).
+    int mp4Resolution() const { return int(m_mp4Options.resolution); }
+    void setMp4Resolution(int value);
+    int mp4CustomWidth() const { return m_mp4Options.customWidth; }
+    void setMp4CustomWidth(int value);
+    int mp4FrameRate() const { return m_mp4Options.frameRate; }
+    void setMp4FrameRate(int value);
+    int mp4Quality() const { return int(m_mp4Options.quality); }
+    void setMp4Quality(int value);
+    int mp4Codec() const { return int(m_mp4Options.codec); }
+    void setMp4Codec(int value);
+    bool mp4OutputOptionsAvailable() const;
+    bool mp4HevcAvailable() const;
+    // The options as this system applies them (unsupported ones fall back).
+    SnapTray::Mp4ExportOptions effectiveMp4Options() const;
+    // True when the options change the MP4 stream (size, frame rate, codec):
+    // that is an export, not a move of the unedited recording.
+    bool mp4OptionsActive() const;
+    QSize mp4OutputSize() const;
+    int mp4OutputFrameRate() const;
+    int mp4SourceFrameRate() const;
+    qint64 mp4EstimatedBytes() const;
+    QString mp4EstimateText() const;
+    // True once the source has been probed (starts the probe if needed).
+    bool sourceProbeReady() const;
+
     // Anything drawn into the export: masks, pointer effects or zoom.
     bool effectsActive() const;
     SnapTray::CursorEffectSettings cursorEffects() const { return m_cursorEffects; }
@@ -339,6 +384,8 @@ signals:
     void windowTimelineChanged();
     void cursorEffectsChanged();
     void selectedPointerHideChanged();
+    void mp4OptionsChanged();
+    void mp4EstimateChanged();
     void zoomChanged();
     void selectedZoomChanged();
     // External interface consumed by MainApplication. `outputSize` is the
@@ -420,7 +467,26 @@ private:
     std::shared_ptr<const SnapTray::CursorTimeline> m_cursorTimeline;
     SnapTray::CursorEffectSettings m_cursorEffects;
     int m_selectedPointerHide = -1;
-    mutable std::optional<bool> m_mp4FrameFilterSupported;
+    // What the platform's MP4 transcoder can do, asked once.
+    struct Mp4Capabilities {
+        bool frameFilter = false;
+        bool outputOptions = false;
+        bool hevc = false;
+    };
+    mutable std::optional<Mp4Capabilities> m_mp4Capabilities;
+    const Mp4Capabilities& mp4Capabilities() const;
+    // The source file's probe, read once (for the frame rate and estimate).
+    // Probed once, off the GUI thread (a probe can read the whole file):
+    // empty until it is ready, then mp4EstimateChanged() (PR #197 review).
+    mutable std::optional<VideoFileProbe> m_sourceProbe;
+    mutable bool m_sourceProbePending = false;
+    // Save left the room check for MP4 options to the export job.
+    bool m_exportSpaceCheckDeferred = false;
+    const VideoFileProbe& sourceProbe() const;
+    SnapTray::Mp4ExportOptions m_mp4Options;
+    void editMp4Options(const std::function<void(SnapTray::Mp4ExportOptions&)>& change);
+    // The picture the MP4 starts from: the crop, or the whole video.
+    QSize mp4BaseSize() const;
     void setCursorEffects(const SnapTray::CursorEffectSettings& settings);
     // Draws the current zoom and pointer effects on an output frame
     // (already cropped); a snapshot of the settings.

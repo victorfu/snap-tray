@@ -146,6 +146,17 @@ The recording is only removed once the file is saved. If you cancel the save dia
 | GIF | Short looping demos |
 | WebP | Lightweight animated snippets |
 
+### MP4 export options
+
+With MP4 selected, **MP4 Options** in the preview sets the exported file, with its size, frame rate and an estimated file size next to the choices:
+
+- **Size**: Original, 1080p, 720p or a custom width. The aspect ratio is kept, and the video is never made larger than it was recorded (or cropped).
+- **Frame rate**: Original, 60, 30 or 15 fps, never above the recording's own rate.
+- **Quality**: Default (the quality from Settings > Recording), Low, Medium or High.
+- **Codec**: H.264, which plays everywhere, or HEVC, which makes smaller files at the same quality but does not open in some older players. HEVC is offered only when the system can encode it.
+
+The estimate is the target bitrate over the exported length, so the real file is usually a little smaller. Your last choices are remembered. Choices that change nothing for a recording (for example 1080p for a 720p recording) keep an unedited recording on the fast path, saved without re-encoding. Pointer effects, zooms and masks are drawn on the full-size picture before it is scaled, so they stay in place in a smaller video. On macOS and Windows only Quality applies for now; Size, Frame rate and HEVC are shown but disabled.
+
 ## Audio options
 
 Audio capture is available for MP4 recordings when supported by the current platform and source:

@@ -26,6 +26,11 @@ public:
     void setFaultForTesting(VideoTranscodeFault value) override { fault = value; }
     VideoFileProbe probe(const QString& path) override { return probeFile(path); }
     bool supportsFrameFilter() const override { return true; }
+    bool supportsOutputOptions() const override { return true; }
+    bool supportsVideoCodec(const QString& codec) const override {
+        return IVideoTranscoder::supportsVideoCodec(codec)
+            || (codec == QLatin1String(kVideoCodecHevc) && FFmpegEncoder::isHevcAvailable());
+    }
     VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback& progress) override {
         VideoTranscodeResult result;
         auto fail = [&](const QString& message) { result.audioCopied = false; result.errorMessage = message; qWarning() << "FFmpeg export:" << message; return result; };
@@ -38,20 +43,40 @@ public:
         crop.setWidth(crop.width() & ~1); crop.setHeight(crop.height() & ~1);
         if (crop.width() < 2 || crop.height() < 2)
             return fail(QStringLiteral("Crop rectangle is outside the video."));
-        const int fps = qBound(1, qRound(source.frameRate), 240);
+        const int sourceFps = qBound(1, qRound(source.frameRate), 240);
+        const int fps = request.frameRate > 0 ? qMin(request.frameRate, sourceFps) : sourceFps;
+        const bool hevc = request.videoCodec == QLatin1String(kVideoCodecHevc);
+        if (!supportsVideoCodec(request.videoCodec))
+            return fail(QStringLiteral("Unsupported video codec: %1").arg(request.videoCodec));
+        // Never larger than the crop, even sides.
+        QSize outputSize = request.outputSize.isEmpty() ? crop.size() : request.outputSize.boundedTo(crop.size());
+        outputSize = QSize(qMax(2, outputSize.width() & ~1), qMax(2, outputSize.height() & ~1));
+        // Frames closer together than this are dropped at a lower output rate.
+        const qint64 outputInterval = qMax<qint64>(1, qRound(1000.0 / fps));
+        const bool dropFrames = fps < sourceFps;
+        const auto toOutputSize = [&outputSize](QImage& image) {
+            if (image.size() != outputSize)
+                image = image.scaled(outputSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        };
         QTemporaryDir temporary(QFileInfo(request.outputPath).absolutePath() + QStringLiteral("/.snaptray-export-XXXXXX"));
         if (!temporary.isValid()) return fail(QStringLiteral("Cannot create export staging directory."));
         const QString video = temporary.filePath("video.mp4");
         FFmpegEncoder encoder;
         encoder.setBitrate(request.videoBitrate > 0 ? request.videoBitrate
-            : SnapTray::VideoBitrate::forQuality(crop.size(), source.frameRate, kDefaultTranscodeQuality));
-        if (!encoder.start(video, crop.size(), fps)) return fail(encoder.lastError());
+            : SnapTray::VideoBitrate::forQuality(outputSize, fps, kDefaultTranscodeQuality));
+        encoder.setHevc(hevc);
+        if (!encoder.start(video, outputSize, fps)) return fail(encoder.lastError());
         FrameReader reader;
         if (!reader.load(request.inputPath)) return fail(reader.lastError());
         // Preserve actual source presentation times. Sampling a new fixed grid
         // after an unaligned trim would shift video relative to copied audio.
         qint64 sourceTime = start;
         qint64 writtenTime = -1;
+        // The output clock: the next frame is due one exact interval after
+        // the previous one was due (not after the frame kept), so a ratio
+        // like 24 -> 15 keeps 5 of every 8 frames instead of every other one.
+        const double exactInterval = 1000.0 / fps;
+        double nextDue = 0.0;
         QImage lastImage;
         QImage lastSource;
         while (sourceTime < end) {
@@ -59,28 +84,45 @@ public:
             if (progress && !progress(int(time*85/(end-start)))) return fail(QStringLiteral("Export cancelled."));
             const QImage image = reader.frameAt(sourceTime);
             if (image.isNull()) return fail(reader.lastError());
-            lastImage = crop == bounds ? image : image.copy(crop);
-            if (request.frameFilter) {
-                // Painting detaches from the decoder's buffer; keep the clean frame.
-                lastSource = lastImage;
-                lastImage = lastSource.copy();
-                request.frameFilter(lastImage, sourceTime);
-            }
-            encoder.writeFrame(lastImage, time); writtenTime = time;
-            if (!encoder.isRunning()) return fail(encoder.lastError());
             const qint64 next = reader.nextTimestampMs();
             if (next >= 0 && next <= sourceTime) return fail(QStringLiteral("Invalid source frame timing."));
-            if (request.frameFilter) {
+            // A lower output rate keeps a frame once a whole output interval
+            // has passed since the last one written, and always the last
+            // frame before a pause in the source, so the newest picture is
+            // what a still stretch (and its effects) shows.
+            const bool beforePause = next < 0 || next - sourceTime >= outputInterval;
+            // A millisecond of slack absorbs rounded source timestamps.
+            const bool keep = !dropFrames || writtenTime < 0 || beforePause || time + 1 >= nextDue;
+            if (keep && dropFrames) {
+                // On schedule: the next one is due an exact interval later. Kept
+                // off schedule (the last before a pause) or fallen behind: the
+                // clock restarts from this frame.
+                const bool onSchedule = time + 1 >= nextDue && time - nextDue <= exactInterval;
+                nextDue = onSchedule ? nextDue + exactInterval : time + exactInterval;
+            }
+            if (keep) {
+                lastImage = crop == bounds ? image : image.copy(crop);
+                lastSource = lastImage;
+                if (request.frameFilter) {
+                    // Painting detaches from the decoder's buffer; keep the clean frame.
+                    lastImage = lastSource.copy();
+                    request.frameFilter(lastImage, sourceTime);
+                }
+                toOutputSize(lastImage);
+                encoder.writeFrame(lastImage, time); writtenTime = time;
+                if (!encoder.isRunning()) return fail(encoder.lastError());
+            }
+            if (request.frameFilter && keep) {
                 // Effects move on over a still picture (a pointer over a
                 // static screen, a ripple): fill source gaps at the frame rate.
-                const qint64 interval = qMax<qint64>(1, qRound(1000.0 / fps));
                 const qint64 gapEnd = next < 0 ? end : qMin(next, end);
-                for (qint64 t = sourceTime + interval; gapEnd - t >= interval / 2; t += interval) {
+                for (qint64 t = sourceTime + outputInterval; gapEnd - t >= outputInterval / 2; t += outputInterval) {
                     // A long gap is many frames: keep reporting, and stop on Cancel.
                     if (progress && !progress(int((t - start) * 85 / (end - start))))
                         return fail(QStringLiteral("Export cancelled."));
                     lastImage = lastSource.copy();
                     request.frameFilter(lastImage, t);
+                    toOutputSize(lastImage);
                     encoder.writeFrame(lastImage, t - start); writtenTime = t - start;
                     if (!encoder.isRunning()) return fail(encoder.lastError());
                 }
@@ -95,6 +137,7 @@ public:
             if (request.frameFilter && !lastSource.isNull()) {
                 lastImage = lastSource.copy();
                 request.frameFilter(lastImage, start + finalTime);
+                toOutputSize(lastImage);
             }
             encoder.writeFrame(lastImage, finalTime);
         }
@@ -195,7 +238,7 @@ public:
         if (code >= 0) code = avio_closep(&out->pb);
         if (code < 0) return fail(errorString(code));
         const auto verified = probe(muxed);
-        if (!verified.valid || verified.videoSize != crop.size()
+        if (!verified.valid || verified.videoSize != outputSize
             || qAbs(verified.durationMs - (end-start)) > qMax(100, 2000/fps)
             || (source.hasAudio && qMin(end,source.audioEndMs)-qMax(start,source.audioStartMs) > kAudioCoverageToleranceMs && !verified.hasAudio))
             return fail(QStringLiteral("Export validation failed."));

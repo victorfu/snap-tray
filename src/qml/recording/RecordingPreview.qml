@@ -51,6 +51,23 @@ Item {
                                               qsTr("Motion Blur: Medium"), qsTr("Motion Blur: High")]
     // The pointer options panel replaces the format row while open.
     property bool pointerOptionsOpen: false
+    // MP4 export options (#190), in Mp4ExportOptions order.
+    property bool mp4OptionsOpen: false
+    readonly property var mp4ResolutionLabels: [qsTr("Size: Original"), qsTr("Size: 1080p"), qsTr("Size: 720p"),
+                                                qsTr("Size: Custom Width")]
+    readonly property var mp4FrameRateChoices: [0, 60, 30, 15]
+    readonly property var mp4QualityLabels: [qsTr("Quality: Default"), qsTr("Quality: Low"),
+                                             qsTr("Quality: Medium"), qsTr("Quality: High")]
+    // The next frame rate choice that changes something for this source.
+    function nextMp4FrameRate(current) {
+        const choices = root.mp4FrameRateChoices
+        for (let step = 1; step <= choices.length; ++step) {
+            const next = choices[(choices.indexOf(current) + step) % choices.length]
+            if (next === 0 || next < backend.mp4SourceFrameRate)
+                return next
+        }
+        return 0
+    }
     readonly property var selectedPointerHideData: backend.selectedPointerHide >= 0
         ? backend.pointerHiddenRanges[backend.selectedPointerHide] : null
     function nextChoice(choices, current) {
@@ -157,6 +174,10 @@ Item {
         if (maskPanel.visible && !maskPanel.wholeRecording && !root.commitPendingRange(maskStartField, maskEndField,
                 (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
             return
+        if (mp4Panel.visible && mp4WidthField.visible && !mp4WidthField.commitText()) {
+            mp4WidthField.forceActiveFocus()
+            return
+        }
         if (pointerHidePanel.visible && !root.commitPendingRange(pointerHideStartField, pointerHideEndField,
                 (start, end) => backend.setPointerHideRange(backend.selectedPointerHide, start, end)))
             return
@@ -1086,6 +1107,7 @@ Item {
                                              zoomPanel.visible ? zoomPanel.height : 0,
                                              maskPanel.visible ? maskPanel.height : 0,
                                              pointerPanel.visible ? pointerPanel.height : 0,
+                                             mp4Panel.visible ? mp4Panel.height : 0,
                                              pointerHidePanel.visible ? pointerHidePanel.height : 0,
                                              cropPanel.visible ? cropPanel.height : 0,
                                              ComponentTokens.recordingPreviewControlButtonHeight)
@@ -1098,7 +1120,7 @@ Item {
                 spacing: SemanticTokens.spacing8
                 readonly property bool shown: !cropOverlay.editing && !(backend.selectedZoom >= 0)
                                               && !(backend.selectedMask >= 0) && !pointerPanel.visible
-                                              && !pointerHidePanel.visible
+                                              && !pointerHidePanel.visible && !mp4Panel.visible
                 opacity: shown ? 1 : 0
                 enabled: shown
                 Accessible.ignored: !shown
@@ -1120,6 +1142,19 @@ Item {
                     tooltipText: qsTr("Export as WebP")
                     selected: backend.selectedFormat === 2
                     onClicked: backend.selectedFormat = 2
+                }
+
+                SegmentButton {
+                    objectName: "previewMp4Options"
+                    visible: backend.selectedFormat === 0
+                    minimumButtonWidth: 0
+                    text: qsTr("MP4 Options")
+                    tooltipText: qsTr("Size, frame rate, quality and codec of the MP4, with an estimated file size")
+                    selected: backend.mp4OptionsActive || backend.mp4Quality > 0
+                    onClicked: {
+                        root.pointerOptionsOpen = false
+                        root.mp4OptionsOpen = true
+                    }
                 }
 
                 // Pointer effects, only for recordings with pointer data.
@@ -1176,6 +1211,7 @@ Item {
                     onClicked: {
                         backend.selectedZoom = -1
                         backend.selectedMask = -1
+                        root.mp4OptionsOpen = false
                         root.pointerOptionsOpen = true
                     }
                 }
@@ -1381,6 +1417,101 @@ Item {
                     text: qsTr("Done")
                     tooltipText: qsTr("Back to the export options")
                     onClicked: root.pointerOptionsOpen = false
+                }
+            }
+
+            // MP4 export options (#190), in place of the format buttons.
+            Flow {
+                id: mp4Panel
+                objectName: "previewMp4Panel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: root.mp4OptionsOpen && backend.selectedFormat === 0 && !cropOverlay.editing
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0)
+                         && !(backend.selectedZoom >= 0)
+                readonly property string sizeOrFpsUnavailable:
+                    qsTr("Changing the MP4 size and frame rate is not supported on this system yet")
+
+                SegmentButton {
+                    objectName: "previewMp4Resolution"
+                    enabled: backend.mp4OutputOptionsAvailable
+                    minimumButtonWidth: 0
+                    text: root.mp4ResolutionLabels[backend.mp4Resolution]
+                    tooltipText: backend.mp4OutputOptionsAvailable
+                        ? qsTr("Make the video smaller; it is never made larger than recorded")
+                        : mp4Panel.sizeOrFpsUnavailable
+                    selected: backend.mp4Resolution > 0
+                    onClicked: backend.mp4Resolution = (backend.mp4Resolution + 1) % root.mp4ResolutionLabels.length
+                }
+                NumberField {
+                    id: mp4WidthField
+                    objectName: "previewMp4Width"
+                    visible: backend.mp4OutputOptionsAvailable && backend.mp4Resolution === 3
+                    accessibleName: qsTr("Video width in pixels")
+                    value: backend.mp4CustomWidth
+                    onCommitted: function(v) { backend.mp4CustomWidth = v }
+                }
+                SegmentButton {
+                    objectName: "previewMp4FrameRate"
+                    enabled: backend.mp4OutputOptionsAvailable
+                    minimumButtonWidth: 0
+                    text: backend.mp4FrameRate > 0 ? qsTr("%1 fps").arg(backend.mp4FrameRate) : qsTr("FPS: Original")
+                    tooltipText: backend.mp4OutputOptionsAvailable
+                        ? qsTr("A lower frame rate makes a smaller file; it is never higher than recorded")
+                        : mp4Panel.sizeOrFpsUnavailable
+                    selected: backend.mp4FrameRate > 0
+                    onClicked: backend.mp4FrameRate = root.nextMp4FrameRate(backend.mp4FrameRate)
+                }
+                SegmentButton {
+                    objectName: "previewMp4Quality"
+                    minimumButtonWidth: 0
+                    text: root.mp4QualityLabels[backend.mp4Quality]
+                    tooltipText: qsTr("Default uses the quality from the Recording settings")
+                    selected: backend.mp4Quality > 0
+                    onClicked: backend.mp4Quality = (backend.mp4Quality + 1) % root.mp4QualityLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewMp4H264"
+                    minimumButtonWidth: 0
+                    text: "H.264"
+                    tooltipText: qsTr("Plays everywhere")
+                    selected: backend.mp4Codec === 0 || !backend.mp4HevcAvailable
+                    onClicked: backend.mp4Codec = 0
+                }
+                SegmentButton {
+                    objectName: "previewMp4Hevc"
+                    enabled: backend.mp4HevcAvailable
+                    minimumButtonWidth: 0
+                    text: "HEVC"
+                    tooltipText: backend.mp4HevcAvailable
+                        ? qsTr("Smaller files at the same quality; some older players cannot open them")
+                        : qsTr("HEVC export is not available on this system")
+                    selected: backend.mp4Codec === 1 && backend.mp4HevcAvailable
+                    onClicked: backend.mp4Codec = 1
+                }
+                Text {
+                    objectName: "previewMp4Estimate"
+                    height: ComponentTokens.recordingPreviewControlButtonHeight
+                    verticalAlignment: Text.AlignVCenter
+                    visible: backend.mp4EstimateText.length > 0
+                    text: qsTr("%1 × %2, %3 fps · %4 (estimate)")
+                        .arg(backend.mp4OutputSize.width).arg(backend.mp4OutputSize.height)
+                        .arg(backend.mp4OutputFrameRate).arg(backend.mp4EstimateText)
+                    color: root.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeSmall
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: text
+                }
+                SegmentButton {
+                    objectName: "previewMp4OptionsDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Back to the export options")
+                    onClicked: {
+                        if (!mp4WidthField.visible || mp4WidthField.commitText())
+                            root.mp4OptionsOpen = false
+                    }
                 }
             }
 

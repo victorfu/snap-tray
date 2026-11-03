@@ -44,6 +44,11 @@ public:
     QJsonObject pointerEffects() const;
     void setPointerEffects(const QJsonObject& value);
 
+    // Last MP4 export options chosen in the preview (Mp4ExportOptions JSON, #190);
+    // empty = defaults (export as recorded).
+    QJsonObject mp4ExportOptions() const;
+    void setMp4ExportOptions(const QJsonObject& value);
+
     // Hand captured surfaces straight to the hardware video encoder when they
     // fit (macOS ScreenCaptureKit + AVFoundation;
     // Windows D3D11 textures + Media Foundation after a probe encode, #155). Off forces the CPU image
@@ -88,6 +93,7 @@ private:
     static constexpr const char* kKeyCountdownSeconds = "recording/countdownSeconds";
     static constexpr const char* kKeyShowSetupBeforeRecording = "recording/showSetupBeforeRecording";
     static constexpr const char* kKeyPointerEffects = "recording/pointerEffects";
+    static constexpr const char* kKeyMp4ExportOptions = "recording/mp4ExportOptions";
     static constexpr const char* kKeyNativeFrameEncoding = "recording/nativeFrameEncoding";
     static constexpr const char* kKeyWindowsGraphicsCapture = "recording/windowsGraphicsCapture";
 };

@@ -365,6 +365,14 @@ private:
     std::shared_ptr<ExportGate> m_gate;
 };
 
+// The same, for a system whose MP4 export can change size and frame rate.
+class OptionsGatedTranscoder : public GatedTranscoder
+{
+public:
+    using GatedTranscoder::GatedTranscoder;
+    bool supportsOutputOptions() const override { return true; }
+};
+
 } // namespace
 
 class tst_RecordingPreviewExport : public QObject
@@ -411,6 +419,12 @@ private slots:
     void pointerMatchesAcrossPreviewAndOutputs();
     void pointerEffectsOnlyReencodeWhenDrawn();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs_data();
+    void mp4OptionsReachTheOutput();
+    void mp4OptionsMatchingTheSourceKeepTheFastPath();
+    void sourceProbeNeverBlocksTheGuiThread();
+    void saveBeforeTheProbeDecidesTheRoomAfterIt();
+    void mp4OptionsTurnAnUneditedSaveIntoAnExport_data();
+    void mp4OptionsTurnAnUneditedSaveIntoAnExport();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
@@ -1186,8 +1200,32 @@ void tst_RecordingPreviewExport::smartSaveMovesRecordingNotRecordedAsIntermediat
     QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
     QVERIFY(QFileInfo::exists(noiseInputPath));
     QVERIFY(backend.errorMessage().isEmpty());
-    std::lock_guard<std::mutex> lock(log->mutex);
-    QCOMPARE(log->calls, 0);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->calls, 0);
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+
+    // PR #197 review: an explicit quality is honoured. The noise fixture is
+    // above Low's target, so choosing Low re-encodes it.
+    const QJsonObject rememberedOptions = RecordingSettingsManager::instance().mp4ExportOptions();
+    auto restoreOptions = qScopeGuard([rememberedOptions]() {
+        RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
+    });
+    backend.setMp4Quality(int(SnapTray::Mp4ExportOptions::Quality::Low));
+    // The estimate agrees with the export: less than the file (PR #197 review).
+    QTRY_VERIFY(backend.sourceProbeReady());
+    QVERIFY(backend.mp4EstimatedBytes() < QFileInfo(noiseInputPath).size());
+    savedSpy.clear();
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QTRY_COMPARE(savedSpy.count(), 1);
+    QVERIFY(savedSpy.first().at(0).toString() != noiseInputPath);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->calls, 1);
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
 }
 
 void tst_RecordingPreviewExport::failedSmartSaveReencodeSavesOriginal()
@@ -1837,6 +1875,264 @@ void tst_RecordingPreviewExport::pointerEffectsOnlyReencodeWhenDrawn()
         QVERIFY(savedSpy.first().at(0).toString() != inputPath);
         backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     }
+}
+
+// #190: a smaller size, a lower frame rate and HEVC reach the MP4, with the
+// pointer and a mask drawn where they belong in the smaller picture.
+void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
+{
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    QVERIFY(writePointerSidecar(inputPath, sourceSize));
+    const QJsonObject rememberedLook = RecordingSettingsManager::instance().pointerEffects();
+    const QJsonObject rememberedOptions = RecordingSettingsManager::instance().mp4ExportOptions();
+    auto restore = qScopeGuard([rememberedLook, rememberedOptions]() {
+        RecordingSettingsManager::instance().setPointerEffects(rememberedLook);
+        RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
+    });
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QTRY_VERIFY(backend.sourceProbeReady()); // probed off the GUI thread
+    if (!backend.mp4OutputOptionsAvailable() || !backend.cursorEffectsAvailable()) {
+        QSKIP("This platform's MP4 transcoder cannot change size and frame rate yet");
+    }
+    backend.setShowCursor(true);
+    backend.setCursorScale(1.0);
+    backend.setCursorSmoothing(0);
+    // A solid mask over the top-left 40x40 of the picture.
+    QCOMPARE(backend.addMask(), 0);
+    backend.setMaskRectFromView(0, QRectF(0, 0, 40, 40), QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+    backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::CustomWidth));
+    backend.setMp4CustomWidth(80);
+    backend.setMp4FrameRate(15); // above the source's 10: no change
+    QVERIFY(backend.mp4OptionsActive()); // the size still changes
+    QCOMPARE(backend.mp4OutputFrameRate(), kFrameRate);
+    backend.setMp4FrameRate(0);
+    const bool hevc = backend.mp4HevcAvailable();
+    if (hevc) backend.setMp4Codec(int(SnapTray::Mp4ExportOptions::Codec::Hevc));
+    QCOMPARE(backend.mp4OutputSize(), QSize(80, 60));
+    QVERIFY(backend.mp4EstimatedBytes() > 0);
+    QVERIFY(!backend.mp4EstimateText().isEmpty());
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    // Options changed during the export do not reach it.
+    backend.setMp4CustomWidth(40);
+    QCOMPARE(backend.mp4CustomWidth(), 80);
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+    QCOMPARE(savedSpy.first().at(1).toSize(), QSize(80, 60)); // the file name's size
+
+    auto transcoder = IVideoTranscoder::create();
+    QVERIFY(transcoder);
+    const VideoFileProbe probe = transcoder->probe(output);
+    QCOMPARE(probe.videoSize, QSize(80, 60));
+    QCOMPARE(probe.videoCodec, QString::fromLatin1(hevc ? kVideoCodecHevc : kVideoCodecH264));
+    auto reader = IVideoFrameReader::create();
+    if (!reader) QSKIP("No frame reader to inspect the MP4 on this platform");
+    QVERIFY2(reader->load(output), qPrintable(reader->lastError()));
+    const QImage frame = reader->frameAt(700);
+    QVERIFY(!frame.isNull());
+    // The pointer, at (100,70) from 500 ms, is at half its position and size.
+    const QPoint pointer = pointerTopLeft(frame);
+    QVERIFY2((pointer - QPoint(50, 35)).manhattanLength() <= 2,
+             qPrintable(QStringLiteral("pointer at %1,%2").arg(pointer.x()).arg(pointer.y())));
+    // The mask covers the top-left 20x20 of the smaller picture.
+    const QColor masked = frame.pixelColor(10, 10);
+    QVERIFY2(masked.lightness() < 40, qPrintable(masked.name()));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+// Options that change nothing for this recording (no smaller size, no lower
+// frame rate, H.264) keep an unedited recording on the move-as-is path.
+// PR #197 review: the MP4 options and estimate read the source's probe, which
+// can scan a whole file (Windows reads every audio packet). It runs off the
+// GUI thread: the getters answer at once and update when the probe is ready.
+void tst_RecordingPreviewExport::sourceProbeNeverBlocksTheGuiThread()
+{
+    auto gate = std::make_shared<ExportGate>();
+    gate->blockProbe = true;
+    auto restore = qScopeGuard([gate]() {
+        gate->resumeProbe.release();
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    });
+    RecordingPreviewBackend::transcoderFactoryOverride() = [gate]() -> std::unique_ptr<IVideoTranscoder> {
+        return std::make_unique<GatedTranscoder>(gate);
+    };
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QSignalSpy estimate(&backend, &RecordingPreviewBackend::mp4EstimateChanged);
+    QElapsedTimer timer;
+    timer.start();
+    QVERIFY(!backend.sourceProbeReady());
+    (void)backend.mp4OptionsActive();
+    (void)backend.mp4EstimatedBytes();
+    (void)backend.mp4SourceFrameRate();
+    QVERIFY(timer.elapsed() < 1000); // the probe is still held at the gate
+    QVERIFY(gate->probeEntered.tryAcquire(1, kExportGateTimeoutMs));
+    QVERIFY(!backend.sourceProbeReady());
+    gate->resumeProbe.release();
+    QTRY_VERIFY(backend.sourceProbeReady());
+    QVERIFY(estimate.count() >= 1);
+    QCOMPARE(backend.mp4SourceFrameRate(), 10);
+    QVERIFY(!gate->timedOut.load());
+}
+
+// PR #197 review: Save pressed while the source is still being probed, with
+// almost no room. Options that change nothing are still a move; options that
+// do change the stream are refused for space, once the job has probed.
+void tst_RecordingPreviewExport::saveBeforeTheProbeDecidesTheRoomAfterIt()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    {
+        QFile file(inputPath);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(QByteArray(4096, 'v'));
+    }
+    const QJsonObject rememberedOptions = RecordingSettingsManager::instance().mp4ExportOptions();
+    auto gate = std::make_shared<ExportGate>();
+    auto restore = qScopeGuard([gate, rememberedOptions]() {
+        gate->resumeProbe.release();
+        RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+        RecordingPreviewBackend::outputQualityOverride() = {};
+        RecordingPreviewBackend::freeBytesForPathOverride() = {};
+    });
+    RecordingPreviewBackend::transcoderFactoryOverride() = [gate]() -> std::unique_ptr<IVideoTranscoder> {
+        return std::make_unique<OptionsGatedTranscoder>(gate);
+    };
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+    RecordingPreviewBackend::freeBytesForPathOverride() = [](const QString&) { return qint64(1); };
+
+    for (const bool optionsChangeTheStream : {false, true}) {
+        // The preview's own probe (the first) is held: Save cannot know yet.
+        gate->firstProbe.store(true);
+        gate->blockProbe = true;
+        RecordingPreviewBackend backend(inputPath);
+        backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+        backend.updateVideoSize(QSize(160, 120));
+        backend.updateDuration(1000);
+        if (optionsChangeTheStream) {
+            backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::CustomWidth));
+            backend.setMp4CustomWidth(80); // smaller than the 160 px source
+        } else {
+            backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::P720)); // larger: no change
+            backend.setMp4FrameRate(60);                                                  // above its 10 fps
+        }
+        QVERIFY(backend.mp4OutputOptionsAvailable());
+        QVERIFY(!backend.sourceProbeReady());
+        QVERIFY(gate->probeEntered.tryAcquire(1, kExportGateTimeoutMs));
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage())); // not refused up front
+        if (optionsChangeTheStream) {
+            QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 10000);
+            QCOMPARE(savedSpy.count(), 0);
+            QVERIFY(backend.errorMessage().contains(QStringLiteral("Not enough free disk space")));
+            QVERIFY(backend.canRetrySave());
+        } else {
+            QTRY_COMPARE_WITH_TIMEOUT(savedSpy.count(), 1, 10000); // handed to the save dialog
+            QCOMPARE(savedSpy.first().at(0).toString(), inputPath); // moved as recorded
+            QVERIFY(backend.errorMessage().isEmpty());
+            backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+        }
+        QVERIFY(QFileInfo::exists(inputPath));
+        gate->resumeProbe.release();
+        QTRY_VERIFY(backend.sourceProbeReady());
+    }
+}
+
+void tst_RecordingPreviewExport::mp4OptionsMatchingTheSourceKeepTheFastPath()
+{
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    const QJsonObject rememberedOptions = RecordingSettingsManager::instance().mp4ExportOptions();
+    auto restore = qScopeGuard([rememberedOptions]() {
+        RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
+        RecordingPreviewBackend::outputQualityOverride() = {};
+        RecordingPreviewBackend::freeBytesForPathOverride() = {};
+    });
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+    // Almost no room: a move needs none, so options that change nothing must
+    // not be refused for space (PR #197 review).
+    RecordingPreviewBackend::freeBytesForPathOverride() = [](const QString&) { return qint64(1); };
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::P720)); // larger than the source
+    backend.setMp4FrameRate(60);                                                  // above the source's rate
+    QTRY_VERIFY(backend.sourceProbeReady());
+    QVERIFY(!backend.mp4OptionsActive());
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
+    QCOMPARE(backend.mp4EstimatedBytes(), QFileInfo(inputPath).size());
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+}
+
+void tst_RecordingPreviewExport::mp4OptionsTurnAnUneditedSaveIntoAnExport_data()
+{
+    QTest::addColumn<bool>("recordedAsIntermediate");
+    QTest::newRow("intermediate") << true;
+    QTest::newRow("recorded at the selected quality") << false;
+}
+
+// Unedited, but a smaller size is asked for: an export, never a move, on both
+// smart-save routes (the probe decides, off the GUI thread).
+void tst_RecordingPreviewExport::mp4OptionsTurnAnUneditedSaveIntoAnExport()
+{
+    QFETCH(bool, recordedAsIntermediate);
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    const QJsonObject rememberedOptions = RecordingSettingsManager::instance().mp4ExportOptions();
+    auto restore = qScopeGuard([rememberedOptions]() {
+        RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
+        RecordingPreviewBackend::outputQualityOverride() = {};
+    });
+    // Any recording meets quality 0: without the options it would be moved.
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+
+    RecordingPreviewBackend backend(inputPath, recordedAsIntermediate);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    if (!backend.mp4OutputOptionsAvailable()) QSKIP("This platform's MP4 transcoder cannot change the size yet");
+    backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::CustomWidth));
+    backend.setMp4CustomWidth(80);
+    QVERIFY(!backend.hasEdits());
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+    QVERIFY(output != inputPath);
+    QCOMPARE(IVideoTranscoder::create()->probe(output).videoSize, QSize(80, 60));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
 }
 
 void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()

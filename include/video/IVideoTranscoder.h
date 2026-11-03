@@ -31,6 +31,12 @@ struct VideoTranscodeRequest {
     qint64 endMs = -1;      // -1 = end of input
     QRect cropRect;         // video pixels, even-aligned; empty = full frame
     int videoBitrate = 0;   // bits/s; 0 = VideoBitrate::forQuality(output size, fps, kDefaultTranscodeQuality)
+    // #190 output options; only for transcoders whose supportsOutputOptions()
+    // is true. The frame is cropped, then filtered (frameFilter may already
+    // scale it), then scaled to outputSize.
+    QSize outputSize;       // even sides, at most the crop size; empty = the crop size
+    int frameRate = 0;      // at most the source rate; 0 = the source rate
+    QString videoCodec;     // kVideoCodecH264 or kVideoCodecHevc; empty = H.264
     // Draws on each output frame (already cropped, RGB32) before it is
     // encoded; sourceMs is the frame's time in the input. Empty = none.
     // Only for transcoders whose supportsFrameFilter() is true.
@@ -87,6 +93,13 @@ public:
     virtual VideoFileProbe probe(const QString& filePath) = 0;
     // True when transcode() applies VideoTranscodeRequest::frameFilter.
     virtual bool supportsFrameFilter() const { return false; }
+    // True when transcode() applies outputSize and frameRate (#190).
+    virtual bool supportsOutputOptions() const { return false; }
+    // True when transcode() can write videoCodec (H.264 is always supported).
+    virtual bool supportsVideoCodec(const QString& codec) const
+    {
+        return codec.isEmpty() || codec == QLatin1String(kVideoCodecH264);
+    }
 
     // nullptr on platforms/builds without a recording backend.
     static std::unique_ptr<IVideoTranscoder> create();

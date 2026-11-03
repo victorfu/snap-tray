@@ -28,6 +28,10 @@ public:
     void setRateControl(SnapTray::VideoRateControl mode, int quality) override;
     SnapTray::VideoRateControl effectiveRateControl() const override;
     void setBitrate(int bitrate) { m_bitrate = qMax(0, bitrate); }
+    // H.264 (default) or HEVC (#190); set before start().
+    void setHevc(bool hevc) { m_hevc = hevc; }
+    // True when this FFmpeg can encode HEVC in software (hardware may add more).
+    static bool isHevcAvailable();
     void setAudioFormat(int sampleRate, int channels, int bitsPerSample) override;
     bool isAudioSupported() const override;
     bool isAudioEnabled() const override;
@@ -56,4 +60,5 @@ private:
     QString m_encoderName;
     int m_keyframeSeconds = 2;
     bool m_fragmented = false;
+    bool m_hevc = false;
 };
