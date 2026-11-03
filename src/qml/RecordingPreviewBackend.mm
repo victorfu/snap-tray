@@ -255,9 +255,22 @@ void RecordingPreviewBackend::editAppearance(const std::function<void(SnapTray::
     SnapTray::RecordingAppearance appearance = m_appearance;
     change(appearance);
     if (appearance == m_appearance) return;
-    RecordingSettingsManager::instance().setAppearance(appearance.toJson());
+    rememberAppearance(appearance);
     setAppearance(appearance);
     recordEdit();
+}
+
+void RecordingPreviewBackend::rememberAppearance(const SnapTray::RecordingAppearance& appearance)
+{
+    // A project's own copy of a background image lives and dies with the
+    // project: the next recording keeps the image it remembered before
+    // (PR #203 review).
+    QJsonObject json = appearance.toJson();
+    if (!appearance.imagePath.isEmpty() && SnapTray::RecordingProjects::contains(appearance.imagePath)) {
+        const auto remembered = SnapTray::RecordingAppearance::fromJson(RecordingSettingsManager::instance().appearance());
+        json.insert(QStringLiteral("imagePath"), remembered.imagePath);
+    }
+    RecordingSettingsManager::instance().setAppearance(json);
 }
 
 void RecordingPreviewBackend::setAppearanceEnabled(bool value)
@@ -1351,7 +1364,9 @@ void RecordingPreviewBackend::applyPendingProjectRecipe()
     if (!m_projectRecipePending || !m_project || m_videoSize.isEmpty() || m_duration <= 0) return;
     m_projectRecipePending = false;
     if (const auto state = SnapTray::RecordingRecipe::editState(m_project->recipe)) {
+        m_restoringProject = true;
         applyEditState(*state);
+        m_restoringProject = false;
     }
     // Undo starts from the project as it was saved.
     m_editHistory.reset(currentEditState());
@@ -2462,20 +2477,22 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
     }
     if (state.keys != m_keyOverlay) {
         m_keyOverlay = state.keys;
-        RecordingSettingsManager::instance().setKeyOverlay(m_keyOverlay.toJson());
+        if (!m_restoringProject) RecordingSettingsManager::instance().setKeyOverlay(m_keyOverlay.toJson());
         emit keyOverlayChanged();
     }
     if (state.timeline != m_timeline) {
         m_timeline = state.timeline;
         emit timelineChanged();
     }
+    // Restoring a project's recipe is not a choice for the next recording:
+    // its looks are not remembered (PR #203 review).
     if (state.appearance != m_appearance) {
         setAppearance(state.appearance);
-        RecordingSettingsManager::instance().setAppearance(state.appearance.toJson());
+        if (!m_restoringProject) rememberAppearance(state.appearance);
     }
     if (state.cursor != m_cursorEffects) {
         setCursorEffects(state.cursor);
-        RecordingSettingsManager::instance().setPointerEffects(state.cursor.preferences().toJson());
+        if (!m_restoringProject) RecordingSettingsManager::instance().setPointerEffects(state.cursor.preferences().toJson());
     }
     emit editHistoryChanged();
 }
