@@ -1321,7 +1321,9 @@ void tst_VideoTranscoder::segmentsOfAVariableRateSource()
              qPrintable(QStringLiteral("Source: %1; output: %2")
                  .arg(describeFrames(input), describeFrames(request.outputPath))));
     QVERIFY2(fast.green() > 120 && fast.red() < 90, qPrintable(fast.name()));
-    QVERIFY2(last.blue() > 170 && last.green() < 90, qPrintable(last.name()));
+    QVERIFY2(last.blue() > 170 && last.green() < 90,
+             qPrintable(QStringLiteral("Source: %1; output: %2")
+                 .arg(describeFrames(input), describeFrames(request.outputPath))));
 }
 
 // #189: the separate tracks next to a recording are mixed again at export.
