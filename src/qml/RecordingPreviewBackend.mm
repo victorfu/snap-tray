@@ -1317,6 +1317,14 @@ bool RecordingPreviewBackend::moveSplit(int index, qint64 sourceMs)
     return moved;
 }
 
+qint64 RecordingPreviewBackend::legalSplitPosition(int index, qint64 sourceMs) const
+{
+    if (m_duration <= 0 || index < 0 || index >= int(m_timeline.splits.size())) return -1;
+    const qint64 lower = m_timeline.partStartMs(index) + SnapTray::TimelineEdit::kMinPartMs;
+    const qint64 upper = m_timeline.partEndMs(index + 1, m_duration) - SnapTray::TimelineEdit::kMinPartMs;
+    return lower > upper ? -1 : qBound(lower, sourceMs, upper);
+}
+
 void RecordingPreviewBackend::commitTimelineEdit()
 {
     recordEdit();

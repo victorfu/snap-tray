@@ -391,6 +391,9 @@ public:
     Q_INVOKABLE void removeSplit(int index);
     // While dragging: moves without an undo step; commitTimelineEdit() records it.
     Q_INVOKABLE bool moveSplit(int index, qint64 sourceMs);
+    // Where split `index` may be dragged to: `sourceMs` kept between its
+    // neighbours (each part at least TimelineEdit::kMinPartMs); -1 if none.
+    Q_INVOKABLE qint64 legalSplitPosition(int index, qint64 sourceMs) const;
     Q_INVOKABLE void commitTimelineEdit();
     Q_INVOKABLE void setPartDeleted(int part, bool deleted);
     Q_INVOKABLE void setPartSpeed(int part, qreal speed);

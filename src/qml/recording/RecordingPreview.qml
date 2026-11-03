@@ -164,8 +164,20 @@ Item {
         return Number(speed).toLocaleString(Qt.locale(), "f", speed % 1 ? 1 : 0) + "×"
     }
     // The preview plays the edit: the chosen preview speed times the part's.
+    // What every platform player can play (IVideoPlayer::setPlaybackRate).
+    readonly property real minPlayerRate: 0.25
+    readonly property real maxPlayerRate: 2.0
+    property real requestedPlaybackRate: 0
     function applyPlaybackRate() {
-        const rate = root.speedOptions[root.speedIndex] * backend.playbackSpeedAt(videoPlayer.position)
+        // A 4x part at normal preview speed asks for 4x: the preview plays it
+        // as fast as the player can (the export keeps 4x). Only a new request
+        // is set: a player that adjusts the rate and seeks re-enters here
+        // through positionChanged (PR #199 review).
+        const wanted = root.speedOptions[root.speedIndex] * backend.playbackSpeedAt(videoPlayer.position)
+        const rate = Math.max(root.minPlayerRate, Math.min(root.maxPlayerRate, wanted))
+        if (Math.abs(root.requestedPlaybackRate - rate) < 0.0001)
+            return
+        root.requestedPlaybackRate = rate
         if (videoPlayer.playbackRate !== rate)
             videoPlayer.playbackRate = rate
     }
@@ -463,10 +475,18 @@ Item {
                         // part plays at its own speed (#185).
                         if (videoPlayer.playing && backend.hasTimelineEdits && !root.isScrubbing) {
                             const target = backend.playbackTarget(positionMs)
-                            if (target < 0)
-                                videoPlayer.seek(Math.max(0, backend.playbackTarget(backend.trimStart)))
-                            else if (target !== positionMs)
+                            if (target < 0) {
+                                // Past the last kept part: start over, or stop
+                                // when every part is cut (seeking would land
+                                // back here, forever; PR #199 review).
+                                const restart = backend.playbackTarget(backend.trimStart)
+                                if (restart < 0)
+                                    videoPlayer.pause()
+                                else
+                                    videoPlayer.seek(restart)
+                            } else if (target !== positionMs) {
                                 videoPlayer.seek(target)
+                            }
                         }
                         root.applyPlaybackRate()
                     }
@@ -927,7 +947,11 @@ Item {
                     required property int index
                     required property var modelData
                     objectName: "previewTimelineSplit" + index
-                    x: timelineArea.posToX(modelData) - width / 2
+                    // While dragged it moves here only: changing the model on
+                    // every move would rebuild this delegate and end the drag
+                    // (PR #199 review). The edit is made once, on release.
+                    property real dragMs: -1
+                    x: timelineArea.posToX(dragMs >= 0 ? dragMs : modelData) - width / 2
                     y: trackRect.y - 7
                     width: 3
                     height: trackRect.height + 14
@@ -941,14 +965,20 @@ Item {
                         anchors.fill: parent
                         anchors.margins: -4
                         cursorShape: CursorTokens.resizeHorizontal
-                        property bool moved: false
-                        onPressed: { moved = false; videoPlayer.pause() }
+                        onPressed: { parent.dragMs = -1; videoPlayer.pause() }
                         onPositionChanged: function(mouse) {
                             const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
-                            if (backend.moveSplit(parent.index, ms)) moved = true
+                            const legal = backend.legalSplitPosition(parent.index, ms)
+                            if (legal >= 0) parent.dragMs = legal
                         }
-                        onReleased: if (moved) backend.commitTimelineEdit()
-                        onCanceled: if (moved) backend.commitTimelineEdit()
+                        function finishDrag() {
+                            const target = parent.dragMs
+                            parent.dragMs = -1
+                            if (target >= 0 && backend.moveSplit(parent.index, target))
+                                backend.commitTimelineEdit()
+                        }
+                        onReleased: finishDrag()
+                        onCanceled: finishDrag()
                         onDoubleClicked: backend.removeSplit(parent.index)
                     }
                 }
