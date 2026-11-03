@@ -1,6 +1,7 @@
 #include "recording/KeyProbe.h"
 
 #include <QDebug>
+#include <QLibrary>
 #include <QElapsedTimer>
 #include <QScopeGuard>
 #include <QSocketNotifier>
@@ -40,6 +41,8 @@ constexpr KeysymKey kNamedKeysyms[] = {
     {XK_comma, Qt::Key_Comma}, {XK_period, Qt::Key_Period}, {XK_slash, Qt::Key_Slash},
 };
 
+QString textFor(KeySym keysym);
+
 int qtKeyFor(KeySym keysym)
 {
     if (keysym >= XK_a && keysym <= XK_z) return Qt::Key_A + int(keysym - XK_a);
@@ -49,6 +52,14 @@ int qtKeyFor(KeySym keysym)
     if (keysym >= XK_KP_0 && keysym <= XK_KP_9) return Qt::Key_0 + int(keysym - XK_KP_0);
     for (const auto& entry : kNamedKeysyms) {
         if (entry.keysym == keysym) return entry.key;
+    }
+    // Any other printable character (ä, é, Cyrillic, ...): Qt numbers such
+    // keys by the upper-case character, so they are recorded too and shortcuts
+    // on them keep their key (PR #200 review).
+    const QString text = textFor(keysym);
+    const QList<uint> codepoints = text.toUcs4();
+    if (codepoints.size() == 1 && QChar::isPrint(codepoints.front())) {
+        return int(QChar::toUpper(codepoints.front()));
     }
     return 0;
 }
@@ -66,15 +77,34 @@ Qt::KeyboardModifier modifierFor(int key)
     }
 }
 
-// What a keysym types, for the all-keys mode: Latin-1 and Unicode keysyms.
+// libxkbcommon's full keysym table, for the legacy (pre-Unicode) keysyms of
+// Cyrillic, Greek, Hebrew, Thai, Kana... Loaded at run time: Qt's xcb
+// platform plugin needs the library already, so it is there wherever this
+// probe runs, and no development package is needed to build.
+using KeysymToUtf32 = uint32_t (*)(uint32_t);
+KeysymToUtf32 keysymToUtf32()
+{
+    static const KeysymToUtf32 function = [] {
+        QLibrary library(QStringLiteral("xkbcommon"), 0);
+        return reinterpret_cast<KeysymToUtf32>(library.resolve("xkb_keysym_to_utf32"));
+    }();
+    return function;
+}
+
+// What a keysym types, for the all-keys mode.
 QString textFor(KeySym keysym)
 {
-    if (keysym >= 0x20 && keysym <= 0xff) return QString(QChar(char16_t(keysym)));
+    if (keysym >= 0x20 && keysym <= 0x7e) return QString(QChar(char16_t(keysym)));
+    if (keysym >= 0xa0 && keysym <= 0xff) return QString(QChar(char16_t(keysym)));
+    char32_t codepoint = 0;
     if ((keysym & 0xff000000) == 0x01000000) {
-        const char32_t codepoint = char32_t(keysym & 0x00ffffff);
-        return QString::fromUcs4(&codepoint, 1);
+        codepoint = char32_t(keysym & 0x00ffffff);
+    } else if (const KeysymToUtf32 convert = keysymToUtf32()) {
+        // Legacy keysyms (Cyrillic, Greek, ...) and keypad characters.
+        codepoint = char32_t(convert(uint32_t(keysym)));
     }
-    return QString();
+    if (codepoint < 0x20 || codepoint == 0x7f) return QString();
+    return QString::fromUcs4(&codepoint, 1);
 }
 
 // Reads key presses on its own X connection through XInput2 raw events,
@@ -110,6 +140,19 @@ public:
         mask.mask = bits.data();
         if (XISelectEvents(m_display, DefaultRootWindow(m_display), &mask, 1) != Success) return false;
         XFlush(m_display);
+        m_localClock.start();
+        // State and keymap changes, in order with the key events.
+        int opcode = 0, xkbError = 0, xkbMajor = XkbMajorVersion, xkbMinor = XkbMinorVersion;
+        if (XkbQueryExtension(m_display, &opcode, &m_xkbEventBase, &xkbError, &xkbMajor, &xkbMinor)) {
+            XkbSelectEventDetails(m_display, XkbUseCoreKbd, XkbStateNotify, XkbAllStateComponentsMask,
+                                  XkbAllStateComponentsMask);
+            XkbSelectEvents(m_display, XkbUseCoreKbd, XkbMapNotifyMask | XkbNewKeyboardNotifyMask,
+                            XkbMapNotifyMask | XkbNewKeyboardNotifyMask);
+        } else {
+            m_xkbEventBase = -1;
+        }
+        syncState();
+        XFlush(m_display);
         m_notifier = new QSocketNotifier(ConnectionNumber(m_display), QSocketNotifier::Read);
         QObject::connect(m_notifier, &QSocketNotifier::activated, this, [this] { drainEvents(); });
         return true;
@@ -118,11 +161,67 @@ public:
     QString name() const override { return QStringLiteral("x11"); }
 
 private:
+    // Server time to an age in local milliseconds, as X11CursorProbe does:
+    // a key queued while the GUI was busy keeps the time it was pressed.
+    qint64 ageOf(Time serverTime)
+    {
+        const qint64 now = m_localClock.elapsed();
+        const auto server = static_cast<quint32>(serverTime);
+        if (!m_haveTimeReference) {
+            m_haveTimeReference = true;
+            m_referenceLocalMs = now;
+            m_referenceServerMs = server;
+            return 0;
+        }
+        const qint64 happened = m_referenceLocalMs + static_cast<qint32>(server - m_referenceServerMs);
+        if (happened > now) {
+            m_referenceLocalMs = now;
+            m_referenceServerMs = server;
+            return 0;
+        }
+        return now - happened;
+    }
+
+    // The keyboard state when the probe starts; from then on it follows the
+    // XKB state notifications, which arrive in order with the key events, so
+    // a queued press is translated with the state it had (PR #200 review).
+    void syncState()
+    {
+        if (!m_xkb) m_xkb = XkbGetMap(m_display, XkbKeyTypesMask | XkbKeySymsMask | XkbModifierMapMask, XkbUseCoreKbd);
+        XkbStateRec state{};
+        if (XkbGetState(m_display, XkbUseCoreKbd, &state) != Success) return;
+        m_heldMods = state.base_mods | state.latched_mods;
+        m_lockedMods = state.locked_mods;
+        m_group = state.group;
+    }
+
     void drainEvents()
     {
         while (XPending(m_display) > 0) {
             XEvent event;
             XNextEvent(m_display, &event);
+            if (m_xkbEventBase >= 0 && event.type == m_xkbEventBase) {
+                const auto* xkb = reinterpret_cast<const XkbEvent*>(&event);
+                if (xkb->any.xkb_type == XkbStateNotify) {
+                    m_heldMods = xkb->state.base_mods | xkb->state.latched_mods;
+                    m_lockedMods = xkb->state.locked_mods;
+                    m_group = xkb->state.group;
+                } else if (xkb->any.xkb_type == XkbMapNotify || xkb->any.xkb_type == XkbNewKeyboardNotify) {
+                    // Another layout or keymap: read it again (Xlib's copy too).
+                    if (xkb->any.xkb_type == XkbMapNotify) {
+                        XkbMapNotifyEvent mapEvent = xkb->map;
+                        XkbRefreshKeyboardMapping(&mapEvent);
+                    }
+                    if (m_xkb) XkbFreeKeyboard(m_xkb, 0, True);
+                    m_xkb = nullptr;
+                    syncState();
+                }
+                continue;
+            }
+            if (event.type == MappingNotify) {
+                XRefreshKeyboardMapping(&event.xmapping);
+                continue;
+            }
             XGenericEventCookie* cookie = &event.xcookie;
             if (event.type != GenericEvent || cookie->extension != m_xiOpcode || !XGetEventData(m_display, cookie)) {
                 continue;
@@ -132,44 +231,51 @@ private:
             const auto* raw = static_cast<const XIRawEvent*>(cookie->data);
             const bool down = cookie->evtype == XI_RawKeyPress;
             const KeyCode code = KeyCode(raw->detail);
-            // The live keyboard state: the active layout (group) and every
-            // modifier that picks a level, such as Caps Lock and AltGr, not
-            // only Shift (PR #200 review).
-            XkbStateRec state{};
-            const bool haveState = XkbGetState(m_display, XkbUseCoreKbd, &state) == Success;
-            const int group = haveState ? state.group : 0;
+            const bool repeat = raw->flags & XIKeyRepeat;
             // The key itself (for shortcut labels): its first level in the
             // active layout, or in the first layout for one without Latin keys.
-            int key = qtKeyFor(XkbKeycodeToKeysym(m_display, code, group, 0));
-            if (key == 0 && group != 0) key = qtKeyFor(XkbKeycodeToKeysym(m_display, code, 0, 0));
+            const KeySym base = XkbKeycodeToKeysym(m_display, code, m_group, 0);
+            int key = qtKeyFor(base);
+            if (key == 0 && m_group != 0) key = qtKeyFor(XkbKeycodeToKeysym(m_display, code, 0, 0));
+            // What it types: with the state at this event, not the state now
+            // (Shift may be up again by the time a queued press is read).
+            const KeySym typed = down && !repeat ? typedKeysym(code) : NoSymbol;
             if (const Qt::KeyboardModifier modifier = modifierFor(key)) {
                 m_modifiers.setFlag(modifier, down);
                 continue;
             }
-            if (!down || (raw->flags & XIKeyRepeat) || key == 0) continue;
-            emit keyPressed(key, m_modifiers, textFor(typedKeysym(code, state, haveState)), 0);
+            if (!down || repeat || key == 0) continue;
+            emit keyPressed(key, m_modifiers, textFor(typed), ageOf(raw->time));
         }
     }
 
-    // What the key types now: translated through the keyboard's key types
-    // with the full state (group and modifiers).
-    KeySym typedKeysym(KeyCode code, const XkbStateRec& state, bool haveState)
+    // What the key types with the tracked state: translated through the
+    // keyboard's key types with the group and every modifier that picks a
+    // level (Shift, Caps Lock, AltGr), not only Shift on the first layout.
+    KeySym typedKeysym(KeyCode code)
     {
-        if (!m_xkb) m_xkb = XkbGetMap(m_display, XkbKeyTypesMask | XkbKeySymsMask | XkbModifierMapMask, XkbUseCoreKbd);
-        if (haveState && m_xkb) {
+        if (m_xkb) {
             unsigned int consumed = 0;
             KeySym keysym = NoSymbol;
-            if (XkbTranslateKeyCode(m_xkb, code, XkbBuildCoreState(state.mods, state.group), &consumed, &keysym)
+            if (XkbTranslateKeyCode(m_xkb, code, XkbBuildCoreState(m_heldMods | m_lockedMods, m_group), &consumed,
+                                    &keysym)
                 && keysym != NoSymbol) {
                 return keysym;
             }
         }
-        return XkbKeycodeToKeysym(m_display, code, haveState ? state.group : 0,
-                                  m_modifiers.testFlag(Qt::ShiftModifier) ? 1 : 0);
+        return XkbKeycodeToKeysym(m_display, code, m_group, m_modifiers.testFlag(Qt::ShiftModifier) ? 1 : 0);
     }
 
     Display* m_display = nullptr;
     XkbDescPtr m_xkb = nullptr;
+    unsigned int m_heldMods = 0;
+    unsigned int m_lockedMods = 0;
+    int m_group = 0;
+    int m_xkbEventBase = -1;
+    QElapsedTimer m_localClock;
+    bool m_haveTimeReference = false;
+    qint64 m_referenceLocalMs = 0;
+    quint32 m_referenceServerMs = 0;
     QSocketNotifier* m_notifier = nullptr;
     int m_xiOpcode = 0;
     Qt::KeyboardModifiers m_modifiers;

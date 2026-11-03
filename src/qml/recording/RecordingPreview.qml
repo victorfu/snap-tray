@@ -220,7 +220,7 @@ Item {
     // The single guarded save path shared by the Save button, Ctrl+S and non-editing Enter.
     // A visible crop draft is applied first so the export matches what the user sees.
     function saveWithCrop() {
-        if (backend.isProcessing)
+        if (backend.isProcessing || backend.projectLoading)
             return
         // A time typed but not yet confirmed (Save does not take focus) is
         // applied first; an invalid one stops the save instead of exporting
@@ -2676,6 +2676,7 @@ Item {
                     objectName: "previewSaveButton"
                     iconSource: "qrc:/icons/icons/save.svg"
                     primary: true
+                    enabled: !backend.projectLoading
                     tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
                     onClicked: root.saveWithCrop()
                 }

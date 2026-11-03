@@ -1355,6 +1355,7 @@ void RecordingPreviewBackend::applyPendingProjectRecipe()
     // Undo starts from the project as it was saved.
     m_editHistory.reset(currentEditState());
     emit editHistoryChanged();
+    emit projectChanged(); // Save is possible now
 }
 
 bool RecordingPreviewBackend::keepsProject() const
@@ -1373,18 +1374,21 @@ namespace {
 const QSize kProjectThumbnailSize(320, 180);
 }
 
-QJsonObject RecordingPreviewBackend::recipeForProject(const QString& projectDir) const
+QJsonObject RecordingPreviewBackend::recipeForProject(const QString& projectDir, QString* copied) const
 {
     QJsonObject recipe = currentRecipe();
     const QString image = m_appearance.imagePath;
     if (image.isEmpty() || !QFileInfo::exists(image)) return recipe;
-    const QString owned = QDir(projectDir).filePath(QStringLiteral("background.") + QFileInfo(image).suffix());
-    const auto same = [](const QString& a, const QString& b) {
-        return QFileInfo(a).absoluteFilePath() == QFileInfo(b).absoluteFilePath();
-    };
-    if (!same(image, owned)) {
-        QFile::remove(owned);
+    QString owned = image;
+    // Already the project's own copy: nothing to do. Otherwise a new name,
+    // so the copy the saved manifest uses stays until a new manifest is
+    // written (PR #203 review).
+    if (QFileInfo(image).absolutePath() != QFileInfo(projectDir).absoluteFilePath()) {
+        owned = QDir(projectDir).filePath(QStringLiteral("background-%1.%2")
+                                              .arg(QDateTime::currentMSecsSinceEpoch())
+                                              .arg(QFileInfo(image).suffix()));
         if (!QFile::copy(image, owned)) return recipe; // keeps the outside path
+        if (copied) *copied = owned;
     }
     QJsonObject edit = recipe.value(QStringLiteral("edit")).toObject();
     QJsonObject appearance = edit.value(QStringLiteral("appearance")).toObject();
@@ -1394,10 +1398,30 @@ QJsonObject RecordingPreviewBackend::recipeForProject(const QString& projectDir)
     return recipe;
 }
 
+void RecordingPreviewBackend::removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe)
+{
+    const QString used = QFileInfo(recipe.value(QStringLiteral("edit")).toObject()
+                                       .value(QStringLiteral("appearance")).toObject()
+                                       .value(QStringLiteral("imagePath")).toString())
+                             .absoluteFilePath();
+    const QDir dir(projectDir);
+    for (const QFileInfo& file : dir.entryInfoList({QStringLiteral("background*")}, QDir::Files)) {
+        if (file.absoluteFilePath() != used) QFile::remove(file.absoluteFilePath());
+    }
+}
+
 bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
 {
     if (m_project) {
-        return SnapTray::RecordingProjects::update(*m_project, recipeForProject(m_project->dir), savedPath);
+        QString copied;
+        const QJsonObject recipe = recipeForProject(m_project->dir, &copied);
+        if (!SnapTray::RecordingProjects::update(*m_project, recipe, savedPath)) {
+            // The saved manifest still uses the old image: it stays.
+            if (!copied.isEmpty()) QFile::remove(copied);
+            return false;
+        }
+        removeUnusedBackgrounds(m_project->dir, recipe);
+        return true;
     }
     // A small picture for the library, from the first frame shown.
     QImage thumbnail;
@@ -1412,8 +1436,12 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
         return false;
     }
     // Its own copy of a background image, now that the folder exists.
-    const QJsonObject recipe = recipeForProject(project->dir);
-    if (recipe != project->recipe) SnapTray::RecordingProjects::update(*project, recipe, savedPath);
+    QString copied;
+    const QJsonObject recipe = recipeForProject(project->dir, &copied);
+    if (recipe != project->recipe && !SnapTray::RecordingProjects::update(*project, recipe, savedPath)
+        && !copied.isEmpty()) {
+        QFile::remove(copied); // the project keeps the image where it was
+    }
     const int days = RecordingSettingsManager::instance().projectCleanupDays();
     SnapTray::RecordingProjects::removeOlderThan(days);
     return true;
@@ -1863,6 +1891,13 @@ void RecordingPreviewBackend::save()
     qDebug() << "RecordingPreviewBackend: Save requested";
     if (isProcessing() || m_closeHandled) {
         qDebug() << "RecordingPreviewBackend: Save ignored while processing";
+        return;
+    }
+    // An opened project's edits (masks, crops, cuts) are applied once the
+    // player has reported the picture: saving before would export without
+    // them (PR #203 review).
+    if (m_projectRecipePending) {
+        qDebug() << "RecordingPreviewBackend: Save ignored until the project's edits are applied";
         return;
     }
     // Saving answers a pending "discard?" question with "keep".

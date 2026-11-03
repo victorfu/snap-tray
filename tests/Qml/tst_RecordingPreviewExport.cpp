@@ -2757,14 +2757,31 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
         QCOMPARE(projectSpy.count(), 1);
         QVERIFY(backend.isProject());
         QCOMPARE(backend.trimStart(), qint64(0)); // waits for the player
+        // Saving now would export without the project's edits (PR #203 review).
+        QVERIFY(backend.projectLoading());
+        {
+            QSignalSpy early(&backend, &RecordingPreviewBackend::saveRequested);
+            backend.save();
+            QVERIFY(!backend.isProcessing());
+            QTest::qWait(50);
+            QCOMPARE(early.count(), 0);
+        }
         backend.updateVideoSize(kFrameSize);
         backend.updateDuration(duration);
+        QVERIFY(!backend.projectLoading());
         QCOMPARE(sizeSpy.count(), 1);
         QCOMPARE(backend.trimStart(), trimStart);
         QVERIFY(!backend.canUndo());
         QCOMPARE(backend.appearanceImagePath(), ownedBackground);
 
-        // Updating the project fails: the preview stays open with the edits.
+        // Updating the project fails: the preview stays open with the edits,
+        // and a new background image never replaces the saved one before the
+        // manifest is written (PR #203 review).
+        const QString newBackgroundPath = directory.filePath(QStringLiteral("background2.png"));
+        QImage newBackground(16, 16, QImage::Format_RGB32);
+        newBackground.fill(Qt::green);
+        QVERIFY(newBackground.save(newBackgroundPath));
+        QVERIFY(backend.setAppearanceImage(QUrl::fromLocalFile(newBackgroundPath)));
         backend.setTrimEnd(duration - 2 * kFrameIntervalMs);
         QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
         QSignalSpy failSpy(&backend, &RecordingPreviewBackend::saveRequested);
@@ -2775,6 +2792,12 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
         QCOMPARE(closedSpy.count(), 0);
         QVERIFY(backend.errorMessage().contains(QStringLiteral("could not be updated")));
         QCOMPARE(SnapTray::RecordingProjects::load(project.dir)->savedPath, project.savedPath);
+        QVERIFY(QFileInfo::exists(ownedBackground));
+        QCOMPARE(QImage(ownedBackground).pixelColor(0, 0), QColor(Qt::blue)); // still the saved image
+        QCOMPARE(SnapTray::RecordingRecipe::editState(SnapTray::RecordingProjects::load(project.dir)->recipe)
+                     ->appearance.imagePath,
+                 ownedBackground);
+        QCOMPARE(QDir(project.dir).entryList({QStringLiteral("background*")}, QDir::Files).size(), 1);
 
         // An unedited save is handed a copy: the project keeps its recording.
         backend.setAppearanceEnabled(false); // a look Reset keeps
@@ -2802,6 +2825,13 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
     project = projects.first();
     QVERIFY(QFileInfo::exists(project.videoPath()));
     QVERIFY(QFileInfo::exists(project.videoPath() + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix)));
+    // Saved for real: the new image is the project's own, the old one is gone.
+    const QString newOwned = SnapTray::RecordingRecipe::editState(project.recipe)->appearance.imagePath;
+    QVERIFY(SnapTray::RecordingProjects::contains(newOwned));
+    QVERIFY(newOwned != ownedBackground);
+    QVERIFY(!QFileInfo::exists(ownedBackground));
+    QCOMPARE(QDir(project.dir).entryList({QStringLiteral("background*")}, QDir::Files),
+             QStringList{QFileInfo(newOwned).fileName()});
     QCOMPARE(project.savedPath, directory.filePath(QStringLiteral("second.mp4")));
     const auto state = SnapTray::RecordingRecipe::editState(project.recipe);
     QCOMPARE(state->trimStart, qint64(0));
