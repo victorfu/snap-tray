@@ -111,6 +111,7 @@ void TestKeyTimeline::writerRoundTripAndDamage()
     QFile file(KeyTimelineSidecar::pathFor(video));
     QVERIFY(file.open(QIODevice::ReadOnly));
     const QByteArray content = file.readAll();
+    file.close(); // Windows cannot remove an open file
     for (const char* forbidden : {"title", "window", "app", "process"}) QVERIFY(!content.contains(forbidden));
     // A torn last line (a crash) keeps what came before.
     QByteArray torn = content;
