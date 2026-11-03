@@ -204,6 +204,7 @@ CursorEffectRenderer::CursorEffectRenderer(const CursorTimeline& timeline, const
 void CursorEffectRenderer::setTimeline(const TimelineMap& timeline)
 {
     m_kept = timeline.segments();
+    m_map = timeline;
 }
 
 qint64 CursorEffectRenderer::partStart(qint64 ms) const
@@ -283,11 +284,23 @@ qint64 CursorEffectRenderer::distanceToButtonEvent(qint64 sourceMs) const
 
 qint64 CursorEffectRenderer::effectiveTime(qint64 sourceMs) const
 {
-    if (m_settings.stillEndMs <= 0 || m_clipEndMs < 0 || m_timeline.samples.empty()) return sourceMs;
+    if (m_settings.stillEndMs <= 0 || m_timeline.samples.empty()) return sourceMs;
+    const qint64 firstSample = m_timeline.samples.front().tMs;
+    if (!m_map.isEmpty()) {
+        // With parts cut out, "the end" is the exported end: the hold starts
+        // that long before it in output time, at a source time that is kept,
+        // never in a part that was cut (PR #199 review).
+        const auto outputMs = m_map.sourceToOutput(sourceMs);
+        if (!outputMs) return sourceMs; // cut out: never drawn
+        const qint64 holdFrom = std::max<qint64>(0, m_map.outputDurationMs() - m_settings.stillEndMs);
+        if (*outputMs < holdFrom) return sourceMs;
+        return std::max(m_map.outputToSource(holdFrom), firstSample);
+    }
+    if (m_clipEndMs < 0) return sourceMs;
     // A clip shorter than the still interval (Still End is remembered across
     // recordings) holds the pointer from its first sample, never from a time
     // before the timeline, where there is no pointer at all.
-    const qint64 freezeAt = std::max(m_clipEndMs - m_settings.stillEndMs, m_timeline.samples.front().tMs);
+    const qint64 freezeAt = std::max(m_clipEndMs - m_settings.stillEndMs, firstSample);
     return std::min(sourceMs, freezeAt);
 }
 

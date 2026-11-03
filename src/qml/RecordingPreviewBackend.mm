@@ -352,13 +352,34 @@ const RecordingPreviewBackend::Mp4Capabilities& RecordingPreviewBackend::mp4Capa
 
 const VideoFileProbe& RecordingPreviewBackend::sourceProbe() const
 {
-    if (!m_sourceProbe) {
+    static const VideoFileProbe kNotYetProbed;
+    if (m_sourceProbe) return *m_sourceProbe;
+    if (!m_sourceProbePending) {
+        m_sourceProbePending = true;
         const auto factory = transcoderFactoryOverride() ? transcoderFactoryOverride()
                                                          : TranscoderFactory(&IVideoTranscoder::create);
-        const auto transcoder = factory ? factory() : nullptr;
-        m_sourceProbe = transcoder ? transcoder->probe(m_videoPath) : VideoFileProbe();
+        const QString path = m_videoPath;
+        const QPointer<RecordingPreviewBackend> weakThis(const_cast<RecordingPreviewBackend*>(this));
+        (void)QtConcurrent::run([factory, path, weakThis]() {
+            const auto transcoder = factory ? factory() : nullptr;
+            const VideoFileProbe probe = transcoder ? transcoder->probe(path) : VideoFileProbe();
+            if (QCoreApplication* app = QCoreApplication::instance()) {
+                QMetaObject::invokeMethod(app, [weakThis, probe]() {
+                    if (!weakThis) return;
+                    weakThis->m_sourceProbe = probe;
+                    weakThis->m_sourceProbePending = false;
+                    emit weakThis->mp4EstimateChanged();
+                }, Qt::QueuedConnection);
+            }
+        });
     }
-    return *m_sourceProbe;
+    return kNotYetProbed;
+}
+
+bool RecordingPreviewBackend::sourceProbeReady() const
+{
+    (void)sourceProbe();
+    return m_sourceProbe.has_value();
 }
 
 bool RecordingPreviewBackend::formatCanDrawEffects() const
@@ -781,6 +802,9 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
     });
     connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
     connect(this, &RecordingPreviewBackend::appearanceChanged, player, &VideoPlaybackItem::reprocessFrame);
+    // The blurred background is made from the cropped picture: a new crop
+    // (also undo or clear) needs it again, even while paused (PR #198 review).
+    connect(this, &RecordingPreviewBackend::cropRectChanged, player, &VideoPlaybackItem::reprocessFrame);
 }
 
 bool RecordingPreviewBackend::zoomAvailable() const
@@ -1349,6 +1373,14 @@ bool RecordingPreviewBackend::moveSplit(int index, qint64 sourceMs)
     bool moved = false;
     editTimeline([&](SnapTray::TimelineEdit& t) { return moved = t.moveSplit(index, sourceMs, m_duration); }, false);
     return moved;
+}
+
+qint64 RecordingPreviewBackend::legalSplitPosition(int index, qint64 sourceMs) const
+{
+    if (m_duration <= 0 || index < 0 || index >= int(m_timeline.splits.size())) return -1;
+    const qint64 lower = m_timeline.partStartMs(index) + SnapTray::TimelineEdit::kMinPartMs;
+    const qint64 upper = m_timeline.partEndMs(index + 1, m_duration) - SnapTray::TimelineEdit::kMinPartMs;
+    return lower > upper ? -1 : qBound(lower, sourceMs, upper);
 }
 
 void RecordingPreviewBackend::commitTimelineEdit()
@@ -2557,7 +2589,8 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             moveInstead = smartSave;
             moveReason = "no transcoder on this platform";
             if (!moveInstead) result.errorMessage = unsupportedError;
-        } else if (smartSave && !recordedAsIntermediate && !mp4Options.mayChangeStream()) {
+        } else if (smartSave && !recordedAsIntermediate && !mp4Options.mayChangeStream()
+                   && mp4Options.quality == SnapTray::Mp4ExportOptions::Quality::Default) {
             // Already encoded at the user's quality; a re-encode would only lose detail.
             moveInstead = true;
             moveReason = "not an intermediate: recorded at the selected quality; saving as recorded";
@@ -2572,7 +2605,10 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                                             sourceProbe.frameRate, sourceProbe.videoCodec)) {
                 smartSave = false;
             }
-            if (smartSave && !recordedAsIntermediate) {
+            // An explicit quality is judged by its bitrate like an intermediate:
+            // Low re-encodes a recording above Low's target (PR #197 review).
+            if (smartSave && !recordedAsIntermediate
+                && mp4Options.quality == SnapTray::Mp4ExportOptions::Quality::Default) {
                 moveInstead = true;
                 moveReason = "not an intermediate: recorded at the selected quality; saving as recorded";
             } else if (smartSave && !sourceProbe.valid) {

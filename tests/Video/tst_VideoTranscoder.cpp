@@ -348,6 +348,7 @@ private slots:
     void outputAliasingInputIsRefused();
     void invalidInputFails();
     void outputOptionsScaleAndLowerTheFrameRate();
+    void lowerFrameRateKeepsTheCadence();
     void hevcOutput();
     void sizeEstimateAgainstActual();
     void segmentsStayInSync();
@@ -1032,6 +1033,45 @@ void tst_VideoTranscoder::outputOptionsScaleAndLowerTheFrameRate()
     request.frameRate = 0;
     QVERIFY2(m_transcoder->transcode(request, {}).success, "bounded export failed");
     QCOMPARE(m_transcoder->probe(request.outputPath).videoSize, QSize(120, 98));
+}
+
+// PR #197 review: a non-integer ratio keeps the requested cadence. 24 fps
+// exported at 15 keeps 5 of every 8 frames, not every other one (12 fps).
+void tst_VideoTranscoder::lowerFrameRateKeepsTheCadence()
+{
+    if (!m_transcoder->supportsOutputOptions() || !m_transcoder->supportsFrameFilter())
+        QSKIP("This transcoder does not lower the frame rate itself");
+    constexpr int kSourceFps = 24;
+    constexpr int kSeconds = 2;
+    const QString input = m_dir.filePath(QStringLiteral("24fps.mp4"));
+    {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder);
+        QVERIFY(encoder->start(input, kSourceSize, kSourceFps));
+        for (int i = 0; i < kSourceFps * kSeconds; ++i) {
+            const qint64 before = encoder->framesWritten();
+            QElapsedTimer wait;
+            wait.start();
+            do {
+                encoder->writeFrame(fixtureFrame(i % kFrameCount), qint64(i) * 1000 / kSourceFps);
+                if (encoder->framesWritten() != before) break;
+                QTest::qWait(5);
+            } while (wait.elapsed() < 2000);
+        }
+        QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+        encoder->finish();
+        QVERIFY(!finished.isEmpty() || finished.wait(10000));
+    }
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = m_dir.filePath(QStringLiteral("15fps.mp4"));
+    request.frameRate = 15;
+    int kept = 0;
+    request.frameFilter = [&kept](QImage&, qint64) { ++kept; };
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    // 15 fps over 2 s is 30 frames; the old threshold kept about 24.
+    QVERIFY2(qAbs(kept - 15 * kSeconds) <= 2, qPrintable(QString::number(kept)));
 }
 
 void tst_VideoTranscoder::hevcOutput()

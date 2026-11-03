@@ -224,6 +224,9 @@ void RecordingAppearanceRenderer::drawBackground(QPainter& painter, const QImage
 {
     const QRect all(QPoint(0, 0), m_outputSize);
     if (m_appearance.background == RecordingAppearance::Background::Image && !m_backgroundImage.isNull()) {
+        // An opaque base first: a transparent image (a PNG) must not show
+        // whatever the new frame's memory held (PR #198 review).
+        painter.fillRect(all, Qt::black);
         drawCover(painter, all, m_backgroundImage);
         return;
     }
