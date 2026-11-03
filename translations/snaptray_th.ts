@@ -2885,6 +2885,11 @@ English is always included and cannot be removed.</source>
         <source>Too close to another split or an end</source>
         <translation>ใกล้จุดแบ่งอื่นหรือปลายเกินไป</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>เงา</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

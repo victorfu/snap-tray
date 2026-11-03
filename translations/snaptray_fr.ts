@@ -2904,6 +2904,11 @@ Taille : %2</translation>
         <source>Too close to another split or an end</source>
         <translation>Trop près d'une autre scission ou d'une extrémité</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Ombre</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

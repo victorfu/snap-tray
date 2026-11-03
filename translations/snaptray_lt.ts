@@ -2898,6 +2898,11 @@ Dydis: %2</translation>
         <source>Too close to another split or an end</source>
         <translation>Per arti kito padalijimo ar galo</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Šešėlis</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

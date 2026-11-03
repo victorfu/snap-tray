@@ -2904,6 +2904,11 @@ Size: %2</source>
         <source>Too close to another split or an end</source>
         <translation>다른 분할점이나 끝에 너무 가깝습니다</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>그림자</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

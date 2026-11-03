@@ -2898,6 +2898,11 @@ Storlek: %2</translation>
         <source>Too close to another split or an end</source>
         <translation>För nära en annan delning eller ett slut</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Skugga</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

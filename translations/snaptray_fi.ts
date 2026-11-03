@@ -2898,6 +2898,11 @@ Koko: %2</translation>
         <source>Too close to another split or an end</source>
         <translation>Liian lähellä toista jakoa tai päätä</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Varjo</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
