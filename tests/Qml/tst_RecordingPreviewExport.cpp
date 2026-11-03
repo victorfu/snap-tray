@@ -2455,17 +2455,17 @@ void tst_RecordingPreviewExport::overlaysMatchAcrossPreviewAndOutputs()
     }
     QVERIFY(!frame.isNull());
     QCOMPARE(frame.size(), picture);
-    const auto near = [](const QRect& a, const QRect& b) {
+    const auto closeTo = [](const QRect& a, const QRect& b) {
         return qAbs(a.left() - b.left()) <= 3 && qAbs(a.top() - b.top()) <= 3 && qAbs(a.right() - b.right()) <= 3
             && qAbs(a.bottom() - b.bottom()) <= 3;
     };
     const QRect actualText = whiteBox(frame, textArea);
     const QRect actualLogo = whiteBox(frame, logoArea);
-    QVERIFY2(near(actualText, expectedText),
+    QVERIFY2(closeTo(actualText, expectedText),
              qPrintable(QStringLiteral("text: preview %1,%2 %3x%4 output %5,%6 %7x%8")
                             .arg(expectedText.x()).arg(expectedText.y()).arg(expectedText.width()).arg(expectedText.height())
                             .arg(actualText.x()).arg(actualText.y()).arg(actualText.width()).arg(actualText.height())));
-    QVERIFY2(near(actualLogo, expectedLogo), "the logo moved or went missing");
+    QVERIFY2(closeTo(actualLogo, expectedLogo), "the logo moved or went missing");
     // After the title's range only the logo is left.
     const QImage later = format == RecordingPreviewBackend::MP4 ? QImage() : animationFrameAt(output, 1100);
     if (!later.isNull()) QVERIFY(whiteBox(later, textArea).isEmpty());
