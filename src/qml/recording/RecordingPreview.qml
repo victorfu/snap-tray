@@ -181,8 +181,20 @@ Item {
         return Number(speed).toLocaleString(Qt.locale(), "f", speed % 1 ? 1 : 0) + "×"
     }
     // The preview plays the edit: the chosen preview speed times the part's.
+    // What every platform player can play (IVideoPlayer::setPlaybackRate).
+    readonly property real minPlayerRate: 0.25
+    readonly property real maxPlayerRate: 2.0
+    property real requestedPlaybackRate: 0
     function applyPlaybackRate() {
-        const rate = root.speedOptions[root.speedIndex] * backend.playbackSpeedAt(videoPlayer.position)
+        // A 4x part at normal preview speed asks for 4x: the preview plays it
+        // as fast as the player can (the export keeps 4x). Only a new request
+        // is set: a player that adjusts the rate and seeks re-enters here
+        // through positionChanged (PR #199 review).
+        const wanted = root.speedOptions[root.speedIndex] * backend.playbackSpeedAt(videoPlayer.position)
+        const rate = Math.max(root.minPlayerRate, Math.min(root.maxPlayerRate, wanted))
+        if (Math.abs(root.requestedPlaybackRate - rate) < 0.0001)
+            return
+        root.requestedPlaybackRate = rate
         if (videoPlayer.playbackRate !== rate)
             videoPlayer.playbackRate = rate
     }
@@ -257,6 +269,34 @@ Item {
         if (at < 0)
             return here[0]
         return at + 1 < here.length ? here[at + 1] : -1
+    }
+
+    // The same for overlays (PR #201 review): a whole-recording image bar
+    // covers a title's, so each click moves to the next one under the pointer.
+    function nextOverlayAt(ms, current, clicked) {
+        const here = []
+        for (let i = backend.overlays.length - 1; i >= 0; --i) {
+            const overlay = backend.overlays[i]
+            const end = overlay.end < 0 ? timelineArea.dur : overlay.end
+            if (ms >= overlay.start && ms <= end)
+                here.push(i)
+        }
+        if (here.length === 0)
+            return current === clicked ? -1 : clicked
+        const at = here.indexOf(current)
+        if (at < 0)
+            return here[0]
+        return at + 1 < here.length ? here[at + 1] : -1
+    }
+    // Where an overlay is fully shown, past its fade-in.
+    readonly property int overlayRevealMs: 400
+    function showOverlay(index) {
+        if (index < 0 || index >= backend.overlays.length)
+            return
+        const overlay = backend.overlays[index]
+        const end = overlay.end < 0 ? timelineArea.dur : overlay.end
+        videoPlayer.pause()
+        videoPlayer.seek(Math.max(overlay.start, Math.min(end - 1, overlay.start + root.overlayRevealMs)))
     }
 
     // A start/end pair typed but not confirmed yet (Save does not take
@@ -451,7 +491,9 @@ Item {
                 y: root.zoomTarget.y
                 width: root.zoomTarget.width
                 height: root.zoomTarget.height
-                clip: root.zoomFactor > 1.001
+                // Framed (#184): only the cropped picture is in the export,
+                // so nothing outside it shows around the frame (PR #198 review).
+                clip: root.zoomFactor > 1.001 || root.appearanceShown
             }
 
             ZoomClip {
@@ -481,10 +523,18 @@ Item {
                         // part plays at its own speed (#185).
                         if (videoPlayer.playing && backend.hasTimelineEdits && !root.isScrubbing) {
                             const target = backend.playbackTarget(positionMs)
-                            if (target < 0)
-                                videoPlayer.seek(Math.max(0, backend.playbackTarget(backend.trimStart)))
-                            else if (target !== positionMs)
+                            if (target < 0) {
+                                // Past the last kept part: start over, or stop
+                                // when every part is cut (seeking would land
+                                // back here, forever; PR #199 review).
+                                const restart = backend.playbackTarget(backend.trimStart)
+                                if (restart < 0)
+                                    videoPlayer.pause()
+                                else
+                                    videoPlayer.seek(restart)
+                            } else if (target !== positionMs) {
                                 videoPlayer.seek(target)
+                            }
                         }
                         root.applyPlaybackRate()
                     }
@@ -743,6 +793,8 @@ Item {
                 anchors.fill: parent
                 z: 4
                 visible: root.cropAvailable && !root.comparingOriginal
+                // The framed export shows only the crop: no dimmed outside.
+                dimOutside: !root.appearanceShown
                 interactive: !backend.isProcessing
                 aspectRatio: backend.cropAspectRatio
                 legalSizeForDraft: function(r) {
@@ -1063,15 +1115,13 @@ Item {
                         anchors.fill: parent
                         anchors.margins: -2
                         cursorShape: CursorTokens.clickable
-                        onClicked: {
+                        onClicked: function(mouse) {
+                            const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
                             backend.selectedZoom = -1
                             backend.selectedMask = -1
                             backend.selectedPointerHide = -1
-                            backend.selectedOverlay = parent.selected ? -1 : parent.index
-                            if (backend.selectedOverlay >= 0) {
-                                videoPlayer.pause()
-                                videoPlayer.seek(Math.min(parent.endMs - 1, parent.modelData.start + 400))
-                            }
+                            backend.selectedOverlay = root.nextOverlayAt(ms, backend.selectedOverlay, parent.index)
+                            root.showOverlay(backend.selectedOverlay)
                         }
                     }
                 }
@@ -1084,7 +1134,11 @@ Item {
                     required property int index
                     required property var modelData
                     objectName: "previewTimelineSplit" + index
-                    x: timelineArea.posToX(modelData) - width / 2
+                    // While dragged it moves here only: changing the model on
+                    // every move would rebuild this delegate and end the drag
+                    // (PR #199 review). The edit is made once, on release.
+                    property real dragMs: -1
+                    x: timelineArea.posToX(dragMs >= 0 ? dragMs : modelData) - width / 2
                     y: trackRect.y - 7
                     width: 3
                     height: trackRect.height + 14
@@ -1098,14 +1152,20 @@ Item {
                         anchors.fill: parent
                         anchors.margins: -4
                         cursorShape: CursorTokens.resizeHorizontal
-                        property bool moved: false
-                        onPressed: { moved = false; videoPlayer.pause() }
+                        onPressed: { parent.dragMs = -1; videoPlayer.pause() }
                         onPositionChanged: function(mouse) {
                             const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
-                            if (backend.moveSplit(parent.index, ms)) moved = true
+                            const legal = backend.legalSplitPosition(parent.index, ms)
+                            if (legal >= 0) parent.dragMs = legal
                         }
-                        onReleased: if (moved) backend.commitTimelineEdit()
-                        onCanceled: if (moved) backend.commitTimelineEdit()
+                        function finishDrag() {
+                            const target = parent.dragMs
+                            parent.dragMs = -1
+                            if (target >= 0 && backend.moveSplit(parent.index, target))
+                                backend.commitTimelineEdit()
+                        }
+                        onReleased: finishDrag()
+                        onCanceled: finishDrag()
                         onDoubleClicked: backend.removeSplit(parent.index)
                     }
                 }
@@ -1611,7 +1671,9 @@ Item {
                         backend.selectedZoom = -1
                         backend.selectedMask = -1
                         backend.selectedPointerHide = -1
-                        backend.addTextOverlay(videoPlayer.position)
+                        // Shown past its fade-in, so the new title is visible
+                        // while it is edited (PR #201 review).
+                        root.showOverlay(backend.addTextOverlay(videoPlayer.position))
                     }
                 }
                 SegmentButton {

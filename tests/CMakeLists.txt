@@ -414,6 +414,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND X11_XTest_FOUND AND X11_Xfixes_FOUND A
             QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
             $<TARGET_FILE:RecordingManager_CursorTimelineRecorder> x11ProbeOnIsolatedDisplay x11RecorderKeepsQueuedClicks x11QueuedClickKeepsItsDuration x11ClicksDuringAnotherPointerGrab)
     set_tests_properties(RecordingManager_X11CursorProbe PROPERTIES TIMEOUT 60 LABELS "integration")
+    # The real X11 key probe (#187): typed text follows the keyboard state.
+    add_executable(RecordingManager_X11KeyProbe RecordingManager/tst_X11KeyProbe.cpp)
+    target_link_libraries(RecordingManager_X11KeyProbe PRIVATE snaptray_platform X11::X11 X11::Xtst Qt6::Test)
+    add_test(NAME RecordingManager_X11KeyProbe
+        COMMAND xvfb-run -a -s "-screen 0 800x600x24"
+            ${CMAKE_COMMAND} -E env --unset=WAYLAND_DISPLAY --unset=WAYLAND_SOCKET
+            QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
+            $<TARGET_FILE:RecordingManager_X11KeyProbe>)
+    set_tests_properties(RecordingManager_X11KeyProbe PROPERTIES TIMEOUT 60 LABELS "integration")
 endif()
 
 add_executable(RecordingManager_WindowTimelineSidecar RecordingManager/tst_WindowTimelineSidecar.cpp)

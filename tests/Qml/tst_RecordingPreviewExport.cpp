@@ -419,6 +419,7 @@ private slots:
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs_data();
     void mp4OptionsReachTheOutput();
     void mp4OptionsMatchingTheSourceKeepTheFastPath();
+    void sourceProbeNeverBlocksTheGuiThread();
     void mp4OptionsTurnAnUneditedSaveIntoAnExport_data();
     void mp4OptionsTurnAnUneditedSaveIntoAnExport();
     void appearanceMatchesAcrossPreviewAndOutputs_data();
@@ -429,6 +430,7 @@ private slots:
     void cutsRefusedWhereMp4CannotJoin();
     void keyHintsMatchAcrossPreviewAndOutputs_data();
     void keyHintsMatchAcrossPreviewAndOutputs();
+    void keysBeforeTheTrimStayOut();
     void overlaysMatchAcrossPreviewAndOutputs_data();
     void overlaysMatchAcrossPreviewAndOutputs();
     void separateTracksAreMixedOnlyWhenChanged();
@@ -1207,8 +1209,29 @@ void tst_RecordingPreviewExport::smartSaveMovesRecordingNotRecordedAsIntermediat
     QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
     QVERIFY(QFileInfo::exists(noiseInputPath));
     QVERIFY(backend.errorMessage().isEmpty());
-    std::lock_guard<std::mutex> lock(log->mutex);
-    QCOMPARE(log->calls, 0);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->calls, 0);
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+
+    // PR #197 review: an explicit quality is honoured. The noise fixture is
+    // above Low's target, so choosing Low re-encodes it.
+    const QJsonObject rememberedOptions = RecordingSettingsManager::instance().mp4ExportOptions();
+    auto restoreOptions = qScopeGuard([rememberedOptions]() {
+        RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
+    });
+    backend.setMp4Quality(int(SnapTray::Mp4ExportOptions::Quality::Low));
+    savedSpy.clear();
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QTRY_COMPARE(savedSpy.count(), 1);
+    QVERIFY(savedSpy.first().at(0).toString() != noiseInputPath);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->calls, 1);
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
 }
 
 void tst_RecordingPreviewExport::failedSmartSaveReencodeSavesOriginal()
@@ -1882,6 +1905,7 @@ void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);
     backend.updateVideoSize(sourceSize);
     backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QTRY_VERIFY(backend.sourceProbeReady()); // probed off the GUI thread
     if (!backend.mp4OutputOptionsAvailable() || !backend.cursorEffectsAvailable()) {
         QSKIP("This platform's MP4 transcoder cannot change size and frame rate yet");
     }
@@ -1936,6 +1960,39 @@ void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
 
 // Options that change nothing for this recording (no smaller size, no lower
 // frame rate, H.264) keep an unedited recording on the move-as-is path.
+// PR #197 review: the MP4 options and estimate read the source's probe, which
+// can scan a whole file (Windows reads every audio packet). It runs off the
+// GUI thread: the getters answer at once and update when the probe is ready.
+void tst_RecordingPreviewExport::sourceProbeNeverBlocksTheGuiThread()
+{
+    auto gate = std::make_shared<ExportGate>();
+    gate->blockProbe = true;
+    auto restore = qScopeGuard([gate]() {
+        gate->resumeProbe.release();
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    });
+    RecordingPreviewBackend::transcoderFactoryOverride() = [gate]() -> std::unique_ptr<IVideoTranscoder> {
+        return std::make_unique<GatedTranscoder>(gate);
+    };
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QSignalSpy estimate(&backend, &RecordingPreviewBackend::mp4EstimateChanged);
+    QElapsedTimer timer;
+    timer.start();
+    QVERIFY(!backend.sourceProbeReady());
+    (void)backend.mp4OptionsActive();
+    (void)backend.mp4EstimatedBytes();
+    (void)backend.mp4SourceFrameRate();
+    QVERIFY(timer.elapsed() < 1000); // the probe is still held at the gate
+    QVERIFY(gate->probeEntered.tryAcquire(1, kExportGateTimeoutMs));
+    QVERIFY(!backend.sourceProbeReady());
+    gate->resumeProbe.release();
+    QTRY_VERIFY(backend.sourceProbeReady());
+    QVERIFY(estimate.count() >= 1);
+    QCOMPARE(backend.mp4SourceFrameRate(), 10);
+    QVERIFY(!gate->timedOut.load());
+}
+
 void tst_RecordingPreviewExport::mp4OptionsMatchingTheSourceKeepTheFastPath()
 {
     const QSize sourceSize(160, 120);
@@ -1957,6 +2014,7 @@ void tst_RecordingPreviewExport::mp4OptionsMatchingTheSourceKeepTheFastPath()
     backend.updateDuration(kFrameCount * kFrameIntervalMs);
     backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::P720)); // larger than the source
     backend.setMp4FrameRate(60);                                                  // above the source's rate
+    QTRY_VERIFY(backend.sourceProbeReady());
     QVERIFY(!backend.mp4OptionsActive());
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
@@ -2565,6 +2623,68 @@ void tst_RecordingPreviewExport::separateTracksAreMixedOnlyWhenChanged()
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     // The tracks go with the recording once the export is saved.
     QVERIFY(!SnapTray::AudioTracks::exist(inputPath));
+}
+
+// PR #200 review: a plain trim (no cuts) still bounds the hints. A shortcut
+// pressed at 100 ms is not in a recording trimmed to start at 200 ms, in the
+// preview or the output; and the preview's cached renderer follows changes.
+void tst_RecordingPreviewExport::keysBeforeTheTrimStayOut()
+{
+    const QSize sourceSize(320, 240);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    {
+        SnapTray::KeyTimelineWriter writer(SnapTray::KeyTimelineSidecar::pathFor(inputPath));
+        QVERIFY(writer.open({SnapTray::KeyRecordingMode::Shortcuts, false}));
+        writer.add({100, Qt::Key_C, Qt::ControlModifier, {}});
+        QVERIFY(writer.finish());
+    }
+    const QJsonObject remembered = RecordingSettingsManager::instance().keyOverlay();
+    auto restore = qScopeGuard([remembered]() { RecordingSettingsManager::instance().setKeyOverlay(remembered); });
+    RecordingSettingsManager::instance().setKeyOverlay({});
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QVERIFY(backend.keyOverlayActive());
+    const auto hintIn = [](const QImage& image) {
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = 0; x < image.width(); ++x) {
+                const QColor c = image.pixelColor(x, y);
+                if (!(c.red() > 150 && c.green() < 100 && c.blue() < 100)) return true;
+            }
+        return false;
+    };
+    RecordingKeyOverlay overlay;
+    overlay.setBackend(&backend);
+    overlay.setContentRect(QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+    const auto paintAt = [&](qint64 ms) {
+        overlay.setPosition(ms);
+        QImage image(sourceSize, QImage::Format_RGB32);
+        image.fill(Qt::red);
+        QPainter painter(&image);
+        overlay.paint(&painter);
+        painter.end();
+        return image;
+    };
+    QVERIFY(hintIn(paintAt(250))); // untrimmed: the hint lasts past 250 ms
+    backend.setTrimStart(200);
+    QVERIFY(!hintIn(paintAt(250)));
+    backend.setTrimStart(0);
+    QVERIFY(hintIn(paintAt(250))); // the cached renderer follows the trim back
+    backend.setTrimStart(200);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    const QImage first = animationFrameAt(savedSpy.first().at(0).toString(), 50); // source 250 ms
+    QVERIFY(!first.isNull());
+    QVERIFY2(!hintIn(first), "a hint for a key pressed before the trim start");
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
 }
 
 void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()

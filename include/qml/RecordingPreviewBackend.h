@@ -477,6 +477,9 @@ public:
     Q_INVOKABLE void removeSplit(int index);
     // While dragging: moves without an undo step; commitTimelineEdit() records it.
     Q_INVOKABLE bool moveSplit(int index, qint64 sourceMs);
+    // Where split `index` may be dragged to: `sourceMs` kept between its
+    // neighbours (each part at least TimelineEdit::kMinPartMs); -1 if none.
+    Q_INVOKABLE qint64 legalSplitPosition(int index, qint64 sourceMs) const;
     Q_INVOKABLE void commitTimelineEdit();
     Q_INVOKABLE void setPartDeleted(int part, bool deleted);
     Q_INVOKABLE void setPartSpeed(int part, qreal speed);
@@ -547,6 +550,8 @@ public:
     int mp4SourceFrameRate() const;
     qint64 mp4EstimatedBytes() const;
     QString mp4EstimateText() const;
+    // True once the source has been probed (starts the probe if needed).
+    bool sourceProbeReady() const;
 
     // Anything drawn into the export: masks, pointer effects or zoom.
     bool effectsActive() const;
@@ -664,7 +669,10 @@ private:
     mutable std::optional<Mp4Capabilities> m_mp4Capabilities;
     const Mp4Capabilities& mp4Capabilities() const;
     // The source file's probe, read once (for the frame rate and estimate).
+    // Probed once, off the GUI thread (a probe can read the whole file):
+    // empty until it is ready, then mp4EstimateChanged() (PR #197 review).
     mutable std::optional<VideoFileProbe> m_sourceProbe;
+    mutable bool m_sourceProbePending = false;
     const VideoFileProbe& sourceProbe() const;
     SnapTray::Mp4ExportOptions m_mp4Options;
     SnapTray::RecordingAppearance m_appearance;
