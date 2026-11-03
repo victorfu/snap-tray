@@ -817,6 +817,21 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>recording keys</source>
         <translation>καταγραφή πλήκτρων</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>Βιβλιοθήκη εγγραφών...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>Το έργο δεν είναι διαθέσιμο</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>Η εγγραφή αυτού του έργου λείπει ή είναι κατεστραμμένη.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3213,6 +3228,31 @@ Size: %2</source>
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>Μείωση συριγμού, βόμβου και θορύβου δωματίου ανάμεσα στις λέξεις στο μικρόφωνο</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Κλείσιμο χωρίς αποθήκευση (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>Κλείσιμο χωρίς αποθήκευση των αλλαγών;</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Το έργο παραμένει στη Βιβλιοθήκη εγγραφών όπως αποθηκεύτηκε τελευταία φορά.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>Συνέχεια επεξεργασίας</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>Κλείσιμο</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3379,6 +3419,11 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Οι επικαλύψεις κειμένου και εικόνας δεν σχεδιάζονται ακόμα σε MP4 σε αυτό το σύστημα. Εξαγάγετε ως GIF ή WebP ή αφαιρέστε τες για εξαγωγή MP4. Δεν εξήχθη τίποτα.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>Δεν ήταν δυνατή η αντιγραφή της εγγραφής του έργου για αποθήκευση. Δεν αποθηκεύτηκε τίποτα.</translation>
     </message>
 </context>
 <context>
@@ -3681,6 +3726,41 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>Μόνο συντομεύσεις</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>Ποτέ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 ημέρες</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 ημέρες</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 ημέρες</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>Διατήρηση επεξεργάσιμων έργων</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Μετά την αποθήκευση, διατήρηση της εγγραφής και των επεξεργασιών σας, ώστε να την αλλάξετε και να την εξαγάγετε ξανά από τη Βιβλιοθήκη εγγραφών. Τα έργα διατηρούν ολόκληρη την εγγραφή οθόνης, τον δείκτη, τα πλήκτρα και τα κομμάτια ήχου της, μαζί με ό,τι θολώσατε ή περικόψατε, και καταλαμβάνουν χώρο στον δίσκο.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>Διαγραφή έργων που δεν άλλαξαν για</translation>
     </message>
 </context>
 <context>
@@ -5150,6 +5230,97 @@ File size: %3</source>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Η εγγραφή σταμάτησε. %1 Ό,τι έχει εγγραφεί μέχρι τώρα διατηρείται.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>Βιβλιοθήκη εγγραφών</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>Επεξεργάσιμα έργα: %1 σε αυτόν τον υπολογιστή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>Δεν υπάρχουν επεξεργάσιμα έργα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Η διατήρηση νέων έργων είναι απενεργοποιημένη. Τα έργα διατηρούν ολόκληρη την εγγραφή, μαζί με ό,τι θολώσατε ή περικόψατε.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Τα έργα διατηρούν ολόκληρη την εγγραφή, μαζί με ό,τι θολώσατε ή περικόψατε.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Ενεργοποιήστε τη Διατήρηση επεξεργάσιμων έργων στις Ρυθμίσεις &gt; Εγγραφή για να επεξεργάζεστε ξανά εγγραφές μετά την αποθήκευση.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>Διαγραφή αυτού του έργου; Το αρχείο που αποθηκεύσατε από αυτό παραμένει.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>Άνοιγμα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>Άνοιγμα %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>Εμφάνιση στον φάκελο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>Διαγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>Διαγραφή...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>Διαγραφή %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Ακύρωση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>Κλείσιμο</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, δημιουργήθηκε %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>Ανοιχτό στην προεπισκόπηση</translation>
     </message>
 </context>
 </TS>

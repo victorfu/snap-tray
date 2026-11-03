@@ -11,6 +11,7 @@
 #include "qml/QmlHistoryWindow.h"
 #include "qml/ScreenPickerViewModel.h"
 #include "qml/RecordingRecoveryViewModel.h"
+#include "qml/RecordingLibraryViewModel.h"
 #include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
@@ -22,6 +23,7 @@
 #include "recording/CursorTimeline.h"
 #include "recording/KeyTimeline.h"
 #include "recording/AudioTracks.h"
+#include "recording/RecordingProject.h"
 #include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "ui/TrayRecordingIndicator.h"
@@ -264,6 +266,8 @@ void MainApplication::initialize()
 
     // Create recording manager
     m_recordingManager = new RecordingManager(this);
+    // Projects (#191) not changed for the chosen number of days.
+    SnapTray::RecordingProjects::removeOlderThan(RecordingSettingsManager::instance().projectCleanupDays());
 
     // Connect recording signals
     connect(m_recordingManager, &RecordingManager::recordingStopped,
@@ -444,6 +448,10 @@ void MainApplication::initialize()
         m_recoverRecordingsAction = m_trayMenu->addAction(tr("Recover Recordings..."));
         m_recoverRecordingsAction->setVisible(false);
         connect(m_recoverRecordingsAction, &QAction::triggered, this, &MainApplication::showRecoveryDialog);
+        // Kept editable projects (#191); always there, so the library can
+        // explain how to turn keeping on.
+        m_recordingLibraryAction = m_trayMenu->addAction(tr("Recording Library..."));
+        connect(m_recordingLibraryAction, &QAction::triggered, this, &MainApplication::showRecordingLibrary);
         // Local diagnostics for the last recording; only copied when the user asks.
         m_copyRecordingDiagnosticsAction = m_trayMenu->addAction(tr("Copy Recording Diagnostics"));
         m_copyRecordingDiagnosticsAction->setVisible(false);
@@ -1097,6 +1105,10 @@ void MainApplication::onPreviewSaveRequested(const QString& videoPath, const QSi
 
 void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
 {
+    // A kept project's recording is only ever deleted from the library.
+    if (SnapTray::RecordingProjects::contains(videoPath)) {
+        return;
+    }
     if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
         if (!QFile::remove(videoPath)) {
             qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;
@@ -1224,6 +1236,54 @@ void MainApplication::showRecoveryDialog()
     });
     m_recordingManager->scanForRecoveries();
     dialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+}
+
+void MainApplication::showRecordingLibrary()
+{
+    const QString openProject = m_previewBackend ? m_previewBackend->projectDir() : QString();
+    if (m_libraryDialog) {
+        if (auto* model = m_libraryDialog->findChild<SnapTray::RecordingLibraryViewModel*>()) {
+            model->setOpenProjectDir(openProject);
+            model->refresh();
+        }
+        m_libraryDialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+        return;
+    }
+    auto* viewModel = new SnapTray::RecordingLibraryViewModel(this);
+    viewModel->setOpenProjectDir(openProject);
+    auto* dialog = new SnapTray::QmlDialog(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingLibraryDialog.qml")),
+        viewModel, QStringLiteral("viewModel"), this);
+    viewModel->setParent(dialog);
+    m_libraryDialog = dialog;
+    connect(dialog, &SnapTray::QmlDialog::closed, dialog, &QObject::deleteLater);
+    connect(viewModel, &SnapTray::RecordingLibraryViewModel::openRequested, this,
+        &MainApplication::openRecordingProject);
+    connect(viewModel, &SnapTray::RecordingLibraryViewModel::closeRequested, dialog, [this] {
+        if (m_libraryDialog) m_libraryDialog->close();
+    });
+    dialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+}
+
+void MainApplication::openRecordingProject(const QString& projectDir)
+{
+    const auto project = SnapTray::RecordingProjects::load(projectDir);
+    if (!project) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Project Unavailable"),
+            tr("This project's recording is missing or damaged."));
+        return;
+    }
+    if (m_previewBackend || !m_recordingManager->openProjectRecording(project->videoPath())) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Recording Busy"),
+            tr("Finish or close the current recording first."));
+        return;
+    }
+    // A project is always the full-quality recording: Save re-encodes as needed.
+    showRecordingPreview(project->videoPath(), RecordingSettingsManager::instance().outputFormat(), true);
+    if (m_previewBackend) m_previewBackend->setProject(*project);
+    if (m_libraryDialog) m_libraryDialog->close();
 }
 
 void MainApplication::updateRecordingActionText()

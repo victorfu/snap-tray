@@ -817,6 +817,21 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <source>recording keys</source>
         <translation>näppäimiä tallennetaan</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>Tallennekirjasto...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>Projekti ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>Tämän projektin tallenne puuttuu tai on vioittunut.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3213,6 +3228,31 @@ Koko: %2</translation>
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>Vaimenna sihinää, huminaa ja huoneen kohinaa sanojen välissä mikrofonista</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Sulje tallentamatta (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>Suljetaanko tallentamatta muutoksia?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Projekti jää tallennekirjastoon sellaisena kuin se viimeksi tallennettiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>Jatka muokkausta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3379,6 +3419,11 @@ Koko: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Teksti- ja kuvapäällysteitä ei vielä voi piirtää MP4:ään tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista ne viedäksesi MP4:n. Mitään ei viety.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>Projektin tallennetta ei voitu kopioida tallennusta varten. Mitään ei tallennettu.</translation>
     </message>
 </context>
 <context>
@@ -3681,6 +3726,41 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>Vain pikanäppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>Ei koskaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>Säilytä muokattavat projektit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Tallennuksen jälkeen säilytä tallenne ja muokkauksesi, jotta voit muuttaa ja viedä sen uudelleen tallennekirjastosta. Projektit säilyttävät koko näytön tallenteen, sen osoittimen, näppäimet ja ääniraidat, myös sen, minkä sumensit tai rajasit pois, ja vievät levytilaa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>Poista projektit, joita ei ole muutettu</translation>
     </message>
 </context>
 <context>
@@ -5150,6 +5230,97 @@ Tiedoston koko: %3</translation>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Tallennus pysähtyi. %1 Kaikki tähän mennessä tallennettu säilyy.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>Tallennekirjasto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>Muokattavat projektit: %1 tällä tietokoneella</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>Ei muokattavia projekteja</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Uusien projektien säilytys on pois päältä. Projektit säilyttävät koko tallenteen, myös sen, minkä sumensit tai rajasit pois.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Projektit säilyttävät koko tallenteen, myös sen, minkä sumensit tai rajasit pois.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Ota Säilytä muokattavat projektit käyttöön kohdassa Asetukset &gt; Tallennus, niin voit muokata tallenteita uudelleen tallennuksen jälkeen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>Poistetaanko tämä projekti? Siitä tallentamasi tiedosto säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>Avaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>Avaa %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>Näytä kansiossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>Poista</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>Poista...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>Poista %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, luotu %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>Auki esikatselussa</translation>
     </message>
 </context>
 </TS>

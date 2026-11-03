@@ -13,6 +13,12 @@ Flickable {
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
     readonly property var frameRates: [10, 15, 24, 30]
+    readonly property var projectCleanupOptions: [
+        { text: qsTr("Never"), value: 0 },
+        { text: qsTr("7 days"), value: 7 },
+        { text: qsTr("30 days"), value: 30 },
+        { text: qsTr("90 days"), value: 90 }
+    ]
     readonly property bool audioCaptureSupported: !settingsBackend.recordingDirectMp4Only
         && (settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat === 0)
     readonly property bool audioSourceUsesInputDevice: settingsBackend.recordingAudioSource !== 1
@@ -278,6 +284,28 @@ Flickable {
             description: qsTr("Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.")
             checked: settingsBackend.recordingShowPreview
             onToggled: function(checked) { settingsBackend.recordingShowPreview = checked }
+        }
+
+        // Editable projects (#191): off by default, the recording is private.
+        SettingsToggle {
+            objectName: "settingsKeepProjects"
+            label: qsTr("Keep editable projects")
+            visible: !settingsBackend.recordingDirectMp4Only
+            description: qsTr("After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.")
+            checked: settingsBackend.recordingKeepProjects
+            onToggled: function(checked) { settingsBackend.recordingKeepProjects = checked }
+        }
+
+        SettingsCombo {
+            objectName: "settingsProjectCleanup"
+            label: qsTr("Delete projects not changed for")
+            visible: !settingsBackend.recordingDirectMp4Only
+            model: root.projectCleanupOptions
+            currentIndex: Math.max(0, root.projectCleanupOptions.findIndex(function(o) {
+                return o.value === settingsBackend.recordingProjectCleanupDays }))
+            onActivated: function(index) {
+                settingsBackend.recordingProjectCleanupDays = root.projectCleanupOptions[index].value
+            }
         }
 
         SettingsSection { title: qsTr("Countdown") }

@@ -823,6 +823,21 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <source>recording keys</source>
         <translation>Tasten werden aufgezeichnet</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>Aufnahmebibliothek...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>Projekt nicht verfügbar</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>Die Aufnahme dieses Projekts fehlt oder ist beschädigt.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3219,6 +3234,31 @@ Größe: %2</translation>
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>Rauschen, Brummen und Raumgeräusche zwischen den Worten am Mikrofon absenken</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Ohne Speichern schließen (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>Ohne Speichern der Änderungen schließen?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Das Projekt bleibt so in der Aufnahmebibliothek, wie es zuletzt gespeichert wurde.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>Weiter bearbeiten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3385,6 +3425,11 @@ Größe: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Text- und Bildeinblendungen lassen sich auf diesem System noch nicht in MP4 zeichnen. Exportieren Sie als GIF oder WebP oder entfernen Sie sie für MP4. Es wurde nichts exportiert.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>Die Aufnahme des Projekts konnte zum Speichern nicht kopiert werden. Es wurde nichts gespeichert.</translation>
     </message>
 </context>
 <context>
@@ -3687,6 +3732,41 @@ Audio wird bei GIF-Aufnahmen nicht unterstützt.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>Nur Tastenkürzel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>Nie</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 Tage</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 Tage</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 Tage</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>Bearbeitbare Projekte behalten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Nach dem Speichern die Aufnahme und Ihre Bearbeitungen behalten, damit Sie sie in der Aufnahmebibliothek erneut ändern und exportieren können. Projekte behalten die vollständige Bildschirmaufnahme mit Zeiger, Tasten und Audiospuren, einschließlich allem, was Sie verwischt oder weggeschnitten haben, und belegen Speicherplatz.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>Projekte löschen, die nicht geändert wurden seit</translation>
     </message>
 </context>
 <context>
@@ -5156,6 +5236,97 @@ Dateigröße: %3</translation>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Aufnahme gestoppt. %1 Alles bisher Aufgenommene bleibt erhalten.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>Aufnahmebibliothek</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>Bearbeitbare Projekte: %1 auf diesem Computer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>Keine bearbeitbaren Projekte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Das Behalten neuer Projekte ist aus. Projekte behalten die vollständige Aufnahme, einschließlich allem, was Sie verwischt oder weggeschnitten haben.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Projekte behalten die vollständige Aufnahme, einschließlich allem, was Sie verwischt oder weggeschnitten haben.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Aktivieren Sie „Bearbeitbare Projekte behalten“ unter Einstellungen &gt; Aufnahme, um Aufnahmen nach dem Speichern erneut zu bearbeiten.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>Dieses Projekt löschen? Die daraus gespeicherte Datei bleibt erhalten.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>Öffnen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>%1 öffnen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>Im Ordner anzeigen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>Löschen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>Löschen...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>%1 löschen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, erstellt %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>In der Vorschau geöffnet</translation>
     </message>
 </context>
 </TS>

@@ -817,6 +817,21 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <source>recording keys</source>
         <translation>tuşlar kaydediliyor</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>Kayıt Kitaplığı...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>Proje kullanılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>Bu projenin kaydı eksik veya bozuk.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3213,6 +3228,31 @@ Boyut: %2</translation>
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>Mikrofondaki kelimeler arasındaki tıslama, uğultu ve oda gürültüsünü azalt</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Kaydetmeden kapat (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>Değişiklikleri kaydetmeden kapatılsın mı?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Proje, son kaydedildiği hâliyle Kayıt Kitaplığı'nda kalır.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>Düzenlemeye devam et</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3379,6 +3419,11 @@ Boyut: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Metin ve resim katmanları bu sistemde henüz MP4'e çizilemiyor. GIF veya WebP olarak dışa aktarın ya da MP4 için bunları kaldırın. Hiçbir şey dışa aktarılmadı.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>Projenin kaydı kaydetmek için kopyalanamadı. Hiçbir şey kaydedilmedi.</translation>
     </message>
 </context>
 <context>
@@ -3681,6 +3726,41 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>Yalnızca kısayollar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>Asla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 gün</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 gün</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 gün</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>Düzenlenebilir projeleri sakla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Kaydettikten sonra kaydı ve düzenlemelerinizi saklayarak Kayıt Kitaplığı'ndan yeniden değiştirip dışa aktarabilirsiniz. Projeler, bulanıklaştırdığınız veya kırptığınız her şey dâhil tam ekran kaydını, işaretçiyi, tuşları ve ses parçalarını saklar ve disk alanı kullanır.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>Şu süredir değişmeyen projeleri sil</translation>
     </message>
 </context>
 <context>
@@ -5150,6 +5230,97 @@ Dosya boyutu: %3</translation>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Kayıt durdu. %1 Şimdiye kadar kaydedilen her şey korunur.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>Kayıt Kitaplığı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>Düzenlenebilir projeler: bu bilgisayarda %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>Düzenlenebilir proje yok</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Yeni projeleri saklama kapalı. Projeler, bulanıklaştırdığınız veya kırptığınız her şey dâhil kaydın tamamını saklar.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Projeler, bulanıklaştırdığınız veya kırptığınız her şey dâhil kaydın tamamını saklar.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Kaydettikten sonra kayıtları yeniden düzenlemek için Ayarlar &gt; Kayıt bölümünde Düzenlenebilir projeleri sakla seçeneğini açın.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>Bu proje silinsin mi? Ondan kaydettiğiniz dosya kalır.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>Aç</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>%1 öğesini aç</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>Klasörde göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>Sil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>Sil...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>%1 öğesini sil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>Kapat</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, oluşturulma %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>Önizlemede açık</translation>
     </message>
 </context>
 </TS>

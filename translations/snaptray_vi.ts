@@ -817,6 +817,21 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <source>recording keys</source>
         <translation>đang ghi phím</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>Thư viện bản ghi...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>Dự án không khả dụng</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>Bản ghi của dự án này bị thiếu hoặc bị hỏng.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3213,6 +3228,31 @@ Kích thước: %2</translation>
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>Giảm tiếng xì, tiếng ù và tạp âm trong phòng giữa các từ ở micro</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Đóng không lưu (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>Đóng mà không lưu thay đổi?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Dự án vẫn ở trong Thư viện bản ghi như lần lưu gần nhất.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>Tiếp tục chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>Đóng</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3379,6 +3419,11 @@ Kích thước: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Hệ thống này chưa vẽ được lớp phủ chữ và hình vào MP4. Hãy xuất GIF hoặc WebP, hoặc bỏ chúng để xuất MP4. Chưa có gì được xuất.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>Không thể sao chép bản ghi của dự án để lưu. Chưa có gì được lưu.</translation>
     </message>
 </context>
 <context>
@@ -3681,6 +3726,41 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>Chỉ phím tắt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>Không bao giờ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 ngày</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 ngày</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 ngày</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>Giữ dự án có thể chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Sau khi lưu, giữ bản ghi và các chỉnh sửa để bạn có thể thay đổi và xuất lại từ Thư viện bản ghi. Dự án giữ toàn bộ bản ghi màn hình, con trỏ, phím và các rãnh âm thanh, kể cả phần bạn đã làm mờ hoặc cắt bỏ, và chiếm dung lượng đĩa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>Xóa dự án không thay đổi trong</translation>
     </message>
 </context>
 <context>
@@ -5150,6 +5230,97 @@ Kích thước tệp: %3</translation>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Đã dừng ghi hình. %1 Mọi nội dung đã ghi đến lúc này đều được giữ lại.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>Thư viện bản ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>Dự án có thể chỉnh sửa: %1 trên máy tính này</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>Không có dự án có thể chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Giữ dự án mới đang tắt. Dự án giữ toàn bộ bản ghi, kể cả phần bạn đã làm mờ hoặc cắt bỏ.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Dự án giữ toàn bộ bản ghi, kể cả phần bạn đã làm mờ hoặc cắt bỏ.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Bật Giữ dự án có thể chỉnh sửa trong Cài đặt &gt; Ghi hình để chỉnh sửa lại bản ghi sau khi lưu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>Xóa dự án này? Tệp bạn đã lưu từ dự án vẫn được giữ.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>Mở</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>Mở %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>Hiển thị trong thư mục</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>Xóa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>Xóa...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>Xóa %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>Đóng</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, tạo lúc %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>Đang mở trong bản xem trước</translation>
     </message>
 </context>
 </TS>

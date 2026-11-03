@@ -32,6 +32,8 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QFileDialog>
+#include <QStandardPaths>
+#include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QPainter>
@@ -1297,6 +1299,65 @@ bool RecordingPreviewBackend::timelineEditsAvailable() const
     return m_selectedFormat != MP4 || mp4Capabilities().segments;
 }
 
+void RecordingPreviewBackend::setProject(const SnapTray::RecordingProject& project)
+{
+    m_project = project;
+    // The player has not reported yet: the recipe needs the size and length.
+    const VideoFileProbe& probe = sourceProbe();
+    if (m_videoSize.isEmpty()) m_videoSize = probe.videoSize;
+    if (m_duration <= 0) m_duration = probe.durationMs;
+    if (const auto state = SnapTray::RecordingRecipe::editState(project.recipe)) {
+        applyEditState(*state);
+    }
+    const QJsonObject choices = SnapTray::RecordingRecipe::exportChoices(project.recipe);
+    if (choices.contains(QStringLiteral("format"))) setSelectedFormat(choices.value(QStringLiteral("format")).toInt(MP4));
+    if (choices.contains(QStringLiteral("mp4"))) {
+        m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(choices.value(QStringLiteral("mp4")).toObject());
+        emit mp4OptionsChanged();
+    }
+    // Undo starts from the project as it was saved.
+    m_editHistory.reset(currentEditState());
+    emit editHistoryChanged();
+    emit projectChanged();
+}
+
+bool RecordingPreviewBackend::keepsProject() const
+{
+    return m_project.has_value() || RecordingSettingsManager::instance().keepProjects();
+}
+
+QJsonObject RecordingPreviewBackend::currentRecipe() const
+{
+    return SnapTray::RecordingRecipe::toJson(
+        currentEditState(), {{QStringLiteral("format"), m_selectedFormat}, {QStringLiteral("mp4"), m_mp4Options.toJson()}});
+}
+
+namespace {
+// The library's thumbnail, at most this size.
+const QSize kProjectThumbnailSize(320, 180);
+}
+
+void RecordingPreviewBackend::keepAsProject(const QString& savedPath)
+{
+    if (m_project) {
+        SnapTray::RecordingProjects::update(*m_project, currentRecipe(), savedPath);
+        return;
+    }
+    // A small picture for the library, from the first frame shown.
+    QImage thumbnail;
+    if (auto reader = IVideoFrameReader::create(); reader && reader->load(m_videoPath)) {
+        const QImage frame = reader->frameAt(m_trimStart);
+        if (!frame.isNull()) thumbnail = frame.scaled(kProjectThumbnailSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    // Moved with its sidecars; the caller then removes whatever is left.
+    if (!SnapTray::RecordingProjects::create(m_videoPath, false, currentRecipe(), thumbnail, m_duration, savedPath)) {
+        qWarning() << "RecordingPreviewBackend: the recording could not be kept as a project";
+        return;
+    }
+    const int days = RecordingSettingsManager::instance().projectCleanupDays();
+    SnapTray::RecordingProjects::removeOlderThan(days);
+}
+
 bool RecordingPreviewBackend::audioMixAvailable() const
 {
     return m_hasSeparateTracks && m_selectedFormat == MP4 && mp4Capabilities().audioMix;
@@ -1857,6 +1918,24 @@ void RecordingPreviewBackend::setProcessPhase(const QString &status, bool indete
 
 void RecordingPreviewBackend::handOffForSave(const QString &outputPath, const QSize &croppedSize)
 {
+    // A kept project's source is never handed over (the save dialog moves
+    // what it gets and drops its sidecars): an unedited save gets a copy.
+    // Named like a recording, so a copy left by a crash is cleaned up.
+    if (keepsProject() && outputPath == m_videoPath) {
+        const QFileInfo source(m_videoPath);
+        const QString copy = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                 .filePath(QStringLiteral("SnapTray_Recording_%1_project.%2")
+                                               .arg(QDateTime::currentMSecsSinceEpoch())
+                                               .arg(source.suffix()));
+        if (!QFile::copy(m_videoPath, copy)) {
+            finishProcessing();
+            m_canRetrySave = true;
+            setErrorMessage(tr("The project's recording could not be copied for saving. Nothing was saved."));
+            return;
+        }
+        handOffForSave(copy, croppedSize);
+        return;
+    }
     // The export is done; the save dialog (or auto-save) now owns the outcome.
     // Stay "processing" so the window cannot close or start another export.
     m_awaitingSave = true;
@@ -1878,6 +1957,15 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
     m_pendingSaveOutput.clear();
     const bool derived = output != m_videoPath;
 
+    if (outcome == SaveOutcome::Saved && m_project) {
+        // A project keeps its source; the save updates its recipe. The save
+        // dialog took the export (or the copy) as with any save.
+        keepAsProject(savedPath);
+        finishProcessing();
+        m_saved = true;
+        close();
+        return;
+    }
     if (outcome == SaveOutcome::Saved) {
         // Only now is the source no longer needed, unless the export was
         // saved over it: then that path is the user's saved file.
@@ -1887,6 +1975,9 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
             return !ca.isEmpty() ? ca == cb : fa.absoluteFilePath() == fb.absoluteFilePath();
         };
         const bool savedOverSource = !savedPath.isEmpty() && samePath(savedPath, m_videoPath);
+        // Kept as a project (#191): the source and its sidecars move into it
+        // (an unedited save was handed a copy, so the source is still here).
+        if (keepsProject() && !savedOverSource) keepAsProject(savedPath);
         if (derived && !savedOverSource) {
             QFile::remove(m_videoPath);
         }

@@ -17,6 +17,7 @@
 #include "recording/KeyTimeline.h"
 #include "recording/OverlayTrack.h"
 #include "recording/AudioTracks.h"
+#include "recording/RecordingProject.h"
 #include "video/IVideoFrameReader.h"
 #include <QPainter>
 #include "video/IVideoTranscoder.h"
@@ -432,6 +433,7 @@ private slots:
     void overlaysMatchAcrossPreviewAndOutputs_data();
     void overlaysMatchAcrossPreviewAndOutputs();
     void separateTracksAreMixedOnlyWhenChanged();
+    void projectsKeepTheRecordingAndItsEdits();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
@@ -2565,6 +2567,167 @@ void tst_RecordingPreviewExport::separateTracksAreMixedOnlyWhenChanged()
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     // The tracks go with the recording once the export is saved.
     QVERIFY(!SnapTray::AudioTracks::exist(inputPath));
+}
+
+// #191: with "Keep editable projects" on, a save keeps the recording, its
+// sidecars and the edits; opening the project restores them, saving it again
+// updates it, and nothing a project holds is ever handed to the save dialog.
+void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    SnapTray::RecordingProjects::setRootForTests(directory.filePath(QStringLiteral("projects")));
+    auto& settings = RecordingSettingsManager::instance();
+    const bool keptBefore = settings.keepProjects();
+    auto restore = qScopeGuard([&settings, keptBefore]() {
+        settings.setKeepProjects(keptBefore);
+        SnapTray::RecordingProjects::setRootForTests(QString());
+        RecordingPreviewBackend::outputQualityOverride() = {};
+    });
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; }; // any recording meets it
+    const qint64 duration = kFrameCount * kFrameIntervalMs;
+    // The save dialog moves what it is handed.
+    const auto saveAs = [&directory](RecordingPreviewBackend& backend, const QString& handed, const QString& name) {
+        const QString saved = directory.filePath(name);
+        QVERIFY2(QFile::rename(handed, saved), qPrintable(handed));
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, saved);
+    };
+
+    // Off (the default): nothing is kept.
+    settings.setKeepProjects(false);
+    {
+        const QString inputPath = directory.filePath(QStringLiteral("off.mp4"));
+        const QString fixtureError = createRecording(inputPath, 0);
+        QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+        RecordingPreviewBackend backend(inputPath);
+        QVERIFY(!backend.keepsProject());
+        backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+        backend.updateVideoSize(kFrameSize);
+        backend.updateDuration(duration);
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+        QCOMPARE(savedSpy.first().at(0).toString(), inputPath); // moved as before
+        saveAs(backend, inputPath, QStringLiteral("off-saved.mp4"));
+        QVERIFY(SnapTray::RecordingProjects::list().isEmpty());
+    }
+
+    settings.setKeepProjects(true);
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    const QString sidecar = inputPath + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix);
+    {
+        QFile file(sidecar);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+    }
+    const qint64 trimStart = 2 * kFrameIntervalMs;
+    {
+        RecordingPreviewBackend backend(inputPath);
+        QVERIFY(backend.keepsProject());
+        QVERIFY(!backend.isProject());
+        backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+        backend.updateVideoSize(kFrameSize);
+        backend.updateDuration(duration);
+        backend.setTrimStart(trimStart);
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        const QString exported = savedSpy.first().at(0).toString();
+        QVERIFY(exported != inputPath);
+        saveAs(backend, exported, QStringLiteral("first.mp4"));
+    }
+    QList<SnapTray::RecordingProject> projects = SnapTray::RecordingProjects::list();
+    QCOMPARE(projects.size(), 1);
+    SnapTray::RecordingProject project = projects.first();
+    QVERIFY(!QFileInfo::exists(inputPath));
+    QVERIFY(!QFileInfo::exists(sidecar));
+    QVERIFY(QFileInfo::exists(project.videoPath()));
+    QVERIFY(QFileInfo::exists(project.videoPath() + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix)));
+    QVERIFY(QFileInfo::exists(project.thumbnailPath()));
+    QCOMPARE(project.savedPath, directory.filePath(QStringLiteral("first.mp4")));
+    QCOMPARE(SnapTray::RecordingRecipe::editState(project.recipe)->trimStart, trimStart);
+
+    // Reopened: the edits come back, undo starts there, and saving updates it.
+    {
+        RecordingPreviewBackend backend(project.videoPath(), true);
+        QSignalSpy projectSpy(&backend, &RecordingPreviewBackend::projectChanged);
+        backend.setProject(project);
+        QCOMPARE(projectSpy.count(), 1);
+        QVERIFY(backend.isProject());
+        QCOMPARE(backend.trimStart(), trimStart);
+        QVERIFY(!backend.canUndo());
+        backend.updateVideoSize(kFrameSize);
+        backend.updateDuration(duration);
+
+        // An unedited save is handed a copy: the project keeps its recording.
+        backend.resetEdits();
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        const QString handed = savedSpy.first().at(0).toString();
+        QVERIFY(handed != project.videoPath());
+        QVERIFY(!SnapTray::RecordingProjects::contains(handed));
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+        QVERIFY(!QFileInfo::exists(handed));
+        QVERIFY(QFileInfo::exists(project.videoPath()));
+
+        backend.setTrimEnd(duration - kFrameIntervalMs);
+        savedSpy.clear();
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        saveAs(backend, savedSpy.first().at(0).toString(), QStringLiteral("second.mp4"));
+    }
+    projects = SnapTray::RecordingProjects::list();
+    QCOMPARE(projects.size(), 1);
+    project = projects.first();
+    QVERIFY(QFileInfo::exists(project.videoPath()));
+    QVERIFY(QFileInfo::exists(project.videoPath() + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix)));
+    QCOMPARE(project.savedPath, directory.filePath(QStringLiteral("second.mp4")));
+    const auto state = SnapTray::RecordingRecipe::editState(project.recipe);
+    QCOMPARE(state->trimStart, qint64(0));
+    QCOMPARE(state->trimEnd, duration - kFrameIntervalMs);
+
+    // Closing a project without saving names its recording, which the app
+    // never deletes (MainApplication checks RecordingProjects::contains).
+    {
+        RecordingPreviewBackend backend(project.videoPath(), true);
+        backend.setProject(project);
+        QSignalSpy discarded(&backend, &RecordingPreviewBackend::discardRequested);
+        backend.discard();
+        QCOMPARE(discarded.count(), 1);
+        QVERIFY(SnapTray::RecordingProjects::contains(discarded.first().first().toString()));
+    }
+
+    // A new unedited save with keeping on is handed a copy too, so the
+    // recording and its sidecars still move into a new project.
+    const QString plainPath = directory.filePath(QStringLiteral("plain.mp4"));
+    const QString plainError = createRecording(plainPath, 0);
+    QVERIFY2(plainError.isEmpty(), qPrintable(plainError));
+    {
+        QFile file(plainPath + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix));
+        QVERIFY(file.open(QIODevice::WriteOnly));
+    }
+    {
+        RecordingPreviewBackend backend(plainPath);
+        backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+        backend.updateVideoSize(kFrameSize);
+        backend.updateDuration(duration);
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+        const QString handed = savedSpy.first().at(0).toString();
+        QVERIFY(handed != plainPath);
+        saveAs(backend, handed, QStringLiteral("plain-saved.mp4"));
+    }
+    QVERIFY(!QFileInfo::exists(plainPath));
+    QVERIFY(QFileInfo::exists(directory.filePath(QStringLiteral("plain-saved.mp4"))));
+    projects = SnapTray::RecordingProjects::list();
+    QCOMPARE(projects.size(), 2);
+    QVERIFY(QFileInfo::exists(projects.first().videoPath() + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix)));
 }
 
 void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()

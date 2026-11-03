@@ -888,6 +888,21 @@ File size: %3</source>
         <source>recording keys</source>
         <translation>กำลังบันทึกปุ่ม</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Library...</source>
+        <translation>คลังการบันทึก...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Project Unavailable</source>
+        <translation>ไม่สามารถใช้โปรเจกต์ได้</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>การบันทึกของโปรเจกต์นี้หายไปหรือเสียหาย</translation>
+    </message>
 </context>
 <context>
     <name>MultiRegionListPanel</name>
@@ -3200,6 +3215,31 @@ English is always included and cannot be removed.</source>
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>ลดเสียงซ่า เสียงฮัม และเสียงรบกวนในห้องระหว่างคำพูดของไมโครโฟน</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>ปิดโดยไม่บันทึก (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close without saving your changes?</source>
+        <translation>ปิดโดยไม่บันทึกการเปลี่ยนแปลงหรือไม่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>โปรเจกต์ยังคงอยู่ในคลังการบันทึกตามที่บันทึกไว้ล่าสุด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keep Editing</source>
+        <translation>แก้ไขต่อ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Close</source>
+        <translation>ปิด</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3311,6 +3351,11 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>ระบบนี้ยังวาดโอเวอร์เลย์ข้อความและรูปภาพลงใน MP4 ไม่ได้ ส่งออกเป็น GIF หรือ WebP หรือเอาออกเพื่อส่งออก MP4 ยังไม่มีการส่งออกใด ๆ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>ไม่สามารถคัดลอกการบันทึกของโปรเจกต์เพื่อบันทึกได้ ไม่มีสิ่งใดถูกบันทึก</translation>
     </message>
 </context>
 <context>
@@ -3549,6 +3594,41 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Shortcuts only</source>
         <translation>ปุ่มลัดเท่านั้น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Never</source>
+        <translation>ไม่เลย</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>7 days</source>
+        <translation>7 วัน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>30 days</source>
+        <translation>30 วัน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>90 days</source>
+        <translation>90 วัน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Keep editable projects</source>
+        <translation>เก็บโปรเจกต์ที่แก้ไขได้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>หลังจากบันทึก ให้เก็บการบันทึกและการแก้ไขไว้ เพื่อให้เปลี่ยนแปลงและส่งออกอีกครั้งได้จากคลังการบันทึก โปรเจกต์จะเก็บการบันทึกหน้าจอทั้งหมด ตัวชี้ ปุ่ม และแทร็กเสียง รวมถึงส่วนที่คุณเบลอหรือครอปออก และใช้พื้นที่ดิสก์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Delete projects not changed for</source>
+        <translation>ลบโปรเจกต์ที่ไม่ได้เปลี่ยนแปลงเป็นเวลา</translation>
     </message>
 </context>
 <context>
@@ -4922,6 +5002,97 @@ English is always included and cannot be removed.</source>
         <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>การบันทึกหยุดแล้ว %1 ทุกอย่างที่บันทึกไว้จนถึงตอนนี้ยังถูกเก็บไว้</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Recording Library</source>
+        <translation>คลังการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Editable projects: %1 on this computer</source>
+        <translation>โปรเจกต์ที่แก้ไขได้: %1 บนคอมพิวเตอร์นี้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>No editable projects</source>
+        <translation>ไม่มีโปรเจกต์ที่แก้ไขได้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>การเก็บโปรเจกต์ใหม่ปิดอยู่ โปรเจกต์จะเก็บการบันทึกทั้งหมด รวมถึงส่วนที่คุณเบลอหรือครอปออก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>โปรเจกต์จะเก็บการบันทึกทั้งหมด รวมถึงส่วนที่คุณเบลอหรือครอปออก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>เปิด เก็บโปรเจกต์ที่แก้ไขได้ ในการตั้งค่า &gt; การบันทึก เพื่อแก้ไขการบันทึกอีกครั้งหลังจากบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete this project? The file you saved from it stays.</source>
+        <translation>ลบโปรเจกต์นี้หรือไม่ ไฟล์ที่คุณบันทึกจากโปรเจกต์นี้จะยังอยู่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open</source>
+        <translation>เปิด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Open %1</source>
+        <translation>เปิด %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show in Folder</source>
+        <translation>แสดงในโฟลเดอร์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete</source>
+        <translation>ลบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete...</source>
+        <translation>ลบ...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Delete %1</source>
+        <translation>ลบ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Close</source>
+        <translation>ปิด</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingLibraryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>%1, %2, created %3</source>
+        <translation>%1, %2, สร้างเมื่อ %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <source>Open in the preview</source>
+        <translation>เปิดอยู่ในหน้าตัวอย่าง</translation>
     </message>
 </context>
 </TS>

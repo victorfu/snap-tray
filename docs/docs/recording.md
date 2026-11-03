@@ -167,6 +167,12 @@ SnapTray keeps a small record next to each recording until it is saved or discar
 
 On Linux, recordings are written in fragments, so an interrupted recording can usually be recovered up to its last fragment (about every two seconds of video). This depends on the disk and when the system last wrote to it, so it is not a guarantee. On macOS and Windows an interrupted recording cannot be played yet and is listed only so you can discard it; a recording that finished normally but was never saved can be recovered on every platform.
 
+## Editable projects
+
+Normally the recording is deleted once its file is saved. Turn on **Keep editable projects** in Settings > Recording (off by default) to keep it with your edits instead: crop, trim, cut parts and speeds, pointer, zoom, masks, frame, shortcut hints, text and images, the audio mix, and the export format and MP4 options. **Recording Library** in the tray menu lists the kept projects with a thumbnail, length, size and date. **Open** brings one back into the preview with every edit as you left it; saving again exports a new file and updates the project. Closing a project without saving keeps it as it was last saved.
+
+A project holds the **full screen recording**, including anything you blurred, masked or cropped out, plus its pointer, keys and separate audio tracks, so it uses disk space and contains what the saved file leaves out. It stays on this computer in SnapTray's app data folder and is never uploaded. **Delete...** in the library removes a project (the file you saved from it stays), and **Delete projects not changed for** removes old ones automatically after 7, 30 or 90 days. Projects are separate from recordings waiting for recovery; neither one ever removes the other's files.
+
 ## When recording can't keep up
 
 If the computer cannot encode frames as fast as they are captured for several seconds in a row, the tray tooltip says "dropping frames" until it recovers. A short hiccup or an unchanging screen does not count. Lowering the frame rate in Settings > Recording usually helps.

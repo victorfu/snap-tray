@@ -3,6 +3,7 @@
 #include "recording/PreviewEditHistory.h"
 #include "recording/CursorEffects.h"
 #include "recording/Mp4ExportOptions.h"
+#include "recording/RecordingProject.h"
 #include "video/IVideoTranscoder.h"
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
@@ -128,6 +129,10 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool masksAvailable READ masksAvailable NOTIFY masksChanged)
     Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
     Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
+
+    // Editable projects (#191): this preview edits a kept project.
+    Q_PROPERTY(bool isProject READ isProject NOTIFY projectChanged)
+    Q_PROPERTY(bool keepsProject READ keepsProject NOTIFY projectChanged)
 
     // Separate microphone and system audio tracks (#189).
     Q_PROPERTY(bool hasSeparateTracks READ hasSeparateTracks CONSTANT)
@@ -398,6 +403,16 @@ public:
     // endMs -1 = to the end; false (nothing changes) when invalid.
     Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
 
+    // Editable projects (#191). A project's source and sidecars are never
+    // deleted by saving or closing; saving updates its recipe instead.
+    void setProject(const SnapTray::RecordingProject& project);
+    bool isProject() const { return m_project.has_value(); }
+    QString projectDir() const { return m_project ? m_project->dir : QString(); }
+    // Saving keeps (or updates) a project.
+    bool keepsProject() const;
+    // The edits and export choices, for a project.
+    QJsonObject currentRecipe() const;
+
     // Separate tracks (#189), undoable; only for recordings made with them,
     // and only for MP4 (GIF and WebP are silent) where the export can mix.
     bool hasSeparateTracks() const { return m_hasSeparateTracks; }
@@ -569,6 +584,7 @@ signals:
     void keyOverlayChanged();
     void overlaysChanged();
     void audioMixChanged();
+    void projectChanged();
     void selectedOverlayChanged();
     void appearancePreviewFrameChanged();
     void mp4EstimateChanged();
@@ -673,6 +689,9 @@ private:
     SnapTray::KeyOverlaySettings m_keyOverlay;
     SnapTray::OverlayTrack m_overlays;
     bool m_hasSeparateTracks = false;
+    std::optional<SnapTray::RecordingProject> m_project;
+    // After a save: keep this recording (or update the project) as a project.
+    void keepAsProject(const QString& savedPath);
     SnapTray::AudioMixSettings m_audioMix;
     void editAudioMix(const std::function<void(SnapTray::AudioMixSettings&)>& change);
     // The preview plays the tracks mixed at m_audioMix (shared with the player's thread).

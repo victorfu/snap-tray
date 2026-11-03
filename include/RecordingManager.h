@@ -83,6 +83,10 @@ public:
     // Opens one in the preview, like a recording that just finished; false
     // when a recording or preview is already open.
     bool openRecoveredRecording(const QString& videoPath);
+    // Marks a kept project (#191) as open in the preview: no session, no
+    // recovery manifest; the project's files are never deleted from here.
+    // False when a recording or preview is already open.
+    bool openProjectRecording(const QString& videoPath);
     // Scans the temp folder off the GUI thread; emits recoveriesFound.
     void scanForRecoveries();
     static bool isSessionActive(const QString& videoPath);

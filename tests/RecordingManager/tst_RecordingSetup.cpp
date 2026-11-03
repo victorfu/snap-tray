@@ -7,10 +7,13 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QThread>
+#include <QScopeGuard>
 
 #include "capture/AudioLevelMonitor.h"
 #include "qml/QmlDialog.h"
 #include "qml/RecordingRecoveryViewModel.h"
+#include "qml/RecordingLibraryViewModel.h"
+#include "recording/RecordingProject.h"
 #include <QTemporaryDir>
 #include "qml/ScreenPickerViewModel.h"
 #include "recording/RecordingAudioStatus.h"
@@ -114,6 +117,7 @@ private slots:
     void dialogShowsSetup();
     void recoveryDialogLists();
     void recoveryDialogScrollsManyRecordings();
+    void libraryListsOpensAndDeletesProjects();
 
 private:
     std::shared_ptr<FakeEngineState> m_engineState;
@@ -605,6 +609,90 @@ void TestRecordingSetup::recoveryDialogScrollsManyRecordings()
     const QRectF lastRect = lastDiscard->mapRectToItem(list, QRectF(0, 0, lastDiscard->width(), lastDiscard->height()));
     QVERIFY2(lastRect.top() >= 0 && lastRect.bottom() <= list->height(),
              qPrintable(QStringLiteral("last row at %1-%2 of %3").arg(lastRect.top()).arg(lastRect.bottom()).arg(list->height())));
+}
+
+void TestRecordingSetup::libraryListsOpensAndDeletesProjects()
+{
+    // #191: the Recording Library lists kept projects, opens one, and deletes
+    // one only after a second, confirming click.
+    QTemporaryDir dir;
+    SnapTray::RecordingProjects::setRootForTests(dir.filePath(QStringLiteral("projects")));
+    auto resetRoot = qScopeGuard([] { SnapTray::RecordingProjects::setRootForTests(QString()); });
+    QStringList dirs;
+    for (const QString& name : {QStringLiteral("a.mp4"), QStringLiteral("b.mp4")}) {
+        QFile file(dir.filePath(name));
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(QByteArray(2048, 'v'));
+        file.close();
+        QImage thumbnail(32, 18, QImage::Format_RGB32);
+        thumbnail.fill(Qt::blue);
+        const auto project = SnapTray::RecordingProjects::create(dir.filePath(name), false, {}, thumbnail, 65000,
+                                                                 dir.filePath(QStringLiteral("saved-") + name));
+        QVERIFY(project.has_value());
+        dirs.prepend(project->dir); // newest first
+        QTest::qWait(5);
+    }
+
+    auto* viewModel = new SnapTray::RecordingLibraryViewModel;
+    QCOMPARE(viewModel->count(), 2);
+    const QVariantMap first = viewModel->projects().first().toMap();
+    QCOMPARE(first.value(QStringLiteral("title")).toString(), QStringLiteral("saved-b.mp4"));
+    QVERIFY(first.value(QStringLiteral("details")).toString().contains(QStringLiteral("1:05")));
+    QVERIFY(first.value(QStringLiteral("thumbnail")).toString().startsWith(QStringLiteral("file:")));
+    QVERIFY(!viewModel->totalSizeText().isEmpty());
+
+    SnapTray::QmlDialog dialog(QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingLibraryDialog.qml")),
+                               viewModel, QStringLiteral("viewModel"));
+    viewModel->setParent(&dialog);
+    dialog.showCenteredOnScreen(QGuiApplication::primaryScreen());
+    QQuickView* view = nullptr;
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
+            view = candidate;
+    }
+    QVERIFY(view);
+    QVERIFY(view->rootObject()->findChild<QQuickItem*>(QStringLiteral("libraryPrivacyNote")));
+    const auto buttons = [view](const char* name) {
+        QList<QQuickItem*> found;
+        std::function<void(QQuickItem*)> walk = [&](QQuickItem* item) {
+            if (item->objectName() == QLatin1String(name) && item->isVisible()) found.append(item);
+            for (QQuickItem* child : item->childItems()) walk(child);
+        };
+        walk(qobject_cast<QQuickItem*>(view->rootObject()));
+        return found;
+    };
+    QTRY_COMPARE(buttons("libraryOpenButton").size(), 2);
+
+    QSignalSpy open(viewModel, &SnapTray::RecordingLibraryViewModel::openRequested);
+    QMetaObject::invokeMethod(buttons("libraryOpenButton").first(), "clicked");
+    QCOMPARE(open.count(), 1);
+    QCOMPARE(open.first().first().toString(), dirs.first());
+
+    // The first click only asks; Cancel keeps it; the second click deletes.
+    QMetaObject::invokeMethod(buttons("libraryDeleteButton").first(), "clicked");
+    QCOMPARE(viewModel->count(), 2);
+    QCOMPARE(buttons("libraryCancelDeleteButton").size(), 1);
+    QMetaObject::invokeMethod(buttons("libraryCancelDeleteButton").first(), "clicked");
+    QCOMPARE(buttons("libraryCancelDeleteButton").size(), 0);
+    QMetaObject::invokeMethod(buttons("libraryDeleteButton").first(), "clicked");
+    QMetaObject::invokeMethod(buttons("libraryDeleteButton").first(), "clicked");
+    QCOMPARE(viewModel->count(), 1);
+    QVERIFY(!QFileInfo::exists(dirs.first()));
+    QVERIFY(QFileInfo::exists(dirs.last()));
+    QTRY_COMPARE(buttons("libraryOpenButton").size(), 1);
+
+    // The project open in the preview can be neither opened nor deleted.
+    viewModel->setOpenProjectDir(dirs.last());
+    QVERIFY(viewModel->projects().first().toMap().value(QStringLiteral("open")).toBool());
+    QTRY_COMPARE(buttons("libraryOpenButton").size(), 0);
+    QCOMPARE(buttons("libraryDeleteButton").size(), 0);
+    open.clear();
+    viewModel->open(0);
+    viewModel->remove(0);
+    QCOMPARE(open.count(), 0);
+    QVERIFY(QFileInfo::exists(dirs.last()));
+    viewModel->setOpenProjectDir(QString());
+    QTRY_COMPARE(buttons("libraryDeleteButton").size(), 1);
 }
 
 void TestRecordingSetup::lostMicrophoneEndsTheTest_data()

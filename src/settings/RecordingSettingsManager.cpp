@@ -154,6 +154,30 @@ void RecordingSettingsManager::setKeyRecordingMode(int value)
     settings.setValue(kKeyKeyRecordingMode, qBound(0, value, 2));
 }
 
+bool RecordingSettingsManager::keepProjects() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyKeepProjects, false).toBool();
+}
+
+void RecordingSettingsManager::setKeepProjects(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyKeepProjects, value);
+}
+
+int RecordingSettingsManager::projectCleanupDays() const
+{
+    auto settings = SnapTray::getSettings();
+    return qMax(0, settings.value(kKeyProjectCleanupDays, 0).toInt());
+}
+
+void RecordingSettingsManager::setProjectCleanupDays(int days)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyProjectCleanupDays, qMax(0, days));
+}
+
 QJsonObject RecordingSettingsManager::keyOverlay() const
 {
     auto settings = SnapTray::getSettings();

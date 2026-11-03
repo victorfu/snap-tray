@@ -2751,7 +2751,7 @@ Item {
                     iconSource: "qrc:/icons/icons/trash-2.svg"
                     destructive: true
                     objectName: "previewDiscardButton"
-                    tooltipText: qsTr("Discard Recording (Esc)")
+                    tooltipText: backend.isProject ? qsTr("Close Without Saving (Esc)") : qsTr("Discard Recording (Esc)")
                     onClicked: backend.requestDiscard()
                 }
 
@@ -2962,7 +2962,7 @@ Item {
                     id: confirmTitle
                     width: parent.width
                     wrapMode: Text.Wrap
-                    text: qsTr("Discard this recording?")
+                    text: backend.isProject ? qsTr("Close without saving your changes?") : qsTr("Discard this recording?")
                     font.pixelSize: SemanticTokens.fontSizeBody
                     font.family: SemanticTokens.fontFamily
                     font.weight: SemanticTokens.fontWeightMedium
@@ -2973,7 +2973,9 @@ Item {
                     id: confirmBody
                     width: parent.width
                     wrapMode: Text.Wrap
-                    text: qsTr("The video will be deleted and cannot be recovered.")
+                    text: backend.isProject
+                        ? qsTr("The project stays in Recording Library as it was last saved.")
+                        : qsTr("The video will be deleted and cannot be recovered.")
                     font.pixelSize: SemanticTokens.fontSizeCaption
                     font.family: SemanticTokens.fontFamily
                     color: root.textSecondary
@@ -2985,7 +2987,7 @@ Item {
 
                     DialogButton {
                         objectName: "discardKeepButton"
-                        text: qsTr("Keep Recording")
+                        text: backend.isProject ? qsTr("Keep Editing") : qsTr("Keep Recording")
                         style: "secondary"
                         border.width: discardConfirmation.focusIndex === 0 ? 2 : 1
                         border.color: discardConfirmation.focusIndex === 0 ? root.accent
@@ -2998,7 +3000,7 @@ Item {
 
                     DialogButton {
                         objectName: "discardConfirmButton"
-                        text: qsTr("Discard")
+                        text: backend.isProject ? qsTr("Close") : qsTr("Discard")
                         style: "primary"
                         color: ComponentTokens.recordingPreviewDangerPressed
                         border.width: discardConfirmation.focusIndex === 1 ? 2 : 0

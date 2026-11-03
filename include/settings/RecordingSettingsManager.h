@@ -53,6 +53,14 @@ public:
     QJsonObject keyOverlay() const;
     void setKeyOverlay(const QJsonObject& value);
 
+    // Editable projects (#191): keep the recording and its edits after saving
+    // (off by default: only the saved file stays), and remove projects not
+    // changed for this many days (0 = never).
+    bool keepProjects() const;
+    void setKeepProjects(bool value);
+    int projectCleanupDays() const;
+    void setProjectCleanupDays(int days);
+
     // Last MP4 export options chosen in the preview (Mp4ExportOptions JSON, #190);
     // empty = defaults (export as recorded).
     QJsonObject mp4ExportOptions() const;
@@ -109,6 +117,8 @@ private:
     static constexpr const char* kKeyPointerEffects = "recording/pointerEffects";
     static constexpr const char* kKeyKeyRecordingMode = "recording/keyRecordingMode";
     static constexpr const char* kKeyKeyOverlay = "recording/keyOverlay";
+    static constexpr const char* kKeyKeepProjects = "recording/keepProjects";
+    static constexpr const char* kKeyProjectCleanupDays = "recording/projectCleanupDays";
     static constexpr const char* kKeyMp4ExportOptions = "recording/mp4ExportOptions";
     static constexpr const char* kKeyAppearance = "recording/appearance";
     static constexpr const char* kKeyNativeFrameEncoding = "recording/nativeFrameEncoding";

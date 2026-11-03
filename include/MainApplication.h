@@ -91,6 +91,8 @@ private:
     void updatePinsVisibilityActionText();
     void updateRecordingActionText();
     void showRecoveryDialog();
+    void showRecordingLibrary();
+    void openRecordingProject(const QString& projectDir);
     void updateRecoveryAction();
     bool acceptRecordingHotkey(SnapTray::HotkeyAction action);
     SnapTray::QmlSettingsWindow* ensureSettingsWindow();
@@ -126,6 +128,8 @@ private:
     QAction *m_copyRecordingDiagnosticsAction = nullptr;
     QAction *m_recoverRecordingsAction = nullptr;
     QPointer<SnapTray::QmlDialog> m_recoveryDialog;
+    QAction *m_recordingLibraryAction = nullptr;
+    QPointer<SnapTray::QmlDialog> m_libraryDialog;
     QStringList m_recoverablePaths;  // left-behind recordings still offered
     QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;

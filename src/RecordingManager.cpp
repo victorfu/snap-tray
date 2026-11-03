@@ -1696,6 +1696,17 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
     return true;
 }
 
+bool RecordingManager::openProjectRecording(const QString& videoPath)
+{
+    if (m_state != State::Idle || !QFileInfo::exists(videoPath)) {
+        return false;
+    }
+    m_session = {};
+    m_tempVideoPath = videoPath;
+    setState(State::Previewing);
+    return true;
+}
+
 void RecordingManager::startDiskMonitor()
 {
     m_diskGuard.reset();
