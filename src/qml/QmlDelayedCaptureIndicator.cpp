@@ -108,7 +108,6 @@ void QmlDelayedCaptureIndicator::reposition()
 
     const QRect area = m_screen->availableGeometry();
     const int width = qRound(m_rootItem->implicitWidth());
-    const int height = qRound(m_rootItem->implicitHeight());
     m_view->setPosition(area.center().x() - width / 2, area.top() + kTopMargin);
 }
 
