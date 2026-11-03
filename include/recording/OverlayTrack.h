@@ -40,6 +40,7 @@ struct OverlaySegment {
     qint64 fadeMs = 300;
     // Text
     QString text;
+    QString fontFamily; // empty = system default; optional in older recipes
     QColor color{Qt::white};
     Background background = Background::Dark;
     Align align = Align::Left;

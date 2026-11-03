@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QFontDatabase>
 
 #include <QImage>
 #include <QPainter>
@@ -51,6 +52,7 @@ private slots:
     void imageKeepsItsShape();
     void cjkTextRenders();
     void jsonRoundTrip();
+    void fontFamilySurvivesProjectAndChangesRendering();
     void largeImagesAreBounded();
     void previewDrawsOnlyOnThePicture();
 };
@@ -217,6 +219,29 @@ void TestOverlayTrack::largeImagesAreBounded()
     QFile::remove(path);
     QVERIFY(!loaded.isNull());
     QVERIFY(OverlayTrack::loadImage(dir.filePath(QStringLiteral("missing.png"))).isNull());
+}
+
+void TestOverlayTrack::fontFamilySurvivesProjectAndChangesRendering()
+{
+    OverlayTrack track;
+    track.segments.push_back(title(QStringLiteral("iiii WWWW")));
+    QJsonObject json = track.toJson();
+    QJsonArray segments = json.value(QStringLiteral("segments")).toArray();
+    QJsonObject text = segments[0].toObject();
+    const QString family = QFontDatabase::systemFont(QFontDatabase::FixedFont).family();
+    text.insert(QStringLiteral("fontFamily"), family);
+    segments[0] = text;
+    json.insert(QStringLiteral("segments"), segments);
+    const auto restored = OverlayTrack::fromJson(json);
+    QCOMPARE(restored.toJson().value(QStringLiteral("segments")).toArray()[0].toObject()
+                 .value(QStringLiteral("fontFamily")).toString(), family);
+    QVERIFY(restored != track); // Changing only the family creates an undo step.
+    QImage original = blank(), selected = blank();
+    track.paint(original, 2000);
+    restored.paint(selected, 2000);
+    QVERIFY(selected != original);
+    // Older recipes omit the optional family and retain the system default.
+    QCOMPARE(OverlayTrack::fromJson(track.toJson()), track);
 }
 
 QTEST_MAIN(TestOverlayTrack)

@@ -24,7 +24,21 @@
 #include <thread>
 #include <vector>
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+#include "NativeEditTestMedia_linux.h"
+#endif
+
 namespace {
+std::unique_ptr<IVideoTranscoder> createTestTranscoder()
+{
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    if (qEnvironmentVariableIntValue("SNAPTRAY_TEST_NATIVE_EDIT_EXPORT") == 1) {
+        qInfo() << "Testing the shared native edit exporter with FFmpeg codecs";
+        return std::make_unique<NativeEditTestTranscoder>();
+    }
+#endif
+    return IVideoTranscoder::create();
+}
 
 constexpr int kFrameRate = 10;
 constexpr int kFrameCount = 20;                  // 2 s
@@ -278,7 +292,7 @@ std::vector<double> markerOnsetsMs(const QString& path, const QPoint& markerPoin
 bool transcodeWithHangGuard(const VideoTranscodeRequest& request, VideoTranscodeResult* result)
 {
     struct Job {
-        std::unique_ptr<IVideoTranscoder> transcoder = IVideoTranscoder::create();
+        std::unique_ptr<IVideoTranscoder> transcoder = createTestTranscoder();
         VideoTranscodeRequest request;
         VideoTranscodeResult result;
         std::atomic<bool> done{false};
@@ -369,7 +383,7 @@ private:
 
 void tst_VideoTranscoder::init()
 {
-    m_transcoder = IVideoTranscoder::create();
+    m_transcoder = createTestTranscoder();
     if (!m_transcoder) {
         QSKIP("No native transcoder on this platform");
     }
@@ -978,7 +992,7 @@ void tst_VideoTranscoder::cancelStopsInsideAGapFill()
 {
     // PR #175 review: drawing effects fills source gaps at the frame rate,
     // and that loop did not check for Cancel.
-    auto transcoder = IVideoTranscoder::create();
+    auto transcoder = createTestTranscoder();
     if (!transcoder || !transcoder->supportsFrameFilter()) QSKIP("No frame-filter transcoder on this platform");
     QTemporaryDir dir;
     const QString input = dir.filePath(QStringLiteral("gap.mp4"));

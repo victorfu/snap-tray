@@ -86,17 +86,19 @@ public:
         }
     }
 
-    QImage frameAt(qint64 positionMs) override
+    QImage frameAt(qint64 positionMs) override { return frameAtMicroseconds(positionMs * 1000); }
+
+    QImage frameAtMicroseconds(qint64 positionUs) override
     {
         @autoreleasepool {
-            if (!m_reader || !m_error.isEmpty() || positionMs < m_lastPosition) {
+            if (!m_reader || !m_error.isEmpty() || positionUs < m_lastPositionUs) {
                 if (m_error.isEmpty()) {
                     m_error = QStringLiteral("Video reader requires ascending timestamps");
                 }
                 return {};
             }
-            m_lastPosition = positionMs;
-            const CMTime requestedTime = CMTimeMake(qMax<qint64>(0, positionMs), 1000);
+            m_lastPositionUs = positionUs;
+            const qint64 requestedUs = qMax<qint64>(0, positionUs);
 
             // Keep one decoded frame and one look-ahead sample. The first frame
             // also covers a recording's empty lead-in before its first sample.
@@ -106,7 +108,9 @@ public:
                     m_error = QStringLiteral("Video frame has an invalid timestamp");
                     return {};
                 }
-                if (!m_currentFrame.isNull() && CMTimeCompare(sampleTime, requestedTime) > 0) {
+                const qint64 sampleUs = CMTimeConvertScale(sampleTime, 1000000,
+                    kCMTimeRoundingMethod_RoundHalfAwayFromZero).value;
+                if (!m_currentFrame.isNull() && sampleUs > requestedUs) {
                     break;
                 }
                 m_currentFrame = copyFrame(m_nextSample);
@@ -128,6 +132,10 @@ public:
     }
 
     QSize videoSize() const override { return m_size; }
+    qint64 nextFrameTimeMicroseconds() const override {
+        return m_nextSample ? CMTimeConvertScale(CMSampleBufferGetPresentationTimeStamp(m_nextSample),
+            1000000, kCMTimeRoundingMethod_RoundHalfAwayFromZero).value : -1;
+    }
     qint64 duration() const override { return m_duration; }
     double frameRate() const override { return m_frameRate; }
     QString lastError() const override { return m_error; }
@@ -148,7 +156,7 @@ private:
         m_size = {};
         m_duration = 0;
         m_frameRate = 0;
-        m_lastPosition = -1;
+        m_lastPositionUs = -1;
         m_atEnd = false;
     }
 
@@ -210,7 +218,7 @@ private:
     QTransform m_transform;
     QSize m_size;
     qint64 m_duration = 0;
-    qint64 m_lastPosition = -1;
+    qint64 m_lastPositionUs = -1;
     double m_frameRate = 0;
     bool m_atEnd = false;
     QString m_error;

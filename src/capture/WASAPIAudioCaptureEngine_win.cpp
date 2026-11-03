@@ -469,7 +469,7 @@ void WASAPIAudioCaptureEngine::deliverMixerOutput(
 {
     for (const auto& output : result.output) {
         if (!output.pcm.isEmpty()) {
-            deliverAudioData(output.pcm, output.startFrame);
+            deliverAudioData(output.pcm, output.startFrame, output.microphonePcm, output.systemAudioPcm);
         }
     }
 
@@ -779,6 +779,7 @@ bool WASAPIAudioCaptureEngine::start()
         || m_source == AudioSource::Both;
     SnapTray::Audio::TimestampedPcmMixer::Config mixerConfig;
     mixerConfig.microphoneEnabled = wantsMicrophone;
+    mixerConfig.splitSources = m_separateTracks;
     mixerConfig.systemAudioEnabled = wantsSystemAudio;
     m_mixer = std::make_unique<SnapTray::Audio::TimestampedPcmMixer>(mixerConfig);
     m_microphoneActive = false;
@@ -954,7 +955,8 @@ void WASAPIAudioCaptureEngine::drainDataCallbacks(bool disconnectConnections)
     }
 }
 
-void WASAPIAudioCaptureEngine::deliverAudioData(const QByteArray &data, qint64 startFrame)
+void WASAPIAudioCaptureEngine::deliverAudioData(const QByteArray &data, qint64 startFrame,
+                                                const QByteArray &microphone, const QByteArray &systemAudio)
 {
     {
         QMutexLocker locker(&m_dataCallbackMutex);
@@ -968,6 +970,8 @@ void WASAPIAudioCaptureEngine::deliverAudioData(const QByteArray &data, qint64 s
         finishDataCallback();
     });
     emit audioDataReady(data, startFrame);
+    // Keep both sidecars inside the callback drain guard used by stop().
+    if (m_separateTracks) emit sourceAudioReady(microphone, systemAudio, startFrame);
 }
 
 void WASAPIAudioCaptureEngine::finishDataCallback()

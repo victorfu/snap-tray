@@ -41,6 +41,7 @@ public:
     double frameRate() const override;
     QString lastError() const override { return decoder.error; }
     qint64 nextTimestampMs() const { return pending ? decoder.timeMs() : -1; }
+    qint64 nextFrameTimeMicroseconds() const override { return pending ? decoder.timeMs() * 1000 : -1; }
 private:
     Decoder decoder;
     SwsContext* scaler = nullptr;

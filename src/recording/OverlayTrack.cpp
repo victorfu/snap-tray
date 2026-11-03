@@ -51,6 +51,7 @@ Enum valueOf(const Named<Enum> (&table)[N], const QString& name, Enum fallback)
 QFont fontFor(const OverlaySegment& segment, const QSize& picture)
 {
     QFont font;
+    if (!segment.fontFamily.isEmpty()) font.setFamily(segment.fontFamily);
     const double shortSide = std::min(picture.width(), picture.height());
     font.setPixelSize(std::max(kMinFontPx, int(std::lround(segment.size * shortSide))));
     font.setWeight(QFont::DemiBold);
@@ -85,7 +86,7 @@ bool OverlaySegment::operator==(const OverlaySegment& o) const
 {
     // Images are never changed in place: the same pixels share a cache key.
     return kind == o.kind && startMs == o.startMs && endMs == o.endMs && position == o.position
-        && qFuzzyCompare(size, o.size) && fadeMs == o.fadeMs && text == o.text && color == o.color
+        && qFuzzyCompare(size, o.size) && fadeMs == o.fadeMs && text == o.text && fontFamily == o.fontFamily && color == o.color
         && background == o.background && align == o.align && image.cacheKey() == o.image.cacheKey()
         && qFuzzyCompare(opacity + 1.0, o.opacity + 1.0);
 }
@@ -169,6 +170,7 @@ QJsonObject OverlayTrack::toJson() const
                       {QStringLiteral("fadeMs"), double(s.fadeMs)}};
         if (s.kind == OverlaySegment::Kind::Text) {
             o.insert(QStringLiteral("text"), s.text);
+            o.insert(QStringLiteral("fontFamily"), s.fontFamily);
             o.insert(QStringLiteral("color"), s.color.name(QColor::HexArgb));
             o.insert(QStringLiteral("background"), QLatin1String(nameOf(kBackgrounds, s.background)));
             o.insert(QStringLiteral("align"), QLatin1String(nameOf(kAligns, s.align)));
@@ -201,6 +203,7 @@ OverlayTrack OverlayTrack::fromJson(const QJsonObject& json)
         if (s.startMs < 0 || (s.endMs >= 0 && s.endMs <= s.startMs)) continue;
         if (s.kind == OverlaySegment::Kind::Text) {
             s.text = o.value(QStringLiteral("text")).toString();
+            s.fontFamily = o.value(QStringLiteral("fontFamily")).toString();
             const QColor color(o.value(QStringLiteral("color")).toString());
             if (color.isValid()) s.color = color;
             s.background = valueOf(kBackgrounds, o.value(QStringLiteral("background")).toString(), s.background);

@@ -60,6 +60,7 @@ private slots:
     void testCursorTimelineFollowsTheRecording();
     void testCursorPauseIsStampedAtTheBoundary();
     void testKeyTimelineOnlyWhenSwitchedOn();
+    void testKeyPermissionFailureLeavesRecordingActive();
     void testSeparateTracksOnlyWithBothSources();
     void testSeparateTracksDroppedOnFinalFlushFailure_data();
     void testSeparateTracksDroppedOnFinalFlushFailure();
@@ -518,6 +519,25 @@ void TestRecordingManagerLifecycle::testKeyTimelineOnlyWhenSwitchedOn()
     // Cancelling deletes the recording, and the key sidecar with it.
     m_manager->cancelRecording();
     QVERIFY(!QFile::exists(SnapTray::KeyTimelineSidecar::pathFor(video)));
+    m_manager->m_session = {};
+}
+
+void TestRecordingManagerLifecycle::testKeyPermissionFailureLeavesRecordingActive()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("keys-denied.mp4"));
+    m_manager->m_session.videoPath = video;
+    m_manager->m_cursorSidecarVideo = video;
+    m_manager->m_startSettings.keyRecordingMode = int(SnapTray::KeyRecordingMode::Shortcuts);
+    m_manager->m_createKeyProbe = [] { return std::unique_ptr<SnapTray::KeyProbe>{}; };
+    m_manager->m_state = RecordingManager::State::Recording;
+    QSignalSpy warning(m_manager, &RecordingManager::recordingWarning);
+    m_manager->startKeyTimeline();
+    QCOMPARE(warning.count(), 1);
+    QCOMPARE(m_manager->state(), RecordingManager::State::Recording);
+    QVERIFY(!m_manager->isRecordingKeys());
+    QVERIFY(!QFile::exists(SnapTray::KeyTimelineSidecar::pathFor(video)));
+    m_manager->m_state = RecordingManager::State::Idle;
     m_manager->m_session = {};
 }
 

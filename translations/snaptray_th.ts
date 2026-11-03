@@ -2012,6 +2012,14 @@ English is always included and cannot be removed.</source>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>ไม่สามารถบันทึกการบันทึกไว้ในโฟลเดอร์โปรเจกต์ของคลังการบันทึกได้</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>ไม่สามารถบันทึกแป้นพิมพ์ได้ โปรดตรวจสอบสิทธิ์การตรวจสอบอินพุต การบันทึกจะดำเนินต่อโดยไม่แสดงคำแนะนำปุ่ม</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>ไม่สามารถบันทึกคำแนะนำปุ่มได้ การบันทึกจะดำเนินต่อโดยไม่มีคำแนะนำปุ่ม</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3289,6 +3297,14 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>ปิด</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>แบบอักษร</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>ค่าเริ่มต้น</translation>
     </message>
 </context>
 <context>

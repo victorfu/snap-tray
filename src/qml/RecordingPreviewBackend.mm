@@ -1537,6 +1537,7 @@ QVariantList RecordingPreviewBackend::overlays() const
                                 {QStringLiteral("start"), s.startMs},
                                 {QStringLiteral("end"), s.endMs},
                                 {QStringLiteral("text"), s.text},
+                                {QStringLiteral("fontFamily"), s.fontFamily},
                                 {QStringLiteral("size"), s.size},
                                 {QStringLiteral("color"), s.color},
                                 {QStringLiteral("background"), int(s.background)},
@@ -1633,6 +1634,13 @@ void editSegment(SnapTray::OverlayTrack& t, int index, F&& change)
 void RecordingPreviewBackend::setOverlayText(int index, const QString& text)
 {
     editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.text = text; }); });
+}
+
+void RecordingPreviewBackend::setOverlayFontFamily(int index, const QString& family)
+{
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) { s.fontFamily = family; });
+    });
 }
 
 void RecordingPreviewBackend::setOverlaySize(int index, qreal size)

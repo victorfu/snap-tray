@@ -1,3 +1,4 @@
+#include "video/RemixedAudioPreview.h"
 #include "video/IVideoPlayer.h"
 
 #ifdef Q_OS_WIN
@@ -532,12 +533,13 @@ public:
     QSize videoSize() const override { return m_videoSize; }
     bool hasVideo() const override { return m_hasVideo; }
     bool hasAudio() const override { return m_hasAudio; }
-    bool supportsAudioPlayback() const override { return false; }
+    bool supportsAudioPlayback() const override { return m_remixed.hasSource(); }
+    bool setAudioSource(AudioSource source) override { return m_remixed.setSource(std::move(source)); }
 
-    void setVolume(float) override {}
-    float volume() const override { return 1.0f; }
-    void setMuted(bool) override {}
-    bool isMuted() const override { return false; }
+    void setVolume(float volume) override { m_volume = qBound(0.0f, volume, 1.0f); m_remixed.setVolume(m_volume, m_muted); }
+    float volume() const override { return m_volume; }
+    void setMuted(bool muted) override { m_muted = muted; m_remixed.setVolume(m_volume, m_muted); }
+    bool isMuted() const override { return m_muted; }
 
     void setLooping(bool loop) override { m_looping = loop; }
     bool isLooping() const override { return m_looping; }
@@ -584,6 +586,9 @@ private:
     bool m_looping = false;
     bool m_atEndOfStream = false;
     float m_playbackRate = 1.0f;
+    SnapTray::RemixedAudioPreview m_remixed;
+    float m_volume = 1.0f;
+    bool m_muted = false;
     bool m_mfInitialized = false;
     quint64 m_readerGeneration = 0;
 
@@ -636,6 +641,7 @@ void MediaFoundationPlayer::stopReaderThread()
 
 void MediaFoundationPlayer::cleanup()
 {
+    m_remixed.synchronize(0, false, m_playbackRate, true);
     // Invalidate callbacks that may already be queued from this reader.
     ++m_readerGeneration;
     m_pendingFrameSteps = 0;
@@ -996,6 +1002,7 @@ void MediaFoundationPlayer::seek(qint64 positionMs)
         m_readerThread->requestSeek(positionMs);
     }
 
+    m_remixed.synchronize(positionMs, m_state == State::Playing, m_playbackRate, true);
     emit positionChanged(positionMs);
 }
 
@@ -1008,6 +1015,7 @@ void MediaFoundationPlayer::setPlaybackRate(float rate)
     if (m_readerThread) {
         m_readerThread->setPlaybackRate(newRate);
     }
+    m_remixed.synchronize(m_position, m_state == State::Playing, m_playbackRate);
     emit playbackRateChanged(newRate);
 }
 
@@ -1039,6 +1047,7 @@ void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestamp)
     if (m_state == State::Paused) {
         emit positionChanged(m_position);
     }
+    m_remixed.synchronize(m_position, m_state == State::Playing, m_playbackRate);
     emit frameReady(frame, m_position);
 }
 
@@ -1076,6 +1085,7 @@ void MediaFoundationPlayer::onEndOfStream()
 
 void MediaFoundationPlayer::onReaderError(const QString &message)
 {
+    m_remixed.synchronize(m_position, false, m_playbackRate, true);
     qWarning() << "MediaFoundationPlayer: Reader error:" << message;
     m_pendingFrameSteps = 0;
     emit error(message);
@@ -1083,6 +1093,7 @@ void MediaFoundationPlayer::onReaderError(const QString &message)
 
 void MediaFoundationPlayer::setState(State newState)
 {
+    m_remixed.synchronize(m_position, newState == State::Playing, m_playbackRate);
     if (m_state != newState) {
         m_state = newState;
         emit stateChanged(newState);

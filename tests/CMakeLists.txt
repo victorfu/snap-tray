@@ -901,6 +901,18 @@ target_link_libraries(Encoding_EncodingWorker PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Encoding_EncodingWorker COMMAND Encoding_EncodingWorker)
 set_tests_properties(Encoding_EncodingWorker PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Video_RemixedAudioPreview Video/tst_RemixedAudioPreview.cpp ../src/video/RemixedAudioPreview.cpp)
+target_include_directories(Video_RemixedAudioPreview PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Video_RemixedAudioPreview PRIVATE Qt6::Gui Qt6::Test)
+add_test(NAME Video_RemixedAudioPreview COMMAND Video_RemixedAudioPreview)
+set_tests_properties(Video_RemixedAudioPreview PROPERTIES TIMEOUT 30 LABELS "unit")
+
+add_executable(Video_NativePcmReader Video/tst_NativePcmReader.cpp)
+target_include_directories(Video_NativePcmReader PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_NativePcmReader PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Video_NativePcmReader COMMAND Video_NativePcmReader)
+set_tests_properties(Video_NativePcmReader PROPERTIES TIMEOUT 30 LABELS "unit")
+
 add_executable(Video_SourceReaderMailbox Video/tst_SourceReaderMailbox.cpp)
 target_include_directories(Video_SourceReaderMailbox PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(Video_SourceReaderMailbox PRIVATE Qt6::Core Qt6::Test)
@@ -915,6 +927,7 @@ add_executable(Video_VideoTranscoder
     $<IF:$<PLATFORM_ID:Darwin>,Video/VideoTranscoderTestAudio_mac.mm,$<IF:$<PLATFORM_ID:Windows>,Video/VideoTranscoderTestAudio_win.cpp,$<IF:$<BOOL:${SNAPTRAY_ENABLE_LINUX_RECORDING}>,Video/VideoTranscoderTestAudio_linux.cpp,Video/VideoTranscoderTestAudio_stub.cpp>>>
 )
 if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_compile_definitions(Video_VideoTranscoder PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
     target_link_libraries(Video_VideoTranscoder PRIVATE PkgConfig::SYSTEM_FFMPEG)
 endif()
 set_source_files_properties(Video/VideoTranscoderTestAudio_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
@@ -924,6 +937,12 @@ target_link_libraries(Video_VideoTranscoder PRIVATE snaptray_platform Qt6::Test
     "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
     "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
 add_test(NAME Video_VideoTranscoder COMMAND Video_VideoTranscoder)
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_test(NAME Video_NativeEditExport COMMAND Video_VideoTranscoder)
+    set_tests_properties(Video_NativeEditExport PROPERTIES TIMEOUT 120 LABELS "integration;slow"
+        ENVIRONMENT "SNAPTRAY_TEST_NATIVE_EDIT_EXPORT=1;QT_QPA_PLATFORM=offscreen")
+endif()
+
 set_tests_properties(Video_VideoTranscoder PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
 if(WIN32)

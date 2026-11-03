@@ -33,6 +33,8 @@ public:
     explicit WASAPIAudioCaptureEngine(QObject *parent = nullptr);
     ~WASAPIAudioCaptureEngine() override;
 
+    bool supportsSeparateTracks() const override { return true; }
+
     // IAudioCaptureEngine interface
     bool setAudioSource(AudioSource source) override;
     AudioSource audioSource() const override { return m_source; }
@@ -132,7 +134,8 @@ private:
     void captureLoop();
     void enableDataCallbacks();
     void drainDataCallbacks(bool disconnectConnections);
-    void deliverAudioData(const QByteArray &data, qint64 startFrame);
+    void deliverAudioData(const QByteArray &data, qint64 startFrame,
+                          const QByteArray &microphone = {}, const QByteArray &systemAudio = {});
     void finishDataCallback();
 
     // Deletes the thread object only after QThread has actually stopped. A timed-out

@@ -9,6 +9,7 @@ class TestCoreAudioRuntime : public QObject
 {
     Q_OBJECT
 private slots:
+    void separateTracksKeepMixerTimestamp();
     void notificationDegradesOnlySelectedSource_data();
     void notificationDegradesOnlySelectedSource();
     void stoppedAndDestroyedEnginesIgnoreQueuedNotifications();
@@ -135,6 +136,26 @@ void TestCoreAudioRuntime::stoppedAndDestroyedEnginesIgnoreQueuedNotifications()
     // Observer tokens have also been removed; posting again remains harmless.
     [[NSNotificationCenter defaultCenter] postNotificationName:AVCaptureDeviceWasDisconnectedNotification object:device];
     QCoreApplication::processEvents();
+}
+
+void TestCoreAudioRuntime::separateTracksKeepMixerTimestamp()
+{
+    CoreAudioCaptureEngine engine;
+    QVERIFY(engine.supportsSeparateTracks());
+    engine.setSeparateTracks(true);
+    QSignalSpy sources(&engine, &IAudioCaptureEngine::sourceAudioReady);
+    SnapTray::Audio::TimestampedPcmMixer::ProcessResult result;
+    SnapTray::Audio::OutputChunk chunk;
+    chunk.pcm = QByteArray(128, '\0');
+    chunk.microphonePcm = QByteArray(128, '\1');
+    chunk.systemAudioPcm = QByteArray(128, '\2');
+    chunk.startFrame = 512;
+    result.output.append(chunk);
+    engine.deliverMixerOutput(result);
+    QCOMPARE(sources.count(), 1);
+    QCOMPARE(sources.first()[0].toByteArray(), chunk.microphonePcm);
+    QCOMPARE(sources.first()[1].toByteArray(), chunk.systemAudioPcm);
+    QCOMPARE(sources.first()[2].toLongLong(), chunk.startFrame);
 }
 
 QTEST_GUILESS_MAIN(TestCoreAudioRuntime)

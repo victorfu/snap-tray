@@ -2025,6 +2025,14 @@ Kích thước: %2</translation>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Không thể lưu bản ghi vào thư mục dự án của Thư viện bản ghi.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Không thể ghi phím. Hãy kiểm tra quyền giám sát đầu vào. Quá trình ghi sẽ tiếp tục mà không có gợi ý phím.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Không thể lưu gợi ý phím. Quá trình ghi sẽ tiếp tục mà không có chúng.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3302,6 +3310,14 @@ Kích thước: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Đóng</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Phông chữ</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Mặc định</translation>
     </message>
 </context>
 <context>

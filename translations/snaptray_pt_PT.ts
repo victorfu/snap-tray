@@ -2026,6 +2026,14 @@ Tamanho: %2</translation>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Não é possível guardar gravações na pasta de projetos da Biblioteca de gravações.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>A gravação de teclas não está disponível. Verifique as permissões de monitorização de entrada. A gravação continuará sem indicações de teclas.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Não foi possível guardar as indicações de teclas. A gravação continuará sem elas.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3303,6 +3311,14 @@ Tamanho: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Fechar</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Tipo de letra</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Predefinição</translation>
     </message>
 </context>
 <context>

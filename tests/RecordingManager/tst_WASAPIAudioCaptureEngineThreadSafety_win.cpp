@@ -250,17 +250,29 @@ void TestWASAPIAudioCaptureEngineThreadSafetyWin::mixerDeliveryPreservesFrameTim
 {
     WASAPIAudioCaptureEngine engine;
     engine.enableDataCallbacks();
+    QVERIFY(engine.supportsSeparateTracks());
+    engine.setSeparateTracks(true);
+    QSignalSpy sources(&engine, &IAudioCaptureEngine::sourceAudioReady);
     QSignalSpy audioSpy(&engine, &IAudioCaptureEngine::audioDataReady);
 
     SnapTray::Audio::TimestampedPcmMixer::ProcessResult result;
     SnapTray::Audio::OutputChunk chunk;
     chunk.pcm = QByteArray(128, '\0');
     chunk.startFrame = 512;
+    chunk.microphonePcm = QByteArray(128, '\1');
+    chunk.systemAudioPcm = QByteArray(128, '\2');
     result.output.append(chunk);
     engine.deliverMixerOutput(result);
 
     QCOMPARE(audioSpy.count(), 1);
     QCOMPARE(audioSpy.first().at(1).toLongLong(), qint64(512));
+    QCOMPARE(sources.count(), 1);
+    QCOMPARE(sources.first()[0].toByteArray(), chunk.microphonePcm);
+    QCOMPARE(sources.first()[1].toByteArray(), chunk.systemAudioPcm);
+    QCOMPARE(sources.first()[2].toLongLong(), chunk.startFrame);
+    engine.stop();
+    engine.deliverMixerOutput(result);
+    QCOMPARE(sources.count(), 1); // stop drains and closes both deliveries
 }
 
 void TestWASAPIAudioCaptureEngineThreadSafetyWin::farFuturePacketIsRejectedBeforeMixerDrain()
