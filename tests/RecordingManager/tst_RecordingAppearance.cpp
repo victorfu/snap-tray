@@ -159,6 +159,15 @@ void TestRecordingAppearance::imageBackgroundAndFallback()
     const QImage out = RecordingAppearanceRenderer(a, size, filled(QSize(50, 50), Qt::magenta))
                            .compose(filled(size, Qt::black));
     QCOMPARE(out.pixelColor(2, 2), QColor(Qt::magenta));
+    // A transparent image (PR #198 review): an opaque, deterministic base
+    // shows through, never uninitialized memory.
+    QImage clear(QSize(50, 50), QImage::Format_ARGB32);
+    clear.fill(Qt::transparent);
+    for (int run = 0; run < 3; ++run) {
+        const QImage overClear = RecordingAppearanceRenderer(a, size, clear).compose(filled(size, Qt::white));
+        QCOMPARE(overClear.pixelColor(2, 2), QColor(Qt::black));
+        QCOMPARE(overClear.pixelColor(overClear.width() - 3, overClear.height() - 3), QColor(Qt::black));
+    }
     // No image: the gradient, never an empty frame.
     const QImage fallback = RecordingAppearanceRenderer(a, size).compose(filled(size, Qt::black));
     const auto preset = beautifyPresets().front();
