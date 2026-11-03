@@ -673,6 +673,8 @@ private:
     // empty until it is ready, then mp4EstimateChanged() (PR #197 review).
     mutable std::optional<VideoFileProbe> m_sourceProbe;
     mutable bool m_sourceProbePending = false;
+    // Save left the room check for MP4 options to the export job.
+    bool m_exportSpaceCheckDeferred = false;
     const VideoFileProbe& sourceProbe() const;
     SnapTray::Mp4ExportOptions m_mp4Options;
     SnapTray::RecordingAppearance m_appearance;
