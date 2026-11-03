@@ -283,8 +283,12 @@ qint64 CursorEffectRenderer::distanceToButtonEvent(qint64 sourceMs) const
 
 qint64 CursorEffectRenderer::effectiveTime(qint64 sourceMs) const
 {
-    if (m_settings.stillEndMs <= 0 || m_clipEndMs < 0) return sourceMs;
-    return std::min(sourceMs, m_clipEndMs - m_settings.stillEndMs);
+    if (m_settings.stillEndMs <= 0 || m_clipEndMs < 0 || m_timeline.samples.empty()) return sourceMs;
+    // A clip shorter than the still interval (Still End is remembered across
+    // recordings) holds the pointer from its first sample, never from a time
+    // before the timeline, where there is no pointer at all.
+    const qint64 freezeAt = std::max(m_clipEndMs - m_settings.stillEndMs, m_timeline.samples.front().tMs);
+    return std::min(sourceMs, freezeAt);
 }
 
 std::optional<QPointF> CursorEffectRenderer::pointerPosition(qint64 sourceMs) const
