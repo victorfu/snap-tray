@@ -147,6 +147,8 @@ void tst_RecordingPreviewAppearance::undoAndResetKeepTheLook()
     RecordingSettingsManager::instance().setAppearance({});
 
     RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    // GIF draws the frame everywhere (MP4 does not on macOS and Windows yet).
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     backend.updateVideoSize(QSize(320, 180));
     backend.setAppearanceEnabled(true);
     backend.setAppearanceCorners(int(SnapTray::RecordingAppearance::Amount::Large));
