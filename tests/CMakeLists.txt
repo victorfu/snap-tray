@@ -382,6 +382,33 @@ target_link_libraries(RecordingManager_TimelineEdit PRIVATE snaptray_core Qt6::T
 add_test(NAME RecordingManager_TimelineEdit COMMAND RecordingManager_TimelineEdit)
 set_tests_properties(RecordingManager_TimelineEdit PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_KeyTimeline RecordingManager/tst_KeyTimeline.cpp)
+target_link_libraries(RecordingManager_KeyTimeline PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_KeyTimeline COMMAND RecordingManager_KeyTimeline)
+set_tests_properties(RecordingManager_KeyTimeline PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_OverlayTrack RecordingManager/tst_OverlayTrack.cpp)
+target_link_libraries(RecordingManager_OverlayTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_OverlayTrack COMMAND RecordingManager_OverlayTrack)
+set_tests_properties(RecordingManager_OverlayTrack PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_AudioTracks RecordingManager/tst_AudioTracks.cpp)
+target_link_libraries(RecordingManager_AudioTracks PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_AudioTracks COMMAND RecordingManager_AudioTracks)
+set_tests_properties(RecordingManager_AudioTracks PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingArea RecordingManager/tst_RecordingArea.cpp)
+target_link_libraries(RecordingManager_RecordingArea PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingArea COMMAND RecordingManager_RecordingArea)
+set_tests_properties(RecordingManager_RecordingArea PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingProject RecordingManager/tst_RecordingProject.cpp)
+target_link_libraries(RecordingManager_RecordingProject PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingProject COMMAND RecordingManager_RecordingProject)
+set_tests_properties(RecordingManager_RecordingProject PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
 target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_CursorTimelineRecorder COMMAND RecordingManager_CursorTimelineRecorder)
@@ -397,6 +424,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND X11_XTest_FOUND AND X11_Xfixes_FOUND A
             QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
             $<TARGET_FILE:RecordingManager_CursorTimelineRecorder> x11ProbeOnIsolatedDisplay x11RecorderKeepsQueuedClicks x11QueuedClickKeepsItsDuration x11ClicksDuringAnotherPointerGrab)
     set_tests_properties(RecordingManager_X11CursorProbe PROPERTIES TIMEOUT 60 LABELS "integration")
+    # The real X11 key probe (#187): typed text follows the keyboard state.
+    add_executable(RecordingManager_X11KeyProbe RecordingManager/tst_X11KeyProbe.cpp)
+    target_link_libraries(RecordingManager_X11KeyProbe PRIVATE snaptray_platform X11::X11 X11::Xtst Qt6::Test)
+    add_test(NAME RecordingManager_X11KeyProbe
+        COMMAND xvfb-run -a -s "-screen 0 800x600x24"
+            ${CMAKE_COMMAND} -E env --unset=WAYLAND_DISPLAY --unset=WAYLAND_SOCKET
+            QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
+            $<TARGET_FILE:RecordingManager_X11KeyProbe>)
+    set_tests_properties(RecordingManager_X11KeyProbe PROPERTIES TIMEOUT 60 LABELS "integration")
 endif()
 
 add_executable(RecordingManager_WindowTimelineSidecar RecordingManager/tst_WindowTimelineSidecar.cpp)

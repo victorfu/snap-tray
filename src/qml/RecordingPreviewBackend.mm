@@ -14,11 +14,15 @@
 #include "recording/RecordingAppearance.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
+#include "recording/KeyTimeline.h"
+#include "recording/AudioTracks.h"
 
 #include <QCloseEvent>
 #include "recording/DiskSpaceGuard.h"
 #include "recording/RecordingSession.h"
 #include <QLocale>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QStorageInfo>
 #include <cmath>
 #include <QCoreApplication>
@@ -28,6 +32,8 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QFileDialog>
+#include <QStandardPaths>
+#include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QPainter>
@@ -55,6 +61,15 @@ constexpr int kVideoLoadTimeoutMs = 5000;
 constexpr int kFrameExtractionTimeoutMs = 5000;
 }
 
+struct RecordingPreviewBackend::PreviewAudio {
+    QMutex mutex;
+    SnapTray::AudioTrackMixer mixer;
+    PreviewAudio(const QString& videoPath, const SnapTray::AudioMixSettings& settings)
+        : mixer(videoPath, settings)
+    {
+    }
+};
+
 RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObject *parent)
     : RecordingPreviewBackend(videoPath, true, parent)
 {
@@ -77,6 +92,13 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     // The pointer look the user chose last time; undo starts from it.
     m_cursorEffects = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects())
                           .preferences();
+    // Separate tracks (#189): only a recording made with both sources has them.
+    m_hasSeparateTracks = SnapTray::AudioTracks::exist(videoPath);
+    // Shortcut hints (#187): only for a recording made with keys switched on.
+    if (auto keys = SnapTray::KeyTimelineSidecar::read(videoPath)) {
+        m_keyTimeline = std::make_shared<const SnapTray::KeyTimeline>(std::move(*keys));
+    }
+    m_keyOverlay = SnapTray::KeyOverlaySettings::fromJson(RecordingSettingsManager::instance().keyOverlay());
     // The frame around exports: the last one used for recordings, or at first
     // the screenshot Beautify look (off until switched on).
     const QJsonObject appearance = RecordingSettingsManager::instance().appearance();
@@ -89,6 +111,9 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::masksChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::appearanceChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::keyOverlayChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::overlaysChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::audioMixChanged);
     // The exported length and the cut availability follow the trim, duration and format.
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::timelineChanged);
     connect(this, &RecordingPreviewBackend::trimRangeChanged, this, &RecordingPreviewBackend::timelineChanged);
@@ -129,8 +154,22 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         : std::shared_ptr<const SnapTray::RecordingAppearanceRenderer>();
     const bool blurredBackground = appearance
         && m_appearance.background == SnapTray::RecordingAppearance::Background::BlurredVideo;
-    return [timeline, cursor, zoom, redaction, appearance, blurredBackground, bounds, videoSize](QImage& frame,
-                                                                                               qint64 sourceMs) {
+    // Shortcut hints (#187) on the output picture, after the zoom and pointer.
+    std::shared_ptr<SnapTray::KeyOverlayRenderer> keys;
+    if (keyOverlayActive()) {
+        keys = std::shared_ptr<SnapTray::KeyOverlayRenderer>(
+            new SnapTray::KeyOverlayRenderer(*m_keyTimeline, m_keyOverlay),
+            [held = m_keyTimeline](SnapTray::KeyOverlayRenderer* renderer) { delete renderer; });
+        // Always the trimmed range (PR #200 review): a key pressed before the
+        // trim start must not show in the first hint, even without cuts.
+        keys->setTimeline(timelineMap());
+    }
+    // Text and image overlays (#188): on top, inside the frame.
+    const auto overlays = m_overlays.isEmpty() || !overlaysAvailable()
+        ? std::shared_ptr<const SnapTray::OverlayTrack>()
+        : std::make_shared<const SnapTray::OverlayTrack>(m_overlays);
+    return [timeline, cursor, zoom, redaction, appearance, blurredBackground, keys, overlays, bounds, videoSize](
+               QImage& frame, qint64 sourceMs) {
         if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
             frame = frame.convertToFormat(QImage::Format_RGB32);
         }
@@ -164,6 +203,8 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
             }
         }
         if (cursor) cursor->paint(frame, sourceMs, {shown, videoSize, frame.size()});
+        if (keys) keys->paint(frame, sourceMs);
+        if (overlays) overlays->paint(frame, sourceMs);
         if (appearance) frame = appearance->compose(frame, blurSource);
     };
 }
@@ -218,9 +259,22 @@ void RecordingPreviewBackend::editAppearance(const std::function<void(SnapTray::
     SnapTray::RecordingAppearance appearance = m_appearance;
     change(appearance);
     if (appearance == m_appearance) return;
-    RecordingSettingsManager::instance().setAppearance(appearance.toJson());
+    rememberAppearance(appearance);
     setAppearance(appearance);
     recordEdit();
+}
+
+void RecordingPreviewBackend::rememberAppearance(const SnapTray::RecordingAppearance& appearance)
+{
+    // A project's own copy of a background image lives and dies with the
+    // project: the next recording keeps the image it remembered before
+    // (PR #203 review).
+    QJsonObject json = appearance.toJson();
+    if (!appearance.imagePath.isEmpty() && SnapTray::RecordingProjects::contains(appearance.imagePath)) {
+        const auto remembered = SnapTray::RecordingAppearance::fromJson(RecordingSettingsManager::instance().appearance());
+        json.insert(QStringLiteral("imagePath"), remembered.imagePath);
+    }
+    RecordingSettingsManager::instance().setAppearance(json);
 }
 
 void RecordingPreviewBackend::setAppearanceEnabled(bool value)
@@ -333,6 +387,7 @@ const RecordingPreviewBackend::Mp4Capabilities& RecordingPreviewBackend::mp4Capa
             capabilities.outputOptions = transcoder->supportsOutputOptions();
             capabilities.hevc = transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecHevc));
             capabilities.segments = transcoder->supportsSegments();
+            capabilities.audioMix = transcoder->supportsAudioMix();
         }
         m_mp4Capabilities = capabilities;
     }
@@ -650,7 +705,7 @@ bool RecordingPreviewBackend::setPointerHideRange(int index, qint64 startMs, qin
 bool RecordingPreviewBackend::effectsActive() const
 {
     return !m_redaction.isEmpty() || cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive())
-        || appearanceActive();
+        || appearanceActive() || keyOverlayActive() || (!m_overlays.isEmpty() && overlaysAvailable());
 }
 
 QVariantList RecordingPreviewBackend::masks() const
@@ -797,6 +852,24 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
     // The blurred background is made from the cropped picture: a new crop
     // (also undo or clear) needs it again, even while paused (PR #198 review).
     connect(this, &RecordingPreviewBackend::cropRectChanged, player, &VideoPlaybackItem::reprocessFrame);
+    // Separate tracks (#189): the preview hears the new mix as it is set.
+    if (m_hasSeparateTracks) {
+        m_previewAudio = std::make_shared<PreviewAudio>(m_videoPath, m_audioMix);
+        if (m_previewAudio->mixer.isValid()) {
+            std::weak_ptr<PreviewAudio> weakAudio = m_previewAudio;
+            player->setAudioSource([weakAudio](qint64 startFrame, int frames) {
+                const auto audio = weakAudio.lock();
+                if (!audio) return QByteArray(qMax(0, frames) * SnapTray::AudioTracks::kBytesPerFrame, '\0');
+                QMutexLocker lock(&audio->mutex);
+                return audio->mixer.read(startFrame, frames);
+            });
+            const auto audio = m_previewAudio;
+            connect(this, &RecordingPreviewBackend::audioMixChanged, this, [this, audio] {
+                QMutexLocker lock(&audio->mutex);
+                audio->mixer.setSettings(m_audioMix);
+            });
+        }
+    }
 }
 
 bool RecordingPreviewBackend::zoomAvailable() const
@@ -1273,6 +1346,416 @@ bool RecordingPreviewBackend::timelineEditsAvailable() const
     return m_selectedFormat != MP4 || mp4Capabilities().segments;
 }
 
+void RecordingPreviewBackend::setProject(const SnapTray::RecordingProject& project)
+{
+    m_project = project;
+    const QJsonObject choices = SnapTray::RecordingRecipe::exportChoices(project.recipe);
+    if (choices.contains(QStringLiteral("format"))) setSelectedFormat(choices.value(QStringLiteral("format")).toInt(MP4));
+    if (choices.contains(QStringLiteral("mp4"))) {
+        m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(choices.value(QStringLiteral("mp4")).toObject());
+        emit mp4OptionsChanged();
+    }
+    emit projectChanged();
+    // The edits need the picture's size and length: they are applied once
+    // the player has reported both, through the same notifying updates as
+    // any recording (PR #203 review).
+    m_projectRecipePending = true;
+    applyPendingProjectRecipe();
+}
+
+void RecordingPreviewBackend::applyPendingProjectRecipe()
+{
+    if (!m_projectRecipePending || !m_project || m_videoSize.isEmpty() || m_duration <= 0) return;
+    m_projectRecipePending = false;
+    if (const auto state = SnapTray::RecordingRecipe::editState(m_project->recipe)) {
+        m_restoringProject = true;
+        applyEditState(*state);
+        m_restoringProject = false;
+    }
+    // Undo starts from the project as it was saved.
+    m_editHistory.reset(currentEditState());
+    emit editHistoryChanged();
+    emit projectChanged(); // Save is possible now
+}
+
+void RecordingPreviewBackend::setInitialCrop(const QRect& videoRect)
+{
+    if (videoRect.isEmpty()) return;
+    // Checked against the picture once the player has reported its size
+    // (the source is never probed on the GUI thread).
+    m_pendingInitialCrop = videoRect;
+    emit projectChanged(); // Save waits for it (PR #203 review)
+    applyPendingInitialCrop();
+}
+
+void RecordingPreviewBackend::applyPendingInitialCrop()
+{
+    if (m_pendingInitialCrop.isEmpty() || m_videoSize.isEmpty()) return;
+    setCropRect(std::exchange(m_pendingInitialCrop, QRect()));
+    m_editHistory.reset(currentEditState());
+    emit editHistoryChanged();
+    emit projectChanged(); // Save is possible now
+}
+
+bool RecordingPreviewBackend::keepsProject() const
+{
+    return m_project.has_value() || RecordingSettingsManager::instance().keepProjects();
+}
+
+QJsonObject RecordingPreviewBackend::currentRecipe() const
+{
+    return SnapTray::RecordingRecipe::toJson(
+        currentEditState(), {{QStringLiteral("format"), m_selectedFormat}, {QStringLiteral("mp4"), m_mp4Options.toJson()}});
+}
+
+namespace {
+// The library's thumbnail, at most this size.
+const QSize kProjectThumbnailSize(320, 180);
+}
+
+QJsonObject RecordingPreviewBackend::recipeForProject(const QString& projectDir, QString* copied) const
+{
+    QJsonObject recipe = currentRecipe();
+    const QString image = m_appearance.imagePath;
+    if (image.isEmpty() || !QFileInfo::exists(image)) return recipe;
+    QString owned = image;
+    // Already the project's own copy: nothing to do. Otherwise a new name,
+    // so the copy the saved manifest uses stays until a new manifest is
+    // written (PR #203 review).
+    if (QFileInfo(image).absolutePath() != QFileInfo(projectDir).absoluteFilePath()) {
+        owned = QDir(projectDir).filePath(QStringLiteral("background-%1.%2")
+                                              .arg(QDateTime::currentMSecsSinceEpoch())
+                                              .arg(QFileInfo(image).suffix()));
+        if (!QFile::copy(image, owned)) return recipe; // keeps the outside path
+        if (copied) *copied = owned;
+    }
+    QJsonObject edit = recipe.value(QStringLiteral("edit")).toObject();
+    QJsonObject appearance = edit.value(QStringLiteral("appearance")).toObject();
+    appearance.insert(QStringLiteral("imagePath"), owned);
+    edit.insert(QStringLiteral("appearance"), appearance);
+    recipe.insert(QStringLiteral("edit"), edit);
+    return recipe;
+}
+
+void RecordingPreviewBackend::removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe)
+{
+    const QString used = QFileInfo(recipe.value(QStringLiteral("edit")).toObject()
+                                       .value(QStringLiteral("appearance")).toObject()
+                                       .value(QStringLiteral("imagePath")).toString())
+                             .absoluteFilePath();
+    const QDir dir(projectDir);
+    for (const QFileInfo& file : dir.entryInfoList({QStringLiteral("background*")}, QDir::Files)) {
+        if (file.absoluteFilePath() != used) QFile::remove(file.absoluteFilePath());
+    }
+}
+
+bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
+{
+    if (m_project) {
+        QString copied;
+        const QJsonObject recipe = recipeForProject(m_project->dir, &copied);
+        if (!SnapTray::RecordingProjects::update(*m_project, recipe, savedPath)) {
+            // The saved manifest still uses the old image: it stays.
+            if (!copied.isEmpty()) QFile::remove(copied);
+            return false;
+        }
+        removeUnusedBackgrounds(m_project->dir, recipe);
+        return true;
+    }
+    // A small picture for the library, from the first frame shown.
+    QImage thumbnail;
+    if (auto reader = IVideoFrameReader::create(); reader && reader->load(m_videoPath)) {
+        const QImage frame = reader->frameAt(m_trimStart);
+        if (!frame.isNull()) thumbnail = frame.scaled(kProjectThumbnailSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    // Moved with its sidecars; the caller then removes whatever is left.
+    auto project = SnapTray::RecordingProjects::create(m_videoPath, false, currentRecipe(), thumbnail, m_duration, savedPath);
+    if (!project) {
+        qWarning() << "RecordingPreviewBackend: the recording could not be kept as a project";
+        return false;
+    }
+    // Its own copy of a background image, now that the folder exists.
+    QString copied;
+    const QJsonObject recipe = recipeForProject(project->dir, &copied);
+    if (recipe != project->recipe && !SnapTray::RecordingProjects::update(*project, recipe, savedPath)
+        && !copied.isEmpty()) {
+        QFile::remove(copied); // the project keeps the image where it was
+    }
+    const int days = RecordingSettingsManager::instance().projectCleanupDays();
+    SnapTray::RecordingProjects::removeOlderThan(days);
+    return true;
+}
+
+bool RecordingPreviewBackend::audioMixAvailable() const
+{
+    return m_hasSeparateTracks && m_selectedFormat == MP4 && mp4Capabilities().audioMix;
+}
+
+void RecordingPreviewBackend::editAudioMix(const std::function<void(SnapTray::AudioMixSettings&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::AudioMixSettings mix = m_audioMix;
+    change(mix);
+    if (mix == m_audioMix) return;
+    m_audioMix = mix;
+    emit audioMixChanged();
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setMicrophoneGainDb(qreal db)
+{
+    const double clamped = qBound(SnapTray::AudioMixSettings::kMinGainDb, double(db), SnapTray::AudioMixSettings::kMaxGainDb);
+    editAudioMix([clamped](SnapTray::AudioMixSettings& m) { m.microphoneGainDb = clamped; });
+}
+
+void RecordingPreviewBackend::setSystemAudioGainDb(qreal db)
+{
+    const double clamped = qBound(SnapTray::AudioMixSettings::kMinGainDb, double(db), SnapTray::AudioMixSettings::kMaxGainDb);
+    editAudioMix([clamped](SnapTray::AudioMixSettings& m) { m.systemAudioGainDb = clamped; });
+}
+
+void RecordingPreviewBackend::setMicrophoneMuted(bool value)
+{
+    editAudioMix([value](SnapTray::AudioMixSettings& m) { m.microphoneMuted = value; });
+}
+
+void RecordingPreviewBackend::setSystemAudioMuted(bool value)
+{
+    editAudioMix([value](SnapTray::AudioMixSettings& m) { m.systemAudioMuted = value; });
+}
+
+void RecordingPreviewBackend::setMicrophoneNoiseReduction(bool value)
+{
+    editAudioMix([value](SnapTray::AudioMixSettings& m) { m.microphoneNoiseReduction = value; });
+}
+
+QVariantList RecordingPreviewBackend::overlays() const
+{
+    QVariantList list;
+    for (const auto& s : m_overlays.segments) {
+        list.append(QVariantMap{{QStringLiteral("kind"), int(s.kind)},
+                                {QStringLiteral("start"), s.startMs},
+                                {QStringLiteral("end"), s.endMs},
+                                {QStringLiteral("text"), s.text},
+                                {QStringLiteral("size"), s.size},
+                                {QStringLiteral("color"), s.color},
+                                {QStringLiteral("background"), int(s.background)},
+                                {QStringLiteral("align"), int(s.align)},
+                                {QStringLiteral("opacity"), s.opacity}});
+    }
+    return list;
+}
+
+void RecordingPreviewBackend::setSelectedOverlay(int index)
+{
+    index = index >= 0 && index < int(m_overlays.segments.size()) ? index : -1;
+    if (m_selectedOverlay == index) return;
+    m_selectedOverlay = index;
+    emit selectedOverlayChanged();
+}
+
+void RecordingPreviewBackend::editOverlays(const std::function<void(SnapTray::OverlayTrack&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::OverlayTrack overlays = m_overlays;
+    change(overlays);
+    if (overlays == m_overlays) return;
+    m_overlays = overlays;
+    if (m_selectedOverlay >= int(m_overlays.segments.size())) setSelectedOverlay(-1);
+    emit overlaysChanged();
+    recordEdit();
+}
+
+int RecordingPreviewBackend::addTextOverlay(qint64 positionMs)
+{
+    constexpr qint64 kNewTextMs = 3000;
+    if (isProcessing() || !overlaysAvailable()) return -1;
+    SnapTray::OverlaySegment segment;
+    segment.kind = SnapTray::OverlaySegment::Kind::Text;
+    segment.text = tr("Title");
+    segment.startMs = qMax<qint64>(0, positionMs);
+    segment.endMs = m_duration > 0 ? qMin(m_duration, segment.startMs + kNewTextMs) : segment.startMs + kNewTextMs;
+    if (segment.endMs - segment.startMs < SnapTray::OverlaySegment::kMinRangeMs) {
+        segment.startMs = qMax<qint64>(0, segment.endMs - kNewTextMs);
+    }
+    editOverlays([&segment](SnapTray::OverlayTrack& t) { t.segments.push_back(segment); });
+    const int index = int(m_overlays.segments.size()) - 1;
+    setSelectedOverlay(index);
+    return index;
+}
+
+int RecordingPreviewBackend::addImageOverlay(const QUrl& file)
+{
+    if (isProcessing() || !overlaysAvailable()) return -1;
+    const QString path = file.isLocalFile() ? file.toLocalFile() : file.toString();
+    // Read once and kept: the file may go away before the export.
+    const QImage image = SnapTray::OverlayTrack::loadImage(path);
+    if (image.isNull()) return -1;
+    SnapTray::OverlaySegment segment;
+    segment.kind = SnapTray::OverlaySegment::Kind::Image;
+    segment.image = image;
+    segment.size = 0.15;
+    segment.position = QPointF(0.8, 0.05);
+    segment.fadeMs = 0;
+    editOverlays([&segment](SnapTray::OverlayTrack& t) { t.segments.push_back(segment); });
+    const int index = int(m_overlays.segments.size()) - 1;
+    setSelectedOverlay(index);
+    return index;
+}
+
+int RecordingPreviewBackend::chooseOverlayImage()
+{
+    if (isProcessing()) return -1;
+    const QString file = QFileDialog::getOpenFileName(nullptr, tr("Select Image"), QString(),
+                                                      tr("Images (*.png *.svg *.jpg *.jpeg *.webp)"));
+    if (file.isEmpty()) return -1;
+    const int index = addImageOverlay(QUrl::fromLocalFile(file));
+    if (index < 0) setErrorMessage(tr("The image could not be read."));
+    return index;
+}
+
+void RecordingPreviewBackend::removeOverlay(int index)
+{
+    editOverlays([index](SnapTray::OverlayTrack& t) {
+        if (index >= 0 && index < int(t.segments.size())) t.segments.erase(t.segments.begin() + index);
+    });
+    setSelectedOverlay(-1);
+}
+
+namespace {
+template <typename F>
+void editSegment(SnapTray::OverlayTrack& t, int index, F&& change)
+{
+    if (index >= 0 && index < int(t.segments.size())) change(t.segments[size_t(index)]);
+}
+} // namespace
+
+void RecordingPreviewBackend::setOverlayText(int index, const QString& text)
+{
+    editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.text = text; }); });
+}
+
+void RecordingPreviewBackend::setOverlaySize(int index, qreal size)
+{
+    const double clamped = qBound(SnapTray::OverlaySegment::kMinSize, double(size), SnapTray::OverlaySegment::kMaxSize);
+    editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.size = clamped; }); });
+}
+
+void RecordingPreviewBackend::setOverlayColor(int index, const QColor& color)
+{
+    if (!color.isValid()) return;
+    editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.color = color.toRgb(); }); });
+}
+
+void RecordingPreviewBackend::setOverlayBackground(int index, int background)
+{
+    const int clamped = qBound(0, background, int(SnapTray::OverlaySegment::Background::Light));
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) { s.background = SnapTray::OverlaySegment::Background(clamped); });
+    });
+}
+
+void RecordingPreviewBackend::setOverlayAlign(int index, int align)
+{
+    const int clamped = qBound(0, align, int(SnapTray::OverlaySegment::Align::Right));
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) { s.align = SnapTray::OverlaySegment::Align(clamped); });
+    });
+}
+
+void RecordingPreviewBackend::setOverlayOpacity(int index, qreal opacity)
+{
+    const double clamped = qBound(0.1, double(opacity), 1.0);
+    editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.opacity = clamped; }); });
+}
+
+bool RecordingPreviewBackend::setOverlayRange(int index, qint64 startMs, qint64 endMs)
+{
+    if (isProcessing() || index < 0 || index >= int(m_overlays.segments.size())) return false;
+    if (startMs < 0 || (endMs >= 0 && endMs - startMs < SnapTray::OverlaySegment::kMinRangeMs)
+        || (m_duration > 0 && startMs >= m_duration)) {
+        return false;
+    }
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) {
+            s.startMs = startMs;
+            s.endMs = endMs;
+        });
+    });
+    return true;
+}
+
+QRectF RecordingPreviewBackend::overlayRectInView(int index, const QRectF& pictureInView) const
+{
+    const QSize picture = exportContentSize();
+    if (index < 0 || index >= int(m_overlays.segments.size()) || picture.isEmpty() || pictureInView.isEmpty()) return {};
+    const QRectF bounds = SnapTray::OverlayTrack::boundsOf(m_overlays.segments[size_t(index)], picture);
+    const double sx = pictureInView.width() / picture.width();
+    const double sy = pictureInView.height() / picture.height();
+    return QRectF(pictureInView.x() + bounds.x() * sx, pictureInView.y() + bounds.y() * sy, bounds.width() * sx,
+                  bounds.height() * sy);
+}
+
+void RecordingPreviewBackend::setOverlayRectFromView(int index, const QRectF& viewRect, const QRectF& pictureInView)
+{
+    const QRectF current = overlayRectInView(index, pictureInView);
+    if (current.isEmpty() || viewRect.isEmpty()) return;
+    // The top-left places it; a new size scales it (text and image alike keep their shape).
+    const QPointF position(std::clamp((viewRect.x() - pictureInView.x()) / pictureInView.width(), 0.0, 1.0),
+                           std::clamp((viewRect.y() - pictureInView.y()) / pictureInView.height(), 0.0, 1.0));
+    const double scale = viewRect.width() / current.width();
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) {
+            s.position = position;
+            if (std::abs(scale - 1.0) > 0.01) {
+                s.size = std::clamp(s.size * scale, SnapTray::OverlaySegment::kMinSize, SnapTray::OverlaySegment::kMaxSize);
+            }
+        });
+    });
+}
+
+void RecordingPreviewBackend::editKeyOverlay(const std::function<void(SnapTray::KeyOverlaySettings&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::KeyOverlaySettings settings = m_keyOverlay;
+    change(settings);
+    if (settings == m_keyOverlay) return;
+    m_keyOverlay = settings;
+    RecordingSettingsManager::instance().setKeyOverlay(settings.toJson());
+    emit keyOverlayChanged();
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setKeyOverlayEnabled(bool value)
+{
+    editKeyOverlay([value](SnapTray::KeyOverlaySettings& s) { s.enabled = value; });
+}
+
+void RecordingPreviewBackend::setKeyOverlayPosition(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::KeyOverlaySettings::Position::TopCenter));
+    editKeyOverlay([clamped](SnapTray::KeyOverlaySettings& s) { s.position = SnapTray::KeyOverlaySettings::Position(clamped); });
+}
+
+void RecordingPreviewBackend::setKeyOverlaySize(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::KeyOverlaySettings::Size::Large));
+    editKeyOverlay([clamped](SnapTray::KeyOverlaySettings& s) { s.size = SnapTray::KeyOverlaySettings::Size(clamped); });
+}
+
+void RecordingPreviewBackend::setKeyOverlayStyle(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::KeyOverlaySettings::Style::Light));
+    editKeyOverlay([clamped](SnapTray::KeyOverlaySettings& s) { s.style = SnapTray::KeyOverlaySettings::Style(clamped); });
+}
+
+void RecordingPreviewBackend::setKeyOverlayDisplayMs(int value)
+{
+    const auto& choices = SnapTray::KeyOverlaySettings::kDisplayChoices;
+    if (std::find(std::begin(choices), std::end(choices), qint64(value)) == std::end(choices)) return;
+    editKeyOverlay([value](SnapTray::KeyOverlaySettings& s) { s.displayMs = value; });
+}
+
 QVariantList RecordingPreviewBackend::timelineParts() const
 {
     QVariantList list;
@@ -1418,6 +1901,7 @@ void RecordingPreviewBackend::updateDuration(qint64 ms)
         // If trimEnd was -1 (unset), it now means the full duration
         emit durationChanged();
         emit trimRangeChanged();
+        applyPendingProjectRecipe();
     }
 }
 
@@ -1448,6 +1932,15 @@ void RecordingPreviewBackend::save()
         qDebug() << "RecordingPreviewBackend: Save ignored while processing";
         return;
     }
+    // An opened project's edits (masks, crops, cuts) are applied once the
+    // player has reported the picture: saving before would export without
+    // them (PR #203 review).
+    // Nor before the area chosen before recording is the crop: the export
+    // would show the whole screen, outside the area (PR #203 review).
+    if (projectLoading()) {
+        qDebug() << "RecordingPreviewBackend: Save ignored until the project's edits are applied";
+        return;
+    }
     // Saving answers a pending "discard?" question with "keep".
     cancelDiscard();
     m_canRetrySave = false;
@@ -1457,6 +1950,13 @@ void RecordingPreviewBackend::save()
     // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
     m_outputQuality = outputQualityOverride() ? outputQualityOverride()()
                                               : RecordingSettingsManager::instance().quality();
+
+    // An overlay the user added is part of the export: never leave it out quietly.
+    if (!m_overlays.isEmpty() && !overlaysAvailable()) {
+        setErrorMessage(tr("Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF "
+                           "or WebP, or remove them to export MP4. Nothing was exported."));
+        return;
+    }
 
     // Masks are only kept off the export by drawing them; an export that
     // cannot draw them must not happen at all.
@@ -1490,13 +1990,13 @@ void RecordingPreviewBackend::save()
     const bool mp4OptionsMayApply = m_selectedFormat == MP4
         && (sourceProbeReady() ? mp4OptionsActive() : effectiveMp4Options().mayChangeStream());
     const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || effectsActive()
-        || hasTimelineEdits() || mp4OptionsMayApply;
+        || hasTimelineEdits() || mp4OptionsMayApply || audioMixActive();
     // Only MP4 options, with the source not probed yet: whether they change
     // anything is not known here. The export job decides after its probe,
     // moving the recording if they do not and checking the room if they do,
     // so a save that only needs a move is never refused (PR #197 review).
     m_exportSpaceCheckDeferred = mp4OptionsMayApply && !sourceProbeReady() && m_selectedFormat == MP4
-        && !hasTrim() && !hasCrop() && !effectsActive() && !hasTimelineEdits();
+        && !hasTrim() && !hasCrop() && !effectsActive() && !hasTimelineEdits() && !audioMixActive();
     if (writesNewFile && !m_exportSpaceCheckDeferred) {
         const QString directory = QFileInfo(m_videoPath).absolutePath();
         const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
@@ -1530,7 +2030,8 @@ void RecordingPreviewBackend::save()
     }
 
     // Drawing the pointer or a zoom is an edit: the unedited file cannot just be moved.
-    if (hasTrim() || hasCrop() || effectsActive() || hasTimelineEdits()) {
+    // So is a new mix of the separate audio tracks (#189).
+    if (hasTrim() || hasCrop() || effectsActive() || hasTimelineEdits() || audioMixActive()) {
         performTranscode(false);
         return;
     }
@@ -1573,6 +2074,24 @@ void RecordingPreviewBackend::setProcessPhase(const QString &status, bool indete
 
 void RecordingPreviewBackend::handOffForSave(const QString &outputPath, const QSize &croppedSize)
 {
+    // A kept project's source is never handed over (the save dialog moves
+    // what it gets and drops its sidecars): an unedited save gets a copy.
+    // Named like a recording, so a copy left by a crash is cleaned up.
+    if (keepsProject() && outputPath == m_videoPath) {
+        const QFileInfo source(m_videoPath);
+        const QString copy = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                 .filePath(QStringLiteral("SnapTray_Recording_%1_project.%2")
+                                               .arg(QDateTime::currentMSecsSinceEpoch())
+                                               .arg(source.suffix()));
+        if (!QFile::copy(m_videoPath, copy)) {
+            finishProcessing();
+            m_canRetrySave = true;
+            setErrorMessage(tr("The project's recording could not be copied for saving. Nothing was saved."));
+            return;
+        }
+        handOffForSave(copy, croppedSize);
+        return;
+    }
     // The export is done; the save dialog (or auto-save) now owns the outcome.
     // Stay "processing" so the window cannot close or start another export.
     m_awaitingSave = true;
@@ -1594,6 +2113,23 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
     m_pendingSaveOutput.clear();
     const bool derived = output != m_videoPath;
 
+    if (outcome == SaveOutcome::Saved && m_project) {
+        // A project keeps its source; the save updates its recipe. The save
+        // dialog took the export (or the copy) as with any save.
+        if (!keepAsProject(savedPath)) {
+            // The file is saved, but the project still has the old edits:
+            // stay open so they are not lost (PR #203 review).
+            finishProcessing();
+            m_canRetrySave = true;
+            setErrorMessage(tr("Saved to %1, but the project could not be updated. Save again to keep these "
+                               "edits in the project.").arg(QDir::toNativeSeparators(savedPath)));
+            return;
+        }
+        finishProcessing();
+        m_saved = true;
+        close();
+        return;
+    }
     if (outcome == SaveOutcome::Saved) {
         // Only now is the source no longer needed, unless the export was
         // saved over it: then that path is the user's saved file.
@@ -1603,11 +2139,25 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
             return !ca.isEmpty() ? ca == cb : fa.absoluteFilePath() == fb.absoluteFilePath();
         };
         const bool savedOverSource = !savedPath.isEmpty() && samePath(savedPath, m_videoPath);
+        // Kept as a project (#191): the source and its sidecars move into it
+        // (an unedited save was handed a copy, so the source is still here).
+        // When that fails nothing is deleted: the recording stays open
+        // here, so it is not lost with the project (PR #203 review).
+        if (keepsProject() && !savedOverSource && !keepAsProject(savedPath)) {
+            finishProcessing();
+            m_canRetrySave = true;
+            setErrorMessage(tr("Saved to %1, but the recording could not be kept as an editable project. "
+                               "It is still open here: save again, or close it to discard it.")
+                                .arg(QDir::toNativeSeparators(savedPath)));
+            return;
+        }
         if (derived && !savedOverSource) {
             QFile::remove(m_videoPath);
         }
         SnapTray::WindowTimelineSidecar::remove(m_videoPath);
         SnapTray::CursorTimelineSidecar::remove(m_videoPath);
+        SnapTray::KeyTimelineSidecar::remove(m_videoPath);
+        SnapTray::AudioTracks::remove(m_videoPath);
         SnapTray::RecordingSession::remove(m_videoPath);
         finishProcessing();
         m_saved = true;
@@ -1745,6 +2295,8 @@ void RecordingPreviewBackend::updateVideoSize(const QSize &size)
     }
     m_videoSize = size;
     emit videoSizeChanged();
+    applyPendingProjectRecipe();
+    applyPendingInitialCrop();
     if (m_windowTimeline && m_windowTimeline->frameSize() != size) {
         qWarning() << "RecordingPreviewBackend: window timeline frame size" << m_windowTimeline->frameSize()
                    << "does not match the video" << size << "- snapping disabled";
@@ -1907,6 +2459,9 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
     state.redaction = m_redaction;
     state.appearance = m_appearance;
     state.timeline = m_timeline;
+    state.keys = m_keyOverlay;
+    state.overlays = m_overlays;
+    state.audio = m_audioMix;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -1937,17 +2492,33 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
         emit zoomChanged();
     }
+    if (state.audio != m_audioMix) {
+        m_audioMix = state.audio;
+        emit audioMixChanged();
+    }
+    if (state.overlays != m_overlays) {
+        m_overlays = state.overlays;
+        if (m_selectedOverlay >= int(m_overlays.segments.size())) setSelectedOverlay(-1);
+        emit overlaysChanged();
+    }
+    if (state.keys != m_keyOverlay) {
+        m_keyOverlay = state.keys;
+        if (!m_restoringProject) RecordingSettingsManager::instance().setKeyOverlay(m_keyOverlay.toJson());
+        emit keyOverlayChanged();
+    }
     if (state.timeline != m_timeline) {
         m_timeline = state.timeline;
         emit timelineChanged();
     }
+    // Restoring a project's recipe is not a choice for the next recording:
+    // its looks are not remembered (PR #203 review).
     if (state.appearance != m_appearance) {
         setAppearance(state.appearance);
-        RecordingSettingsManager::instance().setAppearance(state.appearance.toJson());
+        if (!m_restoringProject) rememberAppearance(state.appearance);
     }
     if (state.cursor != m_cursorEffects) {
         setCursorEffects(state.cursor);
-        RecordingSettingsManager::instance().setPointerEffects(state.cursor.preferences().toJson());
+        if (!m_restoringProject) RecordingSettingsManager::instance().setPointerEffects(state.cursor.preferences().toJson());
     }
     emit editHistoryChanged();
 }
@@ -1986,6 +2557,9 @@ void RecordingPreviewBackend::resetEdits()
     unedited.zoom = m_zoom;
     unedited.redaction = m_redaction;
     unedited.appearance = m_appearance;
+    unedited.keys = m_keyOverlay;
+    unedited.overlays = m_overlays;
+    unedited.audio = m_audioMix;
     applyEditState(unedited);
     recordEdit();
 }
@@ -2484,6 +3058,10 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     request.startMs = m_trimStart;
     request.endMs = m_trimEnd;
     request.cropRect = m_cropRect;
+    if (audioMixActive()) {
+        request.audioTracksVideoPath = m_videoPath;
+        request.audioMix = m_audioMix;
+    }
     if (hasTimelineEdits()) {
         // The kept range; joined parts when there is more than one.
         const SnapTray::TimelineMap map = timelineMap();
@@ -2530,6 +3108,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         // Nor with a size, frame rate or codec other than the one asked for.
         const bool unsupported = !transcoder || (request.frameFilter && !transcoder->supportsFrameFilter())
             || (!request.segments.empty() && !transcoder->supportsSegments())
+            || (!request.audioTracksVideoPath.isEmpty() && !transcoder->supportsAudioMix())
             || ((mp4Options.resolution != SnapTray::Mp4ExportOptions::Resolution::Original || mp4Options.frameRate > 0)
                 && !transcoder->supportsOutputOptions())
             || !transcoder->supportsVideoCodec(mp4Options.codecId());

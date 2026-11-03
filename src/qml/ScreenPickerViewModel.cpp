@@ -1,9 +1,11 @@
 #include "qml/ScreenPickerViewModel.h"
+#include "recording/KeyProbe.h"
 
 #include "qml/DialogImageProvider.h"
 #include "recording/RecordingAudioStatus.h"
 #include "recording/ScreenSourceService.h"
 #include "settings/RecordingSettingsManager.h"
+#include "PlatformFeatures.h"
 
 #include <memory>
 
@@ -140,14 +142,55 @@ void ScreenPickerViewModel::setSelectedDevice(const QString& deviceId)
 bool ScreenPickerViewModel::outputHasAudio() const
 {
     const auto& settings = RecordingSettingsManager::instance();
-    return recordingCapturesAudio(settings.outputFormat(), settings.showPreview());
+    return recordingCapturesAudio(settings.outputFormat(), editMode());
+}
+
+bool ScreenPickerViewModel::recordingModeSupported() const
+{
+    return !PlatformFeatures::instance().capabilities().recordingDirectMp4Only;
+}
+
+bool ScreenPickerViewModel::editMode() const
+{
+    return recordingModeSupported() && RecordingSettingsManager::instance().showPreview();
+}
+
+void ScreenPickerViewModel::setEditMode(bool edit)
+{
+    if (!recordingModeSupported() || editMode() == edit) return;
+    RecordingSettingsManager::instance().setShowPreview(edit);
+    emit recordingModeChanged();
+}
+
+int ScreenPickerViewModel::quickSaveAction() const
+{
+    return RecordingSettingsManager::instance().quickSaveAction();
+}
+
+void ScreenPickerViewModel::setQuickSaveAction(int action)
+{
+    if (quickSaveAction() == action) return;
+    RecordingSettingsManager::instance().setQuickSaveAction(action);
+    emit recordingModeChanged();
+}
+
+bool ScreenPickerViewModel::preselectArea() const
+{
+    return RecordingSettingsManager::instance().preselectArea();
+}
+
+void ScreenPickerViewModel::setPreselectArea(bool value)
+{
+    if (preselectArea() == value) return;
+    RecordingSettingsManager::instance().setPreselectArea(value);
+    emit recordingModeChanged();
 }
 
 QString ScreenPickerViewModel::outputSummary() const
 {
     const auto& settings = RecordingSettingsManager::instance();
     const QString format = QString::fromLatin1(outputFormatName(settings.outputFormat()));
-    const QString preview = settings.showPreview()
+    const QString preview = editMode()
         ? tr("Preview after recording")
         : tr("Saved without preview");
     const QString countdown = settings.countdownEnabled() && settings.countdownSeconds() > 0
@@ -162,7 +205,7 @@ QString ScreenPickerViewModel::audioNote() const
     if (!outputHasAudio()) {
         return tr("GIF and WebP recordings have no sound. Turn on preview or choose MP4 to record audio.");
     }
-    if (settings.showPreview() && settings.outputFormat() != 0) {
+    if (editMode() && settings.outputFormat() != 0) {
         return tr("Audio is recorded for the preview; GIF and WebP exports are silent.");
     }
     return {};
@@ -178,6 +221,35 @@ void ScreenPickerViewModel::setShowSetupBeforeRecording(bool show)
     if (showSetupBeforeRecording() == show) return;
     RecordingSettingsManager::instance().setShowSetupBeforeRecording(show);
     emit showSetupBeforeRecordingChanged();
+}
+
+bool ScreenPickerViewModel::keyRecordingSupported() const
+{
+    return SnapTray::keyRecordingSupported();
+}
+
+bool ScreenPickerViewModel::recordShortcutKeys() const
+{
+    return keyRecordingSupported() && RecordingSettingsManager::instance().keyRecordingMode() != 0;
+}
+
+void ScreenPickerViewModel::setRecordShortcutKeys(bool value)
+{
+    if (!keyRecordingSupported() || recordShortcutKeys() == value) return;
+    RecordingSettingsManager::instance().setKeyRecordingMode(value ? 1 : 0);
+    emit keyRecordingChanged();
+}
+
+bool ScreenPickerViewModel::recordTypedText() const
+{
+    return keyRecordingSupported() && RecordingSettingsManager::instance().keyRecordingMode() == 2;
+}
+
+void ScreenPickerViewModel::setRecordTypedText(bool value)
+{
+    if (!recordShortcutKeys() || recordTypedText() == value) return;
+    RecordingSettingsManager::instance().setKeyRecordingMode(value ? 2 : 1);
+    emit keyRecordingChanged();
 }
 
 void ScreenPickerViewModel::setAudioEngineFactory(AudioLevelMonitor::EngineFactory factory)

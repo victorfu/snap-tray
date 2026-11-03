@@ -115,12 +115,16 @@ bool PulseAudioCaptureEngine::start() {
         TimestampedPcmMixer::Config config;
         config.microphoneEnabled = m_source == AudioSource::Microphone || m_source == AudioSource::Both;
         config.systemAudioEnabled = m_source == AudioSource::SystemAudio || m_source == AudioSource::Both;
+        config.splitSources = m_separateTracks && m_source == AudioSource::Both;
         TimestampedPcmMixer mixer(config);
         qint64 pauseNs = 0, pauseStartNs = 0;
         bool paused = false;
         auto activeNs = [&] { return (paused ? pauseStartNs : clock.nsecsElapsed()) - pauseNs; };
-        auto deliver = [this](const TimestampedPcmMixer::ProcessResult& result) {
-            for (const auto& chunk : result.output) emit audioDataReady(chunk.pcm, chunk.startFrame);
+        auto deliver = [this, split = config.splitSources](const TimestampedPcmMixer::ProcessResult& result) {
+            for (const auto& chunk : result.output) {
+                emit audioDataReady(chunk.pcm, chunk.startFrame);
+                if (split) emit sourceAudioReady(chunk.microphonePcm, chunk.systemAudioPcm, chunk.startFrame);
+            }
         };
         struct Input {
             pa_stream* stream = nullptr;

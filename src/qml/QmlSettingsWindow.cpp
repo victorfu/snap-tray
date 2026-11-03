@@ -180,6 +180,7 @@ void QmlSettingsWindow::show()
     ensureView();
     if (m_backend) {
         m_backend->refreshStartOnLogin();
+        m_backend->refreshRecordingMode();
     }
 
 #ifdef Q_OS_MACOS
@@ -205,6 +206,7 @@ void QmlSettingsWindow::raise()
 {
     if (m_backend) {
         m_backend->refreshStartOnLogin();
+        m_backend->refreshRecordingMode();
     }
     if (m_view) {
         m_view->raise();
@@ -258,6 +260,7 @@ bool QmlSettingsWindow::eventFilter(QObject* watched, QEvent* event)
         } else {
             if (event->type() == QEvent::WindowActivate && m_backend) {
                 m_backend->refreshStartOnLogin();
+                m_backend->refreshRecordingMode();
             }
             if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
                 syncCursorSurface();

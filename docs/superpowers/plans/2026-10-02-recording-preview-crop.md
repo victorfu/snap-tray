@@ -37,8 +37,10 @@ The historical step checkboxes below retain the original execution recipe. Curre
 
 **Product rules**
 - Recording capture stays full screen. Do not touch Region Selector, and do not add any region-recording UI before recording starts.
+  - Amended 2026-11-03 (#194, maintainer decision): an optional, off-by-default area step before recording is allowed, as a separate recording-only component (`QmlRecordingAreaSelector`); Region Selector stays untouched. In edit mode the capture is still full screen and the area is the preview's initial crop.
 - Crop aspect presets: **Free only**.
 - `showPreview = false` (direct save) behaviour is unchanged.
+  - Amended 2026-11-03 (#194): except with an area chosen before recording, where quick mode records that area.
 
 **Crop geometry**
 - Crop coordinates are video pixels.

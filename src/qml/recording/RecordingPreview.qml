@@ -51,6 +51,23 @@ Item {
                                               qsTr("Motion Blur: Medium"), qsTr("Motion Blur: High")]
     // The pointer options panel replaces the format row while open.
     property bool pointerOptionsOpen: false
+    // Text and image overlays (#188), in OverlaySegment order.
+    readonly property var selectedOverlayData: backend.selectedOverlay >= 0 && backend.selectedOverlay < backend.overlays.length
+        ? backend.overlays[backend.selectedOverlay] : null
+    readonly property var overlayColors: ["#ffffff", "#000000", "#ffd60a", "#ff453a", "#0a84ff"]
+    readonly property var overlayBackgroundLabels: [qsTr("No Background"), qsTr("Dark Background"), qsTr("Light Background")]
+    readonly property var overlayAlignLabels: [qsTr("Align Left"), qsTr("Align Center"), qsTr("Align Right")]
+    // Separate audio tracks (#189).
+    property bool audioOpen: false
+    readonly property var audioGainChoices: [-12, -6, 0, 6]
+    function gainLabel(db) {
+        return (db > 0 ? "+" : "") + Number(db).toLocaleString(Qt.locale(), "f", 0) + " dB"
+    }
+    // Shortcut hints (#187), in KeyOverlaySettings order.
+    property bool keysOpen: false
+    readonly property var keyPositionLabels: [qsTr("Bottom"), qsTr("Bottom Left"), qsTr("Bottom Right"), qsTr("Top")]
+    readonly property var keySizeLabels: [qsTr("Small"), qsTr("Medium"), qsTr("Large")]
+    readonly property var keyDisplayChoices: [1000, 1500, 2500]
     // The frame around the export (#184), in RecordingAppearance order.
     property bool appearanceOpen: false
     readonly property var appearanceAmountLabels: [qsTr("None"), qsTr("Small"), qsTr("Medium"), qsTr("Large")]
@@ -203,7 +220,7 @@ Item {
     // The single guarded save path shared by the Save button, Ctrl+S and non-editing Enter.
     // A visible crop draft is applied first so the export matches what the user sees.
     function saveWithCrop() {
-        if (backend.isProcessing)
+        if (backend.isProcessing || backend.projectLoading)
             return
         // A time typed but not yet confirmed (Save does not take focus) is
         // applied first; an invalid one stops the save instead of exporting
@@ -219,6 +236,9 @@ Item {
             return
         if (maskPanel.visible && !maskPanel.wholeRecording && !root.commitPendingRange(maskStartField, maskEndField,
                 (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
+            return
+        if (overlayPanel.visible && !overlayPanel.wholeRecording && !root.commitPendingRange(overlayStartField, overlayEndField,
+                (start, end) => backend.setOverlayRange(backend.selectedOverlay, start, end)))
             return
         if (mp4Panel.visible && mp4WidthField.visible && !mp4WidthField.commitText()) {
             mp4WidthField.forceActiveFocus()
@@ -249,6 +269,34 @@ Item {
         if (at < 0)
             return here[0]
         return at + 1 < here.length ? here[at + 1] : -1
+    }
+
+    // The same for overlays (PR #201 review): a whole-recording image bar
+    // covers a title's, so each click moves to the next one under the pointer.
+    function nextOverlayAt(ms, current, clicked) {
+        const here = []
+        for (let i = backend.overlays.length - 1; i >= 0; --i) {
+            const overlay = backend.overlays[i]
+            const end = overlay.end < 0 ? timelineArea.dur : overlay.end
+            if (ms >= overlay.start && ms <= end)
+                here.push(i)
+        }
+        if (here.length === 0)
+            return current === clicked ? -1 : clicked
+        const at = here.indexOf(current)
+        if (at < 0)
+            return here[0]
+        return at + 1 < here.length ? here[at + 1] : -1
+    }
+    // Where an overlay is fully shown, past its fade-in.
+    readonly property int overlayRevealMs: 400
+    function showOverlay(index) {
+        if (index < 0 || index >= backend.overlays.length)
+            return
+        const overlay = backend.overlays[index]
+        const end = overlay.end < 0 ? timelineArea.dur : overlay.end
+        videoPlayer.pause()
+        videoPlayer.seek(Math.max(overlay.start, Math.min(end - 1, overlay.start + root.overlayRevealMs)))
     }
 
     // A start/end pair typed but not confirmed yet (Save does not take
@@ -545,6 +593,107 @@ Item {
             }
 
             // The selected mask: drag it to move, drag the corner to resize.
+            // Shortcut hints (#187) on the exported picture, not zoomed with it.
+            RecordingKeyOverlay {
+                objectName: "previewKeyOverlay"
+                anchors.fill: parent
+                z: 4.2
+                visible: !root.comparingOriginal && !cropOverlay.editing
+                backend: root.previewBackend
+                position: videoPlayer.framePosition
+                contentRect: root.zoomTarget
+            }
+
+            // Text and image overlays (#188) on the exported picture.
+            RecordingOverlayItem {
+                objectName: "previewOverlayItem"
+                anchors.fill: parent
+                z: 4.3
+                visible: !root.comparingOriginal && !cropOverlay.editing
+                backend: root.previewBackend
+                position: videoPlayer.framePosition
+                contentRect: root.zoomTarget
+            }
+
+            // Moving and resizing the selected overlay, on the exported picture.
+            Item {
+                id: overlayEditor
+                objectName: "previewOverlayEditor"
+                anchors.fill: parent
+                z: 5
+                visible: backend.selectedOverlay >= 0 && !cropOverlay.editing
+                property rect draft: Qt.rect(0, 0, 0, 0)
+                property bool dragging: false
+                readonly property rect shown: {
+                    void backend.overlays
+                    return dragging ? draft : backend.overlayRectInView(backend.selectedOverlay, root.zoomTarget)
+                }
+                function commit() {
+                    dragging = false
+                    backend.setOverlayRectFromView(backend.selectedOverlay, draft, root.zoomTarget)
+                }
+
+                Rectangle {
+                    x: overlayEditor.shown.x
+                    y: overlayEditor.shown.y
+                    width: overlayEditor.shown.width
+                    height: overlayEditor.shown.height
+                    color: "transparent"
+                    border.width: 2
+                    border.color: root.accent
+                    Accessible.role: Accessible.Graphic
+                    Accessible.name: qsTr("Selected overlay")
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: CursorTokens.moveItem
+                        property point origin
+                        onPressed: function(mouse) {
+                            origin = Qt.point(mouse.x, mouse.y)
+                            overlayEditor.draft = overlayEditor.shown
+                            overlayEditor.dragging = true
+                        }
+                        onPositionChanged: function(mouse) {
+                            const c = root.zoomTarget
+                            const d = overlayEditor.draft
+                            const nx = Math.max(c.x, Math.min(c.x + c.width - Math.min(d.width, c.width), d.x + mouse.x - origin.x))
+                            const ny = Math.max(c.y, Math.min(c.y + c.height - Math.min(d.height, c.height), d.y + mouse.y - origin.y))
+                            overlayEditor.draft = Qt.rect(nx, ny, d.width, d.height)
+                        }
+                        onReleased: overlayEditor.commit()
+                        onCanceled: overlayEditor.commit()
+                    }
+
+                    Rectangle {
+                        objectName: "previewOverlayResizeHandle"
+                        width: 12
+                        height: 12
+                        radius: 2
+                        x: parent.width - width / 2
+                        y: parent.height - height / 2
+                        color: root.accent
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            cursorShape: CursorTokens.resizeDiagonal
+                            onPressed: {
+                                overlayEditor.draft = overlayEditor.shown
+                                overlayEditor.dragging = true
+                            }
+                            onPositionChanged: function(mouse) {
+                                // Keeps the shape: the width sets the scale.
+                                const p = mapToItem(overlayEditor, mouse.x, mouse.y)
+                                const d = overlayEditor.shown
+                                const w = Math.max(8, p.x - d.x)
+                                overlayEditor.draft = Qt.rect(d.x, d.y, w, d.height * w / Math.max(1, d.width))
+                            }
+                            onReleased: overlayEditor.commit()
+                            onCanceled: overlayEditor.commit()
+                        }
+                    }
+                }
+            }
+
             // The frame around the export (#184), drawn by the exports' geometry.
             RecordingAppearanceOverlay {
                 objectName: "previewAppearanceOverlay"
@@ -795,6 +944,44 @@ Item {
                 }
             }
 
+            // Text and image overlays (#188), at the bottom of the timeline.
+            Repeater {
+                model: backend.overlays
+                Rectangle {
+                    required property int index
+                    required property var modelData
+                    objectName: "previewOverlaySegment" + index
+                    readonly property bool selected: backend.selectedOverlay === index
+                    readonly property real endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
+                    x: timelineArea.posToX(modelData.start)
+                    y: timelineArea.trackY + timelineArea.trackHeight + 13
+                    z: 2
+                    width: Math.max(4, timelineArea.posToX(endMs) - x)
+                    height: 5
+                    radius: 2
+                    color: modelData.kind === 0 ? root.accent : root.textSecondary
+                    opacity: !backend.overlaysAvailable ? 0.25 : selected ? 1.0 : 0.55
+                    Accessible.role: Accessible.Button
+                    Accessible.name: (modelData.kind === 0 ? qsTr("Text overlay \"%1\"").arg(modelData.text) : qsTr("Image overlay"))
+                        + " " + qsTr("from %1 to %2").arg(backend.formatPreciseTime(modelData.start))
+                                                  .arg(modelData.end < 0 ? qsTr("the end") : backend.formatPreciseTime(modelData.end))
+                    Accessible.onPressAction: backend.selectedOverlay = index
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -2
+                        cursorShape: CursorTokens.clickable
+                        onClicked: function(mouse) {
+                            const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
+                            backend.selectedZoom = -1
+                            backend.selectedMask = -1
+                            backend.selectedPointerHide = -1
+                            backend.selectedOverlay = root.nextOverlayAt(ms, backend.selectedOverlay, parent.index)
+                            root.showOverlay(backend.selectedOverlay)
+                        }
+                    }
+                }
+            }
+
             // Split points; drag to move one, double-click to join its parts.
             Repeater {
                 model: backend.timelineSplits
@@ -872,6 +1059,7 @@ Item {
                             const next = root.nextMaskAt(ms, backend.selectedMask, parent.index)
                             backend.selectedZoom = -1
                             backend.selectedPointerHide = -1
+                            backend.selectedOverlay = -1
                             root.pointerOptionsOpen = false
                             backend.selectedMask = next
                             if (next >= 0) {
@@ -910,6 +1098,7 @@ Item {
                         onClicked: {
                             backend.selectedZoom = -1
                             backend.selectedMask = -1
+                            backend.selectedOverlay = -1
                             root.pointerOptionsOpen = false
                             backend.selectedPointerHide = parent.selected ? -1 : parent.index
                             if (backend.selectedPointerHide >= 0) {
@@ -953,6 +1142,7 @@ Item {
                         onClicked: {
                             backend.selectedMask = -1
                             backend.selectedPointerHide = -1
+                            backend.selectedOverlay = -1
                             root.pointerOptionsOpen = false
                             backend.selectedZoom = parent.selected ? -1 : parent.index
                             if (backend.selectedZoom >= 0) {
@@ -1153,6 +1343,9 @@ Item {
                                              pointerPanel.visible ? pointerPanel.height : 0,
                                              mp4Panel.visible ? mp4Panel.height : 0,
                                              appearancePanel.visible ? appearancePanel.height : 0,
+                                             keysPanel.visible ? keysPanel.height : 0,
+                                             audioPanel.visible ? audioPanel.height : 0,
+                                             overlayPanel.visible ? overlayPanel.height : 0,
                                              pointerHidePanel.visible ? pointerHidePanel.height : 0,
                                              cropPanel.visible ? cropPanel.height : 0,
                                              ComponentTokens.recordingPreviewControlButtonHeight)
@@ -1166,7 +1359,8 @@ Item {
                 readonly property bool shown: !cropOverlay.editing && !(backend.selectedZoom >= 0)
                                               && !(backend.selectedMask >= 0) && !pointerPanel.visible
                                               && !pointerHidePanel.visible && !mp4Panel.visible
-                                              && !appearancePanel.visible
+                                              && !appearancePanel.visible && !keysPanel.visible && !audioPanel.visible
+                                              && !overlayPanel.visible
                 opacity: shown ? 1 : 0
                 enabled: shown
                 Accessible.ignored: !shown
@@ -1200,6 +1394,8 @@ Item {
                     onClicked: {
                         root.pointerOptionsOpen = false
                         root.appearanceOpen = false
+                        root.audioOpen = false
+                        root.keysOpen = false
                         root.mp4OptionsOpen = true
                     }
                 }
@@ -1260,6 +1456,8 @@ Item {
                         backend.selectedMask = -1
                         root.mp4OptionsOpen = false
                         root.appearanceOpen = false
+                        root.audioOpen = false
+                        root.keysOpen = false
                         root.pointerOptionsOpen = true
                     }
                 }
@@ -1314,6 +1512,41 @@ Item {
                         backend.addMask()
                     }
                 }
+                // Text and image overlays (#188).
+                SegmentButton {
+                    objectName: "previewAddText"
+                    enabled: backend.overlaysAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Add Text")
+                    tooltipText: backend.overlaysAvailable
+                        ? qsTr("A title or caption at the playhead")
+                        : qsTr("Overlays need GIF or WebP on this system")
+                    onClicked: {
+                        videoPlayer.pause()
+                        backend.selectedZoom = -1
+                        backend.selectedMask = -1
+                        backend.selectedPointerHide = -1
+                        // Shown past its fade-in, so the new title is visible
+                        // while it is edited (PR #201 review).
+                        root.showOverlay(backend.addTextOverlay(videoPlayer.position))
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewAddImage"
+                    enabled: backend.overlaysAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Add Image")
+                    tooltipText: backend.overlaysAvailable
+                        ? qsTr("An image such as a logo, for the whole recording")
+                        : qsTr("Overlays need GIF or WebP on this system")
+                    onClicked: {
+                        videoPlayer.pause()
+                        backend.selectedZoom = -1
+                        backend.selectedMask = -1
+                        backend.selectedPointerHide = -1
+                        backend.chooseOverlayImage()
+                    }
+                }
                 // Cuts and speed changes (#185), at the playhead.
                 SegmentButton {
                     objectName: "previewSplit"
@@ -1352,6 +1585,43 @@ Item {
                     onClicked: backend.setPartSpeed(root.playheadPart, root.nextPartSpeed(root.playheadPartData.speed))
                 }
                 SegmentButton {
+                    objectName: "previewAudioOptions"
+                    visible: backend.hasSeparateTracks && backend.selectedFormat === 0
+                    enabled: backend.audioMixAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Audio")
+                    tooltipText: backend.audioMixAvailable
+                        ? qsTr("Microphone and system audio volume, mute, and noise reduction")
+                        : qsTr("Mixing the two tracks is not supported for MP4 on this system yet")
+                    selected: backend.audioMixAvailable && (backend.microphoneGainDb !== 0 || backend.systemAudioGainDb !== 0
+                              || backend.microphoneMuted || backend.systemAudioMuted || backend.microphoneNoiseReduction)
+                    onClicked: {
+                        root.pointerOptionsOpen = false
+                        root.mp4OptionsOpen = false
+                        root.appearanceOpen = false
+                        root.keysOpen = false
+                        root.audioOpen = true
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewKeyOptions"
+                    visible: backend.hasKeyData
+                    enabled: backend.keyOverlayAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Keys")
+                    tooltipText: backend.keyOverlayAvailable
+                        ? qsTr("Show the shortcuts pressed while recording (%1 recorded)").arg(backend.recordedKeyCount)
+                        : qsTr("Shortcut hints need GIF or WebP on this system")
+                    selected: backend.keyOverlayAvailable && backend.keyOverlayEnabled
+                    onClicked: {
+                        root.pointerOptionsOpen = false
+                        root.mp4OptionsOpen = false
+                        root.audioOpen = false
+                        root.appearanceOpen = false
+                        root.keysOpen = true
+                    }
+                }
+                SegmentButton {
                     objectName: "previewAppearanceOptions"
                     enabled: backend.appearanceAvailable
                     minimumButtonWidth: 0
@@ -1363,6 +1633,8 @@ Item {
                     onClicked: {
                         root.pointerOptionsOpen = false
                         root.mp4OptionsOpen = false
+                        root.audioOpen = false
+                        root.keysOpen = false
                         root.appearanceOpen = true
                     }
                 }
@@ -1469,7 +1741,7 @@ Item {
                 width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing4
                 visible: root.pointerOptionsOpen && backend.cursorEffectsAvailable && backend.showCursor
-                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0)
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
                          && !(backend.selectedZoom >= 0) && !cropOverlay.editing
 
                 SegmentButton {
@@ -1520,6 +1792,297 @@ Item {
                 }
             }
 
+            // Editing one text or image overlay (#188), in place of the format buttons.
+            Flow {
+                id: overlayPanel
+                objectName: "previewOverlayPanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: root.selectedOverlayData !== null && !(backend.selectedMask >= 0)
+                         && !(backend.selectedZoom >= 0) && !cropOverlay.editing
+                readonly property bool isText: root.selectedOverlayData !== null && root.selectedOverlayData.kind === 0
+                readonly property bool wholeRecording: root.selectedOverlayData !== null
+                    && root.selectedOverlayData.start === 0 && root.selectedOverlayData.end < 0
+
+                Connections {
+                    target: root.previewBackend
+                    function onSelectedOverlayChanged() {
+                        overlayStartField.discardEdit()
+                        overlayEndField.discardEdit()
+                    }
+                }
+
+                ScrollView {
+                    visible: overlayPanel.isText
+                    width: 180
+                    height: 3 * ComponentTokens.recordingPreviewControlButtonHeight
+                    clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                    TextArea {
+                        id: overlayTextField
+                        objectName: "previewOverlayText"
+                        textFormat: TextEdit.PlainText
+                        wrapMode: TextEdit.Wrap
+                        font.pixelSize: SemanticTokens.fontSizeSmall
+                        color: root.textPrimary
+                        selectByMouse: true
+                        placeholderText: qsTr("Text")
+                        Accessible.name: qsTr("Overlay text")
+                        text: root.selectedOverlayData ? root.selectedOverlayData.text : ""
+                        // Applied as typed; one undo step per edit.
+                        onTextEdited: backend.setOverlayText(backend.selectedOverlay, text)
+                        Keys.onEscapePressed: function(event) {
+                            root.forceActiveFocus()
+                            event.accepted = true
+                        }
+                        background: Rectangle {
+                            radius: SemanticTokens.radiusSmall
+                            color: root.bgPanel
+                            border.width: 1
+                            border.color: overlayTextField.activeFocus ? root.accent : root.borderColor
+                        }
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewOverlaySmaller"
+                    minimumButtonWidth: 0
+                    text: "A\u2212"
+                    tooltipText: qsTr("Smaller")
+                    onClicked: backend.setOverlaySize(backend.selectedOverlay, root.selectedOverlayData.size / 1.25)
+                }
+                SegmentButton {
+                    objectName: "previewOverlayLarger"
+                    minimumButtonWidth: 0
+                    text: "A+"
+                    tooltipText: qsTr("Larger")
+                    onClicked: backend.setOverlaySize(backend.selectedOverlay, root.selectedOverlayData.size * 1.25)
+                }
+                Repeater {
+                    model: overlayPanel.isText ? root.overlayColors : []
+                    Rectangle {
+                        required property int index
+                        required property string modelData
+                        objectName: "previewOverlayColor" + index
+                        readonly property bool chosen: root.selectedOverlayData !== null
+                            && Qt.colorEqual(root.selectedOverlayData.color, modelData)
+                        width: ComponentTokens.recordingPreviewControlButtonHeight
+                        height: width
+                        radius: width / 2
+                        color: modelData
+                        border.width: chosen ? 2 : 1
+                        border.color: chosen ? root.accent : root.borderColor
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Text colour %1").arg(index + 1)
+                        Accessible.onPressAction: backend.setOverlayColor(backend.selectedOverlay, modelData)
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: CursorTokens.clickable
+                            onClicked: backend.setOverlayColor(backend.selectedOverlay, parent.modelData)
+                        }
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewOverlayBackground"
+                    visible: overlayPanel.isText
+                    minimumButtonWidth: 0
+                    text: root.overlayBackgroundLabels[root.selectedOverlayData ? root.selectedOverlayData.background : 0]
+                    tooltipText: qsTr("A box behind the text, so it reads on any picture")
+                    onClicked: backend.setOverlayBackground(backend.selectedOverlay, (root.selectedOverlayData.background + 1) % 3)
+                }
+                SegmentButton {
+                    objectName: "previewOverlayAlign"
+                    visible: overlayPanel.isText
+                    minimumButtonWidth: 0
+                    text: root.overlayAlignLabels[root.selectedOverlayData ? root.selectedOverlayData.align : 0]
+                    tooltipText: qsTr("How lines line up")
+                    onClicked: backend.setOverlayAlign(backend.selectedOverlay, (root.selectedOverlayData.align + 1) % 3)
+                }
+                SegmentButton {
+                    objectName: "previewOverlayOpacity"
+                    visible: !overlayPanel.isText
+                    minimumButtonWidth: 0
+                    text: qsTr("Opacity: %1%").arg(Math.round((root.selectedOverlayData ? root.selectedOverlayData.opacity : 1) * 100))
+                    tooltipText: qsTr("How see-through the image is")
+                    onClicked: {
+                        // 100 % -> 75 % -> 50 % -> 100 %
+                        const now = root.selectedOverlayData.opacity
+                        backend.setOverlayOpacity(backend.selectedOverlay, now > 0.9 ? 0.75 : now > 0.6 ? 0.5 : 1.0)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewOverlayWhole"
+                    minimumButtonWidth: 0
+                    text: qsTr("Whole Recording")
+                    tooltipText: qsTr("Show it for the whole recording, or only for a time range")
+                    selected: overlayPanel.wholeRecording
+                    onClicked: {
+                        if (overlayPanel.wholeRecording) {
+                            const start = Math.min(videoPlayer.position, Math.max(0, timelineArea.dur - 3000))
+                            backend.setOverlayRange(backend.selectedOverlay, start, Math.min(timelineArea.dur, start + 3000))
+                        } else {
+                            backend.setOverlayRange(backend.selectedOverlay, 0, -1)
+                        }
+                    }
+                }
+                TimeField {
+                    id: overlayStartField
+                    objectName: "previewOverlayStartField"
+                    visible: !overlayPanel.wholeRecording
+                    accessibleName: qsTr("Overlay start")
+                    timeMs: root.selectedOverlayData ? root.selectedOverlayData.start : 0
+                    onCommitted: function(ms) {
+                        invalid = !backend.setOverlayRange(backend.selectedOverlay, ms, root.selectedOverlayData.end)
+                    }
+                }
+                TimeField {
+                    id: overlayEndField
+                    objectName: "previewOverlayEndField"
+                    visible: !overlayPanel.wholeRecording
+                    accessibleName: qsTr("Overlay end")
+                    timeMs: root.selectedOverlayData && root.selectedOverlayData.end >= 0 ? root.selectedOverlayData.end : timelineArea.dur
+                    onCommitted: function(ms) {
+                        invalid = !backend.setOverlayRange(backend.selectedOverlay, root.selectedOverlayData.start, ms)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewOverlayDelete"
+                    minimumButtonWidth: 0
+                    text: qsTr("Delete")
+                    tooltipText: qsTr("Delete this overlay")
+                    onClicked: backend.removeOverlay(backend.selectedOverlay)
+                }
+                SegmentButton {
+                    objectName: "previewOverlayDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Drag the overlay to move it, or its corner to resize it. Done finishes editing.")
+                    onClicked: {
+                        if (overlayPanel.wholeRecording || root.commitPendingRange(overlayStartField, overlayEndField,
+                                (start, end) => backend.setOverlayRange(backend.selectedOverlay, start, end)))
+                            backend.selectedOverlay = -1
+                    }
+                }
+            }
+
+            // The two audio tracks (#189), in place of the format buttons.
+            Flow {
+                id: audioPanel
+                objectName: "previewAudioPanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: root.audioOpen && backend.audioMixAvailable && !cropOverlay.editing
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
+                         && !(backend.selectedZoom >= 0)
+
+                SegmentButton {
+                    objectName: "previewMicrophoneGain"
+                    enabled: !backend.microphoneMuted
+                    minimumButtonWidth: 0
+                    text: qsTr("Microphone: %1").arg(root.gainLabel(backend.microphoneGainDb))
+                    tooltipText: qsTr("Microphone volume in the export")
+                    onClicked: backend.microphoneGainDb = root.nextChoice(root.audioGainChoices, backend.microphoneGainDb)
+                }
+                SegmentButton {
+                    objectName: "previewMicrophoneMute"
+                    minimumButtonWidth: 0
+                    text: qsTr("Mute Microphone")
+                    tooltipText: qsTr("Leave the microphone out of the export")
+                    selected: backend.microphoneMuted
+                    onClicked: backend.microphoneMuted = !backend.microphoneMuted
+                }
+                SegmentButton {
+                    objectName: "previewNoiseReduction"
+                    enabled: !backend.microphoneMuted
+                    minimumButtonWidth: 0
+                    text: qsTr("Reduce Noise")
+                    tooltipText: qsTr("Turn down hiss, hum and room noise between words on the microphone")
+                    selected: backend.microphoneNoiseReduction
+                    onClicked: backend.microphoneNoiseReduction = !backend.microphoneNoiseReduction
+                }
+                SegmentButton {
+                    objectName: "previewSystemAudioGain"
+                    enabled: !backend.systemAudioMuted
+                    minimumButtonWidth: 0
+                    text: qsTr("System Audio: %1").arg(root.gainLabel(backend.systemAudioGainDb))
+                    tooltipText: qsTr("System audio volume in the export")
+                    onClicked: backend.systemAudioGainDb = root.nextChoice(root.audioGainChoices, backend.systemAudioGainDb)
+                }
+                SegmentButton {
+                    objectName: "previewSystemAudioMute"
+                    minimumButtonWidth: 0
+                    text: qsTr("Mute System Audio")
+                    tooltipText: qsTr("Leave the system audio out of the export")
+                    selected: backend.systemAudioMuted
+                    onClicked: backend.systemAudioMuted = !backend.systemAudioMuted
+                }
+                SegmentButton {
+                    objectName: "previewAudioDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Back to the export options")
+                    onClicked: root.audioOpen = false
+                }
+            }
+
+            // Shortcut hints (#187), in place of the format buttons.
+            Flow {
+                id: keysPanel
+                objectName: "previewKeysPanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: root.keysOpen && backend.keyOverlayAvailable && !cropOverlay.editing
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
+                         && !(backend.selectedZoom >= 0)
+
+                SegmentButton {
+                    objectName: "previewKeysToggle"
+                    minimumButtonWidth: 0
+                    text: backend.keyOverlayEnabled ? qsTr("Keys: On") : qsTr("Keys: Off")
+                    tooltipText: qsTr("Draw the shortcuts into the exported video")
+                    selected: backend.keyOverlayEnabled
+                    onClicked: backend.keyOverlayEnabled = !backend.keyOverlayEnabled
+                }
+                SegmentButton {
+                    objectName: "previewKeysPosition"
+                    minimumButtonWidth: 0
+                    text: qsTr("Place: %1").arg(root.keyPositionLabels[backend.keyOverlayPosition])
+                    tooltipText: qsTr("Where the shortcuts appear")
+                    onClicked: backend.keyOverlayPosition = (backend.keyOverlayPosition + 1) % root.keyPositionLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewKeysSize"
+                    minimumButtonWidth: 0
+                    text: qsTr("Size: %1").arg(root.keySizeLabels[backend.keyOverlaySize])
+                    tooltipText: qsTr("How large the shortcuts are")
+                    onClicked: backend.keyOverlaySize = (backend.keyOverlaySize + 1) % root.keySizeLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewKeysStyle"
+                    minimumButtonWidth: 0
+                    text: backend.keyOverlayStyle === 0 ? qsTr("Dark") : qsTr("Light")
+                    tooltipText: qsTr("Dark or light keys")
+                    onClicked: backend.keyOverlayStyle = 1 - backend.keyOverlayStyle
+                }
+                SegmentButton {
+                    objectName: "previewKeysDuration"
+                    minimumButtonWidth: 0
+                    text: qsTr("Show for %1 s").arg(root.secondsLabel(backend.keyOverlayDisplayMs))
+                    tooltipText: qsTr("How long a shortcut stays after it was pressed; keys pressed close together show together")
+                    onClicked: backend.keyOverlayDisplayMs = root.nextChoice(root.keyDisplayChoices, backend.keyOverlayDisplayMs)
+                }
+                SegmentButton {
+                    objectName: "previewKeysDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Back to the export options")
+                    onClicked: root.keysOpen = false
+                }
+            }
+
             // The frame around the export (#184), in place of the format buttons.
             Flow {
                 id: appearancePanel
@@ -1528,7 +2091,7 @@ Item {
                 width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing4
                 visible: root.appearanceOpen && backend.appearanceAvailable && !cropOverlay.editing
-                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0)
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
                          && !(backend.selectedZoom >= 0)
 
                 SegmentButton {
@@ -1663,7 +2226,7 @@ Item {
                 width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing4
                 visible: root.mp4OptionsOpen && backend.selectedFormat === 0 && !cropOverlay.editing
-                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0)
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
                          && !(backend.selectedZoom >= 0)
                 readonly property string sizeOrFpsUnavailable:
                     qsTr("Changing the MP4 size and frame rate is not supported on this system yet")
@@ -2112,7 +2675,7 @@ Item {
                     iconSource: "qrc:/icons/icons/trash-2.svg"
                     destructive: true
                     objectName: "previewDiscardButton"
-                    tooltipText: qsTr("Discard Recording (Esc)")
+                    tooltipText: backend.isProject ? qsTr("Close Without Saving (Esc)") : qsTr("Discard Recording (Esc)")
                     onClicked: backend.requestDiscard()
                 }
 
@@ -2120,6 +2683,7 @@ Item {
                     objectName: "previewSaveButton"
                     iconSource: "qrc:/icons/icons/save.svg"
                     primary: true
+                    enabled: !backend.projectLoading
                     tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
                     onClicked: root.saveWithCrop()
                 }
@@ -2482,7 +3046,7 @@ Item {
                     id: confirmTitle
                     width: parent.width
                     wrapMode: Text.Wrap
-                    text: qsTr("Discard this recording?")
+                    text: backend.isProject ? qsTr("Close without saving your changes?") : qsTr("Discard this recording?")
                     font.pixelSize: SemanticTokens.fontSizeBody
                     font.family: SemanticTokens.fontFamily
                     font.weight: SemanticTokens.fontWeightMedium
@@ -2493,7 +3057,9 @@ Item {
                     id: confirmBody
                     width: parent.width
                     wrapMode: Text.Wrap
-                    text: qsTr("The video will be deleted and cannot be recovered.")
+                    text: backend.isProject
+                        ? qsTr("The project stays in Recording Library as it was last saved.")
+                        : qsTr("The video will be deleted and cannot be recovered.")
                     font.pixelSize: SemanticTokens.fontSizeCaption
                     font.family: SemanticTokens.fontFamily
                     color: root.textSecondary
@@ -2505,7 +3071,7 @@ Item {
 
                     DialogButton {
                         objectName: "discardKeepButton"
-                        text: qsTr("Keep Recording")
+                        text: backend.isProject ? qsTr("Keep Editing") : qsTr("Keep Recording")
                         style: "secondary"
                         border.width: discardConfirmation.focusIndex === 0 ? 2 : 1
                         border.color: discardConfirmation.focusIndex === 0 ? root.accent
@@ -2518,7 +3084,7 @@ Item {
 
                     DialogButton {
                         objectName: "discardConfirmButton"
-                        text: qsTr("Discard")
+                        text: backend.isProject ? qsTr("Close") : qsTr("Discard")
                         style: "primary"
                         color: ComponentTokens.recordingPreviewDangerPressed
                         border.width: discardConfirmation.focusIndex === 1 ? 2 : 0

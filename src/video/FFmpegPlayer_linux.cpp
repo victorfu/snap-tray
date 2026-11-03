@@ -1,3 +1,5 @@
+#include <QMutex>
+#include <QMutexLocker>
 #include "FFmpegMedia.h"
 #include "video/IVideoPlayer.h"
 #include <pulse/pulseaudio.h>
@@ -184,6 +186,11 @@ public:
     void setVolume(float value) override { gain = qBound(0.0f, value, 1.0f); }
     float volume() const override { return gain; }
     void setMuted(bool value) override { muted = value; }
+    bool setAudioSource(AudioSource source) override {
+        QMutexLocker lock(&audioSourceMutex);
+        audioSource = std::move(source);
+        return true;
+    }
     bool isMuted() const override { return muted; }
     void setLooping(bool value) override { loop = value; }
     bool isLooping() const override { return loop; }
@@ -216,12 +223,19 @@ private:
         watcher.setFuture(QtConcurrent::run([this, token, target, audioStart, audioCount] {
             Decoded result; result.generation = token; result.position = target; result.audioEnd = audioStart+audioCount;
             result.image = video->frameAt(target); result.error = video->lastError();
-            if (audioCount) { result.pcm = audio->read(audioStart, audioCount); if (result.pcm.isEmpty()) result.error = audio->error(); }
+            if (audioCount) {
+                AudioSource source;
+                { QMutexLocker lock(&audioSourceMutex); source = audioSource; }
+                result.pcm = source ? source(audioStart, audioCount) : audio->read(audioStart, audioCount);
+                if (result.pcm.isEmpty()) result.error = source ? QStringLiteral("Mixed audio unavailable.") : audio->error();
+            }
             return result;
         }));
     }
     std::unique_ptr<SnapTray::FFmpeg::FrameReader> video;
     std::unique_ptr<SnapTray::FFmpeg::AudioReader> audio;
+    QMutex audioSourceMutex;
+    AudioSource audioSource;
     VideoFileProbe media;
     AudioOutput output;
     QFutureWatcher<Decoded> watcher;

@@ -11,6 +11,9 @@
 #include "qml/QmlHistoryWindow.h"
 #include "qml/ScreenPickerViewModel.h"
 #include "qml/RecordingRecoveryViewModel.h"
+#include "qml/RecordingLibraryViewModel.h"
+#include "qml/QuickSaveAction.h"
+#include "qml/QmlRecordingAreaSelector.h"
 #include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
@@ -20,6 +23,9 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
+#include "recording/KeyTimeline.h"
+#include "recording/AudioTracks.h"
+#include "recording/RecordingProject.h"
 #include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "ui/TrayRecordingIndicator.h"
@@ -262,6 +268,8 @@ void MainApplication::initialize()
 
     // Create recording manager
     m_recordingManager = new RecordingManager(this);
+    // Projects (#191) not changed for the chosen number of days.
+    SnapTray::RecordingProjects::removeOlderThan(RecordingSettingsManager::instance().projectCleanupDays());
 
     // Connect recording signals
     connect(m_recordingManager, &RecordingManager::recordingStopped,
@@ -270,6 +278,19 @@ void MainApplication::initialize()
                 SnapTray::QmlToast::Level::Success,
                 MainApplication::tr("Recording Saved"),
                 MainApplication::tr("Saved to: %1").arg(path));
+        });
+
+    // Quick mode (#193): the chosen action once the file is saved.
+    connect(m_recordingManager, &RecordingManager::quickRecordingSaved,
+        this, [](const QString& path) {
+            const int action = RecordingSettingsManager::instance().quickSaveAction();
+            if (!SnapTray::QuickSaveAction::apply(action, path)) return;
+            if (action == RecordingSettingsManager::QuickSaveCopyFile) {
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Success,
+                    MainApplication::tr("Recording Copied"),
+                    MainApplication::tr("Saved to %1 and copied: paste it into a chat or folder.").arg(path));
+            }
         });
 
     connect(m_recordingManager, &RecordingManager::recordingError,
@@ -442,6 +463,10 @@ void MainApplication::initialize()
         m_recoverRecordingsAction = m_trayMenu->addAction(tr("Recover Recordings..."));
         m_recoverRecordingsAction->setVisible(false);
         connect(m_recoverRecordingsAction, &QAction::triggered, this, &MainApplication::showRecoveryDialog);
+        // Kept editable projects (#191); always there, so the library can
+        // explain how to turn keeping on.
+        m_recordingLibraryAction = m_trayMenu->addAction(tr("Recording Library..."));
+        connect(m_recordingLibraryAction, &QAction::triggered, this, &MainApplication::showRecordingLibrary);
         // Local diagnostics for the last recording; only copied when the user asks.
         m_copyRecordingDiagnosticsAction = m_trayMenu->addAction(tr("Copy Recording Diagnostics"));
         m_copyRecordingDiagnosticsAction->setVisible(false);
@@ -534,7 +559,7 @@ void MainApplication::initialize()
 
 bool MainApplication::canShutdownForUpdate() const
 {
-    return !m_screenPickerDialog &&
+    return !recordingSetupActive() &&
            (!m_recordingManager || !isBlockingUpdateRecordingState(m_recordingManager->state()));
 }
 
@@ -575,7 +600,7 @@ void MainApplication::prepareForUpdateShutdown()
 
 bool MainApplication::canStartRegionCapture() const
 {
-    return m_captureManager && !m_screenPickerDialog
+    return m_captureManager && !recordingSetupActive()
         && (!m_screenCanvasManager || !m_screenCanvasManager->isActive())
         && (!m_recordingManager || !m_recordingManager->blocksCapture());
 }
@@ -617,7 +642,7 @@ void MainApplication::onQuickPin()
     if (m_recordingManager->blocksCapture()) {
         return;
     }
-    if (m_screenPickerDialog) {
+    if (recordingSetupActive()) {
         return;
     }
 
@@ -639,8 +664,8 @@ void MainApplication::onScreenCanvas()
         qDebug() << "onScreenCanvas: blocked by recordingManager";
         return;
     }
-    if (m_screenPickerDialog) {
-        qDebug() << "onScreenCanvas: blocked by screen picker";
+    if (recordingSetupActive()) {
+        qDebug() << "onScreenCanvas: blocked by the recording setup";
         return;
     }
 
@@ -660,6 +685,10 @@ void MainApplication::onFullScreenRecording()
 
     if (m_screenPickerDialog) {
         closeScreenPicker();
+        return;
+    }
+    if (m_areaSelector) {
+        closeAreaSelector();
         return;
     }
 
@@ -996,7 +1025,7 @@ void MainApplication::onPasteFromClipboard()
 
 void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
 {
-    if (m_screenPickerDialog) {
+    if (recordingSetupActive()) {
         return;
     }
 
@@ -1058,6 +1087,8 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
 
     m_previewBackend = new RecordingPreviewBackend(videoPath, recordedAsIntermediate, this);
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
+    // The area chosen before recording (#194), also for a recovered recording.
+    m_previewBackend->setInitialCrop(m_recordingManager->previewInitialCrop());
 
     // The save handler opens a native dialog. Keep it out of the QML click/key
     // handler stack so preview deleteLater() cannot run during a nested dialog
@@ -1095,6 +1126,10 @@ void MainApplication::onPreviewSaveRequested(const QString& videoPath, const QSi
 
 void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
 {
+    // A kept project's recording is only ever deleted from the library.
+    if (SnapTray::RecordingProjects::contains(videoPath)) {
+        return;
+    }
     if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
         if (!QFile::remove(videoPath)) {
             qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;
@@ -1102,6 +1137,8 @@ void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
     }
     SnapTray::WindowTimelineSidecar::remove(videoPath);
     SnapTray::CursorTimelineSidecar::remove(videoPath);
+    SnapTray::KeyTimelineSidecar::remove(videoPath);
+    SnapTray::AudioTracks::remove(videoPath);
     SnapTray::RecordingSession::remove(videoPath);
 }
 
@@ -1222,6 +1259,54 @@ void MainApplication::showRecoveryDialog()
     dialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
 }
 
+void MainApplication::showRecordingLibrary()
+{
+    const QString openProject = m_previewBackend ? m_previewBackend->projectDir() : QString();
+    if (m_libraryDialog) {
+        if (auto* model = m_libraryDialog->findChild<SnapTray::RecordingLibraryViewModel*>()) {
+            model->setOpenProjectDir(openProject);
+            model->refresh();
+        }
+        m_libraryDialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+        return;
+    }
+    auto* viewModel = new SnapTray::RecordingLibraryViewModel(this);
+    viewModel->setOpenProjectDir(openProject);
+    auto* dialog = new SnapTray::QmlDialog(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingLibraryDialog.qml")),
+        viewModel, QStringLiteral("viewModel"), this);
+    viewModel->setParent(dialog);
+    m_libraryDialog = dialog;
+    connect(dialog, &SnapTray::QmlDialog::closed, dialog, &QObject::deleteLater);
+    connect(viewModel, &SnapTray::RecordingLibraryViewModel::openRequested, this,
+        &MainApplication::openRecordingProject);
+    connect(viewModel, &SnapTray::RecordingLibraryViewModel::closeRequested, dialog, [this] {
+        if (m_libraryDialog) m_libraryDialog->close();
+    });
+    dialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+}
+
+void MainApplication::openRecordingProject(const QString& projectDir)
+{
+    const auto project = SnapTray::RecordingProjects::load(projectDir);
+    if (!project) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Project Unavailable"),
+            tr("This project's recording is missing or damaged."));
+        return;
+    }
+    if (m_previewBackend || !m_recordingManager->openProjectRecording(project->videoPath())) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Recording Busy"),
+            tr("Finish or close the current recording first."));
+        return;
+    }
+    // A project is always the full-quality recording: Save re-encodes as needed.
+    showRecordingPreview(project->videoPath(), RecordingSettingsManager::instance().outputFormat(), true);
+    if (m_previewBackend) m_previewBackend->setProject(*project);
+    if (m_libraryDialog) m_libraryDialog->close();
+}
+
 void MainApplication::updateRecordingActionText()
 {
     const auto recordingState = m_recordingManager ? m_recordingManager->state() : RecordingManager::State::Idle;
@@ -1258,14 +1343,14 @@ void MainApplication::updateRecordingActionText()
     QString baseName = recordScreenText;
     bool includeHotkey = true;
 
-    if (!m_recordingManager && !m_screenPickerDialog) {
+    if (!m_recordingManager && !recordingSetupActive()) {
         updateActionHotkeyText(m_fullScreenRecordingAction,
                                SnapTray::HotkeyAction::RecordFullScreen,
                                recordScreenText);
         return;
     }
 
-    if (m_screenPickerDialog) {
+    if (recordingSetupActive()) {
         baseName = tr("Cancel Recording");
         includeHotkey = false;
     } else if (m_recordingManager) {
@@ -1412,11 +1497,20 @@ QString MainApplication::trayRecordingStatusLine() const
     if (!screenSummary.isEmpty()) {
         parts.append(screenSummary);
     }
+    // The mode this recording was started in (#193).
+    if (m_recordingManager && m_trayRecordingStatus != Status::Preparing) {
+        parts.append(m_recordingManager->recordingOpensPreview() ? tr("edit mode") : tr("quick mode"));
+    }
     if (m_recordingManager && m_recordingManager->isDroppingFrames()) {
         parts.append(tr("dropping frames"));
     }
     if (m_recordingManager && m_recordingManager->isLowOnDiskSpace()) {
         parts.append(tr("low disk space"));
+    }
+    // Said for as long as keys are kept (#187): never silently.
+    if (m_recordingManager && m_recordingManager->isRecordingKeys()
+        && (m_trayRecordingStatus == Status::Recording || m_trayRecordingStatus == Status::Paused)) {
+        parts.append(tr("recording keys"));
     }
     QString line = parts.join(QStringLiteral(" \u00B7 "));
     // Audio stays visible for the whole recording, including fallbacks that
@@ -1499,7 +1593,7 @@ void MainApplication::startScreenRecordingFlow(QScreen* preferredScreen)
     // Quick recording: one screen and no setup requested starts right away
     // with the last-used settings.
     if (sources.size() == 1 && !RecordingSettingsManager::instance().showSetupBeforeRecording()) {
-        m_recordingManager->startScreenRecording(sources.first().screen.data());
+        startRecordingOn(sources.first().screen.data());
         return;
     }
 
@@ -1549,7 +1643,45 @@ void MainApplication::onScreenPickerChosen(QScreen* screen)
         return;
     }
 
-    m_recordingManager->startScreenRecording(screen);
+    startRecordingOn(screen);
+}
+
+void MainApplication::startRecordingOn(QScreen* screen)
+{
+    if (!RecordingSettingsManager::instance().preselectArea() || !screen) {
+        m_recordingManager->startScreenRecording(screen);
+        return;
+    }
+    // Choose an area of this screen first (#194); the capture stays full
+    // screen in edit mode, where the area is the preview's initial crop.
+    closeAreaSelector();
+    auto* selector = new SnapTray::QmlRecordingAreaSelector(this);
+    m_areaSelector = selector;
+    const QPointer<QScreen> target(screen);
+    connect(selector, &SnapTray::QmlRecordingAreaSelector::areaChosen, this,
+        [this, target](const QRect& area) {
+            closeAreaSelector();
+            if (!target) return;
+            m_recordingManager->startScreenRecording(target.data(), area);
+        });
+    connect(selector, &SnapTray::QmlRecordingAreaSelector::cancelled, this, [this]() { closeAreaSelector(); });
+    selector->start(screen);
+    updateRecordingActionText();
+}
+
+bool MainApplication::recordingSetupActive() const
+{
+    return m_screenPickerDialog || m_areaSelector;
+}
+
+void MainApplication::closeAreaSelector()
+{
+    if (!m_areaSelector) return;
+    SnapTray::QmlRecordingAreaSelector* selector = m_areaSelector;
+    m_areaSelector = nullptr;
+    selector->close();
+    selector->deleteLater();
+    updateRecordingActionText();
 }
 
 void MainApplication::onScreenPickerCancelled()

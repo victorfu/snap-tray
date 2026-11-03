@@ -54,6 +54,10 @@ struct InputChunk {
 struct OutputChunk {
     QByteArray pcm;
     qint64 startFrame = 0;
+    // With Config::splitSources (#189): each source alone, same frames and
+    // format as `pcm` (silence where a source has nothing); empty otherwise.
+    QByteArray microphonePcm;
+    QByteArray systemAudioPcm;
 
     bool isEmpty() const { return pcm.isEmpty(); }
     qint64 timestampNs() const;
@@ -86,6 +90,8 @@ public:
         qint64 maxFutureLeadFrames = 24000;        // 500 ms at 48 kHz
         qint64 maxMaterializedSilenceFramesPerCall = 24000; // 500 ms per API call
         int outputChunkFrames = 480;              // 10 ms at 48 kHz
+        // Also hand out each source on its own (#189: separate tracks).
+        bool splitSources = false;
     };
 
     enum class ResultCode {

@@ -3,6 +3,7 @@
 
 #include <QDateTime>
 #include <QList>
+#include <QRect>
 #include <QSize>
 #include <QString>
 
@@ -42,6 +43,9 @@ struct RecordingSessionInfo {
     QDateTime startedAt;
     QDateTime updatedAt;
     qint64 recordedMs = 0;    // last known recorded duration
+    // An area chosen before recording (#194): the preview's initial crop, in
+    // video pixels. Empty = none (the whole recording).
+    QRect initialCrop;
 };
 
 namespace RecordingSession {
