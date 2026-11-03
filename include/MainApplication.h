@@ -33,6 +33,7 @@ class QmlSettingsWindow;
 class QmlHistoryWindow;
 class QmlDialog;
 class ScreenPickerViewModel;
+class QmlRecordingAreaSelector;
 }
 
 class MainApplication : public QObject
@@ -100,6 +101,12 @@ private:
     void attachScreenPicker(SnapTray::QmlDialog* dialog,
                             SnapTray::ScreenPickerViewModel* viewModel);
     void onScreenPickerChosen(QScreen* screen);
+    // Starts recording `screen`, after choosing an area when that is on (#194).
+    void startRecordingOn(QScreen* screen);
+    // The recording setup is on screen: the screen picker, or the area
+    // selector after it (#194). Captures and other overlays wait.
+    bool recordingSetupActive() const;
+    void closeAreaSelector();
     void onScreenPickerCancelled();
     void onScreenPickerClosed(SnapTray::QmlDialog* dialog);
     void closeScreenPicker();
@@ -135,6 +142,7 @@ private:
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;
     QPointer<SnapTray::QmlDialog> m_screenPickerDialog;
+    QPointer<SnapTray::QmlRecordingAreaSelector> m_areaSelector;
     QPointer<SnapTray::ScreenPickerViewModel> m_screenPickerViewModel;
     RecordingPreviewBackend *m_previewBackend = nullptr;
     // Tray artwork without a recording badge, and the state currently shown on it.

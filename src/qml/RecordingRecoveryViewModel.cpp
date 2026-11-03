@@ -40,7 +40,11 @@ QString RecordingRecoveryViewModel::statusText(const RecordingSession::Recoverab
         : tr("Interrupted: %1 can be recovered").arg(durationText(item.durationMs));
     // Never present a recording without its required audio as complete.
     if (item.audioMissing) {
-        text += QLatin1String(" · ") + tr("audio is missing");
+        text += QStringLiteral(" \u00B7 ") + tr("audio is missing");
+    }
+    // An area chosen before recording (#194): the file is still the whole screen.
+    if (!item.info.initialCrop.isEmpty()) {
+        text += QStringLiteral(" \u00B7 ") + tr("the whole screen was recorded; it opens cropped to the chosen area");
     }
     return text;
 }

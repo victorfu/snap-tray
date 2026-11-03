@@ -16,6 +16,7 @@ Previous scrolling-capture approaches coupled capture with immediate, one-direct
 
 Phase 1 provides independently useful recording edits:
 - Full-screen capture, then free-aspect crop in Preview; no pre-recording selection.
+  - Amended 2026-11-03 (#194, maintainer decision): an optional, off-by-default "Choose an area before recording" step exists. Capture stays full screen in edit mode (the area is only the preview's initial crop); see `include/recording/RecordingArea.h`.
 - Crop state uses even-aligned video pixels, with a 64-pixel minimum side or the smaller even-floored frame dimension. Full frame means no crop.
 - First crop entry has an empty draft so dragging inside the video draws a selection. Existing selections support moving, handle resizing, replacement from outside, and bounded snapping to video edges and centre lines.
 - Enter applies a draft; Escape cancels it. The committed-size chip includes a clear action. Playback and scrubbing remain available. Save button and shortcut both apply the visible draft before exporting.
@@ -29,6 +30,7 @@ Phase 1 provides independently useful recording edits:
 - Recording always captures the full screen. Region choice happens after recording, in RecordingPreview.
 - Do not touch Region Selector.
 - `showPreview = false` (direct save) behaviour stays unchanged in every phase.
+  - Amended 2026-11-03 (#194, maintainer decision): only when the user has chosen an area before recording, quick mode (preview off) records that area as the region, because there is no preview to crop in. Without a chosen area it is unchanged.
 
 **Platforms**
 - macOS 14+ and Windows 10+. Linux beta keeps recording hidden; new code compiles there but stays inactive.

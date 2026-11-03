@@ -832,6 +832,26 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>This project's recording is missing or damaged.</source>
         <translation>Η εγγραφή αυτού του έργου λείπει ή είναι κατεστραμμένη.</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Copied</source>
+        <translation>Η εγγραφή αντιγράφηκε</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>Αποθηκεύτηκε στο %1 και αντιγράφηκε: επικολλήστε το σε μια συνομιλία ή έναν φάκελο.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>edit mode</source>
+        <translation>λειτουργία επεξεργασίας</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>quick mode</source>
+        <translation>γρήγορη λειτουργία</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3779,6 +3799,61 @@ Audio is not supported for GIF recordings.</source>
     </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After recording</source>
+        <translation>Μετά την εγγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Επεξεργασία στην προεπισκόπηση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Άμεση αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Γρήγορη λειτουργία: το αρχείο αποθηκεύεται στην τελική του μορφή μόλις σταματήσετε, χωρίς προεπισκόπηση και χωρίς κομμάτια επεξεργασίας.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving</source>
+        <translation>Μετά την αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Καμία ενέργεια</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Αντιγραφή του αρχείου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Εμφάνιση στον φάκελο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>Λειτουργία επεξεργασίας: περικοπή, κάδρο και εφέ στην προεπισκόπηση, μετά αποθήκευση. Οι εγγραφές με προεπισκόπηση καταγράφονται πάντα πρώτα ως MP4.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Choose an area before recording</source>
+        <translation>Επιλογή περιοχής πριν από την εγγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Σύρετε πάνω στην οθόνη για να επιλέξετε τι θα εγγραφεί. Η λειτουργία επεξεργασίας εξακολουθεί να εγγράφει όλη την οθόνη και ανοίγει την προεπισκόπηση περικομμένη στην περιοχή, ώστε να την αλλάξετε· η γρήγορη λειτουργία εγγράφει μόνο την περιοχή.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>Τα έργα διατηρούνται όταν αποθηκεύετε από την προεπισκόπηση. Ενεργοποιήστε την Εμφάνιση προεπισκόπησης για να τα χρησιμοποιήσετε.</translation>
     </message>
@@ -5147,6 +5222,71 @@ File size: %3</source>
         <source>Record shortcut keys</source>
         <translation>Καταγραφή συντομεύσεων πληκτρολογίου</translation>
     </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After recording</source>
+        <translation>Μετά την εγγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Επεξεργασία στην προεπισκόπηση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Άμεση αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Γρήγορη λειτουργία: το αρχείο αποθηκεύεται στην τελική του μορφή μόλις σταματήσετε, χωρίς προεπισκόπηση και χωρίς κομμάτια επεξεργασίας.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After saving</source>
+        <translation>Μετά την αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Καμία ενέργεια</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Αντιγραφή του αρχείου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Εμφάνιση στον φάκελο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>Λειτουργία επεξεργασίας: περικοπή, κάδρο και εφέ στην προεπισκόπηση, μετά αποθήκευση. Τα κομμάτια δείκτη, παραθύρων και πλήκτρων διατηρούνται για επεξεργασία.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>Μόνο στη λειτουργία επεξεργασίας: η γρήγορη λειτουργία δεν διατηρεί κομμάτια επεξεργασίας.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Choose an area first</source>
+        <translation>Πρώτα επιλογή περιοχής</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>Εγγράφεται ακόμη όλη η οθόνη· η προεπισκόπηση ανοίγει περικομμένη στην περιοχή.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Only the area is recorded.</source>
+        <translation>Εγγράφεται μόνο η περιοχή.</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
@@ -5179,6 +5319,11 @@ File size: %3</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
         <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
         <translation>Δεν μπορεί να ανακτηθεί: η εγγραφή διακόπηκε πριν αποθηκευτεί κάποιο αναπαραγώγιμο τμήμα.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>εγγράφηκε όλη η οθόνη· ανοίγει περικομμένη στην επιλεγμένη περιοχή</translation>
     </message>
 </context>
 <context>
@@ -5341,6 +5486,49 @@ File size: %3</source>
         <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
         <source>Open in the preview</source>
         <translation>Ανοιχτό στην προεπισκόπηση</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Free</source>
+        <translation>Ελεύθερο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to move or redraw</source>
+        <translation>Σύρετε για μετακίνηση ή νέα σχεδίαση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Drag to choose the area to record</source>
+        <translation>Σύρετε για να επιλέξετε την περιοχή εγγραφής</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Ratio %1</source>
+        <translation>Αναλογία %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Full Screen</source>
+        <translation>Πλήρης οθόνη</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Cancel</source>
+        <translation>Ακύρωση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record</source>
+        <translation>Εγγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <source>Record this area</source>
+        <translation>Εγγραφή αυτής της περιοχής</translation>
     </message>
 </context>
 </TS>

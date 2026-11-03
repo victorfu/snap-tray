@@ -155,6 +155,20 @@ void QmlRecordingBoundary::setExcludedFromCapture(bool excluded)
 #endif
 }
 
+quintptr QmlRecordingBoundary::captureExclusionId() const
+{
+    if (!m_view)
+        return 0;
+#ifdef Q_OS_MACOS
+    NSView* view = reinterpret_cast<NSView*>(m_view->winId());
+    NSWindow* window = view ? [view window] : nil;
+    const NSInteger number = window ? [window windowNumber] : 0;
+    return number > 0 ? static_cast<quintptr>(number) : 0;
+#else
+    return static_cast<quintptr>(m_view->winId());
+#endif
+}
+
 WId QmlRecordingBoundary::winId() const
 {
     if (m_view)
