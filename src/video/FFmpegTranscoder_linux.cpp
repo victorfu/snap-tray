@@ -101,8 +101,11 @@ public:
             // A millisecond of slack absorbs rounded source timestamps.
             const bool keep = !dropFrames || writtenTime < 0 || beforePause || time + 1 >= nextDue;
             if (keep && dropFrames) {
-                // Fallen behind (a pause in the source): restart the clock here.
-                nextDue = time - nextDue > exactInterval ? time + exactInterval : nextDue + exactInterval;
+                // On schedule: the next one is due an exact interval later. Kept
+                // off schedule (the last before a pause) or fallen behind: the
+                // clock restarts from this frame.
+                const bool onSchedule = time + 1 >= nextDue && time - nextDue <= exactInterval;
+                nextDue = onSchedule ? nextDue + exactInterval : time + exactInterval;
             }
             if (keep) {
                 lastImage = crop == bounds ? image : image.copy(crop);
@@ -298,6 +301,7 @@ private:
         QSize outputSize = request.outputSize.isEmpty() ? filteredSize : request.outputSize.boundedTo(filteredSize);
         outputSize = QSize(qMax(2, outputSize.width() & ~1), qMax(2, outputSize.height() & ~1));
         const qint64 interval = qMax<qint64>(1, qRound(1000.0 / fps));
+        const double exactOutInterval = 1000.0 / fps;
 
         // Audio: only when a part at normal speed reaches the source audio
         // (or, remixing separate tracks, any part at normal speed).
@@ -369,6 +373,10 @@ private:
         FrameReader reader;
         if (!reader.load(request.inputPath)) return fail(reader.lastError());
         qint64 writtenOut = -1;
+        // The output clock, as on the plain path: the next frame is due one
+        // exact interval after the previous one was due, so a 1.5x part of a
+        // 30 fps recording keeps 30 fps, not every other frame (PR #199 review).
+        double nextDueOut = 0.0;
         QImage lastImage, lastSource;
         auto write = [&](qint64 outMs) -> bool {
             encoder.writeFrame(lastImage, outMs);
@@ -396,8 +404,13 @@ private:
                 // interval; the first frame of a part and the last before a
                 // pause are always kept.
                 const bool keep = first || writtenOut < 0 || nextOut - outTime >= interval
-                    || outTime - writtenOut >= interval - interval / 4;
+                    || outTime + 1 >= nextDueOut;
                 if (keep && outTime > writtenOut) {
+                    // On schedule: the next one is due an exact interval later.
+                    // Kept off schedule (a part's first frame, the last before a
+                    // pause) or fallen behind: the clock restarts from this frame.
+                    const bool onSchedule = outTime + 1 >= nextDueOut && outTime - nextDueOut <= exactOutInterval;
+                    nextDueOut = onSchedule ? nextDueOut + exactOutInterval : outTime + exactOutInterval;
                     lastImage = crop == bounds ? image : image.copy(crop);
                     lastSource = lastImage;
                     if (request.frameFilter) {
