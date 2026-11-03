@@ -11,6 +11,7 @@
 #include "recording/CursorTimeline.h"
 #include "settings/RecordingSettingsManager.h"
 #include "qml/RecordingCursorOverlay.h"
+#include "qml/RecordingAppearanceOverlay.h"
 #include "video/IVideoFrameReader.h"
 #include <QPainter>
 #include "video/IVideoTranscoder.h"
@@ -415,6 +416,9 @@ private slots:
     void mp4OptionsMatchingTheSourceKeepTheFastPath();
     void mp4OptionsTurnAnUneditedSaveIntoAnExport_data();
     void mp4OptionsTurnAnUneditedSaveIntoAnExport();
+    void appearanceMatchesAcrossPreviewAndOutputs_data();
+    void appearanceMatchesAcrossPreviewAndOutputs();
+    void blurredBackgroundNeverShowsMaskedContent();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
@@ -1992,6 +1996,142 @@ void tst_RecordingPreviewExport::mp4OptionsTurnAnUneditedSaveIntoAnExport()
     const QString output = savedSpy.first().at(0).toString();
     QVERIFY(output != inputPath);
     QCOMPARE(IVideoTranscoder::create()->probe(output).videoSize, QSize(80, 60));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+void tst_RecordingPreviewExport::appearanceMatchesAcrossPreviewAndOutputs_data()
+{
+    pointerMatchesAcrossPreviewAndOutputs_data();
+}
+
+// #184: a white frame around a cropped picture with the pointer, the same in
+// the preview and in each output.
+void tst_RecordingPreviewExport::appearanceMatchesAcrossPreviewAndOutputs()
+{
+    QFETCH(int, format);
+    const QSize sourceSize(160, 120);
+    const QRect crop(20, 10, 120, 100);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    QVERIFY(writePointerSidecar(inputPath, sourceSize));
+    const QJsonObject rememberedLook = RecordingSettingsManager::instance().pointerEffects();
+    const QJsonObject rememberedFrame = RecordingSettingsManager::instance().appearance();
+    auto restore = qScopeGuard([rememberedLook, rememberedFrame]() {
+        RecordingSettingsManager::instance().setPointerEffects(rememberedLook);
+        RecordingSettingsManager::instance().setAppearance(rememberedFrame);
+    });
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    if (!backend.appearanceAvailable() || !backend.cursorEffectsAvailable()) {
+        QSKIP("This platform's MP4 transcoder cannot draw onto frames yet");
+    }
+    backend.setShowCursor(true);
+    backend.setCursorScale(1.0);
+    backend.setCursorSmoothing(0);
+    backend.setCropRect(crop);
+    backend.setAppearanceSolidColor(Qt::white); // also switches the frame on
+    backend.setAppearancePadding(int(SnapTray::RecordingAppearance::Amount::Medium)); // 8 % of 100 px
+    backend.setAppearanceCorners(int(SnapTray::RecordingAppearance::Amount::None));
+    backend.setAppearanceShadow(false);
+    backend.setAppearanceBorder(false);
+    QVERIFY(backend.appearanceActive());
+    QVERIFY(backend.effectsActive());
+    const QSize framed(136, 116);
+    const QPoint inset(8, 8);
+
+    // The preview: the canvas around the crop as shown 1:1, framed in white,
+    // with the picture left clear.
+    const QRectF cropInView(crop);
+    const QRectF canvas = backend.appearanceCanvasInView(cropInView);
+    QCOMPARE(canvas, QRectF(QPointF(crop.topLeft() - inset), QSizeF(framed)));
+    RecordingAppearanceOverlay overlay;
+    overlay.setBackend(&backend);
+    overlay.setContentRect(QRectF(QPointF(inset), QSizeF(crop.size())));
+    QImage preview(framed, QImage::Format_ARGB32_Premultiplied);
+    preview.fill(Qt::transparent);
+    {
+        QPainter painter(&preview);
+        overlay.paint(&painter);
+    }
+    QCOMPARE(preview.pixelColor(2, 2), QColor(Qt::white));
+    QCOMPARE(qAlpha(preview.pixel(inset + QPoint(60, 50))), 0);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    // Changing the frame while exporting must not reach the running job.
+    backend.setAppearancePadding(int(SnapTray::RecordingAppearance::Amount::Large));
+    QCOMPARE(backend.appearancePadding(), int(SnapTray::RecordingAppearance::Amount::Medium));
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    QCOMPARE(savedSpy.first().at(1).toSize(), framed);
+    const QString output = savedSpy.first().at(0).toString();
+    QImage frame;
+    constexpr qint64 kAtMs = 200; // a red source frame; the pointer at (40,30)
+    if (format == RecordingPreviewBackend::MP4) {
+        auto reader = IVideoFrameReader::create();
+        if (!reader) QSKIP("No frame reader to inspect the MP4 on this platform");
+        QVERIFY2(reader->load(output), qPrintable(reader->lastError()));
+        frame = reader->frameAt(kAtMs);
+    } else {
+        frame = animationFrameAt(output, kAtMs);
+    }
+    QVERIFY(!frame.isNull());
+    QCOMPARE(frame.size(), framed);
+    const QColor background = frame.pixelColor(2, 2);
+    QVERIFY2(background.lightness() > 230, qPrintable(background.name()));
+    const QColor picture = frame.pixelColor(inset + QPoint(100, 80));
+    QVERIFY2(picture.red() > 170 && picture.green() < 90, qPrintable(picture.name()));
+    // The pointer lands where it does in the preview: through the crop, then the inset.
+    const QPoint pointer = pointerTopLeft(frame);
+    const QPoint expected = QPoint(40, 30) - crop.topLeft() + inset;
+    QVERIFY2((pointer - expected).manhattanLength() <= 2,
+             qPrintable(QStringLiteral("pointer at %1,%2").arg(pointer.x()).arg(pointer.y())));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+// #184: a blurred-video background is made from the masked picture, so a
+// mask over everything leaves no trace of the content around it either.
+void tst_RecordingPreviewExport::blurredBackgroundNeverShowsMaskedContent()
+{
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    const QJsonObject rememberedFrame = RecordingSettingsManager::instance().appearance();
+    auto restore = qScopeGuard([rememberedFrame]() {
+        RecordingSettingsManager::instance().setAppearance(rememberedFrame);
+    });
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QCOMPARE(backend.addMask(), 0);
+    backend.setMaskRectFromView(0, QRectF(QPointF(0, 0), QSizeF(sourceSize)), QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+    backend.setAppearanceBackground(int(SnapTray::RecordingAppearance::Background::BlurredVideo));
+    backend.setAppearancePadding(int(SnapTray::RecordingAppearance::Amount::Large));
+    QVERIFY(backend.appearanceActive());
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QImage frame = animationFrameAt(savedSpy.first().at(0).toString(), 200); // red underneath
+    QVERIFY(!frame.isNull());
+    for (const QPoint at : {QPoint(2, 2), QPoint(frame.width() - 3, frame.height() / 2), QPoint(frame.width() / 2, 2)}) {
+        const QColor c = frame.pixelColor(at);
+        QVERIFY2(c.red() < 80, qPrintable(QStringLiteral("%1 at %2,%3").arg(c.name()).arg(at.x()).arg(at.y())));
+    }
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
 }
 

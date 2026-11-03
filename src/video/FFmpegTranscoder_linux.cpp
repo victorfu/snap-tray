@@ -48,8 +48,11 @@ public:
         const bool hevc = request.videoCodec == QLatin1String(kVideoCodecHevc);
         if (!supportsVideoCodec(request.videoCodec))
             return fail(QStringLiteral("Unsupported video codec: %1").arg(request.videoCodec));
-        // Never larger than the crop, even sides.
-        QSize outputSize = request.outputSize.isEmpty() ? crop.size() : request.outputSize.boundedTo(crop.size());
+        // What the frame filter returns (it may frame the picture, #184).
+        const QSize filteredSize = request.frameFilter && !request.filterOutputSize.isEmpty()
+            ? request.filterOutputSize : crop.size();
+        // Never larger than that, even sides.
+        QSize outputSize = request.outputSize.isEmpty() ? filteredSize : request.outputSize.boundedTo(filteredSize);
         outputSize = QSize(qMax(2, outputSize.width() & ~1), qMax(2, outputSize.height() & ~1));
         // Frames closer together than this are dropped at a lower output rate.
         const qint64 outputInterval = qMax<qint64>(1, qRound(1000.0 / fps));

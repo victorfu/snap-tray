@@ -51,6 +51,18 @@ Item {
                                               qsTr("Motion Blur: Medium"), qsTr("Motion Blur: High")]
     // The pointer options panel replaces the format row while open.
     property bool pointerOptionsOpen: false
+    // The frame around the export (#184), in RecordingAppearance order.
+    property bool appearanceOpen: false
+    readonly property var appearanceAmountLabels: [qsTr("None"), qsTr("Small"), qsTr("Medium"), qsTr("Large")]
+    readonly property var appearanceRatioLabels: [qsTr("Ratio: Auto"), "1:1", "16:9", "4:3", "9:16", "2:1"]
+    // Shown in the preview: the frame, unless the crop is being edited or the
+    // original is compared.
+    readonly property bool appearanceShown: backend.appearanceActive && !cropOverlay.editing && !root.comparingOriginal
+    readonly property rect appearanceCanvas: {
+        void backend.appearanceEnabled; void backend.appearancePadding; void backend.appearanceAspectRatio
+        void backend.cropRect; void backend.videoSize; void backend.selectedFormat
+        return backend.appearanceCanvasInView(root.zoomTarget)
+    }
     // MP4 export options (#190), in Mp4ExportOptions order.
     property bool mp4OptionsOpen: false
     readonly property var mp4ResolutionLabels: [qsTr("Size: Original"), qsTr("Size: 1080p"), qsTr("Size: 720p"),
@@ -359,11 +371,34 @@ Item {
         enabled: !backend.isProcessing
 
         Item {
+            id: stage
+            objectName: "previewStage"
             Layout.fillWidth: true
             Layout.fillHeight: true
             // A zoomed picture never spills over the controls. Only while
             // zoomed: crop handles at the edges must stay visible when editing.
-            clip: root.zoomFactor > 1.001
+            // With a frame around the export the zoom clips itself (ZoomClip)
+            // and the frame may reach past the stage before it is fitted.
+            clip: root.zoomFactor > 1.001 && !root.appearanceShown
+
+            // The framed export (#184) is bigger than the picture: the whole
+            // stage is scaled to fit it and centred, so every overlay and
+            // pointer mapping stays as it is.
+            readonly property real fitScale: root.appearanceShown && root.appearanceCanvas.width > 0
+                ? Math.min(1, (width - 2 * SemanticTokens.spacing8) / root.appearanceCanvas.width,
+                           (height - 2 * SemanticTokens.spacing8) / root.appearanceCanvas.height)
+                : 1
+            transform: [
+                Translate {
+                    x: root.appearanceShown ? -(root.appearanceCanvas.x + root.appearanceCanvas.width / 2) : 0
+                    y: root.appearanceShown ? -(root.appearanceCanvas.y + root.appearanceCanvas.height / 2) : 0
+                },
+                Scale { xScale: stage.fitScale; yScale: stage.fitScale },
+                Translate {
+                    x: root.appearanceShown ? stage.width / 2 : 0
+                    y: root.appearanceShown ? stage.height / 2 : 0
+                }
+            ]
 
             // The zoomed picture stays inside the frame the export shows: the
             // video and pointer are drawn whole and transformed, so without
@@ -456,6 +491,20 @@ Item {
             }
 
             // The selected mask: drag it to move, drag the corner to resize.
+            // The frame around the export (#184), drawn by the exports' geometry.
+            RecordingAppearanceOverlay {
+                objectName: "previewAppearanceOverlay"
+                z: 4.5
+                visible: root.appearanceShown
+                x: root.appearanceCanvas.x
+                y: root.appearanceCanvas.y
+                width: root.appearanceCanvas.width
+                height: root.appearanceCanvas.height
+                backend: root.previewBackend
+                contentRect: Qt.rect(root.zoomTarget.x - x, root.zoomTarget.y - y,
+                                     root.zoomTarget.width, root.zoomTarget.height)
+            }
+
             Item {
                 id: maskEditor
                 objectName: "previewMaskEditor"
@@ -1108,6 +1157,7 @@ Item {
                                              maskPanel.visible ? maskPanel.height : 0,
                                              pointerPanel.visible ? pointerPanel.height : 0,
                                              mp4Panel.visible ? mp4Panel.height : 0,
+                                             appearancePanel.visible ? appearancePanel.height : 0,
                                              pointerHidePanel.visible ? pointerHidePanel.height : 0,
                                              cropPanel.visible ? cropPanel.height : 0,
                                              ComponentTokens.recordingPreviewControlButtonHeight)
@@ -1121,6 +1171,7 @@ Item {
                 readonly property bool shown: !cropOverlay.editing && !(backend.selectedZoom >= 0)
                                               && !(backend.selectedMask >= 0) && !pointerPanel.visible
                                               && !pointerHidePanel.visible && !mp4Panel.visible
+                                              && !appearancePanel.visible
                 opacity: shown ? 1 : 0
                 enabled: shown
                 Accessible.ignored: !shown
@@ -1153,6 +1204,7 @@ Item {
                     selected: backend.mp4OptionsActive || backend.mp4Quality > 0
                     onClicked: {
                         root.pointerOptionsOpen = false
+                        root.appearanceOpen = false
                         root.mp4OptionsOpen = true
                     }
                 }
@@ -1212,6 +1264,7 @@ Item {
                         backend.selectedZoom = -1
                         backend.selectedMask = -1
                         root.mp4OptionsOpen = false
+                        root.appearanceOpen = false
                         root.pointerOptionsOpen = true
                     }
                 }
@@ -1264,6 +1317,21 @@ Item {
                         backend.selectedZoom = -1
                         backend.selectedPointerHide = -1
                         backend.addMask()
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewAppearanceOptions"
+                    enabled: backend.appearanceAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Frame")
+                    tooltipText: backend.appearanceAvailable
+                        ? qsTr("A background, padding, rounded corners, a shadow and a border around the video")
+                        : qsTr("A frame needs GIF or WebP on this system")
+                    selected: backend.appearanceActive
+                    onClicked: {
+                        root.pointerOptionsOpen = false
+                        root.mp4OptionsOpen = false
+                        root.appearanceOpen = true
                     }
                 }
             }
@@ -1417,6 +1485,141 @@ Item {
                     text: qsTr("Done")
                     tooltipText: qsTr("Back to the export options")
                     onClicked: root.pointerOptionsOpen = false
+                }
+            }
+
+            // The frame around the export (#184), in place of the format buttons.
+            Flow {
+                id: appearancePanel
+                objectName: "previewAppearancePanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: root.appearanceOpen && backend.appearanceAvailable && !cropOverlay.editing
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0)
+                         && !(backend.selectedZoom >= 0)
+
+                SegmentButton {
+                    objectName: "previewAppearanceToggle"
+                    minimumButtonWidth: 0
+                    text: backend.appearanceEnabled ? qsTr("Frame: On") : qsTr("Frame: Off")
+                    tooltipText: qsTr("Draw the frame around the exported video")
+                    selected: backend.appearanceEnabled
+                    onClicked: backend.appearanceEnabled = !backend.appearanceEnabled
+                }
+                Repeater {
+                    model: backend.appearanceGradients
+                    Rectangle {
+                        required property int index
+                        required property var modelData
+                        objectName: "previewAppearanceGradient" + index
+                        readonly property bool chosen: backend.appearanceEnabled && backend.appearanceBackground === 0
+                                                       && backend.appearanceGradientPreset === index
+                        width: ComponentTokens.recordingPreviewControlButtonHeight
+                        height: width
+                        radius: SemanticTokens.radiusSmall
+                        border.width: chosen ? 2 : 1
+                        border.color: chosen ? root.accent : root.borderColor
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0; color: modelData.start }
+                            GradientStop { position: 1; color: modelData.end }
+                        }
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Background: %1").arg(modelData.name)
+                        Accessible.onPressAction: backend.appearanceGradientPreset = index
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: CursorTokens.clickable
+                            onClicked: backend.appearanceGradientPreset = parent.index
+                        }
+                    }
+                }
+                Repeater {
+                    model: ["#ffffff", "#000000"]
+                    Rectangle {
+                        required property int index
+                        required property string modelData
+                        objectName: "previewAppearanceSolid" + index
+                        readonly property bool chosen: backend.appearanceEnabled && backend.appearanceBackground === 1
+                                                       && Qt.colorEqual(backend.appearanceSolidColor, modelData)
+                        width: ComponentTokens.recordingPreviewControlButtonHeight
+                        height: width
+                        radius: SemanticTokens.radiusSmall
+                        color: modelData
+                        border.width: chosen ? 2 : 1
+                        border.color: chosen ? root.accent : root.borderColor
+                        Accessible.role: Accessible.Button
+                        Accessible.name: index === 0 ? qsTr("Background: White") : qsTr("Background: Black")
+                        Accessible.onPressAction: backend.appearanceSolidColor = modelData
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: CursorTokens.clickable
+                            onClicked: backend.appearanceSolidColor = parent.modelData
+                        }
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewAppearanceBlur"
+                    minimumButtonWidth: 0
+                    text: qsTr("Blurred Video")
+                    tooltipText: qsTr("The video itself, blurred, behind it (masks applied)")
+                    selected: backend.appearanceEnabled && backend.appearanceBackground === 2
+                    onClicked: backend.appearanceBackground = 2
+                }
+                SegmentButton {
+                    objectName: "previewAppearanceImage"
+                    minimumButtonWidth: 0
+                    text: qsTr("Image…")
+                    tooltipText: backend.appearanceImagePath.length > 0
+                        ? qsTr("Background image: %1").arg(backend.appearanceImagePath)
+                        : qsTr("Use an image file as the background")
+                    selected: backend.appearanceEnabled && backend.appearanceBackground === 3
+                    onClicked: backend.chooseAppearanceImage()
+                }
+                SegmentButton {
+                    objectName: "previewAppearancePadding"
+                    minimumButtonWidth: 0
+                    text: qsTr("Padding: %1").arg(root.appearanceAmountLabels[backend.appearancePadding])
+                    tooltipText: qsTr("Space around the video")
+                    onClicked: backend.appearancePadding = (backend.appearancePadding + 1) % root.appearanceAmountLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewAppearanceCorners"
+                    minimumButtonWidth: 0
+                    text: qsTr("Corners: %1").arg(root.appearanceAmountLabels[backend.appearanceCorners])
+                    tooltipText: qsTr("How round the video's corners are")
+                    onClicked: backend.appearanceCorners = (backend.appearanceCorners + 1) % root.appearanceAmountLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewAppearanceShadow"
+                    minimumButtonWidth: 0
+                    text: qsTr("Shadow")
+                    tooltipText: backend.appearanceShadow ? qsTr("Remove the shadow") : qsTr("Add a shadow under the video")
+                    selected: backend.appearanceShadow
+                    onClicked: backend.appearanceShadow = !backend.appearanceShadow
+                }
+                SegmentButton {
+                    objectName: "previewAppearanceBorder"
+                    minimumButtonWidth: 0
+                    text: qsTr("Border")
+                    tooltipText: backend.appearanceBorder ? qsTr("Remove the border") : qsTr("Add a thin border around the video")
+                    selected: backend.appearanceBorder
+                    onClicked: backend.appearanceBorder = !backend.appearanceBorder
+                }
+                SegmentButton {
+                    objectName: "previewAppearanceRatio"
+                    minimumButtonWidth: 0
+                    text: root.appearanceRatioLabels[backend.appearanceAspectRatio]
+                    tooltipText: qsTr("The shape of the exported video; the background fills the extra space")
+                    onClicked: backend.appearanceAspectRatio = (backend.appearanceAspectRatio + 1) % root.appearanceRatioLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewAppearanceDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Back to the export options")
+                    onClicked: root.appearanceOpen = false
                 }
             }
 

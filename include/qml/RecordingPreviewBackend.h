@@ -12,6 +12,9 @@
 #include <QRect>
 #include <QRectF>
 #include <QSize>
+#include <QColor>
+#include <QImage>
+#include <QUrl>
 #include <QVariantList>
 
 #include <atomic>
@@ -125,6 +128,25 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool masksAvailable READ masksAvailable NOTIFY masksChanged)
     Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
     Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
+
+    // The frame around the export (#184): enum values in RecordingAppearance order.
+    Q_PROPERTY(bool appearanceAvailable READ appearanceAvailable NOTIFY appearanceChanged)
+    Q_PROPERTY(bool appearanceActive READ appearanceActive NOTIFY appearanceChanged)
+    Q_PROPERTY(bool appearanceEnabled READ appearanceEnabled WRITE setAppearanceEnabled NOTIFY appearanceChanged)
+    Q_PROPERTY(int appearanceBackground READ appearanceBackground WRITE setAppearanceBackground NOTIFY appearanceChanged)
+    Q_PROPERTY(int appearanceGradientPreset READ appearanceGradientPreset WRITE setAppearanceGradientPreset
+                   NOTIFY appearanceChanged)
+    Q_PROPERTY(QColor appearanceSolidColor READ appearanceSolidColor WRITE setAppearanceSolidColor
+                   NOTIFY appearanceChanged)
+    Q_PROPERTY(QString appearanceImagePath READ appearanceImagePath NOTIFY appearanceChanged)
+    Q_PROPERTY(int appearancePadding READ appearancePadding WRITE setAppearancePadding NOTIFY appearanceChanged)
+    Q_PROPERTY(int appearanceCorners READ appearanceCorners WRITE setAppearanceCorners NOTIFY appearanceChanged)
+    Q_PROPERTY(bool appearanceShadow READ appearanceShadow WRITE setAppearanceShadow NOTIFY appearanceChanged)
+    Q_PROPERTY(bool appearanceBorder READ appearanceBorder WRITE setAppearanceBorder NOTIFY appearanceChanged)
+    Q_PROPERTY(int appearanceAspectRatio READ appearanceAspectRatio WRITE setAppearanceAspectRatio
+                   NOTIFY appearanceChanged)
+    // [{start, end}] colours of the gradient presets, for swatches.
+    Q_PROPERTY(QVariantList appearanceGradients READ appearanceGradients CONSTANT)
 
     // MP4 export options (#190): enum values in Mp4ExportOptions order.
     Q_PROPERTY(int mp4Resolution READ mp4Resolution WRITE setMp4Resolution NOTIFY mp4OptionsChanged)
@@ -342,6 +364,42 @@ public:
     // endMs -1 = to the end; false (nothing changes) when invalid.
     Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
 
+    // The frame around the export (#184); undoable, remembered as the last look.
+    bool appearanceAvailable() const { return formatCanDrawEffects(); }
+    // Enabled and drawable in the selected format.
+    bool appearanceActive() const { return m_appearance.enabled && appearanceAvailable(); }
+    const SnapTray::RecordingAppearance& appearance() const { return m_appearance; }
+    bool appearanceEnabled() const { return m_appearance.enabled; }
+    void setAppearanceEnabled(bool value);
+    int appearanceBackground() const { return int(m_appearance.background); }
+    void setAppearanceBackground(int value);
+    int appearanceGradientPreset() const { return m_appearance.gradientPreset; }
+    void setAppearanceGradientPreset(int value);
+    QColor appearanceSolidColor() const { return m_appearance.solidColor; }
+    void setAppearanceSolidColor(const QColor& value);
+    QString appearanceImagePath() const { return m_appearance.imagePath; }
+    // Uses an image file as the background; false (nothing changes) when it cannot be read.
+    Q_INVOKABLE bool setAppearanceImage(const QUrl& file);
+    // Asks for an image file and uses it as the background; false when cancelled or unreadable.
+    Q_INVOKABLE bool chooseAppearanceImage();
+    int appearancePadding() const { return int(m_appearance.padding); }
+    void setAppearancePadding(int value);
+    int appearanceCorners() const { return int(m_appearance.corners); }
+    void setAppearanceCorners(int value);
+    bool appearanceShadow() const { return m_appearance.shadow; }
+    void setAppearanceShadow(bool value);
+    bool appearanceBorder() const { return m_appearance.border; }
+    void setAppearanceBorder(bool value);
+    int appearanceAspectRatio() const { return int(m_appearance.aspectRatio); }
+    void setAppearanceAspectRatio(int value);
+    QVariantList appearanceGradients() const;
+    // The picture the export starts from (the crop, or the whole video).
+    QSize exportContentSize() const;
+    // The framed canvas in view coordinates, for a picture shown at contentInView.
+    Q_INVOKABLE QRectF appearanceCanvasInView(const QRectF& contentInView) const;
+    // The masked picture for a blurred background in the preview (small).
+    QImage appearancePreviewFrame() const { return m_appearancePreviewFrame; }
+
     // MP4 export options (#190). Saved as the last choice; not edits, so
     // undo does not cover them (like the format).
     int mp4Resolution() const { return int(m_mp4Options.resolution); }
@@ -383,6 +441,8 @@ signals:
     void cursorEffectsChanged();
     void selectedPointerHideChanged();
     void mp4OptionsChanged();
+    void appearanceChanged();
+    void appearancePreviewFrameChanged();
     void mp4EstimateChanged();
     void zoomChanged();
     void selectedZoomChanged();
@@ -477,6 +537,14 @@ private:
     mutable std::optional<VideoFileProbe> m_sourceProbe;
     const VideoFileProbe& sourceProbe() const;
     SnapTray::Mp4ExportOptions m_mp4Options;
+    SnapTray::RecordingAppearance m_appearance;
+    QImage m_appearancePreviewFrame;
+    // The video size the effects use (the pointer data's when the player has not said).
+    QSize effectsVideoSize() const;
+    // The framed export size when the appearance is drawn; empty otherwise.
+    QSize framedExportSize() const;
+    void editAppearance(const std::function<void(SnapTray::RecordingAppearance&)>& change);
+    void setAppearance(const SnapTray::RecordingAppearance& appearance);
     void editMp4Options(const std::function<void(SnapTray::Mp4ExportOptions&)>& change);
     // The picture the MP4 starts from: the crop, or the whole video.
     QSize mp4BaseSize() const;
