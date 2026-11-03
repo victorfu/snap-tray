@@ -97,8 +97,11 @@ public:
             // A millisecond of slack absorbs rounded source timestamps.
             const bool keep = !dropFrames || writtenTime < 0 || beforePause || time + 1 >= nextDue;
             if (keep && dropFrames) {
-                // Fallen behind (a pause in the source): restart the clock here.
-                nextDue = time - nextDue > exactInterval ? time + exactInterval : nextDue + exactInterval;
+                // On schedule: the next one is due an exact interval later. Kept
+                // off schedule (the last before a pause) or fallen behind: the
+                // clock restarts from this frame.
+                const bool onSchedule = time + 1 >= nextDue && time - nextDue <= exactInterval;
+                nextDue = onSchedule ? nextDue + exactInterval : time + exactInterval;
             }
             if (keep) {
                 lastImage = crop == bounds ? image : image.copy(crop);
