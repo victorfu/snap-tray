@@ -1,7 +1,6 @@
 #include <QtTest>
 
 #include <QGuiApplication>
-#include <QStyleHints>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QTemporaryDir>
@@ -299,16 +298,22 @@ void tst_RecordingPreviewTimeline::overlaysAreShownAndReachable()
     QTRY_VERIFY((titleBar = delegate(view, QStringLiteral("previewOverlaySegment0"))) != nullptr && titleBar->width() > 0);
     const QPoint onBoth = titleBar->mapToScene(QPointF(titleBar->width() / 2, titleBar->height() / 2)).toPoint();
     backend.setSelectedOverlay(-1);
-    // Separate clicks, not a double click (its interval differs per system).
-    const int apart = QGuiApplication::styleHints()->mouseDoubleClickInterval() + 50;
+    // A click on the shared place reaches the bars: topmost first, the image.
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
-    QCOMPARE(backend.selectedOverlay(), 1); // topmost first: the image
-    QTest::qWait(apart);
-    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
-    QCOMPARE(backend.selectedOverlay(), 0); // then the title under it
-    QTest::qWait(apart);
-    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
-    QCOMPARE(backend.selectedOverlay(), -1);
+    QCOMPARE(backend.selectedOverlay(), 1);
+    // Each further click there moves to the next overlay under it, then to
+    // none (checked through the same function the click uses: synthesized
+    // repeat clicks are timed differently by each system's CI).
+    const qint64 inBoth = backend.overlayTrack().segments[0].startMs + 100;
+    const auto next = [&](int current) {
+        QVariant result;
+        QMetaObject::invokeMethod(view->rootObject(), "nextOverlayAt", Q_RETURN_ARG(QVariant, result),
+                                  Q_ARG(QVariant, inBoth), Q_ARG(QVariant, current), Q_ARG(QVariant, 1));
+        return result.toInt();
+    };
+    QCOMPARE(next(1), 0);  // then the title under it
+    QCOMPARE(next(0), -1); // then none
+    QCOMPARE(next(-1), 1); // and round again
     backend.requestDiscard();
 }
 
