@@ -1,4 +1,5 @@
 #include "qml/ScreenPickerViewModel.h"
+#include "recording/KeyProbe.h"
 
 #include "qml/DialogImageProvider.h"
 #include "recording/RecordingAudioStatus.h"
@@ -178,6 +179,35 @@ void ScreenPickerViewModel::setShowSetupBeforeRecording(bool show)
     if (showSetupBeforeRecording() == show) return;
     RecordingSettingsManager::instance().setShowSetupBeforeRecording(show);
     emit showSetupBeforeRecordingChanged();
+}
+
+bool ScreenPickerViewModel::keyRecordingSupported() const
+{
+    return SnapTray::keyRecordingSupported();
+}
+
+bool ScreenPickerViewModel::recordShortcutKeys() const
+{
+    return keyRecordingSupported() && RecordingSettingsManager::instance().keyRecordingMode() != 0;
+}
+
+void ScreenPickerViewModel::setRecordShortcutKeys(bool value)
+{
+    if (!keyRecordingSupported() || recordShortcutKeys() == value) return;
+    RecordingSettingsManager::instance().setKeyRecordingMode(value ? 1 : 0);
+    emit keyRecordingChanged();
+}
+
+bool ScreenPickerViewModel::recordTypedText() const
+{
+    return keyRecordingSupported() && RecordingSettingsManager::instance().keyRecordingMode() == 2;
+}
+
+void ScreenPickerViewModel::setRecordTypedText(bool value)
+{
+    if (!recordShortcutKeys() || recordTypedText() == value) return;
+    RecordingSettingsManager::instance().setKeyRecordingMode(value ? 2 : 1);
+    emit keyRecordingChanged();
 }
 
 void ScreenPickerViewModel::setAudioEngineFactory(AudioLevelMonitor::EngineFactory factory)

@@ -39,10 +39,19 @@ public:
     bool showSetupBeforeRecording() const;
     void setShowSetupBeforeRecording(bool value);
 
+    // Keys kept for shortcut hints (#187): 0 off (default), 1 shortcuts and
+    // named keys, 2 all keys. Read when a recording starts.
+    int keyRecordingMode() const;
+    void setKeyRecordingMode(int value);
+
     // Last pointer effects chosen in the preview (CursorEffectSettings JSON);
     // empty = defaults.
     QJsonObject pointerEffects() const;
     void setPointerEffects(const QJsonObject& value);
+
+    // Last shortcut-hint look chosen in the preview (KeyOverlaySettings JSON, #187).
+    QJsonObject keyOverlay() const;
+    void setKeyOverlay(const QJsonObject& value);
 
     // Last MP4 export options chosen in the preview (Mp4ExportOptions JSON, #190);
     // empty = defaults (export as recorded).
@@ -98,6 +107,8 @@ private:
     static constexpr const char* kKeyCountdownSeconds = "recording/countdownSeconds";
     static constexpr const char* kKeyShowSetupBeforeRecording = "recording/showSetupBeforeRecording";
     static constexpr const char* kKeyPointerEffects = "recording/pointerEffects";
+    static constexpr const char* kKeyKeyRecordingMode = "recording/keyRecordingMode";
+    static constexpr const char* kKeyKeyOverlay = "recording/keyOverlay";
     static constexpr const char* kKeyMp4ExportOptions = "recording/mp4ExportOptions";
     static constexpr const char* kKeyAppearance = "recording/appearance";
     static constexpr const char* kKeyNativeFrameEncoding = "recording/nativeFrameEncoding";

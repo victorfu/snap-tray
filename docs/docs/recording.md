@@ -108,6 +108,17 @@ When a recording has this record, the preview shows pointer controls next to the
 
 Your last choices are remembered (hidden ranges belong to one recording and are not), and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. On macOS and Windows, pointer effects are available for GIF and WebP exports; MP4 exports there do not draw them yet, and the preview says so.
 
+### Shortcut hints
+
+SnapTray can show the shortcuts you pressed while recording, for tutorials ("Ctrl + C", "Ctrl + Shift + T"). Keys are **never recorded unless you switch it on** before the recording: in the setup shown before recording (**Record shortcut keys**), or in Settings > Recording (**Record keys**). While keys are recorded, the tray status says so.
+
+- **Shortcuts only** (the default once switched on) keeps keys held with Ctrl, Alt or Super, and keys such as Enter, Esc, Tab, the arrows and F-keys. Plain typing, Shift+letter included, is not kept.
+- **All keys, including typed text** is a separate choice. Do not use it while entering passwords.
+
+The keys are kept next to the temporary recording, without window titles or application names, and are deleted with it: they are never in the saved file or the History. Keys pressed while the recording is paused are not kept. On Linux (X11) keys are read passively, without grabbing the keyboard; macOS and Windows do not record keys yet, and the options say so.
+
+In the preview, **Keys** (shown when the recording has keys) draws them into the export: **Keys: On/Off**, **Place** (bottom, bottom left, bottom right, top), **Size**, **Dark/Light**, and how long a hint stays (1, 1.5 or 2.5 s). Keys pressed close together show together, and a repeated shortcut shows once with a count ("Ctrl + Z ×3"). Hints follow cuts (#185): keys in a cut part never show. Like other effects, hints are drawn for MP4 on Linux and for GIF and WebP everywhere.
+
 ### Zoom and pan
 
 Full-screen recordings often make buttons and text small once shared. The preview can zoom in on parts of the recording:

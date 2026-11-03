@@ -247,6 +247,31 @@ Flickable {
             onToggled: function(checked) { settingsBackend.recordingShowSetup = checked }
         }
 
+        SettingsCombo {
+            objectName: "settingsRecordingKeys"
+            label: qsTr("Record keys")
+            enabled: settingsBackend.recordingKeysSupported
+            model: [
+                { text: qsTr("Off"), value: 0 },
+                { text: qsTr("Shortcuts only"), value: 1 },
+                { text: qsTr("All keys, including typed text"), value: 2 }
+            ]
+            currentIndex: settingsBackend.recordingKeyMode
+            onActivated: function(index) { settingsBackend.recordingKeyMode = index }
+        }
+
+        Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: settingsBackend.recordingKeysSupported
+                ? qsTr("For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.")
+                : qsTr("Not available on this system yet")
+            color: SemanticTokens.textTertiary
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
+        }
+
         SettingsToggle {
             label: qsTr("Show preview")
             visible: !settingsBackend.recordingDirectMp4Only

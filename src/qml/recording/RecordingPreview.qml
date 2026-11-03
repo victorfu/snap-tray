@@ -51,6 +51,11 @@ Item {
                                               qsTr("Motion Blur: Medium"), qsTr("Motion Blur: High")]
     // The pointer options panel replaces the format row while open.
     property bool pointerOptionsOpen: false
+    // Shortcut hints (#187), in KeyOverlaySettings order.
+    property bool keysOpen: false
+    readonly property var keyPositionLabels: [qsTr("Bottom"), qsTr("Bottom Left"), qsTr("Bottom Right"), qsTr("Top")]
+    readonly property var keySizeLabels: [qsTr("Small"), qsTr("Medium"), qsTr("Large")]
+    readonly property var keyDisplayChoices: [1000, 1500, 2500]
     // The frame around the export (#184), in RecordingAppearance order.
     property bool appearanceOpen: false
     readonly property var appearanceAmountLabels: [qsTr("None"), qsTr("Small"), qsTr("Medium"), qsTr("Large")]
@@ -523,6 +528,17 @@ Item {
             }
 
             // The selected mask: drag it to move, drag the corner to resize.
+            // Shortcut hints (#187) on the exported picture, not zoomed with it.
+            RecordingKeyOverlay {
+                objectName: "previewKeyOverlay"
+                anchors.fill: parent
+                z: 4.2
+                visible: !root.comparingOriginal && !cropOverlay.editing
+                backend: root.previewBackend
+                position: videoPlayer.framePosition
+                contentRect: root.zoomTarget
+            }
+
             // The frame around the export (#184), drawn by the exports' geometry.
             RecordingAppearanceOverlay {
                 objectName: "previewAppearanceOverlay"
@@ -1264,6 +1280,7 @@ Item {
                                              pointerPanel.visible ? pointerPanel.height : 0,
                                              mp4Panel.visible ? mp4Panel.height : 0,
                                              appearancePanel.visible ? appearancePanel.height : 0,
+                                             keysPanel.visible ? keysPanel.height : 0,
                                              pointerHidePanel.visible ? pointerHidePanel.height : 0,
                                              cropPanel.visible ? cropPanel.height : 0,
                                              ComponentTokens.recordingPreviewControlButtonHeight)
@@ -1277,7 +1294,7 @@ Item {
                 readonly property bool shown: !cropOverlay.editing && !(backend.selectedZoom >= 0)
                                               && !(backend.selectedMask >= 0) && !pointerPanel.visible
                                               && !pointerHidePanel.visible && !mp4Panel.visible
-                                              && !appearancePanel.visible
+                                              && !appearancePanel.visible && !keysPanel.visible
                 opacity: shown ? 1 : 0
                 enabled: shown
                 Accessible.ignored: !shown
@@ -1311,6 +1328,7 @@ Item {
                     onClicked: {
                         root.pointerOptionsOpen = false
                         root.appearanceOpen = false
+                        root.keysOpen = false
                         root.mp4OptionsOpen = true
                     }
                 }
@@ -1371,6 +1389,7 @@ Item {
                         backend.selectedMask = -1
                         root.mp4OptionsOpen = false
                         root.appearanceOpen = false
+                        root.keysOpen = false
                         root.pointerOptionsOpen = true
                     }
                 }
@@ -1463,6 +1482,23 @@ Item {
                     onClicked: backend.setPartSpeed(root.playheadPart, root.nextPartSpeed(root.playheadPartData.speed))
                 }
                 SegmentButton {
+                    objectName: "previewKeyOptions"
+                    visible: backend.hasKeyData
+                    enabled: backend.keyOverlayAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Keys")
+                    tooltipText: backend.keyOverlayAvailable
+                        ? qsTr("Show the shortcuts pressed while recording (%1 recorded)").arg(backend.recordedKeyCount)
+                        : qsTr("Shortcut hints need GIF or WebP on this system")
+                    selected: backend.keyOverlayAvailable && backend.keyOverlayEnabled
+                    onClicked: {
+                        root.pointerOptionsOpen = false
+                        root.mp4OptionsOpen = false
+                        root.appearanceOpen = false
+                        root.keysOpen = true
+                    }
+                }
+                SegmentButton {
                     objectName: "previewAppearanceOptions"
                     enabled: backend.appearanceAvailable
                     minimumButtonWidth: 0
@@ -1474,6 +1510,7 @@ Item {
                     onClicked: {
                         root.pointerOptionsOpen = false
                         root.mp4OptionsOpen = false
+                        root.keysOpen = false
                         root.appearanceOpen = true
                     }
                 }
@@ -1628,6 +1665,62 @@ Item {
                     text: qsTr("Done")
                     tooltipText: qsTr("Back to the export options")
                     onClicked: root.pointerOptionsOpen = false
+                }
+            }
+
+            // Shortcut hints (#187), in place of the format buttons.
+            Flow {
+                id: keysPanel
+                objectName: "previewKeysPanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: root.keysOpen && backend.keyOverlayAvailable && !cropOverlay.editing
+                         && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0)
+                         && !(backend.selectedZoom >= 0)
+
+                SegmentButton {
+                    objectName: "previewKeysToggle"
+                    minimumButtonWidth: 0
+                    text: backend.keyOverlayEnabled ? qsTr("Keys: On") : qsTr("Keys: Off")
+                    tooltipText: qsTr("Draw the shortcuts into the exported video")
+                    selected: backend.keyOverlayEnabled
+                    onClicked: backend.keyOverlayEnabled = !backend.keyOverlayEnabled
+                }
+                SegmentButton {
+                    objectName: "previewKeysPosition"
+                    minimumButtonWidth: 0
+                    text: qsTr("Place: %1").arg(root.keyPositionLabels[backend.keyOverlayPosition])
+                    tooltipText: qsTr("Where the shortcuts appear")
+                    onClicked: backend.keyOverlayPosition = (backend.keyOverlayPosition + 1) % root.keyPositionLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewKeysSize"
+                    minimumButtonWidth: 0
+                    text: qsTr("Size: %1").arg(root.keySizeLabels[backend.keyOverlaySize])
+                    tooltipText: qsTr("How large the shortcuts are")
+                    onClicked: backend.keyOverlaySize = (backend.keyOverlaySize + 1) % root.keySizeLabels.length
+                }
+                SegmentButton {
+                    objectName: "previewKeysStyle"
+                    minimumButtonWidth: 0
+                    text: backend.keyOverlayStyle === 0 ? qsTr("Dark") : qsTr("Light")
+                    tooltipText: qsTr("Dark or light keys")
+                    onClicked: backend.keyOverlayStyle = 1 - backend.keyOverlayStyle
+                }
+                SegmentButton {
+                    objectName: "previewKeysDuration"
+                    minimumButtonWidth: 0
+                    text: qsTr("Show for %1 s").arg(root.secondsLabel(backend.keyOverlayDisplayMs))
+                    tooltipText: qsTr("How long a shortcut stays after it was pressed; keys pressed close together show together")
+                    onClicked: backend.keyOverlayDisplayMs = root.nextChoice(root.keyDisplayChoices, backend.keyOverlayDisplayMs)
+                }
+                SegmentButton {
+                    objectName: "previewKeysDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Back to the export options")
+                    onClicked: root.keysOpen = false
                 }
             }
 

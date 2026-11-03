@@ -6,6 +6,7 @@
 #include "recording/RedactionTrack.h"
 #include "recording/RecordingAppearance.h"
 #include "recording/TimelineEdit.h"
+#include "recording/KeyOverlay.h"
 
 #include <QRect>
 #include <QVector>
@@ -32,12 +33,14 @@ struct PreviewEditState {
     RecordingAppearance appearance;
     // Cut-out parts and speed changes inside the trim (#185): footage edits.
     TimelineEdit timeline;
+    // Shortcut hints (#187): a look, kept by "Reset Crop and Trim".
+    KeyOverlaySettings keys;
 
     bool operator==(const PreviewEditState& other) const
     {
         return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd
             && cursor == other.cursor && zoom == other.zoom && redaction == other.redaction
-            && appearance == other.appearance && timeline == other.timeline;
+            && appearance == other.appearance && timeline == other.timeline && keys == other.keys;
     }
     bool operator!=(const PreviewEditState& other) const { return !(*this == other); }
     bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1 && timeline.isEmpty(); }

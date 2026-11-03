@@ -28,6 +28,7 @@
 
 #include <QCoreApplication>
 #include <QFileDialog>
+#include "recording/KeyProbe.h"
 #include <QFutureWatcher>
 #include <QLocale>
 #include <QMessageBox>
@@ -741,6 +742,23 @@ void SettingsBackend::setRecordingQuality(int v) {
         RecordingSettingsManager::instance().setQuality(v);
         emit recordingQualityChanged();
     }
+}
+
+int SettingsBackend::recordingKeyMode() const
+{
+    return recordingKeysSupported() ? RecordingSettingsManager::instance().keyRecordingMode() : 0;
+}
+
+void SettingsBackend::setRecordingKeyMode(int mode)
+{
+    if (!recordingKeysSupported() || recordingKeyMode() == mode) return;
+    RecordingSettingsManager::instance().setKeyRecordingMode(mode);
+    emit recordingKeyModeChanged();
+}
+
+bool SettingsBackend::recordingKeysSupported() const
+{
+    return SnapTray::keyRecordingSupported();
 }
 
 void SettingsBackend::setRecordingShowSetup(bool v) {

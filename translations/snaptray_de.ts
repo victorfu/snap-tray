@@ -818,6 +818,11 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <source>Full Screen Capture</source>
         <translation>Vollbildaufnahme</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>recording keys</source>
+        <translation>Tasten werden aufgezeichnet</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -2904,6 +2909,101 @@ Größe: %2</translation>
         <source>Too close to another split or an end</source>
         <translation>Zu nah an einer anderen Teilung oder einem Ende</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom</source>
+        <translation>Unten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Left</source>
+        <translation>Unten links</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Right</source>
+        <translation>Unten rechts</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark</source>
+        <translation>Dunkel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark or light keys</source>
+        <translation>Dunkle oder helle Tasten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the shortcuts into the exported video</source>
+        <translation>Die Tastenkürzel in das exportierte Video zeichnen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How large the shortcuts are</source>
+        <translation>Wie groß die Tastenkürzel sind</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
+        <translation>Wie lange ein Tastenkürzel nach dem Drücken bleibt; kurz hintereinander gedrückte Tasten erscheinen zusammen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys</source>
+        <translation>Tasten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: Off</source>
+        <translation>Tasten: Aus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: On</source>
+        <translation>Tasten: Ein</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light</source>
+        <translation>Hell</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Place: %1</source>
+        <translation>Ort: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shortcut hints need GIF or WebP on this system</source>
+        <translation>Tastenkürzel-Hinweise brauchen auf diesem System GIF oder WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show for %1 s</source>
+        <translation>%1 s zeigen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the shortcuts pressed while recording (%1 recorded)</source>
+        <translation>Die beim Aufnehmen gedrückten Tastenkürzel zeigen (%1 aufgezeichnet)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: %1</source>
+        <translation>Größe: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Top</source>
+        <translation>Oben</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Where the shortcuts appear</source>
+        <translation>Wo die Tastenkürzel erscheinen</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3322,6 +3422,36 @@ Audio wird bei GIF-Aufnahmen nicht unterstützt.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>Qualität des gespeicherten Videos. Bei aktivierter Vorschau werden Aufnahmen in hoher Qualität aufgezeichnet und beim Speichern in diese Qualität umgewandelt.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>All keys, including typed text</source>
+        <translation>Alle Tasten, auch getippter Text</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
+        <translation>Für Tastenkürzel-Hinweise in der Vorschau. Die Tasten bleiben bei der temporären Aufnahme und werden mit ihr gelöscht; sie sind nie in der gespeicherten Datei.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>Auf diesem System noch nicht verfügbar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Record keys</source>
+        <translation>Tasten aufzeichnen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Shortcuts only</source>
+        <translation>Nur Tastenkürzel</translation>
     </message>
 </context>
 <context>
@@ -4662,6 +4792,31 @@ Dateigröße: %3</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>Bildschirm aufnehmen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Also record typed text</source>
+        <translation>Auch getippten Text aufzeichnen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Every key, including what you type. Do not use while entering passwords.</source>
+        <translation>Jede Taste, auch was Sie tippen. Nicht beim Eingeben von Passwörtern verwenden.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Für Tastenkürzel-Hinweise in der Vorschau: Tasten mit Strg, Alt oder Super und Tasten wie Enter oder Esc. Nur bei der temporären Aufnahme gespeichert.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>Auf diesem System noch nicht verfügbar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Record shortcut keys</source>
+        <translation>Tastenkürzel aufzeichnen</translation>
     </message>
 </context>
 <context>

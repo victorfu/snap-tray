@@ -199,6 +199,28 @@ DialogBase {
                     }
 
                     SettingsToggle {
+                        objectName: "setupRecordKeysToggle"
+                        width: parent.width
+                        label: qsTr("Record shortcut keys")
+                        description: root.viewModel && !root.viewModel.keyRecordingSupported
+                            ? qsTr("Not available on this system yet")
+                            : qsTr("For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.")
+                        enabled: root.viewModel ? root.viewModel.keyRecordingSupported : false
+                        checked: root.viewModel ? root.viewModel.recordShortcutKeys : false
+                        onToggled: function(checked) { root.viewModel.recordShortcutKeys = checked }
+                    }
+
+                    SettingsToggle {
+                        objectName: "setupRecordTypedTextToggle"
+                        width: parent.width
+                        visible: root.viewModel ? root.viewModel.recordShortcutKeys : false
+                        label: qsTr("Also record typed text")
+                        description: qsTr("Every key, including what you type. Do not use while entering passwords.")
+                        checked: root.viewModel ? root.viewModel.recordTypedText : false
+                        onToggled: function(checked) { root.viewModel.recordTypedText = checked }
+                    }
+
+                    SettingsToggle {
                         objectName: "setupShowBeforeRecordingToggle"
                         width: parent.width
                         label: qsTr("Show this setup before every recording")

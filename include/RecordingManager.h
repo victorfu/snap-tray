@@ -27,6 +27,7 @@
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
 #include "recording/CursorTimelineRecorder.h"
+#include "recording/KeyTimelineRecorder.h"
 #include "utils/ResourceCleanupHelper.h"
 
 class RecordingInitTask;
@@ -191,6 +192,10 @@ private:
     qint64 mediaTimeMs();
     void startCursorTimeline();
     void dropCursorTimeline(bool removeFile);
+public:
+    // True while this recording writes a key sidecar (shown in the tray status).
+    bool isRecordingKeys() const;
+private:
 
     // Countdown methods
     void startCountdown();                    // Begin countdown overlay
@@ -303,6 +308,7 @@ private:
         int countdownSeconds = 3;
         bool windowsGraphicsCapture = false;
         bool nativeFrameEncoding = true;
+        int keyRecordingMode = 0; // KeyRecordingMode; off unless switched on (#187)
     } m_startSettings;
     quint64 m_startGeneration = 0;
     bool m_permissionPending = false;
@@ -346,6 +352,10 @@ private:
     WatermarkRenderer::Settings m_watermarkSettings;
     std::unique_ptr<SnapTray::WindowTimelineRecorder> m_windowTimelineRecorder;
     std::unique_ptr<SnapTray::CursorTimelineRecorder> m_cursorRecorder;
+    // Keys for shortcut hints (#187), only when switched on before recording.
+    std::unique_ptr<SnapTray::KeyTimelineRecorder> m_keyRecorder;
+    std::function<std::unique_ptr<SnapTray::KeyProbe>()> m_createKeyProbe = &SnapTray::createKeyProbe;
+    void startKeyTimeline();
     QString m_cursorSidecarVideo;
     QString m_cursorDiagnostics;
     std::function<std::unique_ptr<SnapTray::CursorProbe>()> m_createCursorProbe = &SnapTray::createCursorProbe;

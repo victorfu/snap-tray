@@ -812,6 +812,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Full Screen Capture</source>
         <translation>لقطة ملء الشاشة</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>recording keys</source>
+        <translation>يسجّل المفاتيح</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -2898,6 +2903,101 @@ Size: %2</source>
         <source>Too close to another split or an end</source>
         <translation>قريب جدًا من تقسيم آخر أو من الطرف</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom</source>
+        <translation>أسفل</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Left</source>
+        <translation>أسفل اليسار</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Right</source>
+        <translation>أسفل اليمين</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark</source>
+        <translation>داكن</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark or light keys</source>
+        <translation>مفاتيح داكنة أو فاتحة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the shortcuts into the exported video</source>
+        <translation>رسم الاختصارات في الفيديو المُصدَّر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How large the shortcuts are</source>
+        <translation>حجم الاختصارات</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
+        <translation>مدة بقاء الاختصار بعد الضغط عليه؛ المفاتيح المضغوطة متقاربة تظهر معًا</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys</source>
+        <translation>المفاتيح</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: Off</source>
+        <translation>المفاتيح: إيقاف</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: On</source>
+        <translation>المفاتيح: تشغيل</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light</source>
+        <translation>فاتح</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Place: %1</source>
+        <translation>الموضع: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shortcut hints need GIF or WebP on this system</source>
+        <translation>تتطلب تلميحات الاختصارات GIF أو WebP على هذا النظام</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show for %1 s</source>
+        <translation>العرض لمدة %1 ث</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the shortcuts pressed while recording (%1 recorded)</source>
+        <translation>عرض الاختصارات المضغوطة أثناء التسجيل (%1 مسجلة)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: %1</source>
+        <translation>الحجم: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Top</source>
+        <translation>أعلى</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Where the shortcuts appear</source>
+        <translation>مكان ظهور الاختصارات</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3316,6 +3416,36 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>جودة الفيديو المحفوظ. عند تشغيل المعاينة، تُسجَّل التسجيلات بجودة عالية ثم تُحوَّل إلى هذه الجودة عند الحفظ.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>All keys, including typed text</source>
+        <translation>كل المفاتيح، بما فيها النص المكتوب</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
+        <translation>لتلميحات الاختصارات في المعاينة. تبقى المفاتيح مع التسجيل المؤقت وتُحذف معه؛ لا تكون أبدًا في الملف المحفوظ.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>غير متاح على هذا النظام بعد</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Off</source>
+        <translation>إيقاف</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Record keys</source>
+        <translation>تسجيل المفاتيح</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Shortcuts only</source>
+        <translation>الاختصارات فقط</translation>
     </message>
 </context>
 <context>
@@ -4656,6 +4786,31 @@ File size: %3</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>تسجيل الشاشة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Also record typed text</source>
+        <translation>تسجيل النص المكتوب أيضًا</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Every key, including what you type. Do not use while entering passwords.</source>
+        <translation>كل المفاتيح، بما في ذلك ما تكتبه. لا تستخدمه أثناء إدخال كلمات المرور.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>لتلميحات الاختصارات في المعاينة: المفاتيح مع Ctrl أو Alt أو Super، ومفاتيح مثل Enter أو Esc. تُحفظ مع التسجيل المؤقت فقط.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>غير متاح على هذا النظام بعد</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Record shortcut keys</source>
+        <translation>تسجيل مفاتيح الاختصار</translation>
     </message>
 </context>
 <context>

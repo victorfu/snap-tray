@@ -812,6 +812,11 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <source>Full Screen Capture</source>
         <translation>Tam Ekran Yakalama</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>recording keys</source>
+        <translation>tuşlar kaydediliyor</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -2898,6 +2903,101 @@ Boyut: %2</translation>
         <source>Too close to another split or an end</source>
         <translation>Başka bir bölmeye veya uca çok yakın</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom</source>
+        <translation>Alt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Left</source>
+        <translation>Sol alt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Right</source>
+        <translation>Sağ alt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark</source>
+        <translation>Koyu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark or light keys</source>
+        <translation>Koyu veya açık tuşlar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the shortcuts into the exported video</source>
+        <translation>Kısayolları dışa aktarılan videoya çiz</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How large the shortcuts are</source>
+        <translation>Kısayolların ne kadar büyük olduğu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
+        <translation>Kısayolun basıldıktan sonra ne kadar görüneceği; art arda basılan tuşlar birlikte gösterilir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys</source>
+        <translation>Tuşlar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: Off</source>
+        <translation>Tuşlar: Kapalı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: On</source>
+        <translation>Tuşlar: Açık</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light</source>
+        <translation>Açık</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Place: %1</source>
+        <translation>Konum: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shortcut hints need GIF or WebP on this system</source>
+        <translation>Kısayol ipuçları bu sistemde GIF veya WebP gerektirir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show for %1 s</source>
+        <translation>%1 sn göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the shortcuts pressed while recording (%1 recorded)</source>
+        <translation>Kayıt sırasında basılan kısayolları göster (%1 kaydedildi)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: %1</source>
+        <translation>Boyut: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Top</source>
+        <translation>Üst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Where the shortcuts appear</source>
+        <translation>Kısayolların göründüğü yer</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3316,6 +3416,36 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>Kaydedilen videonun kalitesi. Önizleme açıkken kayıtlar yüksek kalitede alınır ve kaydederken bu kaliteye dönüştürülür.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>All keys, including typed text</source>
+        <translation>Yazılan metin dahil tüm tuşlar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
+        <translation>Önizlemedeki kısayol ipuçları için. Tuşlar geçici kayıtla kalır ve onunla birlikte silinir; kaydedilen dosyada asla bulunmaz.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>Bu sistemde henüz kullanılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Off</source>
+        <translation>Kapalı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Record keys</source>
+        <translation>Tuşları kaydet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Shortcuts only</source>
+        <translation>Yalnızca kısayollar</translation>
     </message>
 </context>
 <context>
@@ -4656,6 +4786,31 @@ Dosya boyutu: %3</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>Ekranı kaydet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Also record typed text</source>
+        <translation>Yazılan metni de kaydet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Every key, including what you type. Do not use while entering passwords.</source>
+        <translation>Yazdıklarınız dahil her tuş. Parola girerken kullanmayın.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Önizlemedeki kısayol ipuçları için: Ctrl, Alt veya Super ile basılan tuşlar ve Enter ya da Esc gibi tuşlar. Yalnızca geçici kayıtla saklanır.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>Bu sistemde henüz kullanılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Record shortcut keys</source>
+        <translation>Kısayol tuşlarını kaydet</translation>
     </message>
 </context>
 <context>

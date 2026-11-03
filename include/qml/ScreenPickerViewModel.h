@@ -30,6 +30,10 @@ class ScreenPickerViewModel : public QObject
     Q_PROPERTY(QString outputSummary READ outputSummary CONSTANT)
     Q_PROPERTY(QString audioNote READ audioNote CONSTANT)
     Q_PROPERTY(bool showSetupBeforeRecording READ showSetupBeforeRecording WRITE setShowSetupBeforeRecording NOTIFY showSetupBeforeRecordingChanged)
+    // Keys for shortcut hints (#187): off by default; typed text needs its own switch.
+    Q_PROPERTY(bool keyRecordingSupported READ keyRecordingSupported CONSTANT)
+    Q_PROPERTY(bool recordShortcutKeys READ recordShortcutKeys WRITE setRecordShortcutKeys NOTIFY keyRecordingChanged)
+    Q_PROPERTY(bool recordTypedText READ recordTypedText WRITE setRecordTypedText NOTIFY keyRecordingChanged)
     Q_PROPERTY(bool microphoneTestActive READ microphoneTestActive NOTIFY microphoneTestChanged)
     Q_PROPERTY(qreal microphoneLevel READ microphoneLevel NOTIFY microphoneLevelChanged)
     Q_PROPERTY(QString microphoneTestStatus READ microphoneTestStatus NOTIFY microphoneTestChanged)
@@ -60,6 +64,11 @@ public:
     QString outputSummary() const;
     QString audioNote() const;
     bool showSetupBeforeRecording() const;
+    bool keyRecordingSupported() const;
+    bool recordShortcutKeys() const;
+    void setRecordShortcutKeys(bool value);
+    bool recordTypedText() const;
+    void setRecordTypedText(bool value);
     void setShowSetupBeforeRecording(bool show);
 
     // Live input level while testing; the microphone is released when the
@@ -83,6 +92,7 @@ signals:
     void audioSettingsChanged();
     void devicesChanged();
     void showSetupBeforeRecordingChanged();
+    void keyRecordingChanged();
     void microphoneTestChanged();
     void microphoneLevelChanged();
 

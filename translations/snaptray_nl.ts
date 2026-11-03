@@ -818,6 +818,11 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
         <source>Full Screen Capture</source>
         <translation>Volledig scherm opnemen</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>recording keys</source>
+        <translation>toetsen worden opgenomen</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -2904,6 +2909,101 @@ Grootte: %2</translation>
         <source>Too close to another split or an end</source>
         <translation>Te dicht bij een andere splitsing of een einde</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom</source>
+        <translation>Onder</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Left</source>
+        <translation>Linksonder</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Right</source>
+        <translation>Rechtsonder</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark</source>
+        <translation>Donker</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark or light keys</source>
+        <translation>Donkere of lichte toetsen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the shortcuts into the exported video</source>
+        <translation>De sneltoetsen in de geëxporteerde video tekenen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How large the shortcuts are</source>
+        <translation>Hoe groot de sneltoetsen zijn</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
+        <translation>Hoe lang een sneltoets blijft staan na het indrukken; vlak na elkaar ingedrukte toetsen verschijnen samen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys</source>
+        <translation>Toetsen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: Off</source>
+        <translation>Toetsen: Uit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: On</source>
+        <translation>Toetsen: Aan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light</source>
+        <translation>Licht</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Place: %1</source>
+        <translation>Plaats: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shortcut hints need GIF or WebP on this system</source>
+        <translation>Sneltoetshints vereisen op dit systeem GIF of WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show for %1 s</source>
+        <translation>%1 s tonen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the shortcuts pressed while recording (%1 recorded)</source>
+        <translation>De sneltoetsen tonen die tijdens het opnemen zijn ingedrukt (%1 opgenomen)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: %1</source>
+        <translation>Grootte: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Top</source>
+        <translation>Boven</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Where the shortcuts appear</source>
+        <translation>Waar de sneltoetsen verschijnen</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3322,6 +3422,36 @@ Audio wordt niet ondersteund voor GIF-opnamen.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>Kwaliteit van de opgeslagen video. Met voorbeeld aan worden opnamen in hoge kwaliteit vastgelegd en bij het opslaan naar deze kwaliteit omgezet.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>All keys, including typed text</source>
+        <translation>Alle toetsen, ook getypte tekst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
+        <translation>Voor sneltoetshints in de voorvertoning. De toetsen blijven bij de tijdelijke opname en worden ermee verwijderd; ze staan nooit in het opgeslagen bestand.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>Nog niet beschikbaar op dit systeem</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Off</source>
+        <translation>Uit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Record keys</source>
+        <translation>Toetsen opnemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Shortcuts only</source>
+        <translation>Alleen sneltoetsen</translation>
     </message>
 </context>
 <context>
@@ -4662,6 +4792,31 @@ Bestandsgrootte: %3</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>Scherm opnemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Also record typed text</source>
+        <translation>Ook getypte tekst opnemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Every key, including what you type. Do not use while entering passwords.</source>
+        <translation>Elke toets, ook wat u typt. Niet gebruiken bij het invoeren van wachtwoorden.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Voor sneltoetshints in de voorvertoning: toetsen met Ctrl, Alt of Super, en toetsen zoals Enter of Esc. Alleen bewaard bij de tijdelijke opname.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>Nog niet beschikbaar op dit systeem</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Record shortcut keys</source>
+        <translation>Sneltoetsen opnemen</translation>
     </message>
 </context>
 <context>

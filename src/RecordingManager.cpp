@@ -5,6 +5,7 @@
 #include "recording/RecordingFileUtils.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
+#include "recording/KeyTimeline.h"
 #include "qml/QmlRecordingControlBar.h"
 #include "hotkey/HotkeyManager.h"
 #include "RecordingInitTask.h"
@@ -570,7 +571,8 @@ void RecordingManager::initializeStartState()
     m_startSettings = {settings.outputFormat(), settings.showPreview(), settings.quality(),
                       settings.audioEnabled(), settings.audioSource(), settings.audioDevice(),
                       settings.countdownEnabled(), settings.countdownSeconds(),
-                      settings.windowsGraphicsCapture(), settings.nativeFrameEncoding()};
+                      settings.windowsGraphicsCapture(), settings.nativeFrameEncoding(),
+                      settings.keyRecordingMode()};
     if (m_requiresDirectMp4Recording()) {
         // Apply backend limits to this request, without overwriting saved
         // preferences from a platform with audio and preview support.
@@ -1930,6 +1932,9 @@ void RecordingManager::pauseRecording()
     if (m_cursorRecorder) {
         m_cursorRecorder->pause();
     }
+    if (m_keyRecorder) {
+        m_keyRecorder->pause();
+    }
 
     setState(State::Paused);
 
@@ -1978,6 +1983,9 @@ void RecordingManager::resumeRecording()
     }
     if (m_cursorRecorder) {
         m_cursorRecorder->resume();
+    }
+    if (m_keyRecorder) {
+        m_keyRecorder->resume();
     }
 
     setState(State::Recording);
@@ -2130,6 +2138,9 @@ void RecordingManager::stopFrameCapture()
     if (m_cursorRecorder) {
         // Last position, held buttons released, file closed.
         m_cursorRecorder->stop();
+    }
+    if (m_keyRecorder) {
+        m_keyRecorder->stop();
     }
 
     // Stop timers
@@ -2319,6 +2330,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         if (!keepSidecar) {
             SnapTray::WindowTimelineSidecar::remove(tempOutputPath);
             SnapTray::CursorTimelineSidecar::remove(tempOutputPath);
+            SnapTray::KeyTimelineSidecar::remove(tempOutputPath);
         }
     });
 
@@ -2596,6 +2608,38 @@ void RecordingManager::startCursorTimeline()
         return;
     }
     qDebug().noquote() << "RecordingManager:" << m_cursorDiagnostics;
+    startKeyTimeline();
+}
+
+void RecordingManager::startKeyTimeline()
+{
+    // Off unless the user switched it on before this recording (#187).
+    const auto mode = SnapTray::KeyRecordingMode(m_startSettings.keyRecordingMode);
+    if (mode == SnapTray::KeyRecordingMode::Off || m_cursorSidecarVideo.isEmpty()) return;
+    auto probe = m_createKeyProbe ? m_createKeyProbe() : nullptr;
+    if (!probe) {
+        qWarning() << "RecordingManager: keys cannot be read here; recording without shortcut hints";
+        return;
+    }
+    auto mediaTime = [this]() { return mediaTimeMs(); };
+#ifdef Q_OS_MACOS
+    constexpr bool kMacSymbols = true;
+#else
+    constexpr bool kMacSymbols = false;
+#endif
+    m_keyRecorder = std::make_unique<SnapTray::KeyTimelineRecorder>(
+        std::move(probe), mediaTime, mode, SnapTray::KeyTimelineSidecar::pathFor(m_cursorSidecarVideo), kMacSymbols,
+        nullptr);
+    if (!m_keyRecorder->start()) {
+        qWarning() << "RecordingManager: key sidecar not written; the recording continues without it";
+        m_keyRecorder.reset();
+        SnapTray::KeyTimelineSidecar::remove(m_cursorSidecarVideo);
+    }
+}
+
+bool RecordingManager::isRecordingKeys() const
+{
+    return m_keyRecorder != nullptr;
 }
 
 void RecordingManager::dropCursorTimeline(bool removeFile)
@@ -2604,8 +2648,13 @@ void RecordingManager::dropCursorTimeline(bool removeFile)
         m_cursorRecorder->stop();
         m_cursorRecorder.reset();
     }
+    if (m_keyRecorder) {
+        m_keyRecorder->stop();
+        m_keyRecorder.reset();
+    }
     if (removeFile && !m_cursorSidecarVideo.isEmpty()) {
         SnapTray::CursorTimelineSidecar::remove(m_cursorSidecarVideo);
+        SnapTray::KeyTimelineSidecar::remove(m_cursorSidecarVideo);
     }
     m_cursorSidecarVideo.clear();
 }
@@ -2619,7 +2668,8 @@ void RecordingManager::cleanupStaleTempFiles()
     QStringList filters;
     filters << "SnapTray_Recording_*.mp4" << "SnapTray_Recording_*.gif" << "SnapTray_Recording_*.webp"
             << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::WindowTimelineSidecar::kSuffix)
-            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::CursorTimelineSidecar::kSuffix);
+            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::CursorTimelineSidecar::kSuffix)
+            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix);
 
     QFileInfoList files = dir.entryInfoList(filters, QDir::Files);
     QDateTime threshold = QDateTime::currentDateTime().addDays(-1);
@@ -2630,7 +2680,8 @@ void RecordingManager::cleanupStaleTempFiles()
         // be recovered: only the user's choice (recover or discard) removes it.
         // A sidecar belongs to the video its name extends.
         QString owner = file.absoluteFilePath();
-        for (const char* suffix : {SnapTray::WindowTimelineSidecar::kSuffix, SnapTray::CursorTimelineSidecar::kSuffix}) {
+        for (const char* suffix : {SnapTray::WindowTimelineSidecar::kSuffix, SnapTray::CursorTimelineSidecar::kSuffix,
+                                   SnapTray::KeyTimelineSidecar::kSuffix}) {
             if (owner.endsWith(QLatin1String(suffix))) {
                 owner.chop(int(qstrlen(suffix)));
                 break;

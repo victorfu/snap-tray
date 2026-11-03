@@ -55,6 +55,7 @@ private slots:
     void testStaleSidecarsAreCleanedUp();
     void testCursorTimelineFollowsTheRecording();
     void testCursorPauseIsStampedAtTheBoundary();
+    void testKeyTimelineOnlyWhenSwitchedOn();
     void testCursorTimelineOutcome_data();
     void testCursorTimelineOutcome();
     void intermediateQualityFollowsFreeSpace_data();
@@ -449,6 +450,67 @@ void TestRecordingManagerLifecycle::testCursorTimelineFollowsTheRecording()
     m_manager->cancelRecording();
     QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
     QVERIFY(!QFile::exists(SnapTray::CursorTimelineSidecar::pathFor(video)));
+    m_manager->m_session = {};
+}
+
+namespace {
+class LifecycleKeyProbe : public SnapTray::KeyProbe
+{
+public:
+    QString name() const override { return QStringLiteral("test"); }
+    void press(int key, Qt::KeyboardModifiers modifiers) { emit keyPressed(key, modifiers, QString()); }
+};
+} // namespace
+
+// #187: no key is kept unless switched on before the recording; then the
+// sidecar follows the recording and goes with it.
+void TestRecordingManagerLifecycle::testKeyTimelineOnlyWhenSwitchedOn()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_k.mp4"));
+    m_manager->m_createCursorProbe = [] { return std::make_unique<LifecycleCursorProbe>(); };
+    LifecycleKeyProbe* keys = nullptr;
+    int probesMade = 0;
+    m_manager->m_createKeyProbe = [&keys, &probesMade] {
+        ++probesMade;
+        auto owned = std::make_unique<LifecycleKeyProbe>();
+        keys = owned.get();
+        return owned;
+    };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 1000, 500), QRect(), 1.0, QRect(0, 0, 1000, 500)};
+    m_manager->m_session.videoPath = video;
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->m_elapsedTimer.start();
+
+    // Off (the default): no probe is even created, no file, nothing said.
+    m_manager->m_startSettings.keyRecordingMode = 0;
+    m_manager->startCursorTimeline();
+    QCOMPARE(probesMade, 0);
+    QVERIFY(!m_manager->isRecordingKeys());
+    QVERIFY(!QFile::exists(SnapTray::KeyTimelineSidecar::pathFor(video)));
+    m_manager->dropCursorTimeline(true);
+
+    m_manager->m_startSettings.keyRecordingMode = int(SnapTray::KeyRecordingMode::Shortcuts);
+    m_manager->startCursorTimeline();
+    QVERIFY(keys);
+    QVERIFY(m_manager->isRecordingKeys());
+    m_manager->m_state = RecordingManager::State::Recording;
+    keys->press(Qt::Key_C, Qt::ControlModifier);
+    keys->press(Qt::Key_A, Qt::NoModifier); // typing: not kept in this mode
+    m_manager->pauseRecording();
+    keys->press(Qt::Key_V, Qt::ControlModifier); // paused: not kept
+    m_manager->resumeRecording();
+    keys->press(Qt::Key_Return, Qt::NoModifier);
+    m_manager->stopFrameCapture();
+    const auto timeline = SnapTray::KeyTimelineSidecar::read(video);
+    QVERIFY(timeline && timeline->finished);
+    QCOMPARE(int(timeline->strokes.size()), 2);
+    QCOMPARE(timeline->strokes[0].key, int(Qt::Key_C));
+    QCOMPARE(timeline->strokes[1].key, int(Qt::Key_Return));
+
+    // Cancelling deletes the recording, and the key sidecar with it.
+    m_manager->cancelRecording();
+    QVERIFY(!QFile::exists(SnapTray::KeyTimelineSidecar::pathFor(video)));
     m_manager->m_session = {};
 }
 

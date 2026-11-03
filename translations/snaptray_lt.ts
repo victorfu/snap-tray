@@ -812,6 +812,11 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <source>Full Screen Capture</source>
         <translation>Viso ekrano fiksavimas</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>recording keys</source>
+        <translation>įrašomi klavišai</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -2898,6 +2903,101 @@ Dydis: %2</translation>
         <source>Too close to another split or an end</source>
         <translation>Per arti kito padalijimo ar galo</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom</source>
+        <translation>Apačioje</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Left</source>
+        <translation>Apačioje kairėje</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Right</source>
+        <translation>Apačioje dešinėje</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark</source>
+        <translation>Tamsus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark or light keys</source>
+        <translation>Tamsūs arba šviesūs klavišai</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the shortcuts into the exported video</source>
+        <translation>Piešti sparčiuosius klavišus eksportuojamame vaizdo įraše</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How large the shortcuts are</source>
+        <translation>Kokie dideli spartieji klavišai</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
+        <translation>Kiek laiko spartusis klavišas lieka po paspaudimo; greitai vienas po kito paspausti klavišai rodomi kartu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys</source>
+        <translation>Klavišai</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: Off</source>
+        <translation>Klavišai: išjungta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: On</source>
+        <translation>Klavišai: įjungta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light</source>
+        <translation>Šviesus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Place: %1</source>
+        <translation>Vieta: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shortcut hints need GIF or WebP on this system</source>
+        <translation>Šioje sistemoje sparčiųjų klavišų užuominoms reikia GIF arba WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show for %1 s</source>
+        <translation>Rodyti %1 s</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the shortcuts pressed while recording (%1 recorded)</source>
+        <translation>Rodyti įrašant paspaustus sparčiuosius klavišus (įrašyta: %1)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: %1</source>
+        <translation>Dydis: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Top</source>
+        <translation>Viršuje</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Where the shortcuts appear</source>
+        <translation>Kur rodomi spartieji klavišai</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3316,6 +3416,36 @@ GIF įrašuose garsas nepalaikomas.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>Įrašyto vaizdo įrašo kokybė. Įjungus peržiūrą, įrašai fiksuojami aukšta kokybe ir išsaugant konvertuojami į šią kokybę.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>All keys, including typed text</source>
+        <translation>Visi klavišai, įskaitant rašomą tekstą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
+        <translation>Sparčiųjų klavišų užuominoms peržiūroje. Klavišai laikomi su laikinu įrašu ir ištrinami kartu su juo; jų niekada nėra išsaugotame faile.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>Šioje sistemoje dar negalima</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Off</source>
+        <translation>Išjungta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Record keys</source>
+        <translation>Įrašyti klavišus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Shortcuts only</source>
+        <translation>Tik spartieji klavišai</translation>
     </message>
 </context>
 <context>
@@ -4656,6 +4786,31 @@ Failo dydis: %3</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>Įrašyti ekraną</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Also record typed text</source>
+        <translation>Įrašyti ir rašomą tekstą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Every key, including what you type. Do not use while entering passwords.</source>
+        <translation>Kiekvienas klavišas, įskaitant tai, ką rašote. Nenaudokite vesdami slaptažodžius.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Sparčiųjų klavišų užuominoms peržiūroje: klavišai su Ctrl, Alt ar Super ir tokie kaip Enter ar Esc. Laikomi tik su laikinu įrašu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>Šioje sistemoje dar negalima</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Record shortcut keys</source>
+        <translation>Įrašyti sparčiuosius klavišus</translation>
     </message>
 </context>
 <context>

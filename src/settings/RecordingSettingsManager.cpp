@@ -141,6 +141,31 @@ void RecordingSettingsManager::setNativeFrameEncoding(bool value)
     settings.setValue(kKeyNativeFrameEncoding, value);
 }
 
+int RecordingSettingsManager::keyRecordingMode() const
+{
+    auto settings = SnapTray::getSettings();
+    const int mode = settings.value(kKeyKeyRecordingMode, 0).toInt();
+    return mode >= 0 && mode <= 2 ? mode : 0;
+}
+
+void RecordingSettingsManager::setKeyRecordingMode(int value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyKeyRecordingMode, qBound(0, value, 2));
+}
+
+QJsonObject RecordingSettingsManager::keyOverlay() const
+{
+    auto settings = SnapTray::getSettings();
+    return QJsonDocument::fromJson(settings.value(kKeyKeyOverlay).toByteArray()).object();
+}
+
+void RecordingSettingsManager::setKeyOverlay(const QJsonObject& value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyKeyOverlay, QJsonDocument(value).toJson(QJsonDocument::Compact));
+}
+
 QJsonObject RecordingSettingsManager::pointerEffects() const
 {
     auto settings = SnapTray::getSettings();

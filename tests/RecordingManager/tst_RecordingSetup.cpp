@@ -1,5 +1,7 @@
 #include <QtTest>
 
+#include "recording/KeyTimeline.h"
+
 #include <QGuiApplication>
 #include <QScreen>
 #include <QQuickItem>
@@ -105,6 +107,7 @@ private slots:
 
     // Picker setup
     void setupTogglesSaveSettings();
+    void keyRecordingIsOffUntilSwitchedOn();
     void chooseAndCancelReleaseMicrophone();
     void missingSavedDeviceStaysVisible();
     void outputNotes();
@@ -305,6 +308,33 @@ void TestRecordingSetup::levelIsThrottledAndReleasedOnStop()
     QCOMPARE(monitor.state(), AudioLevelMonitor::State::Idle);
     QVERIFY(!engine->isRunning());
     QTRY_COMPARE(m_engineState->destroyed, m_engineState->created);
+}
+
+// #187: keys are never recorded unless switched on here; typed text needs
+// its own switch on top.
+void TestRecordingSetup::keyRecordingIsOffUntilSwitchedOn()
+{
+    auto& settings = RecordingSettingsManager::instance();
+    const int remembered = settings.keyRecordingMode();
+    auto restore = qScopeGuard([&settings, remembered] { settings.setKeyRecordingMode(remembered); });
+    settings.setKeyRecordingMode(0);
+    SnapTray::ScreenPickerViewModel viewModel;
+    QVERIFY(!viewModel.recordShortcutKeys());
+    QVERIFY(!viewModel.recordTypedText());
+    if (!viewModel.keyRecordingSupported()) {
+        viewModel.setRecordShortcutKeys(true);
+        QCOMPARE(settings.keyRecordingMode(), 0);
+        QSKIP("Key recording is not available on this platform");
+    }
+    viewModel.setRecordTypedText(true); // not without shortcuts first
+    QCOMPARE(settings.keyRecordingMode(), 0);
+    viewModel.setRecordShortcutKeys(true);
+    QCOMPARE(settings.keyRecordingMode(), int(SnapTray::KeyRecordingMode::Shortcuts));
+    viewModel.setRecordTypedText(true);
+    QCOMPARE(settings.keyRecordingMode(), int(SnapTray::KeyRecordingMode::AllKeys));
+    viewModel.setRecordShortcutKeys(false);
+    QCOMPARE(settings.keyRecordingMode(), 0);
+    QVERIFY(!viewModel.recordTypedText());
 }
 
 void TestRecordingSetup::setupTogglesSaveSettings()

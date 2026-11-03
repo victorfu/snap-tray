@@ -20,6 +20,7 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
+#include "recording/KeyTimeline.h"
 #include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "ui/TrayRecordingIndicator.h"
@@ -1102,6 +1103,7 @@ void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
     }
     SnapTray::WindowTimelineSidecar::remove(videoPath);
     SnapTray::CursorTimelineSidecar::remove(videoPath);
+    SnapTray::KeyTimelineSidecar::remove(videoPath);
     SnapTray::RecordingSession::remove(videoPath);
 }
 
@@ -1417,6 +1419,11 @@ QString MainApplication::trayRecordingStatusLine() const
     }
     if (m_recordingManager && m_recordingManager->isLowOnDiskSpace()) {
         parts.append(tr("low disk space"));
+    }
+    // Said for as long as keys are kept (#187): never silently.
+    if (m_recordingManager && m_recordingManager->isRecordingKeys()
+        && (m_trayRecordingStatus == Status::Recording || m_trayRecordingStatus == Status::Paused)) {
+        parts.append(tr("recording keys"));
     }
     QString line = parts.join(QStringLiteral(" \u00B7 "));
     // Audio stays visible for the whole recording, including fallbacks that

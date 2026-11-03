@@ -129,6 +129,16 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
     Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
 
+    // Shortcut hints (#187), from the key sidecar; enums in KeyOverlaySettings order.
+    Q_PROPERTY(bool hasKeyData READ hasKeyData CONSTANT)
+    Q_PROPERTY(bool keyOverlayAvailable READ keyOverlayAvailable NOTIFY keyOverlayChanged)
+    Q_PROPERTY(bool keyOverlayEnabled READ keyOverlayEnabled WRITE setKeyOverlayEnabled NOTIFY keyOverlayChanged)
+    Q_PROPERTY(int keyOverlayPosition READ keyOverlayPosition WRITE setKeyOverlayPosition NOTIFY keyOverlayChanged)
+    Q_PROPERTY(int keyOverlaySize READ keyOverlaySize WRITE setKeyOverlaySize NOTIFY keyOverlayChanged)
+    Q_PROPERTY(int keyOverlayStyle READ keyOverlayStyle WRITE setKeyOverlayStyle NOTIFY keyOverlayChanged)
+    Q_PROPERTY(int keyOverlayDisplayMs READ keyOverlayDisplayMs WRITE setKeyOverlayDisplayMs NOTIFY keyOverlayChanged)
+    Q_PROPERTY(int recordedKeyCount READ recordedKeyCount CONSTANT)
+
     // Cuts and speed changes (#185): the parts between split points, in source
     // time, each {start, end, deleted, speed}; and the exported length.
     Q_PROPERTY(QVariantList timelineParts READ timelineParts NOTIFY timelineChanged)
@@ -372,6 +382,24 @@ public:
     // endMs -1 = to the end; false (nothing changes) when invalid.
     Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
 
+    // Shortcut hints (#187); undoable, remembered as the last look.
+    bool hasKeyData() const { return m_keyTimeline && !m_keyTimeline->strokes.empty(); }
+    int recordedKeyCount() const { return m_keyTimeline ? int(m_keyTimeline->strokes.size()) : 0; }
+    bool keyOverlayAvailable() const { return hasKeyData() && formatCanDrawEffects(); }
+    bool keyOverlayActive() const { return keyOverlayAvailable() && m_keyOverlay.enabled; }
+    const SnapTray::KeyTimeline* keyTimeline() const { return m_keyTimeline.get(); }
+    SnapTray::KeyOverlaySettings keyOverlay() const { return m_keyOverlay; }
+    bool keyOverlayEnabled() const { return m_keyOverlay.enabled; }
+    void setKeyOverlayEnabled(bool value);
+    int keyOverlayPosition() const { return int(m_keyOverlay.position); }
+    void setKeyOverlayPosition(int value);
+    int keyOverlaySize() const { return int(m_keyOverlay.size); }
+    void setKeyOverlaySize(int value);
+    int keyOverlayStyle() const { return int(m_keyOverlay.style); }
+    void setKeyOverlayStyle(int value);
+    int keyOverlayDisplayMs() const { return int(m_keyOverlay.displayMs); }
+    void setKeyOverlayDisplayMs(int value);
+
     // Cuts and speed changes (#185), undoable footage edits.
     QVariantList timelineParts() const;
     QVariantList timelineSplits() const;
@@ -480,6 +508,7 @@ signals:
     void mp4OptionsChanged();
     void appearanceChanged();
     void timelineChanged();
+    void keyOverlayChanged();
     void appearancePreviewFrameChanged();
     void mp4EstimateChanged();
     void zoomChanged();
@@ -578,6 +607,9 @@ private:
     SnapTray::Mp4ExportOptions m_mp4Options;
     SnapTray::RecordingAppearance m_appearance;
     SnapTray::TimelineEdit m_timeline;
+    std::shared_ptr<const SnapTray::KeyTimeline> m_keyTimeline;
+    SnapTray::KeyOverlaySettings m_keyOverlay;
+    void editKeyOverlay(const std::function<void(SnapTray::KeyOverlaySettings&)>& change);
     void editTimeline(const std::function<bool(SnapTray::TimelineEdit&)>& change, bool record = true);
     QImage m_appearancePreviewFrame;
     // The video size the effects use (the pointer data's when the player has not said).

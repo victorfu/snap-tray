@@ -12,6 +12,8 @@
 #include "settings/RecordingSettingsManager.h"
 #include "qml/RecordingCursorOverlay.h"
 #include "qml/RecordingAppearanceOverlay.h"
+#include "qml/RecordingKeyOverlay.h"
+#include "recording/KeyTimeline.h"
 #include "video/IVideoFrameReader.h"
 #include <QPainter>
 #include "video/IVideoTranscoder.h"
@@ -422,6 +424,8 @@ private slots:
     void cutsAndSpeedReachEveryFormat_data();
     void cutsAndSpeedReachEveryFormat();
     void cutsRefusedWhereMp4CannotJoin();
+    void keyHintsMatchAcrossPreviewAndOutputs_data();
+    void keyHintsMatchAcrossPreviewAndOutputs();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
@@ -2265,6 +2269,98 @@ void tst_RecordingPreviewExport::cutsRefusedWhereMp4CannotJoin()
     other.setPartDeleted(0, true);
     other.setPartDeleted(1, true);
     QVERIFY(!other.timelineEdit().parts[1].deleted);
+}
+
+void tst_RecordingPreviewExport::keyHintsMatchAcrossPreviewAndOutputs_data()
+{
+    pointerMatchesAcrossPreviewAndOutputs_data();
+}
+
+// #187: a shortcut pressed at 100 ms shows at the same place in the preview
+// and in each output (the fixture is red until 300 ms).
+void tst_RecordingPreviewExport::keyHintsMatchAcrossPreviewAndOutputs()
+{
+    QFETCH(int, format);
+    const QSize sourceSize(320, 240);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    {
+        SnapTray::KeyTimelineWriter writer(SnapTray::KeyTimelineSidecar::pathFor(inputPath));
+        QVERIFY(writer.open({SnapTray::KeyRecordingMode::Shortcuts, false}));
+        writer.add({100, Qt::Key_C, Qt::ControlModifier, {}});
+        QVERIFY(writer.finish());
+    }
+    const QJsonObject remembered = RecordingSettingsManager::instance().keyOverlay();
+    auto restore = qScopeGuard([remembered]() { RecordingSettingsManager::instance().setKeyOverlay(remembered); });
+    RecordingSettingsManager::instance().setKeyOverlay({});
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QVERIFY(backend.hasKeyData());
+    QCOMPARE(backend.recordedKeyCount(), 1);
+    if (!backend.keyOverlayAvailable()) QSKIP("This platform's MP4 transcoder cannot draw onto frames yet");
+    QVERIFY(backend.keyOverlayActive()); // on by default once keys were recorded
+    QVERIFY(backend.effectsActive());
+
+    // Where the hint is: the bounding box of pixels that are not the red picture.
+    const auto hintBox = [](const QImage& image) {
+        QRect box;
+        for (int y = 0; y < image.height(); ++y) {
+            for (int x = 0; x < image.width(); ++x) {
+                const QColor c = image.pixelColor(x, y);
+                if (!(c.red() > 150 && c.green() < 100 && c.blue() < 100)) box |= QRect(x, y, 1, 1);
+            }
+        }
+        return box;
+    };
+    RecordingKeyOverlay overlay;
+    overlay.setBackend(&backend);
+    overlay.setContentRect(QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+    overlay.setPosition(200);
+    QImage preview(sourceSize, QImage::Format_RGB32);
+    preview.fill(Qt::red);
+    {
+        QPainter painter(&preview);
+        overlay.paint(&painter);
+    }
+    const QRect expected = hintBox(preview);
+    QVERIFY(!expected.isEmpty());
+    QVERIFY(expected.top() > sourceSize.height() / 2); // bottom centre by default
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+    const auto frameAt = [&](qint64 ms) -> QImage {
+        if (format == RecordingPreviewBackend::MP4) {
+            auto reader = IVideoFrameReader::create();
+            if (!reader || !reader->load(output)) return QImage();
+            return reader->frameAt(ms);
+        }
+        return animationFrameAt(output, ms);
+    };
+    if (format == RecordingPreviewBackend::MP4 && !IVideoFrameReader::create()) QSKIP("No MP4 frame reader here");
+    const QImage before = frameAt(0);
+    const QImage during = frameAt(200);
+    QVERIFY(!before.isNull() && !during.isNull());
+    QVERIFY2(hintBox(before).isEmpty(), "a hint before the key was pressed");
+    const QRect actual = hintBox(during);
+    // Codec and palette error may blur an edge by a few pixels, never more.
+    QVERIFY2(qAbs(actual.left() - expected.left()) <= 4 && qAbs(actual.top() - expected.top()) <= 4
+                 && qAbs(actual.right() - expected.right()) <= 4 && qAbs(actual.bottom() - expected.bottom()) <= 4,
+             qPrintable(QStringLiteral("preview %1,%2 %3x%4 output %5,%6 %7x%8")
+                            .arg(expected.x()).arg(expected.y()).arg(expected.width()).arg(expected.height())
+                            .arg(actual.x()).arg(actual.y()).arg(actual.width()).arg(actual.height())));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+    // The key sidecar goes with the recording once the export is saved.
+    QVERIFY(!QFile::exists(SnapTray::KeyTimelineSidecar::pathFor(inputPath)));
 }
 
 void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()

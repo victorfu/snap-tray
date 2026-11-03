@@ -9,6 +9,7 @@
 
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/CursorTimeline.h"
+#include "recording/KeyTimeline.h"
 #include "settings/RecordingSettingsManager.h"
 
 // The preview's pointer controls (#160) against the real QML.
@@ -21,6 +22,7 @@ private slots:
     void controlsHiddenWithoutPointerData();
     void overlayFollowsEachFrameTime();
     void advancedPointerOptions();
+    void keysPanelEditsTheHints();
 
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
@@ -175,6 +177,63 @@ void tst_RecordingPreviewPointer::advancedPointerOptions()
     QCOMPARE(backend.selectedPointerHide(), -1);
     QTRY_VERIFY(!hidePanel->isVisible());
 
+    backend.requestDiscard();
+}
+
+// #187: the Keys button shows only for a recording with keys; its panel sets
+// the hint look, undoably, and remembers it.
+void tst_RecordingPreviewPointer::keysPanelEditsTheHints()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString video = dir.filePath(QStringLiteral("missing.mp4"));
+    const QJsonObject remembered = RecordingSettingsManager::instance().keyOverlay();
+    auto restore = qScopeGuard([remembered]() { RecordingSettingsManager::instance().setKeyOverlay(remembered); });
+    RecordingSettingsManager::instance().setKeyOverlay({});
+    {
+        RecordingPreviewBackend withoutKeys(video);
+        QVERIFY(!withoutKeys.hasKeyData());
+        QQuickView* view = openPreview(withoutKeys);
+        QVERIFY(view);
+        QQuickItem* keys = item(view, "previewKeyOptions");
+        QVERIFY(keys);
+        QVERIFY(!keys->isVisible());
+        withoutKeys.requestDiscard();
+    }
+    {
+        SnapTray::KeyTimelineWriter writer(SnapTray::KeyTimelineSidecar::pathFor(video));
+        QVERIFY(writer.open({SnapTray::KeyRecordingMode::Shortcuts, false}));
+        writer.add({100, Qt::Key_C, Qt::ControlModifier, {}});
+        QVERIFY(writer.finish());
+    }
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QQuickItem* keys = item(view, "previewKeyOptions");
+    QQuickItem* panel = item(view, "previewKeysPanel");
+    QVERIFY(keys && panel);
+    QTRY_VERIFY(keys->isVisible());
+    QVERIFY(keys->isEnabled());
+    QVERIFY(QMetaObject::invokeMethod(keys, "clicked"));
+    QTRY_VERIFY(panel->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysPosition"), "clicked"));
+    QCOMPARE(backend.keyOverlayPosition(), 1);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysSize"), "clicked"));
+    QCOMPARE(backend.keyOverlaySize(), 2);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysStyle"), "clicked"));
+    QCOMPARE(backend.keyOverlayStyle(), 1);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysDuration"), "clicked"));
+    QCOMPARE(backend.keyOverlayDisplayMs(), 2500);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysToggle"), "clicked"));
+    QVERIFY(!backend.keyOverlayEnabled());
+    QVERIFY(!backend.keyOverlayActive());
+    const auto saved = SnapTray::KeyOverlaySettings::fromJson(RecordingSettingsManager::instance().keyOverlay());
+    QCOMPARE(saved, backend.keyOverlay());
+    backend.undo();
+    QVERIFY(backend.keyOverlayEnabled());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysDone"), "clicked"));
+    QTRY_VERIFY(!panel->isVisible());
     backend.requestDiscard();
 }
 

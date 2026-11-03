@@ -356,6 +356,8 @@ add_library(snaptray_core STATIC
     src/recording/Mp4ExportOptions.cpp
     src/recording/RecordingAppearance.cpp
     src/recording/TimelineEdit.cpp
+    src/recording/KeyTimeline.cpp
+    src/recording/KeyOverlay.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -542,6 +544,8 @@ add_library(snaptray_platform STATIC
     src/recording/WindowTimelineRecorder.cpp
     src/recording/CursorProbe.cpp
     src/recording/CursorTimelineRecorder.cpp
+    src/recording/KeyProbe.cpp
+    src/recording/KeyTimelineRecorder.cpp
     src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
     src/video/IVideoTranscoder.cpp
@@ -565,6 +569,8 @@ add_library(snaptray_platform STATIC
     include/recording/WindowTimelineRecorder.h
     include/recording/CursorProbe.h
     include/recording/CursorTimelineRecorder.h
+    include/recording/KeyProbe.h
+    include/recording/KeyTimelineRecorder.h
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
     include/platform/QtQuickBackendPolicy.h
@@ -729,6 +735,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_sources(snaptray_platform PRIVATE src/recording/X11CursorProbe_linux.cpp)
         target_link_libraries(snaptray_platform PRIVATE X11::Xfixes X11::Xi)
         target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_HAS_X11_CURSOR_PROBE)
+        # Key presses for shortcut hints (#187), through XInput2 raw events.
+        target_sources(snaptray_platform PRIVATE src/recording/X11KeyProbe_linux.cpp)
+        target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_HAS_X11_KEY_PROBE)
     else()
         message(STATUS "libXfixes/libXi not found: recordings keep pointer positions only")
     endif()
@@ -1218,6 +1227,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/RecordingCursorOverlay.h
         src/qml/RecordingAppearanceOverlay.cpp
         include/qml/RecordingAppearanceOverlay.h
+        src/qml/RecordingKeyOverlay.cpp
+        include/qml/RecordingKeyOverlay.h
         src/qml/SvgIconItem.cpp
         include/qml/SvgIconItem.h
         include/qml/RecordingPreviewBackend.h

@@ -883,6 +883,11 @@ File size: %3</source>
         <source>Full Screen Capture</source>
         <translation>จับภาพเต็มหน้าจอ</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>recording keys</source>
+        <translation>กำลังบันทึกปุ่ม</translation>
+    </message>
 </context>
 <context>
     <name>MultiRegionListPanel</name>
@@ -2885,6 +2890,101 @@ English is always included and cannot be removed.</source>
         <source>Too close to another split or an end</source>
         <translation>ใกล้จุดแบ่งอื่นหรือปลายเกินไป</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom</source>
+        <translation>ด้านล่าง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Left</source>
+        <translation>ล่างซ้าย</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Bottom Right</source>
+        <translation>ล่างขวา</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark</source>
+        <translation>เข้ม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark or light keys</source>
+        <translation>ปุ่มสีเข้มหรือสีอ่อน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the shortcuts into the exported video</source>
+        <translation>วาดปุ่มลัดลงในวิดีโอที่ส่งออก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How large the shortcuts are</source>
+        <translation>ขนาดของปุ่มลัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
+        <translation>ปุ่มลัดจะแสดงนานเท่าใดหลังกด ปุ่มที่กดติดกันจะแสดงพร้อมกัน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys</source>
+        <translation>ปุ่ม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: Off</source>
+        <translation>ปุ่ม: ปิด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Keys: On</source>
+        <translation>ปุ่ม: เปิด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light</source>
+        <translation>อ่อน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Place: %1</source>
+        <translation>ตำแหน่ง: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shortcut hints need GIF or WebP on this system</source>
+        <translation>ระบบนี้ต้องใช้ GIF หรือ WebP สำหรับการแสดงปุ่มลัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show for %1 s</source>
+        <translation>แสดง %1 วินาที</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show the shortcuts pressed while recording (%1 recorded)</source>
+        <translation>แสดงปุ่มลัดที่กดระหว่างบันทึก (บันทึกไว้ %1 รายการ)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: %1</source>
+        <translation>ขนาด: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Top</source>
+        <translation>ด้านบน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Where the shortcuts appear</source>
+        <translation>ตำแหน่งที่แสดงปุ่มลัด</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3184,6 +3284,36 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>คุณภาพของวิดีโอที่บันทึก เมื่อเปิดตัวอย่าง การบันทึกจะจับภาพด้วยคุณภาพสูงและแปลงเป็นคุณภาพนี้เมื่อบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>All keys, including typed text</source>
+        <translation>ทุกปุ่ม รวมถึงข้อความที่พิมพ์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
+        <translation>สำหรับแสดงปุ่มลัดในตัวอย่าง ปุ่มที่บันทึกจะอยู่กับการบันทึกชั่วคราวและถูกลบไปพร้อมกัน ไม่อยู่ในไฟล์ที่บันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>ยังไม่พร้อมใช้งานบนระบบนี้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Off</source>
+        <translation>ปิด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Record keys</source>
+        <translation>บันทึกปุ่ม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Shortcuts only</source>
+        <translation>ปุ่มลัดเท่านั้น</translation>
     </message>
 </context>
 <context>
@@ -4428,6 +4558,31 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>บันทึกหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Also record typed text</source>
+        <translation>บันทึกข้อความที่พิมพ์ด้วย</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Every key, including what you type. Do not use while entering passwords.</source>
+        <translation>ทุกปุ่ม รวมถึงสิ่งที่พิมพ์ อย่าใช้ขณะป้อนรหัสผ่าน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>สำหรับแสดงปุ่มลัดในตัวอย่าง: ปุ่มที่กดร่วมกับ Ctrl, Alt หรือ Super และปุ่มอย่าง Enter หรือ Esc เก็บไว้กับการบันทึกชั่วคราวเท่านั้น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Not available on this system yet</source>
+        <translation>ยังไม่พร้อมใช้งานบนระบบนี้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Record shortcut keys</source>
+        <translation>บันทึกปุ่มลัด</translation>
     </message>
 </context>
 <context>

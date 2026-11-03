@@ -14,6 +14,7 @@
 #include "recording/RecordingAppearance.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
+#include "recording/KeyTimeline.h"
 
 #include <QCloseEvent>
 #include "recording/DiskSpaceGuard.h"
@@ -72,6 +73,11 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     // The pointer look the user chose last time; undo starts from it.
     m_cursorEffects = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects())
                           .preferences();
+    // Shortcut hints (#187): only for a recording made with keys switched on.
+    if (auto keys = SnapTray::KeyTimelineSidecar::read(videoPath)) {
+        m_keyTimeline = std::make_shared<const SnapTray::KeyTimeline>(std::move(*keys));
+    }
+    m_keyOverlay = SnapTray::KeyOverlaySettings::fromJson(RecordingSettingsManager::instance().keyOverlay());
     // The frame around exports: the last one used for recordings, or at first
     // the screenshot Beautify look (off until switched on).
     const QJsonObject appearance = RecordingSettingsManager::instance().appearance();
@@ -84,6 +90,7 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::masksChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::appearanceChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::keyOverlayChanged);
     // The exported length and the cut availability follow the trim, duration and format.
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::timelineChanged);
     connect(this, &RecordingPreviewBackend::trimRangeChanged, this, &RecordingPreviewBackend::timelineChanged);
@@ -124,8 +131,16 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         : std::shared_ptr<const SnapTray::RecordingAppearanceRenderer>();
     const bool blurredBackground = appearance
         && m_appearance.background == SnapTray::RecordingAppearance::Background::BlurredVideo;
-    return [timeline, cursor, zoom, redaction, appearance, blurredBackground, bounds, videoSize](QImage& frame,
-                                                                                               qint64 sourceMs) {
+    // Shortcut hints (#187) on the output picture, after the zoom and pointer.
+    std::shared_ptr<SnapTray::KeyOverlayRenderer> keys;
+    if (keyOverlayActive()) {
+        keys = std::shared_ptr<SnapTray::KeyOverlayRenderer>(
+            new SnapTray::KeyOverlayRenderer(*m_keyTimeline, m_keyOverlay),
+            [held = m_keyTimeline](SnapTray::KeyOverlayRenderer* renderer) { delete renderer; });
+        if (hasTimelineEdits()) keys->setTimeline(timelineMap());
+    }
+    return [timeline, cursor, zoom, redaction, appearance, blurredBackground, keys, bounds, videoSize](
+               QImage& frame, qint64 sourceMs) {
         if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
             frame = frame.convertToFormat(QImage::Format_RGB32);
         }
@@ -159,6 +174,7 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
             }
         }
         if (cursor) cursor->paint(frame, sourceMs, {shown, videoSize, frame.size()});
+        if (keys) keys->paint(frame, sourceMs);
         if (appearance) frame = appearance->compose(frame, blurSource);
     };
 }
@@ -621,7 +637,7 @@ bool RecordingPreviewBackend::setPointerHideRange(int index, qint64 startMs, qin
 bool RecordingPreviewBackend::effectsActive() const
 {
     return !m_redaction.isEmpty() || cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive())
-        || appearanceActive();
+        || appearanceActive() || keyOverlayActive();
 }
 
 QVariantList RecordingPreviewBackend::masks() const
@@ -1241,6 +1257,48 @@ bool RecordingPreviewBackend::timelineEditsAvailable() const
     return m_selectedFormat != MP4 || mp4Capabilities().segments;
 }
 
+void RecordingPreviewBackend::editKeyOverlay(const std::function<void(SnapTray::KeyOverlaySettings&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::KeyOverlaySettings settings = m_keyOverlay;
+    change(settings);
+    if (settings == m_keyOverlay) return;
+    m_keyOverlay = settings;
+    RecordingSettingsManager::instance().setKeyOverlay(settings.toJson());
+    emit keyOverlayChanged();
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setKeyOverlayEnabled(bool value)
+{
+    editKeyOverlay([value](SnapTray::KeyOverlaySettings& s) { s.enabled = value; });
+}
+
+void RecordingPreviewBackend::setKeyOverlayPosition(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::KeyOverlaySettings::Position::TopCenter));
+    editKeyOverlay([clamped](SnapTray::KeyOverlaySettings& s) { s.position = SnapTray::KeyOverlaySettings::Position(clamped); });
+}
+
+void RecordingPreviewBackend::setKeyOverlaySize(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::KeyOverlaySettings::Size::Large));
+    editKeyOverlay([clamped](SnapTray::KeyOverlaySettings& s) { s.size = SnapTray::KeyOverlaySettings::Size(clamped); });
+}
+
+void RecordingPreviewBackend::setKeyOverlayStyle(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::KeyOverlaySettings::Style::Light));
+    editKeyOverlay([clamped](SnapTray::KeyOverlaySettings& s) { s.style = SnapTray::KeyOverlaySettings::Style(clamped); });
+}
+
+void RecordingPreviewBackend::setKeyOverlayDisplayMs(int value)
+{
+    const auto& choices = SnapTray::KeyOverlaySettings::kDisplayChoices;
+    if (std::find(std::begin(choices), std::end(choices), qint64(value)) == std::end(choices)) return;
+    editKeyOverlay([value](SnapTray::KeyOverlaySettings& s) { s.displayMs = value; });
+}
+
 QVariantList RecordingPreviewBackend::timelineParts() const
 {
     QVariantList list;
@@ -1558,6 +1616,7 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
         }
         SnapTray::WindowTimelineSidecar::remove(m_videoPath);
         SnapTray::CursorTimelineSidecar::remove(m_videoPath);
+        SnapTray::KeyTimelineSidecar::remove(m_videoPath);
         SnapTray::RecordingSession::remove(m_videoPath);
         finishProcessing();
         m_saved = true;
@@ -1857,6 +1916,7 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
     state.redaction = m_redaction;
     state.appearance = m_appearance;
     state.timeline = m_timeline;
+    state.keys = m_keyOverlay;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -1886,6 +1946,11 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         m_zoom = state.zoom;
         if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
         emit zoomChanged();
+    }
+    if (state.keys != m_keyOverlay) {
+        m_keyOverlay = state.keys;
+        RecordingSettingsManager::instance().setKeyOverlay(m_keyOverlay.toJson());
+        emit keyOverlayChanged();
     }
     if (state.timeline != m_timeline) {
         m_timeline = state.timeline;
@@ -1936,6 +2001,7 @@ void RecordingPreviewBackend::resetEdits()
     unedited.zoom = m_zoom;
     unedited.redaction = m_redaction;
     unedited.appearance = m_appearance;
+    unedited.keys = m_keyOverlay;
     applyEditState(unedited);
     recordEdit();
 }

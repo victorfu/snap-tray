@@ -72,6 +72,8 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int recordingQuality READ recordingQuality WRITE setRecordingQuality NOTIFY recordingQualityChanged)
     Q_PROPERTY(bool recordingShowPreview READ recordingShowPreview WRITE setRecordingShowPreview NOTIFY recordingShowPreviewChanged)
     Q_PROPERTY(bool recordingShowSetup READ recordingShowSetup WRITE setRecordingShowSetup NOTIFY recordingShowSetupChanged)
+    Q_PROPERTY(int recordingKeyMode READ recordingKeyMode WRITE setRecordingKeyMode NOTIFY recordingKeyModeChanged)
+    Q_PROPERTY(bool recordingKeysSupported READ recordingKeysSupported CONSTANT)
     Q_PROPERTY(bool recordingAudioEnabled READ recordingAudioEnabled WRITE setRecordingAudioEnabled NOTIFY recordingAudioEnabledChanged)
     Q_PROPERTY(int recordingAudioSource READ recordingAudioSource WRITE setRecordingAudioSource NOTIFY recordingAudioSourceChanged)
     Q_PROPERTY(QString recordingAudioDevice READ recordingAudioDevice WRITE setRecordingAudioDevice NOTIFY recordingAudioDeviceChanged)
@@ -196,6 +198,9 @@ public:
     bool recordingShowPreview() const;
     void setRecordingShowPreview(bool v);
     bool recordingShowSetup() const { return m_recordingShowSetup; }
+    int recordingKeyMode() const;
+    void setRecordingKeyMode(int mode);
+    bool recordingKeysSupported() const;
     void setRecordingShowSetup(bool v);
     bool recordingAudioEnabled() const;
     void setRecordingAudioEnabled(bool v);
@@ -324,6 +329,7 @@ signals:
     void recordingQualityChanged();
     void recordingShowPreviewChanged();
     void recordingShowSetupChanged();
+    void recordingKeyModeChanged();
     void recordingAudioEnabledChanged();
     void recordingAudioSourceChanged();
     void recordingAudioDeviceChanged();
