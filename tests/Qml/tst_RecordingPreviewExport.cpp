@@ -1224,6 +1224,9 @@ void tst_RecordingPreviewExport::smartSaveMovesRecordingNotRecordedAsIntermediat
         RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
     });
     backend.setMp4Quality(int(SnapTray::Mp4ExportOptions::Quality::Low));
+    // The estimate agrees with the export: less than the file (PR #197 review).
+    QTRY_VERIFY(backend.sourceProbeReady());
+    QVERIFY(backend.mp4EstimatedBytes() < QFileInfo(noiseInputPath).size());
     savedSpy.clear();
     backend.save();
     WAIT_FOR_EXPORT(backend, savedSpy, 20000);
@@ -2007,8 +2010,12 @@ void tst_RecordingPreviewExport::mp4OptionsMatchingTheSourceKeepTheFastPath()
     auto restore = qScopeGuard([rememberedOptions]() {
         RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
         RecordingPreviewBackend::outputQualityOverride() = {};
+        RecordingPreviewBackend::freeBytesForPathOverride() = {};
     });
     RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+    // Almost no room: a move needs none, so options that change nothing must
+    // not be refused for space (PR #197 review).
+    RecordingPreviewBackend::freeBytesForPathOverride() = [](const QString&) { return qint64(1); };
 
     RecordingPreviewBackend backend(inputPath);
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);
@@ -2021,6 +2028,7 @@ void tst_RecordingPreviewExport::mp4OptionsMatchingTheSourceKeepTheFastPath()
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
     WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
     QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
     QCOMPARE(backend.mp4EstimatedBytes(), QFileInfo(inputPath).size());

@@ -479,7 +479,10 @@ qint64 RecordingPreviewBackend::mp4EstimatedBytes() const
     if (!edited) {
         // Saved as recorded when it already meets the target (see performTranscode).
         const qint64 fileBytes = QFileInfo(m_videoPath).size();
-        if (!m_recordedAsIntermediate
+        // Like the export: Default moves a recording made at the selected
+        // quality; an explicit quality is judged by its bitrate (PR #197 review).
+        const bool defaultQuality = options.quality == SnapTray::Mp4ExportOptions::Quality::Default;
+        if ((!m_recordedAsIntermediate && defaultQuality)
             || SnapTray::IntermediateQuality::smartSaveShouldMove(probe, fileBytes,
                                                                   options.outputQuality(settingsQuality))) {
             return fileBytes;
@@ -1905,7 +1908,11 @@ void RecordingPreviewBackend::save()
     // Whether they really do (a smaller size, a lower rate, another codec
     // than the source's) is decided by the export job, which probes the
     // source off the GUI thread.
-    const bool mp4OptionsMayApply = m_selectedFormat == MP4 && effectiveMp4Options().mayChangeStream();
+    // Once the source is probed (it starts when the preview opens), only
+    // options that really change this stream count: a 1080p choice for a
+    // 720p recording is still a move (PR #197 review).
+    const bool mp4OptionsMayApply = m_selectedFormat == MP4
+        && (sourceProbeReady() ? mp4OptionsActive() : effectiveMp4Options().mayChangeStream());
     const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || effectsActive()
         || hasTimelineEdits() || mp4OptionsMayApply || audioMixActive();
     if (writesNewFile) {

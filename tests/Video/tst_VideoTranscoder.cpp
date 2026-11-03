@@ -350,6 +350,7 @@ private slots:
     void invalidInputFails();
     void outputOptionsScaleAndLowerTheFrameRate();
     void lowerFrameRateKeepsTheCadence();
+    void fasterPartKeepsTheFrameRate();
     void hevcOutput();
     void sizeEstimateAgainstActual();
     void segmentsStayInSync();
@@ -1074,6 +1075,45 @@ void tst_VideoTranscoder::lowerFrameRateKeepsTheCadence()
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     // 15 fps over 2 s is 30 frames; the old threshold kept about 24.
     QVERIFY2(qAbs(kept - 15 * kSeconds) <= 2, qPrintable(QString::number(kept)));
+}
+
+// PR #199 review: a part played faster keeps the output frame rate. A
+// 30 fps recording at 1.5x is 1.33 s of output at 30 fps (40 frames), not
+// every other source frame (about 30).
+void tst_VideoTranscoder::fasterPartKeepsTheFrameRate()
+{
+    if (!m_transcoder->supportsSegments() || !m_transcoder->supportsFrameFilter())
+        QSKIP("This transcoder does not join parts at other speeds");
+    constexpr int kSourceFps = 30;
+    constexpr int kSeconds = 2;
+    const QString input = m_dir.filePath(QStringLiteral("30fps.mp4"));
+    {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder);
+        QVERIFY(encoder->start(input, kSourceSize, kSourceFps));
+        for (int i = 0; i < kSourceFps * kSeconds; ++i) {
+            const qint64 before = encoder->framesWritten();
+            QElapsedTimer wait;
+            wait.start();
+            do {
+                encoder->writeFrame(fixtureFrame(i % kFrameCount), qint64(i) * 1000 / kSourceFps);
+                if (encoder->framesWritten() != before) break;
+                QTest::qWait(5);
+            } while (wait.elapsed() < 2000);
+        }
+        QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+        encoder->finish();
+        QVERIFY(!finished.isEmpty() || finished.wait(10000));
+    }
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = m_dir.filePath(QStringLiteral("faster.mp4"));
+    request.segments = {{0, kSeconds * 1000, 1.5}};
+    int kept = 0;
+    request.frameFilter = [&kept](QImage&, qint64) { ++kept; };
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    QVERIFY2(qAbs(kept - 40) <= 2, qPrintable(QString::number(kept)));
 }
 
 void tst_VideoTranscoder::hevcOutput()
