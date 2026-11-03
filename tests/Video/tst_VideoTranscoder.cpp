@@ -1080,10 +1080,22 @@ void tst_VideoTranscoder::sizeEstimateAgainstActual()
                 }
             }
             painter.end();
-            encoder->writeFrame(frame, i * 1000 / kFps);
+            // Native encoders apply backpressure: retry until the frame lands.
+            const qint64 before = encoder->framesWritten();
+            QElapsedTimer wait;
+            wait.start();
+            do {
+                encoder->writeFrame(frame, i * 1000 / kFps);
+                if (encoder->framesWritten() != before) break;
+                QTest::qWait(5);
+            } while (wait.elapsed() < 2000);
+            QCOMPARE(encoder->framesWritten(), before + 1);
         }
+        // macOS and Windows finish asynchronously.
+        QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
         encoder->finish();
-        QVERIFY2(encoder->lastError().isEmpty(), qPrintable(encoder->lastError()));
+        QVERIFY(!finishedSpy.isEmpty() || finishedSpy.wait(10000));
+        QVERIFY2(finishedSpy.first().at(0).toBool(), qPrintable(encoder->lastError()));
     }
     for (const auto quality : {SnapTray::Mp4ExportOptions::Quality::Low, SnapTray::Mp4ExportOptions::Quality::High}) {
         SnapTray::Mp4ExportOptions options;
