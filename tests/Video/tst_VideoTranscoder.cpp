@@ -1048,7 +1048,8 @@ void tst_VideoTranscoder::outputOptionsScaleAndLowerTheFrameRate()
     request.outputPath = m_dir.filePath(QStringLiteral("bounded.mp4"));
     request.outputSize = QSize(301, 99);
     request.frameRate = 0;
-    QVERIFY2(m_transcoder->transcode(request, {}).success, "bounded export failed");
+    const auto bounded = m_transcoder->transcode(request, {});
+    QVERIFY2(bounded.success, qPrintable(bounded.errorMessage));
     QCOMPARE(m_transcoder->probe(request.outputPath).videoSize, QSize(120, 98));
 }
 

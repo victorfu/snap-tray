@@ -802,13 +802,14 @@ void TestRecordingSetup::setupFitsAShortScreen()
     dialog.showCenteredOnScreen(screen);
     QQuickView* view = nullptr;
     for (QWindow* window : QGuiApplication::topLevelWindows()) {
-        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
+        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible()
+            && candidate->rootObject()
+            && candidate->rootObject()->property("viewModel").value<QObject*>() == viewModel)
             view = candidate;
     }
     QVERIFY(view);
     QTRY_VERIFY(viewModel->devicesLoaded());
-    // A short screen, shorter than the setup on every system (macOS has no
-    // key options, so its setup is shorter than Linux's).
+    // A short screen, shorter than the setup on every system.
     constexpr int kShortScreen = 360;
     view->rootObject()->setProperty("availableScreenHeight", kShortScreen);
     QTRY_VERIFY(view->height() > 0 && qAbs(view->height() - view->rootObject()->height()) < 1);
@@ -822,7 +823,7 @@ void TestRecordingSetup::setupFitsAShortScreen()
     QTRY_VERIFY2(start->mapRectToScene(QRectF(0, 0, start->width(), start->height())).bottom() <= view->height(),
                  qPrintable(QString::number(start->mapRectToScene(QRectF(0, 0, start->width(), start->height())).bottom())));
     // Everything does not fit: the rest scrolls into view.
-    QVERIFY(scroller->property("contentHeight").toReal() > scroller->height());
+    QTRY_VERIFY(scroller->property("contentHeight").toReal() > scroller->height());
     scroller->setProperty("contentY", scroller->property("contentHeight").toReal() - scroller->height());
     auto* last = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("setupShowBeforeRecordingToggle"));
     QVERIFY(last);

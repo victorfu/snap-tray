@@ -3,6 +3,7 @@
 #include "encoding/VideoBitrate.h"
 
 #include <QFile>
+#include <QDebug>
 #include <QFileInfo>
 #include <QSaveFile>
 #include <QScopeGuard>
@@ -213,8 +214,13 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
     const QString codec = QLatin1String(format.hevc ? kVideoCodecHevc : kVideoCodecH264);
     if (!verified.valid || verified.videoSize != format.size || verified.videoCodec != codec
         || qAbs(verified.durationMs - format.durationMs) > qMax<qint64>(100, qRound(2000 / format.fps))
-        || (format.audio && (!verified.hasAudio || verified.audioEndMs + kAudioCoverageToleranceMs < format.durationMs)))
+        || (format.audio && (!verified.hasAudio || verified.audioEndMs + kAudioCoverageToleranceMs < format.durationMs))) {
+        qWarning() << "Edited MP4 validation failed: valid/size/codec/duration/audio/end"
+                   << verified.valid << verified.videoSize << verified.videoCodec << verified.durationMs
+                   << verified.hasAudio << verified.audioEndMs << "expected"
+                   << format.size << codec << format.durationMs << format.audio;
         return fail(QStringLiteral("Export validation failed."));
+    }
     QSaveFile output(request.outputPath);
     QFile input(staged);
     if (!input.open(QIODevice::ReadOnly) || !output.open(QIODevice::WriteOnly)) return fail(QStringLiteral("Cannot open export destination."));
