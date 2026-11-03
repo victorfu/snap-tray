@@ -113,6 +113,11 @@ void tst_RecordingPreviewPointer::advancedPointerOptions()
         writer.addSample({0, QPoint(10, 10), true, 0});
         QVERIFY(writer.finish());
     }
+    // The look is remembered: leave it as the other tests expect it.
+    const QJsonObject rememberedLook = RecordingSettingsManager::instance().pointerEffects();
+    auto restore = qScopeGuard([rememberedLook]() {
+        RecordingSettingsManager::instance().setPointerEffects(rememberedLook);
+    });
     RecordingPreviewBackend backend(video);
     QQuickView* view = openPreview(backend);
     QVERIFY(view);
@@ -170,10 +175,6 @@ void tst_RecordingPreviewPointer::advancedPointerOptions()
     QCOMPARE(backend.selectedPointerHide(), -1);
     QTRY_VERIFY(!hidePanel->isVisible());
 
-    // Leave the remembered look as other tests expect it.
-    backend.setCursorIdleHide(0);
-    backend.setCursorMotionBlur(0);
-    backend.setCursorStillEnd(0);
     backend.requestDiscard();
 }
 

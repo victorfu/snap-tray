@@ -9,6 +9,7 @@
 #include "recording/WindowTimeline.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
+#include "settings/RecordingSettingsManager.h"
 #include "qml/RecordingCursorOverlay.h"
 #include "video/IVideoFrameReader.h"
 #include <QPainter>
@@ -409,6 +410,8 @@ private slots:
     void pointerMatchesAcrossPreviewAndOutputs_data();
     void pointerMatchesAcrossPreviewAndOutputs();
     void pointerEffectsOnlyReencodeWhenDrawn();
+    void advancedPointerEffectsMatchAcrossPreviewAndOutputs_data();
+    void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
     void zoomMatchesAcrossPreviewAndOutputs();
@@ -1676,6 +1679,106 @@ void tst_RecordingPreviewExport::pointerMatchesAcrossPreviewAndOutputs()
         const QPoint expected = check.sourcePoint - crop.topLeft();
         const QPoint actual = pointerTopLeft(frame);
         // Codec and palette error may blur an edge by a pixel, never more.
+        QVERIFY2((actual - expected).manhattanLength() <= 2,
+                 qPrintable(QStringLiteral("at %1 ms: expected %2,%3 got %4,%5")
+                                .arg(check.sourceMs).arg(expected.x()).arg(expected.y())
+                                .arg(actual.x()).arg(actual.y())));
+    }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+void tst_RecordingPreviewExport::advancedPointerEffectsMatchAcrossPreviewAndOutputs_data()
+{
+    pointerMatchesAcrossPreviewAndOutputs_data();
+}
+
+void tst_RecordingPreviewExport::advancedPointerEffectsMatchAcrossPreviewAndOutputs()
+{
+    // #186: a hidden range and "still end" through crop and trim, the same in
+    // the preview and in each output.
+    QFETCH(int, format);
+    const QSize sourceSize(160, 120);
+    const QRect crop(20, 10, 120, 100);
+    constexpr qint64 kTrimStart = 300;
+    constexpr qint64 kTrimEnd = 900;
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    QVERIFY(writePointerSidecar(inputPath, sourceSize));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    if (!backend.cursorEffectsAvailable()) {
+        QSKIP("This platform's MP4 transcoder cannot draw pointer effects yet");
+    }
+    backend.setShowCursor(true);
+    backend.setCursorScale(1.0);
+    backend.setCursorSmoothing(0);
+    backend.setCursorIdleHide(0);
+    backend.setCursorMotionBlur(0);
+    backend.setCropRect(crop);
+    backend.setTrimStart(kTrimStart);
+    backend.setTrimEnd(kTrimEnd);
+    // The look is remembered: leave it as the other tests expect it (directly:
+    // the backend refuses edits while a save waits for its outcome).
+    const QJsonObject rememberedLook = RecordingSettingsManager::instance().pointerEffects();
+    auto restore = qScopeGuard([rememberedLook]() {
+        RecordingSettingsManager::instance().setPointerEffects(rememberedLook);
+    });
+    // Held still from 400 ms (trim end 900 minus 500 ms): the move at 500 ms is not shown.
+    backend.setCursorStillEnd(500);
+    // Covers the source frames at 300 and 400 ms (frames are 100 ms apart).
+    QCOMPARE(backend.addPointerHideAt(300), 0);
+    QVERIFY(!backend.setPointerHideRange(0, 300, 380)); // 80 ms: shorter than the minimum
+    QVERIFY(backend.setPointerHideRange(0, 290, 450));
+
+    const QPoint none(-1, -1);
+    const struct { qint64 sourceMs; QPoint sourcePoint; } checks[] = {
+        {350, none},               // hidden range
+        {600, QPoint(40, 30)},     // still end: where it was at 400 ms
+        {850, QPoint(40, 30)},
+    };
+    RecordingCursorOverlay overlay;
+    overlay.setBackend(&backend);
+    overlay.setContentRect(QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+    for (const auto& check : checks) {
+        QImage preview(sourceSize, QImage::Format_RGB32);
+        preview.fill(Qt::black);
+        overlay.setPosition(check.sourceMs);
+        QPainter painter(&preview);
+        overlay.paint(&painter);
+        painter.end();
+        QCOMPARE(pointerTopLeft(preview), check.sourcePoint);
+    }
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+    for (const auto& check : checks) {
+        const qint64 editedMs = check.sourceMs - kTrimStart;
+        QImage frame;
+        if (format == RecordingPreviewBackend::MP4) {
+            auto reader = IVideoFrameReader::create();
+            if (!reader) QSKIP("No frame reader to inspect the MP4 on this platform");
+            QVERIFY2(reader->load(output), qPrintable(reader->lastError()));
+            frame = reader->frameAt(editedMs);
+        } else {
+            frame = animationFrameAt(output, editedMs);
+        }
+        QVERIFY(!frame.isNull());
+        const QPoint actual = pointerTopLeft(frame);
+        if (check.sourcePoint == none) {
+            QVERIFY2(actual == none, qPrintable(QStringLiteral("pointer drawn at %1 ms").arg(check.sourceMs)));
+            continue;
+        }
+        const QPoint expected = check.sourcePoint - crop.topLeft();
         QVERIFY2((actual - expected).manhattanLength() <= 2,
                  qPrintable(QStringLiteral("at %1 ms: expected %2,%3 got %4,%5")
                                 .arg(check.sourceMs).arg(expected.x()).arg(expected.y())
