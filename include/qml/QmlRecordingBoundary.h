@@ -45,6 +45,7 @@ public:
      * @brief Set the recording region. Positions and sizes the overlay window.
      */
     void setRegion(const QRect& region);
+    QRect region() const { return m_region; }
 
     /**
      * @brief Set the border animation mode.

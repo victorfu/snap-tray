@@ -322,8 +322,17 @@ void RecordingManager::showAreaBoundary()
 {
     closeAreaBoundary();
     if (m_preselectedArea.isEmpty() || !m_showAreaBoundary) return;
+    const bool editMode = m_startSettings.showPreview;
+    // Edit mode records the whole screen: where the capture cannot leave the
+    // frame out (X11), it would be in the video around the area and show
+    // when the crop changes. No frame there (PR #205 review).
+    const bool canExclude = m_captureExcludesOverlays ? m_captureExcludesOverlays()
+                                                      : !SnapTray::currentPlatformCapabilities().recordingControlsInTray;
+    if (editMode && !canExclude) return;
     m_areaBoundary = new SnapTray::QmlRecordingBoundary(this);
-    m_areaBoundary->setRegion(m_preselectedArea);
+    // Quick mode: around what is recorded, the area grown to even pixels,
+    // so the frame is always outside the capture (PR #205 review).
+    m_areaBoundary->setRegion(editMode ? m_preselectedArea : m_recordingRegion);
     m_areaBoundary->show();
     m_areaBoundary->setExcludedFromCapture(true);
 }
@@ -781,6 +790,7 @@ void RecordingManager::beginAsyncInitialization()
     }
 
     m_recordingRegion = normalizeRecordingRegion(m_recordingRegion, screenInfo);
+    if (m_areaBoundary && !m_startSettings.showPreview) m_areaBoundary->setRegion(m_recordingRegion);
     if (m_recordingRegion.isEmpty()) {
         qWarning() << "RecordingManager: Normalized region is empty";
         stopFrameCapture();

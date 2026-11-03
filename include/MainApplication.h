@@ -103,6 +103,10 @@ private:
     void onScreenPickerChosen(QScreen* screen);
     // Starts recording `screen`, after choosing an area when that is on (#194).
     void startRecordingOn(QScreen* screen);
+    // The recording setup is on screen: the screen picker, or the area
+    // selector after it (#194). Captures and other overlays wait.
+    bool recordingSetupActive() const;
+    void closeAreaSelector();
     void onScreenPickerCancelled();
     void onScreenPickerClosed(SnapTray::QmlDialog* dialog);
     void closeScreenPicker();

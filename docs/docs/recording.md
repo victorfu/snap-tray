@@ -38,7 +38,7 @@ After you choose the screen, it dims: drag to draw the area, drag inside it to m
 - **Edit mode** still records the whole screen. The preview opens cropped to the area, so you can move or resize the crop, undo back to it, or reset it to see everything. A recording recovered after a crash opens with the same crop, and the recovery list says that the file holds the whole screen.
 - **Quick mode** records only the area, because there is no preview to crop in afterwards.
 
-While recording, a frame around the area shows what is being recorded, amber while paused. It is left out of the recording on macOS and Windows. On Linux X11 it is drawn just outside the area, so it can appear in an edit-mode recording beyond the crop, but not in the cropped file.
+While recording, a frame around the area shows what is being recorded, amber while paused. It is left out of the recording on macOS and Windows. On Linux X11 the capture cannot leave it out, so it is shown only in quick mode, just outside the recorded area; in edit mode, where the whole screen is recorded, no frame is shown, so changing the crop later never reveals one. While the area is being chosen, screenshots, Screen Canvas and pins wait until it is done or cancelled.
 
 The temporary recording in edit mode, and a recording waiting for recovery, contain the whole screen, including what is outside the area, until they are saved or discarded.
 

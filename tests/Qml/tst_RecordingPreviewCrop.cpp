@@ -294,10 +294,13 @@ void tst_RecordingPreviewCrop::exactInputIsLegalized()
 void tst_RecordingPreviewCrop::chosenAreaIsTheInitialCrop()
 {
     {
-        // Size unknown (no file to probe): nothing is applied.
+        // Size not known yet: applied once the player reports it.
         RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
         backend.setInitialCrop(QRect(100, 60, 640, 360));
         QVERIFY(!backend.hasCrop());
+        backend.updateVideoSize(QSize(1920, 1080));
+        QCOMPARE(backend.cropRect(), QRect(100, 60, 640, 360));
+        QVERIFY(!backend.canUndo());
     }
     RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
     backend.updateVideoSize(QSize(1920, 1080));

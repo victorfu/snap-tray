@@ -559,7 +559,7 @@ void MainApplication::initialize()
 
 bool MainApplication::canShutdownForUpdate() const
 {
-    return !m_screenPickerDialog &&
+    return !recordingSetupActive() &&
            (!m_recordingManager || !isBlockingUpdateRecordingState(m_recordingManager->state()));
 }
 
@@ -600,7 +600,7 @@ void MainApplication::prepareForUpdateShutdown()
 
 bool MainApplication::canStartRegionCapture() const
 {
-    return m_captureManager && !m_screenPickerDialog
+    return m_captureManager && !recordingSetupActive()
         && (!m_screenCanvasManager || !m_screenCanvasManager->isActive())
         && (!m_recordingManager || !m_recordingManager->blocksCapture());
 }
@@ -642,7 +642,7 @@ void MainApplication::onQuickPin()
     if (m_recordingManager->blocksCapture()) {
         return;
     }
-    if (m_screenPickerDialog) {
+    if (recordingSetupActive()) {
         return;
     }
 
@@ -664,8 +664,8 @@ void MainApplication::onScreenCanvas()
         qDebug() << "onScreenCanvas: blocked by recordingManager";
         return;
     }
-    if (m_screenPickerDialog) {
-        qDebug() << "onScreenCanvas: blocked by screen picker";
+    if (recordingSetupActive()) {
+        qDebug() << "onScreenCanvas: blocked by the recording setup";
         return;
     }
 
@@ -685,6 +685,10 @@ void MainApplication::onFullScreenRecording()
 
     if (m_screenPickerDialog) {
         closeScreenPicker();
+        return;
+    }
+    if (m_areaSelector) {
+        closeAreaSelector();
         return;
     }
 
@@ -1021,7 +1025,7 @@ void MainApplication::onPasteFromClipboard()
 
 void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
 {
-    if (m_screenPickerDialog) {
+    if (recordingSetupActive()) {
         return;
     }
 
@@ -1339,14 +1343,14 @@ void MainApplication::updateRecordingActionText()
     QString baseName = recordScreenText;
     bool includeHotkey = true;
 
-    if (!m_recordingManager && !m_screenPickerDialog) {
+    if (!m_recordingManager && !recordingSetupActive()) {
         updateActionHotkeyText(m_fullScreenRecordingAction,
                                SnapTray::HotkeyAction::RecordFullScreen,
                                recordScreenText);
         return;
     }
 
-    if (m_screenPickerDialog) {
+    if (recordingSetupActive()) {
         baseName = tr("Cancel Recording");
         includeHotkey = false;
     } else if (m_recordingManager) {
@@ -1650,25 +1654,34 @@ void MainApplication::startRecordingOn(QScreen* screen)
     }
     // Choose an area of this screen first (#194); the capture stays full
     // screen in edit mode, where the area is the preview's initial crop.
-    if (m_areaSelector) {
-        m_areaSelector->close();
-        m_areaSelector->deleteLater();
-    }
+    closeAreaSelector();
     auto* selector = new SnapTray::QmlRecordingAreaSelector(this);
     m_areaSelector = selector;
     const QPointer<QScreen> target(screen);
     connect(selector, &SnapTray::QmlRecordingAreaSelector::areaChosen, this,
-        [this, selector, target](const QRect& area) {
-            selector->close();
-            selector->deleteLater();
+        [this, target](const QRect& area) {
+            closeAreaSelector();
             if (!target) return;
             m_recordingManager->startScreenRecording(target.data(), area);
         });
-    connect(selector, &SnapTray::QmlRecordingAreaSelector::cancelled, this, [selector]() {
-        selector->close();
-        selector->deleteLater();
-    });
+    connect(selector, &SnapTray::QmlRecordingAreaSelector::cancelled, this, [this]() { closeAreaSelector(); });
     selector->start(screen);
+    updateRecordingActionText();
+}
+
+bool MainApplication::recordingSetupActive() const
+{
+    return m_screenPickerDialog || m_areaSelector;
+}
+
+void MainApplication::closeAreaSelector()
+{
+    if (!m_areaSelector) return;
+    SnapTray::QmlRecordingAreaSelector* selector = m_areaSelector;
+    m_areaSelector = nullptr;
+    selector->close();
+    selector->deleteLater();
+    updateRecordingActionText();
 }
 
 void MainApplication::onScreenPickerCancelled()

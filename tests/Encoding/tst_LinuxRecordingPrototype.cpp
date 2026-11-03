@@ -229,12 +229,21 @@ void TestLinuxRecordingPrototype::chosenAreaQuickModeRecordsTheArea()
     RecordingManager manager;
     QSignalSpy errors(&manager, &RecordingManager::recordingError), started(&manager, &RecordingManager::recordingStarted),
         stopped(&manager, &RecordingManager::recordingStopped);
-    const QRect area(100, 60, 640, 360);
+    // Odd sizes: the recorded region grows to even pixels, and the frame
+    // goes around that region, never into it (PR #205 review).
+    const QRect area(100, 60, 641, 361);
     manager.startScreenRecording(QGuiApplication::primaryScreen(), area);
     QTRY_VERIFY_WITH_TIMEOUT(!started.isEmpty() || !errors.isEmpty(), 10000);
     QVERIFY2(errors.isEmpty(), errors.isEmpty() ? "" : qPrintable(errors.first().first().toString()));
-    QCOMPARE(manager.m_recordingRegion, area);
-    QVERIFY(manager.m_areaBoundary); // its frame, just outside the area
+    const QRect region = manager.m_recordingRegion;
+    QVERIFY(region.contains(area));
+    QCOMPARE(region.width() % 2, 0);
+    QCOMPARE(region.height() % 2, 0);
+    QVERIFY(manager.m_areaBoundary); // its frame, just outside the region
+    QCOMPARE(manager.m_areaBoundary->region(), region);
+    manager.pauseRecording();
+    QCOMPARE(manager.m_areaBoundary->borderMode(), SnapTray::QmlRecordingBoundary::BorderMode::Paused);
+    manager.resumeRecording();
     QTest::qWait(500);
     manager.stopRecording();
     QTRY_VERIFY_WITH_TIMEOUT(!stopped.isEmpty() || !errors.isEmpty(), 20000);
@@ -246,8 +255,8 @@ void TestLinuxRecordingPrototype::chosenAreaQuickModeRecordsTheArea()
     QCOMPARE(avformat_open_input(&format, QFile::encodeName(path).constData(), nullptr, nullptr), 0);
     auto closeFormat = qScopeGuard([&] { avformat_close_input(&format); });
     QVERIFY(avformat_find_stream_info(format, nullptr) >= 0);
-    QCOMPARE(format->streams[0]->codecpar->width, 640);
-    QCOMPARE(format->streams[0]->codecpar->height, 360);
+    QCOMPARE(format->streams[0]->codecpar->width, region.width());
+    QCOMPARE(format->streams[0]->codecpar->height, region.height());
 }
 
 // #194, edit mode: the whole screen is recorded; the area is the preview's
@@ -266,14 +275,13 @@ void TestLinuxRecordingPrototype::chosenAreaEditModeRecordsTheScreenAndCrops()
     QTRY_VERIFY_WITH_TIMEOUT(!started.isEmpty() || !errors.isEmpty(), 10000);
     QVERIFY(errors.isEmpty());
     QCOMPARE(manager.m_recordingRegion, QGuiApplication::primaryScreen()->geometry());
-    QVERIFY(manager.m_areaBoundary);
+    // X11 cannot leave a frame out of the full-screen capture: none is shown,
+    // so a later crop change never reveals one (PR #205 review).
+    QVERIFY(!manager.m_areaBoundary);
     QCOMPARE(manager.m_session.initialCrop, area); // 1x: video pixels = logical
     const auto manifest = SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(manager.m_session.videoPath));
     QVERIFY(manifest);
     QCOMPARE(manifest->initialCrop, area);
-    manager.pauseRecording();
-    QCOMPARE(manager.m_areaBoundary->borderMode(), SnapTray::QmlRecordingBoundary::BorderMode::Paused);
-    manager.resumeRecording();
     QTest::qWait(300);
     manager.stopRecording();
     QTRY_VERIFY_WITH_TIMEOUT(!preview.isEmpty() || !errors.isEmpty(), 20000);
