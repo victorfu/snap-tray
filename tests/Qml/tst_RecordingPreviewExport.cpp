@@ -2825,6 +2825,10 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
     // and length (with their notifications, PR #203 review), undo starts
     // there, and saving updates it.
     {
+        // What the next recording would use, before the project is opened.
+        const QJsonObject rememberedLook = settings.appearance();
+        QVERIFY(!SnapTray::RecordingProjects::contains(
+            SnapTray::RecordingAppearance::fromJson(rememberedLook).imagePath));
         RecordingPreviewBackend backend(project.videoPath(), true);
         QSignalSpy projectSpy(&backend, &RecordingPreviewBackend::projectChanged);
         QSignalSpy sizeSpy(&backend, &RecordingPreviewBackend::videoSizeChanged);
@@ -2848,6 +2852,14 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
         QCOMPARE(backend.trimStart(), trimStart);
         QVERIFY(!backend.canUndo());
         QCOMPARE(backend.appearanceImagePath(), ownedBackground);
+        // Opening a project is not a choice for the next recording, and its
+        // own background image never becomes the remembered one (PR #203 review).
+        QCOMPARE(settings.appearance(), rememberedLook);
+        backend.setAppearancePadding(int(SnapTray::RecordingAppearance::Amount::Small));
+        QVERIFY(!SnapTray::RecordingProjects::contains(
+            SnapTray::RecordingAppearance::fromJson(settings.appearance()).imagePath));
+        QCOMPARE(SnapTray::RecordingAppearance::fromJson(settings.appearance()).imagePath,
+                 SnapTray::RecordingAppearance::fromJson(rememberedLook).imagePath);
 
         // Updating the project fails: the preview stays open with the edits,
         // and a new background image never replaces the saved one before the
