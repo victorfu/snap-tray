@@ -43,8 +43,11 @@ bool writeRecording(const QString& path)
             QTest::qWait(5);
         } while (wait.elapsed() < 2000);
     }
+    // macOS and Windows finish asynchronously.
+    QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
     encoder->finish();
-    return encoder->lastError().isEmpty();
+    if (finishedSpy.isEmpty() && !finishedSpy.wait(10000)) return false;
+    return finishedSpy.first().at(0).toBool();
 }
 } // namespace
 

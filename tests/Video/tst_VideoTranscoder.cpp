@@ -1188,8 +1188,10 @@ void tst_VideoTranscoder::segmentsOfAVariableRateSource()
                 QTest::qWait(5);
             } while (wait.elapsed() < 2000);
         }
+        QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
         encoder->finish();
-        QVERIFY2(encoder->lastError().isEmpty(), qPrintable(encoder->lastError()));
+        QVERIFY(!finishedSpy.isEmpty() || finishedSpy.wait(10000));
+        QVERIFY2(finishedSpy.first().at(0).toBool(), qPrintable(encoder->lastError()));
     }
     VideoTranscodeRequest request;
     request.inputPath = input;
