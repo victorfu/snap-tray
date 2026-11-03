@@ -98,6 +98,26 @@ std::shared_ptr<void> surfaceFrom(CVPixelBufferPoolRef pool, const QImage& image
     return adoptPixelBuffer(buffer);
 }
 
+// A pool surface once the encoder has handed one back, or null after
+// kSurfaceReturnTimeoutMs of real time. Timed with a wall clock: QTRY's
+// step-counted loop gave up after well under a second on CI runners.
+std::shared_ptr<void> waitForSurface(CVPixelBufferPoolRef pool, const QImage& image, qint64* waitedMs)
+{
+    QElapsedTimer timer;
+    timer.start();
+    for (;;) {
+        if (auto surface = surfaceFrom(pool, image)) {
+            *waitedMs = timer.elapsed();
+            return surface;
+        }
+        if (timer.elapsed() >= kSurfaceReturnTimeoutMs) {
+            *waitedMs = timer.elapsed();
+            return nullptr;
+        }
+        QTest::qWait(5);
+    }
+}
+
 // Offers one frame until the encoder takes it (it drops while busy).
 QString writeUntilAccepted(IVideoEncoder& encoder, const std::function<void()>& write)
 {
@@ -202,8 +222,10 @@ void tst_AVFoundationNativeFrames::nativeSurfacesEncodeColorBars()
 
     for (int i = 0; i < kFrameCount; ++i) {
         // A small pool runs dry if the encoder keeps surfaces it has encoded.
-        std::shared_ptr<void> surface;
-        QTRY_VERIFY_WITH_TIMEOUT((surface = surfaceFrom(pool, bars)) != nullptr, kSurfaceReturnTimeoutMs);
+        qint64 waitedMs = 0;
+        const std::shared_ptr<void> surface = waitForSurface(pool, bars, &waitedMs);
+        QVERIFY2(surface, qPrintable(QStringLiteral("frame %1: no pool surface came back within %2 ms")
+                                         .arg(i).arg(waitedMs)));
         bool taken = true;
         const QString error = writeUntilAccepted(*encoder, [&] {
             taken = encoder->writeNativeFrame(surface, qint64(i) * 1000 / kFrameRate) && taken;

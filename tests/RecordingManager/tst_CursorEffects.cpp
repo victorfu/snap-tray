@@ -414,6 +414,16 @@ void TestCursorEffects::stillEndHoldsTheLastPosition()
     QCOMPARE(*renderer.pointerPosition(100), *CursorEffectRenderer(t, {}).pointerPosition(100));
     // Unknown clip end: off.
     QCOMPARE(*CursorEffectRenderer(t, s).pointerPosition(3100), QPointF(220, 50));
+    // A clip shorter than the interval (PR #196 review): the pointer stays at
+    // its first sample instead of vanishing.
+    CursorEffectSettings longHold;
+    longHold.stillEndMs = 2000;
+    const CursorEffectRenderer shortClip(t, longHold, 1000);
+    for (const qint64 ms : {qint64(0), qint64(100), qint64(500), qint64(999)}) {
+        const auto at = shortClip.pointerPosition(ms);
+        QVERIFY2(at.has_value(), qPrintable(QString::number(ms)));
+        QCOMPARE(*at, QPointF(20, 50));
+    }
     // With idle hiding, the movement after the hold does not wake the pointer.
     s.idleHideMs = 1000;
     const CursorEffectRenderer idle(t, s, 3200);
