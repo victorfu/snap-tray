@@ -57,6 +57,12 @@ public:
     void paint(QImage& frame, qint64 sourceMs) const;
 
 private:
+    struct StrokeHint {
+        QString label;
+        size_t groupStart;
+        size_t runStart;
+    };
+
     // The strokes of the hint showing at sourceMs: [first, last] indexes.
     bool groupAt(qint64 sourceMs, size_t* first, size_t* last) const;
     qint64 partStart(qint64 ms) const;
@@ -64,7 +70,9 @@ private:
     const KeyTimeline& m_timeline;
     KeyOverlaySettings m_settings;
     std::vector<TimelineSegment> m_kept;
-    std::vector<QString> m_labels; // per stroke
+    // Per-stroke group and repeat-run boundaries keep lookups independent
+    // of the length of a continuous typing run.
+    std::vector<StrokeHint> m_hints;
 };
 
 } // namespace SnapTray

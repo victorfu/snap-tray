@@ -55,6 +55,10 @@ private slots:
     void recorderOffWritesNothing();
     void recorderDropsKeysPressedWhilePaused();
     void overlayGroupsAndCounts();
+    void overlayLongTypingRun();
+    void overlayRepeatRunsRespectBoundaries();
+    void benchmarkOverlayLookup_data();
+    void benchmarkOverlayLookup();
     void overlayTimingIsAFunctionOfTime();
     void overlayNeverReachesAcrossACut();
     void overlayDrawsWhereItSays();
@@ -241,6 +245,106 @@ void TestKeyTimeline::overlayGroupsAndCounts()
     KeyOverlaySettings off;
     off.enabled = false;
     QVERIFY(KeyOverlayRenderer(t, off).tokensAt(1000).isEmpty());
+}
+
+void TestKeyTimeline::overlayLongTypingRun()
+{
+    KeyTimeline timeline;
+    timeline.info.mode = KeyRecordingMode::AllKeys;
+    constexpr int kStrokeCount = 20000;
+    for (int i = 0; i < kStrokeCount; ++i) {
+        // aa, bb, cc, dd, ee, ... with no gap large enough to start a new hint.
+        const int letter = (i / 2) % 5;
+        timeline.strokes.push_back({100 + i * 100, Qt::Key_A + letter, {}, QString(QChar('a' + letter))});
+    }
+    const KeyOverlayRenderer renderer(timeline, {});
+    const QStringList newest{QStringLiteral("b \u00D72"), QStringLiteral("c \u00D72"),
+                             QStringLiteral("d \u00D72"), QStringLiteral("e \u00D72")};
+    const qint64 last = timeline.strokes.back().tMs;
+    QCOMPARE(renderer.tokensAt(last), newest);
+    QCOMPARE(renderer.opacityAt(last), 1.0); // fading still uses the group's first key
+    // Seeking backwards must neither count future repeats nor change later results.
+    QCOMPARE(renderer.tokensAt(100), QStringList{QStringLiteral("a")});
+    QCOMPARE(renderer.tokensAt(200), QStringList{QStringLiteral("a \u00D72")});
+    QCOMPARE(renderer.tokensAt(last - 100).last(), QStringLiteral("e"));
+    QCOMPARE(renderer.tokensAt(last), newest);
+    QCOMPARE(renderer.opacityAt(last + 1400), 0.5);
+    QVERIFY(renderer.tokensAt(last + 1500).isEmpty());
+}
+
+void TestKeyTimeline::overlayRepeatRunsRespectBoundaries()
+{
+    const KeyTimeline timeline = timelineOf({{100, Qt::Key_A, {}, QStringLiteral("a")},
+                                             {200, Qt::Key_A, {}, QStringLiteral("a")},
+                                             {300, Qt::Key_A, {}, QStringLiteral("a")},
+                                             {400, Qt::Key_A, {}, QStringLiteral("a")},
+                                             {1200, Qt::Key_A, {}, QStringLiteral("a")},
+                                             {1999, Qt::Key_A, {}, QStringLiteral("a")},
+                                             {2799, Qt::Key_A, {}, QStringLiteral("a")}});
+    KeyOverlayRenderer renderer(timeline, {});
+    QCOMPARE(renderer.tokensAt(450), QStringList{QStringLiteral("a \u00D74")});
+    // A gap of 800 ms starts a new group, even if its label is unchanged.
+    QCOMPARE(renderer.tokensAt(1200), QStringList{QStringLiteral("a")});
+    QCOMPARE(renderer.opacityAt(1200), 0.0);
+    QCOMPARE(renderer.tokensAt(1999), QStringList{QStringLiteral("a \u00D72")});
+    QCOMPARE(renderer.tokensAt(2799), QStringList{QStringLiteral("a")});
+
+    renderer.setTimeline(TimelineMap({{250, 500, 1.0}}));
+    QVERIFY(renderer.tokensAt(250).isEmpty());
+    QCOMPARE(renderer.tokensAt(300), QStringList{QStringLiteral("a")});
+    QCOMPARE(renderer.opacityAt(300), 0.0);
+    QCOMPARE(renderer.opacityAt(340), 0.5);
+    QCOMPARE(renderer.tokensAt(450), QStringList{QStringLiteral("a \u00D72")});
+    QVERIFY(renderer.tokensAt(500).isEmpty());
+
+    // A cut through a repeated-key run must reset both its count and fade.
+    renderer.setTimeline(TimelineMap({{100, 250, 1.0}, {350, 500, 1.0}}));
+    QVERIFY(renderer.tokensAt(300).isEmpty());
+    QVERIFY(renderer.tokensAt(350).isEmpty());
+    QCOMPARE(renderer.tokensAt(450), QStringList{QStringLiteral("a")});
+    QCOMPARE(renderer.opacityAt(400), 0.0);
+    QCOMPARE(renderer.tokensAt(200), QStringList{QStringLiteral("a \u00D72")});
+    renderer.setTimeline(TimelineMap());
+    QCOMPARE(renderer.tokensAt(450), QStringList{QStringLiteral("a \u00D74")});
+}
+
+void TestKeyTimeline::benchmarkOverlayLookup_data()
+{
+    QTest::addColumn<int>("strokeCount");
+    QTest::addColumn<bool>("repeated");
+    QTest::newRow("1000 alternating") << 1000 << false;
+    QTest::newRow("100000 alternating") << 100000 << false;
+    QTest::newRow("1000 repeated") << 1000 << true;
+    QTest::newRow("100000 repeated") << 100000 << true;
+}
+
+void TestKeyTimeline::benchmarkOverlayLookup()
+{
+    QFETCH(int, strokeCount);
+    QFETCH(bool, repeated);
+    KeyTimeline timeline;
+    timeline.info.mode = KeyRecordingMode::AllKeys;
+    timeline.strokes.reserve(size_t(strokeCount));
+    for (int i = 0; i < strokeCount; ++i) {
+        const int letter = repeated ? 0 : i % 2;
+        timeline.strokes.push_back({i * 100, Qt::Key_A + letter, {}, QString(QChar('a' + letter))});
+    }
+    KeyOverlayRenderer renderer(timeline, {});
+    const qint64 at = timeline.strokes.back().tMs + 100;
+    renderer.setTimeline(TimelineMap({{50, at + 1500, 1.0}}));
+    QStringList tokens;
+    double opacity = 0.0;
+    QBENCHMARK {
+        tokens = renderer.tokensAt(at);
+        opacity = renderer.opacityAt(at);
+    }
+    QCOMPARE(opacity, 1.0);
+    if (repeated) {
+        QCOMPARE(tokens, QStringList{QStringLiteral("a \u00D7%1").arg(strokeCount - 1)});
+    } else {
+        QCOMPARE(tokens, (QStringList{QStringLiteral("a"), QStringLiteral("b"),
+                                     QStringLiteral("a"), QStringLiteral("b")}));
+    }
 }
 
 void TestKeyTimeline::overlayTimingIsAFunctionOfTime()

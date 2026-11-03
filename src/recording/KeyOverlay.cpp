@@ -97,8 +97,16 @@ KeyOverlayRenderer::KeyOverlayRenderer(const KeyTimeline& timeline, const KeyOve
     : m_timeline(timeline)
     , m_settings(settings)
 {
-    m_labels.reserve(timeline.strokes.size());
-    for (const auto& stroke : timeline.strokes) m_labels.push_back(keyStrokeLabel(stroke, timeline.info.macSymbols));
+    m_hints.reserve(timeline.strokes.size());
+    for (size_t i = 0; i < timeline.strokes.size(); ++i) {
+        const auto& stroke = timeline.strokes[i];
+        const QString label = keyStrokeLabel(stroke, timeline.info.macSymbols);
+        const bool continuesGroup = i > 0
+            && stroke.tMs - timeline.strokes[i - 1].tMs < KeyOverlaySettings::kMergeGapMs;
+        const size_t groupStart = continuesGroup ? m_hints.back().groupStart : i;
+        const size_t runStart = continuesGroup && label == m_hints.back().label ? m_hints.back().runStart : i;
+        m_hints.push_back({label, groupStart, runStart});
+    }
 }
 
 void KeyOverlayRenderer::setTimeline(const TimelineMap& timeline)
@@ -109,8 +117,11 @@ void KeyOverlayRenderer::setTimeline(const TimelineMap& timeline)
 qint64 KeyOverlayRenderer::partStart(qint64 ms) const
 {
     if (m_kept.empty()) return std::numeric_limits<qint64>::min() / 2;
-    for (const auto& segment : m_kept) {
-        if (segment.contains(ms)) return segment.startMs;
+    auto it = std::upper_bound(m_kept.begin(), m_kept.end(), ms,
+                               [](qint64 t, const TimelineSegment& s) { return t < s.startMs; });
+    if (it != m_kept.begin()) {
+        --it;
+        if (it->contains(ms)) return it->startMs;
     }
     return std::numeric_limits<qint64>::max() / 2; // cut out: nothing shows
 }
@@ -124,10 +135,12 @@ bool KeyOverlayRenderer::groupAt(qint64 sourceMs, size_t* first, size_t* last) c
     const qint64 from = partStart(sourceMs);
     size_t end = size_t(it - strokes.begin()) - 1;
     if (strokes[end].tMs < from || sourceMs >= strokes[end].tMs + m_settings.displayMs) return false;
-    size_t start = end;
-    while (start > 0 && strokes[start].tMs - strokes[start - 1].tMs < KeyOverlaySettings::kMergeGapMs
-           && strokes[start - 1].tMs >= from) {
-        --start;
+    size_t start = m_hints[end].groupStart;
+    // A trim or cut can bisect a cached group. Find its first kept stroke
+    // without walking the preceding typing run on every frame.
+    if (strokes[start].tMs < from) {
+        start = size_t(std::lower_bound(strokes.begin() + ptrdiff_t(start), it, from,
+                                       [](const KeyStroke& s, qint64 t) { return s.tMs < t; }) - strokes.begin());
     }
     *first = start;
     *last = end;
@@ -139,23 +152,16 @@ QStringList KeyOverlayRenderer::tokensAt(qint64 sourceMs) const
     size_t first = 0, last = 0;
     if (!m_settings.enabled || !groupAt(sourceMs, &first, &last)) return {};
     QStringList tokens;
-    QString previous;
-    int repeats = 0;
-    auto flush = [&] {
-        if (previous.isEmpty()) return;
-        tokens << (repeats > 1 ? QStringLiteral("%1 \u00D7%2").arg(previous).arg(repeats) : previous);
-    };
-    for (size_t i = first; i <= last; ++i) {
-        if (m_labels[i] == previous) {
-            ++repeats;
-            continue;
-        }
-        flush();
-        previous = m_labels[i];
-        repeats = 1;
+    tokens.reserve(KeyOverlaySettings::kMaxTokens);
+    size_t end = last;
+    while (tokens.size() < KeyOverlaySettings::kMaxTokens) {
+        const auto& hint = m_hints[end];
+        const size_t start = std::max(first, hint.runStart);
+        const size_t repeats = end - start + 1;
+        tokens.prepend(repeats > 1 ? QStringLiteral("%1 \u00D7%2").arg(hint.label).arg(qulonglong(repeats)) : hint.label);
+        if (start == first) break;
+        end = start - 1;
     }
-    flush();
-    while (tokens.size() > KeyOverlaySettings::kMaxTokens) tokens.removeFirst();
     return tokens;
 }
 
