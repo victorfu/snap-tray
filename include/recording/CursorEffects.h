@@ -139,6 +139,7 @@ private:
     CursorEffectSettings m_settings;
     qint64 m_clipEndMs = -1;
     std::vector<TimelineSegment> m_kept; // empty = everything
+    TimelineMap m_map;                   // the same parts, for output times
     // The start and end of the kept part showing ms (ms itself when cut out).
     qint64 partStart(qint64 ms) const;
     qint64 partEnd(qint64 ms) const;

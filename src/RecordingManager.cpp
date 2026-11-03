@@ -2102,7 +2102,7 @@ void RecordingManager::cancelRecording()
 
     stopFrameCapture();
     m_windowTimelineRecorder.reset();
-    dropCursorTimeline(true);
+    dropRecordingSidecars(true);
 
     // Stop encoding worker (aborts encoding)
     if (m_encodingWorker || m_encodingThread) {
@@ -2237,7 +2237,7 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     finishWindowTimeline(outputPath, success);
     // The pointer sidecar stays with a finished file, or with a crash-safe
     // part that recovery may offer; otherwise there is no video to go with.
-    dropCursorTimeline(!success && !(crashSafeOutput && QFileInfo(outputPath).size() > 0));
+    dropRecordingSidecars(!success && !(crashSafeOutput && QFileInfo(outputPath).size() > 0));
     m_usingNativeEncoder = false;
     if (success) {
         // A finished file: if SnapTray stops before it is saved, it is still
@@ -2509,7 +2509,7 @@ void RecordingManager::onEncodingError(const QString &error)
     }
     m_usingNativeEncoder = false;
     m_windowTimelineRecorder.reset();
-    dropCursorTimeline(true);
+    dropRecordingSidecars(true);
 
     setState(State::Idle);
     emit recordingError(error);
@@ -2673,6 +2673,7 @@ void RecordingManager::startAudioTracks()
     }
     m_microphoneTrack = microphone;
     m_systemAudioTrack = system;
+    m_audioTracksVideo = m_session.videoPath;
     m_audioEngine->setSeparateTracks(true);
     // On the capture thread, like the mixed track.
     connect(m_audioEngine.get(), &IAudioCaptureEngine::sourceAudioReady, m_audioEngine.get(),
@@ -2706,13 +2707,21 @@ void RecordingManager::dropCursorTimeline(bool removeFile)
         m_keyRecorder->stop();
         m_keyRecorder.reset();
     }
-    closeAudioTracks();
     if (removeFile && !m_cursorSidecarVideo.isEmpty()) {
         SnapTray::CursorTimelineSidecar::remove(m_cursorSidecarVideo);
         SnapTray::KeyTimelineSidecar::remove(m_cursorSidecarVideo);
-        SnapTray::AudioTracks::remove(m_cursorSidecarVideo);
     }
     m_cursorSidecarVideo.clear();
+}
+
+void RecordingManager::dropRecordingSidecars(bool removeFiles)
+{
+    // The audio tracks follow the recording, not the pointer timeline:
+    // (re)starting the pointer must never close them (PR #202 review).
+    dropCursorTimeline(removeFiles);
+    closeAudioTracks();
+    if (removeFiles && !m_audioTracksVideo.isEmpty()) SnapTray::AudioTracks::remove(m_audioTracksVideo);
+    m_audioTracksVideo.clear();
 }
 
 void RecordingManager::cleanupStaleTempFiles()
