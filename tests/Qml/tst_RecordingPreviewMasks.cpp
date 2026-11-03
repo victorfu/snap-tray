@@ -59,6 +59,18 @@ int edges(const QImage& image, QRect rect = QRect())
     return count;
 }
 
+int previewEdges(QQuickView* view, QQuickItem* player)
+{
+    const QImage shot = view->grabWindow();
+    const QRectF content = player->property("contentRect").toRectF();
+    if (shot.isNull() || content.isEmpty()) return -1;
+    const QRectF scene = player->mapRectToScene(content).adjusted(2, 2, -2, -2);
+    const qreal dpr = shot.devicePixelRatio();
+    const QRect pixels = QRectF(scene.topLeft() * dpr, scene.size() * dpr)
+        .toAlignedRect().intersected(shot.rect());
+    return pixels.isEmpty() ? -1 : edges(shot, pixels);
+}
+
 QImage outputFrame(int format, const QString& path, qint64 ms)
 {
     if (format == RecordingPreviewBackend::MP4) {
@@ -225,16 +237,18 @@ void tst_RecordingPreviewMasks::previewShowsTheMaskedPixels()
     QMetaObject::invokeMethod(player, "pause");
     // Measure the picture only: the paused play button's glyph and the
     // "no audio" notice (shown without an audio device, as on CI) are white.
-    for (const char* name : {"previewPlayOverlay", "previewAudioUnavailableLabel"}) {
-        auto* overlay = view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(name));
-        QVERIFY(overlay);
-        overlay->setVisible(false);
-    }
-    const auto videoArea = [&] {
-        const QRectF content = player->property("contentRect").toRectF();
-        return player->mapRectToScene(content).toAlignedRect().adjusted(2, 2, -2, -2);
-    };
-    QTRY_VERIFY_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()) > 50, 10000);
+    // Hiding a child does not remove its QML visibility binding: a late
+    // playback state change can show it again. Hide the unbound parent.
+    auto* chrome = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewStageChrome"));
+    QVERIFY(chrome);
+    chrome->setVisible(false);
+    // Native loading can change playback state after the first pause. The
+    // pixel measurement must stay free of stage controls across that change.
+    QMetaObject::invokeMethod(player, "play");
+    QTRY_VERIFY(player->property("playing").toBool());
+    QMetaObject::invokeMethod(player, "pause");
+    QTRY_VERIFY(!player->property("playing").toBool());
+    QTRY_VERIFY_WITH_TIMEOUT(previewEdges(view, player) > 50, 10000);
 
     if (!backend.masksAvailable()) QSKIP("This platform's MP4 transcoder cannot draw masks yet");
     QCOMPARE(backend.addMask(), 0);
@@ -243,10 +257,10 @@ void tst_RecordingPreviewMasks::previewShowsTheMaskedPixels()
     // and handle in the accent colour, which can be light (CI's theme).
     backend.setSelectedMask(-1);
     // The real frame is re-processed at once: no pattern left in the video area.
-    QTRY_COMPARE_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()), 0, 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(previewEdges(view, player), 0, 5000);
     // Undo takes the mask away again.
     backend.undo();
-    QTRY_VERIFY_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()) > 50, 5000);
+    QTRY_VERIFY_WITH_TIMEOUT(previewEdges(view, player) > 50, 5000);
     backend.requestDiscard();
 }
 
@@ -335,20 +349,16 @@ void tst_RecordingPreviewMasks::previewMaskTimesMatchTheExport()
     QVERIFY(player);
     QTRY_VERIFY_WITH_TIMEOUT(!backend.videoSize().isEmpty(), 10000);
     QMetaObject::invokeMethod(player, "pause");
-    for (const char* name : {"previewPlayOverlay", "previewAudioUnavailableLabel"}) {
-        auto* overlay = view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(name));
-        QVERIFY(overlay);
-        overlay->setVisible(false);
-    }
+    // Hiding a child does not remove its QML visibility binding: a late
+    // playback state change can show it again. Hide the unbound parent.
+    auto* chrome = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewStageChrome"));
+    QVERIFY(chrome);
+    chrome->setVisible(false);
     if (!backend.masksAvailable()) QSKIP("This platform's MP4 transcoder cannot draw masks yet");
     QCOMPARE(backend.addMask(), 0);
     backend.setMaskRectFromView(0, QRectF(kSecret), QRectF(QPointF(0, 0), QSizeF(kSize)));
     QVERIFY(backend.setMaskRange(0, 0, 800));
     backend.setSelectedMask(-1);
-    const auto videoArea = [&] {
-        const QRectF content = player->property("contentRect").toRectF();
-        return player->mapRectToScene(content).toAlignedRect().adjusted(2, 2, -2, -2);
-    };
     QImage frame(kSize, QImage::Format_ARGB32);
     frame.fill(QColor(128, 128, 128));
     for (int y = kSecret.top(); y <= kSecret.bottom(); ++y)
@@ -360,10 +370,10 @@ void tst_RecordingPreviewMasks::previewMaskTimesMatchTheExport()
     };
     // Inside the mask's time: covered.
     QVERIFY(show(700));
-    QTRY_COMPARE_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()), 0, 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(previewEdges(view, player), 0, 5000);
     // After it: the export shows this frame, so the preview does too.
     QVERIFY(show(900));
-    QTRY_VERIFY_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()) > 50, 5000);
+    QTRY_VERIFY_WITH_TIMEOUT(previewEdges(view, player) > 50, 5000);
     backend.requestDiscard();
 }
 
