@@ -10,6 +10,8 @@
 #include "encoding/WebPAnimEncoder.h"
 #include "encoding/IntermediateQuality.h"
 #include "settings/RecordingSettingsManager.h"
+#include "settings/BeautifySettingsManager.h"
+#include "recording/RecordingAppearance.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
 
@@ -25,6 +27,7 @@
 #include <QEvent>
 #include <QEventLoop>
 #include <QFile>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QPainter>
@@ -70,17 +73,25 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     // The pointer look the user chose last time; undo starts from it.
     m_cursorEffects = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects())
                           .preferences();
+    // The frame around exports: the last one used for recordings, or at first
+    // the screenshot Beautify look (off until switched on).
+    const QJsonObject appearance = RecordingSettingsManager::instance().appearance();
+    m_appearance = appearance.isEmpty()
+        ? SnapTray::RecordingAppearance::fromBeautify(BeautifySettingsManager::instance().loadSettings())
+        : SnapTray::RecordingAppearance::fromJson(appearance);
     m_editHistory.reset(currentEditState());
     // Availability depends on the format (MP4 needs a capable transcoder).
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::cursorEffectsChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::masksChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::appearanceChanged);
     m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(RecordingSettingsManager::instance().mp4ExportOptions());
     // The estimate follows everything that changes the exported picture or length.
     for (const auto signal : {&RecordingPreviewBackend::mp4OptionsChanged, &RecordingPreviewBackend::cropRectChanged,
                               &RecordingPreviewBackend::trimRangeChanged, &RecordingPreviewBackend::durationChanged,
                               &RecordingPreviewBackend::videoSizeChanged, &RecordingPreviewBackend::cursorEffectsChanged,
-                              &RecordingPreviewBackend::zoomChanged, &RecordingPreviewBackend::masksChanged}) {
+                              &RecordingPreviewBackend::zoomChanged, &RecordingPreviewBackend::masksChanged,
+                              &RecordingPreviewBackend::appearanceChanged}) {
         connect(this, signal, this, &RecordingPreviewBackend::mp4EstimateChanged);
     }
 }
@@ -88,7 +99,7 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
 std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
 {
     // A snapshot: shares the immutable timeline, copies settings and geometry.
-    const QSize videoSize = m_videoSize.isEmpty() && m_cursorTimeline ? m_cursorTimeline->info.frameSize : m_videoSize;
+    const QSize videoSize = effectsVideoSize();
     const QRectF bounds = m_cropRect.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(videoSize)) : QRectF(m_cropRect);
     const auto timeline = m_cursorTimeline;
     const bool drawCursor = cursorEffectsActive();
@@ -99,7 +110,17 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
                                                             : std::shared_ptr<SnapTray::ZoomTrack>();
     const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()
                                                   : std::make_shared<SnapTray::RedactionTrack>(m_redaction);
-    return [timeline, cursor, zoom, redaction, bounds, videoSize](QImage& frame, qint64 sourceMs) {
+    // The frame around the picture (#184), last; its static parts are drawn once here.
+    const auto appearance = appearanceActive() && !bounds.isEmpty()
+        ? std::make_shared<const SnapTray::RecordingAppearanceRenderer>(
+              m_appearance, bounds.size().toSize(),
+              m_appearance.background == SnapTray::RecordingAppearance::Background::Image
+                  ? QImage(m_appearance.imagePath) : QImage())
+        : std::shared_ptr<const SnapTray::RecordingAppearanceRenderer>();
+    const bool blurredBackground = appearance
+        && m_appearance.background == SnapTray::RecordingAppearance::Background::BlurredVideo;
+    return [timeline, cursor, zoom, redaction, appearance, blurredBackground, bounds, videoSize](QImage& frame,
+                                                                                               qint64 sourceMs) {
         if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
             frame = frame.convertToFormat(QImage::Format_RGB32);
         }
@@ -111,6 +132,10 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
             redaction->apply(frame, sourceMs,
                              bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds);
         }
+        // A blurred background comes from the masked picture, before zoom and
+        // pointer: nothing a mask covers can show through it.
+        const QImage blurSource = blurredBackground
+            ? SnapTray::RecordingAppearanceRenderer::blurSourceFor(frame) : QImage();
         // The frame shows `bounds`; a zoom shows part of it, scaled to fill.
         QRectF shown = bounds;
         if (zoom) {
@@ -129,7 +154,151 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
             }
         }
         if (cursor) cursor->paint(frame, sourceMs, {shown, videoSize, frame.size()});
+        if (appearance) frame = appearance->compose(frame, blurSource);
     };
+}
+
+QSize RecordingPreviewBackend::effectsVideoSize() const
+{
+    return m_videoSize.isEmpty() && m_cursorTimeline ? m_cursorTimeline->info.frameSize : m_videoSize;
+}
+
+QSize RecordingPreviewBackend::exportContentSize() const
+{
+    return m_cropRect.isEmpty() ? effectsVideoSize() : m_cropRect.size();
+}
+
+QSize RecordingPreviewBackend::framedExportSize() const
+{
+    const QSize content = exportContentSize();
+    return appearanceActive() && !content.isEmpty() ? m_appearance.outputSize(content) : QSize();
+}
+
+QRectF RecordingPreviewBackend::appearanceCanvasInView(const QRectF& contentInView) const
+{
+    const QSize content = exportContentSize();
+    if (!appearanceActive() || content.isEmpty() || contentInView.isEmpty()) return contentInView;
+    const double scale = contentInView.width() / content.width();
+    const QRect inset = m_appearance.contentRect(content);
+    const QSize framed = m_appearance.outputSize(content);
+    return QRectF(contentInView.topLeft() - QPointF(inset.topLeft()) * scale, QSizeF(framed) * scale);
+}
+
+QVariantList RecordingPreviewBackend::appearanceGradients() const
+{
+    QVariantList list;
+    for (const auto& preset : beautifyPresets()) {
+        list.append(QVariantMap{{QStringLiteral("name"), preset.name},
+                                {QStringLiteral("start"), preset.gradientStart},
+                                {QStringLiteral("end"), preset.gradientEnd}});
+    }
+    return list;
+}
+
+void RecordingPreviewBackend::setAppearance(const SnapTray::RecordingAppearance& appearance)
+{
+    if (m_appearance == appearance) return;
+    m_appearance = appearance;
+    emit appearanceChanged();
+}
+
+void RecordingPreviewBackend::editAppearance(const std::function<void(SnapTray::RecordingAppearance&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::RecordingAppearance appearance = m_appearance;
+    change(appearance);
+    if (appearance == m_appearance) return;
+    RecordingSettingsManager::instance().setAppearance(appearance.toJson());
+    setAppearance(appearance);
+    recordEdit();
+}
+
+void RecordingPreviewBackend::setAppearanceEnabled(bool value)
+{
+    editAppearance([value](SnapTray::RecordingAppearance& a) { a.enabled = value; });
+}
+
+void RecordingPreviewBackend::setAppearanceBackground(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::RecordingAppearance::Background::Image));
+    // An image background needs an image: setAppearanceImage() picks one.
+    if (clamped == int(SnapTray::RecordingAppearance::Background::Image) && m_appearance.imagePath.isEmpty()) return;
+    editAppearance([clamped](SnapTray::RecordingAppearance& a) {
+        a.enabled = true;
+        a.background = SnapTray::RecordingAppearance::Background(clamped);
+    });
+}
+
+void RecordingPreviewBackend::setAppearanceGradientPreset(int value)
+{
+    if (value < 0 || value >= beautifyPresets().size()) return;
+    editAppearance([value](SnapTray::RecordingAppearance& a) {
+        a.enabled = true;
+        a.background = SnapTray::RecordingAppearance::Background::Gradient;
+        a.gradientPreset = value;
+    });
+}
+
+void RecordingPreviewBackend::setAppearanceSolidColor(const QColor& value)
+{
+    if (!value.isValid()) return;
+    editAppearance([value](SnapTray::RecordingAppearance& a) {
+        a.enabled = true;
+        a.background = SnapTray::RecordingAppearance::Background::Solid;
+        a.solidColor = value.toRgb();
+        a.solidColor.setAlpha(255);
+    });
+}
+
+bool RecordingPreviewBackend::setAppearanceImage(const QUrl& file)
+{
+    const QString path = file.isLocalFile() ? file.toLocalFile() : file.toString();
+    if (path.isEmpty() || QImage(path).isNull()) return false;
+    editAppearance([path](SnapTray::RecordingAppearance& a) {
+        a.enabled = true;
+        a.background = SnapTray::RecordingAppearance::Background::Image;
+        a.imagePath = path;
+    });
+    return true;
+}
+
+bool RecordingPreviewBackend::chooseAppearanceImage()
+{
+    if (isProcessing()) return false;
+    const QString file = QFileDialog::getOpenFileName(nullptr, tr("Select Background Image"), m_appearance.imagePath,
+                                                      tr("Images (*.png *.jpg *.jpeg *.bmp *.webp)"));
+    if (file.isEmpty()) return false;
+    if (setAppearanceImage(QUrl::fromLocalFile(file))) return true;
+    setErrorMessage(tr("The image could not be read."));
+    return false;
+}
+
+void RecordingPreviewBackend::setAppearancePadding(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::RecordingAppearance::Amount::Large));
+    editAppearance([clamped](SnapTray::RecordingAppearance& a) { a.padding = SnapTray::RecordingAppearance::Amount(clamped); });
+}
+
+void RecordingPreviewBackend::setAppearanceCorners(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::RecordingAppearance::Amount::Large));
+    editAppearance([clamped](SnapTray::RecordingAppearance& a) { a.corners = SnapTray::RecordingAppearance::Amount(clamped); });
+}
+
+void RecordingPreviewBackend::setAppearanceShadow(bool value)
+{
+    editAppearance([value](SnapTray::RecordingAppearance& a) { a.shadow = value; });
+}
+
+void RecordingPreviewBackend::setAppearanceBorder(bool value)
+{
+    editAppearance([value](SnapTray::RecordingAppearance& a) { a.border = value; });
+}
+
+void RecordingPreviewBackend::setAppearanceAspectRatio(int value)
+{
+    const int clamped = qBound(0, value, int(BeautifyAspectRatio::Twitter_2_1));
+    editAppearance([clamped](SnapTray::RecordingAppearance& a) { a.aspectRatio = BeautifyAspectRatio(clamped); });
 }
 
 bool RecordingPreviewBackend::hasPointerData() const
@@ -222,6 +391,8 @@ SnapTray::Mp4ExportOptions RecordingPreviewBackend::effectiveMp4Options() const
 
 QSize RecordingPreviewBackend::mp4BaseSize() const
 {
+    const QSize framed = framedExportSize();
+    if (!framed.isEmpty()) return framed;
     if (!m_cropRect.isEmpty()) return m_cropRect.size();
     return m_videoSize.isEmpty() ? sourceProbe().videoSize : m_videoSize;
 }
@@ -467,7 +638,8 @@ bool RecordingPreviewBackend::setPointerHideRange(int index, qint64 startMs, qin
 
 bool RecordingPreviewBackend::effectsActive() const
 {
-    return !m_redaction.isEmpty() || cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive());
+    return !m_redaction.isEmpty() || cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive())
+        || appearanceActive();
 }
 
 QVariantList RecordingPreviewBackend::masks() const
@@ -582,15 +754,38 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
     // function as the exports, never a lookalike drawn on top.
     QPointer<RecordingPreviewBackend> weakThis(this);
     player->setFrameProcessor([weakThis](QImage& frame, qint64 positionMs) {
-        if (!weakThis || weakThis->m_redaction.isEmpty()) return;
+        if (!weakThis) return;
         const QSize source = weakThis->m_videoSize.isEmpty() ? frame.size() : weakThis->m_videoSize;
-        // positionMs is this frame's own time (#175), so the preview masks
-        // exactly the frames the export does, with the same function; no
-        // extra margin that would show frames masked that are exported
-        // unmasked (#177 review).
-        weakThis->m_redaction.apply(frame, positionMs, QRectF(QPointF(0, 0), QSizeF(source)));
+        if (!weakThis->m_redaction.isEmpty()) {
+            // positionMs is this frame's own time (#175), so the preview masks
+            // exactly the frames the export does, with the same function; no
+            // extra margin that would show frames masked that are exported
+            // unmasked (#177 review).
+            weakThis->m_redaction.apply(frame, positionMs, QRectF(QPointF(0, 0), QSizeF(source)));
+        }
+        // A blurred background (#184) is made from this masked frame, cropped
+        // like the export's picture.
+        if (weakThis->appearanceActive()
+            && weakThis->m_appearance.background == SnapTray::RecordingAppearance::Background::BlurredVideo) {
+            QRect picture = weakThis->m_cropRect.isEmpty() ? frame.rect() : weakThis->m_cropRect;
+            if (frame.size() != source && !source.isEmpty()) {
+                const double sx = double(frame.width()) / source.width();
+                const double sy = double(frame.height()) / source.height();
+                picture = QRect(qRound(picture.x() * sx), qRound(picture.y() * sy), qRound(picture.width() * sx),
+                                qRound(picture.height() * sy));
+            }
+            weakThis->m_appearancePreviewFrame =
+                SnapTray::RecordingAppearanceRenderer::blurSourceFor(frame.copy(picture.intersected(frame.rect())));
+            emit weakThis->appearancePreviewFrameChanged();
+        } else if (!weakThis->m_appearancePreviewFrame.isNull()) {
+            weakThis->m_appearancePreviewFrame = QImage();
+        }
     });
     connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
+    connect(this, &RecordingPreviewBackend::appearanceChanged, player, &VideoPlaybackItem::reprocessFrame);
+    // The blurred background is made from the cropped picture: a new crop
+    // (also undo or clear) needs it again, even while paused (PR #198 review).
+    connect(this, &RecordingPreviewBackend::cropRectChanged, player, &VideoPlaybackItem::reprocessFrame);
 }
 
 bool RecordingPreviewBackend::zoomAvailable() const
@@ -1558,6 +1753,7 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
     state.cursor = m_cursorEffects;
     state.zoom = m_zoom;
     state.redaction = m_redaction;
+    state.appearance = m_appearance;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -1587,6 +1783,10 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         m_zoom = state.zoom;
         if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
         emit zoomChanged();
+    }
+    if (state.appearance != m_appearance) {
+        setAppearance(state.appearance);
+        RecordingSettingsManager::instance().setAppearance(state.appearance.toJson());
     }
     if (state.cursor != m_cursorEffects) {
         setCursorEffects(state.cursor);
@@ -1628,6 +1828,7 @@ void RecordingPreviewBackend::resetEdits()
     unedited.cursor = m_cursorEffects;
     unedited.zoom = m_zoom;
     unedited.redaction = m_redaction;
+    unedited.appearance = m_appearance;
     applyEditState(unedited);
     recordEdit();
 }
@@ -1731,6 +1932,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     const QRect cropRect = m_cropRect;
     const auto cursorFilter = effectsActive() ? effectsFrameFilter()
                                               : std::function<void(QImage&, qint64)>();
+    // The filter frames the picture (#184): frames come out at this size.
+    const QSize framedSize = cursorFilter ? framedExportSize() : QSize();
     const int selectedFormat = static_cast<int>(format);
     const QString createPlayerError = tr("Failed to create video player for conversion");
     const QString loadVideoError = tr("Failed to load video for conversion");
@@ -1750,6 +1953,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              requestedEndMs,
                              cropRect,
                              cursorFilter,
+                             framedSize,
                              outputPath,
                              selectedFormat,
                              createPlayerError,
@@ -1854,7 +2058,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         const qint64 dur = frameReader ? frameReader->duration() : player->duration();
         const qint64 startMs = qMax<qint64>(0, requestedStartMs);
         const qint64 endMs = requestedEndMs < 0 ? dur : qMin(requestedEndMs, dur);
-        const QSize outputSize = cropRect.isEmpty() ? vidSize : cropRect.size();
+        const QSize outputSize = !framedSize.isEmpty() ? framedSize : cropRect.isEmpty() ? vidSize : cropRect.size();
 
         if (dur <= 0 || vidSize.isEmpty() || startMs >= endMs) {
             qWarning() << "RecordingPreviewBackend: Video not loaded properly for conversion";
@@ -2050,7 +2254,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             return;
         }
 
-        const QSize croppedSize = cropRect.isEmpty() ? QSize() : outputSize;
+        const QSize croppedSize = cropRect.isEmpty() && framedSize.isEmpty() ? QSize() : outputSize;
         QMetaObject::invokeMethod(app, [weakThis, isCurrent, cancelToken, outputPath, outputMissingError,
                                         croppedSize]() {
             // The output is still only a temporary next to the recording, so a
@@ -2116,6 +2320,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     if (effectsActive()) {
         // A snapshot: later changes in the preview do not reach this job.
         request.frameFilter = effectsFrameFilter();
+        request.filterOutputSize = framedExportSize();
     }
     QSize croppedSize = m_cropRect.isEmpty() ? QSize() : m_cropRect.size(); // the output size, set by the job
     const QString unsupportedError = tr("Video export is not supported on this platform");
@@ -2260,7 +2465,8 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                     });
                     return !cancelToken->load();
                 };
-            const QSize baseSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
+            const QSize contentSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
+            const QSize baseSize = request.filterOutputSize.isEmpty() ? contentSize : request.filterOutputSize;
             const QSize outputSize = mp4Options.outputSize(baseSize);
             if (outputSize != baseSize) request.outputSize = outputSize;
             const int outputFps = mp4Options.outputFrameRate(sourceProbe.frameRate);
@@ -2268,7 +2474,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             if (mp4Options.codec != SnapTray::Mp4ExportOptions::Codec::H264) request.videoCodec = mp4Options.codecId();
             request.videoBitrate = mp4Options.videoBitrate(outputSize, outputFps, outputQuality);
             // The file name's {w}x{h} is the picture's real size.
-            if (!request.cropRect.isEmpty() || outputSize != baseSize) croppedSize = outputSize;
+            if (!request.cropRect.isEmpty() || outputSize != contentSize) croppedSize = outputSize;
             qDebug() << "RecordingPreviewBackend: exporting at" << request.videoBitrate << "bps for"
                      << outputSize << "at" << outputFps << "fps," << mp4Options.codecId()
                      << "quality" << mp4Options.outputQuality(outputQuality);
@@ -2293,9 +2499,9 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             // The picture must be exactly what was asked for: a crop the
             // transcoder had to shrink or ignore is a different export (and
             // would be named by the requested size).
-            const QSize expectedSize = request.outputSize.isEmpty()
-                ? (request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size())
-                : request.outputSize;
+            const QSize expectedSize = !request.outputSize.isEmpty() ? request.outputSize
+                : !request.filterOutputSize.isEmpty() ? request.filterOutputSize
+                : (request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size());
             const QString expectedCodec = request.videoCodec.isEmpty() ? QString::fromLatin1(kVideoCodecH264)
                                                                         : request.videoCodec;
             if (cancelToken->load() || !sourceProbe.valid || !outputProbe.valid

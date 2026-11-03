@@ -2683,6 +2683,156 @@ Size: %2</source>
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2, %3 fps · %4 (εκτίμηση)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A background, padding, rounded corners, a shadow and a border around the video</source>
+        <translation>Φόντο, περιθώριο, στρογγυλεμένες γωνίες, σκιά και περίγραμμα γύρω από το βίντεο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a shadow under the video</source>
+        <translation>Προσθήκη σκιάς κάτω από το βίντεο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a thin border around the video</source>
+        <translation>Προσθήκη λεπτού περιγράμματος γύρω από το βίντεο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A frame needs GIF or WebP on this system</source>
+        <translation>Το πλαίσιο χρειάζεται GIF ή WebP σε αυτό το σύστημα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: %1</source>
+        <translation>Φόντο: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: Black</source>
+        <translation>Φόντο: Μαύρο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background image: %1</source>
+        <translation>Εικόνα φόντου: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: White</source>
+        <translation>Φόντο: Λευκό</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blurred Video</source>
+        <translation>Θολωμένο βίντεο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Border</source>
+        <translation>Περίγραμμα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Corners: %1</source>
+        <translation>Γωνίες: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the frame around the exported video</source>
+        <translation>Σχεδίαση του πλαισίου γύρω από το εξαγόμενο βίντεο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame</source>
+        <translation>Πλαίσιο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: Off</source>
+        <translation>Πλαίσιο: Ανενεργό</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: On</source>
+        <translation>Πλαίσιο: Ενεργό</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How round the video's corners are</source>
+        <translation>Πόσο στρογγυλεμένες είναι οι γωνίες του βίντεο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image…</source>
+        <translation>Εικόνα…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Large</source>
+        <translation>Μεγάλο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Medium</source>
+        <translation>Μεσαίο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>None</source>
+        <translation>Κανένα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Padding: %1</source>
+        <translation>Περιθώριο: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Ratio: Auto</source>
+        <translation>Αναλογία: Αυτόματη</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the border</source>
+        <translation>Αφαίρεση περιγράμματος</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the shadow</source>
+        <translation>Αφαίρεση σκιάς</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Small</source>
+        <translation>Μικρό</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Space around the video</source>
+        <translation>Χώρος γύρω από το βίντεο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The shape of the exported video; the background fills the extra space</source>
+        <translation>Το σχήμα του εξαγόμενου βίντεο· το φόντο γεμίζει τον επιπλέον χώρο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The video itself, blurred, behind it (masks applied)</source>
+        <translation>Το ίδιο το βίντεο, θολωμένο, από πίσω (με τις μάσκες)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Use an image file as the background</source>
+        <translation>Χρήση αρχείου εικόνας ως φόντο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Σκιά</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2804,6 +2954,21 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>About %1</source>
         <translation>Περίπου %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
+        <translation>Εικόνες (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Background Image</source>
+        <translation>Επιλογή εικόνας φόντου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The image could not be read.</source>
+        <translation>Δεν ήταν δυνατή η ανάγνωση της εικόνας.</translation>
     </message>
 </context>
 <context>

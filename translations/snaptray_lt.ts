@@ -2683,6 +2683,156 @@ Dydis: %2</translation>
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2, %3 kadr./s · %4 (numatoma)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A background, padding, rounded corners, a shadow and a border around the video</source>
+        <translation>Fonas, paraštės, suapvalinti kampai, šešėlis ir rėmelis aplink vaizdo įrašą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a shadow under the video</source>
+        <translation>Pridėti šešėlį po vaizdo įrašu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a thin border around the video</source>
+        <translation>Pridėti ploną rėmelį aplink vaizdo įrašą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A frame needs GIF or WebP on this system</source>
+        <translation>Šioje sistemoje rėmeliui reikia GIF arba WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: %1</source>
+        <translation>Fonas: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: Black</source>
+        <translation>Fonas: juodas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background image: %1</source>
+        <translation>Fono vaizdas: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: White</source>
+        <translation>Fonas: baltas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blurred Video</source>
+        <translation>Suliejtas vaizdo įrašas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Border</source>
+        <translation>Rėmelis</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Corners: %1</source>
+        <translation>Kampai: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the frame around the exported video</source>
+        <translation>Piešti rėmelį aplink eksportuojamą vaizdo įrašą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame</source>
+        <translation>Rėmelis</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: Off</source>
+        <translation>Rėmelis: išjungtas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: On</source>
+        <translation>Rėmelis: įjungtas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How round the video's corners are</source>
+        <translation>Kiek suapvalinti vaizdo įrašo kampai</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image…</source>
+        <translation>Vaizdas…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Large</source>
+        <translation>Didelis</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Medium</source>
+        <translation>Vidutinis</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>None</source>
+        <translation>Nėra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Padding: %1</source>
+        <translation>Paraštės: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Ratio: Auto</source>
+        <translation>Santykis: automatinis</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the border</source>
+        <translation>Pašalinti rėmelį</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the shadow</source>
+        <translation>Pašalinti šešėlį</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Small</source>
+        <translation>Mažas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Space around the video</source>
+        <translation>Erdvė aplink vaizdo įrašą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The shape of the exported video; the background fills the extra space</source>
+        <translation>Eksportuojamo vaizdo įrašo forma; papildomą vietą užpildo fonas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The video itself, blurred, behind it (masks applied)</source>
+        <translation>Pats vaizdo įrašas, suliejtas, už jo (su kaukėmis)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Use an image file as the background</source>
+        <translation>Naudoti vaizdo failą kaip foną</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Šešėlis</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2804,6 +2954,21 @@ Dydis: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>About %1</source>
         <translation>Apie %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
+        <translation>Vaizdai (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Background Image</source>
+        <translation>Pasirinkti fono vaizdą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The image could not be read.</source>
+        <translation>Nepavyko perskaityti vaizdo.</translation>
     </message>
 </context>
 <context>

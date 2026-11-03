@@ -2689,6 +2689,156 @@ Tamaño: %2</translation>
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2, %3 fps · %4 (estimado)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A background, padding, rounded corners, a shadow and a border around the video</source>
+        <translation>Fondo, margen, esquinas redondeadas, sombra y borde alrededor del video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a shadow under the video</source>
+        <translation>Agregar una sombra debajo del video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a thin border around the video</source>
+        <translation>Agregar un borde delgado alrededor del video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A frame needs GIF or WebP on this system</source>
+        <translation>El marco requiere GIF o WebP en este sistema</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: %1</source>
+        <translation>Fondo: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: Black</source>
+        <translation>Fondo: Negro</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background image: %1</source>
+        <translation>Imagen de fondo: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: White</source>
+        <translation>Fondo: Blanco</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blurred Video</source>
+        <translation>Video desenfocado</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Border</source>
+        <translation>Borde</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Corners: %1</source>
+        <translation>Esquinas: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the frame around the exported video</source>
+        <translation>Dibujar el marco alrededor del video exportado</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame</source>
+        <translation>Marco</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: Off</source>
+        <translation>Marco: No</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: On</source>
+        <translation>Marco: Sí</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How round the video's corners are</source>
+        <translation>Qué tan redondeadas son las esquinas del video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image…</source>
+        <translation>Imagen…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Large</source>
+        <translation>Grande</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Medium</source>
+        <translation>Mediano</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>None</source>
+        <translation>Ninguno</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Padding: %1</source>
+        <translation>Margen: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Ratio: Auto</source>
+        <translation>Proporción: Auto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the border</source>
+        <translation>Quitar el borde</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the shadow</source>
+        <translation>Quitar la sombra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Small</source>
+        <translation>Pequeño</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Space around the video</source>
+        <translation>Espacio alrededor del video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The shape of the exported video; the background fills the extra space</source>
+        <translation>La forma del video exportado; el fondo rellena el espacio extra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The video itself, blurred, behind it (masks applied)</source>
+        <translation>El propio video, desenfocado, detrás (con máscaras aplicadas)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Use an image file as the background</source>
+        <translation>Usar un archivo de imagen como fondo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Sombra</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2810,6 +2960,21 @@ Tamaño: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>About %1</source>
         <translation>Aprox. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
+        <translation>Imágenes (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Background Image</source>
+        <translation>Seleccionar imagen de fondo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The image could not be read.</source>
+        <translation>No se pudo leer la imagen.</translation>
     </message>
 </context>
 <context>

@@ -2683,6 +2683,156 @@ Koko: %2</translation>
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2, %3 fps · %4 (arvio)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A background, padding, rounded corners, a shadow and a border around the video</source>
+        <translation>Tausta, reunus, pyöristetyt kulmat, varjo ja kehys videon ympärille</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a shadow under the video</source>
+        <translation>Lisää varjo videon alle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a thin border around the video</source>
+        <translation>Lisää ohut kehys videon ympärille</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A frame needs GIF or WebP on this system</source>
+        <translation>Kehys vaatii tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: %1</source>
+        <translation>Tausta: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: Black</source>
+        <translation>Tausta: Musta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background image: %1</source>
+        <translation>Taustakuva: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: White</source>
+        <translation>Tausta: Valkoinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blurred Video</source>
+        <translation>Sumennettu video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Border</source>
+        <translation>Kehys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Corners: %1</source>
+        <translation>Kulmat: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the frame around the exported video</source>
+        <translation>Piirrä kehys viedyn videon ympärille</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame</source>
+        <translation>Kehys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: Off</source>
+        <translation>Kehys: Pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: On</source>
+        <translation>Kehys: Päällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How round the video's corners are</source>
+        <translation>Kuinka pyöreät videon kulmat ovat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image…</source>
+        <translation>Kuva…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Large</source>
+        <translation>Suuri</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Medium</source>
+        <translation>Keskikokoinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>None</source>
+        <translation>Ei mitään</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Padding: %1</source>
+        <translation>Reunus: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Ratio: Auto</source>
+        <translation>Suhde: Automaattinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the border</source>
+        <translation>Poista kehys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the shadow</source>
+        <translation>Poista varjo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Small</source>
+        <translation>Pieni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Space around the video</source>
+        <translation>Tilaa videon ympärillä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The shape of the exported video; the background fills the extra space</source>
+        <translation>Viedyn videon muoto; tausta täyttää ylimääräisen tilan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The video itself, blurred, behind it (masks applied)</source>
+        <translation>Itse video sumennettuna taustalla (maskit käytössä)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Use an image file as the background</source>
+        <translation>Käytä kuvatiedostoa taustana</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Varjo</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2804,6 +2954,21 @@ Koko: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>About %1</source>
         <translation>Noin %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
+        <translation>Kuvat (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Background Image</source>
+        <translation>Valitse taustakuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The image could not be read.</source>
+        <translation>Kuvaa ei voitu lukea.</translation>
     </message>
 </context>
 <context>

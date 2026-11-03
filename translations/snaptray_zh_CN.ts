@@ -2680,6 +2680,156 @@ Size: %2</source>
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2，%3 fps · %4（预估）</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A background, padding, rounded corners, a shadow and a border around the video</source>
+        <translation>在视频周围加上背景、内边距、圆角、阴影与边框</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a shadow under the video</source>
+        <translation>在视频下方加上阴影</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a thin border around the video</source>
+        <translation>在视频周围加上细边框</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A frame needs GIF or WebP on this system</source>
+        <translation>此系统上的外框需要使用 GIF 或 WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: %1</source>
+        <translation>背景：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: Black</source>
+        <translation>背景：黑色</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background image: %1</source>
+        <translation>背景图片：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Background: White</source>
+        <translation>背景：白色</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blurred Video</source>
+        <translation>模糊视频</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Border</source>
+        <translation>边框</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Corners: %1</source>
+        <translation>圆角：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Draw the frame around the exported video</source>
+        <translation>在导出的视频周围绘制外框</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame</source>
+        <translation>外框</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: Off</source>
+        <translation>外框：关</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Frame: On</source>
+        <translation>外框：开</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How round the video's corners are</source>
+        <translation>视频圆角的程度</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image…</source>
+        <translation>图片…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Large</source>
+        <translation>大</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Medium</source>
+        <translation>中</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>None</source>
+        <translation>无</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Padding: %1</source>
+        <translation>内边距：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Ratio: Auto</source>
+        <translation>比例：自动</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the border</source>
+        <translation>移除边框</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Remove the shadow</source>
+        <translation>移除阴影</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Small</source>
+        <translation>小</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Space around the video</source>
+        <translation>视频周围的空间</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The shape of the exported video; the background fills the extra space</source>
+        <translation>导出视频的形状；多出的空间由背景填满</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>The video itself, blurred, behind it (masks applied)</source>
+        <translation>以模糊后的视频本身作为背景（已套用遮蔽）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Use an image file as the background</source>
+        <translation>使用图片文件作为背景</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>阴影</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2801,6 +2951,21 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>About %1</source>
         <translation>约 %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
+        <translation>图片 (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Background Image</source>
+        <translation>选择背景图片</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>The image could not be read.</source>
+        <translation>无法读取该图片。</translation>
     </message>
 </context>
 <context>

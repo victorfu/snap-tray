@@ -34,13 +34,17 @@ struct VideoTranscodeRequest {
     // #190 output options; only for transcoders whose supportsOutputOptions()
     // is true. The frame is cropped, then filtered (frameFilter may already
     // scale it), then scaled to outputSize.
-    QSize outputSize;       // even sides, at most the crop size; empty = the crop size
+    QSize outputSize;       // even sides, at most the filtered size; empty = the filtered size
     int frameRate = 0;      // at most the source rate; 0 = the source rate
     QString videoCodec;     // kVideoCodecH264 or kVideoCodecHevc; empty = H.264
     // Draws on each output frame (already cropped, RGB32) before it is
     // encoded; sourceMs is the frame's time in the input. Empty = none.
     // Only for transcoders whose supportsFrameFilter() is true.
     std::function<void(QImage& frame, qint64 sourceMs)> frameFilter;
+    // The size of the frames frameFilter returns when it changes it (the
+    // frame around an export, #184); empty = the crop size. Every transcoder
+    // that supports frameFilter must accept it.
+    QSize filterOutputSize;
 };
 
 struct VideoTranscodeResult {

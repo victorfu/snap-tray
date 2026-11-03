@@ -118,6 +118,16 @@ Masks are burned into the exported MP4, GIF or WebP, and the preview shows them 
 
 **Masks are only in the exported file.** The unmasked recording is a temporary file: it stays available in the preview until you save (also after Cancel or a failed save), and once the masked export is saved, SnapTray deletes it. If you need an unmasked copy too, save once without masks first. SnapTray never uploads recordings. If the selected format cannot draw masks on your system (MP4 on macOS and Windows for now), SnapTray refuses to export and says so, instead of saving a file without the masks. Masks are not tracked automatically: if the content moves, add masks for each time range.
 
+### A frame around the video
+
+**Frame** in the preview puts the exported video on a background, like Beautify does for screenshots. The first time it starts from your screenshot Beautify look (switched off); after that, your last frame for recordings is remembered. It can be undone like other edits, and **Reset Crop and Trim** keeps it.
+
+- **Background**: one of the gradient presets, white, black, **Blurred Video** (the video itself, blurred, behind it) or **Image…** (a picture file).
+- **Padding**, **Corners** (None, Small, Medium, Large), **Shadow** and **Border**. Sizes follow the video, so a frame looks the same on a small or a 4K recording.
+- **Ratio**: Auto, or 1:1, 16:9, 4:3, 9:16, 2:1. The background fills the extra space.
+
+The frame makes the exported file larger than the cropped picture by the padding (and the ratio); MP4 export options then scale the framed video. It is drawn last, around a picture that already has its masks, zoom and pointer, and a blurred background is made from the masked picture, so nothing a mask hides shows around it. The preview shows the frame except while you edit the crop or compare with the original. Like masks, the frame is available for MP4 on Linux and for GIF and WebP everywhere.
+
 ## Recovering unsaved recordings
 
 SnapTray keeps a small record next to each recording until it is saved or discarded. If SnapTray stops before that (a crash, power loss, or quitting with an unsaved preview open), the next start shows a notice, and **Recover Recordings** in the tray menu lists what was left. Each entry shows when it was recorded, how much of it can be played, and whether audio that should be there is missing. **Recover** opens it in the preview so you can save it; **Discard** deletes it; **Later** keeps it for next time. Files waiting here are never removed by SnapTray's routine clean-up of old temporary files.

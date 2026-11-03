@@ -165,6 +165,18 @@ void RecordingSettingsManager::setMp4ExportOptions(const QJsonObject& value)
     settings.setValue(kKeyMp4ExportOptions, QJsonDocument(value).toJson(QJsonDocument::Compact));
 }
 
+QJsonObject RecordingSettingsManager::appearance() const
+{
+    auto settings = SnapTray::getSettings();
+    return QJsonDocument::fromJson(settings.value(kKeyAppearance).toByteArray()).object();
+}
+
+void RecordingSettingsManager::setAppearance(const QJsonObject& value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyAppearance, QJsonDocument(value).toJson(QJsonDocument::Compact));
+}
+
 bool RecordingSettingsManager::windowsGraphicsCapture() const
 {
     auto settings = SnapTray::getSettings();

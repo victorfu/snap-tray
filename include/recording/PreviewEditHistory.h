@@ -4,6 +4,7 @@
 #include "recording/CursorEffects.h"
 #include "recording/ZoomTrack.h"
 #include "recording/RedactionTrack.h"
+#include "recording/RecordingAppearance.h"
 
 #include <QRect>
 #include <QVector>
@@ -26,11 +27,14 @@ struct PreviewEditState {
     // Masks over sensitive content (#162), undoable; also kept by "Reset
     // Crop and Trim", so a reset never uncovers anything.
     RedactionTrack redaction;
+    // The frame around the export (#184): a look, kept by "Reset Crop and Trim".
+    RecordingAppearance appearance;
 
     bool operator==(const PreviewEditState& other) const
     {
         return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd
-            && cursor == other.cursor && zoom == other.zoom && redaction == other.redaction;
+            && cursor == other.cursor && zoom == other.zoom && redaction == other.redaction
+            && appearance == other.appearance;
     }
     bool operator!=(const PreviewEditState& other) const { return !(*this == other); }
     bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1; }
