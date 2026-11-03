@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include <QGuiApplication>
+#include <QStyleHints>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QTemporaryDir>
@@ -298,10 +299,14 @@ void tst_RecordingPreviewTimeline::overlaysAreShownAndReachable()
     QTRY_VERIFY((titleBar = delegate(view, QStringLiteral("previewOverlaySegment0"))) != nullptr && titleBar->width() > 0);
     const QPoint onBoth = titleBar->mapToScene(QPointF(titleBar->width() / 2, titleBar->height() / 2)).toPoint();
     backend.setSelectedOverlay(-1);
+    // Separate clicks, not a double click (its interval differs per system).
+    const int apart = QGuiApplication::styleHints()->mouseDoubleClickInterval() + 50;
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
     QCOMPARE(backend.selectedOverlay(), 1); // topmost first: the image
+    QTest::qWait(apart);
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
     QCOMPARE(backend.selectedOverlay(), 0); // then the title under it
+    QTest::qWait(apart);
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
     QCOMPARE(backend.selectedOverlay(), -1);
     backend.requestDiscard();
