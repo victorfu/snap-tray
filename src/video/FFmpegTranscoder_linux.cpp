@@ -75,6 +75,11 @@ public:
         // after an unaligned trim would shift video relative to copied audio.
         qint64 sourceTime = start;
         qint64 writtenTime = -1;
+        // The output clock: the next frame is due one exact interval after
+        // the previous one was due (not after the frame kept), so a ratio
+        // like 24 -> 15 keeps 5 of every 8 frames instead of every other one.
+        const double exactInterval = 1000.0 / fps;
+        double nextDue = 0.0;
         QImage lastImage;
         QImage lastSource;
         while (sourceTime < end) {
@@ -89,8 +94,12 @@ public:
             // frame before a pause in the source, so the newest picture is
             // what a still stretch (and its effects) shows.
             const bool beforePause = next < 0 || next - sourceTime >= outputInterval;
-            const bool keep = !dropFrames || writtenTime < 0 || beforePause
-                || time - writtenTime >= outputInterval - outputInterval / 4;
+            // A millisecond of slack absorbs rounded source timestamps.
+            const bool keep = !dropFrames || writtenTime < 0 || beforePause || time + 1 >= nextDue;
+            if (keep && dropFrames) {
+                // Fallen behind (a pause in the source): restart the clock here.
+                nextDue = time - nextDue > exactInterval ? time + exactInterval : nextDue + exactInterval;
+            }
             if (keep) {
                 lastImage = crop == bounds ? image : image.copy(crop);
                 lastSource = lastImage;
