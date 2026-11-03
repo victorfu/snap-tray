@@ -1294,6 +1294,30 @@ void tst_VideoTranscoder::segmentsOfAVariableRateSource()
     request.outputPath = m_dir.filePath(QStringLiteral("vfr-segments.mp4"));
     // 100-700 (still red) | 1050-1450 at 2x (green, then blue at 1400 -> out 775).
     request.segments = {{100, 700, 1.0}, {1050, 1450, 2.0}};
+    const QPoint centre = QRect(QPoint(0, 0), kSourceSize).center();
+    // Check the fixture independently: some native encoders can rewrite VFR
+    // timing. Include decoded transitions in failures to distinguish that
+    // from the editing path or output reader.
+    auto describeFrames = [](const QString& path) {
+        auto frames = IVideoFrameReader::create();
+        if (!frames || !frames->load(path)) return QStringLiteral("unreadable");
+        QStringList details;
+        qint64 at = 0;
+        for (int i = 0; i < 40; ++i) {
+            const QImage frame = frames->frameAtMicroseconds(at);
+            if (frame.isNull()) break;
+            details << QStringLiteral("%1:%2").arg(at).arg(frame.pixelColor(frame.rect().center()).name());
+            const qint64 next = frames->nextFrameTimeMicroseconds();
+            if (next <= at) break;
+            at = next;
+        }
+        return details.join(QLatin1Char(' '));
+    };
+    auto sourceReader = IVideoFrameReader::create();
+    QVERIFY(sourceReader && sourceReader->load(input));
+    const QColor sourceStill = sourceReader->frameAt(600).pixelColor(centre);
+    QVERIFY2(sourceStill.red() > 170 && sourceStill.green() < 90,
+             qPrintable(QStringLiteral("Source timing: %1").arg(describeFrames(input))));
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
@@ -1301,11 +1325,12 @@ void tst_VideoTranscoder::segmentsOfAVariableRateSource()
     auto reader = IVideoFrameReader::create();
     if (!reader) QSKIP("No frame reader to inspect the output here");
     QVERIFY2(reader->load(request.outputPath), qPrintable(reader->lastError()));
-    const QPoint centre = QRect(QPoint(0, 0), kSourceSize).center();
     const QColor still = reader->frameAt(500).pixelColor(centre);
     const QColor fast = reader->frameAt(650).pixelColor(centre);
     const QColor last = reader->frameAt(790).pixelColor(centre);
-    QVERIFY2(still.red() > 170 && still.green() < 90, qPrintable(still.name()));
+    QVERIFY2(still.red() > 170 && still.green() < 90,
+             qPrintable(QStringLiteral("Source: %1; output: %2")
+                 .arg(describeFrames(input), describeFrames(request.outputPath))));
     QVERIFY2(fast.green() > 120 && fast.red() < 90, qPrintable(fast.name()));
     QVERIFY2(last.blue() > 170 && last.green() < 90, qPrintable(last.name()));
 }

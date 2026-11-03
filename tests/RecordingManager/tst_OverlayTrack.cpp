@@ -1,5 +1,6 @@
 #include <QtTest>
 #include <QFontDatabase>
+#include <QFontMetricsF>
 
 #include <QImage>
 #include <QPainter>
@@ -228,7 +229,25 @@ void TestOverlayTrack::fontFamilySurvivesProjectAndChangesRendering()
     QJsonObject json = track.toJson();
     QJsonArray segments = json.value(QStringLiteral("segments")).toArray();
     QJsonObject text = segments[0].toObject();
-    const QString family = QFontDatabase::systemFont(QFontDatabase::FixedFont).family();
+    // FixedFont can resolve to the same face as the UI font on Windows.
+    // Choose an installed face whose text metrics really differ instead of
+    // assuming that a platform's logical font aliases name different fonts.
+    QFont baseline;
+    baseline.setPixelSize(20);
+    baseline.setWeight(QFont::DemiBold);
+    const auto width = [&](const QFont& font) {
+        return QFontMetricsF(font).horizontalAdvance(track.segments[0].text);
+    };
+    QString family;
+    for (const QString& candidate : QFontDatabase::families()) {
+        QFont alternate = baseline;
+        alternate.setFamily(candidate);
+        if (qAbs(width(alternate) - width(baseline)) > 2.0) {
+            family = candidate;
+            break;
+        }
+    }
+    QVERIFY2(!family.isEmpty(), "The font fixture needs two distinct installed faces");
     text.insert(QStringLiteral("fontFamily"), family);
     segments[0] = text;
     json.insert(QStringLiteral("segments"), segments);
