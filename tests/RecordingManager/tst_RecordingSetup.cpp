@@ -921,6 +921,29 @@ void TestRecordingSetup::areaSelectorChoosesAnAreaOfOneScreen()
     QTRY_COMPARE(cancelled.count(), 1);
     selector.close();
     QVERIFY(!selector.rootItem());
+    QTest::qWait(50);
+    QCOMPARE(cancelled.count(), 1); // closing it ourselves is not a cancel
+
+    // A narrow screen (a portrait display at 200%): the toolbar wraps and
+    // Record stays on screen (PR #205 review).
+    selector.start(screen);
+    root = selector.rootItem();
+    QVERIFY(root);
+    constexpr int kNarrow = 720;
+    root->window()->showNormal();
+    root->window()->resize(kNarrow, 600);
+    QTRY_COMPARE(int(root->width()), kNarrow);
+    QQuickItem* record = root->findChild<QQuickItem*>(QStringLiteral("areaRecordButton"));
+    QVERIFY(record);
+    QTRY_VERIFY(record->mapRectToScene(QRectF(0, 0, record->width(), record->height())).right() <= kNarrow);
+    QVERIFY(record->mapRectToScene(QRectF(0, 0, record->width(), record->height())).left() >= 0);
+
+    // Closed by the window manager (Alt+F4): the setup is cancelled, once.
+    root->window()->close();
+    QTRY_COMPARE(cancelled.count(), 2);
+    selector.close();
+    QTest::qWait(50);
+    QCOMPARE(cancelled.count(), 2);
 }
 
 void TestRecordingSetup::lostMicrophoneEndsTheTest_data()

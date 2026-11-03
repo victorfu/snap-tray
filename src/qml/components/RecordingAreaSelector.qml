@@ -182,7 +182,21 @@ Item {
     // The toolbar: ratio, full screen, cancel, record.
     Item {
         objectName: "areaToolbar"
-        width: toolbarRow.implicitWidth + 16
+        // One line where it fits; on a narrow screen (a portrait display at
+        // 200%) the buttons wrap, so Record is always on screen (PR #205 review).
+        readonly property real naturalWidth: {
+            let total = 0
+            let count = 0
+            for (let i = 0; i < toolbarRow.children.length; ++i) {
+                const child = toolbarRow.children[i]
+                if (child.visible && child.implicitWidth > 0) {
+                    total += child.implicitWidth
+                    ++count
+                }
+            }
+            return total + Math.max(0, count - 1) * toolbarRow.spacing
+        }
+        width: Math.min(naturalWidth, root.width - 2 * root.toolbarMargin - 16) + 16
         height: toolbarRow.implicitHeight + 12
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
@@ -197,13 +211,15 @@ Item {
             glassRadius: ComponentTokens.captureOverlayPanelRadius
         }
 
-        Row {
+        Flow {
             id: toolbarRow
             anchors.centerIn: parent
+            width: parent.width - 16
             spacing: 6
 
             Text {
-                anchors.verticalCenter: parent.verticalCenter
+                height: 28
+                verticalAlignment: Text.AlignVCenter
                 text: root.hasSelection ? qsTr("Drag to move or redraw") : qsTr("Drag to choose the area to record")
                 color: SemanticTokens.textPrimary
                 font.pixelSize: SemanticTokens.fontSizeCaption

@@ -40,6 +40,7 @@ private:
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
     QPointer<QScreen> m_screen;
+    bool m_closing = false; // close() itself, not the window manager
 };
 
 } // namespace SnapTray

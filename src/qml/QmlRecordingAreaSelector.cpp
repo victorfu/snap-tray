@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QQuickItem>
 #include <QQuickView>
+#include <QScopeGuard>
 #include <QScreen>
 #include <QtMath>
 
@@ -42,6 +43,13 @@ void QmlRecordingAreaSelector::start(QScreen* screen)
     connect(m_rootItem, SIGNAL(accepted(qreal,qreal,qreal,qreal)), this, SLOT(onAccepted(qreal,qreal,qreal,qreal)));
     connect(m_rootItem, SIGNAL(cancelled()), this, SIGNAL(cancelled()));
     connect(m_rootItem, SIGNAL(fullScreenChosen()), this, SLOT(onFullScreenChosen()));
+    // Closed by the window manager (Alt+F4): the same as Cancel, so the
+    // recording setup ends instead of holding other captures (PR #205
+    // review). Queued: the cancel handler closes this window again.
+    connect(m_view, &QQuickWindow::closing, this, [this]() {
+        if (m_closing) return;
+        QMetaObject::invokeMethod(this, [this]() { emit cancelled(); }, Qt::QueuedConnection);
+    });
     m_view->setScreen(screen);
     m_view->setGeometry(screen->geometry());
     // Full screen, so a window manager does not keep it clear of its panels.
@@ -54,6 +62,8 @@ void QmlRecordingAreaSelector::start(QScreen* screen)
 void QmlRecordingAreaSelector::close()
 {
     if (!m_view) return;
+    m_closing = true;
+    const auto reset = qScopeGuard([this] { m_closing = false; });
     m_view->close();
     m_view->deleteLater();
     m_view = nullptr;
