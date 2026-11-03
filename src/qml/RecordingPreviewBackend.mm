@@ -137,7 +137,9 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         keys = std::shared_ptr<SnapTray::KeyOverlayRenderer>(
             new SnapTray::KeyOverlayRenderer(*m_keyTimeline, m_keyOverlay),
             [held = m_keyTimeline](SnapTray::KeyOverlayRenderer* renderer) { delete renderer; });
-        if (hasTimelineEdits()) keys->setTimeline(timelineMap());
+        // Always the trimmed range (PR #200 review): a key pressed before the
+        // trim start must not show in the first hint, even without cuts.
+        keys->setTimeline(timelineMap());
     }
     return [timeline, cursor, zoom, redaction, appearance, blurredBackground, keys, bounds, videoSize](
                QImage& frame, qint64 sourceMs) {

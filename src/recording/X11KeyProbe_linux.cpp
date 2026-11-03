@@ -87,6 +87,7 @@ public:
     ~X11KeyProbe() override
     {
         delete m_notifier;
+        if (m_xkb) XkbFreeKeyboard(m_xkb, 0, True);
         if (m_display) XCloseDisplay(m_display);
     }
 
@@ -130,20 +131,45 @@ private:
             if (cookie->evtype != XI_RawKeyPress && cookie->evtype != XI_RawKeyRelease) continue;
             const auto* raw = static_cast<const XIRawEvent*>(cookie->data);
             const bool down = cookie->evtype == XI_RawKeyPress;
-            const KeySym base = XkbKeycodeToKeysym(m_display, KeyCode(raw->detail), 0, 0);
-            const int key = qtKeyFor(base);
+            const KeyCode code = KeyCode(raw->detail);
+            // The live keyboard state: the active layout (group) and every
+            // modifier that picks a level, such as Caps Lock and AltGr, not
+            // only Shift (PR #200 review).
+            XkbStateRec state{};
+            const bool haveState = XkbGetState(m_display, XkbUseCoreKbd, &state) == Success;
+            const int group = haveState ? state.group : 0;
+            // The key itself (for shortcut labels): its first level in the
+            // active layout, or in the first layout for one without Latin keys.
+            int key = qtKeyFor(XkbKeycodeToKeysym(m_display, code, group, 0));
+            if (key == 0 && group != 0) key = qtKeyFor(XkbKeycodeToKeysym(m_display, code, 0, 0));
             if (const Qt::KeyboardModifier modifier = modifierFor(key)) {
                 m_modifiers.setFlag(modifier, down);
                 continue;
             }
             if (!down || (raw->flags & XIKeyRepeat) || key == 0) continue;
-            const KeySym typed = XkbKeycodeToKeysym(m_display, KeyCode(raw->detail), 0,
-                                                    m_modifiers.testFlag(Qt::ShiftModifier) ? 1 : 0);
-            emit keyPressed(key, m_modifiers, textFor(typed), 0);
+            emit keyPressed(key, m_modifiers, textFor(typedKeysym(code, state, haveState)), 0);
         }
     }
 
+    // What the key types now: translated through the keyboard's key types
+    // with the full state (group and modifiers).
+    KeySym typedKeysym(KeyCode code, const XkbStateRec& state, bool haveState)
+    {
+        if (!m_xkb) m_xkb = XkbGetMap(m_display, XkbKeyTypesMask | XkbKeySymsMask | XkbModifierMapMask, XkbUseCoreKbd);
+        if (haveState && m_xkb) {
+            unsigned int consumed = 0;
+            KeySym keysym = NoSymbol;
+            if (XkbTranslateKeyCode(m_xkb, code, XkbBuildCoreState(state.mods, state.group), &consumed, &keysym)
+                && keysym != NoSymbol) {
+                return keysym;
+            }
+        }
+        return XkbKeycodeToKeysym(m_display, code, haveState ? state.group : 0,
+                                  m_modifiers.testFlag(Qt::ShiftModifier) ? 1 : 0);
+    }
+
     Display* m_display = nullptr;
+    XkbDescPtr m_xkb = nullptr;
     QSocketNotifier* m_notifier = nullptr;
     int m_xiOpcode = 0;
     Qt::KeyboardModifiers m_modifiers;

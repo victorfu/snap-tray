@@ -427,6 +427,7 @@ private slots:
     void cutsRefusedWhereMp4CannotJoin();
     void keyHintsMatchAcrossPreviewAndOutputs_data();
     void keyHintsMatchAcrossPreviewAndOutputs();
+    void keysBeforeTheTrimStayOut();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
@@ -2418,6 +2419,68 @@ void tst_RecordingPreviewExport::keyHintsMatchAcrossPreviewAndOutputs()
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     // The key sidecar goes with the recording once the export is saved.
     QVERIFY(!QFile::exists(SnapTray::KeyTimelineSidecar::pathFor(inputPath)));
+}
+
+// PR #200 review: a plain trim (no cuts) still bounds the hints. A shortcut
+// pressed at 100 ms is not in a recording trimmed to start at 200 ms, in the
+// preview or the output; and the preview's cached renderer follows changes.
+void tst_RecordingPreviewExport::keysBeforeTheTrimStayOut()
+{
+    const QSize sourceSize(320, 240);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    {
+        SnapTray::KeyTimelineWriter writer(SnapTray::KeyTimelineSidecar::pathFor(inputPath));
+        QVERIFY(writer.open({SnapTray::KeyRecordingMode::Shortcuts, false}));
+        writer.add({100, Qt::Key_C, Qt::ControlModifier, {}});
+        QVERIFY(writer.finish());
+    }
+    const QJsonObject remembered = RecordingSettingsManager::instance().keyOverlay();
+    auto restore = qScopeGuard([remembered]() { RecordingSettingsManager::instance().setKeyOverlay(remembered); });
+    RecordingSettingsManager::instance().setKeyOverlay({});
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QVERIFY(backend.keyOverlayActive());
+    const auto hintIn = [](const QImage& image) {
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = 0; x < image.width(); ++x) {
+                const QColor c = image.pixelColor(x, y);
+                if (!(c.red() > 150 && c.green() < 100 && c.blue() < 100)) return true;
+            }
+        return false;
+    };
+    RecordingKeyOverlay overlay;
+    overlay.setBackend(&backend);
+    overlay.setContentRect(QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+    const auto paintAt = [&](qint64 ms) {
+        overlay.setPosition(ms);
+        QImage image(sourceSize, QImage::Format_RGB32);
+        image.fill(Qt::red);
+        QPainter painter(&image);
+        overlay.paint(&painter);
+        painter.end();
+        return image;
+    };
+    QVERIFY(hintIn(paintAt(250))); // untrimmed: the hint lasts past 250 ms
+    backend.setTrimStart(200);
+    QVERIFY(!hintIn(paintAt(250)));
+    backend.setTrimStart(0);
+    QVERIFY(hintIn(paintAt(250))); // the cached renderer follows the trim back
+    backend.setTrimStart(200);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    const QImage first = animationFrameAt(savedSpy.first().at(0).toString(), 50); // source 250 ms
+    QVERIFY(!first.isNull());
+    QVERIFY2(!hintIn(first), "a hint for a key pressed before the trim start");
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
 }
 
 void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()
