@@ -1813,29 +1813,36 @@ Item {
                     }
                 }
 
-                TextField {
-                    id: overlayTextField
-                    objectName: "previewOverlayText"
+                ScrollView {
                     visible: overlayPanel.isText
                     width: 180
-                    height: ComponentTokens.recordingPreviewControlButtonHeight
-                    font.pixelSize: SemanticTokens.fontSizeSmall
-                    color: root.textPrimary
-                    selectByMouse: true
-                    placeholderText: qsTr("Text")
-                    Accessible.name: qsTr("Overlay text")
-                    text: root.selectedOverlayData ? root.selectedOverlayData.text : ""
-                    // Applied as typed; one undo step per edit.
-                    onTextEdited: backend.setOverlayText(backend.selectedOverlay, text)
-                    Keys.onEscapePressed: function(event) {
-                        root.forceActiveFocus()
-                        event.accepted = true
-                    }
-                    background: Rectangle {
-                        radius: SemanticTokens.radiusSmall
-                        color: root.bgPanel
-                        border.width: 1
-                        border.color: overlayTextField.activeFocus ? root.accent : root.borderColor
+                    height: 3 * ComponentTokens.recordingPreviewControlButtonHeight
+                    clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                    TextArea {
+                        id: overlayTextField
+                        objectName: "previewOverlayText"
+                        textFormat: TextEdit.PlainText
+                        wrapMode: TextEdit.Wrap
+                        font.pixelSize: SemanticTokens.fontSizeSmall
+                        color: root.textPrimary
+                        selectByMouse: true
+                        placeholderText: qsTr("Text")
+                        Accessible.name: qsTr("Overlay text")
+                        text: root.selectedOverlayData ? root.selectedOverlayData.text : ""
+                        // Applied as typed; one undo step per edit.
+                        onTextEdited: backend.setOverlayText(backend.selectedOverlay, text)
+                        Keys.onEscapePressed: function(event) {
+                            root.forceActiveFocus()
+                            event.accepted = true
+                        }
+                        background: Rectangle {
+                            radius: SemanticTokens.radiusSmall
+                            color: root.bgPanel
+                            border.width: 1
+                            border.color: overlayTextField.activeFocus ? root.accent : root.borderColor
+                        }
                     }
                 }
                 SegmentButton {

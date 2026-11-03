@@ -261,10 +261,27 @@ void tst_RecordingPreviewPointer::overlayPanelEditsText()
     QVERIFY(field && field->isVisible());
     QCOMPARE(field->property("text").toString(), backend.overlayTrack().segments[0].text);
     // Typing: the field is a text entry, so preview shortcuts stay off.
+    view->requestActivate();
+    QVERIFY(QTest::qWaitForWindowActive(view));
     field->forceActiveFocus();
+    QTRY_VERIFY(field->hasActiveFocus());
     QTest::keyClick(view, Qt::Key_A, Qt::ControlModifier); // select all
     for (const QChar c : QStringLiteral("Step 1")) QTest::keyClick(view, c.toLatin1());
     QTRY_COMPARE(backend.overlayTrack().segments[0].text, QStringLiteral("Step 1"));
+    QTRY_VERIFY(view->rootObject()->property("textEntryActive").toBool());
+    QTest::keyClick(view, Qt::Key_Return);
+    for (const QChar c : QStringLiteral("<b>Step 2</b>")) QTest::keyClick(view, c.toLatin1());
+    const QString caption = QStringLiteral("Step 1\n<b>Step 2</b>");
+    QTRY_COMPARE(backend.overlayTrack().segments[0].text, caption);
+    QCOMPARE(field->property("text").toString(), caption);
+    // Editing keys must not delete the selected overlay or discard the preview.
+    QTest::keyClick(view, Qt::Key_Home, Qt::ControlModifier);
+    QTest::keyClick(view, Qt::Key_Backspace);
+    QCOMPARE(backend.selectedOverlay(), 0);
+    QCOMPARE(backend.overlayTrack().segments[0].text, caption);
+    QTest::keyClick(view, Qt::Key_Escape);
+    QTRY_VERIFY(!view->rootObject()->property("textEntryActive").toBool());
+    QVERIFY(!backend.discardConfirmationPending());
     const double size = backend.overlayTrack().segments[0].size;
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayLarger"), "clicked"));
     QVERIFY(backend.overlayTrack().segments[0].size > size);
