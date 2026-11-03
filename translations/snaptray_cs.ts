@@ -2584,6 +2584,111 @@ Velikost: %2</translation>
         <source>Finish editing this range</source>
         <translation>Dokončit úpravu tohoto úseku</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Original</source>
+        <translation>Velikost: Původní</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 1080p</source>
+        <translation>Velikost: 1080p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 720p</source>
+        <translation>Velikost: 720p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Custom Width</source>
+        <translation>Velikost: Vlastní šířka</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Default</source>
+        <translation>Kvalita: Výchozí</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Low</source>
+        <translation>Kvalita: Nízká</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Medium</source>
+        <translation>Kvalita: Střední</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: High</source>
+        <translation>Kvalita: Vysoká</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>MP4 Options</source>
+        <translation>Možnosti MP4</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size, frame rate, quality and codec of the MP4, with an estimated file size</source>
+        <translation>Velikost, snímková frekvence, kvalita a kodek MP4 s odhadem velikosti souboru</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
+        <translation>Změna velikosti a snímkové frekvence MP4 zatím v tomto systému není podporována</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Make the video smaller; it is never made larger than recorded</source>
+        <translation>Zmenšit video; nikdy se nezvětší nad nahranou velikost</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Video width in pixels</source>
+        <translation>Šířka videa v pixelech</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 fps</source>
+        <translation>%1 sn./s</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>FPS: Original</source>
+        <translation>Sn./s: Původní</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
+        <translation>Nižší snímková frekvence znamená menší soubor; nikdy není vyšší než při nahrávání</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Default uses the quality from the Recording settings</source>
+        <translation>Výchozí použije kvalitu z nastavení nahrávání</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Plays everywhere</source>
+        <translation>Přehraje se všude</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller files at the same quality; some older players cannot open them</source>
+        <translation>Menší soubory při stejné kvalitě; některé starší přehrávače je neotevřou</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export is not available on this system</source>
+        <translation>Export HEVC není v tomto systému k dispozici</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 × %2, %3 fps · %4 (estimate)</source>
+        <translation>%1 × %2, %3 sn./s · %4 (odhad)</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2700,6 +2805,11 @@ Velikost: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Cancelling...</source>
         <translation>Rušení...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>About %1</source>
+        <translation>Asi %1</translation>
     </message>
 </context>
 <context>

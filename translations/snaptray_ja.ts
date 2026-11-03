@@ -2584,6 +2584,111 @@ Size: %2</source>
         <source>Finish editing this range</source>
         <translation>この範囲の編集を終了します</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Original</source>
+        <translation>サイズ：元のまま</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 1080p</source>
+        <translation>サイズ：1080p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 720p</source>
+        <translation>サイズ：720p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Custom Width</source>
+        <translation>サイズ：幅を指定</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Default</source>
+        <translation>画質：既定</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Low</source>
+        <translation>画質：低</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Medium</source>
+        <translation>画質：中</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: High</source>
+        <translation>画質：高</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>MP4 Options</source>
+        <translation>MP4 オプション</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size, frame rate, quality and codec of the MP4, with an estimated file size</source>
+        <translation>MP4 のサイズ、フレームレート、画質、コーデックと推定ファイルサイズ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
+        <translation>このシステムでは MP4 のサイズとフレームレートの変更にまだ対応していません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Make the video smaller; it is never made larger than recorded</source>
+        <translation>動画を小さくします。録画より大きくなることはありません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Video width in pixels</source>
+        <translation>動画の幅（ピクセル）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 fps</source>
+        <translation>%1 fps</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>FPS: Original</source>
+        <translation>fps：元のまま</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
+        <translation>フレームレートを下げるとファイルが小さくなります。録画より高くなることはありません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Default uses the quality from the Recording settings</source>
+        <translation>既定は録画設定の画質を使います</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Plays everywhere</source>
+        <translation>どこでも再生できます</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller files at the same quality; some older players cannot open them</source>
+        <translation>同じ画質でファイルが小さくなります。古いプレーヤーでは開けない場合があります</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export is not available on this system</source>
+        <translation>このシステムでは HEVC で書き出せません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 × %2, %3 fps · %4 (estimate)</source>
+        <translation>%1 × %2、%3 fps · %4（推定）</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2700,6 +2805,11 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Cancelling...</source>
         <translation>キャンセルしています...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>About %1</source>
+        <translation>約 %1</translation>
     </message>
 </context>
 <context>

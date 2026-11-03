@@ -2584,6 +2584,111 @@ Rozmiar: %2</translation>
         <source>Finish editing this range</source>
         <translation>Zakończ edycję tego zakresu</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Original</source>
+        <translation>Rozmiar: Oryginalny</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 1080p</source>
+        <translation>Rozmiar: 1080p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 720p</source>
+        <translation>Rozmiar: 720p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Custom Width</source>
+        <translation>Rozmiar: Własna szerokość</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Default</source>
+        <translation>Jakość: Domyślna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Low</source>
+        <translation>Jakość: Niska</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Medium</source>
+        <translation>Jakość: Średnia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: High</source>
+        <translation>Jakość: Wysoka</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>MP4 Options</source>
+        <translation>Opcje MP4</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size, frame rate, quality and codec of the MP4, with an estimated file size</source>
+        <translation>Rozmiar, liczba klatek, jakość i kodek MP4 z szacowanym rozmiarem pliku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
+        <translation>Zmiana rozmiaru i liczby klatek MP4 nie jest jeszcze obsługiwana w tym systemie</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Make the video smaller; it is never made larger than recorded</source>
+        <translation>Zmniejsz wideo; nigdy nie jest powiększane ponad nagrany rozmiar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Video width in pixels</source>
+        <translation>Szerokość wideo w pikselach</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 fps</source>
+        <translation>%1 kl./s</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>FPS: Original</source>
+        <translation>Kl./s: Oryginalna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
+        <translation>Niższa liczba klatek daje mniejszy plik; nigdy nie jest wyższa niż nagrana</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Default uses the quality from the Recording settings</source>
+        <translation>Domyślna używa jakości z ustawień nagrywania</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Plays everywhere</source>
+        <translation>Odtwarzany wszędzie</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller files at the same quality; some older players cannot open them</source>
+        <translation>Mniejsze pliki przy tej samej jakości; niektóre starsze odtwarzacze ich nie otworzą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export is not available on this system</source>
+        <translation>Eksport HEVC nie jest dostępny w tym systemie</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 × %2, %3 fps · %4 (estimate)</source>
+        <translation>%1 × %2, %3 kl./s · %4 (szacunkowo)</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2700,6 +2805,11 @@ Rozmiar: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Cancelling...</source>
         <translation>Anulowanie...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>About %1</source>
+        <translation>Około %1</translation>
     </message>
 </context>
 <context>

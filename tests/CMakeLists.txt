@@ -272,6 +272,12 @@ target_sources(Qml_RecordingPreviewPointer PRIVATE ${CMAKE_SOURCE_DIR}/resources
 add_test(NAME Qml_RecordingPreviewPointer COMMAND Qml_RecordingPreviewPointer)
 set_tests_properties(Qml_RecordingPreviewPointer PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(Qml_RecordingPreviewMp4Options Qml/tst_RecordingPreviewMp4Options.cpp)
+target_link_libraries(Qml_RecordingPreviewMp4Options PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingPreviewMp4Options PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingPreviewMp4Options COMMAND Qml_RecordingPreviewMp4Options)
+set_tests_properties(Qml_RecordingPreviewMp4Options PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Qml_RecordingPreviewDiscard Qml/tst_RecordingPreviewDiscard.cpp)
 target_link_libraries(Qml_RecordingPreviewDiscard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
 target_sources(Qml_RecordingPreviewDiscard PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -359,6 +365,11 @@ target_link_libraries(RecordingManager_CursorEffects PRIVATE snaptray_core Qt6::
 add_test(NAME RecordingManager_CursorEffects COMMAND RecordingManager_CursorEffects)
 set_tests_properties(RecordingManager_CursorEffects PROPERTIES TIMEOUT 60 LABELS "unit"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_Mp4ExportOptions RecordingManager/tst_Mp4ExportOptions.cpp)
+target_link_libraries(RecordingManager_Mp4ExportOptions PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_Mp4ExportOptions COMMAND RecordingManager_Mp4ExportOptions)
+set_tests_properties(RecordingManager_Mp4ExportOptions PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
 target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)

@@ -39,6 +39,11 @@ const AVCodec* softwareEncoder()
     return nullptr;
 }
 
+const AVCodec* softwareHevcEncoder()
+{
+    return avcodec_find_encoder_by_name("libx265");
+}
+
 QString ffmpegError(int code)
 {
     char buffer[AV_ERROR_MAX_STRING_SIZE] = {};
@@ -132,6 +137,7 @@ struct FFmpegEncoder::State
 FFmpegEncoder::FFmpegEncoder(QObject* parent) : IVideoEncoder(parent) {}
 FFmpegEncoder::~FFmpegEncoder() { release(); }
 bool FFmpegEncoder::isAvailable() const { return softwareEncoder() != nullptr; }
+bool FFmpegEncoder::isHevcAvailable() { return softwareHevcEncoder() != nullptr; }
 QString FFmpegEncoder::encoderName() const
 {
     if (!m_encoderName.isEmpty()) return m_encoderName;
@@ -204,9 +210,10 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
         fail(QStringLiteral("MP4 requires a valid path, even frame dimensions, and 1–240 fps."));
         return false;
     }
-    const AVCodec* encoder = softwareEncoder();
+    const AVCodec* encoder = m_hevc ? softwareHevcEncoder() : softwareEncoder();
     if (!encoder) {
-        fail(QStringLiteral("System FFmpeg has no libx264 or libopenh264 H.264 encoder."));
+        fail(m_hevc ? QStringLiteral("System FFmpeg has no libx265 HEVC encoder.")
+                    : QStringLiteral("System FFmpeg has no libx264 or libopenh264 H.264 encoder."));
         return false;
     }
 
@@ -279,6 +286,10 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
             s.codec->hw_frames_ctx = frames;
         }
         AVDictionary* options = nullptr;
+        if (QByteArray(candidate->name) == "libx265") {
+            av_dict_set(&options, "preset", "ultrafast", 0);
+            av_dict_set(&options, "x265-params", "log-level=error", 0);
+        }
         if (QByteArray(candidate->name) == "libx264") {
             av_dict_set(&options, "preset", "ultrafast", 0);
             av_dict_set(&options, "tune", "zerolatency", 0);
@@ -299,20 +310,26 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
     bool opened = false;
     const QByteArray preference = qgetenv("SNAPTRAY_FFMPEG_ENCODER");
     if (preference != "software") {
+        const char* vaapi = m_hevc ? "hevc_vaapi" : "h264_vaapi";
+        const char* nvenc = m_hevc ? "hevc_nvenc" : "h264_nvenc";
         if (preference.isEmpty() || preference == "h264_vaapi") {
             const auto nodes = QDir(QStringLiteral("/dev/dri")).entryList({QStringLiteral("renderD*")}, QDir::System | QDir::Files);
             for (const auto& node : nodes) {
                 const QByteArray path = QFile::encodeName(QStringLiteral("/dev/dri/") + node);
                 if (av_hwdevice_ctx_create(&s.device, AV_HWDEVICE_TYPE_VAAPI, path.constData(), nullptr, 0) >= 0
-                    && openEncoder(avcodec_find_encoder_by_name("h264_vaapi"), s.device)) { opened = true; break; }
+                    && openEncoder(avcodec_find_encoder_by_name(vaapi), s.device)) { opened = true; break; }
                 av_buffer_unref(&s.device);
             }
         }
         if (!opened && (preference.isEmpty() || preference == "h264_nvenc"))
-            opened = openEncoder(avcodec_find_encoder_by_name("h264_nvenc"), nullptr);
+            opened = openEncoder(avcodec_find_encoder_by_name(nvenc), nullptr);
     }
     if (!opened) opened = openEncoder(encoder, nullptr);
-    if (!opened) { fail(QStringLiteral("Cannot initialize a hardware or software H.264 encoder.")); return false; }
+    if (!opened) {
+        fail(m_hevc ? QStringLiteral("Cannot initialize a hardware or software HEVC encoder.")
+                    : QStringLiteral("Cannot initialize a hardware or software H.264 encoder."));
+        return false;
+    }
     s.frame->format = s.device ? AV_PIX_FMT_NV12 : s.codec->pix_fmt;
     if (s.device) {
         s.hardwareFrame = av_frame_alloc();
@@ -352,6 +369,8 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
     s.stream->time_base = s.codec->time_base;
     s.stream->avg_frame_rate = s.codec->framerate;
     result = avcodec_parameters_from_context(s.stream->codecpar, s.codec);
+    // "hvc1" (parameter sets in the sample description) is what Apple players accept.
+    if (result >= 0 && m_hevc) s.stream->codecpar->codec_tag = MKTAG('h', 'v', 'c', '1');
     if (result >= 0) {
         // Fragmented MP4: a fragment at every keyframe, so an interrupted file
         // still plays up to its last fragment. delay_moov writes the header

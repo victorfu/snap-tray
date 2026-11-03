@@ -74,6 +74,14 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::cursorEffectsChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::masksChanged);
+    m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(RecordingSettingsManager::instance().mp4ExportOptions());
+    // The estimate follows everything that changes the exported picture or length.
+    for (const auto signal : {&RecordingPreviewBackend::mp4OptionsChanged, &RecordingPreviewBackend::cropRectChanged,
+                              &RecordingPreviewBackend::trimRangeChanged, &RecordingPreviewBackend::durationChanged,
+                              &RecordingPreviewBackend::videoSizeChanged, &RecordingPreviewBackend::cursorEffectsChanged,
+                              &RecordingPreviewBackend::zoomChanged, &RecordingPreviewBackend::masksChanged}) {
+        connect(this, signal, this, &RecordingPreviewBackend::mp4EstimateChanged);
+    }
 }
 
 std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
@@ -133,16 +141,161 @@ bool RecordingPreviewBackend::cursorEffectsAvailable() const
     return hasPointerData() && formatCanDrawEffects();
 }
 
-bool RecordingPreviewBackend::formatCanDrawEffects() const
+const RecordingPreviewBackend::Mp4Capabilities& RecordingPreviewBackend::mp4Capabilities() const
 {
-    if (m_selectedFormat != MP4) return true; // GIF/WebP frames are drawn here
-    if (!m_mp4FrameFilterSupported) {
+    if (!m_mp4Capabilities) {
         const auto factory = transcoderFactoryOverride() ? transcoderFactoryOverride()
                                                          : TranscoderFactory(&IVideoTranscoder::create);
         const auto transcoder = factory ? factory() : nullptr;
-        m_mp4FrameFilterSupported = transcoder && transcoder->supportsFrameFilter();
+        Mp4Capabilities capabilities;
+        if (transcoder) {
+            capabilities.frameFilter = transcoder->supportsFrameFilter();
+            capabilities.outputOptions = transcoder->supportsOutputOptions();
+            capabilities.hevc = transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecHevc));
+        }
+        m_mp4Capabilities = capabilities;
     }
-    return *m_mp4FrameFilterSupported;
+    return *m_mp4Capabilities;
+}
+
+const VideoFileProbe& RecordingPreviewBackend::sourceProbe() const
+{
+    if (!m_sourceProbe) {
+        const auto factory = transcoderFactoryOverride() ? transcoderFactoryOverride()
+                                                         : TranscoderFactory(&IVideoTranscoder::create);
+        const auto transcoder = factory ? factory() : nullptr;
+        m_sourceProbe = transcoder ? transcoder->probe(m_videoPath) : VideoFileProbe();
+    }
+    return *m_sourceProbe;
+}
+
+bool RecordingPreviewBackend::formatCanDrawEffects() const
+{
+    if (m_selectedFormat != MP4) return true; // GIF/WebP frames are drawn here
+    return mp4Capabilities().frameFilter;
+}
+
+bool RecordingPreviewBackend::mp4OutputOptionsAvailable() const
+{
+    return mp4Capabilities().outputOptions;
+}
+
+bool RecordingPreviewBackend::mp4HevcAvailable() const
+{
+    return mp4Capabilities().hevc;
+}
+
+SnapTray::Mp4ExportOptions RecordingPreviewBackend::effectiveMp4Options() const
+{
+    SnapTray::Mp4ExportOptions options = m_mp4Options;
+    if (!mp4OutputOptionsAvailable()) {
+        options.resolution = SnapTray::Mp4ExportOptions::Resolution::Original;
+        options.frameRate = 0;
+    }
+    if (options.codec == SnapTray::Mp4ExportOptions::Codec::Hevc && !mp4HevcAvailable()) {
+        options.codec = SnapTray::Mp4ExportOptions::Codec::H264;
+    }
+    return options;
+}
+
+QSize RecordingPreviewBackend::mp4BaseSize() const
+{
+    if (!m_cropRect.isEmpty()) return m_cropRect.size();
+    return m_videoSize.isEmpty() ? sourceProbe().videoSize : m_videoSize;
+}
+
+bool RecordingPreviewBackend::mp4OptionsActive() const
+{
+    const VideoFileProbe& probe = sourceProbe();
+    // Unknown source codec: only an explicit HEVC choice counts as a change.
+    return effectiveMp4Options().changesStream(mp4BaseSize(), probe.frameRate, probe.videoCodec);
+}
+
+QSize RecordingPreviewBackend::mp4OutputSize() const
+{
+    return effectiveMp4Options().outputSize(mp4BaseSize());
+}
+
+int RecordingPreviewBackend::mp4OutputFrameRate() const
+{
+    return effectiveMp4Options().outputFrameRate(sourceProbe().frameRate);
+}
+
+int RecordingPreviewBackend::mp4SourceFrameRate() const
+{
+    return SnapTray::IntermediateQuality::effectiveFrameRate(sourceProbe().frameRate);
+}
+
+qint64 RecordingPreviewBackend::mp4EstimatedBytes() const
+{
+    const VideoFileProbe& probe = sourceProbe();
+    const qint64 durationMs = m_duration > 0 ? trimmedDuration() : probe.durationMs;
+    if (durationMs <= 0) return 0;
+    const int settingsQuality = outputQualityOverride() ? outputQualityOverride()()
+                                                        : RecordingSettingsManager::instance().quality();
+    const SnapTray::Mp4ExportOptions options = effectiveMp4Options();
+    const bool edited = hasTrim() || hasCrop() || effectsActive() || mp4OptionsActive();
+    if (!edited) {
+        // Saved as recorded when it already meets the target (see performTranscode).
+        const qint64 fileBytes = QFileInfo(m_videoPath).size();
+        if (!m_recordedAsIntermediate
+            || SnapTray::IntermediateQuality::smartSaveShouldMove(probe, fileBytes,
+                                                                  options.outputQuality(settingsQuality))) {
+            return fileBytes;
+        }
+    }
+    const int bitrate = options.videoBitrate(mp4OutputSize(), mp4OutputFrameRate(), settingsQuality);
+    return SnapTray::Mp4SizeEstimate::bytes(bitrate, probe.hasAudio, durationMs);
+}
+
+QString RecordingPreviewBackend::mp4EstimateText() const
+{
+    const qint64 bytes = mp4EstimatedBytes();
+    if (bytes <= 0) return QString();
+    return tr("About %1").arg(QLocale().formattedDataSize(bytes));
+}
+
+void RecordingPreviewBackend::editMp4Options(const std::function<void(SnapTray::Mp4ExportOptions&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::Mp4ExportOptions options = m_mp4Options;
+    change(options);
+    if (options == m_mp4Options) return;
+    m_mp4Options = options;
+    RecordingSettingsManager::instance().setMp4ExportOptions(options.toJson());
+    emit mp4OptionsChanged();
+}
+
+void RecordingPreviewBackend::setMp4Resolution(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::Mp4ExportOptions::Resolution::CustomWidth));
+    editMp4Options([clamped](SnapTray::Mp4ExportOptions& o) { o.resolution = SnapTray::Mp4ExportOptions::Resolution(clamped); });
+}
+
+void RecordingPreviewBackend::setMp4CustomWidth(int value)
+{
+    const int clamped = qBound(SnapTray::Mp4ExportOptions::kMinCustomWidth, value,
+                               SnapTray::Mp4ExportOptions::kMaxCustomWidth);
+    editMp4Options([clamped](SnapTray::Mp4ExportOptions& o) { o.customWidth = clamped; });
+}
+
+void RecordingPreviewBackend::setMp4FrameRate(int value)
+{
+    const auto& choices = SnapTray::Mp4ExportOptions::kFrameRateChoices;
+    if (std::find(std::begin(choices), std::end(choices), value) == std::end(choices)) return;
+    editMp4Options([value](SnapTray::Mp4ExportOptions& o) { o.frameRate = value; });
+}
+
+void RecordingPreviewBackend::setMp4Quality(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::Mp4ExportOptions::Quality::High));
+    editMp4Options([clamped](SnapTray::Mp4ExportOptions& o) { o.quality = SnapTray::Mp4ExportOptions::Quality(clamped); });
+}
+
+void RecordingPreviewBackend::setMp4Codec(int value)
+{
+    const int clamped = qBound(0, value, int(SnapTray::Mp4ExportOptions::Codec::Hevc));
+    editMp4Options([clamped](SnapTray::Mp4ExportOptions& o) { o.codec = SnapTray::Mp4ExportOptions::Codec(clamped); });
 }
 
 bool RecordingPreviewBackend::clickEffectsAvailable() const
@@ -955,7 +1108,13 @@ void RecordingPreviewBackend::save()
 
     // An export writes a second file next to the recording. Check the room
     // for it first (an unedited MP4 can be moved as is, so it needs none).
-    const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || effectsActive();
+    // MP4 options that may change the stream need room for an export too.
+    // Whether they really do (a smaller size, a lower rate, another codec
+    // than the source's) is decided by the export job, which probes the
+    // source off the GUI thread.
+    const bool mp4OptionsMayApply = m_selectedFormat == MP4 && effectiveMp4Options().mayChangeStream();
+    const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop() || effectsActive()
+        || mp4OptionsMayApply;
     if (writesNewFile) {
         const QString directory = QFileInfo(m_videoPath).absolutePath();
         const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
@@ -995,7 +1154,8 @@ void RecordingPreviewBackend::save()
     }
 
     // MP4 with no edits: move the intermediate if it already meets the
-    // user's quality, otherwise re-encode it to that quality.
+    // user's quality, otherwise re-encode it to that quality. MP4 options
+    // that change the stream make it an export (decided after the probe).
     performTranscode(true);
 }
 
@@ -1922,13 +2082,15 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         // A snapshot: later changes in the preview do not reach this job.
         request.frameFilter = effectsFrameFilter();
     }
-    const QSize croppedSize = m_cropRect.isEmpty() ? QSize() : m_cropRect.size();
+    QSize croppedSize = m_cropRect.isEmpty() ? QSize() : m_cropRect.size(); // the output size, set by the job
     const QString unsupportedError = tr("Video export is not supported on this platform");
     const QString failedTemplate = tr("Export failed: %1");
     // Transcoder and validation failures carry English diagnostics for the
     // log; the user sees this translated summary instead.
     const QString keptMessage = tr("Export failed; the original recording was kept.");
     const int outputQuality = m_outputQuality;
+    // A snapshot, like the effects: changes in the preview do not reach this job.
+    const SnapTray::Mp4ExportOptions mp4Options = effectiveMp4Options();
     const bool recordedAsIntermediate = m_recordedAsIntermediate;
     const TranscoderFactory createTranscoder = transcoderFactoryOverride()
         ? transcoderFactoryOverride()
@@ -1937,7 +2099,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
 
     (void)QtConcurrent::run([weakThis, request, outputPath, croppedSize, unsupportedError, failedTemplate,
                              keptMessage, cancelToken, createTranscoder, smartSave, outputQuality,
-                             recordedAsIntermediate]() mutable {
+                             mp4Options, recordedAsIntermediate]() mutable {
         // Queued onto the GUI thread; never blocks, so it is safe from the
         // transcoder's worker threads (see IVideoTranscoder::ProgressCallback).
         auto post = [](auto fn) {
@@ -1950,7 +2112,11 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         auto transcoder = createTranscoder();
         // Never export without drawing what was asked for: masks left out
         // would leave what they cover visible.
-        const bool unsupported = !transcoder || (request.frameFilter && !transcoder->supportsFrameFilter());
+        // Nor with a size, frame rate or codec other than the one asked for.
+        const bool unsupported = !transcoder || (request.frameFilter && !transcoder->supportsFrameFilter())
+            || ((mp4Options.resolution != SnapTray::Mp4ExportOptions::Resolution::Original || mp4Options.frameRate > 0)
+                && !transcoder->supportsOutputOptions())
+            || !transcoder->supportsVideoCodec(mp4Options.codecId());
         VideoTranscodeResult result;
         VideoFileProbe sourceProbe;
         bool moveInstead = false;
@@ -1960,20 +2126,33 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             moveInstead = smartSave;
             moveReason = "no transcoder on this platform";
             if (!moveInstead) result.errorMessage = unsupportedError;
-        } else if (smartSave && !recordedAsIntermediate) {
+        } else if (smartSave && !recordedAsIntermediate && !mp4Options.mayChangeStream()) {
             // Already encoded at the user's quality; a re-encode would only lose detail.
             moveInstead = true;
             moveReason = "not an intermediate: recorded at the selected quality; saving as recorded";
         } else {
             sourceProbe = transcoder->probe(request.inputPath);
-            if (smartSave && !sourceProbe.valid) {
+            // A smaller size, a lower frame rate or another codec than the
+            // source's is an export like any edit: never a move, and a failure
+            // is reported instead of saving the recording as it is.
+            if (smartSave && sourceProbe.valid
+                && mp4Options.changesStream(request.cropRect.isEmpty() ? sourceProbe.videoSize
+                                                                       : request.cropRect.size(),
+                                            sourceProbe.frameRate, sourceProbe.videoCodec)) {
+                smartSave = false;
+            }
+            if (smartSave && !recordedAsIntermediate) {
+                moveInstead = true;
+                moveReason = "not an intermediate: recorded at the selected quality; saving as recorded";
+            } else if (smartSave && !sourceProbe.valid) {
                 // A re-encode would only fail validation and leave the user
                 // with Discard; keep the recording as recorded.
                 qWarning() << "RecordingPreviewBackend: unedited recording could not be probed; saving it as recorded";
                 moveInstead = true;
                 moveReason = "unprobeable";
             } else if (smartSave && SnapTray::IntermediateQuality::smartSaveShouldMove(
-                                        sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
+                                        sourceProbe, QFileInfo(request.inputPath).size(),
+                                        mp4Options.outputQuality(outputQuality))) {
                 moveInstead = true;
                 moveReason = "meets the output quality target";
             }
@@ -2017,11 +2196,18 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                     });
                     return !cancelToken->load();
                 };
-            const QSize outputSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
-            request.videoBitrate = SnapTray::IntermediateQuality::outputBitrateFor(
-                outputSize, sourceProbe.frameRate, outputQuality);
+            const QSize baseSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
+            const QSize outputSize = mp4Options.outputSize(baseSize);
+            if (outputSize != baseSize) request.outputSize = outputSize;
+            const int outputFps = mp4Options.outputFrameRate(sourceProbe.frameRate);
+            if (mp4Options.frameRate > 0) request.frameRate = outputFps;
+            if (mp4Options.codec != SnapTray::Mp4ExportOptions::Codec::H264) request.videoCodec = mp4Options.codecId();
+            request.videoBitrate = mp4Options.videoBitrate(outputSize, outputFps, outputQuality);
+            // The file name's {w}x{h} is the picture's real size.
+            if (!request.cropRect.isEmpty() || outputSize != baseSize) croppedSize = outputSize;
             qDebug() << "RecordingPreviewBackend: exporting at" << request.videoBitrate << "bps for"
-                     << outputSize << "quality" << outputQuality;
+                     << outputSize << "at" << outputFps << "fps," << mp4Options.codecId()
+                     << "quality" << mp4Options.outputQuality(outputQuality);
             result = transcoder->transcode(request, progressCallback);
         }
         // Do not trust the transcoder's claim alone: the source is deleted on
@@ -2043,10 +2229,15 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             // The picture must be exactly what was asked for: a crop the
             // transcoder had to shrink or ignore is a different export (and
             // would be named by the requested size).
-            const QSize expectedSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
+            const QSize expectedSize = request.outputSize.isEmpty()
+                ? (request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size())
+                : request.outputSize;
+            const QString expectedCodec = request.videoCodec.isEmpty() ? QString::fromLatin1(kVideoCodecH264)
+                                                                        : request.videoCodec;
             if (cancelToken->load() || !sourceProbe.valid || !outputProbe.valid
                 || !outputInfo.exists() || outputInfo.size() <= 0 || outputProbe.durationMs <= 0
                 || outputProbe.videoSize != expectedSize
+                || (!outputProbe.videoCodec.isEmpty() && outputProbe.videoCodec != expectedCodec)
                 || (expectAudio && (!result.audioCopied || !outputProbe.hasAudio))
                 || (result.audioCopied && !outputProbe.hasAudio)) {
                 qWarning() << "RecordingPreviewBackend: MP4 export output failed validation;"
@@ -2054,6 +2245,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                            << "source valid:" << sourceProbe.valid
                            << "output valid:" << outputProbe.valid
                            << "output size:" << outputProbe.videoSize << "expected:" << expectedSize
+                           << "output codec:" << outputProbe.videoCodec << "expected:" << expectedCodec
                            << "source audio:" << sourceProbe.hasAudio
                            << "audio coverage (ms):" << audioCoverageMs
                            << "audio copied:" << result.audioCopied

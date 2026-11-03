@@ -5,6 +5,8 @@
 #include "video/IVideoFrameReader.h"
 #include "video/IVideoTranscoder.h"
 #include "video/VideoTranscoderFaultInjection.h"
+#include "recording/Mp4ExportOptions.h"
+#include "encoding/VideoBitrate.h"
 
 #include <QCryptographicHash>
 #include <QFile>
@@ -344,6 +346,9 @@ private slots:
     void retryAfterAudioFailureSucceeds();
     void outputAliasingInputIsRefused();
     void invalidInputFails();
+    void outputOptionsScaleAndLowerTheFrameRate();
+    void hevcOutput();
+    void sizeEstimateAgainstActual();
 
 private:
     std::unique_ptr<IVideoTranscoder> m_transcoder;
@@ -994,6 +999,107 @@ void tst_VideoTranscoder::cancelStopsInsideAGapFill()
     // Stopped early in the gap (~20 %), not after filling all ~570 frames of it.
     QVERIFY2(filtered < 300, qPrintable(QString::number(filtered)));
     QVERIFY(!QFileInfo::exists(request.outputPath));
+}
+
+// #190: a smaller picture and a lower frame rate, with the audio kept.
+void tst_VideoTranscoder::outputOptionsScaleAndLowerTheFrameRate()
+{
+    if (!m_transcoder->supportsOutputOptions()) QSKIP("This transcoder does not apply output options");
+    const QString input = fixture(true);
+    if (input.isEmpty()) QSKIP("AAC encoding unavailable");
+    QVERIFY2(!input.startsWith(QLatin1String("ERROR:")), qPrintable(input));
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = m_dir.filePath(QStringLiteral("smaller.mp4"));
+    request.cropRect = QRect(0, 0, 120, 100);
+    request.outputSize = QSize(60, 50);
+    request.frameRate = 5;
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    QVERIFY(result.audioCopied);
+    const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
+    QCOMPARE(probe.videoSize, QSize(60, 50));
+    QVERIFY2(qAbs(probe.frameRate - 5.0) <= kFrameRateTolerance, qPrintable(QString::number(probe.frameRate)));
+    QVERIFY(qAbs(probe.durationMs - kFrameCount * kFrameIntervalMs) <= kDurationToleranceMs);
+    QVERIFY(probe.hasAudio);
+    QCOMPARE(probe.videoCodec, QString::fromLatin1(kVideoCodecH264));
+    // Never larger than the crop, and even.
+    request.outputPath = m_dir.filePath(QStringLiteral("bounded.mp4"));
+    request.outputSize = QSize(301, 99);
+    request.frameRate = 0;
+    QVERIFY2(m_transcoder->transcode(request, {}).success, "bounded export failed");
+    QCOMPARE(m_transcoder->probe(request.outputPath).videoSize, QSize(120, 98));
+}
+
+void tst_VideoTranscoder::hevcOutput()
+{
+    if (!m_transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecHevc)))
+        QSKIP("This system cannot export HEVC");
+    const QString input = fixture(false);
+    QVERIFY2(!input.isEmpty() && !input.startsWith(QLatin1String("ERROR:")), qPrintable(input));
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = m_dir.filePath(QStringLiteral("hevc.mp4"));
+    request.videoCodec = QString::fromLatin1(kVideoCodecHevc);
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
+    QCOMPARE(probe.videoCodec, QString::fromLatin1(kVideoCodecHevc));
+    QCOMPARE(probe.videoSize, kSourceSize);
+    auto reader = IVideoFrameReader::create();
+    QVERIFY(reader);
+    QVERIFY2(reader->load(request.outputPath), qPrintable(reader->lastError()));
+    QVERIFY(!reader->frameAt(500).isNull());
+}
+
+// The MP4 size estimate (#190) next to what the encoder really writes, for
+// screen-like content: text blocks that scroll, at the export bitrate.
+void tst_VideoTranscoder::sizeEstimateAgainstActual()
+{
+    const QSize size(640, 360);
+    constexpr int kFps = 30;
+    constexpr int kSeconds = 4;
+    const QString input = m_dir.filePath(QStringLiteral("screen.mp4"));
+    {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder);
+        encoder->setQuality(100);
+        QVERIFY2(encoder->start(input, size, kFps), qPrintable(encoder->lastError()));
+        for (int i = 0; i < kFps * kSeconds; ++i) {
+            QImage frame(size, QImage::Format_RGB32);
+            frame.fill(Qt::white);
+            QPainter painter(&frame);
+            for (int line = 0; line < 30; ++line) {
+                const int y = (line * 14 + i * 3) % size.height();
+                for (int word = 0; word < 12; ++word) {
+                    const int w = 10 + ((line * 7 + word * 13) % 30);
+                    painter.fillRect(QRect(8 + word * 52, y, w, 8), QColor((line * 37) % 200, (word * 53) % 200, 90));
+                }
+            }
+            painter.end();
+            encoder->writeFrame(frame, i * 1000 / kFps);
+        }
+        encoder->finish();
+        QVERIFY2(encoder->lastError().isEmpty(), qPrintable(encoder->lastError()));
+    }
+    for (const auto quality : {SnapTray::Mp4ExportOptions::Quality::Low, SnapTray::Mp4ExportOptions::Quality::High}) {
+        SnapTray::Mp4ExportOptions options;
+        options.quality = quality;
+        VideoTranscodeRequest request;
+        request.inputPath = input;
+        request.outputPath = m_dir.filePath(QStringLiteral("estimate-%1.mp4").arg(int(quality)));
+        request.videoBitrate = options.videoBitrate(size, kFps, 0);
+        const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+        QVERIFY2(result.success, qPrintable(result.errorMessage));
+        const qint64 actual = QFileInfo(request.outputPath).size();
+        const qint64 estimate = SnapTray::Mp4SizeEstimate::bytes(request.videoBitrate, false, kSeconds * 1000);
+        qInfo("MP4 estimate, quality %d: %lld bytes estimated, %lld written (%.2fx)", int(quality),
+              estimate, actual, double(actual) / double(estimate));
+        // Encoders aim at the bitrate but simple content can stay well below it:
+        // the estimate is an upper guide, never wildly under.
+        QVERIFY(actual > 0);
+        QVERIFY2(actual <= estimate * 2, "far above the estimate");
+    }
 }
 
 QTEST_MAIN(tst_VideoTranscoder)

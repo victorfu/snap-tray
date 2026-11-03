@@ -2578,6 +2578,111 @@ Kích thước: %2</translation>
         <source>Finish editing this range</source>
         <translation>Hoàn tất chỉnh sửa khoảng này</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Original</source>
+        <translation>Kích thước: Gốc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 1080p</source>
+        <translation>Kích thước: 1080p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 720p</source>
+        <translation>Kích thước: 720p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Custom Width</source>
+        <translation>Kích thước: Chiều rộng tùy chỉnh</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Default</source>
+        <translation>Chất lượng: Mặc định</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Low</source>
+        <translation>Chất lượng: Thấp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Medium</source>
+        <translation>Chất lượng: Vừa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: High</source>
+        <translation>Chất lượng: Cao</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>MP4 Options</source>
+        <translation>Tùy chọn MP4</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size, frame rate, quality and codec of the MP4, with an estimated file size</source>
+        <translation>Kích thước, tốc độ khung hình, chất lượng và codec của MP4, kèm kích thước tệp ước tính</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
+        <translation>Hệ thống này chưa hỗ trợ thay đổi kích thước và tốc độ khung hình của MP4</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Make the video smaller; it is never made larger than recorded</source>
+        <translation>Thu nhỏ video; không bao giờ phóng to hơn bản ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Video width in pixels</source>
+        <translation>Chiều rộng video theo pixel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 fps</source>
+        <translation>%1 fps</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>FPS: Original</source>
+        <translation>FPS: Gốc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
+        <translation>Tốc độ khung hình thấp hơn cho tệp nhỏ hơn; không bao giờ cao hơn bản ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Default uses the quality from the Recording settings</source>
+        <translation>Mặc định dùng chất lượng trong cài đặt Ghi hình</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Plays everywhere</source>
+        <translation>Phát được ở mọi nơi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller files at the same quality; some older players cannot open them</source>
+        <translation>Tệp nhỏ hơn với cùng chất lượng; một số trình phát cũ không mở được</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export is not available on this system</source>
+        <translation>Hệ thống này không hỗ trợ xuất HEVC</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 × %2, %3 fps · %4 (estimate)</source>
+        <translation>%1 × %2, %3 fps · %4 (ước tính)</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2694,6 +2799,11 @@ Kích thước: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Cancelling...</source>
         <translation>Đang hủy...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>About %1</source>
+        <translation>Khoảng %1</translation>
     </message>
 </context>
 <context>

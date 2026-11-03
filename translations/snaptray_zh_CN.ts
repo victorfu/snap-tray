@@ -2575,6 +2575,111 @@ Size: %2</source>
         <source>Finish editing this range</source>
         <translation>完成编辑此区段</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Original</source>
+        <translation>尺寸：原始</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 1080p</source>
+        <translation>尺寸：1080p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: 720p</source>
+        <translation>尺寸：720p</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size: Custom Width</source>
+        <translation>尺寸：自定义宽度</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Default</source>
+        <translation>质量：默认</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Low</source>
+        <translation>质量：低</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: Medium</source>
+        <translation>质量：中</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Quality: High</source>
+        <translation>质量：高</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>MP4 Options</source>
+        <translation>MP4 选项</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Size, frame rate, quality and codec of the MP4, with an estimated file size</source>
+        <translation>MP4 的尺寸、帧率、质量与编码格式，并显示预估文件大小</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
+        <translation>此系统尚不支持更改 MP4 尺寸与帧率</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Make the video smaller; it is never made larger than recorded</source>
+        <translation>缩小视频；不会放大到超过录制尺寸</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Video width in pixels</source>
+        <translation>视频宽度（像素）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 fps</source>
+        <translation>%1 fps</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>FPS: Original</source>
+        <translation>帧率：原始</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
+        <translation>降低帧率可缩小文件；不会高于录制时的帧率</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Default uses the quality from the Recording settings</source>
+        <translation>默认使用录制设置中的质量</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Plays everywhere</source>
+        <translation>到处都能播放</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller files at the same quality; some older players cannot open them</source>
+        <translation>相同质量下文件更小；部分较旧的播放器无法打开</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export is not available on this system</source>
+        <translation>此系统无法导出 HEVC</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>%1 × %2, %3 fps · %4 (estimate)</source>
+        <translation>%1 × %2，%3 fps · %4（预估）</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -2691,6 +2796,11 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Cancelling...</source>
         <translation>正在取消...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>About %1</source>
+        <translation>约 %1</translation>
     </message>
 </context>
 <context>
