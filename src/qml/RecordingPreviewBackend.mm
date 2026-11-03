@@ -406,7 +406,7 @@ int RecordingPreviewBackend::addPointerHideAt(qint64 positionMs)
     if (isProcessing() || !cursorEffectsAvailable()) return -1;
     const qint64 end = m_duration > 0 ? m_duration : positionMs + kNewHiddenRangeMs;
     const qint64 start = std::clamp<qint64>(positionMs, 0, end);
-    const qint64 rangeEnd = std::min(end, start + kNewHiddenRangeMs);
+    const qint64 rangeEnd = qMin(end, start + kNewHiddenRangeMs); // not std::min: windows.h defines min
     if (rangeEnd - start < SnapTray::CursorEffectSettings::kMinHiddenRangeMs) return -1;
     editCursorEffects([start, rangeEnd](SnapTray::CursorEffectSettings& s) {
         auto ranges = s.hiddenRanges;
