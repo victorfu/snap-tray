@@ -838,6 +838,26 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <source>This project's recording is missing or damaged.</source>
         <translation>Die Aufnahme dieses Projekts fehlt oder ist beschädigt.</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Copied</source>
+        <translation>Aufnahme kopiert</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>Gespeichert unter %1 und kopiert: in einen Chat oder Ordner einfügen.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>edit mode</source>
+        <translation>Bearbeitungsmodus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>quick mode</source>
+        <translation>Schnellmodus</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3768,6 +3788,51 @@ Audio wird bei GIF-Aufnahmen nicht unterstützt.</translation>
         <source>Delete projects not changed for</source>
         <translation>Projekte löschen, die nicht geändert wurden seit</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After recording</source>
+        <translation>Nach der Aufnahme</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>In der Vorschau bearbeiten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Sofort speichern</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Schnellmodus: Die Datei wird beim Beenden sofort im endgültigen Format gespeichert, ohne Vorschau und ohne Bearbeitungsspuren.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving</source>
+        <translation>Nach dem Speichern</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Nichts tun</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Datei kopieren</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Im Ordner anzeigen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>Bearbeitungsmodus: In der Vorschau kürzen, zuschneiden und Effekte hinzufügen, dann speichern. Aufnahmen mit Vorschau werden immer zuerst als MP4 aufgenommen.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -5132,6 +5197,56 @@ Dateigröße: %3</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Record shortcut keys</source>
         <translation>Tastenkürzel aufzeichnen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After recording</source>
+        <translation>Nach der Aufnahme</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>In der Vorschau bearbeiten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Sofort speichern</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Schnellmodus: Die Datei wird beim Beenden sofort im endgültigen Format gespeichert, ohne Vorschau und ohne Bearbeitungsspuren.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After saving</source>
+        <translation>Nach dem Speichern</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Nichts tun</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Datei kopieren</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Im Ordner anzeigen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>Bearbeitungsmodus: In der Vorschau kürzen, zuschneiden und Effekte hinzufügen, dann speichern. Zeiger-, Fenster- und Tastenspuren bleiben zum Bearbeiten erhalten.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>Nur im Bearbeitungsmodus: Der Schnellmodus behält keine Bearbeitungsspuren.</translation>
     </message>
 </context>
 <context>

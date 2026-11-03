@@ -761,6 +761,29 @@ bool SettingsBackend::recordingKeysSupported() const
     return SnapTray::keyRecordingSupported();
 }
 
+int SettingsBackend::recordingQuickSaveAction() const
+{
+    return RecordingSettingsManager::instance().quickSaveAction();
+}
+
+void SettingsBackend::setRecordingQuickSaveAction(int action)
+{
+    if (recordingQuickSaveAction() == action) return;
+    RecordingSettingsManager::instance().setQuickSaveAction(action);
+    emit recordingQuickSaveActionChanged();
+}
+
+void SettingsBackend::refreshRecordingMode()
+{
+    const bool showPreview = RecordingSettingsManager::instance().showPreview();
+    if (m_recordingShowPreview != showPreview) {
+        m_recordingShowPreview = showPreview;
+        emit recordingShowPreviewChanged();
+    }
+    emit recordingQuickSaveActionChanged();
+    emit recordingKeyModeChanged();
+}
+
 bool SettingsBackend::recordingKeepProjects() const
 {
     return RecordingSettingsManager::instance().keepProjects();

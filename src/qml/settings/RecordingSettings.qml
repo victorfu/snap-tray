@@ -278,12 +278,43 @@ Flickable {
             font.letterSpacing: SemanticTokens.letterSpacingDefault
         }
 
-        SettingsToggle {
-            label: qsTr("Show preview")
+        // Quick or edit mode (#193), also chosen in the recording setup.
+        SettingsCombo {
+            objectName: "settingsRecordingMode"
+            label: qsTr("After recording")
             visible: !settingsBackend.recordingDirectMp4Only
-            description: qsTr("Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.")
-            checked: settingsBackend.recordingShowPreview
-            onToggled: function(checked) { settingsBackend.recordingShowPreview = checked }
+            model: [
+                { text: qsTr("Edit in the preview"), value: true },
+                { text: qsTr("Save right away"), value: false }
+            ]
+            currentIndex: settingsBackend.recordingShowPreview ? 0 : 1
+            onActivated: function(index) { settingsBackend.recordingShowPreview = index === 0 }
+        }
+
+        Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            visible: !settingsBackend.recordingDirectMp4Only
+            text: settingsBackend.recordingShowPreview
+                ? qsTr("Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.")
+                : qsTr("Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.")
+            color: SemanticTokens.textTertiary
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
+        }
+
+        SettingsCombo {
+            objectName: "settingsQuickSaveAction"
+            label: qsTr("After saving")
+            visible: !settingsBackend.recordingShowPreview
+            model: [
+                { text: qsTr("Do nothing"), value: 0 },
+                { text: qsTr("Copy the file"), value: 1 },
+                { text: qsTr("Show in folder"), value: 2 }
+            ]
+            currentIndex: settingsBackend.recordingQuickSaveAction
+            onActivated: function(index) { settingsBackend.recordingQuickSaveAction = index }
         }
 
         // Editable projects (#191): off by default, the recording is private.

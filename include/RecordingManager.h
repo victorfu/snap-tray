@@ -123,6 +123,8 @@ public slots:
 signals:
     void recordingStarted();
     void recordingStopped(const QString &outputPath);
+    // Quick mode (#193): a recording saved straight after it stopped.
+    void quickRecordingSaved(const QString &outputPath);
     void recordingCancelled();
     void recordingError(const QString &error);
     void recordingWarning(const QString &warning);
@@ -200,6 +202,9 @@ private:
 public:
     // True while this recording writes a key sidecar (shown in the tray status).
     bool isRecordingKeys() const;
+    // The mode this recording was started in (#193): true = edit (opens the
+    // preview), false = quick (saved right away).
+    bool recordingOpensPreview() const { return m_startSettings.showPreview; }
 private:
 
     // Countdown methods

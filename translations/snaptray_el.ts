@@ -832,6 +832,26 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>This project's recording is missing or damaged.</source>
         <translation>Η εγγραφή αυτού του έργου λείπει ή είναι κατεστραμμένη.</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Copied</source>
+        <translation>Η εγγραφή αντιγράφηκε</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>Αποθηκεύτηκε στο %1 και αντιγράφηκε: επικολλήστε το σε μια συνομιλία ή έναν φάκελο.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>edit mode</source>
+        <translation>λειτουργία επεξεργασίας</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>quick mode</source>
+        <translation>γρήγορη λειτουργία</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3762,6 +3782,51 @@ Audio is not supported for GIF recordings.</source>
         <source>Delete projects not changed for</source>
         <translation>Διαγραφή έργων που δεν άλλαξαν για</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After recording</source>
+        <translation>Μετά την εγγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Επεξεργασία στην προεπισκόπηση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Άμεση αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Γρήγορη λειτουργία: το αρχείο αποθηκεύεται στην τελική του μορφή μόλις σταματήσετε, χωρίς προεπισκόπηση και χωρίς κομμάτια επεξεργασίας.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving</source>
+        <translation>Μετά την αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Καμία ενέργεια</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Αντιγραφή του αρχείου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Εμφάνιση στον φάκελο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>Λειτουργία επεξεργασίας: περικοπή, κάδρο και εφέ στην προεπισκόπηση, μετά αποθήκευση. Οι εγγραφές με προεπισκόπηση καταγράφονται πάντα πρώτα ως MP4.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -5126,6 +5191,56 @@ File size: %3</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Record shortcut keys</source>
         <translation>Καταγραφή συντομεύσεων πληκτρολογίου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After recording</source>
+        <translation>Μετά την εγγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>Επεξεργασία στην προεπισκόπηση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Save right away</source>
+        <translation>Άμεση αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Γρήγορη λειτουργία: το αρχείο αποθηκεύεται στην τελική του μορφή μόλις σταματήσετε, χωρίς προεπισκόπηση και χωρίς κομμάτια επεξεργασίας.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After saving</source>
+        <translation>Μετά την αποθήκευση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>Καμία ενέργεια</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>Αντιγραφή του αρχείου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>Εμφάνιση στον φάκελο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>Λειτουργία επεξεργασίας: περικοπή, κάδρο και εφέ στην προεπισκόπηση, μετά αποθήκευση. Τα κομμάτια δείκτη, παραθύρων και πλήκτρων διατηρούνται για επεξεργασία.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>Μόνο στη λειτουργία επεξεργασίας: η γρήγορη λειτουργία δεν διατηρεί κομμάτια επεξεργασίας.</translation>
     </message>
 </context>
 <context>

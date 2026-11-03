@@ -12,6 +12,7 @@
 #include "qml/ScreenPickerViewModel.h"
 #include "qml/RecordingRecoveryViewModel.h"
 #include "qml/RecordingLibraryViewModel.h"
+#include "qml/QuickSaveAction.h"
 #include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
@@ -276,6 +277,19 @@ void MainApplication::initialize()
                 SnapTray::QmlToast::Level::Success,
                 MainApplication::tr("Recording Saved"),
                 MainApplication::tr("Saved to: %1").arg(path));
+        });
+
+    // Quick mode (#193): the chosen action once the file is saved.
+    connect(m_recordingManager, &RecordingManager::quickRecordingSaved,
+        this, [](const QString& path) {
+            const int action = RecordingSettingsManager::instance().quickSaveAction();
+            if (!SnapTray::QuickSaveAction::apply(action, path)) return;
+            if (action == RecordingSettingsManager::QuickSaveCopyFile) {
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Success,
+                    MainApplication::tr("Recording Copied"),
+                    MainApplication::tr("Saved to %1 and copied: paste it into a chat or folder.").arg(path));
+            }
         });
 
     connect(m_recordingManager, &RecordingManager::recordingError,
@@ -1475,6 +1489,10 @@ QString MainApplication::trayRecordingStatusLine() const
         : QString();
     if (!screenSummary.isEmpty()) {
         parts.append(screenSummary);
+    }
+    // The mode this recording was started in (#193).
+    if (m_recordingManager && m_trayRecordingStatus != Status::Preparing) {
+        parts.append(m_recordingManager->recordingOpensPreview() ? tr("edit mode") : tr("quick mode"));
     }
     if (m_recordingManager && m_recordingManager->isDroppingFrames()) {
         parts.append(tr("dropping frames"));

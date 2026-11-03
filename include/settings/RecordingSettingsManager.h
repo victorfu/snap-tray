@@ -53,6 +53,11 @@ public:
     QJsonObject keyOverlay() const;
     void setKeyOverlay(const QJsonObject& value);
 
+    // Quick mode (#193, preview off): what happens once the file is saved.
+    enum QuickSaveAction { QuickSaveNothing = 0, QuickSaveCopyFile = 1, QuickSaveShowInFolder = 2 };
+    int quickSaveAction() const;
+    void setQuickSaveAction(int action);
+
     // Editable projects (#191): keep the recording and its edits after saving
     // (off by default: only the saved file stays), and remove projects not
     // changed for this many days (0 = never).
@@ -118,6 +123,7 @@ private:
     static constexpr const char* kKeyKeyRecordingMode = "recording/keyRecordingMode";
     static constexpr const char* kKeyKeyOverlay = "recording/keyOverlay";
     static constexpr const char* kKeyKeepProjects = "recording/keepProjects";
+    static constexpr const char* kKeyQuickSaveAction = "recording/quickSaveAction";
     static constexpr const char* kKeyProjectCleanupDays = "recording/projectCleanupDays";
     static constexpr const char* kKeyMp4ExportOptions = "recording/mp4ExportOptions";
     static constexpr const char* kKeyAppearance = "recording/appearance";

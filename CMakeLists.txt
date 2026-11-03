@@ -1260,6 +1260,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/RecordingRecoveryViewModel.cpp
         include/qml/RecordingRecoveryViewModel.h
         src/qml/RecordingLibraryViewModel.cpp
+        src/qml/QuickSaveAction.cpp
+        include/qml/QuickSaveAction.h
         include/qml/RecordingLibraryViewModel.h
         src/qml/OCRResultViewModel.cpp
         include/qml/OCRResultViewModel.h

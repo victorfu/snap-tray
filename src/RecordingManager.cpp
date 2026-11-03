@@ -2271,7 +2271,11 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
             setState(State::Idle);
             QString tempPath = outputPath;
             QMetaObject::invokeMethod(this, [this, tempPath, sessionPath, sessionLock]() {
-                const SaveOutcome outcome = showSaveDialog(tempPath);
+                QString savedPath;
+                const SaveOutcome outcome = showSaveDialog(tempPath, QSize(), false, &savedPath);
+                if (outcome == SaveOutcome::Saved && !savedPath.isEmpty()) {
+                    emit quickRecordingSaved(savedPath);
+                }
                 // Saved or discarded: nothing to recover. A failed save keeps
                 // the file in the temp folder, so its manifest stays.
                 if (outcome != SaveOutcome::Failed && !sessionPath.isEmpty()) {

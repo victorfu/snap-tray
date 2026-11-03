@@ -154,6 +154,20 @@ void RecordingSettingsManager::setKeyRecordingMode(int value)
     settings.setValue(kKeyKeyRecordingMode, qBound(0, value, 2));
 }
 
+int RecordingSettingsManager::quickSaveAction() const
+{
+    auto settings = SnapTray::getSettings();
+    const int action = settings.value(kKeyQuickSaveAction, int(QuickSaveNothing)).toInt();
+    return action >= QuickSaveNothing && action <= QuickSaveShowInFolder ? action : int(QuickSaveNothing);
+}
+
+void RecordingSettingsManager::setQuickSaveAction(int action)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyQuickSaveAction,
+                      action >= QuickSaveNothing && action <= QuickSaveShowInFolder ? action : int(QuickSaveNothing));
+}
+
 bool RecordingSettingsManager::keepProjects() const
 {
     auto settings = SnapTray::getSettings();

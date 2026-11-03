@@ -94,6 +94,47 @@ DialogBase {
                     spacing: 6
                     visible: root.viewModel !== null
 
+                    // Quick or edit mode (#193), shared with Settings > Recording.
+                    SettingsCombo {
+                        objectName: "setupRecordingMode"
+                        width: parent.width
+                        label: qsTr("After recording")
+                        visible: root.viewModel ? root.viewModel.recordingModeSupported : false
+                        model: [
+                            { text: qsTr("Edit in the preview"), value: true },
+                            { text: qsTr("Save right away"), value: false }
+                        ]
+                        currentIndex: root.viewModel && root.viewModel.editMode ? 0 : 1
+                        onActivated: function(index) { root.viewModel.editMode = index === 0 }
+                    }
+
+                    Text {
+                        objectName: "setupRecordingModeNote"
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        visible: root.viewModel ? root.viewModel.recordingModeSupported : false
+                        text: root.viewModel && root.viewModel.editMode
+                            ? qsTr("Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.")
+                            : qsTr("Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.")
+                        font.pixelSize: SemanticTokens.fontSizeCaption
+                        font.family: SemanticTokens.fontFamily
+                        color: SemanticTokens.textSecondary
+                    }
+
+                    SettingsCombo {
+                        objectName: "setupQuickSaveAction"
+                        width: parent.width
+                        label: qsTr("After saving")
+                        visible: root.viewModel ? !root.viewModel.editMode : false
+                        model: [
+                            { text: qsTr("Do nothing"), value: 0 },
+                            { text: qsTr("Copy the file"), value: 1 },
+                            { text: qsTr("Show in folder"), value: 2 }
+                        ]
+                        currentIndex: root.viewModel ? root.viewModel.quickSaveAction : 0
+                        onActivated: function(index) { root.viewModel.quickSaveAction = index }
+                    }
+
                     SettingsToggle {
                         objectName: "setupMicrophoneToggle"
                         width: parent.width
@@ -204,8 +245,10 @@ DialogBase {
                         label: qsTr("Record shortcut keys")
                         description: root.viewModel && !root.viewModel.keyRecordingSupported
                             ? qsTr("Not available on this system yet")
-                            : qsTr("For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.")
-                        enabled: root.viewModel ? root.viewModel.keyRecordingSupported : false
+                            : root.viewModel && !root.viewModel.editMode
+                                ? qsTr("Edit mode only: quick mode keeps no editing tracks.")
+                                : qsTr("For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.")
+                        enabled: root.viewModel ? (root.viewModel.keyRecordingSupported && root.viewModel.editMode) : false
                         checked: root.viewModel ? root.viewModel.recordShortcutKeys : false
                         onToggled: function(checked) { root.viewModel.recordShortcutKeys = checked }
                     }
@@ -213,7 +256,7 @@ DialogBase {
                     SettingsToggle {
                         objectName: "setupRecordTypedTextToggle"
                         width: parent.width
-                        visible: root.viewModel ? root.viewModel.recordShortcutKeys : false
+                        visible: root.viewModel ? (root.viewModel.recordShortcutKeys && root.viewModel.editMode) : false
                         label: qsTr("Also record typed text")
                         description: qsTr("Every key, including what you type. Do not use while entering passwords.")
                         checked: root.viewModel ? root.viewModel.recordTypedText : false

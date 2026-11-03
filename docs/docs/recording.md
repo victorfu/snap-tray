@@ -27,7 +27,21 @@ While recording, the tray menu also offers Pause/Resume Recording and, on macOS 
 1. Choose the screen to record when prompted on multi-display setups.
 2. Recording starts immediately on the selected screen.
 3. Use the floating control bar to monitor duration, pause or resume, and stop recording. While paused, the bar shows "Paused" and the time stops. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
-4. Click Stop to open the preview (or to save directly when preview is off).
+4. Click Stop to open the preview in edit mode, or to save the file right away in quick mode.
+
+## Quick mode and edit mode
+
+**After recording** in the recording setup and in Settings > Recording chooses what Stop does. Both places change the same setting.
+
+| | Edit mode (**Edit in the preview**) | Quick mode (**Save right away**) |
+| --- | --- | --- |
+| After Stop | The preview opens: trim, crop, cut, zoom, mask, add effects, then save | The save dialog opens, or the file is saved automatically when auto-save is on |
+| Recorded as | MP4 at high quality, converted to your format and quality when you save | Your output format and quality directly |
+| Audio | Recorded, also for GIF and WebP exports (which stay silent) | MP4 only; GIF and WebP have no sound |
+| Pointer, window and key tracks | Kept with the temporary recording for editing | Not recorded |
+| After saving | The preview closes (or keeps an editable project, if that is on) | Optionally **Copy the file** to paste it into a chat or folder, or **Show in folder** |
+
+Quick mode behaves exactly like the former "Show preview" off. The tray tooltip says which mode the current recording uses. Disk space monitoring, stopping safely when the disk is nearly full, and recovering a recording after a crash work the same in both modes. On a system that records MP4 directly without a preview, recording is always in quick mode.
 
 In the preview, the trash button, **Esc**, and the window's close button ask before deleting the recording. **Esc** or **Enter** on that question keeps the recording; press **Tab** to move to Discard. While you are drawing a crop, **Esc** only cancels the crop.
 

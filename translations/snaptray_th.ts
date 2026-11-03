@@ -903,6 +903,26 @@ File size: %3</source>
         <source>This project's recording is missing or damaged.</source>
         <translation>การบันทึกของโปรเจกต์นี้หายไปหรือเสียหาย</translation>
     </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Recording Copied</source>
+        <translation>คัดลอกการบันทึกแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>บันทึกไปที่ %1 และคัดลอกแล้ว: วางลงในแชตหรือโฟลเดอร์ได้</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>edit mode</source>
+        <translation>โหมดแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>quick mode</source>
+        <translation>โหมดด่วน</translation>
+    </message>
 </context>
 <context>
     <name>MultiRegionListPanel</name>
@@ -3630,6 +3650,51 @@ English is always included and cannot be removed.</source>
         <source>Delete projects not changed for</source>
         <translation>ลบโปรเจกต์ที่ไม่ได้เปลี่ยนแปลงเป็นเวลา</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After recording</source>
+        <translation>หลังการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>แก้ไขในหน้าตัวอย่าง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Save right away</source>
+        <translation>บันทึกทันที</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>โหมดด่วน: ไฟล์จะถูกบันทึกในรูปแบบสุดท้ายทันทีที่คุณหยุด โดยไม่มีหน้าตัวอย่างและไม่มีแทร็กสำหรับแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>After saving</source>
+        <translation>หลังจากบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>ไม่ต้องทำอะไร</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>คัดลอกไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>แสดงในโฟลเดอร์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>โหมดแก้ไข: ตัด ครอป และเพิ่มเอฟเฟกต์ในหน้าตัวอย่าง แล้วจึงบันทึก การบันทึกที่มีหน้าตัวอย่างจะถูกบันทึกเป็น MP4 ก่อนเสมอ</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -4898,6 +4963,56 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Record shortcut keys</source>
         <translation>บันทึกปุ่มลัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After recording</source>
+        <translation>หลังการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit in the preview</source>
+        <translation>แก้ไขในหน้าตัวอย่าง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Save right away</source>
+        <translation>บันทึกทันที</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>โหมดด่วน: ไฟล์จะถูกบันทึกในรูปแบบสุดท้ายทันทีที่คุณหยุด โดยไม่มีหน้าตัวอย่างและไม่มีแทร็กสำหรับแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>After saving</source>
+        <translation>หลังจากบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Do nothing</source>
+        <translation>ไม่ต้องทำอะไร</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Copy the file</source>
+        <translation>คัดลอกไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Show in folder</source>
+        <translation>แสดงในโฟลเดอร์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>โหมดแก้ไข: ตัด ครอป และเพิ่มเอฟเฟกต์ในหน้าตัวอย่าง แล้วจึงบันทึก แทร็กตัวชี้ หน้าต่าง และปุ่มจะถูกเก็บไว้สำหรับแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>เฉพาะโหมดแก้ไข: โหมดด่วนจะไม่เก็บแทร็กสำหรับแก้ไข</translation>
     </message>
 </context>
 <context>

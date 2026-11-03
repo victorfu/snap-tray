@@ -13,6 +13,9 @@
 #include "qml/QmlDialog.h"
 #include "qml/RecordingRecoveryViewModel.h"
 #include "qml/RecordingLibraryViewModel.h"
+#include "qml/QuickSaveAction.h"
+#include <QClipboard>
+#include <QMimeData>
 #include "recording/RecordingProject.h"
 #include <QTemporaryDir>
 #include "qml/ScreenPickerViewModel.h"
@@ -118,6 +121,8 @@ private slots:
     void recoveryDialogLists();
     void recoveryDialogScrollsManyRecordings();
     void libraryListsOpensAndDeletesProjects();
+    void recordingModeIsTheSameSettingEverywhere();
+    void quickSaveActionsDoWhatTheySay();
 
 private:
     std::shared_ptr<FakeEngineState> m_engineState;
@@ -693,6 +698,114 @@ void TestRecordingSetup::libraryListsOpensAndDeletesProjects()
     QVERIFY(QFileInfo::exists(dirs.last()));
     viewModel->setOpenProjectDir(QString());
     QTRY_COMPARE(buttons("libraryDeleteButton").size(), 1);
+}
+
+void TestRecordingSetup::recordingModeIsTheSameSettingEverywhere()
+{
+    // #193: the setup's mode is Settings > Recording's "After recording"
+    // (showPreview); switching it changes what the setup says about audio.
+    auto& settings = RecordingSettingsManager::instance();
+    const int actionBefore = settings.quickSaveAction();
+    auto restore = qScopeGuard([&settings, actionBefore] {
+        settings.setShowPreview(true);
+        settings.setOutputFormat(0);
+        settings.setQuickSaveAction(actionBefore);
+    });
+    QScreen* primaryScreen = QGuiApplication::primaryScreen();
+    if (!primaryScreen) QSKIP("No screen available");
+    SnapTray::ScreenSource source;
+    source.id = QStringLiteral("screen-a");
+    source.name = QStringLiteral("Display A");
+    source.screen = primaryScreen;
+    auto* viewModel = new SnapTray::ScreenPickerViewModel({source});
+    viewModel->setAudioEngineFactory(factory());
+    if (!viewModel->recordingModeSupported()) {
+        QVERIFY(!viewModel->editMode()); // direct MP4 only: always quick
+        delete viewModel;
+        QSKIP("This platform records direct MP4 only");
+    }
+    settings.setOutputFormat(1); // GIF: audio only in edit mode
+    QVERIFY(viewModel->editMode());
+    QVERIFY(viewModel->outputHasAudio());
+    const QString editSummary = viewModel->outputSummary();
+
+    SnapTray::QmlDialog dialog(QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/ScreenPickerDialog.qml")),
+                               viewModel, QStringLiteral("viewModel"));
+    viewModel->setParent(&dialog);
+    dialog.showCenteredOnScreen(primaryScreen);
+    QQuickView* view = nullptr;
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
+            view = candidate;
+    }
+    QVERIFY(view);
+    const auto find = [view](const char* name) {
+        return view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(name));
+    };
+    QVERIFY(find("setupRecordingMode") && find("setupRecordingMode")->isVisible());
+    QCOMPARE(find("setupRecordingMode")->property("currentIndex").toInt(), 0);
+    QVERIFY(!find("setupQuickSaveAction")->isVisible());
+
+    QSignalSpy changed(viewModel, &SnapTray::ScreenPickerViewModel::recordingModeChanged);
+    QMetaObject::invokeMethod(find("setupRecordingMode"), "activated", Q_ARG(int, 1));
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(!settings.showPreview());
+    QVERIFY(!viewModel->editMode());
+    // Quick GIF: no sound, a different summary, no key tracks.
+    QVERIFY(!viewModel->outputHasAudio());
+    QVERIFY(viewModel->outputSummary() != editSummary);
+    QTRY_VERIFY(find("setupQuickSaveAction")->isVisible());
+    QVERIFY(!find("setupMicrophoneToggle")->isEnabled());
+    QVERIFY(!find("setupRecordKeysToggle")->isEnabled());
+    QMetaObject::invokeMethod(find("setupQuickSaveAction"), "activated", Q_ARG(int, 2));
+    QCOMPARE(settings.quickSaveAction(), int(RecordingSettingsManager::QuickSaveShowInFolder));
+
+    // Changed elsewhere (Settings): a new setup shows it.
+    settings.setShowPreview(true);
+    SnapTray::ScreenPickerViewModel again({source});
+    QVERIFY(again.editMode());
+    QCOMPARE(again.quickSaveAction(), int(RecordingSettingsManager::QuickSaveShowInFolder));
+    // Out-of-range values read as "do nothing".
+    settings.setQuickSaveAction(7);
+    QCOMPARE(settings.quickSaveAction(), int(RecordingSettingsManager::QuickSaveNothing));
+}
+
+void TestRecordingSetup::quickSaveActionsDoWhatTheySay()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("saved.mp4"));
+    {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    QList<QUrl> opened;
+    const auto openUrl = [&opened](const QUrl& url) {
+        opened.append(url);
+        return true;
+    };
+    QVERIFY(!SnapTray::QuickSaveAction::apply(RecordingSettingsManager::QuickSaveNothing, path, openUrl));
+    QVERIFY(opened.isEmpty());
+    QVERIFY(SnapTray::QuickSaveAction::apply(RecordingSettingsManager::QuickSaveShowInFolder, path, openUrl));
+    QCOMPARE(opened.size(), 1);
+    QCOMPARE(opened.first(), QUrl::fromLocalFile(QFileInfo(path).absolutePath()));
+    // A file that is gone: nothing is opened or copied.
+    QVERIFY(!SnapTray::QuickSaveAction::apply(RecordingSettingsManager::QuickSaveShowInFolder,
+                                              dir.filePath(QStringLiteral("missing.mp4")), openUrl));
+    QCOMPARE(opened.size(), 1);
+
+    std::unique_ptr<QMimeData> data(SnapTray::QuickSaveAction::fileMimeData(path));
+    QCOMPARE(data->urls(), QList<QUrl>{QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath())});
+    QCOMPARE(data->text(), QFileInfo(path).absoluteFilePath());
+    QVERIFY(SnapTray::QuickSaveAction::apply(RecordingSettingsManager::QuickSaveCopyFile, path, openUrl));
+    const QMimeData* copied = QGuiApplication::clipboard()->mimeData();
+    QVERIFY(copied);
+    if (copied->hasUrls()) {
+        QCOMPARE(copied->urls().first(), QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath()));
+    } else {
+        // Some offscreen/X11 test clipboards keep only the text.
+        QCOMPARE(copied->text(), QFileInfo(path).absoluteFilePath());
+    }
 }
 
 void TestRecordingSetup::lostMicrophoneEndsTheTest_data()
