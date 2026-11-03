@@ -803,8 +803,9 @@ void TestRecordingSetup::setupFitsAShortScreen()
     }
     QVERIFY(view);
     QTRY_VERIFY(viewModel->devicesLoaded());
-    // A short screen (a 768 px laptop less its panels).
-    constexpr int kShortScreen = 520;
+    // A short screen, shorter than the setup on every system (macOS has no
+    // key options, so its setup is shorter than Linux's).
+    constexpr int kShortScreen = 360;
     view->rootObject()->setProperty("availableScreenHeight", kShortScreen);
     QTRY_VERIFY(view->height() > 0 && qAbs(view->height() - view->rootObject()->height()) < 1);
     QVERIFY2(view->height() <= kShortScreen,
