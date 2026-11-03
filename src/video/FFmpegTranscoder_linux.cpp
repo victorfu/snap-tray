@@ -99,8 +99,11 @@ public:
             // A millisecond of slack absorbs rounded source timestamps.
             const bool keep = !dropFrames || writtenTime < 0 || beforePause || time + 1 >= nextDue;
             if (keep && dropFrames) {
-                // Fallen behind (a pause in the source): restart the clock here.
-                nextDue = time - nextDue > exactInterval ? time + exactInterval : nextDue + exactInterval;
+                // On schedule: the next one is due an exact interval later. Kept
+                // off schedule (the last before a pause) or fallen behind: the
+                // clock restarts from this frame.
+                const bool onSchedule = time + 1 >= nextDue && time - nextDue <= exactInterval;
+                nextDue = onSchedule ? nextDue + exactInterval : time + exactInterval;
             }
             if (keep) {
                 lastImage = crop == bounds ? image : image.copy(crop);
@@ -388,9 +391,11 @@ private:
                 const bool keep = first || writtenOut < 0 || nextOut - outTime >= interval
                     || outTime + 1 >= nextDueOut;
                 if (keep && outTime > writtenOut) {
-                    // Fallen behind (a part's start, a pause): restart the clock here.
-                    nextDueOut = outTime - nextDueOut > exactOutInterval ? outTime + exactOutInterval
-                                                                        : nextDueOut + exactOutInterval;
+                    // On schedule: the next one is due an exact interval later.
+                    // Kept off schedule (a part's first frame, the last before a
+                    // pause) or fallen behind: the clock restarts from this frame.
+                    const bool onSchedule = outTime + 1 >= nextDueOut && outTime - nextDueOut <= exactOutInterval;
+                    nextDueOut = onSchedule ? nextDueOut + exactOutInterval : outTime + exactOutInterval;
                     lastImage = crop == bounds ? image : image.copy(crop);
                     lastSource = lastImage;
                     if (request.frameFilter) {
