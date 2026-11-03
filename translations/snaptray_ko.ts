@@ -3004,6 +3004,11 @@ Size: %2</source>
         <source>Where the shortcuts appear</source>
         <translation>단축키가 나타나는 위치</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>그림자</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

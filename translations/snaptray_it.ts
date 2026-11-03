@@ -3004,6 +3004,11 @@ Dimensione: %2</translation>
         <source>Where the shortcuts appear</source>
         <translation>Dove appaiono le scorciatoie</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Ombra</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

@@ -3004,6 +3004,11 @@ Rozmiar: %2</translation>
         <source>Where the shortcuts appear</source>
         <translation>Gdzie pojawiają się skróty</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Cień</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

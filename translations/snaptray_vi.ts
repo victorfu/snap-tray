@@ -2998,6 +2998,11 @@ Kích thước: %2</translation>
         <source>Where the shortcuts appear</source>
         <translation>Vị trí hiện phím tắt</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Đổ bóng</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

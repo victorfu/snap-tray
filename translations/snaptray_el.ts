@@ -2998,6 +2998,11 @@ Size: %2</source>
         <source>Where the shortcuts appear</source>
         <translation>Πού εμφανίζονται οι συντομεύσεις</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Σκιά</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

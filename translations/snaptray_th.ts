@@ -2985,6 +2985,11 @@ English is always included and cannot be removed.</source>
         <source>Where the shortcuts appear</source>
         <translation>ตำแหน่งที่แสดงปุ่มลัด</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>เงา</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

@@ -3004,6 +3004,11 @@ Grootte: %2</translation>
         <source>Where the shortcuts appear</source>
         <translation>Waar de sneltoetsen verschijnen</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Schaduw</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

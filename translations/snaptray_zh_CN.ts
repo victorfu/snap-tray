@@ -2995,6 +2995,11 @@ Size: %2</source>
         <source>Where the shortcuts appear</source>
         <translation>快捷键显示的位置</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>阴影</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

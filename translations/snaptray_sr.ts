@@ -3004,6 +3004,11 @@ Size: %2</source>
         <source>Where the shortcuts appear</source>
         <translation>Где се приказују пречице</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Сенка</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
