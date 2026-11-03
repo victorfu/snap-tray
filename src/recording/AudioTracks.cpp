@@ -119,20 +119,32 @@ void AudioTrackWriter::write(const QByteArray& pcm, qint64 startFrame)
     }
     if (++m_chunksSinceFlush >= kFlushEveryChunks) {
         m_chunksSinceFlush = 0;
-        m_file.flush();
+        flushLocked();
     }
 }
 
 void AudioTrackWriter::flush()
 {
     QMutexLocker locker(&m_mutex);
-    if (m_file.isOpen()) m_file.flush();
+    flushLocked();
+}
+
+void AudioTrackWriter::flushLocked()
+{
+    if (m_file.isOpen() && !m_file.flush()) {
+        qWarning() << "AudioTrackWriter: cannot flush" << m_file.fileName() << m_file.errorString();
+        m_failed = true;
+    }
 }
 
 void AudioTrackWriter::close()
 {
     QMutexLocker locker(&m_mutex);
-    if (m_file.isOpen()) m_file.close();
+    if (!m_file.isOpen()) return;
+    // QFile::write can succeed with PCM still buffered. Check the final
+    // flush explicitly: close alone cannot report that write failure.
+    flushLocked();
+    m_file.close();
 }
 
 bool AudioTrackWriter::failed() const

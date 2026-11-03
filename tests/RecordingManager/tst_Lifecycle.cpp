@@ -4,6 +4,7 @@
 #include "RecordingManager.h"
 #include "capture/IAudioCaptureEngine.h"
 #include "recording/AudioTracks.h"
+#include "AudioTrackWriterTestAccess.h"
 #include <QtEndian>
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
@@ -60,6 +61,8 @@ private slots:
     void testCursorPauseIsStampedAtTheBoundary();
     void testKeyTimelineOnlyWhenSwitchedOn();
     void testSeparateTracksOnlyWithBothSources();
+    void testSeparateTracksDroppedOnFinalFlushFailure_data();
+    void testSeparateTracksDroppedOnFinalFlushFailure();
     void testCursorTimelineOutcome_data();
     void testCursorTimelineOutcome();
     void intermediateQualityFollowsFreeSpace_data();
@@ -607,6 +610,55 @@ void TestRecordingManagerLifecycle::testSeparateTracksOnlyWithBothSources()
     QVERIFY(!SnapTray::AudioTracks::exist(video));
     m_manager->m_audioEngine.reset();
     m_manager->m_session = {};
+}
+
+void TestRecordingManagerLifecycle::testSeparateTracksDroppedOnFinalFlushFailure_data()
+{
+    QTest::addColumn<bool>("microphoneFails");
+    QTest::newRow("microphone") << true;
+    QTest::newRow("system audio") << false;
+}
+
+void TestRecordingManagerLifecycle::testSeparateTracksDroppedOnFinalFlushFailure()
+{
+#ifndef Q_OS_LINUX
+    QSKIP("Descriptor fault injection requires Linux");
+#else
+    QFETCH(bool, microphoneFails);
+    using namespace SnapTray;
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("recording.mp4"));
+    const QByteArray mixedRecording("recording with mixed audio");
+    QFile recording(video);
+    QVERIFY(recording.open(QIODevice::WriteOnly));
+    QCOMPARE(recording.write(mixedRecording), mixedRecording.size());
+    recording.close();
+
+    m_manager->m_audioTracksVideo = video;
+    const QString micPath = AudioTracks::pathFor(video, AudioTracks::Track::Microphone);
+    const QString systemPath = AudioTracks::pathFor(video, AudioTracks::Track::SystemAudio);
+    const auto mic = std::make_shared<AudioTrackWriter>(micPath);
+    const auto system = std::make_shared<AudioTrackWriter>(systemPath);
+    m_manager->m_microphoneTrack = mic;
+    m_manager->m_systemAudioTrack = system;
+    for (const auto& track : {mic, system}) {
+        QVERIFY(track->open());
+        track->write(QByteArray(AudioTracks::kBytesPerFrame, '\1'), 0);
+        QVERIFY(!track->failed());
+    }
+    const auto failing = microphoneFails ? mic : system;
+    QVERIFY(AudioTrackWriterTestAccess::makeReadOnly(*failing));
+    QVERIFY(!failing->failed()); // failure is discovered only during finalization
+    m_manager->closeAudioTracks();
+    QCOMPARE(mic->failed(), microphoneFails);
+    QCOMPARE(system->failed(), !microphoneFails);
+    QVERIFY(!m_manager->m_microphoneTrack);
+    QVERIFY(!m_manager->m_systemAudioTrack);
+    QVERIFY(!QFile::exists(micPath));
+    QVERIFY(!QFile::exists(systemPath));
+    QVERIFY(recording.open(QIODevice::ReadOnly));
+    QCOMPARE(recording.readAll(), mixedRecording);
+#endif
 }
 
 void TestRecordingManagerLifecycle::testCursorPauseIsStampedAtTheBoundary()

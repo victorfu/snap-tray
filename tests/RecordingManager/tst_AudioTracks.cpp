@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include "recording/AudioTracks.h"
+#include "AudioTrackWriterTestAccess.h"
 
 using namespace SnapTray;
 
@@ -58,6 +59,8 @@ class TestAudioTracks : public QObject
 
 private slots:
     void writerPlacesChunksOnTheTimeline();
+    void writerReportsBufferedFlushFailures_data();
+    void writerReportsBufferedFlushFailures();
     void readerValidatesAndPadsWithSilence();
     void neutralMixIsTheRecordedMix();
     void gainsAndMutes();
@@ -85,6 +88,45 @@ void TestAudioTracks::writerPlacesChunksOnTheTimeline()
     QCOMPARE(reader.read(48000, 480), tone(480, 440, 0.5, 48000));
     const QByteArray gap = reader.read(1000, 1000);
     QCOMPARE(gap, QByteArray(gap.size(), '\0'));
+}
+
+void TestAudioTracks::writerReportsBufferedFlushFailures_data()
+{
+    QTest::addColumn<QString>("flushAt");
+    QTest::newRow("explicit flush") << QStringLiteral("explicit");
+    QTest::newRow("periodic flush") << QStringLiteral("periodic");
+    QTest::newRow("close") << QStringLiteral("close");
+}
+
+void TestAudioTracks::writerReportsBufferedFlushFailures()
+{
+#ifndef Q_OS_LINUX
+    QSKIP("Descriptor fault injection requires Linux");
+#else
+    QFETCH(QString, flushAt);
+    QTemporaryDir dir;
+    AudioTrackWriter writer(dir.filePath(QStringLiteral("track.pcm")));
+    QVERIFY(writer.open());
+    const QByteArray pcm = tone(1, 440, 0.5);
+    constexpr int kChunksBeforePeriodicFlush = 99;
+    if (flushAt == QLatin1String("periodic")) {
+        // The next chunk triggers the writer's flush after 100 chunks.
+        for (int i = 0; i < kChunksBeforePeriodicFlush; ++i) writer.write(pcm, i);
+        writer.flush();
+    } else {
+        writer.write(pcm, 0);
+    }
+    QVERIFY(!writer.failed());
+    QVERIFY(AudioTrackWriterTestAccess::makeReadOnly(writer));
+    if (flushAt == QLatin1String("explicit")) writer.flush();
+    else if (flushAt == QLatin1String("periodic")) writer.write(pcm, kChunksBeforePeriodicFlush);
+    else writer.close();
+    QVERIFY(writer.failed());
+    // A later close/flush must never clear the failure.
+    writer.close();
+    writer.flush();
+    QVERIFY(writer.failed());
+#endif
 }
 
 void TestAudioTracks::readerValidatesAndPadsWithSilence()

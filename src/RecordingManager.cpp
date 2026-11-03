@@ -2774,11 +2774,12 @@ void RecordingManager::closeAudioTracks()
     // A track that stopped writing (a full disk) is shorter than the
     // recording but still looks valid: the preview and exports would use it
     // instead of the complete mixed track. The pair goes, so the recording
-    // keeps its own audio (PR #202 review).
-    const bool failed = (m_microphoneTrack && m_microphoneTrack->failed())
-        || (m_systemAudioTrack && m_systemAudioTrack->failed());
+    // keeps its own audio (PR #202 review). Finalize both files before
+    // checking: the last buffered write may fail only on close.
     if (m_microphoneTrack) m_microphoneTrack->close();
     if (m_systemAudioTrack) m_systemAudioTrack->close();
+    const bool failed = (m_microphoneTrack && m_microphoneTrack->failed())
+        || (m_systemAudioTrack && m_systemAudioTrack->failed());
     m_microphoneTrack.reset();
     m_systemAudioTrack.reset();
     if (failed && !m_audioTracksVideo.isEmpty()) {

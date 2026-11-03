@@ -52,6 +52,9 @@ public:
     void failForTests();
 
 private:
+    friend struct AudioTrackWriterTestAccess;
+    void flushLocked(); // caller holds m_mutex
+
     mutable QMutex m_mutex;
     QFile m_file;
     bool m_failed = false;
