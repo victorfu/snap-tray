@@ -122,6 +122,7 @@ private slots:
     void recoveryDialogScrollsManyRecordings();
     void libraryListsOpensAndDeletesProjects();
     void recordingModeIsTheSameSettingEverywhere();
+    void setupFitsAShortScreen();
     void quickSaveActionsDoWhatTheySay();
 
 private:
@@ -768,6 +769,60 @@ void TestRecordingSetup::recordingModeIsTheSameSettingEverywhere()
     // Out-of-range values read as "do nothing".
     settings.setQuickSaveAction(7);
     QCOMPARE(settings.quickSaveAction(), int(RecordingSettingsManager::QuickSaveNothing));
+}
+
+// PR #204 review: with every option shown the setup was taller than a short
+// screen, pushing Start/Cancel off it. It is bounded by the screen and scrolls.
+void TestRecordingSetup::setupFitsAShortScreen()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("No screen available");
+    auto& settings = RecordingSettingsManager::instance();
+    auto restore = qScopeGuard([&settings] {
+        settings.setAudioEnabled(false);
+        settings.setKeyRecordingMode(0);
+    });
+    settings.setShowPreview(true);
+    settings.setAudioEnabled(true);
+    settings.setAudioSource(SnapTray::kAudioSourceMicrophone);
+    SnapTray::ScreenSource source;
+    source.id = QStringLiteral("screen-a");
+    source.name = QStringLiteral("Display A");
+    source.screen = screen;
+    auto* viewModel = new SnapTray::ScreenPickerViewModel({source});
+    viewModel->setAudioEngineFactory(factory());
+    if (viewModel->keyRecordingSupported()) viewModel->setRecordTypedText(true);
+    SnapTray::QmlDialog dialog(QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/ScreenPickerDialog.qml")),
+                               viewModel, QStringLiteral("viewModel"));
+    viewModel->setParent(&dialog);
+    dialog.showCenteredOnScreen(screen);
+    QQuickView* view = nullptr;
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
+            view = candidate;
+    }
+    QVERIFY(view);
+    QTRY_VERIFY(viewModel->devicesLoaded());
+    // A short screen (a 768 px laptop less its panels).
+    constexpr int kShortScreen = 520;
+    view->rootObject()->setProperty("availableScreenHeight", kShortScreen);
+    QTRY_VERIFY(view->height() > 0 && qAbs(view->height() - view->rootObject()->height()) < 1);
+    QVERIFY2(view->height() <= kShortScreen,
+             qPrintable(QStringLiteral("%1 > %2").arg(view->height()).arg(kShortScreen)));
+    auto* scroller = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("setupScroller"));
+    QVERIFY(scroller);
+    auto* start = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("setupStartButton"));
+    QVERIFY(start && start->isVisible());
+    // Start and Cancel stay in the window (after the layout settles).
+    QTRY_VERIFY2(start->mapRectToScene(QRectF(0, 0, start->width(), start->height())).bottom() <= view->height(),
+                 qPrintable(QString::number(start->mapRectToScene(QRectF(0, 0, start->width(), start->height())).bottom())));
+    // Everything does not fit: the rest scrolls into view.
+    QVERIFY(scroller->property("contentHeight").toReal() > scroller->height());
+    scroller->setProperty("contentY", scroller->property("contentHeight").toReal() - scroller->height());
+    auto* last = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("setupShowBeforeRecordingToggle"));
+    QVERIFY(last);
+    const QRectF lastRect = last->mapRectToItem(scroller, QRectF(0, 0, last->width(), last->height()));
+    QVERIFY(lastRect.bottom() <= scroller->height() + 1);
 }
 
 void TestRecordingSetup::quickSaveActionsDoWhatTheySay()
