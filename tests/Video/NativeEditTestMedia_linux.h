@@ -34,7 +34,15 @@ private:
 
 class NativeEditTestTranscoder final : public IVideoTranscoder, public VideoTranscoderFaultInjection {
 public:
-    VideoFileProbe probe(const QString& path) override { return delegate->probe(path); }
+    VideoFileProbe probe(const QString& path) override {
+        auto result = delegate->probe(path);
+        if (path == sourceRatePath) result.frameRate = sourceRate;
+        return result;
+    }
+    void setSourceFrameRateForTesting(const QString& path, double rate) {
+        sourceRatePath = path;
+        sourceRate = rate;
+    }
     bool supportsFrameFilter() const override { return true; }
     bool supportsOutputOptions() const override { return true; }
     bool supportsSegments() const override { return true; }
@@ -49,5 +57,7 @@ public:
         return SnapTray::exportNativeEdit(r, progress, *this, media);
     }
 private:
+    QString sourceRatePath;
+    double sourceRate = 0;
     std::unique_ptr<IVideoTranscoder> delegate = IVideoTranscoder::create();
 };

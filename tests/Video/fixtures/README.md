@@ -16,3 +16,25 @@ reports an average frame interval of 105 ms, shorter than the 200 ms gap.
 This exercises issue #112: stepping from the red
 frame at 1000 ms must reach the green frame at 1200 ms, while an ordinary seek
 to 1100 ms must keep the red frame at 1000 ms.
+
+## Edited variable-rate fixture
+
+`edit-vfr.mp4` contains eight synthetic 160 × 120 solid-color H.264 frames,
+without audio or captured user content. Their PTS are 0, 100, 200, 1000, 1100,
+1400, 1500 and 1600 ms; the first three are red, the next two green, and the
+last three blue. The final frame lasts 100 ms. The nominal maximum is 10 fps
+and the average is 80/17 fps. Unlike a file generated inside the test with a
+native capture encoder, these timestamp gaps are independently fixed.
+
+It was generated using FFmpeg 4.4.2/libx264 with these eight RGB24 frames on
+stdin (each color repeated 160 × 120 times):
+
+```bash
+ffmpeg -f rawvideo -pixel_format rgb24 -video_size 160x120 -framerate 10 -i pipe:0 \
+  -vf "setpts='if(lt(N,3),N,if(lt(N,5),N+7,N+9))'" -vsync vfr \
+  -c:v libx264 -pix_fmt yuv420p -bf 0 -crf 18 edit-vfr.mp4
+```
+
+Check packet PTS and durations with `ffprobe -select_streams v -show_packets
+edit-vfr.mp4`. The edited test joins a still-red span with a doubled-speed
+green/blue span and checks the short blue frame immediately before the cut.

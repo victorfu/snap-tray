@@ -177,7 +177,12 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
             const qint64 nextOut = nextSourceUs < 0 || nextSourceUs >= part.endMs * 1000
                 ? outEnd : qMin(outEnd, *map.sourceToOutputMicroseconds(nextSourceUs));
             constexpr qint64 kTimestampToleranceUs = 1000; // millisecond-timestamp capture sources
-            const bool keep = first || pendingTime < 0 || nextOut - outUs >= intervalUs
+            // Native readers can report a VFR file's average rate. That is
+            // only a cadence hint: without an explicit fps reduction, do not
+            // discard the last visible picture just because a cut leaves it
+            // shorter than that average interval.
+            const bool terminalPicture = request.frameRate <= 0 && nextOut == outEnd;
+            const bool keep = first || terminalPicture || pendingTime < 0 || nextOut - outUs >= intervalUs
                 || outUs + kTimestampToleranceUs >= nextDueUs;
             if (keep && outUs > pendingTime) {
                 const bool onSchedule = outUs + kTimestampToleranceUs >= nextDueUs
