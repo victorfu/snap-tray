@@ -121,6 +121,21 @@ void tst_RecordingPreviewAppearance::panelEditsTheFrame()
     QCOMPARE(backend.appearanceAspectRatio(), 1);
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceBlur"), "clicked"));
     QCOMPARE(backend.appearanceBackground(), int(SnapTray::RecordingAppearance::Background::BlurredVideo));
+    // A new crop remakes the blurred background, also while paused (PR #198 review).
+    QTRY_VERIFY(!backend.appearancePreviewFrame().isNull());
+    QSignalSpy blurRemade(&backend, &RecordingPreviewBackend::appearancePreviewFrameChanged);
+    backend.setCropRect(QRect(0, 0, 160, 90));
+    QTRY_VERIFY(blurRemade.count() >= 1);
+    // Framed and cropped: only the crop is shown, clipped, with no dimmed
+    // outside or crop border around it (PR #198 review).
+    QTRY_VERIFY(item(view, "previewZoomClip")->clip());
+    QQuickItem* cropOverlay = item(view, "previewCropOverlay");
+    QVERIFY(cropOverlay);
+    QCOMPARE(cropOverlay->findChild<QObject*>(QStringLiteral("cropOutsideDim"))->property("count").toInt(), 0);
+    QVERIFY(!cropOverlay->findChild<QQuickItem*>(QStringLiteral("cropSelectionFrame"))->isVisible());
+    blurRemade.clear();
+    backend.clearCrop();
+    QTRY_VERIFY(blurRemade.count() >= 1);
     // An image needs a file first: nothing changes without one.
     backend.setAppearanceBackground(int(SnapTray::RecordingAppearance::Background::Image));
     QCOMPARE(backend.appearanceBackground(), int(SnapTray::RecordingAppearance::Background::BlurredVideo));

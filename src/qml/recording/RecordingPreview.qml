@@ -409,7 +409,9 @@ Item {
                 y: root.zoomTarget.y
                 width: root.zoomTarget.width
                 height: root.zoomTarget.height
-                clip: root.zoomFactor > 1.001
+                // Framed (#184): only the cropped picture is in the export,
+                // so nothing outside it shows around the frame (PR #198 review).
+                clip: root.zoomFactor > 1.001 || root.appearanceShown
             }
 
             ZoomClip {
@@ -590,6 +592,8 @@ Item {
                 anchors.fill: parent
                 z: 4
                 visible: root.cropAvailable && !root.comparingOriginal
+                // The framed export shows only the crop: no dimmed outside.
+                dimOutside: !root.appearanceShown
                 interactive: !backend.isProcessing
                 aspectRatio: backend.cropAspectRatio
                 legalSizeForDraft: function(r) {

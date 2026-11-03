@@ -779,6 +779,9 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
     });
     connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
     connect(this, &RecordingPreviewBackend::appearanceChanged, player, &VideoPlaybackItem::reprocessFrame);
+    // The blurred background is made from the cropped picture: a new crop
+    // (also undo or clear) needs it again, even while paused (PR #198 review).
+    connect(this, &RecordingPreviewBackend::cropRectChanged, player, &VideoPlaybackItem::reprocessFrame);
 }
 
 bool RecordingPreviewBackend::zoomAvailable() const
