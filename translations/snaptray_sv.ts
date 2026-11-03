@@ -2828,6 +2828,11 @@ Storlek: %2</translation>
         <source>Use an image file as the background</source>
         <translation>Använd en bildfil som bakgrund</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Skugga</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

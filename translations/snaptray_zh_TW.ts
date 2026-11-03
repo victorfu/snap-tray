@@ -2961,6 +2961,11 @@ File size: %3</source>
         <source>Use an image file as the background</source>
         <translation>使用圖片檔案作為背景</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>陰影</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

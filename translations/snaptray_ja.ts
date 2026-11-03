@@ -2834,6 +2834,11 @@ Size: %2</source>
         <source>Use an image file as the background</source>
         <translation>画像ファイルを背景にします</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>影</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

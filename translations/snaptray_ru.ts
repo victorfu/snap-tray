@@ -2834,6 +2834,11 @@ Size: %2</source>
         <source>Use an image file as the background</source>
         <translation>Использовать файл изображения как фон</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Тень</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

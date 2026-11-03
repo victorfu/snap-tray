@@ -2834,6 +2834,11 @@ Velikost: %2</translation>
         <source>Use an image file as the background</source>
         <translation>Použít jako pozadí obrázek</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Stín</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

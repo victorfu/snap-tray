@@ -2828,6 +2828,11 @@ Size: %2</source>
         <source>Use an image file as the background</source>
         <translation>Χρήση αρχείου εικόνας ως φόντο</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Shadow</source>
+        <translation>Σκιά</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
