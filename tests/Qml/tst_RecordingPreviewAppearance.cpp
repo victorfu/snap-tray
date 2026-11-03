@@ -133,6 +133,20 @@ void tst_RecordingPreviewAppearance::panelEditsTheFrame()
     QVERIFY(cropOverlay);
     QCOMPARE(cropOverlay->findChild<QObject*>(QStringLiteral("cropOutsideDim"))->property("count").toInt(), 0);
     QVERIFY(!cropOverlay->findChild<QQuickItem*>(QStringLiteral("cropSelectionFrame"))->isVisible());
+    // A small crop in the far corner: the frame-fitting transform moves the
+    // picture, never the controls. The crop chip stays at the stage's top
+    // left, inside the window (PR #198 review).
+    backend.setCropRect(QRect(160, 90, 160, 90));
+    QQuickItem* chip = item(view, "previewCropChip");
+    QVERIFY(chip);
+    QTRY_VERIFY(chip->isVisible());
+    QTest::qWait(50);
+    const QRectF chipRect = chip->mapRectToScene(QRectF(0, 0, chip->width(), chip->height()));
+    const QRectF stageArea = stage->parentItem()->mapRectToScene(
+        QRectF(stage->x(), stage->y(), stage->width(), stage->height()));
+    QVERIFY2(QRectF(QPointF(0, 0), QSizeF(view->size())).contains(chipRect),
+             qPrintable(QStringLiteral("chip at %1,%2").arg(chipRect.x()).arg(chipRect.y())));
+    QVERIFY(qAbs(chipRect.left() - stageArea.left()) < 40 && qAbs(chipRect.top() - stageArea.top()) < 40);
     blurRemade.clear();
     backend.clearCrop();
     QTRY_VERIFY(blurRemade.count() >= 1);

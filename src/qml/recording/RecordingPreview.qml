@@ -616,151 +616,6 @@ Item {
                 }
             }
 
-            Rectangle {
-                id: playOverlay
-                objectName: "previewPlayOverlay"
-                anchors.centerIn: parent
-                width: 72
-                height: 72
-                radius: 36
-                color: ComponentTokens.recordingPreviewPlayOverlay
-                visible: !videoPlayer.playing
-                opacity: visible ? 1.0 : 0.0
-
-                Behavior on opacity {
-                    NumberAnimation { duration: SemanticTokens.durationInteractionHover }
-                }
-
-                SvgIcon {
-                    anchors.centerIn: parent
-                    source: "qrc:/icons/icons/play.svg"
-                    iconSize: ComponentTokens.recordingPreviewActionIconSize
-                    color: ComponentTokens.recordingPreviewPrimaryButtonIcon
-                }
-            }
-
-            // Committed crop chip; kept off the toolbar so it fits the minimum window width.
-            GlassSurface {
-                id: cropChip
-                objectName: "previewCropChip"
-                visible: backend.hasCrop && !cropOverlay.editing && !root.comparingOriginal
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.margins: SemanticTokens.spacing12
-                width: cropChipRow.implicitWidth + SemanticTokens.spacing16
-                height: root.overlayChipHeight
-                z: 5
-                glassBg: ComponentTokens.tooltipBackground
-                glassBgTop: ComponentTokens.tooltipBackgroundTop
-                glassHighlight: ComponentTokens.tooltipHighlight
-                glassBorder: ComponentTokens.tooltipBorder
-                glassRadius: ComponentTokens.tooltipRadius
-
-                Row {
-                    id: cropChipRow
-                    anchors.centerIn: parent
-                    spacing: SemanticTokens.spacing4
-
-                    Text {
-                        objectName: "previewCropSizeLabel"
-                        anchors.verticalCenter: parent.verticalCenter
-                        // Authoritative: the backend's normalized, even video-pixel crop.
-                        text: backend.cropRect.width + " × " + backend.cropRect.height
-                        color: root.textSecondary
-                        font.pixelSize: SemanticTokens.fontSizeCaption
-                        font.family: SemanticTokens.fontFamily
-                    }
-
-                    IconButton {
-                        objectName: "previewClearCropButton"
-                        anchors.verticalCenter: parent.verticalCenter
-                        enabled: !backend.isProcessing
-                        iconSource: "qrc:/icons/icons/close.svg"
-                        iconSize: ComponentTokens.iconSizeMenu
-                        width: root.overlayChipButtonSize
-                        height: root.overlayChipButtonSize
-                        tooltipText: qsTr("Clear Crop")
-                        tooltipPreferredAbove: false
-                        onClicked: backend.clearCrop()
-                    }
-                }
-            }
-
-            GlassSurface {
-                objectName: "previewCompareChip"
-                visible: root.comparingOriginal
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.margins: SemanticTokens.spacing12
-                width: compareText.implicitWidth + SemanticTokens.spacing16
-                height: root.overlayChipHeight
-                z: 5
-                glassBg: ComponentTokens.tooltipBackground
-                glassBgTop: ComponentTokens.tooltipBackgroundTop
-                glassHighlight: ComponentTokens.tooltipHighlight
-                glassBorder: ComponentTokens.tooltipBorder
-                glassRadius: ComponentTokens.tooltipRadius
-
-                Text {
-                    id: compareText
-                    anchors.centerIn: parent
-                    text: qsTr("Original")
-                    color: root.textPrimary
-                    font.pixelSize: SemanticTokens.fontSizeCaption
-                    font.family: SemanticTokens.fontFamily
-                }
-            }
-
-            GlassSurface {
-                objectName: "previewWindowSnapHint"
-                visible: cropOverlay.editing && backend.hasWindowTimeline && !cropOverlay.hasShownRect
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.margins: SemanticTokens.spacing12
-                width: snapHintText.implicitWidth + SemanticTokens.spacing16
-                height: root.overlayChipHeight
-                z: 5
-                glassBg: ComponentTokens.tooltipBackground
-                glassBgTop: ComponentTokens.tooltipBackgroundTop
-                glassHighlight: ComponentTokens.tooltipHighlight
-                glassBorder: ComponentTokens.tooltipBorder
-                glassRadius: ComponentTokens.tooltipRadius
-
-                Text {
-                    id: snapHintText
-                    anchors.centerIn: parent
-                    text: qsTr("Click a window to crop to it, or drag to draw")
-                    color: root.textSecondary
-                    font.pixelSize: SemanticTokens.fontSizeCaption
-                    font.family: SemanticTokens.fontFamily
-                }
-            }
-
-            GlassSurface {
-                id: silentPreviewNotice
-                objectName: "previewAudioUnavailableLabel"
-                visible: !videoPlayer.audioPlaybackSupported
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.margins: SemanticTokens.spacing12
-                width: silentPreviewText.implicitWidth + SemanticTokens.spacing16
-                height: root.overlayChipHeight
-                z: 5
-                glassBg: ComponentTokens.tooltipBackground
-                glassBgTop: ComponentTokens.tooltipBackgroundTop
-                glassHighlight: ComponentTokens.tooltipHighlight
-                glassBorder: ComponentTokens.tooltipBorder
-                glassRadius: ComponentTokens.tooltipRadius
-
-                Text {
-                    id: silentPreviewText
-                    anchors.centerIn: parent
-                    text: qsTr("Audio playback is unavailable in this preview.")
-                    font.pixelSize: SemanticTokens.fontSizeCaption
-                    font.family: SemanticTokens.fontFamily
-                    color: root.textSecondary
-                }
-            }
         }
 
         Item {
@@ -2094,6 +1949,165 @@ Item {
                     tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
                     onClicked: root.saveWithCrop()
                 }
+            }
+        }
+    }
+
+    // The preview's controls over the stage, outside its frame-fitting
+    // transform: they stay where the window is, not where the framed
+    // picture is scaled to (PR #198 review).
+    Item {
+        id: stageChrome
+        objectName: "previewStageChrome"
+        x: stage.x
+        y: stage.y
+        width: stage.width
+        height: stage.height
+        enabled: !backend.isProcessing
+
+        Rectangle {
+            id: playOverlay
+            objectName: "previewPlayOverlay"
+            anchors.centerIn: parent
+            width: 72
+            height: 72
+            radius: 36
+            color: ComponentTokens.recordingPreviewPlayOverlay
+            visible: !videoPlayer.playing
+            opacity: visible ? 1.0 : 0.0
+
+            Behavior on opacity {
+                NumberAnimation { duration: SemanticTokens.durationInteractionHover }
+            }
+
+            SvgIcon {
+                anchors.centerIn: parent
+                source: "qrc:/icons/icons/play.svg"
+                iconSize: ComponentTokens.recordingPreviewActionIconSize
+                color: ComponentTokens.recordingPreviewPrimaryButtonIcon
+            }
+        }
+
+        // Committed crop chip; kept off the toolbar so it fits the minimum window width.
+        GlassSurface {
+            id: cropChip
+            objectName: "previewCropChip"
+            visible: backend.hasCrop && !cropOverlay.editing && !root.comparingOriginal
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.margins: SemanticTokens.spacing12
+            width: cropChipRow.implicitWidth + SemanticTokens.spacing16
+            height: root.overlayChipHeight
+            z: 5
+            glassBg: ComponentTokens.tooltipBackground
+            glassBgTop: ComponentTokens.tooltipBackgroundTop
+            glassHighlight: ComponentTokens.tooltipHighlight
+            glassBorder: ComponentTokens.tooltipBorder
+            glassRadius: ComponentTokens.tooltipRadius
+
+            Row {
+                id: cropChipRow
+                anchors.centerIn: parent
+                spacing: SemanticTokens.spacing4
+
+                Text {
+                    objectName: "previewCropSizeLabel"
+                    anchors.verticalCenter: parent.verticalCenter
+                    // Authoritative: the backend's normalized, even video-pixel crop.
+                    text: backend.cropRect.width + " × " + backend.cropRect.height
+                    color: root.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
+                }
+
+                IconButton {
+                    objectName: "previewClearCropButton"
+                    anchors.verticalCenter: parent.verticalCenter
+                    enabled: !backend.isProcessing
+                    iconSource: "qrc:/icons/icons/close.svg"
+                    iconSize: ComponentTokens.iconSizeMenu
+                    width: root.overlayChipButtonSize
+                    height: root.overlayChipButtonSize
+                    tooltipText: qsTr("Clear Crop")
+                    tooltipPreferredAbove: false
+                    onClicked: backend.clearCrop()
+                }
+            }
+        }
+
+        GlassSurface {
+            objectName: "previewCompareChip"
+            visible: root.comparingOriginal
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.margins: SemanticTokens.spacing12
+            width: compareText.implicitWidth + SemanticTokens.spacing16
+            height: root.overlayChipHeight
+            z: 5
+            glassBg: ComponentTokens.tooltipBackground
+            glassBgTop: ComponentTokens.tooltipBackgroundTop
+            glassHighlight: ComponentTokens.tooltipHighlight
+            glassBorder: ComponentTokens.tooltipBorder
+            glassRadius: ComponentTokens.tooltipRadius
+
+            Text {
+                id: compareText
+                anchors.centerIn: parent
+                text: qsTr("Original")
+                color: root.textPrimary
+                font.pixelSize: SemanticTokens.fontSizeCaption
+                font.family: SemanticTokens.fontFamily
+            }
+        }
+
+        GlassSurface {
+            objectName: "previewWindowSnapHint"
+            visible: cropOverlay.editing && backend.hasWindowTimeline && !cropOverlay.hasShownRect
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.margins: SemanticTokens.spacing12
+            width: snapHintText.implicitWidth + SemanticTokens.spacing16
+            height: root.overlayChipHeight
+            z: 5
+            glassBg: ComponentTokens.tooltipBackground
+            glassBgTop: ComponentTokens.tooltipBackgroundTop
+            glassHighlight: ComponentTokens.tooltipHighlight
+            glassBorder: ComponentTokens.tooltipBorder
+            glassRadius: ComponentTokens.tooltipRadius
+
+            Text {
+                id: snapHintText
+                anchors.centerIn: parent
+                text: qsTr("Click a window to crop to it, or drag to draw")
+                color: root.textSecondary
+                font.pixelSize: SemanticTokens.fontSizeCaption
+                font.family: SemanticTokens.fontFamily
+            }
+        }
+
+        GlassSurface {
+            id: silentPreviewNotice
+            objectName: "previewAudioUnavailableLabel"
+            visible: !videoPlayer.audioPlaybackSupported
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: SemanticTokens.spacing12
+            width: silentPreviewText.implicitWidth + SemanticTokens.spacing16
+            height: root.overlayChipHeight
+            z: 5
+            glassBg: ComponentTokens.tooltipBackground
+            glassBgTop: ComponentTokens.tooltipBackgroundTop
+            glassHighlight: ComponentTokens.tooltipHighlight
+            glassBorder: ComponentTokens.tooltipBorder
+            glassRadius: ComponentTokens.tooltipRadius
+
+            Text {
+                id: silentPreviewText
+                anchors.centerIn: parent
+                text: qsTr("Audio playback is unavailable in this preview.")
+                font.pixelSize: SemanticTokens.fontSizeCaption
+                font.family: SemanticTokens.fontFamily
+                color: root.textSecondary
             }
         }
     }
