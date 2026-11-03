@@ -3000,6 +3000,151 @@ Size: %2</source>
         <source>Shadow</source>
         <translation>阴影</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A box behind the text, so it reads on any picture</source>
+        <translation>在文字后加上底框，在任何画面上都清晰可读</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A title or caption at the playhead</source>
+        <translation>在播放位置加上标题或说明</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Image</source>
+        <translation>添加图片</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Text</source>
+        <translation>添加文字</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Center</source>
+        <translation>居中对齐</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Left</source>
+        <translation>左对齐</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Right</source>
+        <translation>右对齐</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>An image such as a logo, for the whole recording</source>
+        <translation>像标志这样的图片，显示在整段录制中</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark Background</source>
+        <translation>深色背景</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this overlay</source>
+        <translation>删除此叠加</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>拖动叠加可移动位置，拖动角落可调整大小。按“完成”结束编辑。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How lines line up</source>
+        <translation>各行的对齐方式</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How see-through the image is</source>
+        <translation>图片的透明程度</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image overlay</source>
+        <translation>图片叠加</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Larger</source>
+        <translation>放大</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light Background</source>
+        <translation>浅色背景</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No Background</source>
+        <translation>无背景</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Opacity: %1%</source>
+        <translation>不透明度：%1%</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay end</source>
+        <translation>叠加结束</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay start</source>
+        <translation>叠加开始</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay text</source>
+        <translation>叠加文字</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlays need GIF or WebP on this system</source>
+        <translation>此系统上的叠加需要使用 GIF 或 WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected overlay</source>
+        <translation>选中的叠加</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show it for the whole recording, or only for a time range</source>
+        <translation>在整段录制中显示，或只在某个时间区段显示</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller</source>
+        <translation>缩小</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text</source>
+        <translation>文字</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text colour %1</source>
+        <translation>文字颜色 %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text overlay "%1"</source>
+        <translation>文字叠加“%1”</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>from %1 to %2</source>
+        <translation>从 %1 到 %2</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3146,6 +3291,26 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>所有片段都已剪掉，没有可导出的内容。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
+        <translation>图片 (*.png *.svg *.jpg *.jpeg *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Image</source>
+        <translation>选择图片</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Title</source>
+        <translation>标题</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>此系统尚无法将文字与图片叠加绘制到 MP4。请导出为 GIF 或 WebP，或移除它们后再导出 MP4。未导出任何内容。</translation>
     </message>
 </context>
 <context>

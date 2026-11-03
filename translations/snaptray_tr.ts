@@ -3003,6 +3003,151 @@ Boyut: %2</translation>
         <source>Shadow</source>
         <translation>Gölge</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A box behind the text, so it reads on any picture</source>
+        <translation>Her görüntüde okunsun diye metnin arkasına bir kutu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A title or caption at the playhead</source>
+        <translation>Oynatma konumunda bir başlık veya açıklama</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Image</source>
+        <translation>Resim ekle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Text</source>
+        <translation>Metin ekle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Center</source>
+        <translation>Ortala</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Left</source>
+        <translation>Sola hizala</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Right</source>
+        <translation>Sağa hizala</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>An image such as a logo, for the whole recording</source>
+        <translation>Logo gibi bir resim, kaydın tamamı için</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark Background</source>
+        <translation>Koyu arka plan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this overlay</source>
+        <translation>Bu katmanı sil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Taşımak için katmanı, boyutlandırmak için köşesini sürükleyin. Bitti düzenlemeyi bitirir.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How lines line up</source>
+        <translation>Satırların hizalanması</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How see-through the image is</source>
+        <translation>Resmin ne kadar saydam olduğu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image overlay</source>
+        <translation>Resim katmanı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Larger</source>
+        <translation>Daha büyük</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light Background</source>
+        <translation>Açık arka plan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No Background</source>
+        <translation>Arka plan yok</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Opacity: %1%</source>
+        <translation>Opaklık: %%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay end</source>
+        <translation>Katman bitişi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay start</source>
+        <translation>Katman başlangıcı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay text</source>
+        <translation>Katman metni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlays need GIF or WebP on this system</source>
+        <translation>Katmanlar bu sistemde GIF veya WebP gerektirir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected overlay</source>
+        <translation>Seçili katman</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show it for the whole recording, or only for a time range</source>
+        <translation>Kaydın tamamında veya yalnızca bir zaman aralığında göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller</source>
+        <translation>Daha küçük</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text</source>
+        <translation>Metin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text colour %1</source>
+        <translation>Metin rengi %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text overlay "%1"</source>
+        <translation>Metin katmanı "%1"</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>from %1 to %2</source>
+        <translation>%1 ile %2 arası</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3149,6 +3294,26 @@ Boyut: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>Tüm bölümler kesildi: dışa aktarılacak bir şey yok.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
+        <translation>Resimler (*.png *.svg *.jpg *.jpeg *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Image</source>
+        <translation>Resim seç</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Title</source>
+        <translation>Başlık</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Metin ve resim katmanları bu sistemde henüz MP4'e çizilemiyor. GIF veya WebP olarak dışa aktarın ya da MP4 için bunları kaldırın. Hiçbir şey dışa aktarılmadı.</translation>
     </message>
 </context>
 <context>

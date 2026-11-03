@@ -3003,6 +3003,151 @@ Size: %2</source>
         <source>Shadow</source>
         <translation>ظل</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A box behind the text, so it reads on any picture</source>
+        <translation>مربع خلف النص ليُقرأ فوق أي صورة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A title or caption at the playhead</source>
+        <translation>عنوان أو تعليق عند موضع التشغيل</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Image</source>
+        <translation>إضافة صورة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Text</source>
+        <translation>إضافة نص</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Center</source>
+        <translation>محاذاة للوسط</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Left</source>
+        <translation>محاذاة لليسار</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Right</source>
+        <translation>محاذاة لليمين</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>An image such as a logo, for the whole recording</source>
+        <translation>صورة مثل شعار، للتسجيل بأكمله</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark Background</source>
+        <translation>خلفية داكنة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this overlay</source>
+        <translation>حذف هذا التراكب</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>اسحب التراكب لنقله، أو زاويته لتغيير حجمه. «تم» ينهي التحرير.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How lines line up</source>
+        <translation>طريقة محاذاة الأسطر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How see-through the image is</source>
+        <translation>مدى شفافية الصورة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image overlay</source>
+        <translation>تراكب صورة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Larger</source>
+        <translation>أكبر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light Background</source>
+        <translation>خلفية فاتحة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No Background</source>
+        <translation>بدون خلفية</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Opacity: %1%</source>
+        <translation>العتامة: %1%</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay end</source>
+        <translation>نهاية التراكب</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay start</source>
+        <translation>بداية التراكب</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay text</source>
+        <translation>نص التراكب</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlays need GIF or WebP on this system</source>
+        <translation>تتطلب التراكبات GIF أو WebP على هذا النظام</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected overlay</source>
+        <translation>التراكب المحدد</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show it for the whole recording, or only for a time range</source>
+        <translation>عرضه طوال التسجيل، أو لفترة زمنية فقط</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller</source>
+        <translation>أصغر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text</source>
+        <translation>النص</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text colour %1</source>
+        <translation>لون النص %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text overlay "%1"</source>
+        <translation>تراكب نص «%1»</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>from %1 to %2</source>
+        <translation>من %1 إلى %2</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3149,6 +3294,26 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>تم قص كل الأجزاء: لا يوجد شيء للتصدير.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
+        <translation>الصور (*.png *.svg *.jpg *.jpeg *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Image</source>
+        <translation>اختيار صورة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Title</source>
+        <translation>العنوان</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>لا يمكن بعد رسم تراكبات النص والصور في MP4 على هذا النظام. صدّر بتنسيق GIF أو WebP، أو أزلها لتصدير MP4. لم يتم تصدير أي شيء.</translation>
     </message>
 </context>
 <context>

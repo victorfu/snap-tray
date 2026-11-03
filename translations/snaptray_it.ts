@@ -3009,6 +3009,151 @@ Dimensione: %2</translation>
         <source>Shadow</source>
         <translation>Ombra</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A box behind the text, so it reads on any picture</source>
+        <translation>Un riquadro dietro il testo, leggibile su qualsiasi immagine</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A title or caption at the playhead</source>
+        <translation>Un titolo o una didascalia alla testina</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Image</source>
+        <translation>Aggiungi immagine</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Text</source>
+        <translation>Aggiungi testo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Center</source>
+        <translation>Allinea al centro</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Left</source>
+        <translation>Allinea a sinistra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Right</source>
+        <translation>Allinea a destra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>An image such as a logo, for the whole recording</source>
+        <translation>Un'immagine, come un logo, per tutta la registrazione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark Background</source>
+        <translation>Sfondo scuro</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this overlay</source>
+        <translation>Elimina questa sovrimpressione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Trascina la sovrimpressione per spostarla o l'angolo per ridimensionarla. Fine termina la modifica.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How lines line up</source>
+        <translation>Come si allineano le righe</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How see-through the image is</source>
+        <translation>Quanto è trasparente l'immagine</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image overlay</source>
+        <translation>Sovrimpressione immagine</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Larger</source>
+        <translation>Più grande</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light Background</source>
+        <translation>Sfondo chiaro</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No Background</source>
+        <translation>Nessuno sfondo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Opacity: %1%</source>
+        <translation>Opacità: %1%</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay end</source>
+        <translation>Fine sovrimpressione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay start</source>
+        <translation>Inizio sovrimpressione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay text</source>
+        <translation>Testo della sovrimpressione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlays need GIF or WebP on this system</source>
+        <translation>Le sovrimpressioni richiedono GIF o WebP su questo sistema</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected overlay</source>
+        <translation>Sovrimpressione selezionata</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show it for the whole recording, or only for a time range</source>
+        <translation>Mostralo per tutta la registrazione o solo per un intervallo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller</source>
+        <translation>Più piccolo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text</source>
+        <translation>Testo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text colour %1</source>
+        <translation>Colore del testo %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text overlay "%1"</source>
+        <translation>Sovrimpressione di testo «%1»</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>from %1 to %2</source>
+        <translation>da %1 a %2</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3155,6 +3300,26 @@ Dimensione: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>Tutte le parti sono tagliate: non c'è nulla da esportare.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
+        <translation>Immagini (*.png *.svg *.jpg *.jpeg *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Image</source>
+        <translation>Seleziona immagine</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Title</source>
+        <translation>Titolo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Le sovrimpressioni di testo e immagini non si possono ancora disegnare negli MP4 su questo sistema. Esporta come GIF o WebP, oppure rimuovile per esportare in MP4. Non è stato esportato nulla.</translation>
     </message>
 </context>
 <context>

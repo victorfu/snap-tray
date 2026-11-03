@@ -141,6 +141,16 @@ Masks are burned into the exported MP4, GIF or WebP, and the preview shows them 
 
 **Masks are only in the exported file.** The unmasked recording is a temporary file: it stays available in the preview until you save (also after Cancel or a failed save), and once the masked export is saved, SnapTray deletes it. If you need an unmasked copy too, save once without masks first. SnapTray never uploads recordings. If the selected format cannot draw masks on your system (MP4 on macOS and Windows for now), SnapTray refuses to export and says so, instead of saving a file without the masks. Masks are not tracked automatically: if the content moves, add masks for each time range.
 
+### Text and images
+
+**Add Text** puts a title or caption on the video for three seconds from the playhead; **Add Image** adds a picture file (PNG, SVG, JPEG, WebP), such as a logo, for the whole recording. Overlays appear as bars at the bottom of the timeline; click one to edit it:
+
+- Text: type it in the box (several lines are fine), make it smaller or larger, pick a colour, a dark or light box behind it, and the alignment.
+- Image: smaller or larger, and its opacity.
+- Both: drag it on the video to move it, drag its corner to resize it, show it for the whole recording or type a start and end time, or delete it. Overlays fade in and out.
+
+Overlays sit on the exported picture: they keep their place through a crop and do not zoom with it, and masks never cover them. An image is read once when you add it, so deleting or moving the file afterwards does not affect the export. Overlays can be undone like other edits; **Reset Crop and Trim** keeps them. Like masks, they are drawn for MP4 on Linux and for GIF and WebP everywhere; elsewhere SnapTray refuses to export MP4 without them and says so. The watermark from Settings is still added while recording, as before; overlays do not replace it.
+
 ### A frame around the video
 
 **Frame** in the preview puts the exported video on a background, like Beautify does for screenshots. The first time it starts from your screenshot Beautify look (switched off); after that, your last frame for recordings is remembered. It can be undone like other edits, and **Reset Crop and Trim** keeps it.

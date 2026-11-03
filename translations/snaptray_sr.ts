@@ -3009,6 +3009,151 @@ Size: %2</source>
         <source>Shadow</source>
         <translation>Сенка</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A box behind the text, so it reads on any picture</source>
+        <translation>Оквир иза текста, да се чита на свакој слици</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>A title or caption at the playhead</source>
+        <translation>Наслов или натпис на позицији репродукције</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Image</source>
+        <translation>Додај слику</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Text</source>
+        <translation>Додај текст</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Center</source>
+        <translation>Поравнај по средини</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Left</source>
+        <translation>Поравнај лево</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Align Right</source>
+        <translation>Поравнај десно</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>An image such as a logo, for the whole recording</source>
+        <translation>Слика, на пример логотип, за цео снимак</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Dark Background</source>
+        <translation>Тамна позадина</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this overlay</source>
+        <translation>Обриши овај слој</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Превуците слој да га померите, или угао да промените величину. Готово завршава уређивање.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How lines line up</source>
+        <translation>Како се поравнавају редови</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>How see-through the image is</source>
+        <translation>Колико је слика провидна</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Image overlay</source>
+        <translation>Слој слике</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Larger</source>
+        <translation>Веће</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Light Background</source>
+        <translation>Светла позадина</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No Background</source>
+        <translation>Без позадине</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Opacity: %1%</source>
+        <translation>Непровидност: %1%</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay end</source>
+        <translation>Крај слоја</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay start</source>
+        <translation>Почетак слоја</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlay text</source>
+        <translation>Текст слоја</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Overlays need GIF or WebP on this system</source>
+        <translation>Слојеви на овом систему захтевају GIF или WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected overlay</source>
+        <translation>Изабрани слој</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Show it for the whole recording, or only for a time range</source>
+        <translation>Прикажи за цео снимак или само за временски опсег</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Smaller</source>
+        <translation>Мање</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text colour %1</source>
+        <translation>Боја текста %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Text overlay "%1"</source>
+        <translation>Текстуални слој „%1“</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>from %1 to %2</source>
+        <translation>од %1 до %2</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3155,6 +3300,26 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>Сви делови су исечени: нема шта да се извезе.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
+        <translation>Слике (*.png *.svg *.jpg *.jpeg *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Select Image</source>
+        <translation>Изабери слику</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Title</source>
+        <translation>Наслов</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Текстуални и слојеви слика још не могу да се цртају у MP4 на овом систему. Извезите као GIF или WebP или их уклоните да бисте извезли MP4. Ништа није извезено.</translation>
     </message>
 </context>
 <context>

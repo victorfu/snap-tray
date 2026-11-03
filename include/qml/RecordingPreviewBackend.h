@@ -129,6 +129,12 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
     Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
 
+    // Text and image overlays (#188): [{kind, start, end, text, size, color,
+    // background, align, opacity}], enums in OverlaySegment order.
+    Q_PROPERTY(bool overlaysAvailable READ overlaysAvailable NOTIFY overlaysChanged)
+    Q_PROPERTY(QVariantList overlays READ overlays NOTIFY overlaysChanged)
+    Q_PROPERTY(int selectedOverlay READ selectedOverlay WRITE setSelectedOverlay NOTIFY selectedOverlayChanged)
+
     // Shortcut hints (#187), from the key sidecar; enums in KeyOverlaySettings order.
     Q_PROPERTY(bool hasKeyData READ hasKeyData CONSTANT)
     Q_PROPERTY(bool keyOverlayAvailable READ keyOverlayAvailable NOTIFY keyOverlayChanged)
@@ -382,6 +388,31 @@ public:
     // endMs -1 = to the end; false (nothing changes) when invalid.
     Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
 
+    // Text and image overlays (#188), undoable; drawn where masks are.
+    bool overlaysAvailable() const { return formatCanDrawEffects(); }
+    QVariantList overlays() const;
+    const SnapTray::OverlayTrack& overlayTrack() const { return m_overlays; }
+    int selectedOverlay() const { return m_selectedOverlay; }
+    void setSelectedOverlay(int index);
+    // A title at the playhead for three seconds; returns its index (-1 when overlays cannot be drawn).
+    Q_INVOKABLE int addTextOverlay(qint64 positionMs);
+    // An image (a logo) for the whole recording; -1 when unreadable.
+    Q_INVOKABLE int addImageOverlay(const QUrl& file);
+    Q_INVOKABLE int chooseOverlayImage();
+    Q_INVOKABLE void removeOverlay(int index);
+    Q_INVOKABLE void setOverlayText(int index, const QString& text);
+    Q_INVOKABLE void setOverlaySize(int index, qreal size);
+    Q_INVOKABLE void setOverlayColor(int index, const QColor& color);
+    Q_INVOKABLE void setOverlayBackground(int index, int background);
+    Q_INVOKABLE void setOverlayAlign(int index, int align);
+    Q_INVOKABLE void setOverlayOpacity(int index, qreal opacity);
+    // endMs -1 = to the end; false (nothing changes) when invalid.
+    Q_INVOKABLE bool setOverlayRange(int index, qint64 startMs, qint64 endMs);
+    // Where an overlay is drawn, in view coordinates, for the picture shown at pictureInView.
+    Q_INVOKABLE QRectF overlayRectInView(int index, const QRectF& pictureInView) const;
+    // Moves (and for a resized rect, scales) an overlay from a rect in view coordinates.
+    Q_INVOKABLE void setOverlayRectFromView(int index, const QRectF& viewRect, const QRectF& pictureInView);
+
     // Shortcut hints (#187); undoable, remembered as the last look.
     bool hasKeyData() const { return m_keyTimeline && !m_keyTimeline->strokes.empty(); }
     int recordedKeyCount() const { return m_keyTimeline ? int(m_keyTimeline->strokes.size()) : 0; }
@@ -509,6 +540,8 @@ signals:
     void appearanceChanged();
     void timelineChanged();
     void keyOverlayChanged();
+    void overlaysChanged();
+    void selectedOverlayChanged();
     void appearancePreviewFrameChanged();
     void mp4EstimateChanged();
     void zoomChanged();
@@ -609,6 +642,9 @@ private:
     SnapTray::TimelineEdit m_timeline;
     std::shared_ptr<const SnapTray::KeyTimeline> m_keyTimeline;
     SnapTray::KeyOverlaySettings m_keyOverlay;
+    SnapTray::OverlayTrack m_overlays;
+    int m_selectedOverlay = -1;
+    void editOverlays(const std::function<void(SnapTray::OverlayTrack&)>& change);
     void editKeyOverlay(const std::function<void(SnapTray::KeyOverlaySettings&)>& change);
     void editTimeline(const std::function<bool(SnapTray::TimelineEdit&)>& change, bool record = true);
     QImage m_appearancePreviewFrame;

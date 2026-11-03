@@ -91,6 +91,7 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::masksChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::appearanceChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::keyOverlayChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::overlaysChanged);
     // The exported length and the cut availability follow the trim, duration and format.
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::timelineChanged);
     connect(this, &RecordingPreviewBackend::trimRangeChanged, this, &RecordingPreviewBackend::timelineChanged);
@@ -139,7 +140,11 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
             [held = m_keyTimeline](SnapTray::KeyOverlayRenderer* renderer) { delete renderer; });
         if (hasTimelineEdits()) keys->setTimeline(timelineMap());
     }
-    return [timeline, cursor, zoom, redaction, appearance, blurredBackground, keys, bounds, videoSize](
+    // Text and image overlays (#188): on top, inside the frame.
+    const auto overlays = m_overlays.isEmpty() || !overlaysAvailable()
+        ? std::shared_ptr<const SnapTray::OverlayTrack>()
+        : std::make_shared<const SnapTray::OverlayTrack>(m_overlays);
+    return [timeline, cursor, zoom, redaction, appearance, blurredBackground, keys, overlays, bounds, videoSize](
                QImage& frame, qint64 sourceMs) {
         if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
             frame = frame.convertToFormat(QImage::Format_RGB32);
@@ -175,6 +180,7 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         }
         if (cursor) cursor->paint(frame, sourceMs, {shown, videoSize, frame.size()});
         if (keys) keys->paint(frame, sourceMs);
+        if (overlays) overlays->paint(frame, sourceMs);
         if (appearance) frame = appearance->compose(frame, blurSource);
     };
 }
@@ -637,7 +643,7 @@ bool RecordingPreviewBackend::setPointerHideRange(int index, qint64 startMs, qin
 bool RecordingPreviewBackend::effectsActive() const
 {
     return !m_redaction.isEmpty() || cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive())
-        || appearanceActive() || keyOverlayActive();
+        || appearanceActive() || keyOverlayActive() || (!m_overlays.isEmpty() && overlaysAvailable());
 }
 
 QVariantList RecordingPreviewBackend::masks() const
@@ -1257,6 +1263,191 @@ bool RecordingPreviewBackend::timelineEditsAvailable() const
     return m_selectedFormat != MP4 || mp4Capabilities().segments;
 }
 
+QVariantList RecordingPreviewBackend::overlays() const
+{
+    QVariantList list;
+    for (const auto& s : m_overlays.segments) {
+        list.append(QVariantMap{{QStringLiteral("kind"), int(s.kind)},
+                                {QStringLiteral("start"), s.startMs},
+                                {QStringLiteral("end"), s.endMs},
+                                {QStringLiteral("text"), s.text},
+                                {QStringLiteral("size"), s.size},
+                                {QStringLiteral("color"), s.color},
+                                {QStringLiteral("background"), int(s.background)},
+                                {QStringLiteral("align"), int(s.align)},
+                                {QStringLiteral("opacity"), s.opacity}});
+    }
+    return list;
+}
+
+void RecordingPreviewBackend::setSelectedOverlay(int index)
+{
+    index = index >= 0 && index < int(m_overlays.segments.size()) ? index : -1;
+    if (m_selectedOverlay == index) return;
+    m_selectedOverlay = index;
+    emit selectedOverlayChanged();
+}
+
+void RecordingPreviewBackend::editOverlays(const std::function<void(SnapTray::OverlayTrack&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::OverlayTrack overlays = m_overlays;
+    change(overlays);
+    if (overlays == m_overlays) return;
+    m_overlays = overlays;
+    if (m_selectedOverlay >= int(m_overlays.segments.size())) setSelectedOverlay(-1);
+    emit overlaysChanged();
+    recordEdit();
+}
+
+int RecordingPreviewBackend::addTextOverlay(qint64 positionMs)
+{
+    constexpr qint64 kNewTextMs = 3000;
+    if (isProcessing() || !overlaysAvailable()) return -1;
+    SnapTray::OverlaySegment segment;
+    segment.kind = SnapTray::OverlaySegment::Kind::Text;
+    segment.text = tr("Title");
+    segment.startMs = qMax<qint64>(0, positionMs);
+    segment.endMs = m_duration > 0 ? qMin(m_duration, segment.startMs + kNewTextMs) : segment.startMs + kNewTextMs;
+    if (segment.endMs - segment.startMs < SnapTray::OverlaySegment::kMinRangeMs) {
+        segment.startMs = qMax<qint64>(0, segment.endMs - kNewTextMs);
+    }
+    editOverlays([&segment](SnapTray::OverlayTrack& t) { t.segments.push_back(segment); });
+    const int index = int(m_overlays.segments.size()) - 1;
+    setSelectedOverlay(index);
+    return index;
+}
+
+int RecordingPreviewBackend::addImageOverlay(const QUrl& file)
+{
+    if (isProcessing() || !overlaysAvailable()) return -1;
+    const QString path = file.isLocalFile() ? file.toLocalFile() : file.toString();
+    // Read once and kept: the file may go away before the export.
+    const QImage image = SnapTray::OverlayTrack::loadImage(path);
+    if (image.isNull()) return -1;
+    SnapTray::OverlaySegment segment;
+    segment.kind = SnapTray::OverlaySegment::Kind::Image;
+    segment.image = image;
+    segment.size = 0.15;
+    segment.position = QPointF(0.8, 0.05);
+    segment.fadeMs = 0;
+    editOverlays([&segment](SnapTray::OverlayTrack& t) { t.segments.push_back(segment); });
+    const int index = int(m_overlays.segments.size()) - 1;
+    setSelectedOverlay(index);
+    return index;
+}
+
+int RecordingPreviewBackend::chooseOverlayImage()
+{
+    if (isProcessing()) return -1;
+    const QString file = QFileDialog::getOpenFileName(nullptr, tr("Select Image"), QString(),
+                                                      tr("Images (*.png *.svg *.jpg *.jpeg *.webp)"));
+    if (file.isEmpty()) return -1;
+    const int index = addImageOverlay(QUrl::fromLocalFile(file));
+    if (index < 0) setErrorMessage(tr("The image could not be read."));
+    return index;
+}
+
+void RecordingPreviewBackend::removeOverlay(int index)
+{
+    editOverlays([index](SnapTray::OverlayTrack& t) {
+        if (index >= 0 && index < int(t.segments.size())) t.segments.erase(t.segments.begin() + index);
+    });
+    setSelectedOverlay(-1);
+}
+
+namespace {
+template <typename F>
+void editSegment(SnapTray::OverlayTrack& t, int index, F&& change)
+{
+    if (index >= 0 && index < int(t.segments.size())) change(t.segments[size_t(index)]);
+}
+} // namespace
+
+void RecordingPreviewBackend::setOverlayText(int index, const QString& text)
+{
+    editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.text = text; }); });
+}
+
+void RecordingPreviewBackend::setOverlaySize(int index, qreal size)
+{
+    const double clamped = qBound(SnapTray::OverlaySegment::kMinSize, double(size), SnapTray::OverlaySegment::kMaxSize);
+    editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.size = clamped; }); });
+}
+
+void RecordingPreviewBackend::setOverlayColor(int index, const QColor& color)
+{
+    if (!color.isValid()) return;
+    editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.color = color.toRgb(); }); });
+}
+
+void RecordingPreviewBackend::setOverlayBackground(int index, int background)
+{
+    const int clamped = qBound(0, background, int(SnapTray::OverlaySegment::Background::Light));
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) { s.background = SnapTray::OverlaySegment::Background(clamped); });
+    });
+}
+
+void RecordingPreviewBackend::setOverlayAlign(int index, int align)
+{
+    const int clamped = qBound(0, align, int(SnapTray::OverlaySegment::Align::Right));
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) { s.align = SnapTray::OverlaySegment::Align(clamped); });
+    });
+}
+
+void RecordingPreviewBackend::setOverlayOpacity(int index, qreal opacity)
+{
+    const double clamped = qBound(0.1, double(opacity), 1.0);
+    editOverlays([&](SnapTray::OverlayTrack& t) { editSegment(t, index, [&](auto& s) { s.opacity = clamped; }); });
+}
+
+bool RecordingPreviewBackend::setOverlayRange(int index, qint64 startMs, qint64 endMs)
+{
+    if (isProcessing() || index < 0 || index >= int(m_overlays.segments.size())) return false;
+    if (startMs < 0 || (endMs >= 0 && endMs - startMs < SnapTray::OverlaySegment::kMinRangeMs)
+        || (m_duration > 0 && startMs >= m_duration)) {
+        return false;
+    }
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) {
+            s.startMs = startMs;
+            s.endMs = endMs;
+        });
+    });
+    return true;
+}
+
+QRectF RecordingPreviewBackend::overlayRectInView(int index, const QRectF& pictureInView) const
+{
+    const QSize picture = exportContentSize();
+    if (index < 0 || index >= int(m_overlays.segments.size()) || picture.isEmpty() || pictureInView.isEmpty()) return {};
+    const QRectF bounds = SnapTray::OverlayTrack::boundsOf(m_overlays.segments[size_t(index)], picture);
+    const double sx = pictureInView.width() / picture.width();
+    const double sy = pictureInView.height() / picture.height();
+    return QRectF(pictureInView.x() + bounds.x() * sx, pictureInView.y() + bounds.y() * sy, bounds.width() * sx,
+                  bounds.height() * sy);
+}
+
+void RecordingPreviewBackend::setOverlayRectFromView(int index, const QRectF& viewRect, const QRectF& pictureInView)
+{
+    const QRectF current = overlayRectInView(index, pictureInView);
+    if (current.isEmpty() || viewRect.isEmpty()) return;
+    // The top-left places it; a new size scales it (text and image alike keep their shape).
+    const QPointF position(std::clamp((viewRect.x() - pictureInView.x()) / pictureInView.width(), 0.0, 1.0),
+                           std::clamp((viewRect.y() - pictureInView.y()) / pictureInView.height(), 0.0, 1.0));
+    const double scale = viewRect.width() / current.width();
+    editOverlays([&](SnapTray::OverlayTrack& t) {
+        editSegment(t, index, [&](auto& s) {
+            s.position = position;
+            if (std::abs(scale - 1.0) > 0.01) {
+                s.size = std::clamp(s.size * scale, SnapTray::OverlaySegment::kMinSize, SnapTray::OverlaySegment::kMaxSize);
+            }
+        });
+    });
+}
+
 void RecordingPreviewBackend::editKeyOverlay(const std::function<void(SnapTray::KeyOverlaySettings&)>& change)
 {
     if (isProcessing()) return; // a running export keeps what it started with
@@ -1475,6 +1666,13 @@ void RecordingPreviewBackend::save()
     // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
     m_outputQuality = outputQualityOverride() ? outputQualityOverride()()
                                               : RecordingSettingsManager::instance().quality();
+
+    // An overlay the user added is part of the export: never leave it out quietly.
+    if (!m_overlays.isEmpty() && !overlaysAvailable()) {
+        setErrorMessage(tr("Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF "
+                           "or WebP, or remove them to export MP4. Nothing was exported."));
+        return;
+    }
 
     // Masks are only kept off the export by drawing them; an export that
     // cannot draw them must not happen at all.
@@ -1917,6 +2115,7 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
     state.appearance = m_appearance;
     state.timeline = m_timeline;
     state.keys = m_keyOverlay;
+    state.overlays = m_overlays;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -1946,6 +2145,11 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         m_zoom = state.zoom;
         if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
         emit zoomChanged();
+    }
+    if (state.overlays != m_overlays) {
+        m_overlays = state.overlays;
+        if (m_selectedOverlay >= int(m_overlays.segments.size())) setSelectedOverlay(-1);
+        emit overlaysChanged();
     }
     if (state.keys != m_keyOverlay) {
         m_keyOverlay = state.keys;
@@ -2002,6 +2206,7 @@ void RecordingPreviewBackend::resetEdits()
     unedited.redaction = m_redaction;
     unedited.appearance = m_appearance;
     unedited.keys = m_keyOverlay;
+    unedited.overlays = m_overlays;
     applyEditState(unedited);
     recordEdit();
 }

@@ -13,7 +13,9 @@
 #include "qml/RecordingCursorOverlay.h"
 #include "qml/RecordingAppearanceOverlay.h"
 #include "qml/RecordingKeyOverlay.h"
+#include "qml/RecordingOverlayItem.h"
 #include "recording/KeyTimeline.h"
+#include "recording/OverlayTrack.h"
 #include "video/IVideoFrameReader.h"
 #include <QPainter>
 #include "video/IVideoTranscoder.h"
@@ -426,6 +428,8 @@ private slots:
     void cutsRefusedWhereMp4CannotJoin();
     void keyHintsMatchAcrossPreviewAndOutputs_data();
     void keyHintsMatchAcrossPreviewAndOutputs();
+    void overlaysMatchAcrossPreviewAndOutputs_data();
+    void overlaysMatchAcrossPreviewAndOutputs();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs();
     void pointerMovesOverAStillPicture();
     void zoomMatchesAcrossPreviewAndOutputs_data();
@@ -2361,6 +2365,109 @@ void tst_RecordingPreviewExport::keyHintsMatchAcrossPreviewAndOutputs()
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     // The key sidecar goes with the recording once the export is saved.
     QVERIFY(!QFile::exists(SnapTray::KeyTimelineSidecar::pathFor(inputPath)));
+}
+
+void tst_RecordingPreviewExport::overlaysMatchAcrossPreviewAndOutputs_data()
+{
+    pointerMatchesAcrossPreviewAndOutputs_data();
+}
+
+// #188: a title and a logo through crop, zoom and a mask, the same in the
+// preview and each output. The logo's file is deleted before the export.
+void tst_RecordingPreviewExport::overlaysMatchAcrossPreviewAndOutputs()
+{
+    QFETCH(int, format);
+    const QSize sourceSize(320, 240);
+    const QRect crop(40, 20, 240, 200);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    const QString logoPath = directory.filePath(QStringLiteral("logo.png"));
+    QImage logo(40, 20, QImage::Format_ARGB32);
+    logo.fill(Qt::white);
+    QVERIFY(logo.save(logoPath));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    if (!backend.overlaysAvailable()) QSKIP("This platform's MP4 transcoder cannot draw onto frames yet");
+    backend.setCropRect(crop);
+    // A mask over the whole picture: overlays stay on top of it.
+    QCOMPARE(backend.addMask(), 0);
+    backend.setMaskRectFromView(0, QRectF(QPointF(0, 0), QSizeF(sourceSize)), QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+    // A 2x zoom while the overlays show: they do not zoom.
+    QCOMPARE(backend.addZoomAt(0), 0);
+    QCOMPARE(backend.addTextOverlay(0), 0);
+    backend.setOverlayText(0, QStringLiteral("Hi"));
+    backend.setOverlayColor(0, Qt::white);
+    backend.setOverlayBackground(0, 0); // no box: only the white letters
+    QVERIFY(backend.setOverlayRange(0, 0, 1000));
+    QCOMPARE(backend.addImageOverlay(QUrl::fromLocalFile(logoPath)), 1);
+    QVERIFY(QFile::remove(logoPath));
+    QVERIFY(backend.effectsActive());
+
+    // White pixels on the (black-masked) picture.
+    const auto whiteBox = [](const QImage& image, const QRect& within) {
+        QRect box;
+        for (int y = within.top(); y <= within.bottom(); ++y)
+            for (int x = within.left(); x <= within.right(); ++x)
+                if (image.pixelColor(x, y).lightness() > 200) box |= QRect(x, y, 1, 1);
+        return box;
+    };
+    const QSize picture = crop.size();
+    const QRect textArea = SnapTray::OverlayTrack::boundsOf(backend.overlayTrack().segments[0], picture)
+                               .toAlignedRect().adjusted(-2, -2, 2, 2).intersected(QRect(QPoint(0, 0), picture));
+    const QRect logoArea = SnapTray::OverlayTrack::boundsOf(backend.overlayTrack().segments[1], picture)
+                               .toAlignedRect().adjusted(-2, -2, 2, 2).intersected(QRect(QPoint(0, 0), picture));
+    RecordingOverlayItem item;
+    item.setBackend(&backend);
+    item.setContentRect(QRectF(QPointF(0, 0), QSizeF(picture)));
+    item.setPosition(500);
+    QImage preview(picture, QImage::Format_RGB32);
+    preview.fill(Qt::black);
+    {
+        QPainter painter(&preview);
+        item.paint(&painter);
+    }
+    const QRect expectedText = whiteBox(preview, textArea);
+    const QRect expectedLogo = whiteBox(preview, logoArea);
+    QVERIFY(!expectedText.isEmpty() && !expectedLogo.isEmpty());
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+    QImage frame;
+    if (format == RecordingPreviewBackend::MP4) {
+        auto reader = IVideoFrameReader::create();
+        if (!reader) QSKIP("No MP4 frame reader here");
+        QVERIFY2(reader->load(output), qPrintable(reader->lastError()));
+        frame = reader->frameAt(500);
+    } else {
+        frame = animationFrameAt(output, 500);
+    }
+    QVERIFY(!frame.isNull());
+    QCOMPARE(frame.size(), picture);
+    const auto near = [](const QRect& a, const QRect& b) {
+        return qAbs(a.left() - b.left()) <= 3 && qAbs(a.top() - b.top()) <= 3 && qAbs(a.right() - b.right()) <= 3
+            && qAbs(a.bottom() - b.bottom()) <= 3;
+    };
+    const QRect actualText = whiteBox(frame, textArea);
+    const QRect actualLogo = whiteBox(frame, logoArea);
+    QVERIFY2(near(actualText, expectedText),
+             qPrintable(QStringLiteral("text: preview %1,%2 %3x%4 output %5,%6 %7x%8")
+                            .arg(expectedText.x()).arg(expectedText.y()).arg(expectedText.width()).arg(expectedText.height())
+                            .arg(actualText.x()).arg(actualText.y()).arg(actualText.width()).arg(actualText.height())));
+    QVERIFY2(near(actualLogo, expectedLogo), "the logo moved or went missing");
+    // After the title's range only the logo is left.
+    const QImage later = format == RecordingPreviewBackend::MP4 ? QImage() : animationFrameAt(output, 1100);
+    if (!later.isNull()) QVERIFY(whiteBox(later, textArea).isEmpty());
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
 }
 
 void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()

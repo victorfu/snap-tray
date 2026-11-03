@@ -23,6 +23,7 @@ private slots:
     void overlayFollowsEachFrameTime();
     void advancedPointerOptions();
     void keysPanelEditsTheHints();
+    void overlayPanelEditsText();
 
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
@@ -234,6 +235,48 @@ void tst_RecordingPreviewPointer::keysPanelEditsTheHints()
     QVERIFY(backend.keyOverlayEnabled());
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysDone"), "clicked"));
     QTRY_VERIFY(!panel->isVisible());
+    backend.requestDiscard();
+}
+
+// #188: Add Text opens its editor; typing, size, colour and deleting reach
+// the backend, undoably; Done closes it.
+void tst_RecordingPreviewPointer::overlayPanelEditsText()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QQuickItem* addText = item(view, "previewAddText");
+    QQuickItem* panel = item(view, "previewOverlayPanel");
+    QVERIFY(addText && panel);
+    QVERIFY(addText->isEnabled());
+    QVERIFY(QMetaObject::invokeMethod(addText, "clicked"));
+    QCOMPARE(backend.selectedOverlay(), 0);
+    QTRY_VERIFY(panel->isVisible());
+    QQuickItem* field = item(view, "previewOverlayText");
+    QVERIFY(field && field->isVisible());
+    QCOMPARE(field->property("text").toString(), backend.overlayTrack().segments[0].text);
+    // Typing: the field is a text entry, so preview shortcuts stay off.
+    field->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_A, Qt::ControlModifier); // select all
+    for (const QChar c : QStringLiteral("Step 1")) QTest::keyClick(view, c.toLatin1());
+    QTRY_COMPARE(backend.overlayTrack().segments[0].text, QStringLiteral("Step 1"));
+    const double size = backend.overlayTrack().segments[0].size;
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayLarger"), "clicked"));
+    QVERIFY(backend.overlayTrack().segments[0].size > size);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayBackground"), "clicked"));
+    QCOMPARE(int(backend.overlayTrack().segments[0].background), 2);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayWhole"), "clicked"));
+    QCOMPARE(backend.overlayTrack().segments[0].endMs, -1);
+    backend.undo();
+    QVERIFY(backend.overlayTrack().segments[0].endMs >= 0);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayDelete"), "clicked"));
+    QVERIFY(backend.overlayTrack().isEmpty());
+    QTRY_VERIFY(!panel->isVisible());
+    backend.undo();
+    QCOMPARE(int(backend.overlayTrack().segments.size()), 1);
     backend.requestDiscard();
 }
 
