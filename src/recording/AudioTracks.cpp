@@ -141,6 +141,12 @@ bool AudioTrackWriter::failed() const
     return m_failed;
 }
 
+void AudioTrackWriter::failForTests()
+{
+    QMutexLocker locker(&m_mutex);
+    m_failed = true;
+}
+
 bool AudioTrackReader::open(const QString& path)
 {
     m_file.setFileName(path);

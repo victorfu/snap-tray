@@ -592,6 +592,19 @@ void TestRecordingManagerLifecycle::testSeparateTracksOnlyWithBothSources()
     m_manager->m_cursorSidecarVideo = video;
     m_manager->dropRecordingSidecars(true);
     QVERIFY(!SnapTray::AudioTracks::exist(video));
+
+    // A finished recording keeps its tracks for the preview...
+    m_manager->startAudioTracks();
+    engine->send(1000, -2000, 0);
+    m_manager->dropRecordingSidecars(false);
+    QVERIFY(SnapTray::AudioTracks::exist(video));
+    // ...unless one stopped writing during the recording (PR #202 review):
+    // then it keeps no tracks, only its own complete mixed audio.
+    m_manager->startAudioTracks();
+    engine->send(1000, -2000, 0);
+    m_manager->m_systemAudioTrack->failForTests();
+    m_manager->dropRecordingSidecars(false);
+    QVERIFY(!SnapTray::AudioTracks::exist(video));
     m_manager->m_audioEngine.reset();
     m_manager->m_session = {};
 }

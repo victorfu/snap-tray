@@ -133,6 +133,8 @@ class RecordingPreviewBackend : public QObject
     // Editable projects (#191): this preview edits a kept project.
     Q_PROPERTY(bool isProject READ isProject NOTIFY projectChanged)
     Q_PROPERTY(bool keepsProject READ keepsProject NOTIFY projectChanged)
+    // An opened project whose edits are not applied yet: no Save until they are.
+    Q_PROPERTY(bool projectLoading READ projectLoading NOTIFY projectChanged)
 
     // Separate microphone and system audio tracks (#189).
     Q_PROPERTY(bool hasSeparateTracks READ hasSeparateTracks CONSTANT)
@@ -414,6 +416,7 @@ private:
     void applyPendingInitialCrop();
 public:
     bool isProject() const { return m_project.has_value(); }
+    bool projectLoading() const { return m_projectRecipePending; }
     QString projectDir() const { return m_project ? m_project->dir : QString(); }
     // Saving keeps (or updates) a project.
     bool keepsProject() const;
@@ -711,7 +714,12 @@ private:
     bool keepAsProject(const QString& savedPath);
     // The recipe, with a background image copied into `projectDir`, so the
     // project does not depend on a file elsewhere (PR #203 review).
-    QJsonObject recipeForProject(const QString& projectDir) const;
+    // A new image gets a new name; the old one stays until the manifest that
+    // stops using it is written (PR #203 review). `copied` names a file this
+    // call created, to remove if that write fails.
+    QJsonObject recipeForProject(const QString& projectDir, QString* copied = nullptr) const;
+    // Background images in `projectDir` the recipe no longer uses.
+    static void removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe);
     // A project's edits wait for the player's size and length (PR #203 review).
     bool m_projectRecipePending = false;
     void applyPendingProjectRecipe();
