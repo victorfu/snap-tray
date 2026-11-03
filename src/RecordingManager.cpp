@@ -1,12 +1,15 @@
 #include "platform/CaptureExclusionPolicy.h"
 #include "platform/PlatformCapabilities.h"
 #include "RecordingManager.h"
+#include "recording/RecordingProject.h"
 #include "recording/ScreenSourceService.h"
 #include "recording/RecordingFileUtils.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
 #include "recording/KeyTimeline.h"
 #include "qml/QmlRecordingControlBar.h"
+#include "qml/QmlRecordingBoundary.h"
+#include "recording/RecordingArea.h"
 #include "hotkey/HotkeyManager.h"
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
@@ -302,11 +305,44 @@ void RecordingManager::setState(State newState)
 {
     if (m_state != newState) {
         m_state = newState;
+        // The area's frame (#194) follows the recording, amber while paused.
+        if (m_areaBoundary) {
+            if (m_state == State::Recording) m_areaBoundary->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Recording);
+            else if (m_state == State::Paused) m_areaBoundary->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Paused);
+            else if (m_state != State::Preparing && m_state != State::Countdown) closeAreaBoundary();
+        }
         if (m_state == State::Idle) {
             setAudioStatus({});
         }
         emit stateChanged(m_state);
     }
+}
+
+void RecordingManager::showAreaBoundary()
+{
+    closeAreaBoundary();
+    if (m_preselectedArea.isEmpty() || !m_showAreaBoundary) return;
+    const bool editMode = m_startSettings.showPreview;
+    // Edit mode records the whole screen: where the capture cannot leave the
+    // frame out (X11), it would be in the video around the area and show
+    // when the crop changes. No frame there (PR #205 review).
+    const bool canExclude = m_captureExcludesOverlays ? m_captureExcludesOverlays()
+                                                      : !SnapTray::currentPlatformCapabilities().recordingControlsInTray;
+    if (editMode && !canExclude) return;
+    m_areaBoundary = new SnapTray::QmlRecordingBoundary(this);
+    // Quick mode: around what is recorded, the area grown to even pixels,
+    // so the frame is always outside the capture (PR #205 review).
+    m_areaBoundary->setRegion(editMode ? m_preselectedArea : m_recordingRegion);
+    m_areaBoundary->show();
+    m_areaBoundary->setExcludedFromCapture(true);
+}
+
+void RecordingManager::closeAreaBoundary()
+{
+    if (!m_areaBoundary) return;
+    m_areaBoundary->close();
+    m_areaBoundary->deleteLater();
+    m_areaBoundary = nullptr;
 }
 
 void RecordingManager::setAudioStatus(const SnapTray::RecordingAudioStatus& status)
@@ -391,7 +427,7 @@ QString RecordingManager::activeScreenSummary() const
             screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0));
 }
 
-void RecordingManager::startScreenRecording(QScreen* screen)
+void RecordingManager::startScreenRecording(QScreen* screen, const QRect& area)
 {
     if (m_state == State::Recording || m_state == State::Paused ||
         m_state == State::Encoding || m_state == State::Preparing ||
@@ -413,6 +449,13 @@ void RecordingManager::startScreenRecording(QScreen* screen)
         return;
     }
     m_targetScreen = targetScreen;
+    // An area chosen before recording (#194), kept on this screen.
+    m_preselectedArea = area.isEmpty()
+        ? QRect()
+        : SnapTray::RecordingArea::clampToScreen(area, targetScreen->geometry(), targetScreen->devicePixelRatio());
+    // The whole screen chosen ("Full Screen") is no area at all.
+    if (m_preselectedArea == targetScreen->geometry()) m_preselectedArea = {};
+    m_pendingInitialCrop = {};
 
     loadAndValidateFrameRate();
     resetPauseTracking();
@@ -526,6 +569,13 @@ void RecordingManager::startFrameCapture()
     const quint64 startGeneration = m_startGeneration + 1;
     initializeStartState();
     if (m_state != State::Preparing || startGeneration != m_startGeneration) return;
+    // Quick mode records the chosen area itself (#194): there is no preview
+    // to crop it in. Edit mode keeps the full screen and crops afterwards.
+    if (!m_preselectedArea.isEmpty() && !m_startSettings.showPreview) {
+        const QRect region = normalizeRecordingRegionForScreen(m_preselectedArea, m_targetScreen.data());
+        if (!region.isEmpty()) m_recordingRegion = region;
+    }
+    showAreaBoundary();
     // Show control bar in preparing state
     // Clean up any existing control bar first to prevent resource leak
     if (m_controlBar) {
@@ -740,6 +790,7 @@ void RecordingManager::beginAsyncInitialization()
     }
 
     m_recordingRegion = normalizeRecordingRegion(m_recordingRegion, screenInfo);
+    if (m_areaBoundary && !m_startSettings.showPreview) m_areaBoundary->setRegion(m_recordingRegion);
     if (m_recordingRegion.isEmpty()) {
         qWarning() << "RecordingManager: Normalized region is empty";
         stopFrameCapture();
@@ -832,6 +883,11 @@ void RecordingManager::beginAsyncInitialization()
         }
     }
     m_recordingFilePath = config.outputPath;
+    // Edit mode: the chosen area becomes the preview's initial crop, kept in
+    // the manifest so a recovered recording opens with it too.
+    m_pendingInitialCrop = showPreview && !m_preselectedArea.isEmpty()
+        ? SnapTray::RecordingArea::videoCrop(m_preselectedArea, m_recordingRegion, physicalSize)
+        : QRect();
     beginSession(config.outputPath, physicalSize, shouldConfigureAudio);
 
     // Collect UI window IDs to exclude from capture.
@@ -843,6 +899,11 @@ void RecordingManager::beginAsyncInitialization()
             return;
         }
         m_controlBar->setExcludedFromCapture(true);
+    }
+    // The area's frame is never part of the recording where the platform can
+    // leave it out; elsewhere (X11) it is drawn just outside the area.
+    if (m_areaBoundary) {
+        if (const quintptr id = m_areaBoundary->captureExclusionId()) config.excludedCaptureWindowIds.append(id);
     }
 
     const quint64 generation = ++m_initGeneration;
@@ -1571,6 +1632,7 @@ void RecordingManager::beginSession(const QString& videoPath, const QSize& frame
     m_session.frameRate = m_frameRate;
     m_session.audioRequired = audioRequired;
     m_session.intermediate = m_recordedAsIntermediate;
+    m_session.initialCrop = m_pendingInitialCrop;
     m_session.startedAt = QDateTime::currentDateTime();
     m_sessionHeartbeat = 0;
     // The lock tells a scan (here or in another SnapTray) this session is live;
@@ -1693,6 +1755,22 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
     // Recorded as the high-quality intermediate (or unknown, from an older
     // manifest): Save still checks the output quality instead of moving it.
     emit previewRequested(videoPath, RecordingSettingsManager::instance().outputFormat(), m_session.intermediate);
+    return true;
+}
+
+bool RecordingManager::isAllowedSaveDestination(const QString& path)
+{
+    return !path.isEmpty() && !SnapTray::RecordingProjects::contains(path);
+}
+
+bool RecordingManager::openProjectRecording(const QString& videoPath)
+{
+    if (m_state != State::Idle || !QFileInfo::exists(videoPath)) {
+        return false;
+    }
+    m_session = {};
+    m_tempVideoPath = videoPath;
+    setState(State::Previewing);
     return true;
 }
 
@@ -2260,7 +2338,11 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
             setState(State::Idle);
             QString tempPath = outputPath;
             QMetaObject::invokeMethod(this, [this, tempPath, sessionPath, sessionLock]() {
-                const SaveOutcome outcome = showSaveDialog(tempPath);
+                QString savedPath;
+                const SaveOutcome outcome = showSaveDialog(tempPath, QSize(), false, &savedPath);
+                if (outcome == SaveOutcome::Saved && !savedPath.isEmpty()) {
+                    emit quickRecordingSaved(savedPath);
+                }
                 // Saved or discarded: nothing to recover. A failed save keeps
                 // the file in the temp folder, so its manifest stays.
                 if (outcome != SaveOutcome::Failed && !sessionPath.isEmpty()) {
@@ -2376,6 +2458,8 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         // Try rename first. If path collides between render and rename, retry with a new unique path.
         const int maxAttempts = 100;
         int attempt = 0;
+        // Never into a kept project's folder (PR #203 review): ask instead.
+        if (!isAllowedSaveDestination(savePath)) attempt = maxAttempts;
         while (attempt < maxAttempts) {
             if (QFile::rename(tempOutputPath, savePath)) {
                 syncFile(savePath);
@@ -2400,7 +2484,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
             savePath = FilenameTemplateEngine::buildUniqueFilePath(
                 outputDir, templateValue, context, 100, &renderError);
         }
-        if (QFile::copy(tempOutputPath, savePath)) {
+        if (isAllowedSaveDestination(savePath) && QFile::copy(tempOutputPath, savePath)) {
             QFile::remove(tempOutputPath);
             syncFile(savePath);
             if (savedPath) *savedPath = savePath;
@@ -2440,6 +2524,18 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         QFile::remove(tempOutputPath);
         emit recordingCancelled();
         return SaveOutcome::Cancelled;
+    }
+    // A kept project's folder holds its source recording: a save there could
+    // replace it with an edited export, losing the original (PR #203 review).
+    if (!isAllowedSaveDestination(savePath)) {
+        qWarning() << "RecordingManager: refusing to save inside the projects folder:" << savePath;
+        keepSidecar = keepOnCancel;
+        emit recordingError(tr("Recordings cannot be saved in the Recording Library's project folder.")
+                            + QLatin1Char(' ')
+                            + (keepOnCancel ? tr("Your recording is kept; choose another location.")
+                                            : tr("The recording is kept at %1.")
+                                                  .arg(QDir::toNativeSeparators(tempOutputPath))));
+        return SaveOutcome::Failed;
     }
     // Move/rename the file to chosen location
     if (savePath != tempOutputPath) {

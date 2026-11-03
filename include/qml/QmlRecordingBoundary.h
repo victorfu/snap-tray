@@ -45,6 +45,7 @@ public:
      * @brief Set the recording region. Positions and sizes the overlay window.
      */
     void setRegion(const QRect& region);
+    QRect region() const { return m_region; }
 
     /**
      * @brief Set the border animation mode.
@@ -82,6 +83,12 @@ public:
      * @brief Exclude this window from screen capture.
      */
     void setExcludedFromCapture(bool excluded);
+
+    /**
+     * @brief The id a capture engine excludes (macOS window number, else the
+     * native window id); 0 before show().
+     */
+    quintptr captureExclusionId() const;
 
     /**
      * @brief Get the underlying QQuickView (for platform-specific operations).

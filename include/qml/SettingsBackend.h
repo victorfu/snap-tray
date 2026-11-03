@@ -74,6 +74,10 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool recordingShowSetup READ recordingShowSetup WRITE setRecordingShowSetup NOTIFY recordingShowSetupChanged)
     Q_PROPERTY(int recordingKeyMode READ recordingKeyMode WRITE setRecordingKeyMode NOTIFY recordingKeyModeChanged)
     Q_PROPERTY(bool recordingKeysSupported READ recordingKeysSupported CONSTANT)
+    Q_PROPERTY(bool recordingPreselectArea READ recordingPreselectArea WRITE setRecordingPreselectArea NOTIFY recordingPreselectAreaChanged)
+    Q_PROPERTY(int recordingQuickSaveAction READ recordingQuickSaveAction WRITE setRecordingQuickSaveAction NOTIFY recordingQuickSaveActionChanged)
+    Q_PROPERTY(bool recordingKeepProjects READ recordingKeepProjects WRITE setRecordingKeepProjects NOTIFY recordingKeepProjectsChanged)
+    Q_PROPERTY(int recordingProjectCleanupDays READ recordingProjectCleanupDays WRITE setRecordingProjectCleanupDays NOTIFY recordingProjectCleanupDaysChanged)
     Q_PROPERTY(bool recordingAudioEnabled READ recordingAudioEnabled WRITE setRecordingAudioEnabled NOTIFY recordingAudioEnabledChanged)
     Q_PROPERTY(int recordingAudioSource READ recordingAudioSource WRITE setRecordingAudioSource NOTIFY recordingAudioSourceChanged)
     Q_PROPERTY(QString recordingAudioDevice READ recordingAudioDevice WRITE setRecordingAudioDevice NOTIFY recordingAudioDeviceChanged)
@@ -201,6 +205,16 @@ public:
     int recordingKeyMode() const;
     void setRecordingKeyMode(int mode);
     bool recordingKeysSupported() const;
+    bool recordingPreselectArea() const;
+    void setRecordingPreselectArea(bool value);
+    int recordingQuickSaveAction() const;
+    void setRecordingQuickSaveAction(int action);
+    // Re-reads what the recording setup can also change (#193).
+    void refreshRecordingMode();
+    bool recordingKeepProjects() const;
+    void setRecordingKeepProjects(bool value);
+    int recordingProjectCleanupDays() const;
+    void setRecordingProjectCleanupDays(int days);
     void setRecordingShowSetup(bool v);
     bool recordingAudioEnabled() const;
     void setRecordingAudioEnabled(bool v);
@@ -330,6 +344,10 @@ signals:
     void recordingShowPreviewChanged();
     void recordingShowSetupChanged();
     void recordingKeyModeChanged();
+    void recordingKeepProjectsChanged();
+    void recordingQuickSaveActionChanged();
+    void recordingPreselectAreaChanged();
+    void recordingProjectCleanupDaysChanged();
     void recordingAudioEnabledChanged();
     void recordingAudioSourceChanged();
     void recordingAudioDeviceChanged();

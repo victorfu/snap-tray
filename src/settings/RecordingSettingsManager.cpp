@@ -154,6 +154,56 @@ void RecordingSettingsManager::setKeyRecordingMode(int value)
     settings.setValue(kKeyKeyRecordingMode, qBound(0, value, 2));
 }
 
+bool RecordingSettingsManager::preselectArea() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyPreselectArea, false).toBool();
+}
+
+void RecordingSettingsManager::setPreselectArea(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyPreselectArea, value);
+}
+
+int RecordingSettingsManager::quickSaveAction() const
+{
+    auto settings = SnapTray::getSettings();
+    const int action = settings.value(kKeyQuickSaveAction, int(QuickSaveNothing)).toInt();
+    return action >= QuickSaveNothing && action <= QuickSaveShowInFolder ? action : int(QuickSaveNothing);
+}
+
+void RecordingSettingsManager::setQuickSaveAction(int action)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyQuickSaveAction,
+                      action >= QuickSaveNothing && action <= QuickSaveShowInFolder ? action : int(QuickSaveNothing));
+}
+
+bool RecordingSettingsManager::keepProjects() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyKeepProjects, false).toBool();
+}
+
+void RecordingSettingsManager::setKeepProjects(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyKeepProjects, value);
+}
+
+int RecordingSettingsManager::projectCleanupDays() const
+{
+    auto settings = SnapTray::getSettings();
+    return qMax(0, settings.value(kKeyProjectCleanupDays, 0).toInt());
+}
+
+void RecordingSettingsManager::setProjectCleanupDays(int days)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyProjectCleanupDays, qMax(0, days));
+}
+
 QJsonObject RecordingSettingsManager::keyOverlay() const
 {
     auto settings = SnapTray::getSettings();

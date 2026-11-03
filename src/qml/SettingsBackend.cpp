@@ -761,6 +761,66 @@ bool SettingsBackend::recordingKeysSupported() const
     return SnapTray::keyRecordingSupported();
 }
 
+bool SettingsBackend::recordingPreselectArea() const
+{
+    return RecordingSettingsManager::instance().preselectArea();
+}
+
+void SettingsBackend::setRecordingPreselectArea(bool value)
+{
+    if (recordingPreselectArea() == value) return;
+    RecordingSettingsManager::instance().setPreselectArea(value);
+    emit recordingPreselectAreaChanged();
+}
+
+int SettingsBackend::recordingQuickSaveAction() const
+{
+    return RecordingSettingsManager::instance().quickSaveAction();
+}
+
+void SettingsBackend::setRecordingQuickSaveAction(int action)
+{
+    if (recordingQuickSaveAction() == action) return;
+    RecordingSettingsManager::instance().setQuickSaveAction(action);
+    emit recordingQuickSaveActionChanged();
+}
+
+void SettingsBackend::refreshRecordingMode()
+{
+    const bool showPreview = RecordingSettingsManager::instance().showPreview();
+    if (m_recordingShowPreview != showPreview) {
+        m_recordingShowPreview = showPreview;
+        emit recordingShowPreviewChanged();
+    }
+    emit recordingQuickSaveActionChanged();
+    emit recordingPreselectAreaChanged();
+    emit recordingKeyModeChanged();
+}
+
+bool SettingsBackend::recordingKeepProjects() const
+{
+    return RecordingSettingsManager::instance().keepProjects();
+}
+
+void SettingsBackend::setRecordingKeepProjects(bool value)
+{
+    if (recordingKeepProjects() == value) return;
+    RecordingSettingsManager::instance().setKeepProjects(value);
+    emit recordingKeepProjectsChanged();
+}
+
+int SettingsBackend::recordingProjectCleanupDays() const
+{
+    return RecordingSettingsManager::instance().projectCleanupDays();
+}
+
+void SettingsBackend::setRecordingProjectCleanupDays(int days)
+{
+    if (recordingProjectCleanupDays() == days) return;
+    RecordingSettingsManager::instance().setProjectCleanupDays(days);
+    emit recordingProjectCleanupDaysChanged();
+}
+
 void SettingsBackend::setRecordingShowSetup(bool v) {
     if (m_recordingShowSetup == v)
         return;

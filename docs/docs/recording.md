@@ -27,7 +27,34 @@ While recording, the tray menu also offers Pause/Resume Recording and, on macOS 
 1. Choose the screen to record when prompted on multi-display setups.
 2. Recording starts immediately on the selected screen.
 3. Use the floating control bar to monitor duration, pause or resume, and stop recording. While paused, the bar shows "Paused" and the time stops. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
-4. Click Stop to open the preview (or to save directly when preview is off).
+4. Click Stop to open the preview in edit mode, or to save the file right away in quick mode.
+
+## Choosing an area before recording
+
+Turn on **Choose an area before recording** in Settings > Recording (or **Choose an area first** in the recording setup) to pick what to record before it starts. It is off by default: recording starts on the whole screen, as before.
+
+After you choose the screen, it dims: drag to draw the area, drag inside it to move it, and pick a ratio (Free, 16:9, 4:3, 1:1, 9:16) if you need one. The label shows the size in video pixels; an area is at least 64 pixels on each side and stays on one screen. **Record** (or **Enter**, or a double-click) starts, **Full Screen** records the whole screen, and **Cancel** (or **Esc**) does not record.
+
+- **Edit mode** still records the whole screen. The preview opens cropped to the area, so you can move or resize the crop, undo back to it, or reset it to see everything. A recording recovered after a crash opens with the same crop, and the recovery list says that the file holds the whole screen.
+- **Quick mode** records only the area, because there is no preview to crop in afterwards.
+
+While recording, a frame around the area shows what is being recorded, amber while paused. It is left out of the recording on macOS and Windows. On Linux X11 the capture cannot leave it out, so it is shown only in quick mode, just outside the recorded area; in edit mode, where the whole screen is recorded, no frame is shown, so changing the crop later never reveals one. While the area is being chosen, screenshots, Screen Canvas and pins wait until it is done or cancelled.
+
+The temporary recording in edit mode, and a recording waiting for recovery, contain the whole screen, including what is outside the area, until they are saved or discarded.
+
+## Quick mode and edit mode
+
+**After recording** in the recording setup and in Settings > Recording chooses what Stop does. Both places change the same setting.
+
+| | Edit mode (**Edit in the preview**) | Quick mode (**Save right away**) |
+| --- | --- | --- |
+| After Stop | The preview opens: trim, crop, cut, zoom, mask, add effects, then save | The save dialog opens, or the file is saved automatically when auto-save is on |
+| Recorded as | MP4 at high quality, converted to your format and quality when you save | Your output format and quality directly |
+| Audio | Recorded, also for GIF and WebP exports (which stay silent) | MP4 only; GIF and WebP have no sound |
+| Pointer, window and key tracks | Kept with the temporary recording for editing | Not recorded |
+| After saving | The preview closes (or keeps an editable project, if that is on) | Optionally **Copy the file** to paste it into a chat or folder, or **Show in folder** |
+
+Quick mode behaves exactly like the former "Show preview" off. The tray tooltip says which mode the current recording uses. Disk space monitoring, stopping safely when the disk is nearly full, and recovering a recording after a crash work the same in both modes. On a system that records MP4 directly without a preview, recording is always in quick mode.
 
 In the preview, the trash button, **Esc**, and the window's close button ask before deleting the recording. **Esc** or **Enter** on that question keeps the recording; press **Tab** to move to Discard. While you are drawing a crop, **Esc** only cancels the crop.
 
@@ -166,6 +193,12 @@ The frame makes the exported file larger than the cropped picture by the padding
 SnapTray keeps a small record next to each recording until it is saved or discarded. If SnapTray stops before that (a crash, power loss, or quitting with an unsaved preview open), the next start shows a notice, and **Recover Recordings** in the tray menu lists what was left. Each entry shows when it was recorded, how much of it can be played, and whether audio that should be there is missing. **Recover** opens it in the preview so you can save it; **Discard** deletes it; **Later** keeps it for next time. Files waiting here are never removed by SnapTray's routine clean-up of old temporary files.
 
 On Linux, recordings are written in fragments, so an interrupted recording can usually be recovered up to its last fragment (about every two seconds of video). This depends on the disk and when the system last wrote to it, so it is not a guarantee. On macOS and Windows an interrupted recording cannot be played yet and is listed only so you can discard it; a recording that finished normally but was never saved can be recovered on every platform.
+
+## Editable projects
+
+Normally the recording is deleted once its file is saved. Turn on **Keep editable projects** in Settings > Recording (off by default) to keep it with your edits instead: crop, trim, cut parts and speeds, pointer, zoom, masks, frame, shortcut hints, text and images, the audio mix, and the export format and MP4 options. **Recording Library** in the tray menu lists the kept projects with a thumbnail, length, size and date. **Open** brings one back into the preview with every edit as you left it; saving again exports a new file and updates the project. Closing a project without saving keeps it as it was last saved. Projects are kept when you save from the preview, so the setting needs **Show preview**. A background image used by the frame is copied into the project. If a project cannot be kept or updated (for example, the disk is full), the saved file stays and the recording stays open in the preview, so nothing is lost; save again to retry. Saving into the Recording Library's own folder is refused.
+
+A project holds the **full screen recording**, including anything you blurred, masked or cropped out, plus its pointer, keys and separate audio tracks, so it uses disk space and contains what the saved file leaves out. It stays on this computer in SnapTray's app data folder and is never uploaded. **Delete...** in the library removes a project (the file you saved from it stays), and **Delete projects not changed for** removes old ones automatically after 7, 30 or 90 days. Projects are separate from recordings waiting for recovery; neither one ever removes the other's files.
 
 ## When recording can't keep up
 

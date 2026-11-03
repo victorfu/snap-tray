@@ -113,7 +113,7 @@ Use `PlatformFeatures` and the platform layer instead of scattering OS-specific 
 
 Recording entry is driven by the tray menu or recording hotkey and always records a full screen source. The CLI does not support recording. Region Selector remains screenshot-only and must not regain region-recording semantics. Linux recording is enabled by `SNAPTRAY_ENABLE_LINUX_RECORDING`; X11 keeps active recording controls in the tray so floating controls are not captured.
 
-Choosing a region happens after recording, by cropping in the Recording Preview; capture itself stays full screen.
+Choosing a region happens after recording, by cropping in the Recording Preview; capture itself stays full screen. The one exception is opt-in (#194, off by default): an area chosen before recording with the recording-only `QmlRecordingAreaSelector` (never Region Selector). In edit mode (preview on) capture still stays full screen and the area only becomes the preview's initial crop, kept in the session manifest for recovery. In quick mode (preview off) there is no preview to crop in, so the area itself is the recorded region.
 
 ### Shared glass UI stays shared
 

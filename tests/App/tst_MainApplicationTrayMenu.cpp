@@ -1,4 +1,5 @@
 #include "MainApplication.h"
+#include "qml/QmlRecordingAreaSelector.h"
 #include "platform/PlatformCapabilities.h"
 #include "ImageColorSpaceHelper.h"
 #include <QClipboard>
@@ -153,6 +154,7 @@ private slots:
     void handleCLICommand_deferredUntilFullScreenExportFinishes();
     void screenPickerClosed_deletesWrapperAndViewModel();
     void queuedHistoryEntryRechecksCaptureMode();
+    void areaSelectorHoldsOtherCaptures();
     void previewCloseDiscardsTemporaryFile_data();
     void previewCloseDiscardsTemporaryFile();
     void cliClipboardPinPosition_data();
@@ -585,6 +587,30 @@ void tst_MainApplicationTrayMenu::handleCLICommand_removedRecordCommandIsIgnored
     QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Idle);
 
     application.closeScreenPicker();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+// PR #205 review: while the recording area selector is open (the recording
+// manager is still idle and the screen picker gone), screenshots, canvas
+// and pins wait, as they do for the screen picker.
+void tst_MainApplicationTrayMenu::areaSelectorHoldsOtherCaptures()
+{
+    MainApplication application;
+    application.m_captureManager = new CaptureManager(nullptr, &application);
+    application.m_recordingManager = new RecordingManager(&application);
+    QVERIFY(application.canStartRegionCapture());
+    QVERIFY(application.canShutdownForUpdate());
+    application.m_areaSelector = new SnapTray::QmlRecordingAreaSelector(&application);
+    QVERIFY(application.recordingSetupActive());
+    QVERIFY(!application.canStartRegionCapture());
+    QVERIFY(!application.canShutdownForUpdate());
+    QSignalSpy captureStarted(application.m_captureManager, &CaptureManager::captureStarted);
+    application.onHotkeyAction(SnapTray::HotkeyAction::RegionCapture);
+    application.onHotkeyAction(SnapTray::HotkeyAction::CaptureFullScreen);
+    QCOMPARE(captureStarted.count(), 0);
+    application.closeAreaSelector();
+    QVERIFY(!application.recordingSetupActive());
+    QVERIFY(application.canStartRegionCapture());
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
