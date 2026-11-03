@@ -52,6 +52,7 @@ private slots:
     void cjkTextRenders();
     void jsonRoundTrip();
     void largeImagesAreBounded();
+    void previewDrawsOnlyOnThePicture();
 };
 
 void TestOverlayTrack::boundsFollowTheContentAndThePicture()
@@ -144,6 +145,34 @@ void TestOverlayTrack::cjkTextRenders()
     QImage frame = blank();
     track.paint(frame, 2000);
     QVERIFY(!changed(frame, blank()).isEmpty());
+}
+
+// PR #201 review: an overlay reaching past the picture is cut off in the
+// export, so the preview (a picture shown inside a larger view) cuts it too.
+void TestOverlayTrack::previewDrawsOnlyOnThePicture()
+{
+    OverlayTrack track;
+    OverlaySegment image;
+    image.kind = OverlaySegment::Kind::Image;
+    image.image = QImage(200, 200, QImage::Format_ARGB32_Premultiplied);
+    image.image.fill(Qt::white);
+    image.position = QPointF(0.5, 0.5);
+    image.size = 1.0; // far past the picture's lower right
+    image.startMs = 0;
+    image.endMs = -1;
+    image.fadeMs = 0;
+    track.segments = {image};
+    const QSize picture(200, 100);
+    QImage view(400, 300, QImage::Format_RGB32);
+    view.fill(Qt::black);
+    const QRectF target(100, 100, 200, 100); // where the picture is shown
+    {
+        QPainter painter(&view);
+        track.paint(painter, 500, target, picture);
+    }
+    QCOMPARE(view.pixelColor(290, 190), QColor(Qt::white));  // on the picture
+    QCOMPARE(view.pixelColor(310, 190), QColor(Qt::black));  // right of it
+    QCOMPARE(view.pixelColor(290, 210), QColor(Qt::black));  // below it
 }
 
 void TestOverlayTrack::jsonRoundTrip()

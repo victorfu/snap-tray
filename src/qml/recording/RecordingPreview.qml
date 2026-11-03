@@ -265,6 +265,34 @@ Item {
         return at + 1 < here.length ? here[at + 1] : -1
     }
 
+    // The same for overlays (PR #201 review): a whole-recording image bar
+    // covers a title's, so each click moves to the next one under the pointer.
+    function nextOverlayAt(ms, current, clicked) {
+        const here = []
+        for (let i = backend.overlays.length - 1; i >= 0; --i) {
+            const overlay = backend.overlays[i]
+            const end = overlay.end < 0 ? timelineArea.dur : overlay.end
+            if (ms >= overlay.start && ms <= end)
+                here.push(i)
+        }
+        if (here.length === 0)
+            return current === clicked ? -1 : clicked
+        const at = here.indexOf(current)
+        if (at < 0)
+            return here[0]
+        return at + 1 < here.length ? here[at + 1] : -1
+    }
+    // Where an overlay is fully shown, past its fade-in.
+    readonly property int overlayRevealMs: 400
+    function showOverlay(index) {
+        if (index < 0 || index >= backend.overlays.length)
+            return
+        const overlay = backend.overlays[index]
+        const end = overlay.end < 0 ? timelineArea.dur : overlay.end
+        videoPlayer.pause()
+        videoPlayer.seek(Math.max(overlay.start, Math.min(end - 1, overlay.start + root.overlayRevealMs)))
+    }
+
     // A start/end pair typed but not confirmed yet (Save does not take
     // focus), applied together so a range that needs both ends works. False,
     // with the field marked and focused, when it is unreadable or rejected.
@@ -1081,15 +1109,13 @@ Item {
                         anchors.fill: parent
                         anchors.margins: -2
                         cursorShape: CursorTokens.clickable
-                        onClicked: {
+                        onClicked: function(mouse) {
+                            const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
                             backend.selectedZoom = -1
                             backend.selectedMask = -1
                             backend.selectedPointerHide = -1
-                            backend.selectedOverlay = parent.selected ? -1 : parent.index
-                            if (backend.selectedOverlay >= 0) {
-                                videoPlayer.pause()
-                                videoPlayer.seek(Math.min(parent.endMs - 1, parent.modelData.start + 400))
-                            }
+                            backend.selectedOverlay = root.nextOverlayAt(ms, backend.selectedOverlay, parent.index)
+                            root.showOverlay(backend.selectedOverlay)
                         }
                     }
                 }
@@ -1636,7 +1662,9 @@ Item {
                         backend.selectedZoom = -1
                         backend.selectedMask = -1
                         backend.selectedPointerHide = -1
-                        backend.addTextOverlay(videoPlayer.position)
+                        // Shown past its fade-in, so the new title is visible
+                        // while it is edited (PR #201 review).
+                        root.showOverlay(backend.addTextOverlay(videoPlayer.position))
                     }
                 }
                 SegmentButton {

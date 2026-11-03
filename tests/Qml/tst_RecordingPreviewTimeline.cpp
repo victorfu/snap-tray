@@ -19,6 +19,7 @@ private slots:
     void buttonsAndKeysEditTheTimeline();
     void playbackFollowsTheEdit();
     void splitFollowsTheWholeDrag();
+    void overlaysAreShownAndReachable();
 
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
@@ -262,6 +263,47 @@ void tst_RecordingPreviewTimeline::splitFollowsTheWholeDrag()
     backend.undo();
     const auto& splits = backend.timelineEdit().splits;
     QVERIFY(splits.empty() || splits.front() == start);
+    backend.requestDiscard();
+}
+
+// PR #201 review: a new title is shown past its fade-in (not invisible at its
+// start), and a whole-recording image bar over a title's bar does not hide
+// it: each click moves to the next overlay under the pointer.
+void tst_RecordingPreviewTimeline::overlaysAreShownAndReachable()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString video = dir.filePath(QStringLiteral("recording.mp4"));
+    if (!writeRecording(video)) QSKIP("No native encoder for the fixture recording");
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY_WITH_TIMEOUT(backend.duration() > 0, 10000);
+    QQuickItem* player = item(view, "previewVideoPlayer");
+    QVERIFY(seek(view, 500));
+    const qint64 start = player->property("position").toLongLong();
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAddText"), "clicked"));
+    QCOMPARE(backend.selectedOverlay(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(player->property("position").toLongLong() >= start + 300, 5000);
+    const qint64 shown = player->property("position").toLongLong();
+    QVERIFY2(backend.overlayTrack().segments[0].opacityAt(shown) > 0.5, qPrintable(QString::number(shown)));
+
+    QImage logo(16, 16, QImage::Format_ARGB32);
+    logo.fill(Qt::white);
+    const QString logoPath = dir.filePath(QStringLiteral("logo.png"));
+    QVERIFY(logo.save(logoPath));
+    QCOMPARE(backend.addImageOverlay(QUrl::fromLocalFile(logoPath)), 1); // the whole recording
+    QQuickItem* titleBar = nullptr;
+    QTRY_VERIFY((titleBar = delegate(view, QStringLiteral("previewOverlaySegment0"))) != nullptr && titleBar->width() > 0);
+    const QPoint onBoth = titleBar->mapToScene(QPointF(titleBar->width() / 2, titleBar->height() / 2)).toPoint();
+    backend.setSelectedOverlay(-1);
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
+    QCOMPARE(backend.selectedOverlay(), 1); // topmost first: the image
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
+    QCOMPARE(backend.selectedOverlay(), 0); // then the title under it
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
+    QCOMPARE(backend.selectedOverlay(), -1);
     backend.requestDiscard();
 }
 
