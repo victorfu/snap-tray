@@ -69,7 +69,11 @@ qint64 TimelineMap::outputToSource(qint64 outputMs) const
     if (index >= m_segments.size()) return m_segments.back().endMs;
     const TimelineSegment& s = m_segments[index];
     const qint64 source = s.startMs + qint64(std::llround(double(outputMs - m_outputStarts[index]) * s.speed));
-    return std::min(source, s.endMs);
+    // A time inside this part never maps to its end: the end is exclusive,
+    // the first moment of what was cut (rounding at 0.5x would reach it,
+    // PR #199 review). Past the whole output, the end is the answer.
+    const bool inside = index + 1 < m_outputStarts.size() && outputMs < m_outputStarts[index + 1];
+    return std::min(source, inside ? std::max(s.startMs, s.endMs - 1) : s.endMs);
 }
 
 qint64 TimelineMap::nextShownSourceMs(qint64 sourceMs) const

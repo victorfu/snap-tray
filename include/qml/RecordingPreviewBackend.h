@@ -58,7 +58,9 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(qint64 trimStart READ trimStart WRITE setTrimStart NOTIFY trimRangeChanged)
     Q_PROPERTY(qint64 trimEnd READ trimEnd WRITE setTrimEnd NOTIFY trimRangeChanged)
     Q_PROPERTY(bool hasTrim READ hasTrim NOTIFY trimRangeChanged)
-    Q_PROPERTY(qint64 trimmedDuration READ trimmedDuration NOTIFY trimRangeChanged)
+    // The exported length: changes with the trim, the cut parts and speeds,
+    // and the recording's length (PR #199 review).
+    Q_PROPERTY(qint64 trimmedDuration READ trimmedDuration NOTIFY outputDurationChanged)
 
     // Crop (video pixels; empty = no crop)
     Q_PROPERTY(QRect cropRect READ cropRect NOTIFY cropRectChanged)
@@ -145,7 +147,7 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(QVariantList timelineSplits READ timelineSplits NOTIFY timelineChanged)
     Q_PROPERTY(bool hasTimelineEdits READ hasTimelineEdits NOTIFY timelineChanged)
     Q_PROPERTY(bool timelineEditsAvailable READ timelineEditsAvailable NOTIFY timelineChanged)
-    Q_PROPERTY(qint64 outputDuration READ outputDuration NOTIFY timelineChanged)
+    Q_PROPERTY(qint64 outputDuration READ outputDuration NOTIFY outputDurationChanged)
 
     // The frame around the export (#184): enum values in RecordingAppearance order.
     Q_PROPERTY(bool appearanceAvailable READ appearanceAvailable NOTIFY appearanceChanged)
@@ -530,6 +532,7 @@ signals:
     void positionChanged();
     void stateChanged();
     void trimRangeChanged();
+    void outputDurationChanged();
     void formatChanged();
     void processingChanged();
     void processProgressChanged();

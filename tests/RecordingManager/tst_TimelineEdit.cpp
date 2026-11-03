@@ -12,6 +12,7 @@ private slots:
     void emptyEditIsThePlainTrim();
     void splitDeleteAndSpeed();
     void mapsBothWays();
+    void neverMapsIntoTheCutAtAPartsEnd();
     void neighboursAtOneSpeedMerge();
     void splitLimits();
     void playbackSkipsCuts();
@@ -147,6 +148,23 @@ void TestTimelineEdit::jsonRoundTrip()
     broken.insert(QStringLiteral("splits"), QJsonArray{2500, 1000});
     QVERIFY(TimelineEdit::fromJson(broken).isEmpty());
     QVERIFY(TimelineEdit::fromJson({}).isEmpty());
+}
+
+// PR #199 review: [0, 117) at 0.5x is 234 ms of output; rounding mapped
+// output 233 ms to 117, the first moment of what was cut.
+void TestTimelineEdit::neverMapsIntoTheCutAtAPartsEnd()
+{
+    const TimelineMap slow({{0, 117, 0.5}, {500, 600, 1.0}});
+    QCOMPARE(slow.outputDurationMs(), qint64(334));
+    for (qint64 out = 0; out < 234; ++out) {
+        const qint64 source = slow.outputToSource(out);
+        QVERIFY2(source >= 0 && source < 117, qPrintable(QStringLiteral("%1 -> %2").arg(out).arg(source)));
+    }
+    QCOMPARE(slow.outputToSource(234), qint64(500)); // the next part
+    // Past the whole output: the end of the last part.
+    const TimelineMap one({{0, 117, 0.5}});
+    QCOMPARE(one.outputToSource(233), qint64(116));
+    QCOMPARE(one.outputToSource(234), qint64(117));
 }
 
 QTEST_MAIN(TestTimelineEdit)
