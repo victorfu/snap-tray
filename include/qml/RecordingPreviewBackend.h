@@ -724,6 +724,10 @@ private:
     static void removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe);
     // A project's edits wait for the player's size and length (PR #203 review).
     bool m_projectRecipePending = false;
+    // Applying a project's recipe: its looks are not remembered as defaults.
+    bool m_restoringProject = false;
+    // Remembers the frame for the next recording, never a project-owned image.
+    void rememberAppearance(const SnapTray::RecordingAppearance& appearance);
     void applyPendingProjectRecipe();
     SnapTray::AudioMixSettings m_audioMix;
     void editAudioMix(const std::function<void(SnapTray::AudioMixSettings&)>& change);
