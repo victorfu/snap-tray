@@ -2,6 +2,7 @@
 #include <QSemaphore>
 #include <QtEndian>
 #include "video/RemixedAudioPreview.h"
+#include "video/FramePresentationClock.h"
 #include <mutex>
 #include <atomic>
 
@@ -35,6 +36,24 @@ private slots:
     void init() { std::lock_guard<std::mutex> lock(output.mutex); output.writes.clear(); output.resets = 0; output.queued = 0; }
     void seekDiscardsAnInflightRead();
     void pauseSpeedAndVolume();
+    void sourceClockKeepsVfrGapsAndAccountsForDecodeTime() {
+        SnapTray::FramePresentationClock clock;
+        clock.setPlaying(true, 1000000);
+        // A picture at 1 s stays due at 2 s wall time, even when decoding
+        // took 80 ms; a fixed sleep per decoded frame would skip the gap.
+        QCOMPARE(clock.delayUs(1000000, 1080000), qint64(920000));
+        QCOMPARE(clock.delayUs(1000000, 2000000), qint64(0));
+        clock.setPlaying(false, 2250000);
+        QCOMPARE(clock.positionUs(9000000), qint64(1250000));
+        clock.setPlaying(true, 9000000);
+        QCOMPARE(clock.delayUs(1500000, 9000000), qint64(250000));
+        clock.setRate(2.0, 9100000);
+        QCOMPARE(clock.positionUs(9100000), qint64(1350000));
+        QCOMPARE(clock.delayUs(1500000, 9100000), qint64(75000));
+        clock.seek(400000, 9200000);
+        QCOMPARE(clock.positionUs(9250000), qint64(500000));
+        QCOMPARE(clock.delayUs(400000, 9250000), qint64(0));
+    }
 };
 
 void TestRemixedAudioPreview::seekDiscardsAnInflightRead()
