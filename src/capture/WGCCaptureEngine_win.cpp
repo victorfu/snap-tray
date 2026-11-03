@@ -445,7 +445,17 @@ void WGCCaptureEngine::Private::emitFrameLocked(const SnapTray::CapturedFrame &f
     if (!running || generation != generationAtStart) {
         return;
     }
-    lastEmittedNs = qMax(lastEmittedNs, frame.sourceTimeNs);
+    // A real frame carries the time it was composed and can arrive after a
+    // repeat stamped "now" already went out. Its picture is newer than the
+    // repeat's, so it is kept, but never with an earlier time: frame times
+    // only move forward.
+    if (lastEmittedNs >= 0 && frame.sourceTimeNs < lastEmittedNs) {
+        SnapTray::CapturedFrame stamped = frame;
+        stamped.sourceTimeNs = lastEmittedNs;
+        emit q->frameCaptured(stamped);
+        return;
+    }
+    lastEmittedNs = frame.sourceTimeNs;
     emit q->frameCaptured(frame);
 }
 
