@@ -18,6 +18,7 @@
 #include <QStandardPaths>
 
 #include <algorithm>
+#include <utility>
 
 namespace SnapTray {
 
@@ -56,8 +57,15 @@ bool moveFile(const QString& from, const QString& to)
     return true;
 }
 
+bool& failNextManifestWrite()
+{
+    static bool fail = false;
+    return fail;
+}
+
 bool writeJson(const QString& path, const QJsonObject& object)
 {
+    if (std::exchange(failNextManifestWrite(), false)) return false;
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) return false;
     file.write(QJsonDocument(object).toJson(QJsonDocument::Indented));
@@ -183,6 +191,11 @@ void setRootForTests(const QString& path)
     rootOverride() = path;
 }
 
+void failNextManifestWriteForTests()
+{
+    failNextManifestWrite() = true;
+}
+
 QStringList sidecarSuffixes()
 {
     return {QLatin1String(WindowTimelineSidecar::kSuffix), QLatin1String(CursorTimelineSidecar::kSuffix),
@@ -207,8 +220,15 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
     project.durationMs = durationMs;
     project.savedPath = savedPath;
     project.recipe = recipe;
-    const auto transfer = [copy](const QString& from, const QString& to) {
-        return copy ? QFile::copy(from, to) : moveFile(from, to);
+    // What was moved, so a failure can put it back: the recording is the
+    // only full-quality copy and must survive a half-made project
+    // (PR #203 review).
+    QList<QPair<QString, QString>> moved;
+    const auto transfer = [copy, &moved](const QString& from, const QString& to) {
+        if (copy) return QFile::copy(from, to);
+        if (!moveFile(from, to)) return false;
+        moved.append({from, to});
+        return true;
     };
     bool ok = transfer(videoPath, project.videoPath());
     for (const QString& sidecar : sidecarSuffixes()) {
@@ -218,7 +238,13 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
     ok = ok && writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(project));
     if (!ok) {
         qWarning() << "RecordingProjects: could not create a project in" << project.dir;
-        QDir(project.dir).removeRecursively();
+        bool restored = true;
+        for (auto it = moved.crbegin(); it != moved.crend(); ++it) {
+            if (!moveFile(it->second, it->first)) restored = false;
+        }
+        // Never delete the only copy of something that could not go back.
+        if (restored) QDir(project.dir).removeRecursively();
+        else qWarning() << "RecordingProjects: kept" << project.dir << "- files could not be moved back";
         return std::nullopt;
     }
     return project;

@@ -1995,6 +1995,11 @@ Size: %2</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>لا توجد مساحة كافية على القرص للتسجيل بجودة عالية. سيتم التسجيل بالجودة المحددة بدلاً من ذلك.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>لا يمكن حفظ التسجيلات في مجلد مشاريع مكتبة التسجيلات.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3445,6 +3450,16 @@ Size: %2</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>تعذّر نسخ تسجيل المشروع للحفظ. لم يُحفظ أي شيء.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>حُفظ في %1، لكن تعذّر تحديث المشروع. احفظ مجددًا للاحتفاظ بهذه التعديلات في المشروع.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>حُفظ في %1، لكن تعذّر الاحتفاظ بالتسجيل كمشروع قابل للتحرير. لا يزال مفتوحًا هنا: احفظ مجددًا، أو أغلقه لتجاهله.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3836,6 +3851,11 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>اسحب فوق الشاشة لاختيار ما تريد تسجيله. يظل وضع التحرير يسجّل الشاشة كاملة ويفتح المعاينة مقصوصة على المنطقة لتتمكن من تغييرها؛ أما الوضع السريع فيسجّل المنطقة فقط.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>تُحفظ المشاريع عند الحفظ من المعاينة. فعّل إظهار المعاينة لاستخدامها.</translation>
     </message>
 </context>
 <context>

@@ -58,13 +58,15 @@ namespace RecordingProjects {
 // Under the app's local data; tests point it elsewhere.
 QString root();
 void setRootForTests(const QString& path);
+// Tests: make the next create() or update() fail at its manifest write.
+void failNextManifestWriteForTests();
 
 // Every sidecar a recording can have, by suffix of its video path.
 QStringList sidecarSuffixes();
 
 // Moves the recording and its sidecars into a new project, or copies them
-// (copy: the source stays where it is). nullopt when anything fails; a
-// half-made project is removed again.
+// (copy: the source stays where it is). nullopt when anything fails: moved
+// files are moved back first, so the source is never lost.
 std::optional<RecordingProject> create(const QString& videoPath, bool copy, const QJsonObject& recipe,
                                        const QImage& thumbnail, qint64 durationMs, const QString& savedPath);
 std::optional<RecordingProject> load(const QString& dir);

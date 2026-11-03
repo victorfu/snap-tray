@@ -2001,6 +2001,11 @@ Rozmiar: %2</translation>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>Za mało wolnego miejsca na dysku na nagrywanie w wysokiej jakości. Nagrywanie w wybranej jakości.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Nagrań nie można zapisywać w folderze projektów biblioteki nagrań.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3451,6 +3456,16 @@ Rozmiar: %2</translation>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Nie można skopiować nagrania projektu do zapisu. Nic nie zostało zapisane.</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Zapisano w %1, ale nie udało się zaktualizować projektu. Zapisz ponownie, aby zachować te zmiany w projekcie.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Zapisano w %1, ale nie udało się zachować nagrania jako edytowalnego projektu. Nadal jest tu otwarte: zapisz ponownie lub zamknij, aby je odrzucić.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3842,6 +3857,11 @@ Dźwięk nie jest obsługiwany w nagraniach GIF.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>Przeciągnij po ekranie, aby wybrać, co nagrać. Tryb edycji nadal nagrywa cały ekran i otwiera podgląd przycięty do obszaru, więc można go zmienić; tryb szybki nagrywa tylko obszar.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projekty są zachowywane przy zapisywaniu z podglądu. Włącz Pokaż podgląd, aby z nich korzystać.</translation>
     </message>
 </context>
 <context>

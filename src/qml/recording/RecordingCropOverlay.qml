@@ -20,6 +20,8 @@ Item {
     property size videoSize: Qt.size(0, 0)
     property color accentColor: SemanticTokens.accentDefault
     property bool editing: false
+    // Dim the video outside a committed crop (off while a frame shows only it).
+    property bool dimOutside: true
     property rect draftRect: Qt.rect(0, 0, 0, 0)
     // False blocks pointer edits (for example while an export is processing).
     property bool interactive: true
@@ -345,7 +347,8 @@ Item {
 
     // Dim everything inside the video but outside the crop.
     Repeater {
-        model: overlay.hasShownRect ? 4 : 0
+        objectName: "cropOutsideDim"
+        model: overlay.hasShownRect && (overlay.dimOutside || overlay.editing) ? 4 : 0
         delegate: Rectangle {
             required property int index
             readonly property rect c: overlay.contentRect
@@ -360,7 +363,7 @@ Item {
 
     Rectangle {
         objectName: "cropSelectionFrame"
-        visible: overlay.hasShownRect
+        visible: overlay.hasShownRect && (overlay.dimOutside || overlay.editing)
         x: overlay.shownRect.x
         y: overlay.shownRect.y
         width: overlay.shownRect.width

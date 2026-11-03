@@ -2001,6 +2001,11 @@ Size: %2</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>高画質で録画するための空き容量が不足しています。選択した画質で録画します。</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>録画ライブラリのプロジェクトフォルダーには保存できません。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3451,6 +3456,16 @@ Size: %2</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>保存用にプロジェクトの録画をコピーできませんでした。何も保存されていません。</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>%1 に保存しましたが、プロジェクトを更新できませんでした。この編集をプロジェクトに残すには、もう一度保存してください。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>%1 に保存しましたが、録画を編集可能なプロジェクトとして保持できませんでした。ここでまだ開いています。もう一度保存するか、閉じて破棄してください。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3842,6 +3857,11 @@ GIF録画では音声はサポートされていません。</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>画面上をドラッグして録画する範囲を選びます。編集モードでは画面全体を録画し、範囲で切り抜いた状態でプレビューを開くので後から変更できます。クイックモードでは範囲だけを録画します。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>プロジェクトはプレビューから保存したときに保持されます。使用するには「プレビューを表示」をオンにしてください。</translation>
     </message>
 </context>
 <context>

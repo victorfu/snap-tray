@@ -1,9 +1,13 @@
 #pragma once
 
 #include <QPointer>
+
+#include <memory>
 #include <QQuickPaintedItem>
 #include <QRectF>
 #include <QtQml/qqmlregistration.h>
+
+#include "recording/KeyOverlay.h"
 
 class RecordingPreviewBackend;
 
@@ -37,6 +41,12 @@ signals:
     void contentRectChanged();
 
 private:
+    // Built once per settings, timeline and trim (it formats every stroke's
+    // label), not on every repainted frame (PR #200 review).
+    const SnapTray::KeyOverlayRenderer* renderer();
+    std::unique_ptr<SnapTray::KeyOverlayRenderer> m_renderer;
+    void invalidateRenderer();
+
     QPointer<RecordingPreviewBackend> m_backend;
     qint64 m_position = 0;
     QRectF m_contentRect;

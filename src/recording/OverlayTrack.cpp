@@ -119,6 +119,9 @@ void OverlayTrack::paint(QPainter& painter, qint64 sourceMs, const QRectF& targe
 {
     if (target.isEmpty() || picture.isEmpty()) return;
     painter.save();
+    // Only on the picture: the export cuts off whatever reaches past it, so
+    // the preview must not show it around the picture (PR #201 review).
+    painter.setClipRect(target, Qt::IntersectClip);
     painter.translate(target.topLeft());
     painter.scale(target.width() / picture.width(), target.height() / picture.height());
     painter.setRenderHint(QPainter::Antialiasing, true);

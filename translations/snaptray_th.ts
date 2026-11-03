@@ -1982,6 +1982,11 @@ English is always included and cannot be removed.</source>
         <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
         <translation>พื้นที่ว่างในดิสก์ไม่พอสำหรับการบันทึกคุณภาพสูง จะบันทึกด้วยคุณภาพที่เลือกแทน</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>ไม่สามารถบันทึกการบันทึกไว้ในโฟลเดอร์โปรเจกต์ของคลังการบันทึกได้</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3377,6 +3382,16 @@ English is always included and cannot be removed.</source>
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>ไม่สามารถคัดลอกการบันทึกของโปรเจกต์เพื่อบันทึกได้ ไม่มีสิ่งใดถูกบันทึก</translation>
     </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>บันทึกไปที่ %1 แล้ว แต่ไม่สามารถอัปเดตโปรเจกต์ได้ บันทึกอีกครั้งเพื่อเก็บการแก้ไขเหล่านี้ไว้ในโปรเจกต์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>บันทึกไปที่ %1 แล้ว แต่ไม่สามารถเก็บการบันทึกเป็นโปรเจกต์ที่แก้ไขได้ ยังเปิดอยู่ที่นี่: บันทึกอีกครั้ง หรือปิดเพื่อทิ้ง</translation>
+    </message>
 </context>
 <context>
     <name>RecordingSettings</name>
@@ -3704,6 +3719,11 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>ลากบนหน้าจอเพื่อเลือกสิ่งที่จะบันทึก โหมดแก้ไขยังคงบันทึกทั้งหน้าจอและเปิดหน้าตัวอย่างที่ครอปตามพื้นที่ จึงเปลี่ยนได้ภายหลัง ส่วนโหมดด่วนจะบันทึกเฉพาะพื้นที่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>โปรเจกต์จะถูกเก็บเมื่อคุณบันทึกจากหน้าตัวอย่าง เปิด แสดงตัวอย่าง เพื่อใช้งาน</translation>
     </message>
 </context>
 <context>

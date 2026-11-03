@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls.Basic
 import SnapTrayQml
 
 DialogBase {
@@ -53,14 +54,35 @@ DialogBase {
 
     onCloseRequested: dismiss()
 
+    // The title and button bars, and room kept around the dialog: on a short
+    // screen the setup scrolls instead of growing past it, so every option
+    // and Start/Cancel stay reachable (PR #204 review).
+    readonly property int dialogChromeHeight: 72 + 56
+    readonly property int screenMargin: 80
+    readonly property int minimumContentHeight: 160
+    // The screen's usable height (a test sets a short one).
+    property real availableScreenHeight: Screen.desktopAvailableHeight
+
     contentItem: Component {
         Item {
-            implicitHeight: contentColumn.implicitHeight + 28
+            readonly property real maximumHeight: Math.max(root.minimumContentHeight,
+                root.availableScreenHeight - root.dialogChromeHeight - root.screenMargin)
+            implicitHeight: Math.min(contentColumn.implicitHeight + 28, maximumHeight)
+
+            Flickable {
+            id: setupScroller
+            objectName: "setupScroller"
+            anchors.fill: parent
+            anchors.margins: 14
+            contentWidth: width
+            contentHeight: contentColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
             Column {
                 id: contentColumn
-                anchors.fill: parent
-                anchors.margins: 14
+                width: setupScroller.width
                 spacing: 12
 
                 Flow {
@@ -282,6 +304,7 @@ DialogBase {
                         onToggled: function(checked) { root.viewModel.showSetupBeforeRecording = checked }
                     }
                 }
+            }
             }
         }
     }
