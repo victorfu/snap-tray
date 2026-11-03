@@ -296,9 +296,18 @@ void tst_RecordingPreviewCrop::chosenAreaIsTheInitialCrop()
     {
         // Size not known yet: applied once the player reports it.
         RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+        QSignalSpy loading(&backend, &RecordingPreviewBackend::projectChanged);
         backend.setInitialCrop(QRect(100, 60, 640, 360));
         QVERIFY(!backend.hasCrop());
+        // Saving now would export the whole screen (PR #203 review).
+        QVERIFY(backend.projectLoading());
+        QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        QVERIFY(!backend.isProcessing());
+        QCOMPARE(saved.count(), 0);
         backend.updateVideoSize(QSize(1920, 1080));
+        QVERIFY(!backend.projectLoading());
+        QVERIFY(loading.count() >= 2);
         QCOMPARE(backend.cropRect(), QRect(100, 60, 640, 360));
         QVERIFY(!backend.canUndo());
     }

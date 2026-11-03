@@ -1380,6 +1380,7 @@ void RecordingPreviewBackend::setInitialCrop(const QRect& videoRect)
     // Checked against the picture once the player has reported its size
     // (the source is never probed on the GUI thread).
     m_pendingInitialCrop = videoRect;
+    emit projectChanged(); // Save waits for it (PR #203 review)
     applyPendingInitialCrop();
 }
 
@@ -1389,6 +1390,7 @@ void RecordingPreviewBackend::applyPendingInitialCrop()
     setCropRect(std::exchange(m_pendingInitialCrop, QRect()));
     m_editHistory.reset(currentEditState());
     emit editHistoryChanged();
+    emit projectChanged(); // Save is possible now
 }
 
 bool RecordingPreviewBackend::keepsProject() const
@@ -1929,7 +1931,9 @@ void RecordingPreviewBackend::save()
     // An opened project's edits (masks, crops, cuts) are applied once the
     // player has reported the picture: saving before would export without
     // them (PR #203 review).
-    if (m_projectRecipePending) {
+    // Nor before the area chosen before recording is the crop: the export
+    // would show the whole screen, outside the area (PR #203 review).
+    if (projectLoading()) {
         qDebug() << "RecordingPreviewBackend: Save ignored until the project's edits are applied";
         return;
     }

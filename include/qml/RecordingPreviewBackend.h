@@ -133,7 +133,8 @@ class RecordingPreviewBackend : public QObject
     // Editable projects (#191): this preview edits a kept project.
     Q_PROPERTY(bool isProject READ isProject NOTIFY projectChanged)
     Q_PROPERTY(bool keepsProject READ keepsProject NOTIFY projectChanged)
-    // An opened project whose edits are not applied yet: no Save until they are.
+    // Edits not applied yet (an opened project's, the area chosen before
+    // recording): no Save until they are.
     Q_PROPERTY(bool projectLoading READ projectLoading NOTIFY projectChanged)
 
     // Separate microphone and system audio tracks (#189).
@@ -416,7 +417,9 @@ private:
     void applyPendingInitialCrop();
 public:
     bool isProject() const { return m_project.has_value(); }
-    bool projectLoading() const { return m_projectRecipePending; }
+    // Edits waiting for the player's size (a project's recipe, an area chosen
+    // before recording): no Save until they are applied.
+    bool projectLoading() const { return m_projectRecipePending || !m_pendingInitialCrop.isEmpty(); }
     QString projectDir() const { return m_project ? m_project->dir : QString(); }
     // Saving keeps (or updates) a project.
     bool keepsProject() const;
