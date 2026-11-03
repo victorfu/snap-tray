@@ -2645,7 +2645,9 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
     QVERIFY(!QFileInfo::exists(sidecar));
     QVERIFY(QFileInfo::exists(project.videoPath()));
     QVERIFY(QFileInfo::exists(project.videoPath() + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix)));
-    QVERIFY(QFileInfo::exists(project.thumbnailPath()));
+    // A thumbnail where a frame reader exists (not on Windows yet: the
+    // library shows a placeholder there).
+    if (IVideoFrameReader::create()) QVERIFY(QFileInfo::exists(project.thumbnailPath()));
     QCOMPARE(project.savedPath, directory.filePath(QStringLiteral("first.mp4")));
     QCOMPARE(SnapTray::RecordingRecipe::editState(project.recipe)->trimStart, trimStart);
 
