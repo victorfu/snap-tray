@@ -1035,6 +1035,7 @@ set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
 set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOURCE_ALIAS components/Countdown.qml)
 set_source_files_properties(src/qml/components/RecordingAreaSelector.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingAreaSelector.qml)
+set_source_files_properties(src/qml/components/DelayedCaptureIndicator.qml PROPERTIES QT_RESOURCE_ALIAS components/DelayedCaptureIndicator.qml)
 set_source_files_properties(src/qml/components/RecordingTooltip.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingTooltip.qml)
 set_source_files_properties(src/qml/components/GlassSurface.qml PROPERTIES QT_RESOURCE_ALIAS components/GlassSurface.qml)
 set_source_files_properties(src/qml/components/ToolbarButton.qml PROPERTIES QT_RESOURCE_ALIAS components/ToolbarButton.qml)
@@ -1144,6 +1145,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/RecordingBoundary.qml
         src/qml/components/Countdown.qml
         src/qml/components/RecordingAreaSelector.qml
+        src/qml/components/DelayedCaptureIndicator.qml
         src/qml/components/RecordingTooltip.qml
         src/qml/components/GlassSurface.qml
         src/qml/components/ToolbarButton.qml
@@ -1228,6 +1230,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlToast.h
         src/qml/QmlBadge.cpp
         include/qml/QmlBadge.h
+        src/qml/QmlDelayedCaptureIndicator.cpp
+        include/qml/QmlDelayedCaptureIndicator.h
         include/qml/QmlRecordingBoundary.h
         include/qml/QmlRecordingControlBar.h
         include/qml/QmlCountdownOverlay.h

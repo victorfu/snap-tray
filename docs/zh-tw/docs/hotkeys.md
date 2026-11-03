@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-17
+last_modified_at: 2026-10-20
 layout: docs
 title: 快捷鍵
 seo_title: "SnapTray 快捷鍵設定：自訂截圖與平台限定錄影快速鍵"
@@ -23,6 +23,7 @@ doc_order: 3
 ## 其他可設定動作（預設未綁定）
 
 - Full Screen Capture
+- Delayed Capture
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins

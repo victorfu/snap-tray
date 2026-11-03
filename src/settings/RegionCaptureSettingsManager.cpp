@@ -90,3 +90,28 @@ void RegionCaptureSettingsManager::setFullScreenCaptureAction(FullScreenCaptureA
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyFullScreenCaptureAction, static_cast<int>(action));
 }
+
+int RegionCaptureSettingsManager::delayedCaptureSeconds() const
+{
+    auto settings = SnapTray::getSettings();
+    bool ok = false;
+    const int rawValue = settings.value(kSettingsKeyDelayedCaptureSeconds).toInt(&ok);
+    if (!ok || !isValidDelayedCaptureSeconds(rawValue)) {
+        return kDefaultDelayedCaptureSeconds;
+    }
+    return rawValue;
+}
+
+void RegionCaptureSettingsManager::setDelayedCaptureSeconds(int seconds)
+{
+    if (!isValidDelayedCaptureSeconds(seconds)) {
+        seconds = kDefaultDelayedCaptureSeconds;
+    }
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyDelayedCaptureSeconds, seconds);
+}
+
+bool RegionCaptureSettingsManager::isValidDelayedCaptureSeconds(int seconds)
+{
+    return seconds >= kMinDelayedCaptureSeconds && seconds <= kMaxDelayedCaptureSeconds;
+}

@@ -16,6 +16,7 @@
 #include "region/CapturePerfRecorder.h"
 #include "region/MultiRegionManager.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "qml/QmlDelayedCaptureIndicator.h"
 
 #include <QDebug>
 #include <QGuiApplication>
@@ -108,9 +109,12 @@ CaptureManager::~CaptureManager()
 
 bool CaptureManager::isActive() const
 {
-    // A full-screen capture owns the screen until it is grabbed and exported, so
-    // other capture, canvas and recording entry points must stay out.
-    return (m_regionSelector && m_regionSelector->isVisible()) || isFullScreenCaptureInProgress();
+    // A full-screen capture owns the screen until it is grabbed and exported, and
+    // a delayed capture owns it while counting down, so other capture, canvas and
+    // recording entry points must stay out.
+    return (m_regionSelector && m_regionSelector->isVisible())
+        || isFullScreenCaptureInProgress()
+        || m_delayedCapturePending;
 }
 
 bool CaptureManager::hasCompleteSelection() const
@@ -129,6 +133,11 @@ void CaptureManager::triggerFinishSelection()
 
 void CaptureManager::cancelCapture()
 {
+    if (m_delayedCapturePending) {
+        qDebug() << "CaptureManager: Cancelling delayed capture countdown";
+        cancelDelayedCapture();
+    }
+
     if (m_fullScreenCapturePending) {
         qDebug() << "CaptureManager: Cancelling pending full screen capture";
         abortPendingFullScreenCapture();
@@ -163,7 +172,7 @@ void CaptureManager::cycleOrSwitchCaptureScreenByCursor()
 
 bool CaptureManager::startHistoryReplay(const QString& entryId)
 {
-    if (entryId.isEmpty() || isFullScreenCaptureInProgress()) {
+    if (entryId.isEmpty() || isFullScreenCaptureInProgress() || m_delayedCapturePending) {
         return false;
     }
 
@@ -259,7 +268,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     {
         snaptray::region::CapturePerfScope snapshotPerfScope(
             "CaptureManager.captureScreenSnapshot");
-        preCapture = snaptray::capture::captureScreenSnapshot(targetScreen);
+        preCapture = captureSnapshot(targetScreen);
     }
 
     // 4. Close popup/modal AFTER screenshot
@@ -270,6 +279,125 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
         snaptray::region::CapturePerfScope selectorPerfScope(
             "CaptureManager.initializeRegionSelector");
         initializeRegionSelector(targetScreen, preCapture, quickPinMode, showShortcutHintsOnEntry);
+    }
+}
+
+bool CaptureManager::isDelayedCapturePending() const
+{
+    return m_delayedCapturePending;
+}
+
+int CaptureManager::delayedCaptureRemainingSeconds() const
+{
+    return m_delayedCapturePending ? m_delayedCaptureRemainingSeconds : 0;
+}
+
+void CaptureManager::startDelayedRegionCapture(int delaySeconds, bool showShortcutHintsOnEntry)
+{
+    // Skip if already in capture mode (including another countdown)
+    if (isActive()) {
+        return;
+    }
+
+    if (!RegionCaptureSettingsManager::isValidDelayedCaptureSeconds(delaySeconds)) {
+        qWarning() << "CaptureManager: Invalid delayed capture delay" << delaySeconds
+                   << "- using default";
+        delaySeconds = RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds;
+    }
+
+    QScreen* indicatorScreen = screenAtCursor();
+    if (!indicatorScreen) {
+        qCritical() << "CaptureManager: No valid screen available for delayed capture";
+        return;
+    }
+
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+
+    if (!m_delayedCaptureTimer) {
+        m_delayedCaptureTimer = new QTimer(this);
+        connect(m_delayedCaptureTimer, &QTimer::timeout,
+                this, &CaptureManager::tickDelayedCapture);
+    }
+    if (!m_delayedCaptureIndicator) {
+        m_delayedCaptureIndicator = std::make_unique<SnapTray::QmlDelayedCaptureIndicator>();
+    }
+
+    ++m_delayedCaptureGeneration;
+    m_delayedCapturePending = true;
+    m_delayedCaptureShowShortcutHints = showShortcutHintsOnEntry;
+    m_delayedCaptureRemainingSeconds = delaySeconds;
+
+    // The indicator stays on the screen where the countdown started; the capture
+    // itself targets the screen under the cursor when the countdown ends.
+    m_delayedCaptureIndicator->show(indicatorScreen, m_delayedCaptureRemainingSeconds);
+    m_delayedCaptureTimer->start(m_delayedCaptureTickIntervalMs);
+
+    emit delayedCaptureStateChanged(true);
+    emit delayedCaptureCountdownChanged(m_delayedCaptureRemainingSeconds);
+}
+
+void CaptureManager::tickDelayedCapture()
+{
+    if (!m_delayedCapturePending) {
+        return;
+    }
+
+    --m_delayedCaptureRemainingSeconds;
+    if (m_delayedCaptureRemainingSeconds > 0) {
+        m_delayedCaptureIndicator->setRemainingSeconds(m_delayedCaptureRemainingSeconds);
+        emit delayedCaptureCountdownChanged(m_delayedCaptureRemainingSeconds);
+        return;
+    }
+
+    m_delayedCaptureTimer->stop();
+    emit delayedCaptureCountdownChanged(0);
+
+    // The indicator must not appear in the capture: hide it, then give the
+    // compositor a frame to present without it before grabbing the screen.
+    m_delayedCaptureIndicator->hide();
+    const quint64 generation = m_delayedCaptureGeneration;
+    QTimer::singleShot(snaptray::capture::OwnWindowCaptureHider::kSettleDelayMs, this,
+                       [this, generation]() {
+        if (!m_delayedCapturePending || generation != m_delayedCaptureGeneration) {
+            return;  // Cancelled while waiting for the compositor.
+        }
+        finishDelayedCaptureCountdown();
+    });
+}
+
+void CaptureManager::finishDelayedCaptureCountdown()
+{
+    const bool showShortcutHints = m_delayedCaptureShowShortcutHints;
+    clearDelayedCaptureState();
+    emit delayedCaptureStateChanged(false);
+
+    // From here on this is an ordinary region capture of the screen under the cursor.
+    startCaptureInternal(CaptureEntryMode::Region, showShortcutHints);
+}
+
+void CaptureManager::cancelDelayedCapture()
+{
+    if (!m_delayedCapturePending) {
+        return;
+    }
+
+    clearDelayedCaptureState();
+    emit delayedCaptureStateChanged(false);
+    emit captureCancelled();
+}
+
+void CaptureManager::clearDelayedCaptureState()
+{
+    ++m_delayedCaptureGeneration;
+    m_delayedCapturePending = false;
+    m_delayedCaptureRemainingSeconds = 0;
+    if (m_delayedCaptureTimer) {
+        m_delayedCaptureTimer->stop();
+    }
+    if (m_delayedCaptureIndicator) {
+        m_delayedCaptureIndicator->hide();
     }
 }
 
