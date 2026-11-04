@@ -131,7 +131,11 @@ SettingsRow {
             horizontalPadding: root.delegatePadding
             highlighted: combo.highlightedIndex === index
             // The option's accessible name; the shown text is contentItem (#210).
+            // Set explicitly: Qt copies `text` into the name only while
+            // accessibility is already active.
             text: modelData.text
+            Accessible.role: Accessible.ListItem
+            Accessible.name: modelData.text
 
             contentItem: Text {
                 text: modelData.text
