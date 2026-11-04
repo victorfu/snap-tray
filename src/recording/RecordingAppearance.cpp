@@ -4,6 +4,7 @@
 
 #include <QPainter>
 #include <QPainterPath>
+#include <QRegion>
 
 #include <algorithm>
 #include <cmath>
@@ -79,7 +80,7 @@ void drawCover(QPainter& painter, const QRect& target, const QImage& image)
                     target.y() + (target.height() - shown.height()) / 2.0, shown.width(), shown.height());
     painter.save();
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-    painter.setClipRect(target);
+    painter.setClipRect(target, Qt::IntersectClip);
     painter.drawImage(at, image);
     painter.restore();
 }
@@ -278,6 +279,14 @@ QImage RecordingAppearanceRenderer::compose(const QImage& content, const QImage&
         out = QImage(m_outputSize, QImage::Format_RGB32);
         QPainter background(&out);
         background.setRenderHint(QPainter::Antialiasing, true);
+        // Opaque video covers the interior completely. Avoid upscaling the blur
+        // and painting shadow layers there for every frame, especially at 4K.
+        // Keep the rounded edges in the background and preserve alpha inputs.
+        const int inset = static_cast<int>(std::ceil(m_settings.cornerRadius)) + 1;
+        const QRect opaqueInterior = m_contentRect.adjusted(inset, inset, -inset, -inset);
+        if (!content.hasAlphaChannel() && !opaqueInterior.isEmpty()) {
+            background.setClipRegion(QRegion(out.rect()).subtracted(QRegion(opaqueInterior)));
+        }
         drawBackground(background, blurSource.isNull() ? blurSourceFor(content) : blurSource);
         drawDecorations(background);
     }

@@ -38,3 +38,20 @@ ffmpeg -f rawvideo -pixel_format rgb24 -video_size 160x120 -framerate 10 -i pipe
 Check packet PTS and durations with `ffprobe -select_streams v -show_packets
 edit-vfr.mp4`. The edited test joins a still-red span with a doubled-speed
 green/blue span and checks the short blue frame immediately before the cut.
+
+## Windows HEVC capability fixture
+
+`hevc-main.mp4` contains two synthetic green 64 × 64 frames at 5 fps, with no
+audio or captured user content. It is an 8-bit HEVC Main stream tagged `hvc1`.
+The Windows capability test checks native playback independently of the
+installed encoder: a GPU encoder alone must not enable HEVC export when the
+Windows HEVC decoder is missing.
+
+Generated with FFmpeg 9.0.2/libx265:
+
+```bash
+ffmpeg -f lavfi -i 'color=c=green:s=64x64:r=5' -frames:v 2 -an \
+  -c:v libx265 -preset ultrafast \
+  -x265-params 'log-level=error:pools=1:frame-threads=1' \
+  -pix_fmt yuv420p -tag:v hvc1 -map_metadata -1 hevc-main.mp4
+```

@@ -53,16 +53,17 @@ void QmlRecordingAreaSelector::start(QScreen* screen)
     });
     m_view->setScreen(screen);
     m_view->setGeometry(screen->geometry());
-#ifdef Q_OS_MACOS
-    // Not showFullScreen(): macOS moves a full screen window to a Space of its
-    // own, where the desktop to choose from is black. Like RegionSelector, cover
-    // the screen above the menu bar instead.
+#ifdef Q_OS_LINUX
+    // Full screen, so a window manager does not keep it clear of its panels.
+    m_view->showFullScreen();
+#else
+    // Not showFullScreen(), like RegionSelector. macOS moves a full screen
+    // window to a Space of its own, where the desktop to choose from is black.
+    // On Windows the full-screen state change plus the overlay policy's frame
+    // update expose the Qt Quick window before it can render, which crashes.
     m_view->show();
     raiseWindowAboveMenuBar(m_view);
     QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
-#else
-    // Full screen, so a window manager does not keep it clear of its panels.
-    m_view->showFullScreen();
 #endif
     m_view->raise();
     m_view->requestActivate();

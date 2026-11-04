@@ -1,9 +1,12 @@
 #include <QtTest/QtTest>
 #include <QPainter>
+#include <QQuickItem>
+#include <QQuickView>
 #include <QWidget>
 
 #include "platform/WindowLevel.h"
 #include "platform/CaptureExclusionPolicy.h"
+#include "platform/QtQuickBackendPolicy.h"
 #include <Windows.h>
 
 namespace {
@@ -37,6 +40,13 @@ class tst_WindowCaptureAffinity : public QObject
 {
     Q_OBJECT
 private slots:
+    void initTestCase()
+    {
+        // Same scene graph as the app: software on Windows 10, where a
+        // transparent Qt Quick window is then a layered window.
+        SnapTray::applyQtQuickGraphicsBackendPolicy(SnapTray::currentQtQuickGraphicsBackendPolicy());
+    }
+
     void translucentOverlay_data()
     {
         QTest::addColumn<bool>("alreadyPainted");
@@ -87,6 +97,55 @@ private slots:
         QVERIFY(GetWindowDisplayAffinity(hwnd, &affinity));
         QCOMPARE(affinity, DWORD(WDA_NONE));
         QCOMPARE(GetWindowLongPtrW(hwnd, GWL_EXSTYLE), styleBeforeReset);
+    }
+
+    // Recording overlays (control bar, area boundary) are transparent Qt Quick
+    // windows. Windows 10 rejects their layered surface with error 8 too.
+    void translucentQuickOverlay_data()
+    {
+        QTest::addColumn<bool>("transparentForInput");
+        QTest::newRow("interactive") << false;
+        QTest::newRow("click-through") << true;
+    }
+
+    void translucentQuickOverlay()
+    {
+        if (!SnapTray::windowsCaptureAffinity(true, QOperatingSystemVersion::current())) {
+            QSKIP("Capture exclusion requires Windows 10 version 2004 or later");
+        }
+        QFETCH(bool, transparentForInput);
+        QQuickView view;
+        view.setFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+        view.setFlag(Qt::WindowTransparentForInput, transparentForInput);
+        view.setColor(Qt::transparent);
+        view.setResizeMode(QQuickView::SizeRootObjectToView);
+        view.loadFromModule("QtQuick", "Rectangle");
+        QVERIFY(view.rootObject());
+        view.rootObject()->setProperty("color", QColor(100, 150, 200, 100));
+        view.resize(200, 120);
+        view.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&view));
+        const HWND hwnd = reinterpret_cast<HWND>(view.winId());
+        const LONG_PTR originalStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+
+        setWindowExcludedFromCapture(&view, true);
+        DWORD affinity = 0;
+        QVERIFY(GetWindowDisplayAffinity(hwnd, &affinity));
+        QCOMPARE(affinity, DWORD(WDA_EXCLUDEFROMCAPTURE));
+        QCOMPARE(GetWindowLongPtrW(hwnd, GWL_EXSTYLE), originalStyle);
+
+        // The window keeps rendering and stays excluded.
+        QSignalSpy swapped(&view, &QQuickWindow::frameSwapped);
+        view.update();
+        QTRY_VERIFY(swapped.count() > 0);
+        QVERIFY(IsWindowVisible(hwnd));
+        QVERIFY(GetWindowDisplayAffinity(hwnd, &affinity));
+        QCOMPARE(affinity, DWORD(WDA_EXCLUDEFROMCAPTURE));
+
+        setWindowExcludedFromCapture(&view, false);
+        QVERIFY(GetWindowDisplayAffinity(hwnd, &affinity));
+        QCOMPARE(affinity, DWORD(WDA_NONE));
+        QCOMPARE(GetWindowLongPtrW(hwnd, GWL_EXSTYLE), originalStyle);
     }
 };
 
