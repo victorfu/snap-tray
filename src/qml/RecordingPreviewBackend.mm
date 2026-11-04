@@ -1171,7 +1171,8 @@ bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
     }
     // The title-bar close button must not delete an unsaved recording silently.
     if (watched == m_view && event && event->type() == QEvent::Close
-        && !m_closeApproved && !m_applicationQuitting && !m_saved && !m_closeHandled) {
+        && !m_closeApproved && !m_applicationQuitting && !m_saved && !m_closeHandled
+        && !(isProject() && !hasUnsavedProjectChanges())) {
         static_cast<QCloseEvent*>(event)->ignore();
         requestDiscard();
         return true;
@@ -1374,8 +1375,16 @@ void RecordingPreviewBackend::applyPendingProjectRecipe()
     }
     // Undo starts from the project as it was saved.
     m_editHistory.reset(currentEditState());
+    m_projectOpenedRecipe = currentRecipe();
     emit editHistoryChanged();
     emit projectChanged(); // Save is possible now
+}
+
+bool RecordingPreviewBackend::hasUnsavedProjectChanges() const
+{
+    // Nothing can be edited before the saved edits are applied.
+    if (!m_project || projectLoading()) return false;
+    return currentRecipe() != m_projectOpenedRecipe;
 }
 
 void RecordingPreviewBackend::setInitialCrop(const QRect& videoRect)
@@ -2229,6 +2238,12 @@ void RecordingPreviewBackend::discard()
 void RecordingPreviewBackend::requestDiscard()
 {
     if (isProcessing() || m_closeHandled || m_discardConfirmationPending) {
+        return;
+    }
+    // A reopened project closed as it was opened loses nothing: the library
+    // keeps it, so there is no "Close without saving your changes?" to ask.
+    if (isProject() && !hasUnsavedProjectChanges()) {
+        discard();
         return;
     }
     m_discardConfirmationPending = true;

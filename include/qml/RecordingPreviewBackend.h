@@ -422,6 +422,8 @@ public:
     // Edits waiting for the player's size (a project's recipe, an area chosen
     // before recording): no Save until they are applied.
     bool projectLoading() const { return m_projectRecipePending || !m_pendingInitialCrop.isEmpty(); }
+    // A reopened project whose edits differ from the ones it was opened with.
+    bool hasUnsavedProjectChanges() const;
     QString projectDir() const { return m_project ? m_project->dir : QString(); }
     // Saving keeps (or updates) a project.
     bool keepsProject() const;
@@ -731,6 +733,7 @@ private:
     static void removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe);
     // A project's edits wait for the player's size and length (PR #203 review).
     bool m_projectRecipePending = false;
+    QJsonObject m_projectOpenedRecipe; // the reopened project's recipe, as applied
     // Applying a project's recipe: its looks are not remembered as defaults.
     bool m_restoringProject = false;
     // Remembers the frame for the next recording, never a project-owned image.
