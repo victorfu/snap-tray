@@ -28,6 +28,21 @@ QPoint QmlDialog::centeredTopLeftForBounds(const QRect& bounds, const QSize& vie
     };
 }
 
+QPoint QmlDialog::keptInsideBounds(const QPoint& topLeft, const QSize& viewSize, const QRect& bounds)
+{
+    if (!bounds.isValid() || viewSize.isEmpty()) {
+        return topLeft;
+    }
+
+    const auto fit = [](int start, int length, int boundsStart, int boundsLength) {
+        return qMax(boundsStart, qMin(start, boundsStart + boundsLength - length));
+    };
+    return {
+        fit(topLeft.x(), viewSize.width(), bounds.x(), bounds.width()),
+        fit(topLeft.y(), viewSize.height(), bounds.y(), bounds.height())
+    };
+}
+
 QmlDialog::QmlDialog(const QUrl& qmlSource, QObject* viewModel,
                      const QString& contextPropertyName, QObject* parent, ViewModelOwnership ownership)
     : QObject(parent)
@@ -82,6 +97,11 @@ void QmlDialog::ensureView()
     connect(m_view, &QQuickView::closing, this, [this]() {
         emit closed();
     });
+    // The view follows its content's size, which can grow after it is shown
+    // (the recording setup lays out and loads devices late). Keep it on the
+    // screen instead of letting it grow past the bottom edge.
+    connect(m_view, &QWindow::widthChanged, this, &QmlDialog::keepViewOnScreen);
+    connect(m_view, &QWindow::heightChanged, this, &QmlDialog::keepViewOnScreen);
 
     syncTransientParent();
 }
@@ -146,12 +166,13 @@ void QmlDialog::showAt(const QPoint& pos)
 
     if (pos.isNull()) {
         // Center on primary screen
-        QScreen* screen = QGuiApplication::primaryScreen();
-        if (screen) {
-            m_view->setPosition(centeredTopLeftForBounds(screen->geometry(), m_view->size()));
+        m_centeredOn = QGuiApplication::primaryScreen();
+        if (m_centeredOn) {
+            placeView(centeredTopLeftForBounds(m_centeredOn->availableGeometry(), m_view->size()));
         }
     } else {
-        m_view->setPosition(pos);
+        m_centeredOn = nullptr;
+        placeView(pos);
     }
 
     showPreparedView();
@@ -165,9 +186,9 @@ void QmlDialog::showCenteredOnScreen(QScreen* screen)
         return;
     }
 
-    QScreen* targetScreen = screen ? screen : QGuiApplication::primaryScreen();
-    if (targetScreen) {
-        m_view->setPosition(centeredTopLeftForBounds(targetScreen->geometry(), m_view->size()));
+    m_centeredOn = screen ? screen : QGuiApplication::primaryScreen();
+    if (m_centeredOn) {
+        placeView(centeredTopLeftForBounds(m_centeredOn->availableGeometry(), m_view->size()));
     }
 
     showPreparedView();
@@ -216,6 +237,35 @@ void QmlDialog::setModal(bool modal)
         m_view->setGeometry(geometry);
         showPreparedView();
     }
+}
+
+void QmlDialog::placeView(const QPoint& topLeft)
+{
+    if (!m_view) {
+        return;
+    }
+
+    QScreen* screen = m_centeredOn ? m_centeredOn.data() : QGuiApplication::screenAt(topLeft);
+    if (!screen) {
+        screen = m_view->screen() ? m_view->screen() : QGuiApplication::primaryScreen();
+    }
+    m_placedAt = screen ? keptInsideBounds(topLeft, m_view->size(), screen->availableGeometry()) : topLeft;
+    m_view->setPosition(m_placedAt);
+}
+
+void QmlDialog::keepViewOnScreen()
+{
+    if (!m_view || !m_view->isVisible()) {
+        return;
+    }
+
+    // Moved since it was placed: the user's place is kept, only on screen.
+    if (m_view->position() != m_placedAt) {
+        m_centeredOn = nullptr;
+    }
+    placeView(m_centeredOn
+        ? centeredTopLeftForBounds(m_centeredOn->availableGeometry(), m_view->size())
+        : m_view->position());
 }
 
 void QmlDialog::syncCursorSurface()

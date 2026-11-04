@@ -5,6 +5,8 @@
 #include <QWidget>
 #include <QTemporaryDir>
 #include <QFile>
+#include <QScreen>
+#include <QScopeGuard>
 #include <QtQml/qqmlextensionplugin.h>
 #include "qml/QmlDialog.h"
 #include "qml/ScreenPickerViewModel.h"
@@ -29,6 +31,7 @@ private slots:
     void initTestCase();
     void modalityBlocksAndRestoresInput();
     void screenPickerPreservesParentAndContent();
+    void growingDialogStaysOnScreen();
 };
 
 void TestQmlDialogModality::initTestCase()
@@ -116,6 +119,54 @@ void TestQmlDialogModality::screenPickerPreservesParentAndContent()
     dialog->close();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QVERIFY(dialog.isNull());
+}
+
+// Content that grows after the dialog is shown (the recording setup lays out
+// and loads its devices late) must not push the bottom, with Start, off the
+// screen.
+void TestQmlDialogModality::growingDialogStaysOnScreen()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    const QRect available = screen->availableGeometry();
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QFile qml(dir.filePath("Dialog.qml"));
+    QVERIFY(qml.open(QIODevice::WriteOnly));
+    qml.write("import QtQuick\nRectangle { property var viewModel; width: 200; height: 100; color: 'white' }");
+    qml.close();
+    QPointer<QmlDialog> dialog = new QmlDialog(QUrl::fromLocalFile(qml.fileName()), new QObject, "viewModel");
+    auto cleanup = qScopeGuard([&dialog] {
+        if (dialog) dialog->close();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    });
+    const auto describe = [&dialog] {
+        const QRect g = dialog->m_view->geometry();
+        return QStringLiteral("%1,%2 %3x%4").arg(g.x()).arg(g.y()).arg(g.width()).arg(g.height());
+    };
+    dialog->showCenteredOnScreen(screen);
+    QVERIFY(QTest::qWaitForWindowExposed(dialog->m_view));
+    QQuickItem* root = dialog->m_view->rootObject();
+    QVERIFY(root);
+
+    // A centered dialog stays centered, on the screen, as it grows.
+    const int tall = available.height() - 40;
+    root->setHeight(tall);
+    QTRY_COMPARE(dialog->m_view->height(), tall);
+    QTRY_VERIFY2(available.contains(dialog->m_view->geometry()), qPrintable(describe()));
+    QTRY_VERIFY2(qAbs(dialog->m_view->geometry().center().y() - available.center().y()) <= 1,
+                 qPrintable(describe()));
+
+    // A dialog placed at a point keeps its place, but is kept on the screen.
+    root->setHeight(100);
+    QTRY_COMPARE(dialog->m_view->height(), 100);
+    const QPoint placed(available.left() + 20, available.bottom() - 150);
+    dialog->showAt(placed);
+    QTRY_COMPARE(dialog->m_view->position(), placed);
+    root->setHeight(400);
+    QTRY_COMPARE(dialog->m_view->height(), 400);
+    QTRY_VERIFY2(available.contains(dialog->m_view->geometry()), qPrintable(describe()));
+    QCOMPARE(dialog->m_view->x(), placed.x());
 }
 }
 

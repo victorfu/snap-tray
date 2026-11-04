@@ -2821,6 +2821,30 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
     QVERIFY(QFileInfo::exists(ownedBackground));
     QVERIFY(QFile::remove(backgroundPath));
 
+    // Reopened and closed as it was saved: there is nothing to lose, so
+    // closing does not ask "Close without saving your changes?". A change
+    // still asks, and undoing it back to the saved edits does not.
+    {
+        RecordingPreviewBackend backend(project.videoPath(), true);
+        backend.setProject(project);
+        backend.updateVideoSize(kFrameSize);
+        backend.updateDuration(duration);
+        QVERIFY(!backend.projectLoading());
+        QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
+        backend.setTrimEnd(duration - 2 * kFrameIntervalMs);
+        backend.commitTrimEdit(); // as the timeline does when a drag ends
+        backend.requestDiscard();
+        QVERIFY(backend.discardConfirmationPending());
+        backend.cancelDiscard();
+        backend.undo();
+        QCOMPARE(backend.trimStart(), trimStart);
+        backend.requestDiscard();
+        QVERIFY(!backend.discardConfirmationPending());
+        QCOMPARE(closedSpy.count(), 1);
+        QCOMPARE(closedSpy.first().at(0).toBool(), false);
+        QVERIFY(QFileInfo::exists(project.videoPath()));
+    }
+
     // Reopened: the edits come back once the player has reported the size
     // and length (with their notifications, PR #203 review), undo starts
     // there, and saving updates it.

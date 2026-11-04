@@ -15,6 +15,11 @@ void raiseWindowAboveMenuBar(QWidget* widget)
     Q_UNUSED(widget);
 }
 
+void raiseWindowAboveMenuBar(QWindow* window)
+{
+    Q_UNUSED(window);
+}
+
 void setWindowClickThrough(QWidget* widget, bool enabled)
 {
     Q_UNUSED(widget);

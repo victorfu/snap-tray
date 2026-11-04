@@ -166,6 +166,14 @@ void raiseWindowAboveMenuBar(QWidget *widget)
     }
 }
 
+void raiseWindowAboveMenuBar(QWindow *window)
+{
+    NSView *view = nsViewForWindow(window);
+    if (view) {
+        [[view window] setLevel:kCGScreenSaverWindowLevel]; // level 1000
+    }
+}
+
 void setWindowClickThrough(QWidget *widget, bool enabled)
 {
     NSView *view = nsViewForWidget(widget);

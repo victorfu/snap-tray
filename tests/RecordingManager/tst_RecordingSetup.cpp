@@ -885,6 +885,15 @@ void TestRecordingSetup::areaSelectorChoosesAnAreaOfOneScreen()
     const qreal dpr = screen->devicePixelRatio();
     QCOMPARE(root->property("minSide").toInt(), qCeil(64 / dpr));
     QVERIFY(root->findChild<QQuickItem*>(QStringLiteral("areaToolbar")));
+    // It covers the screen it chooses on.
+    QTRY_COMPARE(root->window()->geometry(), screen->geometry());
+#ifdef Q_OS_MACOS
+    // Not a macOS full screen window: that Space of its own hides the desktop
+    // being chosen from behind a black background.
+    QTest::qWait(500);
+    QVERIFY(!(root->window()->windowStates() & Qt::WindowFullScreen));
+    QCOMPARE(root->window()->geometry(), screen->geometry());
+#endif
 
     // Nothing drawn: Record does nothing.
     QMetaObject::invokeMethod(root, "confirm");
