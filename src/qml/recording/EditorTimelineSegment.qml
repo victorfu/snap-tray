@@ -6,6 +6,9 @@ Rectangle {
     id: root
     property real startMs: 0
     property real endMs: 0
+    // Display an open end at the duration, but preserve its persisted sentinel.
+    property bool openEnded: false
+    readonly property real resizeHandleWidth: Math.min(6, width / 4)
     property real lowerMs: 0
     property real upperMs: 1
     property real minimumDuration: 100
@@ -50,7 +53,8 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: mouseX < 6 || mouseX > width - 6 ? CursorTokens.resizeHorizontal : CursorTokens.moveItem
+        preventStealing: true
+        cursorShape: mouseX < root.resizeHandleWidth || mouseX > width - root.resizeHandleWidth ? CursorTokens.resizeHorizontal : CursorTokens.moveItem
         property real originX: 0
         property real originalStart: 0
         property real originalEnd: 0
@@ -62,7 +66,7 @@ Rectangle {
             originalStart = root.startMs
             originalEnd = root.endMs
             originX = mapToItem(root.parent, mouse.x, mouse.y).x
-            edge = mouse.x < 6 ? -1 : mouse.x > width - 6 ? 1 : 0
+            edge = mouse.x < root.resizeHandleWidth ? -1 : mouse.x > width - root.resizeHandleWidth ? 1 : 0
             moved = false
             root.draftStart = originalStart
             root.draftEnd = originalEnd
@@ -85,9 +89,9 @@ Rectangle {
         onReleased: {
             if (!root.dragging) return
             const start = root.draftStart
-            const end = root.draftEnd
+            const end = root.openEnded && edge !== 1 ? -1 : root.draftEnd
             root.dragging = false
-            if (moved && (start !== originalStart || end !== originalEnd)) root.rangeEdited(start, end)
+            if (moved && (start !== originalStart || root.draftEnd !== originalEnd)) root.rangeEdited(start, end)
             else root.activated()
         }
         onCanceled: root.dragging = false

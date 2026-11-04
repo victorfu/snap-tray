@@ -9,6 +9,9 @@ Column {
     property string tooltipText: ""
     property var choices: []
     property int currentIndex: 0
+    // Imported projects may contain valid values between the presets.
+    property string currentValueText: ""
+    readonly property bool hasCustomValue: currentIndex < 0 && currentValueText.length > 0
     signal activated(int index)
     width: parent ? parent.width : 240
     spacing: 4
@@ -22,12 +25,15 @@ Column {
     }
     ComboBox {
         id: control
+        objectName: "editorChoiceControl"
         width: parent.width
-        model: root.choices
-        currentIndex: root.currentIndex
+        model: root.hasCustomValue ? root.choices.concat([root.currentValueText]) : root.choices
+        currentIndex: root.hasCustomValue ? root.choices.length : root.currentIndex
         Accessible.name: root.label
         Accessible.description: root.tooltipText
-        onActivated: index => root.activated(index)
+        onActivated: function(index) {
+            if (index < root.choices.length) root.activated(index)
+        }
         font.pixelSize: SemanticTokens.fontSizeBody
         palette.text: SemanticTokens.textPrimary
         palette.buttonText: SemanticTokens.textPrimary

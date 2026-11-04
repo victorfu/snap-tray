@@ -76,7 +76,7 @@ Rectangle {
         enabled: root.enabled
         cursorShape: root.enabled ? CursorTokens.clickable : CursorTokens.defaultCursor
         hoverEnabled: true
-        onClicked: { root.forceActiveFocus(); root.clicked() }
+        onClicked: root.clicked()
     }
 
     Timer {

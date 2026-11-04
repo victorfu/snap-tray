@@ -1373,7 +1373,9 @@ void tst_RecordingCropOverlay::previewGeometryChangeKeepsDraft()
 
     // Resizing the window re-fits the video; the draft moves with it and the
     // user keeps editing. Nothing is committed by the resize itself.
-    m_view->resize(kPreviewWidth + 100, kPreviewHeight + 60);
+    // Shrink the actual native window: CI desktops may already clamp the
+    // initial size, so asking for an even larger size would change nothing.
+    m_view->resize(m_view->width() - 100, m_view->height() - 60);
     QTRY_VERIFY(previewContentRect() != oldContent);
     QVERIFY(editing());
     QCOMPARE(m_backend->cropRect(), committed);

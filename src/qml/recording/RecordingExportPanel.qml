@@ -31,6 +31,7 @@ Popup {
         returnFocusItem = null
     }
     contentItem: ColumnLayout {
+        focus: true
         Keys.onEscapePressed: root.returnRequested()
         spacing: 12
         Text { text: qsTr("Export recording"); color: SemanticTokens.textPrimary; font.pixelSize: SemanticTokens.fontSizeH3 }

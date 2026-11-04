@@ -62,9 +62,11 @@ While a recording is in progress, the tray or menu bar icon shows its state with
 
 ## Editing workspace
 
-The top **Export…** button opens the output settings. **Settings** opens the right inspector: **Frame**, **Pointer**, **Audio**, and **Keys** affect the whole recording. Missing metadata or unsupported formats are explained beside unavailable categories. Select an effect on the timeline to edit its own properties; **Project settings** returns to the whole recording. At narrow window widths the inspector overlays the workspace; **Hide** restores the unobstructed preview and timeline.
+The top **Export…** button opens the output settings. **Settings** opens the right inspector: **Frame**, **Pointer**, **Audio**, and **Keys** affect the whole recording. Missing metadata or unsupported formats are explained beside unavailable categories. Select an effect on the timeline to edit its own properties; **Project settings** returns to the whole recording. At narrow window widths the inspector overlays the workspace; **Hide** restores the unobstructed preview and timeline. Escape deselects the current effect and hides the inspector at narrow widths.
 
 **Add effect** groups Auto Zoom, Add Zoom, Add Mask, Add Text, and Add Image beside the timeline. Effects have named lanes, including separate rows for overlapping masks and overlays. Drag a segment to move it or drag an edge to change its range. Changes apply when you release; Escape during a drag cancels it. Start/end fields in the inspector remain available for precise edits and very short segments. Invalid time input must be corrected or cancelled with Escape before selecting another object.
+
+Click or drag the video track to seek without leaving the active effect or crop edit. Double-click a clip to select it in the inspector (or focus it with Tab and press Enter). Only the effect lanes scroll; the video track and time labels stay visible.
 
 The timeline and effect ranges use **source recording time**, including cut parts. Exported duration reflects cuts and speed changes; the player skips cut parts. **Preview speed** changes playback only; **Export clip speed** changes the part at the playhead in the saved file.
 

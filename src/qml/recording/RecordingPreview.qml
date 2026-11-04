@@ -102,14 +102,15 @@ Item {
         else if (kind === "pointer") backend.setPointerHideRange(index, start, end)
     }
     function openSection(section) {
-        if (!commitInspector()) return
-        if (cropOverlay.editing && !applyCropWithPendingInput()) return
+        if (!commitInspector()) return false
+        if (cropOverlay.editing && !applyCropWithPendingInput()) return false
         clearSelection()
         pointerOptionsOpen = section === "pointer"
         appearanceOpen = section === "appearance"
         audioOpen = section === "audio"
         keysOpen = section === "keys"
         inspectorOpen = true
+        return true
     }
     function openExport() {
         if (backend.isProcessing || backend.projectLoading || !commitInspector()) return
@@ -164,7 +165,7 @@ Item {
     property bool audioOpen: false
     readonly property var audioGainChoices: [-12, -6, 0, 6]
     function gainLabel(db) {
-        return (db > 0 ? "+" : "") + Number(db).toLocaleString(Qt.locale(), "f", 0) + " dB"
+        return (db > 0 ? "+" : "") + Number(db).toLocaleString(Qt.locale(), "g", 6) + " dB"
     }
     // Shortcut hints (#187), in KeyOverlaySettings order.
     property bool keysOpen: false
@@ -187,12 +188,13 @@ Item {
     readonly property var mp4ResolutionLabels: [qsTr("Size: Original"), qsTr("Size: 1080p"), qsTr("Size: 720p"),
                                                 qsTr("Size: Custom Width")]
     readonly property var mp4FrameRateChoices: [0, 60, 30, 15]
+    readonly property var availableMp4FrameRates: mp4FrameRateChoices.filter(v => v === 0 || v < backend.mp4SourceFrameRate)
     readonly property var mp4QualityLabels: [qsTr("Quality: Default"), qsTr("Quality: Low"),
                                              qsTr("Quality: Medium"), qsTr("Quality: High")]
     readonly property var selectedPointerHideData: backend.selectedPointerHide >= 0
         ? backend.pointerHiddenRanges[backend.selectedPointerHide] : null
     function secondsLabel(ms) {
-        return Number(ms / 1000).toLocaleString(Qt.locale(), "f", ms % 1000 ? 1 : 0)
+        return Number(ms / 1000).toLocaleString(Qt.locale(), "g", 6)
     }
     // Zoom (#161): what the preview shows, the same viewport the export uses.
     // Identity while editing the crop or comparing with the original.
@@ -256,7 +258,7 @@ Item {
     readonly property var playheadPartData: backend.timelineParts.length > root.playheadPart
         ? backend.timelineParts[root.playheadPart] : null
     function speedLabel(speed) {
-        return Number(speed).toLocaleString(Qt.locale(), "f", speed % 1 ? 1 : 0) + "×"
+        return Number(speed).toLocaleString(Qt.locale(), "g", 6) + "×"
     }
     // The preview plays the edit: the chosen preview speed times the part's.
     // What every platform player can play (IVideoPlayer::setPlaybackRate).
@@ -939,6 +941,7 @@ Item {
                     label: qsTr("Export clip speed")
                     choices: root.partSpeeds.map(v => root.speedLabel(v))
                     currentIndex: root.partSpeeds.indexOf(root.playheadPartData ? root.playheadPartData.speed : 1)
+                    currentValueText: root.speedLabel(root.playheadPartData ? root.playheadPartData.speed : 1)
                     onActivated: function(index) { backend.setPartSpeed(root.playheadPart, root.partSpeeds[index]) }
                 }
             SegmentButton {
@@ -1050,13 +1053,10 @@ Item {
                 }
             }
         }
-        Flickable {
+        Item {
             id: timelineArea
             objectName: "previewTimeline"
             clip: true
-            contentWidth: width
-            contentHeight: 84 + 30 * (1 + backend.masks.length + backend.overlays.length + backend.pointerHiddenRanges.length)
-            boundsBehavior: Flickable.StopAtBounds
             Layout.fillWidth: true
             Layout.preferredHeight: root.height < 600 ? 140 : 190
             Layout.leftMargin: SemanticTokens.spacing16
@@ -1077,11 +1077,23 @@ Item {
                 return Math.round(fraction * dur)
             }
 
-            MouseArea {
+            // Keep the video track, playhead and time labels visible while effects scroll.
+            Flickable {
+                id: effectTracks
+                objectName: "previewEffectTracks"
                 y: 52
                 width: parent.width
-                height: Math.max(0, timelineArea.contentHeight - y)
-                onClicked: root.openSection("")
+                height: Math.max(0, parent.height - y - (backend.hasTrim ? trimFields.height : 0))
+                clip: true
+                contentWidth: width
+                contentHeight: 30 * (1 + backend.masks.length + backend.overlays.length + backend.pointerHiddenRanges.length)
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar { id: effectScrollBar }
+                MouseArea {
+                    width: parent.width
+                    height: effectTracks.contentHeight
+                    onClicked: root.openSection("")
+                }
             }
 
             Text {
@@ -1094,7 +1106,7 @@ Item {
                 id: trackRect
                 x: 76
                 y: timelineArea.trackY
-                width: timelineArea.width - 76 - timelineArea.handleWidth
+                width: timelineArea.width - 76 - Math.max(timelineArea.handleWidth, effectScrollBar.width + 4)
                 height: timelineArea.trackHeight
                 radius: 3
                 color: root.bgPanel
@@ -1190,7 +1202,12 @@ Item {
                         font.pixelSize: SemanticTokens.fontSizeCaption
                         font.weight: SemanticTokens.fontWeightMedium
                     }
-                    Accessible.role: Accessible.StaticText
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.onPressAction: root.selectPart(index)
+                    Keys.onReturnPressed: root.selectPart(index)
+                    Keys.onSpacePressed: root.selectPart(index)
+                    FocusFrame { anchors.fill: parent; showFocus: parent.activeFocus }
                     Accessible.name: modelData.deleted
                         ? qsTr("Cut from %1 to %2").arg(backend.formatPreciseTime(modelData.start))
                                                    .arg(backend.formatPreciseTime(modelData.end))
@@ -1203,10 +1220,11 @@ Item {
             // Text and image overlays (#188), at the bottom of the timeline.
             Repeater {
                 model: backend.overlays
+                parent: effectTracks.contentItem
                 Item {
                     required property int index
                     required property var modelData
-                    y: 84 + 30 * (backend.masks.length + index)
+                    y: 32 + 30 * (backend.masks.length + index)
                     width: timelineArea.width
                     height: 28
                     z: 2
@@ -1220,6 +1238,7 @@ Item {
                     }
                     EditorTimelineSegment {
                         objectName: "previewOverlaySegment" + index
+                        openEnded: modelData.end < 0
                         startMs: modelData.start
                         endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
                         lowerMs: 0
@@ -1288,10 +1307,11 @@ Item {
             // Masks just above the track; click one to edit it.
             Repeater {
                 model: backend.masks
+                parent: effectTracks.contentItem
                 Item {
                     required property int index
                     required property var modelData
-                    y: 84 + 30 * index
+                    y: 32 + 30 * index
                     width: timelineArea.width
                     height: 28
                     z: 2
@@ -1305,6 +1325,7 @@ Item {
                     }
                     EditorTimelineSegment {
                         objectName: "previewMaskSegment" + index
+                        openEnded: modelData.end < 0
                         startMs: modelData.start
                         endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
                         lowerMs: 0
@@ -1329,10 +1350,11 @@ Item {
             // Ranges without a pointer (#186), just below the track.
             Repeater {
                 model: backend.pointerHiddenRanges
+                parent: effectTracks.contentItem
                 Item {
                     required property int index
                     required property var modelData
-                    y: 84 + 30 * (backend.masks.length + backend.overlays.length + index)
+                    y: 32 + 30 * (backend.masks.length + backend.overlays.length + index)
                     width: timelineArea.width
                     height: 28
                     z: 2
@@ -1370,10 +1392,11 @@ Item {
             // Zoom segments above the track; click one to edit it.
             Repeater {
                 model: backend.zoomSegments
+                parent: effectTracks.contentItem
                 Item {
                     required property int index
                     required property var modelData
-                    y: 54
+                    y: 2
                     width: timelineArea.width
                     height: 28
                     z: 2
@@ -1421,9 +1444,16 @@ Item {
             }
 
             MouseArea {
+                objectName: "previewScrubber"
                 width: parent.width
                 height: 52
                 hoverEnabled: true
+                preventStealing: true
+                // Seeking preserves the active edit. Selecting a clip is an explicit gesture.
+                onDoubleClicked: function(mouse) {
+                    if (!draggingTrimStart && !draggingTrimEnd)
+                        root.selectPart(backend.timelinePartAt(timelineArea.xToPos(mouse.x)))
+                }
 
                 property bool draggingTrimStart: false
                 property bool draggingTrimEnd: false
@@ -1443,7 +1473,6 @@ Item {
                 }
 
                 onPressed: function(mouse) {
-                    if (!root.commitInspector()) { mouse.accepted = false; return }
                     var mx = mouse.x
                     wasPlayingBeforeScrub = false
 
@@ -1487,8 +1516,6 @@ Item {
                     resetInteractionState()
                     if (trimmed)
                         backend.commitTrimEdit()
-                    else
-                        root.selectPart(backend.timelinePartAt(videoPlayer.position))
                 }
 
                 onCanceled: {
@@ -1553,11 +1580,12 @@ Item {
 
             // Exact trim entry ("m:ss.mmm") while a trim range exists.
             Row {
+                id: trimFields
                 objectName: "previewTrimFields"
                 visible: backend.hasTrim
                 anchors.right: parent.right
                 anchors.rightMargin: timelineArea.handleWidth
-                y: timelineArea.contentHeight - height
+                y: timelineArea.height - height
                 spacing: SemanticTokens.spacing4
 
                 TimeField {
@@ -1716,6 +1744,7 @@ Item {
                     tooltipText: qsTr("Changes the selected clip in the exported file. Changed-speed clips are silent.")
                     choices: root.partSpeeds.map(v => root.speedLabel(v))
                     currentIndex: root.partSpeeds.indexOf(root.selectedPartData ? root.selectedPartData.speed : 1)
+                    currentValueText: root.speedLabel(root.selectedPartData ? root.selectedPartData.speed : 1)
                     enabled: backend.timelineEditsAvailable && root.selectedPartData !== null && !root.selectedPartData.deleted
                     onActivated: function(index) {
                         const part = root.selectedPart
@@ -1877,6 +1906,7 @@ Item {
                     label: qsTr("Pointer size")
                     choices: root.pointerScales.map(v => root.speedLabel(v))
                     currentIndex: root.pointerScales.indexOf(backend.cursorScale)
+                    currentValueText: root.speedLabel(backend.cursorScale)
                     onActivated: function(index) { backend.cursorScale = root.pointerScales[index] }
                 }
                 EditorChoice {
@@ -1906,8 +1936,9 @@ Item {
                     objectName: "previewPointerIdle"
                     tooltipText: qsTr("Fade the pointer out when it stops moving; it comes back before it moves or clicks")
                     label: qsTr("Hide when idle")
-                    choices: root.pointerIdleChoices.map(v => v === 0 ? qsTr("Off") : root.secondsLabel(v) + qsTr(" s"))
+                    choices: root.pointerIdleChoices.map(v => v === 0 ? qsTr("Off") : qsTr("%1 s").arg(root.secondsLabel(v)))
                     currentIndex: root.pointerIdleChoices.indexOf(backend.cursorIdleHide)
+                    currentValueText: qsTr("%1 s").arg(root.secondsLabel(backend.cursorIdleHide))
                     onActivated: function(index) { backend.cursorIdleHide = root.pointerIdleChoices[index] }
                 }
                 EditorChoice {
@@ -1922,8 +1953,9 @@ Item {
                     objectName: "previewPointerStillEnd"
                     tooltipText: qsTr("Keep the pointer still at the end, so moving to stop the recording is not shown")
                     label: qsTr("Still ending")
-                    choices: root.pointerStillEndChoices.map(v => v === 0 ? qsTr("Off") : root.secondsLabel(v) + qsTr(" s"))
+                    choices: root.pointerStillEndChoices.map(v => v === 0 ? qsTr("Off") : qsTr("%1 s").arg(root.secondsLabel(v)))
                     currentIndex: root.pointerStillEndChoices.indexOf(backend.cursorStillEnd)
+                    currentValueText: qsTr("%1 s").arg(root.secondsLabel(backend.cursorStillEnd))
                     onActivated: function(index) { backend.cursorStillEnd = root.pointerStillEndChoices[index] }
                 }
                 SegmentButton {
@@ -2085,6 +2117,7 @@ Item {
                     label: qsTr("Image opacity")
                     choices: ["100%", "75%", "50%"]
                     currentIndex: [1, 0.75, 0.5].indexOf(root.selectedOverlayData ? root.selectedOverlayData.opacity : 1)
+                    currentValueText: qsTr("%1%").arg(Math.round(100 * (root.selectedOverlayData ? root.selectedOverlayData.opacity : 1)))
                     onActivated: function(index) { backend.setOverlayOpacity(backend.selectedOverlay, [1, 0.75, 0.5][index]) }
                 }
                 SegmentButton {
@@ -2173,6 +2206,7 @@ Item {
                     label: qsTr("Microphone volume")
                     choices: root.audioGainChoices.map(v => root.gainLabel(v))
                     currentIndex: root.audioGainChoices.indexOf(backend.microphoneGainDb)
+                    currentValueText: root.gainLabel(backend.microphoneGainDb)
                     onActivated: function(index) { backend.microphoneGainDb = root.audioGainChoices[index] }
                 }
                 Switch {
@@ -2205,6 +2239,7 @@ Item {
                     label: qsTr("System audio volume")
                     choices: root.audioGainChoices.map(v => root.gainLabel(v))
                     currentIndex: root.audioGainChoices.indexOf(backend.systemAudioGainDb)
+                    currentValueText: root.gainLabel(backend.systemAudioGainDb)
                     onActivated: function(index) { backend.systemAudioGainDb = root.audioGainChoices[index] }
                 }
                 Switch {
@@ -2278,8 +2313,9 @@ Item {
                     objectName: "previewKeysDuration"
                     tooltipText: qsTr("How long a shortcut stays after it was pressed; keys pressed close together show together")
                     label: qsTr("Display duration")
-                    choices: root.keyDisplayChoices.map(v => root.secondsLabel(v) + qsTr(" s"))
+                    choices: root.keyDisplayChoices.map(v => qsTr("%1 s").arg(root.secondsLabel(v)))
                     currentIndex: root.keyDisplayChoices.indexOf(backend.keyOverlayDisplayMs)
+                    currentValueText: qsTr("%1 s").arg(root.secondsLabel(backend.keyOverlayDisplayMs))
                     onActivated: function(index) { backend.keyOverlayDisplayMs = root.keyDisplayChoices[index] }
                 }
                 SegmentButton {
@@ -2492,9 +2528,9 @@ Item {
                         ? qsTr("A lower frame rate makes a smaller file; it is never higher than recorded")
                         : mp4Panel.sizeOrFpsUnavailable
                     label: qsTr("Frame rate")
-                    choices: root.mp4FrameRateChoices.filter(v => v === 0 || v <= backend.mp4SourceFrameRate).map(v => v === 0 ? qsTr("Original") : v + " fps")
-                    currentIndex: Math.max(0, root.mp4FrameRateChoices.filter(v => v === 0 || v <= backend.mp4SourceFrameRate).indexOf(backend.mp4FrameRate))
-                    onActivated: function(index) { backend.mp4FrameRate = root.mp4FrameRateChoices.filter(v => v === 0 || v <= backend.mp4SourceFrameRate)[index] }
+                    choices: root.availableMp4FrameRates.map(v => v === 0 ? qsTr("Original") : v + " fps")
+                    currentIndex: Math.max(0, root.availableMp4FrameRates.indexOf(backend.mp4FrameRate))
+                    onActivated: function(index) { backend.mp4FrameRate = root.availableMp4FrameRates[index] }
                 }
                 EditorChoice {
                     objectName: "previewMp4Quality"
@@ -3548,8 +3584,10 @@ Item {
             break
         case Qt.Key_Escape:
             if (backend.selectedZoom >= 0 || backend.selectedMask >= 0
-                    || backend.selectedOverlay >= 0 || backend.selectedPointerHide >= 0 || root.selectedPart >= 0)
-                root.openSection("")
+                    || backend.selectedOverlay >= 0 || backend.selectedPointerHide >= 0 || root.selectedPart >= 0) {
+                if (root.openSection("") && !root.wideEditor)
+                    root.inspectorOpen = false
+            }
             else if (!root.wideEditor && root.inspectorOpen)
                 root.inspectorOpen = false
             else
@@ -3675,7 +3713,8 @@ Item {
         Keys.onEscapePressed: function(event) {
             edited = false
             text = Qt.binding(function() { return numberField.value })
-            root.forceActiveFocus()
+            if (exportPanel.opened) exportPanel.contentItem.forceActiveFocus()
+            else root.forceActiveFocus()
             event.accepted = true
         }
     }
