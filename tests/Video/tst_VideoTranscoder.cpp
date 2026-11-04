@@ -2,6 +2,7 @@
 
 #include "IVideoEncoder.h"
 #include "VideoTranscoderTestAudio.h"
+#include "video/Mp4VideoSamples.h"
 #include "video/IVideoFrameReader.h"
 #include "video/IVideoTranscoder.h"
 #include "video/VideoTranscoderFaultInjection.h"
@@ -1181,64 +1182,126 @@ void tst_VideoTranscoder::hevcOutput()
 }
 
 // The MP4 size estimate (#190) next to what the encoder really writes, for
-// screen-like content: text blocks that scroll, at the export bitrate.
+// screen-like content: text blocks that scroll, a still screen (which the
+// target-only estimate put about 10x too high), and a still screen that turns
+// busy at the end, kept in parts (PR #213 review: an average over the whole
+// recording put the busy part far too low). The sizes come from the recording
+// as the platform's encoder wrote it, fragmented when it can (as recordings are).
 void tst_VideoTranscoder::sizeEstimateAgainstActual()
 {
     const QSize size(640, 360);
     constexpr int kFps = 30;
-    constexpr int kSeconds = 4;
-    const QString input = m_dir.filePath(QStringLiteral("screen.mp4"));
-    {
-        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
-        QVERIFY(encoder);
-        encoder->setQuality(100);
-        QVERIFY2(encoder->start(input, size, kFps), qPrintable(encoder->lastError()));
-        for (int i = 0; i < kFps * kSeconds; ++i) {
-            QImage frame(size, QImage::Format_RGB32);
-            frame.fill(Qt::white);
-            QPainter painter(&frame);
-            for (int line = 0; line < 30; ++line) {
-                const int y = (line * 14 + i * 3) % size.height();
-                for (int word = 0; word < 12; ++word) {
-                    const int w = 10 + ((line * 7 + word * 13) % 30);
-                    painter.fillRect(QRect(8 + word * 52, y, w, 8), QColor((line * 37) % 200, (word * 53) % 200, 90));
-                }
+    constexpr int kSeconds = 6;
+    constexpr int kBusyFromMs = 4000;
+    const auto paintText = [](QImage& frame, int scroll) {
+        QPainter painter(&frame);
+        for (int line = 0; line < 30; ++line) {
+            const int y = (line * 14 + scroll) % frame.height();
+            for (int word = 0; word < 12; ++word) {
+                const int w = 10 + ((line * 7 + word * 13) % 30);
+                painter.fillRect(QRect(8 + word * 52, y, w, 8), QColor((line * 37) % 200, (word * 53) % 200, 90));
             }
-            painter.end();
-            // Native encoders apply backpressure: retry until the frame lands.
-            const qint64 before = encoder->framesWritten();
-            QElapsedTimer wait;
-            wait.start();
-            do {
-                encoder->writeFrame(frame, i * 1000 / kFps);
-                if (encoder->framesWritten() != before) break;
-                QTest::qWait(5);
-            } while (wait.elapsed() < 2000);
-            QCOMPARE(encoder->framesWritten(), before + 1);
         }
-        // macOS and Windows finish asynchronously.
-        QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
-        encoder->finish();
-        QVERIFY(!finishedSpy.isEmpty() || finishedSpy.wait(10000));
-        QVERIFY2(finishedSpy.first().at(0).toBool(), qPrintable(encoder->lastError()));
-    }
-    for (const auto quality : {SnapTray::Mp4ExportOptions::Quality::Low, SnapTray::Mp4ExportOptions::Quality::High}) {
-        SnapTray::Mp4ExportOptions options;
-        options.quality = quality;
-        VideoTranscodeRequest request;
-        request.inputPath = input;
-        request.outputPath = m_dir.filePath(QStringLiteral("estimate-%1.mp4").arg(int(quality)));
-        request.videoBitrate = options.videoBitrate(size, kFps, 0);
-        const VideoTranscodeResult result = m_transcoder->transcode(request, {});
-        QVERIFY2(result.success, qPrintable(result.errorMessage));
-        const qint64 actual = QFileInfo(request.outputPath).size();
-        const qint64 estimate = SnapTray::Mp4SizeEstimate::bytes(request.videoBitrate, false, kSeconds * 1000);
-        qInfo("MP4 estimate, quality %d: %lld bytes estimated, %lld written (%.2fx)", int(quality),
-              estimate, actual, double(actual) / double(estimate));
-        // Encoders aim at the bitrate but simple content can stay well below it:
-        // the estimate is an upper guide, never wildly under.
-        QVERIFY(actual > 0);
-        QVERIFY2(actual <= estimate * 2, "far above the estimate");
+    };
+    enum class Content { Scrolling, Still, StillThenBusy };
+    struct Range { qint64 startMs; qint64 endMs; const char* name; };
+    const struct {
+        Content content;
+        const char* name;
+        std::vector<Range> ranges;
+    } cases[] = {
+        {Content::Scrolling, "scrolling", {{0, kSeconds * 1000, "all"}}},
+        // PR #213 review: a short part between keyframes still costs a whole
+        // first frame.
+        {Content::Still, "still", {{0, kSeconds * 1000, "all"}, {1500, 1800, "300 ms mid-GOP"}}},
+        {Content::StillThenBusy, "still-then-busy",
+         {{0, kSeconds * 1000, "all"}, {0, kBusyFromMs, "still part"}, {kBusyFromMs, kSeconds * 1000, "busy part"}}},
+    };
+    for (const auto& testCase : cases) {
+        const QString input = m_dir.filePath(QStringLiteral("%1.mp4").arg(QLatin1String(testCase.name)));
+        {
+            std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+            QVERIFY(encoder);
+            encoder->setQuality(100);
+            encoder->setFragmentedOutput(true); // where the platform records this way
+            QVERIFY2(encoder->start(input, size, kFps), qPrintable(encoder->lastError()));
+            for (int i = 0; i < kFps * kSeconds; ++i) {
+                const int ms = i * 1000 / kFps;
+                const bool moving = testCase.content == Content::Scrolling
+                                    || (testCase.content == Content::StillThenBusy && ms >= kBusyFromMs);
+                QImage frame(size, QImage::Format_RGB32);
+                frame.fill(Qt::white);
+                paintText(frame, moving ? i * 3 : 0);
+                // Native encoders apply backpressure: retry until the frame lands.
+                const qint64 before = encoder->framesWritten();
+                QElapsedTimer wait;
+                wait.start();
+                do {
+                    encoder->writeFrame(frame, ms);
+                    if (encoder->framesWritten() != before) break;
+                    QTest::qWait(5);
+                } while (wait.elapsed() < 2000);
+                QCOMPARE(encoder->framesWritten(), before + 1);
+            }
+            // macOS and Windows finish asynchronously.
+            QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
+            encoder->finish();
+            QVERIFY(!finishedSpy.isEmpty() || finishedSpy.wait(10000));
+            QVERIFY2(finishedSpy.first().at(0).toBool(), qPrintable(encoder->lastError()));
+        }
+        const VideoFileProbe probe = m_transcoder->probe(input);
+        QVERIFY(probe.valid);
+        // The sample table is read from the file as written: every frame, and
+        // the video is most of a file without audio.
+        const SnapTray::Mp4VideoSamples samples = SnapTray::Mp4VideoSamples::read(input);
+        QCOMPARE(samples.sampleCount(), kFps * kSeconds);
+        const qint64 fileBytes = QFileInfo(input).size();
+        QVERIFY2(samples.totalBytes() <= fileBytes && samples.totalBytes() * 2 >= fileBytes,
+                 qPrintable(QStringLiteral("%1 sample bytes in a %2-byte file").arg(samples.totalBytes()).arg(fileBytes)));
+        QCOMPARE(samples.bytesBetween(0, kSeconds * 1000), samples.totalBytes());
+
+        for (const Range& range : testCase.ranges) {
+            for (const auto quality : {SnapTray::Mp4ExportOptions::Quality::Low, SnapTray::Mp4ExportOptions::Quality::High}) {
+                SnapTray::Mp4ExportOptions options;
+                options.quality = quality;
+                VideoTranscodeRequest request;
+                request.inputPath = input;
+                request.outputPath = m_dir.filePath(QStringLiteral("estimate-%1-%2-%3.mp4")
+                                                        .arg(QLatin1String(testCase.name)).arg(range.startMs)
+                                                        .arg(int(quality)));
+                request.startMs = range.startMs;
+                request.endMs = range.endMs;
+                request.videoBitrate = options.videoBitrate(size, kFps, 0);
+                const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+                QVERIFY2(result.success, qPrintable(result.errorMessage));
+                const qint64 actual = QFileInfo(request.outputPath).size();
+                const qint64 durationMs = range.endMs - range.startMs;
+                SnapTray::Mp4SizeEstimate::Source source;
+                source.keptVideoBytes = samples.bytesToEncode(range.startMs, range.endMs);
+                source.videoSize = probe.videoSize;
+                source.hevc = probe.videoCodec == QLatin1String(kVideoCodecHevc);
+                const qint64 targetOnly = SnapTray::Mp4SizeEstimate::bytes(request.videoBitrate, false, durationMs);
+                const qint64 estimate = SnapTray::Mp4SizeEstimate::expectedBytes(
+                    request.videoBitrate, false, source, size, false, durationMs);
+                qInfo("MP4 estimate, %s, %s, quality %d: %lld estimated (target only %lld), %lld written (%.2fx)",
+                      testCase.name, range.name, int(quality), estimate, targetOnly, actual,
+                      double(actual) / double(estimate));
+                // Encoders vary with the content: the estimate is a guide,
+                // never wildly under. When it comes from the recording (below
+                // the target), not wildly over either; at the target, simple
+                // content may still stay well below it, as before.
+                // A part under a second is mostly its first keyframe, and an
+                // export's keyframes run larger than the recording's (about 2x
+                // with VideoToolbox: 30 KB for a 14 KB source keyframe), so it
+                // gets more room. Without that keyframe the 300 ms part was
+                // estimated about 30x under.
+                constexpr qint64 kShortPartMs = 1000;
+                const qint64 headroom = durationMs < kShortPartMs ? 3 : 2;
+                QVERIFY(actual > 0);
+                QVERIFY2(actual <= estimate * headroom, "far above the estimate");
+                if (estimate < targetOnly) QVERIFY2(actual * 4 >= estimate, "far below the estimate");
+            }
+        }
     }
 }
 
