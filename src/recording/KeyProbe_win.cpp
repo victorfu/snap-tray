@@ -111,8 +111,21 @@ public:
         return !focused || passwordWindow(focused) || m_secure.load();
     }
 private:
-    static void CALLBACK focusChanged(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD) {
-        if (activeProbe) { ++activeProbe->m_focusEpoch; activeProbe->m_secure = true; }
+    static void CALLBACK focusChanged(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD eventTime) {
+        if (!activeProbe) return;
+        std::lock_guard<std::mutex> lock(activeProbe->m_mutex);
+        const quint64 epoch = ++activeProbe->m_focusEpoch;
+        activeProbe->m_focusTimes[epoch % activeProbe->m_focusTimes.size()] = {epoch, eventTime};
+        activeProbe->m_secure = true;
+    }
+    // Whether the first focus change after `epoch` happened after `pressTime`,
+    // i.e. the press itself moved the focus (Alt+Tab). Focus events arrive
+    // late: one that happened before the press (into a password field) but
+    // was delivered after it must not count (PR #234 review). Unknown: no.
+    bool focusMovedAfter(quint64 epoch, DWORD pressTime) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        const auto& next = m_focusTimes[(epoch + 1) % m_focusTimes.size()];
+        return next.first == epoch + 1 && LONG(next.second - pressTime) > 0;
     }
     static LRESULT CALLBACK keyboard(int code, WPARAM message, LPARAM data) {
         auto* self = activeProbe;
@@ -123,7 +136,8 @@ private:
                 Press p;
                 p.code = native.vkCode; p.scan = native.scanCode; p.time = native.time;
                 p.focus = focus; p.focusEpoch = self->m_focusEpoch.load();
-                p.secureWhenPressed = self->m_secure.load();
+                // Not secure only with a check made for this very focus.
+                p.secureWhenPressed = self->m_validated.load() != (p.focusEpoch << 1);
                 p.layout = GetKeyboardLayout(GetWindowThreadProcessId(GetForegroundWindow(), nullptr));
                 // The low-level callback runs before async state is updated
                 // for this key, so apply its down bit explicitly.
@@ -171,8 +185,17 @@ private:
             // focus moved is dropped (#210).
             const bool keepIfMoved = KeyCapturePolicy::keepAfterFocusChange(p.modifiers, p.secureWhenPressed);
             const auto focusMoved = [this, &p] { return p.focusEpoch != m_focusEpoch.load() || p.focus != focusedWindow(); };
+            // For a press whose focus moved: whether it may go on. With the
+            // focus event handled, only if the press moved the focus. With
+            // only the window changed (Alt+F4 closed it) and the event not
+            // handled yet, the GUI thread decides: it handles WinEvents
+            // before the posted result (PR #234 review).
+            const auto mayContinueMoved = [&] {
+                if (!keepIfMoved) return false;
+                return p.focusEpoch == m_focusEpoch.load() || focusMovedAfter(p.focusEpoch, p.time);
+            };
             if (focusMoved()) {
-                if (!keepIfMoved) continue;
+                if (!mayContinueMoved()) continue;
             } else {
                 ComPtr<IUIAutomationElement> focused;
                 BOOL password = TRUE;
@@ -181,8 +204,11 @@ private:
                 const bool secure = !readable || password || passwordWindow(p.focus);
                 // Only for the focus it was read for: a focus event since
                 // then already made it secure until its own check (#210 review).
-                if (p.focusEpoch == m_focusEpoch.load()) m_secure = secure;
-                if (secure || (focusMoved() && !keepIfMoved)) continue;
+                if (p.focusEpoch == m_focusEpoch.load()) {
+                    m_secure = secure;
+                    m_validated = (p.focusEpoch << 1) | (secure ? 1u : 0u);
+                }
+                if (secure || (focusMoved() && !mayContinueMoved())) continue;
             }
             wchar_t chars[16]{};
             // Flag 4 asks ToUnicodeEx not to alter the application's dead-key
@@ -211,7 +237,7 @@ private:
                 // pause/resume boundary (ageMs handles it).
                 const qint64 ageMs = DWORD(GetTickCount() - p.time);
                 if (p.focusEpoch != m_focusEpoch.load() || p.focus != focusedWindow()) {
-                    if (!keepIfMoved) return;
+                    if (!keepIfMoved || !focusMovedAfter(p.focusEpoch, p.time)) return;
                     // The recorder asks secureInputActive() while it handles
                     // this signal: answer for where the shortcut was pressed.
                     m_deliveringMovedShortcut = true;
@@ -230,6 +256,11 @@ private:
     HWINEVENTHOOK m_focusHook = nullptr;
     std::atomic<quint64> m_focusEpoch{0};
     std::atomic<bool> m_secure{true};
+    // The last UI Automation check, for one focus epoch: epoch << 1 | secure.
+    // Starts as "secure" for no epoch, so nothing counts as checked yet.
+    std::atomic<quint64> m_validated{1};
+    // Recent focus changes: epoch and when it happened (GetTickCount ms).
+    std::array<std::pair<quint64, DWORD>, 16> m_focusTimes{};
     bool m_deliveringMovedShortcut = false; // GUI thread only
     std::atomic<bool> m_typedTextWanted{true};
     std::mutex m_mutex;
