@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include <QApplication>
+#include <QCursor>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
@@ -295,10 +296,19 @@ void tst_FullScreenCapture::edit_opensSelectorWithFullScreenPreset()
 
     QScreen* screen = screenNamed(screenName);
     QVERIFY(screen);
+    // RegionSelector follows the cursor across screens on a 50 ms timer.
+    // Keep the pointer on the screen whose preset this test is inspecting.
+    const QPoint previousCursor = QCursor::pos();
+    auto restoreCursor = qScopeGuard([previousCursor] { QCursor::setPos(previousCursor); });
+    QCursor::setPos(screen->geometry().center());
     manager.startFullScreenCaptureOnScreen(screen);
 
     QTRY_VERIFY(manager.m_regionSelector);
     QPointer<RegionSelector> selector = manager.m_regionSelector;
+    auto closeSelector = qScopeGuard([&selector] { if (selector) selector->close(); });
+    // Exercise the screen-switch timer as well as initial preset creation.
+    QTest::qWait(100);
+    QVERIFY(selector);
     QVERIFY(selector->isSelectionComplete());
     QCOMPARE(selector->backgroundPixmap().size(), testScreenFor(screen)->nativeSize);
     QCOMPARE(RegionSelectorTestAccess::selectionRect(*selector),

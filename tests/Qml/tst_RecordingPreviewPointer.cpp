@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include <QGuiApplication>
+#include <QKeySequence>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QTemporaryDir>
@@ -275,7 +276,8 @@ void tst_RecordingPreviewPointer::overlayPanelEditsText()
     QTRY_COMPARE(backend.overlayTrack().segments[0].text, caption);
     QCOMPARE(field->property("text").toString(), caption);
     // Editing keys must not delete the selected overlay or discard the preview.
-    QTest::keyClick(view, Qt::Key_Home, Qt::ControlModifier);
+    QTest::keySequence(view, QKeySequence(QKeySequence::MoveToStartOfDocument));
+    QTRY_COMPARE(field->property("cursorPosition").toInt(), 0);
     QTest::keyClick(view, Qt::Key_Backspace);
     QCOMPARE(backend.selectedOverlay(), 0);
     QCOMPARE(backend.overlayTrack().segments[0].text, caption);
