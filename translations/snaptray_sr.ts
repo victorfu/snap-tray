@@ -5273,6 +5273,11 @@ File size: %3</source>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>За наговештаје пречица у прегледу: тастери са Ctrl, Alt или Win и тастери као Enter или Esc. Чувају се само уз привремени снимак.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Још није доступно на овом систему</translation>
     </message>

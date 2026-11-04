@@ -5265,6 +5265,11 @@ File size: %3</source>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>用於預覽中的快捷鍵提示：與 Ctrl、Alt 或 Win 一起按下的鍵，以及 Enter、Esc 等按鍵。只與暫存錄影一起保存。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>此系統尚未可用</translation>
     </message>

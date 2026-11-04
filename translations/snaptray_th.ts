@@ -5037,6 +5037,11 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>สำหรับแสดงปุ่มลัดในตัวอย่าง: ปุ่มที่กดร่วมกับ Ctrl, Alt หรือ Win และปุ่มอย่าง Enter หรือ Esc เก็บไว้กับการบันทึกชั่วคราวเท่านั้น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>ยังไม่พร้อมใช้งานบนระบบนี้</translation>
     </message>

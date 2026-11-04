@@ -5266,6 +5266,11 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Esikatselun pikanäppäinvihjeitä varten: Ctrl-, Alt- tai Win-näppäimen kanssa painetut sekä Enterin tai Escin kaltaiset näppäimet. Säilytetään vain väliaikaisen tallenteen kanssa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Ei vielä käytettävissä tässä järjestelmässä</translation>
     </message>

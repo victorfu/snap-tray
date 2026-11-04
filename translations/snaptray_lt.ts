@@ -5267,6 +5267,11 @@ Failo dydis: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Sparčiųjų klavišų užuominoms peržiūroje: klavišai su Ctrl, Alt ar Win ir tokie kaip Enter ar Esc. Laikomi tik su laikinu įrašu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Šioje sistemoje dar negalima</translation>
     </message>

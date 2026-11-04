@@ -736,6 +736,7 @@ elseif(WIN32)
             d3d11
             dxgi
             uiautomationcore
+            imm32
             winmm
             mfreadwrite
             mfplat
