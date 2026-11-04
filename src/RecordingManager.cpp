@@ -422,12 +422,10 @@ QString RecordingManager::activeScreenSummary() const
     const int index = screens.indexOf(screen);
     return QStringLiteral("%1 (%2)")
         .arg(SnapTray::ScreenSourceService::displayName(screen, qMax(index, 0)))
-        .arg(SnapTray::ScreenSourceService::resolutionText(
-            screen->geometry(),
-            screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0));
+        .arg(SnapTray::ScreenSourceService::resolutionText(screen));
 }
 
-void RecordingManager::startScreenRecording(QScreen* screen, const QRect& area)
+void RecordingManager::startScreenRecording(QScreen* screen, const QRectF& area)
 {
     if (m_state == State::Recording || m_state == State::Paused ||
         m_state == State::Encoding || m_state == State::Preparing ||
@@ -450,11 +448,15 @@ void RecordingManager::startScreenRecording(QScreen* screen, const QRect& area)
     }
     m_targetScreen = targetScreen;
     // An area chosen before recording (#194), kept on this screen.
+    const QRect roundedArea(qRound(area.x()), qRound(area.y()), qRound(area.width()), qRound(area.height()));
     m_preselectedArea = area.isEmpty()
         ? QRect()
-        : SnapTray::RecordingArea::clampToScreen(area, targetScreen->geometry(), targetScreen->devicePixelRatio());
+        : SnapTray::RecordingArea::clampToScreen(roundedArea, targetScreen->geometry(),
+                                                 targetScreen->devicePixelRatio());
     // The whole screen chosen ("Full Screen") is no area at all.
     if (m_preselectedArea == targetScreen->geometry()) m_preselectedArea = {};
+    // Kept unrounded unless clamping changed it (#210).
+    m_preselectedAreaExact = m_preselectedArea == roundedArea ? area.normalized() : QRectF(m_preselectedArea);
     m_pendingInitialCrop = {};
 
     loadAndValidateFrameRate();
@@ -886,7 +888,8 @@ void RecordingManager::beginAsyncInitialization()
     // Edit mode: the chosen area becomes the preview's initial crop, kept in
     // the manifest so a recovered recording opens with it too.
     m_pendingInitialCrop = showPreview && !m_preselectedArea.isEmpty()
-        ? SnapTray::RecordingArea::videoCrop(m_preselectedArea, m_recordingRegion, physicalSize)
+        ? SnapTray::RecordingArea::videoCrop(m_preselectedAreaExact, m_recordingRegion, physicalSize,
+                                             screenInfo.devicePixelRatio)
         : QRect();
     beginSession(config.outputPath, physicalSize, shouldConfigureAudio);
 

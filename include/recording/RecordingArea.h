@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QRect>
+#include <QRectF>
 #include <QSize>
 
 // An area chosen before recording (#194). The capture stays full screen in
@@ -16,7 +17,11 @@ QRect clampToScreen(const QRect& area, const QRect& screenGeometry, qreal device
 // The video-pixel crop for `area` in a recording of `recordedRegion` (both
 // logical, global) encoded at `frameSize`: scaled, even-aligned and at least
 // 64 pixels like any crop. Empty when it misses the recording or covers all
-// of it (no crop).
-QRect videoCrop(const QRect& area, const QRect& recordedRegion, const QSize& frameSize);
+// of it (no crop). `area` keeps fractional logical pixels: at 150% pixel 350
+// is 233.33. With the screen's `devicePixelRatio`, a frame of the region's
+// size at that ratio is scaled by it, not by the frame-to-region ratio, which
+// Qt's rounded logical size skews (1707 for 2560 pixels at 150%, #210).
+QRect videoCrop(const QRectF& area, const QRect& recordedRegion, const QSize& frameSize,
+                qreal devicePixelRatio = 0.0);
 
 } // namespace SnapTray::RecordingArea
