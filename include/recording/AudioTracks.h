@@ -61,7 +61,8 @@ private:
     int m_chunksSinceFlush = 0;
 };
 
-// Reads a track at any frame; past its end is silence.
+// Reads a track at any frame; past its end is silence. The track can be
+// moved or removed while it is open (a save while the preview plays it).
 class AudioTrackReader {
 public:
     bool open(const QString& path);

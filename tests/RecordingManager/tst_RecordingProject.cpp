@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QTemporaryDir>
+#include <QtEndian>
 
 #include "recording/AudioTracks.h"
 #include "recording/CursorTimeline.h"
@@ -25,6 +26,7 @@ private slots:
     void recipeRejectsWhatIsNotARecipe();
     void recipeToleratesUnknownKeys();
     void createMovesTheRecordingAndSidecars();
+    void createMovesTracksThePreviewIsPlaying();
     void createCanCopy();
     void createFailsCleanly();
     void failedCreateNeverLosesTheSource();
@@ -183,6 +185,41 @@ void tst_RecordingProject::createMovesTheRecordingAndSidecars()
     QVERIFY(*RecordingRecipe::editState(loaded->recipe) == sampleState());
     QVERIFY(loaded->sizeBytes() >= 1024);
     QCOMPARE(RecordingProjects::totalBytes(), loaded->sizeBytes());
+}
+
+// The preview plays the separate tracks (#189) while the save keeps the
+// project: the tracks still move, and what the preview reads stays readable.
+// On Windows a track open without share-delete could not be moved or
+// removed, so every kept project left a copy of both in %TEMP% (#210).
+void tst_RecordingProject::createMovesTracksThePreviewIsPlaying()
+{
+    const QString source = writeRecording(QStringLiteral("SnapTray_Recording_playing.mp4"), false);
+    QVERIFY(!source.isEmpty());
+    QByteArray pcm(4800 * AudioTracks::kBytesPerFrame, '\0');
+    for (qsizetype i = 0; i < pcm.size(); i += 2) qToLittleEndian<qint16>(qint16(i % 2000), pcm.data() + i);
+    for (const auto track : {AudioTracks::Track::Microphone, AudioTracks::Track::SystemAudio}) {
+        AudioTrackWriter writer(AudioTracks::pathFor(source, track));
+        QVERIFY(writer.open());
+        writer.write(pcm, 0);
+    }
+    AudioTrackMixer playing(source, AudioMixSettings{});
+    QVERIFY(playing.isValid());
+    const QByteArray before = playing.read(100, 960);
+
+    const auto project = RecordingProjects::create(source, false, {}, {}, 100, {});
+    QVERIFY(project.has_value());
+    for (const auto track : {AudioTracks::Track::Microphone, AudioTracks::Track::SystemAudio}) {
+        QVERIFY2(!QFileInfo::exists(AudioTracks::pathFor(source, track)), qPrintable(AudioTracks::pathFor(source, track)));
+        QVERIFY(QFileInfo::exists(AudioTracks::pathFor(project->videoPath(), track)));
+    }
+    QCOMPARE(playing.read(100, 960), before);
+
+    // A plain save (no project) removes the tracks while they still play.
+    AudioTrackMixer stillPlaying(project->videoPath(), AudioMixSettings{});
+    QVERIFY(stillPlaying.isValid());
+    AudioTracks::remove(project->videoPath());
+    QVERIFY(!AudioTracks::exist(project->videoPath()));
+    QVERIFY(!QFileInfo::exists(AudioTracks::pathFor(project->videoPath(), AudioTracks::Track::Microphone)));
 }
 
 void tst_RecordingProject::createCanCopy()
