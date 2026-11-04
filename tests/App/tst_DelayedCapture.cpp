@@ -1,10 +1,14 @@
 #include <QtTest/QtTest>
 
 #include <QApplication>
+#include <QDir>
 #include <QPixmap>
 #include <QPointer>
+#include <QQuickItem>
+#include <QQuickView>
 #include <QScreen>
 #include <QSignalSpy>
+#include <QtMath>
 
 #include "CaptureManager.h"
 #include "RegionSelector.h"
@@ -16,6 +20,7 @@ namespace {
 
 // Countdown ticks are one second in production; tests shorten them.
 constexpr int kTestTickMs = 20;
+constexpr int kIndicatorRenderSettleMs = 100;
 
 QPixmap solidSnapshot(QScreen* screen)
 {
@@ -51,6 +56,8 @@ private slots:
     void secondStart_whilePendingIsIgnored();
     void otherEntryPoints_rejectedWhilePending();
     void invalidDelay_fallsBackToDefault();
+    void indicator_fitsContentAcrossScreens_data();
+    void indicator_fitsContentAcrossScreens();
 
 private:
     void closeSelector(CaptureManager& manager);
@@ -267,6 +274,62 @@ void tst_DelayedCapture::invalidDelay_fallsBackToDefault()
     QCOMPARE(manager.delayedCaptureRemainingSeconds(),
              RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
     manager.cancelDelayedCapture();
+}
+
+void tst_DelayedCapture::indicator_fitsContentAcrossScreens_data()
+{
+    QTest::addColumn<int>("firstScreen");
+    const auto screens = QGuiApplication::screens();
+    for (int index = 0; index < screens.size(); ++index) {
+        const QString name = QStringLiteral("%1-%2").arg(index).arg(screens.at(index)->name());
+        QTest::newRow(qPrintable(name)) << index;
+    }
+}
+
+void tst_DelayedCapture::indicator_fitsContentAcrossScreens()
+{
+    QFETCH(int, firstScreen);
+    SnapTray::QmlDelayedCaptureIndicator indicator;
+    auto screens = QGuiApplication::screens();
+    QVERIFY(!screens.isEmpty());
+    screens.move(firstScreen, 0);
+    // Reuse the same native window in both directions across mixed-DPI screens.
+    screens.append(screens.first());
+    for (QScreen* screen : screens) {
+        indicator.show(screen, 5);
+        auto* view = qobject_cast<QQuickView*>(indicator.window());
+        QVERIFY(view);
+        QVERIFY(QTest::qWaitForWindowExposed(view));
+        QCOMPARE(view->screen(), screen);
+        auto* root = view->rootObject();
+        QVERIFY(root);
+
+        // Single-digit ticks keep the implicit size unchanged: this used to leave
+        // the native window at the previous screen's pixel size. Also cover 10 -> 9.
+        for (int seconds : {5, 4, 10, 9}) {
+            indicator.setRemainingSeconds(seconds);
+            QTest::qWait(kIndicatorRenderSettleMs);
+            const QImage image = view->grabWindow();
+            QVERIFY(!image.isNull());
+            const QString artifactDir = qEnvironmentVariable("SNAPTRAY_TEST_ARTIFACT_DIR");
+            if (!artifactDir.isEmpty()) {
+                QVERIFY(QDir().mkpath(artifactDir));
+                QVERIFY(image.save(QDir(artifactDir).filePath(
+                    QStringLiteral("indicator-%1-%2-%3.png")
+                        .arg(firstScreen).arg(QGuiApplication::screens().indexOf(screen)).arg(seconds))));
+            }
+
+            // A native surface smaller than the QML pill clips its right/bottom edges.
+            QVERIFY(view->width() >= qFloor(root->implicitWidth()));
+            QVERIFY(view->height() >= qFloor(root->implicitHeight()));
+            QVERIFY(view->width() <= qCeil(root->implicitWidth()));
+            QVERIFY(view->height() <= qCeil(root->implicitHeight()));
+            const qreal dpr = view->devicePixelRatio();
+            QVERIFY(image.width() >= qFloor(view->width() * dpr));
+            QVERIFY(image.height() >= qFloor(view->height() * dpr));
+        }
+        indicator.hide();
+    }
 }
 
 QTEST_MAIN(tst_DelayedCapture)
