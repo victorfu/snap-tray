@@ -156,30 +156,36 @@ Mp4ExportOptions Mp4ExportOptions::fromJson(const QJsonObject& json)
 
 namespace Mp4SizeEstimate {
 
+namespace {
+qint64 bytesFor(double videoBits, bool hasAudio, qint64 durationMs)
+{
+    const double audioBits = hasAudio ? double(kAudioBitrate) * (durationMs / kMsPerSecond) : 0.0;
+    return qint64((videoBits + audioBits) / kBitsPerByte * kContainerOverhead);
+}
+} // namespace
+
 qint64 bytes(int videoBitrate, bool hasAudio, qint64 durationMs)
 {
     if (durationMs <= 0) return 0;
-    const double bitsPerSecond = double(videoBitrate) + (hasAudio ? kAudioBitrate : 0);
-    return qint64(bitsPerSecond / kBitsPerByte * (durationMs / kMsPerSecond) * kContainerOverhead);
+    return bytesFor(double(videoBitrate) * (durationMs / kMsPerSecond), hasAudio, durationMs);
 }
 
-int expectedVideoBitrate(int targetBitrate, bool outputHevc, const Source& source, const QSize& outputSize)
+qint64 expectedBytes(int targetBitrate, bool outputHevc, const Source& source, const QSize& outputSize,
+                     bool hasAudio, qint64 outputDurationMs)
 {
-    if (targetBitrate <= 0 || source.fileBytes <= 0 || source.durationMs <= 0
-        || source.videoSize.isEmpty() || outputSize.isEmpty()) {
-        return targetBitrate;
+    if (outputDurationMs <= 0) return 0;
+    double videoBits = double(targetBitrate) * (outputDurationMs / kMsPerSecond);
+    if (source.keptVideoBytes >= 0 && !source.videoSize.isEmpty() && !outputSize.isEmpty()) {
+        const double area = double(outputSize.width()) * outputSize.height()
+                            / (double(source.videoSize.width()) * source.videoSize.height());
+        double codecScale = 1.0;
+        if (source.hevc != outputHevc) {
+            codecScale = outputHevc ? Mp4ExportOptions::kHevcBitrateFactor
+                                    : 1.0 / Mp4ExportOptions::kHevcBitrateFactor;
+        }
+        videoBits = std::min(videoBits, double(source.keptVideoBytes) * kBitsPerByte * area * codecScale);
     }
-    const double total = double(source.fileBytes) * kBitsPerByte * kMsPerSecond / double(source.durationMs)
-                         / kContainerOverhead;
-    const double video = std::max(0.0, total - (source.hasAudio ? kAudioBitrate : 0));
-    const double area = double(outputSize.width()) * outputSize.height()
-                        / (double(source.videoSize.width()) * source.videoSize.height());
-    double codecScale = 1.0;
-    if (source.hevc != outputHevc) {
-        codecScale = outputHevc ? Mp4ExportOptions::kHevcBitrateFactor
-                                : 1.0 / Mp4ExportOptions::kHevcBitrateFactor;
-    }
-    return int(std::min(double(targetBitrate), std::ceil(video * area * codecScale)));
+    return bytesFor(videoBits, hasAudio, outputDurationMs);
 }
 
 } // namespace Mp4SizeEstimate

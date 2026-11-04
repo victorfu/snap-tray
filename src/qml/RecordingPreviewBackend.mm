@@ -493,7 +493,9 @@ qint64 RecordingPreviewBackend::mp4EstimatedBytes() const
     const int settingsQuality = outputQualityOverride() ? outputQualityOverride()()
                                                         : RecordingSettingsManager::instance().quality();
     const SnapTray::Mp4ExportOptions options = effectiveMp4Options();
-    const bool edited = hasTrim() || hasCrop() || effectsActive() || mp4OptionsActive();
+    // The same edits that make save() transcode (PR #213 review).
+    const bool edited = hasTrim() || hasCrop() || effectsActive() || hasTimelineEdits() || audioMixActive()
+                        || mp4OptionsActive();
     if (!edited) {
         // Saved as recorded when it already meets the target (see performTranscode).
         const qint64 fileBytes = QFileInfo(m_videoPath).size();
@@ -509,16 +511,64 @@ qint64 RecordingPreviewBackend::mp4EstimatedBytes() const
     const QSize outputSize = mp4OutputSize();
     const int target = options.videoBitrate(outputSize, mp4OutputFrameRate(), settingsQuality);
     SnapTray::Mp4SizeEstimate::Source source;
-    source.fileBytes = QFileInfo(m_videoPath).size();
-    source.durationMs = probe.durationMs;
-    source.hasAudio = probe.hasAudio;
-    source.videoSize = probe.videoSize;
-    source.hevc = probe.videoCodec == QLatin1String(kVideoCodecHevc);
-    // Scaled by the output area, which already carries a crop, a frame or a
-    // smaller resolution.
-    const int bitrate = SnapTray::Mp4SizeEstimate::expectedVideoBitrate(
-        target, options.codec == SnapTray::Mp4ExportOptions::Codec::Hevc, source, outputSize);
-    return SnapTray::Mp4SizeEstimate::bytes(bitrate, probe.hasAudio, durationMs);
+    // The recording tells how much this content needs, unless the export asks
+    // for more than it was recorded with or zoom moves the whole picture,
+    // which a recording of a still screen never did (PR #213 review). A
+    // recording that is not an intermediate was made at the user's quality:
+    // a lower export quality is fine (the target caps it), a higher one not.
+    const bool recordedAtLeastAsWell = m_recordedAsIntermediate
+        || options.outputQuality(settingsQuality) <= settingsQuality;
+    const bool zoomMoves = zoomAvailable() && m_zoom.isActive();
+    const auto samples = sourceSamples();
+    if (recordedAtLeastAsWell && !zoomMoves && samples && samples->isValid()) {
+        source.keptVideoBytes = keptSourceVideoBytes();
+        // Scaled only for a smaller resolution: a crop is not counted down,
+        // since the kept area may hold most of the detail (a busy window on a
+        // still screen), and a frame adds little. The estimate stays on the
+        // safe side.
+        source.videoSize = mp4BaseSize();
+        source.hevc = probe.videoCodec == QLatin1String(kVideoCodecHevc);
+    }
+    // durationMs is the kept, sped-up length.
+    return SnapTray::Mp4SizeEstimate::expectedBytes(
+        target, options.codec == SnapTray::Mp4ExportOptions::Codec::Hevc, source, outputSize,
+        probe.hasAudio, durationMs);
+}
+
+qint64 RecordingPreviewBackend::keptSourceVideoBytes() const
+{
+    const auto samples = sourceSamples();
+    if (!samples) return 0;
+    if (m_duration <= 0) return samples->totalBytes(); // not loaded: nothing trimmed yet
+    double bytes = 0;
+    // A part played faster shows fewer of its frames (the output frame rate
+    // is fixed), a slower one repeats them: its share scales with 1/speed.
+    for (const SnapTray::TimelineSegment& segment : timelineMap().segments()) {
+        const double speed = segment.speed > 0.0 ? segment.speed : 1.0;
+        bytes += double(samples->bytesBetween(segment.startMs, segment.endMs)) / speed;
+    }
+    return qint64(std::ceil(bytes));
+}
+
+std::shared_ptr<const SnapTray::Mp4VideoSamples> RecordingPreviewBackend::sourceSamples() const
+{
+    if (m_sourceSamples || m_sourceSamplesPending) return m_sourceSamples;
+    // Read apart from the probe: a long fragmented recording has many
+    // fragments to walk, and the save flow waits on the probe (PR #213 review).
+    m_sourceSamplesPending = true;
+    const QString path = m_videoPath;
+    const QPointer<RecordingPreviewBackend> weakThis(const_cast<RecordingPreviewBackend*>(this));
+    (void)QtConcurrent::run([path, weakThis]() {
+        auto samples = std::make_shared<const SnapTray::Mp4VideoSamples>(SnapTray::Mp4VideoSamples::read(path));
+        if (QCoreApplication* app = QCoreApplication::instance()) {
+            QMetaObject::invokeMethod(app, [weakThis, samples]() {
+                if (!weakThis) return;
+                weakThis->m_sourceSamples = samples;
+                emit weakThis->mp4EstimateChanged();
+            }, Qt::QueuedConnection);
+        }
+    });
+    return nullptr;
 }
 
 QString RecordingPreviewBackend::mp4EstimateText() const

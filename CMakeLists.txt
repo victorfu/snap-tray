@@ -354,6 +354,7 @@ add_library(snaptray_core STATIC
     src/recording/ZoomTrack.cpp
     src/recording/RedactionTrack.cpp
     src/recording/Mp4ExportOptions.cpp
+    src/video/Mp4VideoSamples.cpp
     src/recording/RecordingAppearance.cpp
     src/recording/TimelineEdit.cpp
     src/recording/KeyTimeline.cpp

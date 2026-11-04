@@ -4,6 +4,7 @@
 #include "recording/CursorEffects.h"
 #include "recording/Mp4ExportOptions.h"
 #include "recording/RecordingProject.h"
+#include "video/Mp4VideoSamples.h"
 #include "video/IVideoTranscoder.h"
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
@@ -585,6 +586,8 @@ public:
     QString mp4EstimateText() const;
     // True once the source has been probed (starts the probe if needed).
     bool sourceProbeReady() const;
+    // Video bytes the recording holds in the parts the export keeps.
+    qint64 keptSourceVideoBytes() const;
 
     // Anything drawn into the export: masks, pointer effects or zoom.
     bool effectsActive() const;
@@ -708,6 +711,11 @@ private:
     // empty until it is ready, then mp4EstimateChanged() (PR #197 review).
     mutable std::optional<VideoFileProbe> m_sourceProbe;
     mutable bool m_sourceProbePending = false;
+    // Read with the probe: how many bytes each part of the source holds.
+    mutable std::shared_ptr<const SnapTray::Mp4VideoSamples> m_sourceSamples;
+    mutable bool m_sourceSamplesPending = false;
+    // Read on first use, off the GUI thread; null until then.
+    std::shared_ptr<const SnapTray::Mp4VideoSamples> sourceSamples() const;
     // Save left the room check for MP4 options to the export job.
     bool m_exportSpaceCheckDeferred = false;
     const VideoFileProbe& sourceProbe() const;
