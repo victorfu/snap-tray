@@ -1282,7 +1282,9 @@ Item {
                     if (backend.videoSize.width <= 0)
                         return ""
                     const source = backend.videoSize.width + " × " + backend.videoSize.height
-                    const out = backend.hasCrop ? backend.cropRect.width + " × " + backend.cropRect.height : source
+                    // What is saved: the crop, a frame's padding and the MP4 Size option (#210).
+                    const saved = backend.exportSize
+                    const out = saved.width > 0 ? saved.width + " × " + saved.height : source
                     const parts = [qsTr("Original %1 → Output %2").arg(source).arg(out),
                                    qsTr("%1 kept").arg(backend.formatPreciseTime(backend.trimmedDuration))]
                     if (backend.selectedFormat !== 0)

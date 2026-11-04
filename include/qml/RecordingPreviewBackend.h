@@ -204,6 +204,9 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool mp4HevcAvailable READ mp4HevcAvailable NOTIFY mp4OptionsChanged)
     Q_PROPERTY(bool mp4OptionsActive READ mp4OptionsActive NOTIFY mp4EstimateChanged)
     Q_PROPERTY(QSize mp4OutputSize READ mp4OutputSize NOTIFY mp4EstimateChanged)
+    // The saved picture for the chosen format: crop, frame padding and, for
+    // MP4, its Size option (#210).
+    Q_PROPERTY(QSize exportSize READ exportSize NOTIFY exportSizeChanged)
     Q_PROPERTY(int mp4OutputFrameRate READ mp4OutputFrameRate NOTIFY mp4EstimateChanged)
     Q_PROPERTY(int mp4SourceFrameRate READ mp4SourceFrameRate NOTIFY mp4EstimateChanged)
     Q_PROPERTY(qint64 mp4EstimatedBytes READ mp4EstimatedBytes NOTIFY mp4EstimateChanged)
@@ -580,6 +583,7 @@ public:
     // that is an export, not a move of the unedited recording.
     bool mp4OptionsActive() const;
     QSize mp4OutputSize() const;
+    QSize exportSize() const;
     int mp4OutputFrameRate() const;
     int mp4SourceFrameRate() const;
     qint64 mp4EstimatedBytes() const;
@@ -617,6 +621,7 @@ signals:
     void selectedOverlayChanged();
     void appearancePreviewFrameChanged();
     void mp4EstimateChanged();
+    void exportSizeChanged();
     void zoomChanged();
     void selectedZoomChanged();
     // External interface consumed by MainApplication. `outputSize` is the

@@ -429,6 +429,8 @@ private slots:
     void pointerEffectsOnlyReencodeWhenDrawn();
     void advancedPointerEffectsMatchAcrossPreviewAndOutputs_data();
     void mp4OptionsReachTheOutput();
+    void exportSizeIsTheSavedSize();
+    void projectThumbnailShowsTheMiddle();
     void mp4OptionsMatchingTheSourceKeepTheFastPath();
     void sourceProbeNeverBlocksTheGuiThread();
     void estimateCountsTheKeptParts();
@@ -1898,6 +1900,94 @@ void tst_RecordingPreviewExport::pointerEffectsOnlyReencodeWhenDrawn()
         QVERIFY(savedSpy.first().at(0).toString() != inputPath);
         backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     }
+}
+
+// #210: the preview's "Original -> Output" line showed the crop, not what is
+// saved: an MP4 Size option or a frame's padding changed the file but not
+// the line. exportSize is the saved picture for the chosen format.
+void tst_RecordingPreviewExport::exportSizeIsTheSavedSize()
+{
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    auto& settings = RecordingSettingsManager::instance();
+    const QJsonObject rememberedOptions = settings.mp4ExportOptions();
+    const QJsonObject rememberedAppearance = settings.appearance();
+    auto restore = qScopeGuard([&settings, rememberedOptions, rememberedAppearance]() {
+        settings.setMp4ExportOptions(rememberedOptions);
+        settings.setAppearance(rememberedAppearance);
+    });
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QTRY_VERIFY(backend.sourceProbeReady());
+    backend.setAppearanceEnabled(false);
+    backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::Original));
+    QCOMPARE(backend.exportSize(), sourceSize);
+    QSignalSpy changed(&backend, &RecordingPreviewBackend::exportSizeChanged);
+    if (backend.mp4OutputOptionsAvailable()) {
+        backend.setMp4Resolution(int(SnapTray::Mp4ExportOptions::Resolution::CustomWidth));
+        backend.setMp4CustomWidth(80);
+        QCOMPARE(backend.exportSize(), QSize(80, 60));
+        QVERIFY(changed.count() > 0);
+    }
+    // GIF and WebP are not scaled by the MP4 options.
+    changed.clear();
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QCOMPARE(backend.exportSize(), sourceSize);
+    QVERIFY(changed.count() > 0);
+    // A frame adds its padding around the picture.
+    backend.setAppearanceEnabled(true);
+    if (backend.appearanceEnabled() && backend.appearancePadding() > 0) {
+        QVERIFY(backend.exportSize().width() > sourceSize.width());
+        QVERIFY(backend.exportSize().height() > sourceSize.height());
+    }
+}
+
+// #210: the library's thumbnail was the first kept frame, usually the
+// desktop before the recording got going. It is now the middle of what is
+// kept: the fixture is red, then green, then blue.
+void tst_RecordingPreviewExport::projectThumbnailShowsTheMiddle()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    SnapTray::RecordingProjects::setRootForTests(directory.filePath(QStringLiteral("projects")));
+    auto& settings = RecordingSettingsManager::instance();
+    const bool keptBefore = settings.keepProjects();
+    auto restore = qScopeGuard([&settings, keptBefore]() {
+        settings.setKeepProjects(keptBefore);
+        SnapTray::RecordingProjects::setRootForTests(QString());
+        RecordingPreviewBackend::outputQualityOverride() = {};
+    });
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+    settings.setKeepProjects(true);
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    {
+        RecordingPreviewBackend backend(inputPath);
+        backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+        backend.updateVideoSize(kFrameSize);
+        backend.updateDuration(kFrameCount * kFrameIntervalMs);
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+        const QString saved = directory.filePath(QStringLiteral("saved.mp4"));
+        QVERIFY(QFile::rename(savedSpy.first().at(0).toString(), saved));
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, saved);
+    }
+    const QList<SnapTray::RecordingProject> projects = SnapTray::RecordingProjects::list();
+    QCOMPARE(projects.size(), 1);
+    const QImage thumbnail(projects.first().thumbnailPath());
+    QVERIFY(!thumbnail.isNull());
+    const QColor centre = thumbnail.pixelColor(thumbnail.width() / 2, thumbnail.height() / 2);
+    QVERIFY2(centre.green() > 128 && centre.red() < 100 && centre.blue() < 100,
+             qPrintable(centre.name()));
 }
 
 // #190: a smaller size, a lower frame rate and HEVC reach the MP4, with the

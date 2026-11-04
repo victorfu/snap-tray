@@ -131,6 +131,9 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
                               &RecordingPreviewBackend::overlaysChanged}) {
         connect(this, signal, this, &RecordingPreviewBackend::mp4EstimateChanged);
     }
+    // The saved size follows the same inputs, and the format.
+    connect(this, &RecordingPreviewBackend::mp4EstimateChanged, this, &RecordingPreviewBackend::exportSizeChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::exportSizeChanged);
 }
 
 std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
@@ -477,6 +480,12 @@ bool RecordingPreviewBackend::mp4OptionsActive() const
 QSize RecordingPreviewBackend::mp4OutputSize() const
 {
     return effectiveMp4Options().outputSize(mp4BaseSize());
+}
+
+QSize RecordingPreviewBackend::exportSize() const
+{
+    // GIF and WebP keep the picture's size; only MP4 has a Size option.
+    return m_selectedFormat == MP4 ? mp4OutputSize() : mp4BaseSize();
 }
 
 int RecordingPreviewBackend::mp4OutputFrameRate() const
@@ -1576,10 +1585,14 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
         removeUnusedBackgrounds(m_project->dir, recipe);
         return true;
     }
-    // A small picture for the library, from the first frame shown.
+    // A small picture for the library.
     QImage thumbnail;
     if (auto reader = IVideoFrameReader::create(); reader && reader->load(m_videoPath)) {
-        const QImage frame = reader->frameAt(m_trimStart);
+        // The middle of what is kept: the first frame is usually the desktop
+        // before anything happens (#210).
+        const SnapTray::TimelineMap map = timelineMap();
+        const qint64 middle = map.outputDurationMs() > 0 ? map.outputToSource(map.outputDurationMs() / 2) : m_trimStart;
+        const QImage frame = reader->frameAt(middle);
         if (!frame.isNull()) thumbnail = frame.scaled(kProjectThumbnailSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
     // Moved with its sidecars; the caller then removes whatever is left.
