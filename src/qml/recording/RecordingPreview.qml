@@ -57,6 +57,9 @@ Item {
         audio: "volume-2", keys: "keyboard", project: "panel-right"
     })
     readonly property string inspectorTitle: inspectorTitles[inspectorKind]
+    // What closing keeps, shown in the top bar.
+    property string projectStatusText: backend.isProject ? qsTr("Project")
+        : backend.keepsProject ? qsTr("Editable project") : qsTr("Unsaved recording")
     // Where the shown settings apply (#218: type and time range together).
     function rangeText(item) {
         if (!item) return ""
@@ -272,6 +275,21 @@ Item {
     }
     readonly property var playheadPartData: backend.timelineParts.length > root.playheadPart
         ? backend.timelineParts[root.playheadPart] : null
+    // The clip that Cut and Delete act on: the selected one, as the inspector
+    // shows; the one at the playhead only when no clip is selected.
+    readonly property bool cutTargetsSelection: selectedPartData !== null
+    readonly property int cutTargetPart: cutTargetsSelection ? selectedPart : playheadPart
+    readonly property var cutTargetPartData: cutTargetsSelection ? selectedPartData : playheadPartData
+    function toggleCutTarget() {
+        const data = cutTargetPartData
+        if (!backend.timelineEditsAvailable || data === null || backend.timelineParts.length <= 1)
+            return false
+        // A timeline change clears the clip selection; keep the clip just edited selected.
+        const selected = selectedPart
+        backend.setPartDeleted(cutTargetPart, !data.deleted)
+        selectedPart = selected
+        return true
+    }
     function speedLabel(speed) {
         return Number(speed).toLocaleString(Qt.locale(), "g", 6) + "×"
     }
@@ -544,21 +562,34 @@ Item {
             font.pixelSize: SemanticTokens.fontSizeBody
             font.weight: SemanticTokens.fontWeightSemiBold
             elide: Text.ElideMiddle
-            Layout.preferredWidth: Math.min(implicitWidth, root.width * 0.4)
+            // Name and status shrink first; history, Export and discard keep their room.
+            Layout.preferredWidth: Math.min(implicitWidth, root.width * (root.wideEditor ? 0.4 : 0.25))
             Layout.minimumWidth: 40
         }
         // Says what closing keeps: an editable project or only this recording.
         Rectangle {
+            id: statusChip
             objectName: "previewStatusChip"
+            readonly property real maximumWidth: root.wideEditor ? 200 : 120
             Layout.preferredHeight: 22
-            Layout.preferredWidth: statusText.implicitWidth + 16
+            Layout.preferredWidth: Math.min(statusText.implicitWidth + 16, maximumWidth)
+            Layout.minimumWidth: 0
+            Layout.maximumWidth: maximumWidth
+            visible: Layout.preferredWidth > 0
+            clip: true
             radius: 11
             color: backend.keepsProject || backend.isProject ? ComponentTokens.editorSelection : ComponentTokens.editorControl
+            ToolTip.visible: statusHover.hovered && statusText.truncated
+            ToolTip.text: root.projectStatusText
+            HoverHandler { id: statusHover }
             Text {
                 id: statusText
-                anchors.centerIn: parent
-                text: backend.isProject ? qsTr("Project")
-                    : backend.keepsProject ? qsTr("Editable project") : qsTr("Unsaved recording")
+                anchors.verticalCenter: parent.verticalCenter
+                x: 8
+                width: parent.width - 16
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+                text: root.projectStatusText
                 color: root.textPrimary
                 font.pixelSize: SemanticTokens.fontSizeCaption
                 font.weight: SemanticTokens.fontWeightMedium
@@ -567,6 +598,7 @@ Item {
         Item { Layout.fillWidth: true }
         IconButton {
             objectName: "previewUndoButton"
+            Layout.minimumWidth: ComponentTokens.recordingPreviewControlButtonSize
             iconSource: root.iconUrl("undo")
             enabled: backend.canUndo
             opacity: enabled ? 1.0 : root.disabledControlOpacity
@@ -577,6 +609,7 @@ Item {
         }
         IconButton {
             objectName: "previewRedoButton"
+            Layout.minimumWidth: ComponentTokens.recordingPreviewControlButtonSize
             iconSource: root.iconUrl("redo")
             enabled: backend.canRedo
             opacity: enabled ? 1.0 : root.disabledControlOpacity
@@ -588,6 +621,7 @@ Item {
         // Narrow windows: the inspector is a sheet opened from here.
         IconButton {
             objectName: "previewInspectorToggle"
+            Layout.minimumWidth: ComponentTokens.recordingPreviewControlButtonSize
             visible: !root.wideEditor
             iconSource: root.iconUrl("panel-right")
             highlighted: root.inspectorOpen
@@ -600,6 +634,7 @@ Item {
         }
         SegmentButton {
             objectName: "previewExportOptions"
+            Layout.minimumWidth: implicitWidth
             text: qsTr("Export…")
             iconSource: root.iconUrl("upload")
             primary: true
@@ -616,6 +651,7 @@ Item {
             iconSource: root.iconUrl("trash-2")
             destructive: true
             objectName: "previewDiscardButton"
+            Layout.minimumWidth: ComponentTokens.recordingPreviewControlButtonSize
             tooltipPreferredAbove: false
             tooltipText: backend.isProject ? qsTr("Close Without Saving (Esc)") : qsTr("Discard Recording (Esc)")
             onClicked: backend.requestDiscard()
@@ -1148,16 +1184,19 @@ Item {
             }
             SegmentButton {
                 objectName: "previewPartCut"
-                enabled: backend.timelineEditsAvailable && root.playheadPartData !== null
+                enabled: backend.timelineEditsAvailable && root.cutTargetPartData !== null
                          && backend.timelineParts.length > 1
                 minimumButtonWidth: 0
                 iconSource: root.iconUrl("trash-2")
-                text: root.playheadPartData && root.playheadPartData.deleted ? qsTr("Keep Part") : qsTr("Cut Part")
-                tooltipText: root.playheadPartData && root.playheadPartData.deleted
-                    ? qsTr("Put the part at the playhead back (Delete)")
-                    : qsTr("Leave the part at the playhead out of the export (Delete)")
-                selected: root.playheadPartData !== null && root.playheadPartData.deleted
-                onClicked: backend.setPartDeleted(root.playheadPart, !root.playheadPartData.deleted)
+                text: root.cutTargetPartData && root.cutTargetPartData.deleted ? qsTr("Keep Part") : qsTr("Cut Part")
+                tooltipText: root.cutTargetsSelection
+                    ? (root.cutTargetPartData.deleted ? qsTr("Put the selected clip back (Delete)")
+                                                      : qsTr("Leave the selected clip out of the export (Delete)"))
+                    : root.cutTargetPartData && root.cutTargetPartData.deleted
+                      ? qsTr("Put the part at the playhead back (Delete)")
+                      : qsTr("Leave the part at the playhead out of the export (Delete)")
+                selected: root.cutTargetPartData !== null && root.cutTargetPartData.deleted
+                onClicked: root.toggleCutTarget()
             }
             SegmentButton {
                 objectName: "previewAddEffect"
@@ -1339,15 +1378,21 @@ Item {
                 return Math.round(fraction * dur)
             }
 
-            // Effects of one kind share a lane; an overlapping one gets the next row,
-            // so every segment stays visible and reachable.
+            // Effects of one kind share a lane; one that would overlap another *on
+            // screen* gets the next row, so every segment stays visible and can be
+            // grabbed on its own. A segment is drawn at least segmentMinWidth wide,
+            // so a short one reaches further than its time range.
+            readonly property real segmentMinWidth: 8
+            readonly property real segmentGap: 2
             function packRows(items) {
                 const order = items.map((item, i) => i).sort((a, b) => items[a].start - items[b].start)
+                const msPerPixel = dur / Math.max(1, trackRect.width)
                 const ends = []
                 const row = new Array(items.length)
                 for (const i of order) {
                     const start = items[i].start
-                    const end = items[i].end < 0 ? dur : items[i].end
+                    const end = Math.max(items[i].end < 0 ? dur : items[i].end, start + segmentMinWidth * msPerPixel)
+                                + segmentGap * msPerPixel
                     let r = ends.findIndex(e => e <= start)
                     if (r < 0) { r = ends.length; ends.push(end) } else ends[r] = end
                     row[i] = r
@@ -1355,14 +1400,15 @@ Item {
                 return { row: row, count: ends.length }
             }
             readonly property var lanes: {
-                const zoomRows = backend.zoomSegments.length > 0 ? 1 : 0  // zooms never overlap
+                const zooms = packRows(backend.zoomSegments)
+                const zoomRows = zooms.count
                 const masks = packRows(backend.masks)
                 const overlays = packRows(backend.overlays)
                 const pointers = packRows(backend.pointerHiddenRanges)
                 return {
                     zoomBase: 0, maskBase: zoomRows, overlayBase: zoomRows + masks.count,
                     pointerBase: zoomRows + masks.count + overlays.count,
-                    mask: masks, overlay: overlays, pointer: pointers,
+                    zoom: zooms, mask: masks, overlay: overlays, pointer: pointers,
                     groups: [
                         { name: qsTr("Zoom"), icon: "zoom-in", base: 0, count: zoomRows },
                         { name: qsTr("Mask"), icon: "square-dashed", base: zoomRows, count: masks.count },
@@ -1384,7 +1430,7 @@ Item {
                                                                  effectTracks.contentHeight - effectTracks.height))
             }
             function revealSelection() {
-                if (backend.selectedZoom >= 0) revealLane(lanes.zoomBase)
+                if (backend.selectedZoom >= 0) revealLane(lanes.zoomBase + (lanes.zoom.row[backend.selectedZoom] || 0))
                 else if (backend.selectedMask >= 0) revealLane(lanes.maskBase + (lanes.mask.row[backend.selectedMask] || 0))
                 else if (backend.selectedOverlay >= 0)
                     revealLane(lanes.overlayBase + (lanes.overlay.row[backend.selectedOverlay] || 0))
@@ -1701,7 +1747,7 @@ Item {
                 }
             }
 
-            // Zooms share one lane; they never overlap.
+            // Zooms never overlap in time, but very short ones can on screen.
             Repeater {
                 model: backend.zoomSegments
                 parent: effectTracks.contentItem
@@ -1709,7 +1755,7 @@ Item {
                     required property int index
                     required property var modelData
                     objectName: "previewZoomSegment" + index
-                    y: timelineArea.lanes.zoomBase * timelineArea.laneHeight + 3
+                    y: (timelineArea.lanes.zoomBase + (timelineArea.lanes.zoom.row[index] || 0)) * timelineArea.laneHeight + 3
                     z: 2
                     startMs: modelData.start
                     endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
@@ -1717,6 +1763,7 @@ Item {
                     upperMs: index + 1 < backend.zoomSegments.length ? backend.zoomSegments[index + 1].start : timelineArea.dur
                     minimumDuration: 500
                     pixelsPerMs: trackRect.width / timelineArea.dur
+                    minimumDisplayWidth: timelineArea.segmentMinWidth
                     trackX: trackRect.x
                     selected: backend.selectedZoom === index
                     opacity: backend.zoomEnabled ? 1 : 0.5
@@ -1753,6 +1800,7 @@ Item {
                     upperMs: timelineArea.dur
                     minimumDuration: 1
                     pixelsPerMs: trackRect.width / timelineArea.dur
+                    minimumDisplayWidth: timelineArea.segmentMinWidth
                     trackX: trackRect.x
                     selected: backend.selectedMask === index
                     fillColor: ComponentTokens.editorMaskFill
@@ -1789,6 +1837,7 @@ Item {
                     upperMs: timelineArea.dur
                     minimumDuration: 100
                     pixelsPerMs: trackRect.width / timelineArea.dur
+                    minimumDisplayWidth: timelineArea.segmentMinWidth
                     trackX: trackRect.x
                     selected: backend.selectedOverlay === index
                     opacity: backend.overlaysAvailable ? 1 : 0.5
@@ -1829,6 +1878,7 @@ Item {
                     upperMs: timelineArea.dur
                     minimumDuration: 100
                     pixelsPerMs: trackRect.width / timelineArea.dur
+                    minimumDisplayWidth: timelineArea.segmentMinWidth
                     trackX: trackRect.x
                     selected: backend.selectedPointerHide === index
                     opacity: backend.cursorEffectsAvailable ? 1 : 0.5
@@ -2111,11 +2161,7 @@ Item {
                     text: root.selectedPartData && root.selectedPartData.deleted ? qsTr("Keep clip") : qsTr("Cut clip")
                     tooltipText: qsTr("Leave this clip out of the export, or put it back (Delete)")
                     enabled: backend.timelineEditsAvailable && backend.timelineParts.length > 1
-                    onClicked: {
-                        const part = root.selectedPart
-                        backend.setPartDeleted(part, !root.selectedPartData.deleted)
-                        root.selectedPart = part
-                    }
+                    onClicked: root.toggleCutTarget()
                 }
             }
 
@@ -3777,15 +3823,7 @@ Item {
                 else if (backend.selectedOverlay >= 0) backend.removeOverlay(backend.selectedOverlay)
                 else backend.removePointerHide(backend.selectedPointerHide)
                 event.accepted = true
-            } else if (backend.timelineEditsAvailable && backend.timelineParts.length > 1
-                       && (root.selectedPartData !== null || root.playheadPartData !== null)) {
-                // The selected clip first, as its inspector says; else the one at the playhead.
-                const selected = root.selectedPart
-                const part = root.selectedPartData !== null ? selected : root.playheadPart
-                const data = root.selectedPartData !== null ? root.selectedPartData : root.playheadPartData
-                backend.setPartDeleted(part, !data.deleted)
-                // A timeline change clears the clip selection; keep the clip just edited selected.
-                root.selectedPart = selected
+            } else if (root.toggleCutTarget()) {
                 event.accepted = true
             }
             break

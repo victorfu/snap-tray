@@ -30,6 +30,9 @@ private slots:
     void dialogButtonPreservesMouseFocus();
     void switchFollowsUndo();
     void deleteCutsSelectedClip();
+    void cutButtonFollowsSelectedClip();
+    void adjacentShortEffectsStaySeparate();
+    void narrowHeaderKeepsActionsVisible();
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
     static QQuickItem* item(QQuickView* view, const char* name);
@@ -557,6 +560,109 @@ void tst_RecordingEditor::deleteCutsSelectedClip()
     QVERIFY(!backend.timelineEdit().parts[0].deleted);
     QVERIFY(backend.timelineEdit().parts[1].deleted);
     QCOMPARE(view->rootObject()->property("selectedPart").toInt(), 1);
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::cutButtonFollowsSelectedClip()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(backend.splitAt(1000));
+    // Select clip B, then seek into clip A: the toolbar still acts on B, like Delete.
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "selectPart", Q_ARG(QVariant, 1)));
+    QVERIFY(seek(view, 200));
+    QCOMPARE(view->rootObject()->property("playheadPart").toInt(), 0);
+    QQuickItem* cut = item(view, "previewPartCut");
+    QVERIFY(cut);
+    QVERIFY(cut->property("tooltipText").toString().contains("selected"));
+    QVERIFY(QMetaObject::invokeMethod(cut, "clicked"));
+    QVERIFY(!backend.timelineEdit().parts[0].deleted);
+    QVERIFY(backend.timelineEdit().parts[1].deleted);
+    QCOMPARE(view->rootObject()->property("selectedPart").toInt(), 1);
+    QCOMPARE(cut->property("text").toString(), QStringLiteral("Keep Part"));
+    QVERIFY(cut->property("selected").toBool());
+    // Clicking again puts the selected clip back.
+    QVERIFY(QMetaObject::invokeMethod(cut, "clicked"));
+    QVERIFY(!backend.timelineEdit().parts[1].deleted);
+    // Without a selection it falls back to the clip at the playhead.
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openSection", Q_ARG(QVariant, "")));
+    QVERIFY(QMetaObject::invokeMethod(cut, "clicked"));
+    QVERIFY(backend.timelineEdit().parts[0].deleted);
+    QVERIFY(!backend.timelineEdit().parts[1].deleted);
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::adjacentShortEffectsStaySeparate()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    // Two short masks that touch in time but would cover each other at their minimum width.
+    QVERIFY(backend.addMask() >= 0);
+    QVERIFY(backend.addMask() >= 0);
+    QVERIFY(backend.setMaskRange(0, 500, 501));
+    QVERIFY(backend.setMaskRange(1, 501, 502));
+    backend.setSelectedMask(-1);
+    QQuickItem* first = nullptr;
+    QQuickItem* second = nullptr;
+    QTRY_VERIFY((first = delegate(view, "previewMaskSegment0")) && (second = delegate(view, "previewMaskSegment1")));
+    QTRY_VERIFY(first->y() != second->y());
+    const QRectF a = first->mapRectToScene(QRectF(QPointF(), first->size()));
+    const QRectF b = second->mapRectToScene(QRectF(QPointF(), second->size()));
+    QVERIFY(!a.intersects(b));
+    // Dragging the first one's centre moves the first one, not the second.
+    QSignalSpy rendered(view, &QQuickWindow::afterAnimating);
+    view->requestUpdate();
+    QVERIFY(rendered.wait(2000));
+    const QPoint from = a.center().toPoint();
+    QTest::mousePress(view, Qt::LeftButton, Qt::NoModifier, from);
+    QTest::mouseMove(view, from + QPoint(60, 0), 30);
+    QTest::mouseRelease(view, Qt::LeftButton, Qt::NoModifier, from + QPoint(60, 0));
+    QVERIFY(backend.masks().at(0).toMap().value("start").toLongLong() > 500);
+    QCOMPARE(backend.masks().at(1).toMap().value("start").toLongLong(), 501);
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::narrowHeaderKeepsActionsVisible()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("a-very-long-recording-file-name-for-layout-stress-2026-11-04.mp4"));
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(640, 480);
+    QTRY_VERIFY(!view->rootObject()->property("wideEditor").toBool());
+    // A long translation of the status must give way to the actions.
+    view->rootObject()->setProperty("projectStatusText",
+        QStringLiteral("Nicht gespeicherte Bildschirmaufnahme ohne bearbeitbares Projekt"));
+    QSignalSpy rendered(view, &QQuickWindow::afterAnimating);
+    view->requestUpdate();
+    QVERIFY(rendered.wait(2000));
+    for (const char* name : {"previewUndoButton", "previewRedoButton", "previewInspectorToggle",
+                             "previewExportOptions", "previewDiscardButton"}) {
+        QQuickItem* button = item(view, name);
+        QVERIFY2(button, name);
+        const QRectF r = button->mapRectToScene(QRectF(QPointF(), button->size()));
+        QVERIFY2(r.left() >= 0 && r.right() <= view->width() && r.width() >= 24,
+                 qPrintable(QStringLiteral("%1 at %2..%3").arg(name).arg(r.left()).arg(r.right())));
+    }
+    QQuickItem* chip = item(view, "previewStatusChip");
+    QVERIFY(chip);
+    QVERIFY(chip->width() <= 120);
     backend.requestDiscard();
 }
 

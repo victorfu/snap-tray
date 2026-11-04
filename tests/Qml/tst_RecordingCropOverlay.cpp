@@ -1549,8 +1549,12 @@ void tst_RecordingCropOverlay::previewTinyDraftAppliesWithoutJump()
     QTRY_VERIFY_WITH_TIMEOUT(!overlay->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = overlay->property("draftRect").toRectF();
     QVERIFY(!draft.isEmpty());
-    QVERIFY2(draft.width() >= minView - 0.01 && draft.height() >= minView - 0.01,
-             qPrintable(QStringLiteral("draft %1x%2 < %3").arg(draft.width()).arg(draft.height()).arg(minView)));
+    // Each side against its own axis: a fitted picture rounds to whole pixels,
+    // so the horizontal and vertical view scales can differ slightly.
+    const qreal minViewHeight = overlay->property("minViewHeight").toReal();
+    QVERIFY2(draft.width() >= minView - 0.01 && draft.height() >= minViewHeight - 0.01,
+             qPrintable(QStringLiteral("draft %1x%2 < %3x%4").arg(draft.width()).arg(draft.height())
+                            .arg(minView).arg(minViewHeight)));
 
     sendKey(Qt::Key_Return);
     QVERIFY(!editing());

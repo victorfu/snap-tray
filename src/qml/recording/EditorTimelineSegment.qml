@@ -29,7 +29,9 @@ Rectangle {
     property real draftStart: startMs
     property real draftEnd: endMs
     x: trackX + (dragging ? draftStart : startMs) * pixelsPerMs
-    width: Math.max(8, ((dragging ? draftEnd : endMs) - (dragging ? draftStart : startMs)) * pixelsPerMs)
+    // Short segments stay grabbable; the timeline packs rows by this width too.
+    property real minimumDisplayWidth: 8
+    width: Math.max(minimumDisplayWidth, ((dragging ? draftEnd : endMs) - (dragging ? draftStart : startMs)) * pixelsPerMs)
     height: 24
     radius: 5
     color: fillColor

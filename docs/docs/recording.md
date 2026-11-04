@@ -98,7 +98,7 @@ Every applied crop and trim change can be undone (**Ctrl+Z**) and redone (**Ctrl
 The timeline can do more than trim the ends. In the preview:
 
 1. Move the playhead and click **Split** (or press **S**) to divide the recording there. Splits show as small bars on the timeline; drag one to move it, double-click it to join its two parts again.
-2. With the playhead in a part, **Cut Part** (or **Delete**) leaves it out of the export; the part is shaded on the timeline. **Keep Part** puts it back.
+2. **Cut Part** (or **Delete**) leaves a part out of the export: the selected clip if one is selected, otherwise the part at the playhead. The part is crossed out on the timeline. **Keep Part** puts it back.
 3. Double-click a part to select it. In the inspector, **Export speed** sets how fast it plays in the export: 0.5×, 1×, 1.5×, 2× or 4×. The speed shows on the part.
 
 The preview plays the edit: cut parts are skipped and each part plays at its own speed. The time under the video shows the exported length. Cuts and speeds can be undone like other edits, and **Reset Crop and Trim** removes them.
