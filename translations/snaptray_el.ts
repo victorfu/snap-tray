@@ -540,6 +540,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>Το SnapTray βρήκε %1 εγγραφή(-ές) που δεν αποθηκεύτηκαν. Ανακτήστε τις από το μενού της γραμμής εργασιών.</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>Το SnapTray βρήκε %1 εγγραφή(-ές) που δεν αποθηκεύτηκαν· %2 μπορούν να ανακτηθούν από το μενού της περιοχής ειδοποιήσεων.</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>Βρέθηκαν μη αποθηκευμένες εγγραφές</translation>
@@ -2756,6 +2761,11 @@ Size: %2</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>Η εξαγωγή HEVC δεν είναι διαθέσιμη σε αυτό το σύστημα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>Η εξαγωγή HEVC απαιτεί τις HEVC Video Extensions από το Microsoft Store</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5500,6 +5510,11 @@ File size: %3</source>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>Εμφάνιση στον φάκελο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>Εμφάνιση του %1 στον φάκελο</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

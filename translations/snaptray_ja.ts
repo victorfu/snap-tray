@@ -546,6 +546,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>SnapTray は保存されていない録画を %1 件見つけました。トレイメニューから復元できます。</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray は保存されていない録画を %1 件見つけました。そのうち %2 件はトレイメニューから復元できます。</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>未保存の録画が見つかりました</translation>
@@ -2761,6 +2766,11 @@ Size: %2</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>このシステムでは HEVC で書き出せません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>HEVC で書き出すには Microsoft Store の HEVC Video Extensions が必要です</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5505,6 +5515,11 @@ File size: %3</source>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>フォルダーに表示</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>%1 をフォルダーに表示</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

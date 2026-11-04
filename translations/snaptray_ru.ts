@@ -546,6 +546,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>SnapTray нашёл несохранённые записи: %1. Восстановите их из меню в трее.</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray обнаружил несохранённые записи: %1; %2 из них можно восстановить из меню в системном трее.</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>Найдены несохранённые записи</translation>
@@ -2763,6 +2768,11 @@ Size: %2</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>Экспорт в HEVC недоступен в этой системе</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>Для экспорта в HEVC нужны HEVC Video Extensions из Microsoft Store</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5507,6 +5517,11 @@ File size: %3</source>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>Показать в папке</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>Показать %1 в папке</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

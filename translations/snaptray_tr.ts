@@ -540,6 +540,11 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>SnapTray kaydedilmemiş %1 kayıt buldu. Bunları tepsi menüsünden kurtarın.</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray kaydedilmemiş %1 kayıt buldu; bunlardan %2 tanesi sistem tepsisi menüsünden kurtarılabilir.</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>Kaydedilmemiş kayıtlar bulundu</translation>
@@ -2755,6 +2760,11 @@ Boyut: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>HEVC dışa aktarma bu sistemde kullanılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>HEVC dışa aktarımı için Microsoft Store'dan HEVC Video Extensions gerekir</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5499,6 +5509,11 @@ Dosya boyutu: %3</translation>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>Klasörde göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>%1 öğesini klasörde göster</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

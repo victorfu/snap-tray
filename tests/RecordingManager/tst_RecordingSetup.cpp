@@ -1,3 +1,4 @@
+#include <QAccessible>
 #include <QtTest>
 
 #include "recording/KeyTimeline.h"
@@ -672,6 +673,15 @@ void TestRecordingSetup::libraryListsOpensAndDeletesProjects()
         return found;
     };
     QTRY_COMPARE(buttons("libraryOpenButton").size(), 2);
+    // #210: Show in Folder had no accessible name; like Open and Delete it
+    // names its project.
+    for (QQuickItem* folder : buttons("libraryFolderButton")) {
+        QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(folder);
+        QVERIFY(accessible);
+        QVERIFY2(accessible->text(QAccessible::Name).startsWith(QStringLiteral("Show ")),
+                 qPrintable(accessible->text(QAccessible::Name)));
+        QVERIFY(accessible->text(QAccessible::Name).endsWith(QStringLiteral(" in Folder")));
+    }
 
     QSignalSpy open(viewModel, &SnapTray::RecordingLibraryViewModel::openRequested);
     QMetaObject::invokeMethod(buttons("libraryOpenButton").first(), "clicked");

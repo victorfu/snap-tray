@@ -130,6 +130,8 @@ SettingsRow {
             height: ComponentTokens.inputHeight
             horizontalPadding: root.delegatePadding
             highlighted: combo.highlightedIndex === index
+            // The option's accessible name; the shown text is contentItem (#210).
+            text: modelData.text
 
             contentItem: Text {
                 text: modelData.text

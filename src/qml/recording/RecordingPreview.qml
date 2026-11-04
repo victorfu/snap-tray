@@ -2304,7 +2304,10 @@ Item {
                     text: "HEVC"
                     tooltipText: backend.mp4HevcAvailable
                         ? qsTr("Smaller files at the same quality; some older players cannot open them")
-                        : qsTr("HEVC export is not available on this system")
+                        : Qt.platform.os === "windows"
+                            // The usual reason on Windows: playback needs the Store extension (#210).
+                            ? qsTr("HEVC export needs HEVC Video Extensions from the Microsoft Store")
+                            : qsTr("HEVC export is not available on this system")
                     selected: backend.mp4Codec === 1 && backend.mp4HevcAvailable
                     onClicked: backend.mp4Codec = 1
                 }
@@ -3460,8 +3463,17 @@ Item {
         property bool destructive: false
         property bool primary: false
         property int iconSize: ComponentTokens.recordingPreviewIconSize
+        // Read by assistive technology; by default the tooltip without its
+        // "(shortcut)" hint (#210: play, save, discard had no name and could
+        // not be invoked).
+        property string accessibleName: tooltipText.replace(/\s*\([^()]*\)$/, "")
 
         signal clicked()
+
+        Accessible.role: Accessible.Button
+        Accessible.name: accessibleName !== "" ? accessibleName : iconText
+        Accessible.description: tooltipText
+        Accessible.onPressAction: if (enabled) clicked()
 
         function updateTooltip() {
             if (!mouseArea.containsMouse || tooltipText === "") {
