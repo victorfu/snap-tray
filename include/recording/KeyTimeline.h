@@ -64,7 +64,7 @@ bool isModifierKey(int key);
 // or Meta (Shift alone is typing); named keys are kept in Shortcuts mode.
 bool shouldRecord(KeyRecordingMode mode, int key, Qt::KeyboardModifiers modifiers, bool secureInput);
 // A press whose focus moved before it could be read. Kept only for a
-// shortcut (Ctrl, Alt or Meta, not AltGr = Ctrl+Alt, which types) pressed
+// shortcut (Ctrl, Alt or Meta; never Ctrl with Alt, AltGr, which types) pressed
 // outside a secure field: Alt+Tab and Alt+F4 move the focus themselves.
 bool keepAfterFocusChange(Qt::KeyboardModifiers modifiers, bool secureWhenPressed);
 // While an input method composes, raw keys are not the typed text: only

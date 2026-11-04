@@ -29,7 +29,9 @@ public:
     {
         for (const auto& [key, modifiers] : std::exchange(queued, {})) press(key, modifiers);
     }
+    void setTypedTextWanted(bool wanted) override { typedTextWanted = wanted; }
     bool secure = false;
+    int typedTextWanted = -1;
     std::vector<std::pair<int, Qt::KeyboardModifiers>> queued;
 };
 
@@ -129,6 +131,8 @@ void TestKeyTimeline::policyKeepsShortcutsThatMoveFocus()
     QVERIFY(!keepAfterFocusChange(Qt::NoModifier, false));                         // typing
     QVERIFY(!keepAfterFocusChange(Qt::ShiftModifier, false));
     QVERIFY(!keepAfterFocusChange(Qt::ControlModifier | Qt::AltModifier, false));  // AltGr
+    QVERIFY(!keepAfterFocusChange(Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier, false)); // Win+AltGr
+    QVERIFY(!keepAfterFocusChange(Qt::NoModifier, true));
     QVERIFY(!keepAfterFocusChange(Qt::AltModifier, true));                         // from a secure field
 }
 
@@ -198,6 +202,7 @@ void TestKeyTimeline::recorderRespectsModeSecureInputAndPause()
     FakeKeyProbe* probe = owned.get();
     qint64 now = 0;
     KeyTimelineRecorder recorder(std::move(owned), [&now] { return now; }, KeyRecordingMode::Shortcuts, path, false);
+    QCOMPARE(probe->typedTextWanted, 0); // shortcuts only: the probe can skip text-only work
     QVERIFY(recorder.start());
     now = 100;
     probe->press(Qt::Key_C, Qt::ControlModifier);
@@ -235,6 +240,7 @@ void TestKeyTimeline::recorderDropsKeysPressedWhilePaused()
     FakeKeyProbe* probe = owned.get();
     qint64 now = 0;
     KeyTimelineRecorder recorder(std::move(owned), [&now] { return now; }, KeyRecordingMode::AllKeys, path, false);
+    QCOMPARE(probe->typedTextWanted, 1);
     QVERIFY(recorder.start());
     now = 100;
     recorder.pause(); // media time stops at 100

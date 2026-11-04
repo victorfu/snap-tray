@@ -83,7 +83,8 @@ bool keepAfterFocusChange(Qt::KeyboardModifiers modifiers, bool secureWhenPresse
     const bool control = modifiers & Qt::ControlModifier;
     const bool alt = modifiers & Qt::AltModifier;
     const bool meta = modifiers & Qt::MetaModifier;
-    if (control && alt && !meta) return false; // AltGr types characters
+    // AltGr (Ctrl+Alt) types characters on many layouts, with Win held too.
+    if (control && alt) return false;
     return control || alt || meta;
 }
 

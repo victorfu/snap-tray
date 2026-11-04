@@ -15,7 +15,10 @@ KeyTimelineRecorder::KeyTimelineRecorder(std::unique_ptr<KeyProbe> probe, Clock 
 {
     m_flushTimer.setInterval(kFlushIntervalMs);
     connect(&m_flushTimer, &QTimer::timeout, this, [this] { m_writer.flush(); });
-    if (m_probe) connect(m_probe.get(), &KeyProbe::keyPressed, this, &KeyTimelineRecorder::onKeyPressed);
+    if (m_probe) {
+        connect(m_probe.get(), &KeyProbe::keyPressed, this, &KeyTimelineRecorder::onKeyPressed);
+        m_probe->setTypedTextWanted(m_mode == KeyRecordingMode::AllKeys);
+    }
 }
 
 KeyTimelineRecorder::~KeyTimelineRecorder()

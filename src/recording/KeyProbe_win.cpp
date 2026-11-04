@@ -102,6 +102,7 @@ public:
     }
     QString name() const override { return QStringLiteral("Windows keyboard hook"); }
     bool detectsSecureInput() const override { return true; }
+    void setTypedTextWanted(bool wanted) override { m_typedTextWanted = wanted; }
     bool secureInputActive() const override {
         // While a shortcut that moved the focus is delivered, the state it
         // was pressed in: the new focus is not where it was typed (#210).
@@ -178,7 +179,9 @@ private:
                 const bool readable = SUCCEEDED(automation->GetFocusedElement(&focused)) && focused
                     && SUCCEEDED(focused->get_CurrentIsPassword(&password));
                 const bool secure = !readable || password || passwordWindow(p.focus);
-                m_secure = secure;
+                // Only for the focus it was read for: a focus event since
+                // then already made it secure until its own check (#210 review).
+                if (p.focusEpoch == m_focusEpoch.load()) m_secure = secure;
                 if (secure || (focusMoved() && !keepIfMoved)) continue;
             }
             wchar_t chars[16]{};
@@ -197,7 +200,10 @@ private:
             }
             if (!key) continue;
             // Raw keys an input method composes are not the typed text (#210).
-            if (!KeyCapturePolicy::keepWhileInputMethodComposes(key, p.modifiers) && inputMethodComposes(p.focus))
+            // Only typed text (All keys) can carry them; shortcuts mode drops
+            // plain keys anyway, so the input method is not asked there.
+            if (m_typedTextWanted.load() && !KeyCapturePolicy::keepWhileInputMethodComposes(key, p.modifiers)
+                && inputMethodComposes(p.focus))
                 continue;
             QMetaObject::invokeMethod(this, [this, p, key, text, keepIfMoved] {
                 // A queued result must still belong to the same focus (or be
@@ -225,6 +231,7 @@ private:
     std::atomic<quint64> m_focusEpoch{0};
     std::atomic<bool> m_secure{true};
     bool m_deliveringMovedShortcut = false; // GUI thread only
+    std::atomic<bool> m_typedTextWanted{true};
     std::mutex m_mutex;
     std::condition_variable m_changed;
     std::deque<Press> m_pending;
