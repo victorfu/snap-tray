@@ -11,6 +11,7 @@
 
 // Sets the window level above the menu bar (macOS) or does nothing (Windows)
 void raiseWindowAboveMenuBar(QWidget *widget);
+void raiseWindowAboveMenuBar(QWindow *window);
 
 // Sets click-through mode for a window (mouse events pass through to windows underneath)
 void setWindowClickThrough(QWidget *widget, bool enabled);

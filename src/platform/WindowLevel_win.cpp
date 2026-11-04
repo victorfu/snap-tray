@@ -123,6 +123,11 @@ void raiseWindowAboveMenuBar(QWidget *)
     // Windows does not need special handling for window level
 }
 
+void raiseWindowAboveMenuBar(QWindow *)
+{
+    // Windows does not need special handling for window level
+}
+
 void setWindowClickThrough(QWidget *widget, bool enabled)
 {
 #ifdef Q_OS_WIN

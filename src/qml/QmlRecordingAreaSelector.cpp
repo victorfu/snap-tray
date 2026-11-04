@@ -1,5 +1,6 @@
 #include "qml/QmlRecordingAreaSelector.h"
 
+#include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 #include "utils/VideoCropGeometry.h"
 
@@ -52,8 +53,17 @@ void QmlRecordingAreaSelector::start(QScreen* screen)
     });
     m_view->setScreen(screen);
     m_view->setGeometry(screen->geometry());
+#ifdef Q_OS_MACOS
+    // Not showFullScreen(): macOS moves a full screen window to a Space of its
+    // own, where the desktop to choose from is black. Like RegionSelector, cover
+    // the screen above the menu bar instead.
+    m_view->show();
+    raiseWindowAboveMenuBar(m_view);
+    QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
+#else
     // Full screen, so a window manager does not keep it clear of its panels.
     m_view->showFullScreen();
+#endif
     m_view->raise();
     m_view->requestActivate();
     m_rootItem->forceActiveFocus();
