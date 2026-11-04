@@ -21,6 +21,7 @@ namespace {
 // Countdown ticks are one second in production; tests shorten them.
 constexpr int kTestTickMs = 20;
 constexpr int kIndicatorRenderSettleMs = 100;
+constexpr int kIndicatorSurfaceCatchUpMs = 2000;
 
 QPixmap solidSnapshot(QScreen* screen)
 {
@@ -309,8 +310,25 @@ void tst_DelayedCapture::indicator_fitsContentAcrossScreens()
         for (int seconds : {5, 4, 10, 9}) {
             indicator.setRemainingSeconds(seconds);
             QTest::qWait(kIndicatorRenderSettleMs);
-            const QImage image = view->grabWindow();
-            QVERIFY(!image.isNull());
+
+            // A native surface smaller than the QML pill clips its right/bottom edges.
+            QVERIFY(view->width() >= qFloor(root->implicitWidth()));
+            QVERIFY(view->height() >= qFloor(root->implicitHeight()));
+            QVERIFY(view->width() <= qCeil(root->implicitWidth()));
+            QVERIFY(view->height() <= qCeil(root->implicitHeight()));
+            // The rendered surface must follow the window to its new pixel
+            // size. A virtual display (CI's) can hand back the previous frame
+            // for a moment after a resize, so wait for it to catch up; one
+            // that stays at the old size still fails.
+            const qreal dpr = view->devicePixelRatio();
+            const QSize expected(qFloor(view->width() * dpr), qFloor(view->height() * dpr));
+            QImage image;
+            QTRY_VERIFY2_WITH_TIMEOUT((image = view->grabWindow(),
+                                       image.width() >= expected.width() && image.height() >= expected.height()),
+                                      qPrintable(QStringLiteral("grabbed %1x%2, window needs %3x%4")
+                                                     .arg(image.width()).arg(image.height())
+                                                     .arg(expected.width()).arg(expected.height())),
+                                      kIndicatorSurfaceCatchUpMs);
             const QString artifactDir = qEnvironmentVariable("SNAPTRAY_TEST_ARTIFACT_DIR");
             if (!artifactDir.isEmpty()) {
                 QVERIFY(QDir().mkpath(artifactDir));
@@ -318,15 +336,6 @@ void tst_DelayedCapture::indicator_fitsContentAcrossScreens()
                     QStringLiteral("indicator-%1-%2-%3.png")
                         .arg(firstScreen).arg(QGuiApplication::screens().indexOf(screen)).arg(seconds))));
             }
-
-            // A native surface smaller than the QML pill clips its right/bottom edges.
-            QVERIFY(view->width() >= qFloor(root->implicitWidth()));
-            QVERIFY(view->height() >= qFloor(root->implicitHeight()));
-            QVERIFY(view->width() <= qCeil(root->implicitWidth()));
-            QVERIFY(view->height() <= qCeil(root->implicitHeight()));
-            const qreal dpr = view->devicePixelRatio();
-            QVERIFY(image.width() >= qFloor(view->width() * dpr));
-            QVERIFY(image.height() >= qFloor(view->height() * dpr));
         }
         indicator.hide();
     }
