@@ -23,12 +23,17 @@ public:
     qint64 totalBytes() const { return m_cumulativeBytes.empty() ? 0 : m_cumulativeBytes.back(); }
     // Bytes of the samples starting in [startMs, endMs).
     qint64 bytesBetween(qint64 startMs, qint64 endMs) const;
+    // What re-encoding [startMs, endMs) on its own costs at the recording's
+    // quality: its samples, plus the keyframe its first sample was predicted
+    // from when it starts mid-GOP (the export starts with a whole frame).
+    qint64 bytesToEncode(qint64 startMs, qint64 endMs) const;
 
     // For tests and the parser: samples must be added in decode order.
-    void append(qint64 startUs, qint64 bytes);
+    void append(qint64 startUs, qint64 bytes, bool keyframe = true);
 
 private:
     std::vector<qint64> m_startUs;
+    std::vector<size_t> m_keyframes; // sample indexes, ascending
     std::vector<qint64> m_cumulativeBytes; // size + 1 entries once valid
 };
 

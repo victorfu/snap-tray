@@ -124,7 +124,11 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
                               &RecordingPreviewBackend::trimRangeChanged, &RecordingPreviewBackend::durationChanged,
                               &RecordingPreviewBackend::videoSizeChanged, &RecordingPreviewBackend::cursorEffectsChanged,
                               &RecordingPreviewBackend::zoomChanged, &RecordingPreviewBackend::masksChanged,
-                              &RecordingPreviewBackend::appearanceChanged, &RecordingPreviewBackend::timelineChanged}) {
+                              &RecordingPreviewBackend::appearanceChanged, &RecordingPreviewBackend::timelineChanged,
+                              // These decide whether an unedited recording is
+                              // saved as is (PR #213 review).
+                              &RecordingPreviewBackend::audioMixChanged, &RecordingPreviewBackend::keyOverlayChanged,
+                              &RecordingPreviewBackend::overlaysChanged}) {
         connect(this, signal, this, &RecordingPreviewBackend::mp4EstimateChanged);
     }
 }
@@ -548,7 +552,7 @@ qint64 RecordingPreviewBackend::keptSourceVideoBytes() const
     const SnapTray::TimelineMap map = timelineMap();
     for (const SnapTray::TimelineSegment& segment : map.segments()) {
         const double speed = segment.speed > 0.0 ? segment.speed : 1.0;
-        bytes += double(samples->bytesBetween(segment.startMs, segment.endMs)) / speed;
+        bytes += double(samples->bytesToEncode(segment.startMs, segment.endMs)) / speed;
     }
     return qint64(std::ceil(bytes));
 }

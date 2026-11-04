@@ -1194,7 +1194,9 @@ void tst_VideoTranscoder::sizeEstimateAgainstActual()
         std::vector<Range> ranges;
     } cases[] = {
         {Content::Scrolling, "scrolling", {{0, kSeconds * 1000, "all"}}},
-        {Content::Still, "still", {{0, kSeconds * 1000, "all"}}},
+        // PR #213 review: a short part between keyframes still costs a whole
+        // first frame.
+        {Content::Still, "still", {{0, kSeconds * 1000, "all"}, {1500, 1800, "300 ms mid-GOP"}}},
         {Content::StillThenBusy, "still-then-busy",
          {{0, kSeconds * 1000, "all"}, {0, kBusyFromMs, "still part"}, {kBusyFromMs, kSeconds * 1000, "busy part"}}},
     };
@@ -1258,7 +1260,7 @@ void tst_VideoTranscoder::sizeEstimateAgainstActual()
                 const qint64 actual = QFileInfo(request.outputPath).size();
                 const qint64 durationMs = range.endMs - range.startMs;
                 SnapTray::Mp4SizeEstimate::Source source;
-                source.keptVideoBytes = samples.bytesBetween(range.startMs, range.endMs);
+                source.keptVideoBytes = samples.bytesToEncode(range.startMs, range.endMs);
                 source.videoSize = probe.videoSize;
                 source.hevc = probe.videoCodec == QLatin1String(kVideoCodecHevc);
                 const qint64 targetOnly = SnapTray::Mp4SizeEstimate::bytes(request.videoBitrate, false, durationMs);
@@ -1271,8 +1273,15 @@ void tst_VideoTranscoder::sizeEstimateAgainstActual()
                 // never wildly under. When it comes from the recording (below
                 // the target), not wildly over either; at the target, simple
                 // content may still stay well below it, as before.
+                // A part under a second is mostly its first keyframe, and an
+                // export's keyframes run larger than the recording's (about 2x
+                // with VideoToolbox: 30 KB for a 14 KB source keyframe), so it
+                // gets more room. Without that keyframe the 300 ms part was
+                // estimated about 30x under.
+                constexpr qint64 kShortPartMs = 1000;
+                const qint64 headroom = durationMs < kShortPartMs ? 3 : 2;
                 QVERIFY(actual > 0);
-                QVERIFY2(actual <= estimate * 2, "far above the estimate");
+                QVERIFY2(actual <= estimate * headroom, "far above the estimate");
                 if (estimate < targetOnly) QVERIFY2(actual * 4 >= estimate, "far below the estimate");
             }
         }

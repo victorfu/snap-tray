@@ -28,6 +28,9 @@ constexpr quint32 kTfhdBaseDataOffset = 0x000001;
 constexpr quint32 kTfhdSampleDescriptionIndex = 0x000002;
 constexpr quint32 kTfhdDefaultDuration = 0x000008;
 constexpr quint32 kTfhdDefaultSize = 0x000010;
+constexpr quint32 kTfhdDefaultFlags = 0x000020;
+// sample_is_non_sync_sample in the sample flags (8.8.3.1).
+constexpr quint32 kSampleNonSync = 0x00010000;
 constexpr quint32 kTrunDataOffset = 0x000001;
 constexpr quint32 kTrunFirstSampleFlags = 0x000004;
 constexpr quint32 kTrunDuration = 0x000100;
@@ -113,8 +116,10 @@ struct VideoTrack {
     quint32 timescale = 0;
     quint32 defaultDuration = 0; // from trex
     quint32 defaultSize = 0;     // from trex
+    quint32 defaultFlags = 0;    // from trex
     std::vector<qint64> startTicks;
     std::vector<qint64> sizes;
+    std::vector<bool> sync;
     qint64 endTicks = 0; // decode end of the last sample read
 };
 
@@ -172,6 +177,19 @@ bool readTrak(const Box& trak, VideoTrack& track)
         }
     }
     track.endTicks = ticks;
+    // Keyframes: those listed in stss (1-based); without stss, every sample.
+    const Box* stss = child(stblBoxes, fourcc("stss"));
+    track.sync.assign(track.startTicks.size(), stss == nullptr);
+    if (stss) {
+        Reader keys(stss->payload, stss->size);
+        keys.skip(4);
+        const quint32 keyCount = keys.u32();
+        for (quint32 k = 0; k < keyCount && keys.ok(); ++k) {
+            const quint32 number = keys.u32();
+            if (keys.ok() && number >= 1 && number <= track.sync.size()) track.sync[number - 1] = true;
+        }
+        if (!keys.ok()) return false;
+    }
     return times.ok() && sizes.ok();
 }
 
@@ -185,6 +203,7 @@ void readTrex(const Box& mvex, VideoTrack& track)
         r.skip(4); // default_sample_description_index
         track.defaultDuration = r.u32();
         track.defaultSize = r.u32();
+        track.defaultFlags = r.u32();
     }
 }
 
@@ -202,8 +221,10 @@ bool readMoof(const Box& moof, VideoTrack& track)
         if (flags & kTfhdSampleDescriptionIndex) header.skip(4);
         quint32 duration = track.defaultDuration;
         quint32 size = track.defaultSize;
+        quint32 sampleFlags = track.defaultFlags;
         if (flags & kTfhdDefaultDuration) duration = header.u32();
         if (flags & kTfhdDefaultSize) size = header.u32();
+        if (flags & kTfhdDefaultFlags) sampleFlags = header.u32();
         if (!header.ok()) return false;
 
         qint64 ticks = track.endTicks;
@@ -219,15 +240,18 @@ bool readMoof(const Box& moof, VideoTrack& track)
             const quint32 trunFlags = r.u32() & 0xFFFFFF;
             const quint32 count = r.u32();
             if (trunFlags & kTrunDataOffset) r.skip(4);
-            if (trunFlags & kTrunFirstSampleFlags) r.skip(4);
+            const bool hasFirstFlags = trunFlags & kTrunFirstSampleFlags;
+            const quint32 firstFlags = hasFirstFlags ? r.u32() : 0;
             for (quint32 i = 0; i < count && r.ok(); ++i) {
                 const quint32 sampleDuration = (trunFlags & kTrunDuration) ? r.u32() : duration;
                 const quint32 sampleSize = (trunFlags & kTrunSize) ? r.u32() : size;
-                if (trunFlags & kTrunFlags) r.skip(4);
+                quint32 thisFlags = (i == 0 && hasFirstFlags) ? firstFlags : sampleFlags;
+                if (trunFlags & kTrunFlags) thisFlags = r.u32();
                 if (trunFlags & kTrunCompositionOffset) r.skip(4);
                 if (!r.ok()) break;
                 track.startTicks.push_back(ticks);
                 track.sizes.push_back(sampleSize);
+                track.sync.push_back(!(thisFlags & kSampleNonSync));
                 ticks += sampleDuration;
             }
             if (!r.ok()) return false;
@@ -239,11 +263,30 @@ bool readMoof(const Box& moof, VideoTrack& track)
 
 } // namespace
 
-void Mp4VideoSamples::append(qint64 startUs, qint64 bytes)
+void Mp4VideoSamples::append(qint64 startUs, qint64 bytes, bool keyframe)
 {
     if (m_cumulativeBytes.empty()) m_cumulativeBytes.push_back(0);
     m_startUs.push_back(startUs);
     m_cumulativeBytes.push_back(m_cumulativeBytes.back() + std::max<qint64>(0, bytes));
+    if (keyframe) m_keyframes.push_back(m_startUs.size() - 1);
+}
+
+qint64 Mp4VideoSamples::bytesToEncode(qint64 startMs, qint64 endMs) const
+{
+    if (!isValid() || endMs <= startMs) return 0;
+    const auto first = std::lower_bound(m_startUs.begin(), m_startUs.end(), startMs * kUsPerMs);
+    const auto last = std::lower_bound(m_startUs.begin(), m_startUs.end(), endMs * kUsPerMs);
+    if (first == last) return 0;
+    const size_t firstIndex = size_t(first - m_startUs.begin());
+    qint64 bytes = m_cumulativeBytes[size_t(last - m_startUs.begin())] - m_cumulativeBytes[firstIndex];
+    // The kept part starts mid-GOP: the export must encode its first frame
+    // whole, so count the keyframe it was predicted from (PR #213 review).
+    const auto key = std::upper_bound(m_keyframes.begin(), m_keyframes.end(), firstIndex);
+    if (key != m_keyframes.begin() && *(key - 1) != firstIndex) {
+        const size_t keyIndex = *(key - 1);
+        bytes += m_cumulativeBytes[keyIndex + 1] - m_cumulativeBytes[keyIndex];
+    }
+    return bytes;
 }
 
 qint64 Mp4VideoSamples::bytesBetween(qint64 startMs, qint64 endMs) const
@@ -314,7 +357,7 @@ Mp4VideoSamples Mp4VideoSamples::read(const QString& path)
     for (size_t i = 0; i < track.startTicks.size(); ++i) {
         const qint64 ticks = track.startTicks[i] - first;
         result.append(ticks / timescale * kUsPerSecond + ticks % timescale * kUsPerSecond / timescale,
-                      track.sizes[i]);
+                      track.sizes[i], i < track.sync.size() ? bool(track.sync[i]) : true);
     }
     return result;
 }

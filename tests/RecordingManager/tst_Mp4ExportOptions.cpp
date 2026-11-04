@@ -22,6 +22,7 @@ private slots:
     void estimate();
     void estimateFollowsTheRecording();
     void samplesCountWhatARangeHolds();
+    void samplesCountTheKeyframeAPartNeeds();
     void samplesReadFromFragments();
 };
 
@@ -220,6 +221,30 @@ void TestMp4ExportOptions::samplesCountWhatARangeHolds()
     QCOMPARE(samples.bytesBetween(700000, 800000), 0);
 }
 
+// PR #213 review: a kept part that starts between keyframes is re-encoded
+// from a whole first frame, which costs about the keyframe it was predicted
+// from, not the small predicted frames alone.
+void TestMp4ExportOptions::samplesCountTheKeyframeAPartNeeds()
+{
+    Mp4VideoSamples samples;
+    constexpr int kFps = 30;
+    constexpr qint64 kKey = 50000;
+    constexpr qint64 kPredicted = 100;
+    for (int i = 0; i < 3 * kFps; ++i) {
+        const bool key = i % kFps == 0; // one per second
+        samples.append(qint64(i) * 1000000 / kFps, key ? kKey : kPredicted, key);
+    }
+    // 300 ms from 1.5 s: nine predicted frames and the keyframe at 1 s.
+    QCOMPARE(samples.bytesBetween(1500, 1800), 9 * kPredicted);
+    QCOMPARE(samples.bytesToEncode(1500, 1800), 9 * kPredicted + kKey);
+    // Starting on a keyframe needs nothing more.
+    QCOMPARE(samples.bytesToEncode(1000, 1300), kKey + 8 * kPredicted);
+    // Across a keyframe: the leading one, and the one inside, once each.
+    QCOMPARE(samples.bytesToEncode(1500, 2100), kKey + 15 * kPredicted + kKey + 2 * kPredicted);
+    QCOMPARE(samples.bytesToEncode(0, 3000), samples.totalBytes());
+    QCOMPARE(samples.bytesToEncode(4000, 5000), 0);
+}
+
 namespace {
 QByteArray be32(quint32 v)
 {
@@ -260,15 +285,19 @@ void TestMp4ExportOptions::samplesReadFromFragments()
     // An audio track first: the video track must be found by its handler.
     const QByteArray audioTrak = box("trak", fullBox("tkhd", 0, 3, be32(0) + be32(0) + be32(2) + QByteArray(68, '\0'))
                                                  + box("mdia", mdhd + fullBox("hdlr", 0, 0, be32(0) + QByteArray("soun") + QByteArray(13, '\0'))));
-    const QByteArray trex = fullBox("trex", 0, 0, be32(kTrack) + be32(1) + be32(kFrame) + be32(0) + be32(0));
+    // Samples are predicted frames unless a fragment says otherwise.
+    constexpr quint32 kNonSync = 0x00010000;
+    const QByteArray trex = fullBox("trex", 0, 0, be32(kTrack) + be32(1) + be32(kFrame) + be32(0) + be32(kNonSync));
     const QByteArray moov = box("moov", audioTrak + trak + box("mvex", trex));
-    // Fragment 1: a 64-bit tfdt, sizes per sample, durations from trex.
-    // Fragment 2: no tfdt (continues), version-0 header, a default size.
-    QByteArray trun1 = be32(3);
+    // Fragment 1: a 64-bit tfdt, sizes per sample, durations from trex, the
+    // first sample a keyframe (first_sample_flags).
+    // Fragment 2: no tfdt (continues), version-0 header, a default size, all
+    // predicted frames (the trex default).
+    QByteArray trun1 = be32(3) + be32(0); // count, first_sample_flags: sync
     for (quint32 size : {5000u, 100u, 100u}) trun1 += be32(size);
     const QByteArray moof1 = box("moof", box("traf", fullBox("tfhd", 0, 0, be32(kTrack))
                                                       + fullBox("tfdt", 1, 0, be64(kClockStart))
-                                                      + fullBox("trun", 0, 0x200, trun1)));
+                                                      + fullBox("trun", 0, 0x204, trun1)));
     const QByteArray moof2 = box("moof", box("traf", fullBox("tfhd", 0, 0x10, be32(kTrack) + be32(700))
                                                       + fullBox("trun", 0, 0x001, be32(2) + be32(0))));
     // Another track's fragment is skipped.
@@ -291,6 +320,11 @@ void TestMp4ExportOptions::samplesReadFromFragments()
     QCOMPARE(samples.bytesBetween(0, 1), qint64(5000));
     QCOMPARE(samples.bytesBetween(30, 70), qint64(200));
     QCOMPARE(samples.bytesBetween(90, 200), qint64(1400));
+    // Keyframes from the sample flags: only the first. A part from 30 ms
+    // needs it; one from 0 ms has it.
+    QCOMPARE(samples.bytesToEncode(30, 70), qint64(200 + 5000));
+    QCOMPARE(samples.bytesToEncode(90, 200), qint64(1400 + 5000));
+    QCOMPARE(samples.bytesToEncode(0, 200), samples.totalBytes());
 
     // A file cut short (a recording still being written) keeps what it has.
     QVERIFY(file.open(QIODevice::ReadWrite));

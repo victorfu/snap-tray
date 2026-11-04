@@ -1978,7 +1978,8 @@ void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
 // Options that change nothing for this recording (no smaller size, no lower
 // frame rate, H.264) keep an unedited recording on the move-as-is path.
 // PR #213: the estimate counts the bytes the recording holds in the kept
-// parts, read from the file, each at 1/speed. Walks the timeline's segments
+// parts, read from the file (with the keyframe a part starting mid-GOP
+// needs), each at 1/speed. Walks the timeline's segments
 // (review: they must outlive the loop) after a trim, a split and a speed change.
 void tst_RecordingPreviewExport::estimateCountsTheKeptParts()
 {
@@ -2002,12 +2003,12 @@ void tst_RecordingPreviewExport::estimateCountsTheKeptParts()
     const qint64 end = 10 * kFrameIntervalMs;
     backend.setTrimStart(start);
     backend.setTrimEnd(end);
-    QCOMPARE(backend.keptSourceVideoBytes(), samples.bytesBetween(start, end));
+    QCOMPARE(backend.keptSourceVideoBytes(), samples.bytesToEncode(start, end));
     QVERIFY(backend.splitAt(split));
     backend.setPartSpeed(1, 2.0);
     QCOMPARE(backend.keptSourceVideoBytes(),
-             qint64(std::ceil(double(samples.bytesBetween(start, split))
-                              + double(samples.bytesBetween(split, end)) / 2.0)));
+             qint64(std::ceil(double(samples.bytesToEncode(start, split))
+                              + double(samples.bytesToEncode(split, end)) / 2.0)));
     QVERIFY(backend.mp4EstimatedBytes() > 0);
 }
 
