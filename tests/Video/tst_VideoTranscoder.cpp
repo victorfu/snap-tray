@@ -355,6 +355,7 @@ private slots:
     void trimWithoutAudio();
     void oddCropIsEvenAligned();
     void cancelRemovesOutput();
+    void cancelWithAudioRemovesOutputAndKeepsSource_data();
     void cancelWithAudioRemovesOutputAndKeepsSource();
     void cancelAtCompletionRemovesOutput();
     void audioFaultFailsSafely_data();
@@ -825,8 +826,17 @@ void tst_VideoTranscoder::cancelRemovesOutput()
     QVERIFY(maxPercent.load() < 100);
 }
 
+void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource_data()
+{
+    QTest::addColumn<bool>("edited");
+    QTest::newRow("plain trim") << false;
+    QTest::newRow("edited audio and video") << true;
+}
+
 void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource()
 {
+    QFETCH(bool, edited);
+    if (edited && !m_transcoder->supportsFrameFilter()) QSKIP("Frame filtering unavailable");
     const QString input = fixture(true);
     if (input.isEmpty()) QSKIP("AAC encoding unavailable");
     QVERIFY2(!input.startsWith(QLatin1String("ERROR:")), qPrintable(input));
@@ -836,6 +846,7 @@ void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource()
     request.inputPath = input;
     request.outputPath = m_dir.filePath(QStringLiteral("cancelled-av.mp4"));
     request.startMs = 200;
+    if (edited) request.frameFilter = [](QImage&, qint64) {};
     std::atomic<int> maxPercent{-1};
     const VideoTranscodeResult result = m_transcoder->transcode(request, [&](int percent) {
         maxPercent = qMax(maxPercent.load(), percent);

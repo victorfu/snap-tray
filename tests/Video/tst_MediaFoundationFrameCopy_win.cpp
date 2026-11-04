@@ -3,12 +3,14 @@
 
 #include "video/MediaFoundationFrameCopy_win.h"
 
+#ifdef Q_OS_WIN
 #include <windows.h>
 #include <mfapi.h>
 #include <mfobjects.h>
 #include <wrl/client.h>
 
 using Microsoft::WRL::ComPtr;
+#endif
 
 namespace {
 QImage testImage(const QSize& size)
@@ -30,8 +32,12 @@ class tst_MediaFoundationFrameCopy : public QObject
 private slots:
     void signedPitch_data();
     void signedPitch();
+    void unusedByteIsOpaque_data();
+    void unusedByteIsOpaque();
+#ifdef Q_OS_WIN
     void nativeBuffer_data();
     void nativeBuffer();
+#endif
 };
 
 void tst_MediaFoundationFrameCopy::signedPitch_data()
@@ -71,6 +77,31 @@ void tst_MediaFoundationFrameCopy::signedPitch()
     QCOMPARE(actual, expected);
 }
 
+void tst_MediaFoundationFrameCopy::unusedByteIsOpaque_data()
+{
+    QTest::addColumn<int>("unused");
+    QTest::newRow("zero") << 0;
+    QTest::newRow("partial") << 85;
+    QTest::newRow("opaque") << 255;
+}
+
+void tst_MediaFoundationFrameCopy::unusedByteIsOpaque()
+{
+    QFETCH(int, unused);
+    const QRgb native[] = {qRgba(255, 255, 255, unused), qRgba(40, 80, 120, unused)};
+    const QImage frame = copyMediaFoundationRgb32Frame(reinterpret_cast<const uchar*>(native),
+                                                       sizeof(native), QSize(2, 1));
+    // Qt's RGB32 contract is 0xffRRGGBB; MF's unused X byte is not alpha.
+    const auto* pixels = reinterpret_cast<const QRgb*>(frame.constBits());
+    QCOMPARE(pixels[0], qRgb(255, 255, 255));
+    QCOMPARE(pixels[1], qRgb(40, 80, 120));
+    const QImage texture = frame.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QCOMPARE(texture.pixelColor(0, 0), QColor(Qt::white));
+    QCOMPARE(texture.pixelColor(1, 0), QColor(40, 80, 120));
+    QCOMPARE(qAlpha(native[0]), unused);
+}
+
+#ifdef Q_OS_WIN
 void tst_MediaFoundationFrameCopy::nativeBuffer_data()
 {
     QTest::addColumn<bool>("bottomUp");
@@ -110,6 +141,7 @@ void tst_MediaFoundationFrameCopy::nativeBuffer()
     buffer.Reset();
     QCOMPARE(actual, expected);
 }
+#endif
 
 QTEST_GUILESS_MAIN(tst_MediaFoundationFrameCopy)
 #include "tst_MediaFoundationFrameCopy_win.moc"

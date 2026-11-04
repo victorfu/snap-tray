@@ -20,6 +20,10 @@ inline QImage copyMediaFoundationRgb32Frame(const uchar* scanline0, qsizetype pi
         // advances to the next displayed row by moving backwards in memory.
         const uchar* sourceRow = scanline0 + qsizetype(y) * pitch;
         std::memcpy(frame.scanLine(y), sourceRow, rowBytes);
+        // MF RGB32 is X8R8G8B8: the unused byte may be zero. Qt RGB32
+        // requires 0xffRRGGBB, including when converted to a QML texture.
+        auto* pixels = reinterpret_cast<QRgb*>(frame.scanLine(y));
+        for (int x = 0; x < size.width(); ++x) pixels[x] |= 0xff000000u;
     }
     return frame;
 }

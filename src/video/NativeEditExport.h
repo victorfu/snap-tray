@@ -24,6 +24,10 @@ public:
     virtual QByteArray audioAt(qint64 frame, int count) = 0; // 48 kHz stereo PCM16
     virtual bool writeVideo(const QImage& frame, qint64 timeUs, qint64 durationUs) = 0;
     virtual bool writeAudio(const QByteArray& pcm, qint64 startFrame) = 0;
+    // Some muxers gate either input on the other input's progress. These
+    // adapters support one audio producer alongside the video producer.
+    virtual bool concurrentAudio() const { return false; }
+    virtual void cancel() {}
     virtual bool finish() = 0;
     virtual void abort() = 0;
     virtual QString error() const = 0;

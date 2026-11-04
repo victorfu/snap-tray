@@ -8,6 +8,8 @@
 #include <QSaveFile>
 #include <QScopeGuard>
 #include <QTemporaryDir>
+#include <QThread>
+#include <atomic>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -117,9 +119,11 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
     constexpr int chunk = 4800;
     qint64 audioFrame = 0;
     int audioPart = 0;
+    std::atomic_bool cancelled{false};
     auto writeAudioUntil = [&](qint64 timeUs) {
         const qint64 until = timeUs * rate / 1000000;
         while (format.audio && audioFrame < until) {
+            if (cancelled.load()) return false;
             while (audioPart + 1 < int(segments.size())
                 && map.segmentOutputStartMs(audioPart + 1) * rate / 1000 <= audioFrame) ++audioPart;
             const qint64 partStart = map.segmentOutputStartMs(audioPart) * rate / 1000;
@@ -138,6 +142,26 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
         return true;
     };
     const qint64 durationUs = format.durationMs * 1000;
+    const bool concurrentAudio = format.audio && media.concurrentAudio();
+    bool audioSucceeded = true; // read only after the worker has joined
+    std::unique_ptr<QThread> audioWorker;
+    const auto stopAudio = qScopeGuard([&] {
+        if (audioWorker) {
+            cancelled = true;
+            media.cancel();
+            audioWorker->wait();
+        }
+    });
+    if (concurrentAudio) {
+        audioWorker.reset(QThread::create([&] {
+            audioSucceeded = writeAudioUntil(durationUs);
+            if (!audioSucceeded) {
+                cancelled = true;
+                media.cancel();
+            }
+        }));
+        audioWorker->start();
+    }
     // Keep source transitions on one output clock. A fixed grid alone can
     // miss a short VFR picture at a cut end. Follow native PTS, drop frames
     // against the output cadence, and fill still stretches when effects move.
@@ -149,7 +173,7 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
     auto queueFrame = [&](QImage frame, qint64 outUs) {
         if (pendingTime >= 0) {
             if (outUs <= pendingTime || !media.writeVideo(pendingFrame, pendingTime, outUs - pendingTime)
-                || !writeAudioUntil(outUs)) return false;
+                || (!concurrentAudio && !writeAudioUntil(outUs))) return false;
         }
         pendingFrame = std::move(frame);
         pendingTime = outUs;
@@ -168,6 +192,7 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
         bool first = true;
         qint64 sourceUs = part.startMs * 1000;
         while (sourceUs < part.endMs * 1000) {
+            if (cancelled.load()) return fail(media.error());
             const qint64 outUs = *map.sourceToOutputMicroseconds(sourceUs);
             if (outUs >= outEnd) break;
             if (progress && !progress(int(outUs * 90 / durationUs))) return fail(QStringLiteral("Export cancelled."));
@@ -208,7 +233,12 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
         }
     }
     if (pendingTime < 0 || !media.writeVideo(pendingFrame, pendingTime, durationUs - pendingTime)
-        || !writeAudioUntil(durationUs)) return fail(media.error());
+        || (!concurrentAudio && !writeAudioUntil(durationUs))) return fail(media.error());
+    if (audioWorker) {
+        audioWorker->wait();
+        audioWorker.reset();
+        if (!audioSucceeded) return fail(media.error());
+    }
     if (!media.finish()) return fail(media.error());
     const auto verified = transcoder.probe(staged);
     const QString codec = QLatin1String(format.hevc ? kVideoCodecHevc : kVideoCodecH264);

@@ -3,6 +3,7 @@
 #include "video/NativeEditExport.h"
 
 #include "VideoTranscoderFaultInjection.h"
+#include "MediaFoundationFrameCopy_win.h"
 #include "encoding/VideoBitrate.h"
 
 #include <QDebug>
@@ -619,11 +620,9 @@ public:
                 || qAbs(qint64(locked.pitch())) < qint64(shown.right() + 1) * 4) {
                 failed(FAILED(hr) ? hr : E_BOUNDS); return {};
             }
-            m_frame = QImage(m_size, QImage::Format_RGB32);
+            m_frame = copyMediaFoundationRgb32Frame(locked.row(shown.y()) + shown.x() * 4,
+                                                    locked.pitch(), m_size);
             if (m_frame.isNull()) { failed(E_OUTOFMEMORY); return {}; }
-            for (int y = 0; y < m_size.height(); ++y)
-                std::memcpy(m_frame.scanLine(y), locked.row(y + shown.y()) + shown.x() * 4,
-                            size_t(m_size.width()) * 4);
             hr = locked.unlock();
             m_next.Reset();
             if (FAILED(hr)) { failed(hr); return {}; }

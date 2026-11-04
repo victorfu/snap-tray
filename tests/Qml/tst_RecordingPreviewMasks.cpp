@@ -233,6 +233,8 @@ void tst_RecordingPreviewMasks::previewShowsTheMaskedPixels()
     QVERIFY(QTest::qWaitForWindowExposed(view));
     auto* player = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewVideoPlayer"));
     QVERIFY(player);
+    QSignalSpy decodedFrames(player, SIGNAL(frameReady(QImage)));
+    QSignalSpy playbackErrors(player, SIGNAL(errorOccurred(QString)));
     QTRY_VERIFY_WITH_TIMEOUT(!backend.videoSize().isEmpty(), 10000);
     QMetaObject::invokeMethod(player, "pause");
     // Measure the picture only: the paused play button's glyph and the
@@ -248,7 +250,19 @@ void tst_RecordingPreviewMasks::previewShowsTheMaskedPixels()
     QTRY_VERIFY(player->property("playing").toBool());
     // Playing is reported before the decoder delivers its first frame on
     // Windows. Let that frame arrive before pausing the decoding thread.
-    QTRY_VERIFY_WITH_TIMEOUT(previewEdges(view, player) > 50, 10000);
+    const auto previewDetails = [&] {
+        QString detail;
+        QDebug debug(&detail);
+        debug << "edges" << previewEdges(view, player) << "frames" << decodedFrames.count()
+              << "raw edges" << (decodedFrames.isEmpty() ? -1 : edges(decodedFrames.last().at(0).value<QImage>()))
+              << "position" << player->property("position") << "content" << player->property("contentRect")
+              << "item" << player->size() << "visible" << player->isVisible()
+              << "window" << view->size() << "shot" << view->grabWindow().size()
+              << "dpr" << view->grabWindow().devicePixelRatio() << "errors" << playbackErrors;
+        return detail;
+    };
+    QTRY_VERIFY2_WITH_TIMEOUT(!player->property("contentRect").toRectF().isEmpty(), qPrintable(previewDetails()), 10000);
+    QTRY_VERIFY2_WITH_TIMEOUT(previewEdges(view, player) > 50, qPrintable(previewDetails()), 10000);
     QMetaObject::invokeMethod(player, "pause");
     QTRY_VERIFY(!player->property("playing").toBool());
     QTRY_VERIFY_WITH_TIMEOUT(previewEdges(view, player) > 50, 10000);

@@ -944,18 +944,23 @@ target_link_libraries(Video_VideoTranscoder PRIVATE snaptray_platform Qt6::Test
 add_test(NAME Video_VideoTranscoder COMMAND Video_VideoTranscoder)
 if(SNAPTRAY_ENABLE_LINUX_RECORDING)
     add_test(NAME Video_NativeEditExport COMMAND Video_VideoTranscoder)
+    add_test(NAME Video_NativeEditConcurrentAudio COMMAND Video_VideoTranscoder)
+    set_tests_properties(Video_NativeEditConcurrentAudio PROPERTIES TIMEOUT 120 LABELS "integration;slow"
+        ENVIRONMENT "SNAPTRAY_TEST_NATIVE_EDIT_EXPORT=1;SNAPTRAY_TEST_CONCURRENT_AUDIO=1;QT_QPA_PLATFORM=offscreen")
     set_tests_properties(Video_NativeEditExport PROPERTIES TIMEOUT 120 LABELS "integration;slow"
         ENVIRONMENT "SNAPTRAY_TEST_NATIVE_EDIT_EXPORT=1;QT_QPA_PLATFORM=offscreen")
 endif()
 
 set_tests_properties(Video_VideoTranscoder PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
+add_executable(Video_MediaFoundationFrameCopy Video/tst_MediaFoundationFrameCopy_win.cpp)
+target_include_directories(Video_MediaFoundationFrameCopy PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_MediaFoundationFrameCopy PRIVATE Qt6::Gui Qt6::Test
+    "$<$<PLATFORM_ID:Windows>:mfplat>" "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
+add_test(NAME Video_MediaFoundationFrameCopy COMMAND Video_MediaFoundationFrameCopy)
+set_tests_properties(Video_MediaFoundationFrameCopy PROPERTIES TIMEOUT 30 LABELS "unit")
+
 if(WIN32)
-    add_executable(Video_MediaFoundationFrameCopy Video/tst_MediaFoundationFrameCopy_win.cpp)
-    target_include_directories(Video_MediaFoundationFrameCopy PRIVATE ${CMAKE_SOURCE_DIR}/src)
-    target_link_libraries(Video_MediaFoundationFrameCopy PRIVATE Qt6::Gui Qt6::Test mfplat mfuuid ole32)
-    add_test(NAME Video_MediaFoundationFrameCopy COMMAND Video_MediaFoundationFrameCopy)
-    set_tests_properties(Video_MediaFoundationFrameCopy PROPERTIES TIMEOUT 30 LABELS "unit")
 
     add_executable(Video_MediaFoundationPipeline Video/tst_MediaFoundationPipeline.cpp)
     target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test)

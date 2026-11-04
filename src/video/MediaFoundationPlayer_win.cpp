@@ -499,21 +499,8 @@ private:
                 }
 
                 if (height > 0 && maxLength >= static_cast<DWORD>(height * strideToUse)) {
-                    frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
-
-                    if (!frame.isNull()) {
-                        if (m_stride < 0) {
-                            for (int y = 0; y < m_videoSize.height(); y++) {
-                                const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
-                                memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                            }
-                        } else {
-                            for (int y = 0; y < m_videoSize.height(); y++) {
-                                const BYTE *srcRow = data + y * strideToUse;
-                                memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                            }
-                        }
-                    }
+                    const BYTE* scanline0 = data + (m_stride < 0 ? (height - 1) * strideToUse : 0);
+                    frame = copyMediaFoundationRgb32Frame(scanline0, m_stride, m_videoSize);
                 }
                 buffer->Unlock();
             }

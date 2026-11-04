@@ -6,6 +6,9 @@
 
 #include <QElapsedTimer>
 #include <QThread>
+#include <QMutexLocker>
+#include <QRecursiveMutex>
+#include <atomic>
 #include <cstring>
 
 namespace SnapTray {
@@ -15,7 +18,9 @@ NSURL* url(const QString& path) { return [NSURL fileURLWithPath:path.toNSString(
 class AVEditMedia final : public NativeEditMedia, private NativePcmReader {
 public:
     ~AVEditMedia() override { abort(); }
-    QString error() const override { return m_error; }
+    QString error() const override { QMutexLocker lock(&m_errorMutex); return m_error; }
+    bool concurrentAudio() const override { return true; }
+    void cancel() override { m_cancelled = true; }
 
     bool open(const QString& input, const QString& output,
               const NativeEditFormat& format, bool decodeAudio) override
@@ -91,7 +96,10 @@ public:
         }
     }
 
-    QByteArray audioAt(qint64 frame, int count) override { return read(frame, count); }
+    QByteArray audioAt(qint64 frame, int count) override {
+        QMutexLocker lock(&m_errorMutex);
+        return read(frame, count);
+    }
 
     bool writeVideo(const QImage& image, qint64 timeUs, qint64 durationUs) override
     {
@@ -142,7 +150,12 @@ public:
             const bool ok = status == noErr && [m_audio appendSampleBuffer:sample];
             if (sample) CFRelease(sample);
             if (block) CFRelease(block);
-            return ok || fail(m_writer.error, "Cannot encode edited audio.");
+            if (!ok) return fail(m_writer.error, "Cannot encode edited audio.");
+            if (startFrame + pcm.size() / 4 >= m_format.durationMs * 48) {
+                [m_audio markAsFinished];
+                m_audioFinished = true;
+            }
+            return true;
         }
     }
 
@@ -150,7 +163,7 @@ public:
     {
         @autoreleasepool {
             if (!m_videoFinished) [m_video markAsFinished];
-            if (m_audio) [m_audio markAsFinished];
+            if (m_audio && !m_audioFinished) [m_audio markAsFinished];
             [m_writer endSessionAtSourceTime:CMTimeMake(m_format.durationMs, 1000)];
             dispatch_semaphore_t done = dispatch_semaphore_create(0);
             [m_writer finishWritingWithCompletionHandler:^{ dispatch_semaphore_signal(done); }];
@@ -168,6 +181,7 @@ public:
             m_reader = nil; m_decodedAudio = nil;
             m_pixels = nil; m_video = nil; m_audio = nil; m_writer = nil;
             m_videoFinished = false;
+            m_audioFinished = false;
             if (m_pcmFormat) { CFRelease(m_pcmFormat); m_pcmFormat = nullptr; }
         }
     }
@@ -175,15 +189,18 @@ public:
 private:
     bool fail(NSError* error, const char* fallback)
     {
-        m_error = error ? QString::fromNSString(error.localizedDescription) : QString::fromLatin1(fallback);
+        QMutexLocker lock(&m_errorMutex);
+        if (m_error.isEmpty())
+            m_error = error ? QString::fromNSString(error.localizedDescription) : QString::fromLatin1(fallback);
         return false;
     }
     bool ready(AVAssetWriterInput* input)
     {
         QElapsedTimer timeout; timeout.start();
-        while (input && !input.readyForMoreMediaData && m_writer.status == AVAssetWriterStatusWriting
+        while (!m_cancelled && input && !input.readyForMoreMediaData && m_writer.status == AVAssetWriterStatusWriting
                && timeout.elapsed() < 10000) QThread::msleep(1);
-        if (input && input.readyForMoreMediaData && m_writer.status == AVAssetWriterStatusWriting) return true;
+        if (!m_cancelled && input && input.readyForMoreMediaData && m_writer.status == AVAssetWriterStatusWriting) return true;
+        QMutexLocker lock(&m_errorMutex);
         fail(m_writer.error, "Edited MP4 writer stopped accepting data.");
         m_error += QStringLiteral(" (%1, writer status %2, waited %3 ms)")
             .arg(input == m_video ? QStringLiteral("video") : QStringLiteral("audio"))
@@ -211,7 +228,10 @@ private:
         }
     }
     NativeEditFormat m_format;
+    mutable QRecursiveMutex m_errorMutex;
+    std::atomic_bool m_cancelled{false};
     bool m_videoFinished = false;
+    bool m_audioFinished = false;
     AVAssetWriter* m_writer = nil;
     AVAssetWriterInput* m_video = nil;
     AVAssetWriterInput* m_audio = nil;
