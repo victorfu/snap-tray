@@ -549,6 +549,7 @@ add_library(snaptray_platform STATIC
     src/recording/CursorProbe.cpp
     src/recording/CursorTimelineRecorder.cpp
     src/recording/KeyProbe.cpp
+    src/video/NativeEditExport.cpp
     src/recording/KeyTimelineRecorder.cpp
     src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
@@ -597,6 +598,10 @@ add_library(snaptray_platform STATIC
         src/video/AVFoundationFrameReader_mac.mm
         src/video/AVFoundationPlayer_mac.mm
         src/video/AVFoundationTranscoder_mac.mm
+        src/recording/KeyProbe_mac.mm
+        src/video/NativeEditMedia_mac.mm
+        src/video/PreviewPcmOutput_mac.mm
+        src/video/RemixedAudioPreview.cpp
     >
     # macOS headers with Q_OBJECT
     $<$<PLATFORM_ID:Darwin>:
@@ -624,6 +629,9 @@ add_library(snaptray_platform STATIC
         src/encoding/D3D11Nv12Converter_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
+        src/recording/KeyProbe_win.cpp
+        src/video/PreviewPcmOutput_win.cpp
+        src/video/RemixedAudioPreview.cpp
         src/video/MediaFoundationTranscoder_win.cpp
     >
     # Linux sources
@@ -671,6 +679,9 @@ set_source_files_properties(
     src/video/AVFoundationFrameReader_mac.mm
     src/video/AVFoundationPlayer_mac.mm
     src/video/AVFoundationTranscoder_mac.mm
+    src/video/NativeEditMedia_mac.mm
+    src/video/PreviewPcmOutput_mac.mm
+    src/recording/KeyProbe_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"
 )
 
@@ -703,11 +714,13 @@ if(APPLE)
         PRIVATE
             "-framework CoreGraphics"
             "-framework ApplicationServices"
+            "-framework Carbon"
             "-framework AppKit"
             "-framework Vision"
             "-framework ServiceManagement"
             "-framework CoreMedia"
             "-framework CoreVideo"
+            "-framework VideoToolbox"
             "-framework AVFoundation"
             "-framework CoreAudio"
             "-framework AudioToolbox"
@@ -721,6 +734,8 @@ elseif(WIN32)
             windowsapp
             d3d11
             dxgi
+            uiautomationcore
+            winmm
             mfreadwrite
             mfplat
             mfuuid

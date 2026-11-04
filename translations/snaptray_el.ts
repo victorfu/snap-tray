@@ -2026,6 +2026,14 @@ Size: %2</source>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Οι εγγραφές δεν μπορούν να αποθηκευτούν στον φάκελο έργων της Βιβλιοθήκης εγγραφών.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Η καταγραφή πλήκτρων δεν είναι διαθέσιμη. Ελέγξτε τα δικαιώματα παρακολούθησης εισόδου. Η εγγραφή θα συνεχιστεί χωρίς ενδείξεις πλήκτρων.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Δεν ήταν δυνατή η αποθήκευση των ενδείξεων πλήκτρων. Η εγγραφή θα συνεχιστεί χωρίς αυτές.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3303,6 +3311,14 @@ Size: %2</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Κλείσιμο</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Γραμματοσειρά</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Προεπιλογή</translation>
     </message>
 </context>
 <context>

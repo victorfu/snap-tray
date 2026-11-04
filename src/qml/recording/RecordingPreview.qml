@@ -1845,6 +1845,24 @@ Item {
                         }
                     }
                 }
+                SettingsCombo {
+                    objectName: "previewOverlayFont"
+                    visible: overlayPanel.isText
+                    width: 220
+                    labelWidth: 60
+                    controlWidth: 160
+                    minimumPopupWidth: 260
+                    label: qsTr("Font")
+                    readonly property var families: [""].concat(Qt.fontFamilies())
+                    model: families.map(function(family) {
+                        return {text: family || qsTr("Default"), value: family}
+                    })
+                    currentIndex: Math.max(0, families.indexOf(root.selectedOverlayData
+                        ? root.selectedOverlayData.fontFamily : ""))
+                    onActivated: function(index) {
+                        backend.setOverlayFontFamily(backend.selectedOverlay, families[index])
+                    }
+                }
                 SegmentButton {
                     objectName: "previewOverlaySmaller"
                     minimumButtonWidth: 0

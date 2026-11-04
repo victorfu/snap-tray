@@ -2032,6 +2032,14 @@ Grootte: %2</translation>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Opnamen kunnen niet worden opgeslagen in de projectmap van de opnamebibliotheek.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Toetsaanslagen opnemen is niet beschikbaar. Controleer de rechten voor invoercontrole. De opname gaat door zonder toetsaanwijzingen.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Toetsaanwijzingen konden niet worden opgeslagen. De opname gaat zonder deze verder.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3309,6 +3317,14 @@ Grootte: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Sluiten</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Lettertype</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Standaard</translation>
     </message>
 </context>
 <context>

@@ -1,3 +1,6 @@
+#include "video/RemixedAudioPreview.h"
+#include "video/FramePresentationClock.h"
+#include <chrono>
 #include "video/IVideoPlayer.h"
 
 #ifdef Q_OS_WIN
@@ -33,6 +36,8 @@
 
 namespace {
 constexpr qint64 kTimeUnitsPerMillisecond = 10000;
+qint64 wallTimeUs() { return std::chrono::duration_cast<std::chrono::microseconds>(
+    std::chrono::steady_clock::now().time_since_epoch()).count(); }
 constexpr int kBytesPerPixel = 4;
 constexpr int kStrideAlignments[] = { 16, 32, 64, 128, 256 };
 constexpr int kHeightAlignments[] = { 1, 2, 4, 8, 16, 32 };
@@ -128,9 +133,16 @@ public:
     }
     void setVideoSize(QSize size) { m_videoSize = size; }
     void setStride(int stride) { m_stride = stride; }
-    void setFrameInterval(int intervalMs) { m_frameIntervalMs = intervalMs; }
     void setDuration(qint64 durationMs) { m_durationMs = durationMs; }
-    void setPlaybackRate(float rate) { m_playbackRate.store(rate); }
+    void setPlaybackRate(float rate) {
+        QMutexLocker locker(&m_waitMutex);
+        m_clock.setRate(rate, wallTimeUs());
+        m_wakeCondition.wakeAll();
+    }
+    qint64 positionMs() {
+        QMutexLocker locker(&m_waitMutex);
+        return qBound<qint64>(0, m_clock.positionUs(wallTimeUs()) / 1000, m_durationMs);
+    }
     bool isWaitingAtEndOfStream() const
     {
         return m_waitingAtEndOfStream.load() && !m_seekRequested.load();
@@ -144,11 +156,14 @@ public:
     }
     void requestPause() {
         QMutexLocker locker(&m_waitMutex);
+        m_clock.setPlaying(false, wallTimeUs());
         m_paused = true;
+        m_wakeCondition.wakeAll();
     }
     void requestResume() {
         QMutexLocker locker(&m_waitMutex);
         m_paused = false;
+        if (!m_seekRequested) m_clock.setPlaying(true, wallTimeUs());
         m_wakeCondition.wakeAll();
     }
     void requestSeek(qint64 positionMs) {
@@ -162,6 +177,8 @@ public:
 private:
     void requestFrame(qint64 timestamp, bool nextFrame) {
         QMutexLocker locker(&m_waitMutex);
+        m_clock.setPlaying(false, wallTimeUs());
+        m_clock.seek(timestamp / 10, wallTimeUs());
         m_seekTimestamp = timestamp;
         m_seekNextFrame = nextFrame;
         ++m_seekSerial;
@@ -197,12 +214,23 @@ protected:
         qint64 candidateTime = 0;
         QImage lookAheadFrame;
         qint64 lookAheadTime = 0;
-        const auto pacePlayback = [this] {
-            const int sleepMs = static_cast<int>(m_frameIntervalMs / m_playbackRate.load());
+        const auto waitForPresentation = [&](qint64 timestamp, bool seekFrame) {
             QMutexLocker locker(&m_waitMutex);
-            if (sleepMs > 0 && !m_stopRequested && !m_seekRequested && !m_paused) {
-                m_wakeCondition.wait(&m_waitMutex, sleepMs);
+            if (seekFrame && activeSeekSerial == m_seekSerial.load()) {
+                m_clock.seek((seekNextFrame ? timestamp : targetTime) / 10, wallTimeUs());
+                m_clock.setPlaying(!m_paused, wallTimeUs());
             }
+            while (!m_stopRequested && activeSeekSerial == m_seekSerial.load()) {
+                if (m_paused) {
+                    if (seekFrame) return true;
+                    m_wakeCondition.wait(&m_waitMutex);
+                    continue;
+                }
+                const qint64 waitUs = m_clock.delayUs(timestamp / 10, wallTimeUs());
+                if (waitUs <= 0) return true;
+                m_wakeCondition.wait(&m_waitMutex, static_cast<unsigned long>(qMin<qint64>((waitUs + 999) / 1000, 60000)));
+            }
+            return false;
         };
 
         while (!m_stopRequested) {
@@ -261,9 +289,9 @@ protected:
             }
 
             if (!lookAheadFrame.isNull()) {
-                emit frameReady(lookAheadFrame, lookAheadTime, activeSeekSerial);
+                if (waitForPresentation(lookAheadTime, false))
+                    emit frameReady(lookAheadFrame, lookAheadTime, activeSeekSerial);
                 lookAheadFrame = {};
-                pacePlayback();
                 continue;
             }
 
@@ -313,9 +341,14 @@ protected:
                 // The final frame covers the remainder of the timeline,
                 // including a seek to duration(). Do not time out at EOF.
                 if (framePendingAfterSeek && !candidateFrame.isNull()) {
-                    emit frameReady(candidateFrame, candidateTime, activeSeekSerial);
+                    if (waitForPresentation(candidateTime, true))
+                        emit frameReady(candidateFrame, candidateTime, activeSeekSerial);
                     candidateFrame = {};
                 }
+
+                // Keep the final picture/audio alive through the media end,
+                // not just through the nominal duration of one decoded frame.
+                if (!m_paused && !waitForPresentation(m_durationMs * kTimeUnitsPerMillisecond, false)) continue;
 
                 // Keep the reader thread alive but dormant. Looping and replay
                 // both seek this same Source Reader back to zero, avoiding a
@@ -326,6 +359,7 @@ protected:
                     if (activeSeekSerial != m_seekSerial.load()) {
                         continue;
                     }
+                    m_clock.setPlaying(false, wallTimeUs());
                     m_paused = true;
                 }
                 framePendingAfterSeek = false;
@@ -357,9 +391,11 @@ protected:
                         } else {
                             candidateTime = timestamp;
                         }
-                        emit frameReady(frame, candidateTime, activeSeekSerial);
+                        if (waitForPresentation(candidateTime, framePendingAfterSeek)) {
+                            emit frameReady(frame, candidateTime, activeSeekSerial);
+                            frameDelivered = true;
+                        }
                         candidateFrame = {};
-                        frameDelivered = true;
                     }
                 }
                 sample->Release();
@@ -367,8 +403,6 @@ protected:
 
             if (frameDelivered) {
                 framePendingAfterSeek = false;
-
-                pacePlayback();
             }
         }
 
@@ -465,21 +499,8 @@ private:
                 }
 
                 if (height > 0 && maxLength >= static_cast<DWORD>(height * strideToUse)) {
-                    frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
-
-                    if (!frame.isNull()) {
-                        if (m_stride < 0) {
-                            for (int y = 0; y < m_videoSize.height(); y++) {
-                                const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
-                                memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                            }
-                        } else {
-                            for (int y = 0; y < m_videoSize.height(); y++) {
-                                const BYTE *srcRow = data + y * strideToUse;
-                                memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                            }
-                        }
-                    }
+                    const BYTE* scanline0 = data + (m_stride < 0 ? (height - 1) * strideToUse : 0);
+                    frame = copyMediaFoundationRgb32Frame(scanline0, m_stride, m_videoSize);
                 }
                 buffer->Unlock();
             }
@@ -493,9 +514,8 @@ private:
     MediaFoundationReaderCallback* m_callback = nullptr;
     QSize m_videoSize;
     int m_stride = 0;
-    int m_frameIntervalMs = 33;
     qint64 m_durationMs = 0;
-    std::atomic<float> m_playbackRate{1.0f};
+    SnapTray::FramePresentationClock m_clock;
 
     std::atomic<bool> m_stopRequested{false};
     std::atomic<bool> m_paused{true};
@@ -532,12 +552,13 @@ public:
     QSize videoSize() const override { return m_videoSize; }
     bool hasVideo() const override { return m_hasVideo; }
     bool hasAudio() const override { return m_hasAudio; }
-    bool supportsAudioPlayback() const override { return false; }
+    bool supportsAudioPlayback() const override { return m_remixed.hasSource(); }
+    bool setAudioSource(AudioSource source) override { return m_remixed.setSource(std::move(source)); }
 
-    void setVolume(float) override {}
-    float volume() const override { return 1.0f; }
-    void setMuted(bool) override {}
-    bool isMuted() const override { return false; }
+    void setVolume(float volume) override { m_volume = qBound(0.0f, volume, 1.0f); m_remixed.setVolume(m_volume, m_muted); }
+    float volume() const override { return m_volume; }
+    void setMuted(bool muted) override { m_muted = muted; m_remixed.setVolume(m_volume, m_muted); }
+    bool isMuted() const override { return m_muted; }
 
     void setLooping(bool loop) override { m_looping = loop; }
     bool isLooping() const override { return m_looping; }
@@ -584,6 +605,10 @@ private:
     bool m_looping = false;
     bool m_atEndOfStream = false;
     float m_playbackRate = 1.0f;
+    SnapTray::RemixedAudioPreview m_remixed;
+    bool m_audioSeeking = false;
+    float m_volume = 1.0f;
+    bool m_muted = false;
     bool m_mfInitialized = false;
     quint64 m_readerGeneration = 0;
 
@@ -605,7 +630,9 @@ MediaFoundationPlayer::MediaFoundationPlayer(QObject *parent)
     }
 
     connect(m_positionTimer, &QTimer::timeout, this, [this]() {
-        if (m_state == State::Playing && m_duration > 0) {
+        if (m_state == State::Playing && m_duration > 0 && m_readerThread) {
+            m_position = m_readerThread->positionMs();
+            m_remixed.synchronize(m_position, !m_audioSeeking, m_playbackRate);
             emit positionChanged(m_position);
         }
     });
@@ -636,6 +663,8 @@ void MediaFoundationPlayer::stopReaderThread()
 
 void MediaFoundationPlayer::cleanup()
 {
+    m_remixed.synchronize(0, false, m_playbackRate, true);
+    m_audioSeeking = false;
     // Invalidate callbacks that may already be queued from this reader.
     ++m_readerGeneration;
     m_pendingFrameSteps = 0;
@@ -704,7 +733,6 @@ bool MediaFoundationPlayer::load(const QString &filePath)
     m_readerThread->setReader(m_reader, m_callback);
     m_readerThread->setVideoSize(m_videoSize);
     m_readerThread->setStride(m_stride);
-    m_readerThread->setFrameInterval(m_frameIntervalMs);
     m_readerThread->setDuration(m_duration);
 
     const quint64 readerGeneration = m_readerGeneration;
@@ -950,6 +978,7 @@ void MediaFoundationPlayer::play()
 
     m_readerThread->setPlaybackRate(m_playbackRate);
     m_readerThread->requestResume();
+    m_position = m_readerThread->positionMs();
     m_positionTimer->start();
     setState(State::Playing);
 }
@@ -960,6 +989,7 @@ void MediaFoundationPlayer::pause()
 
     if (m_readerThread) {
         m_readerThread->requestPause();
+        m_position = m_readerThread->positionMs();
     }
     m_positionTimer->stop();
     setState(State::Paused);
@@ -996,6 +1026,8 @@ void MediaFoundationPlayer::seek(qint64 positionMs)
         m_readerThread->requestSeek(positionMs);
     }
 
+    m_audioSeeking = true;
+    m_remixed.synchronize(positionMs, false, m_playbackRate, true);
     emit positionChanged(positionMs);
 }
 
@@ -1007,7 +1039,9 @@ void MediaFoundationPlayer::setPlaybackRate(float rate)
     m_playbackRate = newRate;
     if (m_readerThread) {
         m_readerThread->setPlaybackRate(newRate);
+        m_position = m_readerThread->positionMs();
     }
+    m_remixed.synchronize(m_position, m_state == State::Playing && !m_audioSeeking, m_playbackRate);
     emit playbackRateChanged(newRate);
 }
 
@@ -1030,6 +1064,7 @@ void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestamp)
     }
     m_atEndOfStream = false;
     m_frameTimestamp = timestamp;
+    m_audioSeeking = false;
     m_position = timestamp / kTimeUnitsPerMillisecond;
     if (m_pendingFrameSteps > 0) {
         // Dispatch before notifying observers so a seek/stop from a signal
@@ -1039,7 +1074,9 @@ void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestamp)
     if (m_state == State::Paused) {
         emit positionChanged(m_position);
     }
-    emit frameReady(frame, m_position);
+    m_remixed.synchronize(m_readerThread ? m_readerThread->positionMs() : m_position,
+                         m_state == State::Playing && !m_audioSeeking, m_playbackRate);
+    emit frameReady(frame, timestamp / kTimeUnitsPerMillisecond);
 }
 
 void MediaFoundationPlayer::onEndOfStream()
@@ -1076,6 +1113,7 @@ void MediaFoundationPlayer::onEndOfStream()
 
 void MediaFoundationPlayer::onReaderError(const QString &message)
 {
+    m_remixed.synchronize(m_position, false, m_playbackRate, true);
     qWarning() << "MediaFoundationPlayer: Reader error:" << message;
     m_pendingFrameSteps = 0;
     emit error(message);
@@ -1083,6 +1121,7 @@ void MediaFoundationPlayer::onReaderError(const QString &message)
 
 void MediaFoundationPlayer::setState(State newState)
 {
+    m_remixed.synchronize(m_position, newState == State::Playing && !m_audioSeeking, m_playbackRate);
     if (m_state != newState) {
         m_state = newState;
         emit stateChanged(newState);

@@ -24,6 +24,8 @@ public:
     explicit CoreAudioCaptureEngine(QObject *parent = nullptr);
     ~CoreAudioCaptureEngine() override;
 
+    bool supportsSeparateTracks() const override { return true; }
+
     // IAudioCaptureEngine interface
     bool setAudioSource(AudioSource source) override;
     AudioSource audioSource() const override { return m_source; }

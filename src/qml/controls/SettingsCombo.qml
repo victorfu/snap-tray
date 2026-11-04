@@ -17,13 +17,14 @@ SettingsRow {
         ? model[currentIndex].value : undefined
 
     property int minimumPopupWidth: 0
+    property int controlWidth: 0 // 0 keeps the content-based settings layout
 
     signal activated(int index)
 
     ComboBox {
         id: combo
         anchors.verticalCenter: parent.verticalCenter
-        width: Math.max(120, implicitWidth)
+        width: root.controlWidth > 0 ? root.controlWidth : Math.max(120, implicitWidth)
         model: root.model
         currentIndex: root.currentIndex
         textRole: "text"

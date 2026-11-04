@@ -134,3 +134,26 @@ changes are not covered by mocks; they need the real-device procedure below.
    Flash frames have a high `YAVG`; each `silence_end` is a beep onset. Their
    difference is the A/V offset. Record machine, OS, SnapTray version,
    resolution, frame rate, encoder and power mode with the numbers.
+
+## Native editor follow-up (#185, #187, #188, #189, #190)
+
+The native editor additions need the following macOS/Windows handoff checks.
+Linux exercises the shared export loop through `Video_NativeEditExport`, the
+native PCM packet reader, overlay font persistence/UI, and the remix worker's
+seek/pause/mute/rate behavior. Those checks do not substitute for native device
+or permission testing. Native CI runs the existing `Video_VideoTranscoder`
+contract with the newly enabled capabilities.
+
+| Check | macOS | Windows |
+| --- | --- | --- |
+| Multiple cuts + 0.5×/1.5×/2× parts; audio pulses at seams | Pending device test | Pending device test |
+| Crop + zoom + masks + text/CJK fonts + frame; MP4/GIF/WebP parity | Pending device test | Pending device test |
+| 1080p/720p/custom width, fractional source fps, 15/30 fps, HEVC available/unavailable | Pending device test | Pending device test |
+| Both sources → separate gains/mutes/noise reduction in preview and MP4; recover project | Pending device test | Pending device test |
+| Seek/pause/resume/speed changes with remixed audio and an output device disconnect | Pending device test | Pending device test |
+| Keys off/shortcuts/all; pause boundary; permission refusal; protected input | Input Monitoring + Secure Event Input | UIA password field + secure desktop |
+
+Measure A/V pulse error and output metadata using the procedure above. Check
+that unedited saves still use the existing fast path. Check font fallback when
+opening a project on a computer without the chosen family. #192 (the general
+preview playback backend) remains separate.

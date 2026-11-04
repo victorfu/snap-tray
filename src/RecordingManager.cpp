@@ -2717,6 +2717,7 @@ void RecordingManager::startKeyTimeline()
     auto probe = m_createKeyProbe ? m_createKeyProbe() : nullptr;
     if (!probe) {
         qWarning() << "RecordingManager: keys cannot be read here; recording without shortcut hints";
+        emit recordingWarning(tr("Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints."));
         return;
     }
     auto mediaTime = [this]() { return mediaTimeMs(); };
@@ -2730,6 +2731,7 @@ void RecordingManager::startKeyTimeline()
         nullptr);
     if (!m_keyRecorder->start()) {
         qWarning() << "RecordingManager: key sidecar not written; the recording continues without it";
+        emit recordingWarning(tr("Key hints could not be saved. The recording will continue without them."));
         m_keyRecorder.reset();
         SnapTray::KeyTimelineSidecar::remove(m_cursorSidecarVideo);
     }

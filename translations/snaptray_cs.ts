@@ -2033,6 +2033,14 @@ Velikost: %2</translation>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Záznamy nelze ukládat do složky projektů knihovny záznamů.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Záznam kláves není dostupný. Zkontrolujte oprávnění ke sledování vstupu. Nahrávání bude pokračovat bez zobrazení kláves.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Nápovědy kláves se nepodařilo uložit. Nahrávání bude pokračovat bez nich.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3310,6 +3318,14 @@ Velikost: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Zavřít</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Písmo</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Výchozí</translation>
     </message>
 </context>
 <context>

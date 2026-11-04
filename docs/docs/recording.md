@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-10-04
+last_modified_at: 2026-11-03
 layout: docs
 title: Recording
 seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS, Windows and Linux X11"
@@ -89,7 +89,7 @@ The timeline can do more than trim the ends. In the preview:
 
 The preview plays the edit: cut parts are skipped and each part plays at its own speed. The time under the video shows the exported length. Cuts and speeds can be undone like other edits, and **Reset Crop and Trim** removes them.
 
-The export joins the kept parts in order. Pointer smoothing, motion blur and click highlights never reach across a cut, so a click in a cut part never shows. Audio is kept for parts at normal speed and stays in sync at every seam; **parts at another speed are silent** in this first version. Cutting only the first or last part works like a trim. On macOS and Windows, cuts and speed changes are available for GIF and WebP; MP4 there refuses to export them and says so.
+The export joins the kept parts in order. Pointer smoothing, motion blur and click highlights never reach across a cut, so a click in a cut part never shows. Audio is kept for parts at normal speed and stays in sync at every seam; **parts at another speed are silent** in this first version. Cutting only the first or last part works like a trim. Cuts and speed changes are available for MP4, GIF and WebP on all supported recording platforms.
 
 ## Disk space
 
@@ -115,7 +115,7 @@ If several of these happen at once, the recording still ends only once and the f
 
 ## The pointer in recordings
 
-The recorded video does not contain the mouse pointer. While a recording that opens in the preview runs, SnapTray keeps a separate record of the pointer next to it: where it was, what it looked like, and when buttons were pressed. Keyboard input is never recorded. This record stays with the temporary recording and is deleted with it when you save or discard; saved videos and exports never include it. It is what later editing features use to show, enlarge or highlight the pointer.
+The recorded video does not contain the mouse pointer. While a recording that opens in the preview runs, SnapTray keeps a separate record of the pointer next to it: where it was, what it looked like, and when buttons were pressed. Keyboard input is only recorded if you separately enable shortcut hints. This record stays with the temporary recording and is deleted with it when you save or discard; saved videos and exports never include it. It is what later editing features use to show, enlarge or highlight the pointer.
 
 On Linux (X11) it includes the pointer's shape and clicks. On macOS and Windows only the position is kept for now, and the pointer is drawn as a plain arrow. If the record cannot be written, the recording itself is not affected.
 
@@ -133,7 +133,7 @@ When a recording has this record, the preview shows pointer controls next to the
   - **Still End** (0.5 s, 1 s, 2 s): hold the pointer still for the last moments of the exported clip, so moving to the stop button is not shown. It follows the trim end.
   - **Hide Pointer Here** hides the pointer (and click rings) for two seconds from the playhead. Hidden ranges are shown as grey bars under the timeline; click one to type its start and end, or delete it.
 
-Your last choices are remembered (hidden ranges belong to one recording and are not), and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. On macOS and Windows, pointer effects are available for GIF and WebP exports; MP4 exports there do not draw them yet, and the preview says so.
+Your last choices are remembered (hidden ranges belong to one recording and are not), and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. Pointer effects are available for MP4, GIF and WebP on all supported recording platforms.
 
 ### Shortcut hints
 
@@ -142,9 +142,9 @@ SnapTray can show the shortcuts you pressed while recording, for tutorials ("Ctr
 - **Shortcuts only** (the default once switched on) keeps keys held with Ctrl, Alt or Super, and keys such as Enter, Esc, Tab, the arrows and F-keys. Plain typing, Shift+letter included, is not kept.
 - **All keys, including typed text** is a separate choice. Do not use it while entering passwords.
 
-The keys are kept next to the temporary recording, without window titles or application names, and are deleted with it: they are never in the saved file or the History. Keys pressed while the recording is paused are not kept. On Linux (X11) keys are read passively, without grabbing the keyboard; macOS and Windows do not record keys yet, and the options say so.
+The keys are kept next to the temporary recording, without window titles or application names, and are deleted with it: they are never in the saved file or the History. Keys pressed while the recording is paused are not kept. Keys are read passively on Linux X11, macOS and Windows. macOS asks for Input Monitoring permission only after you opt in; secure input suspends key recording. Windows suppresses keys when the focused control reports a password field, and when that check fails or focus changes during the check. If the probe cannot start, a warning explains that key hints are unavailable and the recording continues. Applications that do not expose protected fields cannot always be detected; keep All keys off when entering sensitive text.
 
-In the preview, **Keys** (shown when the recording has keys) draws them into the export: **Keys: On/Off**, **Place** (bottom, bottom left, bottom right, top), **Size**, **Dark/Light**, and how long a hint stays (1, 1.5 or 2.5 s). Keys pressed close together show together, and a repeated shortcut shows once with a count ("Ctrl + Z ×3"). Hints follow cuts (#185): keys in a cut part never show. Like other effects, hints are drawn for MP4 on Linux and for GIF and WebP everywhere.
+In the preview, **Keys** (shown when the recording has keys) draws them into the export: **Keys: On/Off**, **Place** (bottom, bottom left, bottom right, top), **Size**, **Dark/Light**, and how long a hint stays (1, 1.5 or 2.5 s). Keys pressed close together show together, and a repeated shortcut shows once with a count ("Ctrl + Z ×3"). Hints follow cuts (#185): keys in a cut part never show. Hints are drawn for MP4, GIF and WebP.
 
 ### Zoom and pan
 
@@ -154,7 +154,7 @@ Full-screen recordings often make buttons and text small once shared. The previe
 - **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
 - Zooms appear as bars above the timeline. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less Motion** makes all zooms smaller and slower without direct pans, **Zoom On/Off** turns them all off without deleting them, and **Delete** removes one.
 
-The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Like pointer effects, zooms are available for MP4 on Linux and for GIF and WebP everywhere.
+The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Zooms are available for MP4, GIF and WebP.
 
 ### Masking sensitive areas
 
@@ -166,17 +166,17 @@ Before sharing, cover account names, chats, notifications or other private conte
 
 Masks are burned into the exported MP4, GIF or WebP, and the preview shows them on the real picture, before any crop or zoom, so a zoom never uncovers what a mask hides. Each mask starts a fraction of a second early so no frame shows the content as it begins. Masks can be undone like other edits; **Reset Crop and Trim** keeps them.
 
-**Masks are only in the exported file.** The unmasked recording is a temporary file: it stays available in the preview until you save (also after Cancel or a failed save), and once the masked export is saved, SnapTray deletes it. If you need an unmasked copy too, save once without masks first. SnapTray never uploads recordings. If the selected format cannot draw masks on your system (MP4 on macOS and Windows for now), SnapTray refuses to export and says so, instead of saving a file without the masks. Masks are not tracked automatically: if the content moves, add masks for each time range.
+**Masks are only in the exported file.** The unmasked recording is a temporary file: it stays available in the preview until you save (also after Cancel or a failed save), and once the masked export is saved, SnapTray deletes it. If you need an unmasked copy too, save once without masks first. SnapTray never uploads recordings. If the selected format cannot draw masks on your system, SnapTray refuses to export and says so, instead of saving a file without the masks. Masks are not tracked automatically: if the content moves, add masks for each time range.
 
 ### Text and images
 
 **Add Text** puts a title or caption on the video for three seconds from the playhead; **Add Image** adds a picture file (PNG, SVG, JPEG, WebP), such as a logo, for the whole recording. Overlays appear as bars at the bottom of the timeline; click one to edit it:
 
-- Text: type it in the box (several lines are fine), make it smaller or larger, pick a colour, a dark or light box behind it, and the alignment.
+- Text: type it in the box (several lines are fine), choose a font (Default uses the system font), make it smaller or larger, pick a colour, a dark or light box behind it, and the alignment.
 - Image: smaller or larger, and its opacity.
 - Both: drag it on the video to move it, drag its corner to resize it, show it for the whole recording or type a start and end time, or delete it. Overlays fade in and out.
 
-Overlays sit on the exported picture: they keep their place through a crop and do not zoom with it, and masks never cover them. An image is read once when you add it, so deleting or moving the file afterwards does not affect the export. Overlays can be undone like other edits; **Reset Crop and Trim** keeps them. Like masks, they are drawn for MP4 on Linux and for GIF and WebP everywhere; elsewhere SnapTray refuses to export MP4 without them and says so. The watermark from Settings is still added while recording, as before; overlays do not replace it.
+Overlays sit on the exported picture: they keep their place through a crop and do not zoom with it, and masks never cover them. An image is read once when you add it, so deleting or moving the file afterwards does not affect the export. Overlays can be undone like other edits; **Reset Crop and Trim** keeps them. They are drawn for MP4, GIF and WebP. The font family is saved with editable projects; if it is unavailable on another computer, Qt uses a fallback font. The watermark from Settings is still added while recording, as before; overlays do not replace it.
 
 ### A frame around the video
 
@@ -186,7 +186,7 @@ Overlays sit on the exported picture: they keep their place through a crop and d
 - **Padding**, **Corners** (None, Small, Medium, Large), **Shadow** and **Border**. Sizes follow the video, so a frame looks the same on a small or a 4K recording.
 - **Ratio**: Auto, or 1:1, 16:9, 4:3, 9:16, 2:1. The background fills the extra space.
 
-The frame makes the exported file larger than the cropped picture by the padding (and the ratio); MP4 export options then scale the framed video. It is drawn last, around a picture that already has its masks, zoom and pointer, and a blurred background is made from the masked picture, so nothing a mask hides shows around it. The preview shows the frame except while you edit the crop or compare with the original. Like masks, the frame is available for MP4 on Linux and for GIF and WebP everywhere.
+The frame makes the exported file larger than the cropped picture by the padding (and the ratio); MP4 export options then scale the framed video. It is drawn last, around a picture that already has its masks, zoom and pointer, and a blurred background is made from the masked picture, so nothing a mask hides shows around it. The preview shows the frame except while you edit the crop or compare with the original. The frame is available for MP4, GIF and WebP.
 
 ## Recovering unsaved recordings
 
@@ -231,7 +231,7 @@ With MP4 selected, **MP4 Options** in the preview sets the exported file, with i
 - **Quality**: Default (the quality from Settings > Recording), Low, Medium or High.
 - **Codec**: H.264, which plays everywhere, or HEVC, which makes smaller files at the same quality but does not open in some older players. HEVC is offered only when the system can encode it.
 
-The estimate is the target bitrate over the exported length, so the real file is usually a little smaller. Your last choices are remembered. Choices that change nothing for a recording (for example 1080p for a 720p recording) keep an unedited recording on the fast path, saved without re-encoding. Pointer effects, zooms and masks are drawn on the full-size picture before it is scaled, so they stay in place in a smaller video. On macOS and Windows only Quality applies for now; Size, Frame rate and HEVC are shown but disabled.
+The estimate is the target bitrate over the exported length, so the real file is usually a little smaller. Your last choices are remembered. Choices that change nothing for a recording (for example 1080p for a 720p recording) keep an unedited recording on the fast path, saved without re-encoding. Pointer effects, zooms and masks are drawn on the full-size picture before it is scaled, so they stay in place in a smaller video. These options are available on macOS, Windows and Linux. HEVC availability depends on the installed native encoder or FFmpeg encoder.
 
 ## Audio options
 
@@ -252,7 +252,7 @@ In the preview, **Audio** (MP4) sets each one for the export:
 - **Microphone** and **System Audio** volume (−12, −6, 0, +6 dB), and **Mute** for either.
 - **Reduce Noise** turns down hiss, hum and room noise between words on the microphone (a high-pass filter and a soft noise gate). It uses very little processor time.
 
-The preview plays the new mix as you change it. With everything at 0 dB and nothing muted, the recording is saved as recorded. A changed mix re-encodes the sound, and stays in sync with the video, cuts and speed changes included (parts at another speed stay silent). The two tracks are deleted with the temporary recording, and crash recovery keeps them with the recording it recovers. Recordings with only one source, or made before this, have just the mixed sound and no Audio button. Separate tracks are recorded on Linux for now; on macOS and Windows recordings keep the mixed sound only.
+The preview plays the new mix as you change it. With everything at 0 dB and nothing muted, the recording is saved as recorded. A changed mix re-encodes the sound, and stays in sync with the video, cuts and speed changes included (parts at another speed stay silent). The two tracks are deleted with the temporary recording, and crash recovery keeps them with the recording it recovers. Recordings with only one source, or made before this, have just the mixed sound and no Audio button. Separate tracks are supported on macOS, Windows and Linux. On Windows the new mix can be previewed for recordings with separate tracks; playback of older recordings with only a mixed track remains unchanged.
 
 ### Check audio before you record
 

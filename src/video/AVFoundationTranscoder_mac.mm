@@ -1,3 +1,4 @@
+#include "video/NativeEditExport.h"
 #include "video/IVideoTranscoder.h"
 
 #include "VideoTranscoderFaultInjection.h"
@@ -271,6 +272,15 @@ public:
     VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback& progress) override;
     VideoFileProbe probe(const QString& filePath) override;
     void setFaultForTesting(VideoTranscodeFault fault) override { m_fault.store(fault); }
+    bool supportsFrameFilter() const override { return true; }
+    bool supportsOutputOptions() const override { return true; }
+    bool supportsSegments() const override { return true; }
+    bool supportsAudioMix() const override { return true; }
+    bool supportsVideoCodec(const QString& codec) const override {
+        return IVideoTranscoder::supportsVideoCodec(codec)
+            || (codec == QLatin1String(kVideoCodecHevc) && SnapTray::nativeHevcExportAvailable());
+    }
+
 
 private:
     std::atomic<VideoTranscodeFault> m_fault{VideoTranscodeFault::None};
@@ -341,6 +351,12 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
     if (QFileInfo(request.outputPath).absoluteFilePath() == QFileInfo(request.inputPath).absoluteFilePath()
         || isSameFile(request.outputPath, request.inputPath)) {
         return reject(QStringLiteral("Output path must differ from the input path"));
+    }
+
+    if (!supportsVideoCodec(request.videoCodec)) return reject(QStringLiteral("Unsupported video codec."));
+    if (SnapTray::needsNativeEditExport(request)) {
+        auto media = SnapTray::createNativeEditMedia();
+        return SnapTray::exportNativeEdit(request, progress, *this, *media);
     }
 
     const VideoTranscodeFault fault = m_fault.load();

@@ -2033,6 +2033,14 @@ Size: %2</source>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Снимци не могу да се чувају у фасцикли пројеката библиотеке снимака.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Снимање тастера није доступно. Проверите дозволе за праћење уноса. Снимање ће се наставити без приказа тастера.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Није могуће сачувати приказ тастера. Снимање ће се наставити без њега.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3310,6 +3318,14 @@ Size: %2</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Затвори</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Фонт</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Подразумевано</translation>
     </message>
 </context>
 <context>

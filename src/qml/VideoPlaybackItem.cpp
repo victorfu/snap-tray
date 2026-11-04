@@ -264,7 +264,10 @@ void VideoPlaybackItem::onFrameReady(const QImage &frame, qint64 positionMs)
 
 bool VideoPlaybackItem::setAudioSource(std::function<QByteArray(qint64 startFrame, int frames)> source)
 {
-    return m_player && m_player->setAudioSource(std::move(source));
+    const bool before = audioPlaybackSupported();
+    const bool accepted = m_player && m_player->setAudioSource(std::move(source));
+    if (before != audioPlaybackSupported()) emit audioPlaybackSupportedChanged();
+    return accepted;
 }
 
 void VideoPlaybackItem::setFrameProcessor(FrameProcessor processor)

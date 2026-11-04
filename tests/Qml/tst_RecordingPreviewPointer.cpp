@@ -284,6 +284,16 @@ void tst_RecordingPreviewPointer::overlayPanelEditsText()
     QTest::keyClick(view, Qt::Key_Escape);
     QTRY_VERIFY(!view->rootObject()->property("textEntryActive").toBool());
     QVERIFY(!backend.discardConfirmationPending());
+    QQuickItem* font = item(view, "previewOverlayFont");
+    QVERIFY(font && font->isVisible());
+    const auto families = font->property("families").toStringList();
+    QVERIFY(families.size() > 1);
+    QVERIFY(QMetaObject::invokeMethod(font, "activated", Q_ARG(int, 1)));
+    QCOMPARE(backend.overlayTrack().segments[0].fontFamily, families[1]);
+    backend.undo();
+    QVERIFY(backend.overlayTrack().segments[0].fontFamily.isEmpty());
+    backend.redo();
+    QCOMPARE(backend.overlayTrack().segments[0].fontFamily, families[1]);
     const double size = backend.overlayTrack().segments[0].size;
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayLarger"), "clicked"));
     QVERIFY(backend.overlayTrack().segments[0].size > size);

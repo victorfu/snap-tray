@@ -775,6 +775,7 @@ bool CoreAudioCaptureEngine::start()
         || m_source == AudioSource::Both;
     SnapTray::Audio::TimestampedPcmMixer::Config mixerConfig;
     mixerConfig.microphoneEnabled = wantsMicrophone;
+    mixerConfig.splitSources = m_separateTracks;
     mixerConfig.systemAudioEnabled = wantsSystemAudio && isSystemAudioSupported();
     m_mixer = std::make_unique<SnapTray::Audio::TimestampedPcmMixer>(mixerConfig);
     m_reportedMixerDrop = false;
@@ -1282,6 +1283,9 @@ void CoreAudioCaptureEngine::deliverMixerOutput(
     for (const auto& output : result.output) {
         if (!output.pcm.isEmpty()) {
             emit audioDataReady(output.pcm, output.startFrame);
+            if (m_separateTracks) {
+                emit sourceAudioReady(output.microphonePcm, output.systemAudioPcm, output.startFrame);
+            }
         }
     }
 }

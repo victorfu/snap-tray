@@ -62,18 +62,38 @@ std::optional<qint64> TimelineMap::sourceToOutput(qint64 sourceMs) const
 
 qint64 TimelineMap::outputToSource(qint64 outputMs) const
 {
+    return mapOutputTime(outputMs, 1);
+}
+
+std::optional<qint64> TimelineMap::sourceToOutputMicroseconds(qint64 sourceUs) const
+{
+    if (sourceUs < 0) return std::nullopt;
+    const int index = segmentAt(sourceUs / 1000);
+    if (index < 0) return std::nullopt;
+    const auto& s = m_segments[size_t(index)];
+    return m_outputStarts[size_t(index)] * 1000
+        + qint64(std::llround(double(sourceUs - s.startMs * 1000) / s.speed));
+}
+
+qint64 TimelineMap::outputToSourceMicroseconds(qint64 outputUs) const
+{
+    return mapOutputTime(outputUs, 1000);
+}
+
+qint64 TimelineMap::mapOutputTime(qint64 output, qint64 unitsPerMs) const
+{
     if (m_segments.empty()) return 0;
-    if (outputMs <= 0) return m_segments.front().startMs;
-    auto it = std::upper_bound(m_outputStarts.begin(), m_outputStarts.end(), outputMs);
+    if (output <= 0) return m_segments.front().startMs * unitsPerMs;
+    const auto it = std::upper_bound(m_outputStarts.begin(), m_outputStarts.end(), output,
+        [unitsPerMs](qint64 value, qint64 startMs) { return value < startMs * unitsPerMs; });
     const size_t index = size_t(std::max<ptrdiff_t>(0, (it - m_outputStarts.begin()) - 1));
-    if (index >= m_segments.size()) return m_segments.back().endMs;
+    if (index >= m_segments.size()) return m_segments.back().endMs * unitsPerMs;
     const TimelineSegment& s = m_segments[index];
-    const qint64 source = s.startMs + qint64(std::llround(double(outputMs - m_outputStarts[index]) * s.speed));
-    // A time inside this part never maps to its end: the end is exclusive,
-    // the first moment of what was cut (rounding at 0.5x would reach it,
-    // PR #199 review). Past the whole output, the end is the answer.
-    const bool inside = index + 1 < m_outputStarts.size() && outputMs < m_outputStarts[index + 1];
-    return std::min(source, inside ? std::max(s.startMs, s.endMs - 1) : s.endMs);
+    const qint64 source = s.startMs * unitsPerMs
+        + qint64(std::llround(double(output - m_outputStarts[index] * unitsPerMs) * s.speed));
+    // Inside a part, rounding must never reach the deleted source at its
+    // exclusive end. Past the whole output, return the source end itself.
+    return std::min(source, std::max(s.startMs * unitsPerMs, s.endMs * unitsPerMs - 1));
 }
 
 qint64 TimelineMap::nextShownSourceMs(qint64 sourceMs) const

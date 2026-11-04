@@ -458,6 +458,7 @@ public:
     Q_INVOKABLE int chooseOverlayImage();
     Q_INVOKABLE void removeOverlay(int index);
     Q_INVOKABLE void setOverlayText(int index, const QString& text);
+    Q_INVOKABLE void setOverlayFontFamily(int index, const QString& family);
     Q_INVOKABLE void setOverlaySize(int index, qreal size);
     Q_INVOKABLE void setOverlayColor(int index, const QColor& color);
     Q_INVOKABLE void setOverlayBackground(int index, int background);

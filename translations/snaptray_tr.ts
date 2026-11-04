@@ -2025,6 +2025,14 @@ Boyut: %2</translation>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Kayıtlar Kayıt Kitaplığı'nın proje klasörüne kaydedilemez.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Tuş kaydı kullanılamıyor. Giriş izleme izinlerini kontrol edin. Kayıt, tuş ipuçları olmadan devam edecek.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Tuş ipuçları kaydedilemedi. Kayıt bunlar olmadan devam edecek.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3302,6 +3310,14 @@ Boyut: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Kapat</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Yazı tipi</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Varsayılan</translation>
     </message>
 </context>
 <context>

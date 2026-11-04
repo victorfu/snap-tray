@@ -12,6 +12,7 @@ private slots:
     void emptyEditIsThePlainTrim();
     void splitDeleteAndSpeed();
     void mapsBothWays();
+    void mapsFractionalFrameTimesWithoutCrossingCuts();
     void neverMapsIntoTheCutAtAPartsEnd();
     void neighboursAtOneSpeedMerge();
     void splitLimits();
@@ -95,6 +96,19 @@ void TestTimelineEdit::mapsBothWays()
     QCOMPARE(map.speedAt(1500), 1.0);
     QCOMPARE(map.segmentAt(1500), -1);
     QCOMPARE(map.segmentOutputStartMs(2), 1000);
+}
+
+void TestTimelineEdit::mapsFractionalFrameTimesWithoutCrossingCuts()
+{
+    const TimelineMap map({{100, 1100, 1.0}, {2000, 3000, 1.5}});
+    QCOMPARE(map.outputToSourceMicroseconds(33367), qint64(133367));
+    QCOMPARE(map.outputToSourceMicroseconds(999999), qint64(1099999));
+    QCOMPARE(map.outputToSourceMicroseconds(1000000), qint64(2000000));
+    QCOMPARE(map.outputToSourceMicroseconds(1033367), qint64(2050051));
+    QCOMPARE(map.sourceToOutputMicroseconds(2050051).value(), qint64(1033367));
+    QVERIFY(!map.sourceToOutputMicroseconds(1100000).has_value());
+    QVERIFY(map.outputToSourceMicroseconds(map.outputDurationMs() * 1000 - 1) < 3000000);
+    QCOMPARE(map.outputToSourceMicroseconds(map.outputDurationMs() * 1000), qint64(3000000));
 }
 
 void TestTimelineEdit::neighboursAtOneSpeedMerge()

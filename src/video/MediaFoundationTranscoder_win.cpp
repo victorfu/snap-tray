@@ -1,6 +1,9 @@
 #include "video/IVideoTranscoder.h"
+#include "video/IVideoFrameReader.h"
+#include "video/NativeEditExport.h"
 
 #include "VideoTranscoderFaultInjection.h"
+#include "MediaFoundationFrameCopy_win.h"
 #include "encoding/VideoBitrate.h"
 
 #include <QDebug>
@@ -18,6 +21,7 @@
 #include <mferror.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
+#include <mftransform.h>
 #include <propvarutil.h>
 #include <wrl/client.h>
 
@@ -30,9 +34,9 @@
 // synchronous Media Foundation Source Reader and Sink Writer. Media Foundation
 // timestamps are in 100 ns units ("hns").
 //
-// Audio is copied as compressed AAC packets; there is no PCM re-encode
-// fallback. If the Sink Writer cannot carry the source audio, transcode()
-// fails and the source is retained (never a silent output).
+// The plain trim/crop path copies compressed AAC packets. Advanced edits use
+// the shared native export loop and the PCM/AAC adapter below. Both retain the
+// source on failure.
 
 using Microsoft::WRL::ComPtr;
 
@@ -557,6 +561,253 @@ void removeOutput(const QString& path)
     }
 }
 
+// Offline RGB reader, also used by GIF/WebP export on Windows. It keeps one
+// look-ahead sample and holds the most recent picture across VFR gaps.
+class MFFrameReader final : public IVideoFrameReader {
+public:
+    bool load(const QString& path) override
+    {
+        m_reader.Reset(); m_next.Reset(); m_frame = {}; m_error.clear();
+        m_eof = false; m_position = -1;
+        HRESULT hr = m_com.usable() ? m_mf.result() : m_com.result();
+        if (SUCCEEDED(hr)) hr = openReader(path, true, m_reader);
+        ComPtr<IMFMediaType> native, rgb;
+        if (SUCCEEDED(hr)) hr = m_reader->GetNativeMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &native);
+        QRect area;
+        if (SUCCEEDED(hr)) hr = displayArea(native.Get(), &area);
+        LONGLONG duration = 0;
+        if (SUCCEEDED(hr)) hr = presentationDuration(m_reader.Get(), &duration);
+        if (FAILED(hr)) return failed(hr);
+        m_size = area.size(); m_duration = hnsToMs(duration);
+        UINT32 numerator = 30, denominator = 1;
+        MFGetAttributeRatio(native.Get(), MF_MT_FRAME_RATE, &numerator, &denominator);
+        m_fps = denominator ? double(numerator) / denominator : 30.0;
+        hr = m_reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, FALSE);
+        if (SUCCEEDED(hr)) hr = m_reader->SetStreamSelection(MF_SOURCE_READER_FIRST_VIDEO_STREAM, TRUE);
+        if (SUCCEEDED(hr)) hr = MFCreateMediaType(&rgb);
+        if (SUCCEEDED(hr)) hr = rgb->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+        if (SUCCEEDED(hr)) hr = rgb->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32);
+        if (SUCCEEDED(hr)) hr = m_reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, nullptr, rgb.Get());
+        return SUCCEEDED(hr) || failed(hr);
+    }
+    QImage frameAt(qint64 ms) override { return frameAtMicroseconds(ms * 1000); }
+    QImage frameAtMicroseconds(qint64 us) override
+    {
+        if (!m_reader || !m_error.isEmpty() || us < m_position) {
+            m_error = QStringLiteral("Video reader requires ascending timestamps.");
+            return {};
+        }
+        m_position = us;
+        for (;;) {
+            if (!m_next) {
+                if (m_eof) break;
+                DWORD flags = 0;
+                HRESULT hr = m_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0,
+                    nullptr, &flags, &m_nextTime, &m_next);
+                if (FAILED(hr) || (flags & MF_SOURCE_READERF_ERROR)) {
+                    failed(FAILED(hr) ? hr : E_FAIL); return {};
+                }
+                m_eof = (flags & MF_SOURCE_READERF_ENDOFSTREAM) != 0;
+                if (!m_next) continue;
+                hr = queryDecodedLayout(m_reader.Get(), &m_layout);
+                if (FAILED(hr)) { failed(hr); return {}; }
+            }
+            if (!m_frame.isNull() && qRound64(double(m_nextTime) / 10.0) > us) break;
+            LockedVideoBuffer locked;
+            HRESULT hr = locked.lock(m_next.Get(), m_layout);
+            const QRect shown(m_layout.origin, m_size);
+            if (FAILED(hr) || !QRect(QPoint(), m_layout.frameSize).contains(shown)
+                || qAbs(qint64(locked.pitch())) < qint64(shown.right() + 1) * 4) {
+                failed(FAILED(hr) ? hr : E_BOUNDS); return {};
+            }
+            m_frame = copyMediaFoundationRgb32Frame(locked.row(shown.y()) + shown.x() * 4,
+                                                    locked.pitch(), m_size);
+            if (m_frame.isNull()) { failed(E_OUTOFMEMORY); return {}; }
+            hr = locked.unlock();
+            m_next.Reset();
+            if (FAILED(hr)) { failed(hr); return {}; }
+        }
+        if (m_frame.isNull()) m_error = QStringLiteral("Video has no decoded frames.");
+        return m_frame;
+    }
+    QSize videoSize() const override { return m_size; }
+    qint64 nextFrameTimeMicroseconds() const override { return m_next ? qRound64(double(m_nextTime) / 10.0) : -1; }
+    qint64 duration() const override { return m_duration; }
+    double frameRate() const override { return m_fps; }
+    QString lastError() const override { return m_error; }
+private:
+    bool failed(HRESULT hr) { m_error = hrText("Read offline video", hr); return false; }
+    ComApartment m_com;
+    MfSession m_mf;
+    ComPtr<IMFSourceReader> m_reader;
+    ComPtr<IMFSample> m_next;
+    DecodedVideoLayout m_layout;
+    LONGLONG m_nextTime = 0;
+    QSize m_size;
+    QImage m_frame;
+    qint64 m_duration = 0, m_position = -1;
+    double m_fps = 30.0;
+    bool m_eof = false;
+    QString m_error;
+};
+
+HRESULT pcmMediaType(ComPtr<IMFMediaType>& type)
+{
+    HRESULT hr = MFCreateMediaType(&type);
+    if (SUCCEEDED(hr)) hr = type->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+    if (SUCCEEDED(hr)) hr = type->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 48000);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_AUDIO_BLOCK_ALIGNMENT, 4);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND, 192000);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
+    return hr;
+}
+
+HRESULT preserveEditedFrameTimes(IMFSinkWriter* writer, DWORD stream)
+{
+    ComPtr<IMFSinkWriterEx> extended;
+    HRESULT hr = writer->QueryInterface(IID_PPV_ARGS(&extended));
+    if (FAILED(hr)) return hr;
+    for (DWORD index = 0;; ++index) {
+        GUID category = GUID_NULL;
+        ComPtr<IMFTransform> transform;
+        hr = extended->GetTransformForStream(stream, index, &category, &transform);
+        if (FAILED(hr)) return index > 0 ? S_OK : hr;
+        if (category != MFT_CATEGORY_VIDEO_PROCESSOR) continue;
+        // The RGB32 converter otherwise resamples to the nominal output fps,
+        // duplicating/dropping VFR pictures and changing our edit timestamps.
+        // The shared export loop already decides the cadence. Configure the
+        // processor before BeginWriting so each picture keeps its own PTS.
+        ComPtr<IMFAttributes> attributes;
+        hr = transform->GetAttributes(&attributes);
+        if (SUCCEEDED(hr)) hr = attributes->SetUINT32(MF_XVP_DISABLE_FRC, TRUE);
+        if (FAILED(hr)) return hr;
+    }
+}
+
+class MFEditMedia final : public SnapTray::NativeEditMedia, private SnapTray::NativePcmReader {
+public:
+    ~MFEditMedia() override { abort(); }
+    QString error() const override { return m_error; }
+    bool open(const QString& input, const QString& output,
+              const SnapTray::NativeEditFormat& format, bool decodeAudio) override
+    {
+        HRESULT hr = m_com.usable() ? m_mf.result() : m_com.result();
+        ComPtr<IMFAttributes> attributes;
+        if (SUCCEEDED(hr)) hr = MFCreateAttributes(&attributes, 2);
+        // Offline: do not throttle to wall time. Hardware HEVC encoders may
+        // be the only HEVC implementation installed on this system.
+        if (SUCCEEDED(hr)) hr = attributes->SetUINT32(MF_SINK_WRITER_DISABLE_THROTTLING, TRUE);
+        if (SUCCEEDED(hr)) hr = attributes->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE);
+        if (SUCCEEDED(hr)) hr = MFCreateSinkWriterFromURL(nativePath(output).c_str(), nullptr, attributes.Get(), &m_writer);
+        const UINT32 denominator = 100000;
+        const UINT32 numerator = UINT32(qRound64(format.fps * denominator));
+        ComPtr<IMFMediaType> encoded, rgb, pcm, aac;
+        if (SUCCEEDED(hr)) hr = createVideoType(format.hevc ? MFVideoFormat_HEVC : MFVideoFormat_H264,
+            format.size, numerator, denominator, encoded);
+        if (SUCCEEDED(hr)) hr = encoded->SetUINT32(MF_MT_AVG_BITRATE, UINT32(format.bitrate));
+        if (SUCCEEDED(hr)) hr = m_writer->AddStream(encoded.Get(), &m_videoStream);
+        if (SUCCEEDED(hr)) hr = createVideoType(MFVideoFormat_RGB32, format.size, numerator, denominator, rgb);
+        if (SUCCEEDED(hr)) hr = m_writer->SetInputMediaType(m_videoStream, rgb.Get(), nullptr);
+        if (format.audio && SUCCEEDED(hr)) {
+            hr = pcmMediaType(pcm);
+            if (SUCCEEDED(hr)) hr = MFCreateMediaType(&aac);
+            if (SUCCEEDED(hr)) hr = aac->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+            if (SUCCEEDED(hr)) hr = aac->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_AAC);
+            if (SUCCEEDED(hr)) hr = aac->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
+            if (SUCCEEDED(hr)) hr = aac->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 48000);
+            if (SUCCEEDED(hr)) hr = aac->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+            if (SUCCEEDED(hr)) hr = aac->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND, 16000);
+            if (SUCCEEDED(hr)) hr = aac->SetUINT32(MF_MT_AAC_PAYLOAD_TYPE, 0);
+            if (SUCCEEDED(hr)) hr = aac->SetUINT32(MF_MT_AAC_AUDIO_PROFILE_LEVEL_INDICATION, 0x29);
+            if (SUCCEEDED(hr)) hr = m_writer->AddStream(aac.Get(), &m_audioStream);
+            if (SUCCEEDED(hr)) hr = m_writer->SetInputMediaType(m_audioStream, pcm.Get(), nullptr);
+        }
+        if (decodeAudio && SUCCEEDED(hr)) {
+            hr = openReader(input, false, m_audioReader);
+            if (SUCCEEDED(hr)) hr = m_audioReader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, FALSE);
+            if (SUCCEEDED(hr)) hr = m_audioReader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
+            if (SUCCEEDED(hr)) hr = m_audioReader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, pcm.Get());
+        }
+        if (SUCCEEDED(hr)) hr = preserveEditedFrameTimes(m_writer.Get(), m_videoStream);
+        if (SUCCEEDED(hr)) hr = m_writer->BeginWriting();
+        return SUCCEEDED(hr) || failed("Configure edited MP4", hr);
+    }
+    QByteArray audioAt(qint64 frame, int count) override { return read(frame, count); }
+    bool writeVideo(const QImage& image, qint64 timeUs, qint64 durationUs) override
+    {
+        // RGB32 without a stride attribute is bottom-up for the Sink Writer.
+        const QImage rgb = image.convertToFormat(QImage::Format_RGB32);
+        QByteArray pixels(rgb.width() * rgb.height() * 4, Qt::Uninitialized);
+        for (int y = 0; y < rgb.height(); ++y)
+            std::memcpy(pixels.data() + y * rgb.width() * 4, rgb.constScanLine(rgb.height() - y - 1), size_t(rgb.width()) * 4);
+        return writeSample(m_videoStream, pixels, timeUs * 10, durationUs * 10);
+    }
+    bool writeAudio(const QByteArray& pcm, qint64 startFrame) override
+    {
+        return writeSample(m_audioStream, pcm, startFrame * kHnsPerSecond / 48000,
+                           (pcm.size() / 4) * kHnsPerSecond / 48000);
+    }
+    bool finish() override
+    {
+        const HRESULT hr = m_writer ? m_writer->Finalize() : E_UNEXPECTED;
+        m_writer.Reset(); m_audioReader.Reset();
+        return SUCCEEDED(hr) || failed("Finish edited MP4", hr);
+    }
+    void abort() override { m_writer.Reset(); m_audioReader.Reset(); }
+private:
+    bool failed(const char* step, HRESULT hr) { m_error = hrText(step, hr); return false; }
+    bool writeSample(DWORD stream, const QByteArray& bytes, LONGLONG time, LONGLONG duration)
+    {
+        ComPtr<IMFMediaBuffer> buffer;
+        ComPtr<IMFSample> sample;
+        HRESULT hr = MFCreateMemoryBuffer(DWORD(bytes.size()), &buffer);
+        BYTE* data = nullptr;
+        if (SUCCEEDED(hr)) hr = buffer->Lock(&data, nullptr, nullptr);
+        if (SUCCEEDED(hr)) {
+            std::memcpy(data, bytes.constData(), size_t(bytes.size()));
+            hr = buffer->Unlock();
+        }
+        if (SUCCEEDED(hr)) hr = buffer->SetCurrentLength(DWORD(bytes.size()));
+        if (SUCCEEDED(hr)) hr = MFCreateSample(&sample);
+        if (SUCCEEDED(hr)) hr = sample->AddBuffer(buffer.Get());
+        if (SUCCEEDED(hr)) hr = sample->SetSampleTime(time);
+        if (SUCCEEDED(hr)) hr = sample->SetSampleDuration(duration);
+        if (SUCCEEDED(hr)) hr = m_writer->WriteSample(stream, sample.Get());
+        return SUCCEEDED(hr) || failed("Write edited media sample", hr);
+    }
+    bool nextPacket(QByteArray& pcm, qint64& startFrame) override
+    {
+        if (m_audioEof) return false;
+        DWORD flags = 0;
+        LONGLONG time = 0;
+        ComPtr<IMFSample> sample;
+        HRESULT hr = m_audioReader->ReadSample(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0,
+            nullptr, &flags, &time, &sample);
+        if (FAILED(hr) || (flags & MF_SOURCE_READERF_ERROR)) return failed("Decode source audio", FAILED(hr) ? hr : E_FAIL);
+        m_audioEof = (flags & MF_SOURCE_READERF_ENDOFSTREAM) != 0;
+        if (!sample) return !m_audioEof;
+        ComPtr<IMFMediaBuffer> buffer;
+        hr = sample->ConvertToContiguousBuffer(&buffer);
+        BYTE* data = nullptr; DWORD length = 0;
+        if (SUCCEEDED(hr)) hr = buffer->Lock(&data, nullptr, &length);
+        if (SUCCEEDED(hr)) {
+            pcm = QByteArray(reinterpret_cast<const char*>(data), length);
+            hr = buffer->Unlock();
+        }
+        startFrame = qRound64(double(time) * 48000 / kHnsPerSecond);
+        return SUCCEEDED(hr) || failed("Read decoded PCM", hr);
+    }
+    ComApartment m_com;
+    MfSession m_mf;
+    ComPtr<IMFSinkWriter> m_writer;
+    ComPtr<IMFSourceReader> m_audioReader;
+    DWORD m_videoStream = 0, m_audioStream = 0;
+    bool m_audioEof = false;
+};
+
 struct WriteOutcome {
     QString error;
     bool cancelled = false;
@@ -572,6 +823,15 @@ public:
     VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback& progress) override;
     VideoFileProbe probe(const QString& filePath) override;
     void setFaultForTesting(VideoTranscodeFault fault) override { m_fault.store(fault); }
+    bool supportsFrameFilter() const override { return true; }
+    bool supportsOutputOptions() const override { return true; }
+    bool supportsSegments() const override { return true; }
+    bool supportsAudioMix() const override { return true; }
+    bool supportsVideoCodec(const QString& codec) const override {
+        return IVideoTranscoder::supportsVideoCodec(codec)
+            || (codec == QLatin1String(kVideoCodecHevc) && SnapTray::nativeHevcExportAvailable());
+    }
+
 
 private:
     // Both run inside transcode()'s COM apartment and MF session. writeOutput()
@@ -674,6 +934,12 @@ VideoTranscodeResult MediaFoundationTranscoder::transcode(const VideoTranscodeRe
     // before anything touches the output path.
     if (isSameFile(request.outputPath, request.inputPath)) {
         return reject(QStringLiteral("Output path must differ from the input path"));
+    }
+
+    if (!supportsVideoCodec(request.videoCodec)) return reject(QStringLiteral("Unsupported video codec."));
+    if (SnapTray::needsNativeEditExport(request)) {
+        auto media = SnapTray::createNativeEditMedia();
+        return SnapTray::exportNativeEdit(request, progress, *this, *media);
     }
 
     const VideoTranscodeFault fault = m_fault.load();
@@ -1210,3 +1476,30 @@ std::unique_ptr<IVideoTranscoder> createMediaFoundationTranscoder()
 {
     return std::make_unique<MediaFoundationTranscoder>();
 }
+
+std::unique_ptr<IVideoFrameReader> createMediaFoundationFrameReader()
+{
+    return std::make_unique<MFFrameReader>();
+}
+
+namespace SnapTray {
+std::unique_ptr<NativeEditMedia> createNativeEditMedia() { return std::make_unique<MFEditMedia>(); }
+bool nativeHevcExportAvailable()
+{
+    static const bool available = [] {
+        ComApartment com;
+        MfSession mf;
+        if (!com.usable() || FAILED(mf.result())) return false;
+        IMFActivate** encoders = nullptr;
+        UINT32 count = 0;
+        MFT_REGISTER_TYPE_INFO output{MFMediaType_Video, MFVideoFormat_HEVC};
+        const HRESULT hr = MFTEnumEx(MFT_CATEGORY_VIDEO_ENCODER,
+            MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG_ASYNCMFT | MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SORTANDFILTER,
+            nullptr, &output, &encoders, &count);
+        for (UINT32 i = 0; i < count; ++i) encoders[i]->Release();
+        CoTaskMemFree(encoders);
+        return SUCCEEDED(hr) && count > 0;
+    }();
+    return available;
+}
+} // namespace SnapTray

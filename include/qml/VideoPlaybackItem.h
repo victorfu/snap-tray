@@ -35,7 +35,7 @@ class VideoPlaybackItem : public QQuickPaintedItem
     // every 100 ms while playing).
     Q_PROPERTY(qint64 framePosition READ framePosition NOTIFY framePositionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
-    Q_PROPERTY(bool audioPlaybackSupported READ audioPlaybackSupported CONSTANT)
+    Q_PROPERTY(bool audioPlaybackSupported READ audioPlaybackSupported NOTIFY audioPlaybackSupportedChanged)
     Q_PROPERTY(bool muted READ isMuted WRITE setMuted NOTIFY mutedChanged)
     Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(qreal playbackRate READ playbackRate WRITE setPlaybackRate NOTIFY playbackRateChanged)
@@ -94,6 +94,7 @@ public:
     void reprocessFrame();
 
 signals:
+    void audioPlaybackSupportedChanged();
     void sourceChanged();
     void stateChanged();
     void positionChanged(qint64 positionMs);

@@ -22,6 +22,8 @@ private slots:
     void stepForwardFollowsDecodedFrames_data();
     void stepForwardFollowsDecodedFrames();
     void stepForwardAcrossTimestampGap();
+    void playbackPreservesTimestampGap_data();
+    void playbackPreservesTimestampGap();
     void queuedStepForward_data();
     void queuedStepForward();
     void queuedStepsStopAtEnd();
@@ -99,8 +101,13 @@ void TestMediaFoundationPipeline::audioPlaybackCapabilityIsTruthful()
 
     player->setMuted(true);
     player->setVolume(0.0f);
-    QVERIFY(!player->isMuted());
-    QCOMPARE(player->volume(), 1.0f);
+    QVERIFY(player->isMuted());
+    QCOMPARE(player->volume(), 0.0f);
+    QVERIFY(player->setAudioSource([](qint64, int frames) { return QByteArray(frames * 4, '\0'); }));
+    QVERIFY(player->supportsAudioPlayback());
+    QVERIFY(player->isMuted()); // Settings survive attaching the editable mix.
+    QVERIFY(player->setAudioSource({}));
+    QVERIFY(!player->supportsAudioPlayback());
 }
 
 // H.264 codes frames in 16-row macroblocks, so a 120-row video is decoded
@@ -487,6 +494,40 @@ void TestMediaFoundationPipeline::stepForwardAcrossTimestampGap()
     player->stepForward();
     QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
     QCOMPARE(player->position(), qint64(1300));
+}
+
+void TestMediaFoundationPipeline::playbackPreservesTimestampGap_data()
+{
+    QTest::addColumn<float>("rate");
+    QTest::newRow("normal") << 1.0f;
+    QTest::newRow("slower") << 0.5f;
+}
+
+void TestMediaFoundationPipeline::playbackPreservesTimestampGap()
+{
+    QFETCH(float, rate);
+    const QString input = QFINDTESTDATA("fixtures/frame-gap.mp4");
+    QVERIFY(!input.isEmpty());
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QSignalSpy frames(player.get(), &IVideoPlayer::frameReady);
+    QSignalSpy errors(player.get(), &IVideoPlayer::error);
+    QVERIFY(player->load(input));
+    player->seek(1000);
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
+    player->setPlaybackRate(rate);
+    QElapsedTimer wall;
+    qint64 nextFrameAt = -1;
+    connect(player.get(), &IVideoPlayer::frameReady, player.get(), [&](const QImage&, qint64 pts) {
+        if (pts >= 1200 && nextFrameAt < 0) nextFrameAt = wall.elapsed();
+    });
+    wall.start();
+    player->play();
+    QTRY_VERIFY_WITH_TIMEOUT(nextFrameAt >= 0, 3000);
+    player->pause();
+    // Fixed sleeps after emitting each decoded frame show 1200 immediately,
+    // skipping the source gap and making the remix jump ahead with it.
+    QVERIFY2(nextFrameAt >= qRound(200 / rate) - 40, qPrintable(QString::number(nextFrameAt)));
+    QVERIFY(errors.isEmpty());
 }
 
 void TestMediaFoundationPipeline::playRestartsAfterPausedTerminalSeek_data()

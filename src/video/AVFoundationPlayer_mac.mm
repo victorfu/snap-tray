@@ -1,3 +1,4 @@
+#include "video/RemixedAudioPreview.h"
 #include "video/IVideoPlayer.h"
 
 #ifdef Q_OS_MACOS
@@ -65,6 +66,7 @@ public:
     bool hasAudio() const override { return m_hasAudio; }
     bool supportsAudioPlayback() const override { return true; }
 
+    bool setAudioSource(AudioSource source) override;
     void setVolume(float volume) override;
     float volume() const override { return m_volume; }
     void setMuted(bool muted) override;
@@ -85,6 +87,7 @@ public:
     void onPlaybackFinished();
 
 private:
+    void syncRemix(bool discontinuity = false);
     void updateFrame();
     void deliverSeekFrame();
     void setState(State newState);
@@ -93,6 +96,9 @@ private:
     AVFoundationPlayerHelper *m_helper;
     QTimer *m_frameTimer;
 
+    SnapTray::RemixedAudioPreview m_remixed;
+    bool m_audioSeeking = false;
+    quint64 m_seekGeneration = 0;
     State m_state;
     qint64 m_duration;
     qint64 m_position;
@@ -280,6 +286,9 @@ AVFoundationPlayer::~AVFoundationPlayer()
 
 bool AVFoundationPlayer::load(const QString &filePath)
 {
+    m_remixed.synchronize(0, false, m_playbackRate, true);
+    m_audioSeeking = false;
+    ++m_seekGeneration;
     // Cleanup previous player
     [m_helper cleanup];
     m_hasVideo = false;
@@ -309,6 +318,7 @@ bool AVFoundationPlayer::load(const QString &filePath)
     }
 
     [m_helper setupWithAVPlayer:avPlayer];
+    setMuted(m_muted);
 
     qDebug() << "AVFoundationPlayer: Loading" << filePath;
     return true;
@@ -335,6 +345,8 @@ void AVFoundationPlayer::pause()
 void AVFoundationPlayer::stop()
 {
     if (!m_helper.avPlayer) return;
+    ++m_seekGeneration;
+    m_audioSeeking = false;
 
     [m_helper.avPlayer pause];
     [m_helper.avPlayer seekToTime:kCMTimeZero];
@@ -348,6 +360,9 @@ void AVFoundationPlayer::seek(qint64 positionMs)
 {
     if (!m_helper.avPlayer) return;
 
+    const quint64 generation = ++m_seekGeneration;
+    m_audioSeeking = true;
+    m_remixed.synchronize(positionMs, false, m_playbackRate, true);
     CMTime time = CMTimeMakeWithSeconds(positionMs / 1000.0, NSEC_PER_SEC);
 
     // Pure C++ state can outlive this player without depending on another
@@ -371,13 +386,15 @@ void AVFoundationPlayer::seek(qint64 positionMs)
             return;
         }
 
-        QMetaObject::invokeMethod(player, [seekState]() {
+        QMetaObject::invokeMethod(player, [seekState, generation]() {
             AVFoundationPlayer *player = nullptr;
             {
                 QMutexLocker locker(&seekState->mutex);
                 player = seekState->player;
             }
-            if (player) {
+            if (player && player->m_seekGeneration == generation) {
+                player->m_audioSeeking = false;
+                player->syncRemix(true);
                 player->deliverSeekFrame();
             }
         }, Qt::QueuedConnection);
@@ -400,10 +417,26 @@ void AVFoundationPlayer::deliverSeekFrame()
     emit frameReady(frame, timeMs);
 }
 
+void AVFoundationPlayer::syncRemix(bool discontinuity)
+{
+    const CMTime time = m_helper.avPlayer.currentTime;
+    const qint64 position = CMTIME_IS_NUMERIC(time) ? qint64(CMTimeGetSeconds(time) * 1000) : m_position;
+    m_remixed.synchronize(position, m_state == State::Playing && !m_audioSeeking, m_playbackRate, discontinuity);
+}
+
+bool AVFoundationPlayer::setAudioSource(AudioSource source)
+{
+    m_remixed.setSource(std::move(source));
+    setMuted(m_muted);
+    syncRemix(true);
+    return true;
+}
+
 void AVFoundationPlayer::setVolume(float volume)
 {
     m_volume = qBound(0.0f, volume, 1.0f);
-    if (m_helper.avPlayer && !m_muted) {
+    m_remixed.setVolume(m_volume, m_muted);
+    if (m_helper.avPlayer && !m_muted && !m_remixed.hasSource()) {
         m_helper.avPlayer.volume = m_volume;
     }
 }
@@ -411,8 +444,9 @@ void AVFoundationPlayer::setVolume(float volume)
 void AVFoundationPlayer::setMuted(bool muted)
 {
     m_muted = muted;
+    m_remixed.setVolume(m_volume, m_muted);
     if (m_helper.avPlayer) {
-        m_helper.avPlayer.volume = muted ? 0.0f : m_volume;
+        m_helper.avPlayer.volume = (muted || m_remixed.hasSource()) ? 0.0f : m_volume;
     }
 }
 
@@ -424,6 +458,7 @@ void AVFoundationPlayer::setPlaybackRate(float rate)
         if (m_helper.avPlayer && m_state == State::Playing) {
             [m_helper.avPlayer setRate:m_playbackRate];
         }
+        syncRemix();
         emit playbackRateChanged(m_playbackRate);
     }
 }
@@ -472,6 +507,7 @@ void AVFoundationPlayer::onStatusChanged(int status)
             emit mediaLoaded();
         }
     } else if (status == AVPlayerItemStatusFailed) {
+        m_remixed.synchronize(m_position, false, m_playbackRate, true);
         NSError *error = m_helper.avPlayer.currentItem.error;
         QString errorMsg = error ? QString::fromNSString(error.localizedDescription)
                                  : "Unknown error";
@@ -481,6 +517,7 @@ void AVFoundationPlayer::onStatusChanged(int status)
 
 void AVFoundationPlayer::onTimeUpdate(qint64 timeMs)
 {
+    syncRemix();
     if (m_position != timeMs) {
         m_position = timeMs;
         emit positionChanged(timeMs);
@@ -514,6 +551,7 @@ void AVFoundationPlayer::setState(State newState)
 {
     if (m_state != newState) {
         m_state = newState;
+        syncRemix();
         emit stateChanged(newState);
     }
 }

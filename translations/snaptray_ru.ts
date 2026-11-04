@@ -2033,6 +2033,14 @@ Size: %2</source>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Записи нельзя сохранять в папку проектов библиотеки записей.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Запись клавиш недоступна. Проверьте разрешения на мониторинг ввода. Запись продолжится без отображения клавиш.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Не удалось сохранить подсказки клавиш. Запись продолжится без них.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3310,6 +3318,14 @@ Size: %2</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Закрыть</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Шрифт</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>По умолчанию</translation>
     </message>
 </context>
 <context>

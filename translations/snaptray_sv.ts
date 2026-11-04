@@ -2026,6 +2026,14 @@ Storlek: %2</translation>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Inspelningar kan inte sparas i inspelningsbibliotekets projektmapp.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Tangentregistrering är inte tillgänglig. Kontrollera behörigheterna för inmatningsövervakning. Inspelningen fortsätter utan tangenttips.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Tangenttipsen kunde inte sparas. Inspelningen fortsätter utan dem.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3303,6 +3311,14 @@ Storlek: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Stäng</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Typsnitt</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Standard</translation>
     </message>
 </context>
 <context>

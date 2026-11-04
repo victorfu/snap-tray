@@ -53,14 +53,18 @@ public:
     qint64 segmentOutputStartMs(int index) const;
     // nullopt for source times that are cut out.
     std::optional<qint64> sourceToOutput(qint64 sourceMs) const;
+    std::optional<qint64> sourceToOutputMicroseconds(qint64 sourceUs) const;
     // The source time shown at outputMs (clamped to the kept range).
     qint64 outputToSource(qint64 outputMs) const;
+    // Native frame readers retain sub-millisecond presentation timestamps.
+    qint64 outputToSourceMicroseconds(qint64 outputUs) const;
     // Where playback continues from sourceMs: itself when kept, else the start
     // of the next kept part (-1 past the last one).
     qint64 nextShownSourceMs(qint64 sourceMs) const;
     double speedAt(qint64 sourceMs) const;
 
 private:
+    qint64 mapOutputTime(qint64 output, qint64 unitsPerMs) const;
     std::vector<TimelineSegment> m_segments;
     std::vector<qint64> m_outputStarts; // size = segments + 1 (the last is the total)
 };

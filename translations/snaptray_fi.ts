@@ -2026,6 +2026,14 @@ Koko: %2</translation>
         <source>Recordings cannot be saved in the Recording Library's project folder.</source>
         <translation>Tallenteita ei voi tallentaa tallennekirjaston projektikansioon.</translation>
     </message>
+    <message>
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Näppäinten tallennus ei ole käytettävissä. Tarkista syötteen seurannan käyttöoikeudet. Tallennus jatkuu ilman näppäinvihjeitä.</translation>
+    </message>
+    <message>
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Näppäinvihjeitä ei voitu tallentaa. Tallennus jatkuu ilman niitä.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -3303,6 +3311,14 @@ Koko: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Close</source>
         <translation>Sulje</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Fontti</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Oletus</translation>
     </message>
 </context>
 <context>

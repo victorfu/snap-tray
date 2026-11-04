@@ -391,8 +391,13 @@ set_tests_properties(RecordingManager_KeyTimeline PROPERTIES TIMEOUT 60 LABELS "
 add_executable(RecordingManager_OverlayTrack RecordingManager/tst_OverlayTrack.cpp)
 target_link_libraries(RecordingManager_OverlayTrack PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_OverlayTrack COMMAND RecordingManager_OverlayTrack)
-set_tests_properties(RecordingManager_OverlayTrack PROPERTIES TIMEOUT 60 LABELS "unit"
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_tests_properties(RecordingManager_OverlayTrack PROPERTIES TIMEOUT 60 LABELS "unit")
+if(UNIX AND NOT APPLE)
+    set_tests_properties(RecordingManager_OverlayTrack PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+# Windows/macOS use their native platform font databases. In particular, the
+# Windows offscreen plugin looks for fonts in the SDK, where Qt no longer
+# ships fonts. This image-only test creates no windows.
 
 add_executable(RecordingManager_AudioTracks RecordingManager/tst_AudioTracks.cpp)
 target_link_libraries(RecordingManager_AudioTracks PRIVATE snaptray_core Qt6::Test)
@@ -901,6 +906,18 @@ target_link_libraries(Encoding_EncodingWorker PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Encoding_EncodingWorker COMMAND Encoding_EncodingWorker)
 set_tests_properties(Encoding_EncodingWorker PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Video_RemixedAudioPreview Video/tst_RemixedAudioPreview.cpp ../src/video/RemixedAudioPreview.cpp)
+target_include_directories(Video_RemixedAudioPreview PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Video_RemixedAudioPreview PRIVATE Qt6::Gui Qt6::Test)
+add_test(NAME Video_RemixedAudioPreview COMMAND Video_RemixedAudioPreview)
+set_tests_properties(Video_RemixedAudioPreview PROPERTIES TIMEOUT 30 LABELS "unit")
+
+add_executable(Video_NativePcmReader Video/tst_NativePcmReader.cpp)
+target_include_directories(Video_NativePcmReader PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_NativePcmReader PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Video_NativePcmReader COMMAND Video_NativePcmReader)
+set_tests_properties(Video_NativePcmReader PROPERTIES TIMEOUT 30 LABELS "unit")
+
 add_executable(Video_SourceReaderMailbox Video/tst_SourceReaderMailbox.cpp)
 target_include_directories(Video_SourceReaderMailbox PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(Video_SourceReaderMailbox PRIVATE Qt6::Core Qt6::Test)
@@ -915,6 +932,7 @@ add_executable(Video_VideoTranscoder
     $<IF:$<PLATFORM_ID:Darwin>,Video/VideoTranscoderTestAudio_mac.mm,$<IF:$<PLATFORM_ID:Windows>,Video/VideoTranscoderTestAudio_win.cpp,$<IF:$<BOOL:${SNAPTRAY_ENABLE_LINUX_RECORDING}>,Video/VideoTranscoderTestAudio_linux.cpp,Video/VideoTranscoderTestAudio_stub.cpp>>>
 )
 if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_compile_definitions(Video_VideoTranscoder PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
     target_link_libraries(Video_VideoTranscoder PRIVATE PkgConfig::SYSTEM_FFMPEG)
 endif()
 set_source_files_properties(Video/VideoTranscoderTestAudio_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
@@ -924,14 +942,25 @@ target_link_libraries(Video_VideoTranscoder PRIVATE snaptray_platform Qt6::Test
     "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
     "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
 add_test(NAME Video_VideoTranscoder COMMAND Video_VideoTranscoder)
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_test(NAME Video_NativeEditExport COMMAND Video_VideoTranscoder)
+    add_test(NAME Video_NativeEditConcurrentAudio COMMAND Video_VideoTranscoder)
+    set_tests_properties(Video_NativeEditConcurrentAudio PROPERTIES TIMEOUT 120 LABELS "integration;slow"
+        ENVIRONMENT "SNAPTRAY_TEST_NATIVE_EDIT_EXPORT=1;SNAPTRAY_TEST_CONCURRENT_AUDIO=1;QT_QPA_PLATFORM=offscreen")
+    set_tests_properties(Video_NativeEditExport PROPERTIES TIMEOUT 120 LABELS "integration;slow"
+        ENVIRONMENT "SNAPTRAY_TEST_NATIVE_EDIT_EXPORT=1;QT_QPA_PLATFORM=offscreen")
+endif()
+
 set_tests_properties(Video_VideoTranscoder PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
+add_executable(Video_MediaFoundationFrameCopy Video/tst_MediaFoundationFrameCopy_win.cpp)
+target_include_directories(Video_MediaFoundationFrameCopy PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_MediaFoundationFrameCopy PRIVATE Qt6::Gui Qt6::Test
+    "$<$<PLATFORM_ID:Windows>:mfplat>" "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
+add_test(NAME Video_MediaFoundationFrameCopy COMMAND Video_MediaFoundationFrameCopy)
+set_tests_properties(Video_MediaFoundationFrameCopy PROPERTIES TIMEOUT 30 LABELS "unit")
+
 if(WIN32)
-    add_executable(Video_MediaFoundationFrameCopy Video/tst_MediaFoundationFrameCopy_win.cpp)
-    target_include_directories(Video_MediaFoundationFrameCopy PRIVATE ${CMAKE_SOURCE_DIR}/src)
-    target_link_libraries(Video_MediaFoundationFrameCopy PRIVATE Qt6::Gui Qt6::Test mfplat mfuuid ole32)
-    add_test(NAME Video_MediaFoundationFrameCopy COMMAND Video_MediaFoundationFrameCopy)
-    set_tests_properties(Video_MediaFoundationFrameCopy PROPERTIES TIMEOUT 30 LABELS "unit")
 
     add_executable(Video_MediaFoundationPipeline Video/tst_MediaFoundationPipeline.cpp)
     target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test)

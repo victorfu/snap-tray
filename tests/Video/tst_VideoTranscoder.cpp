@@ -24,7 +24,21 @@
 #include <thread>
 #include <vector>
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+#include "NativeEditTestMedia_linux.h"
+#endif
+
 namespace {
+std::unique_ptr<IVideoTranscoder> createTestTranscoder()
+{
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    if (qEnvironmentVariableIntValue("SNAPTRAY_TEST_NATIVE_EDIT_EXPORT") == 1) {
+        qInfo() << "Testing the shared native edit exporter with FFmpeg codecs";
+        return std::make_unique<NativeEditTestTranscoder>();
+    }
+#endif
+    return IVideoTranscoder::create();
+}
 
 constexpr int kFrameRate = 10;
 constexpr int kFrameCount = 20;                  // 2 s
@@ -278,7 +292,7 @@ std::vector<double> markerOnsetsMs(const QString& path, const QPoint& markerPoin
 bool transcodeWithHangGuard(const VideoTranscodeRequest& request, VideoTranscodeResult* result)
 {
     struct Job {
-        std::unique_ptr<IVideoTranscoder> transcoder = IVideoTranscoder::create();
+        std::unique_ptr<IVideoTranscoder> transcoder = createTestTranscoder();
         VideoTranscodeRequest request;
         VideoTranscodeResult result;
         std::atomic<bool> done{false};
@@ -341,6 +355,7 @@ private slots:
     void trimWithoutAudio();
     void oddCropIsEvenAligned();
     void cancelRemovesOutput();
+    void cancelWithAudioRemovesOutputAndKeepsSource_data();
     void cancelWithAudioRemovesOutputAndKeepsSource();
     void cancelAtCompletionRemovesOutput();
     void audioFaultFailsSafely_data();
@@ -369,7 +384,7 @@ private:
 
 void tst_VideoTranscoder::init()
 {
-    m_transcoder = IVideoTranscoder::create();
+    m_transcoder = createTestTranscoder();
     if (!m_transcoder) {
         QSKIP("No native transcoder on this platform");
     }
@@ -811,8 +826,17 @@ void tst_VideoTranscoder::cancelRemovesOutput()
     QVERIFY(maxPercent.load() < 100);
 }
 
+void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource_data()
+{
+    QTest::addColumn<bool>("edited");
+    QTest::newRow("plain trim") << false;
+    QTest::newRow("edited audio and video") << true;
+}
+
 void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource()
 {
+    QFETCH(bool, edited);
+    if (edited && !m_transcoder->supportsFrameFilter()) QSKIP("Frame filtering unavailable");
     const QString input = fixture(true);
     if (input.isEmpty()) QSKIP("AAC encoding unavailable");
     QVERIFY2(!input.startsWith(QLatin1String("ERROR:")), qPrintable(input));
@@ -822,6 +846,7 @@ void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource()
     request.inputPath = input;
     request.outputPath = m_dir.filePath(QStringLiteral("cancelled-av.mp4"));
     request.startMs = 200;
+    if (edited) request.frameFilter = [](QImage&, qint64) {};
     std::atomic<int> maxPercent{-1};
     const VideoTranscodeResult result = m_transcoder->transcode(request, [&](int percent) {
         maxPercent = qMax(maxPercent.load(), percent);
@@ -978,7 +1003,7 @@ void tst_VideoTranscoder::cancelStopsInsideAGapFill()
 {
     // PR #175 review: drawing effects fills source gaps at the frame rate,
     // and that loop did not check for Cancel.
-    auto transcoder = IVideoTranscoder::create();
+    auto transcoder = createTestTranscoder();
     if (!transcoder || !transcoder->supportsFrameFilter()) QSKIP("No frame-filter transcoder on this platform");
     QTemporaryDir dir;
     const QString input = dir.filePath(QStringLiteral("gap.mp4"));
@@ -1034,7 +1059,8 @@ void tst_VideoTranscoder::outputOptionsScaleAndLowerTheFrameRate()
     request.outputPath = m_dir.filePath(QStringLiteral("bounded.mp4"));
     request.outputSize = QSize(301, 99);
     request.frameRate = 0;
-    QVERIFY2(m_transcoder->transcode(request, {}).success, "bounded export failed");
+    const auto bounded = m_transcoder->transcode(request, {});
+    QVERIFY2(bounded.success, qPrintable(bounded.errorMessage));
     QCOMPARE(m_transcoder->probe(request.outputPath).videoSize, QSize(120, 98));
 }
 
@@ -1249,51 +1275,67 @@ void tst_VideoTranscoder::segmentsStayInSync()
 void tst_VideoTranscoder::segmentsOfAVariableRateSource()
 {
     if (!m_transcoder->supportsSegments()) QSKIP("This transcoder does not join parts");
-    const QString input = m_dir.filePath(QStringLiteral("vfr.mp4"));
-    {
-        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
-        QVERIFY(encoder);
-        QVERIFY2(encoder->start(input, kSourceSize, kFrameRate), qPrintable(encoder->lastError()));
-        // Red at 0-200, nothing new until green at 1000, blue from 1400.
-        const struct { qint64 ms; QColor color; } frames[] = {
-            {0, Qt::red}, {100, Qt::red}, {200, Qt::red}, {1000, Qt::green}, {1100, Qt::green},
-            {1400, Qt::blue}, {1500, Qt::blue}, {1600, Qt::blue}};
-        for (const auto& f : frames) {
-            QImage image(kSourceSize, QImage::Format_ARGB32);
-            image.fill(f.color);
-            const qint64 before = encoder->framesWritten();
-            QElapsedTimer wait;
-            wait.start();
-            do {
-                encoder->writeFrame(image, f.ms);
-                if (encoder->framesWritten() != before) break;
-                QTest::qWait(5);
-            } while (wait.elapsed() < 2000);
-        }
-        QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
-        encoder->finish();
-        QVERIFY(!finishedSpy.isEmpty() || finishedSpy.wait(10000));
-        QVERIFY2(finishedSpy.first().at(0).toBool(), qPrintable(encoder->lastError()));
+    // A checked-in VFR file keeps the fixture independent of native capture
+    // encoders, some of which normalize the supplied timestamps.
+    const QString input = QFINDTESTDATA("fixtures/edit-vfr.mp4");
+    QVERIFY(!input.isEmpty());
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    if (auto* native = dynamic_cast<NativeEditTestTranscoder*>(m_transcoder.get())) {
+        // Media Foundation reports the average rate, not the maximum rate.
+        native->setSourceFrameRateForTesting(input, 80.0 / 17.0);
     }
+#endif
     VideoTranscodeRequest request;
     request.inputPath = input;
     request.outputPath = m_dir.filePath(QStringLiteral("vfr-segments.mp4"));
     // 100-700 (still red) | 1050-1450 at 2x (green, then blue at 1400 -> out 775).
     request.segments = {{100, 700, 1.0}, {1050, 1450, 2.0}};
+    const QPoint centre = QRect(QPoint(0, 0), kSourceSize).center();
+    // Check the fixture independently: some native encoders can rewrite VFR
+    // timing. Include decoded transitions in failures to distinguish that
+    // from the editing path or output reader.
+    auto describeFrames = [](const QString& path) {
+        auto frames = IVideoFrameReader::create();
+        if (!frames || !frames->load(path)) return QStringLiteral("unreadable");
+        QStringList details;
+        qint64 at = 0;
+        for (int i = 0; i < 40; ++i) {
+            const QImage frame = frames->frameAtMicroseconds(at);
+            if (frame.isNull()) break;
+            details << QStringLiteral("%1:%2").arg(at).arg(frame.pixelColor(frame.rect().center()).name());
+            const qint64 next = frames->nextFrameTimeMicroseconds();
+            if (next <= at) break;
+            at = next;
+        }
+        return details.join(QLatin1Char(' '));
+    };
+    auto sourceReader = IVideoFrameReader::create();
+    QVERIFY(sourceReader && sourceReader->load(input));
+    const QColor sourceStill = sourceReader->frameAt(600).pixelColor(centre);
+    QVERIFY2(sourceStill.red() > 170 && sourceStill.green() < 90,
+             qPrintable(QStringLiteral("Source timing: %1").arg(describeFrames(input))));
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
-    QVERIFY2(qAbs(probe.durationMs - 800) <= kDurationToleranceMs, qPrintable(QString::number(probe.durationMs)));
+    // Encoders may retain one nominal frame's tail. Native readers report
+    // this VFR source as 80/17 fps, so 150 ms is less than one such frame.
+    const double sourceFps = m_transcoder->probe(input).frameRate;
+    QVERIFY(sourceFps > 0);
+    const qint64 tailTolerance = qMax(kDurationToleranceMs, qint64(std::ceil(1000.0 / sourceFps)));
+    QVERIFY2(qAbs(probe.durationMs - 800) <= tailTolerance, qPrintable(QString::number(probe.durationMs)));
     auto reader = IVideoFrameReader::create();
     if (!reader) QSKIP("No frame reader to inspect the output here");
     QVERIFY2(reader->load(request.outputPath), qPrintable(reader->lastError()));
-    const QPoint centre = QRect(QPoint(0, 0), kSourceSize).center();
     const QColor still = reader->frameAt(500).pixelColor(centre);
     const QColor fast = reader->frameAt(650).pixelColor(centre);
     const QColor last = reader->frameAt(790).pixelColor(centre);
-    QVERIFY2(still.red() > 170 && still.green() < 90, qPrintable(still.name()));
+    QVERIFY2(still.red() > 170 && still.green() < 90,
+             qPrintable(QStringLiteral("Source: %1; output: %2")
+                 .arg(describeFrames(input), describeFrames(request.outputPath))));
     QVERIFY2(fast.green() > 120 && fast.red() < 90, qPrintable(fast.name()));
-    QVERIFY2(last.blue() > 170 && last.green() < 90, qPrintable(last.name()));
+    QVERIFY2(last.blue() > 170 && last.green() < 90,
+             qPrintable(QStringLiteral("Source: %1; output: %2")
+                 .arg(describeFrames(input), describeFrames(request.outputPath))));
 }
 
 // #189: the separate tracks next to a recording are mixed again at export.
