@@ -5,6 +5,8 @@
 #include "video/IVideoTranscoder.h"
 
 #include <QtTest>
+#include <algorithm>
+#include <cmath>
 #include <QFileInfo>
 #include <QImage>
 #include <QPainter>
@@ -119,6 +121,61 @@ int countKeyFrames(const QString& path)
     return keyFrames;
 }
 
+// Times the recorder actually hands over: a 33 ms polling timer with jitter,
+// so about 30.3 frames a second and never exactly 1/30 s apart (#210).
+QList<qint64> recorderTimestampsMs(int count)
+{
+    static constexpr int kJitterMs[] = {0, 6, -4, 9, -7, 2, -3, 5};
+    QList<qint64> times;
+    for (int i = 0; i < count; ++i) times.append(qint64(i) * 33 + (i ? kJitterMs[i % 8] : 0));
+    return times;
+}
+
+QString encodeAt(const QString& path, const QList<qint64>& timesMs, bool enableHardwareTransforms)
+{
+    auto encoder = std::make_unique<MediaFoundationEncoder>(enableHardwareTransforms, nullptr);
+    encoder->setQuality(IntermediateQuality::kConstantQualityValue);
+    encoder->setRateControl(VideoRateControl::ConstantQuality, IntermediateQuality::kConstantQualityValue);
+    encoder->setKeyFrameIntervalSeconds(IntermediateQuality::kKeyFrameIntervalSeconds);
+    if (!encoder->start(path, kFrameSize, kFrameRate)) return encoder->lastError();
+    for (int i = 0; i < timesMs.size(); ++i) {
+        const qint64 before = encoder->framesWritten();
+        QElapsedTimer timer;
+        timer.start();
+        do {
+            encoder->writeFrame(frameAt(i, kFrameSize), timesMs[i]);
+            if (encoder->framesWritten() != before) break;
+            QTest::qWait(5);
+        } while (timer.elapsed() < kFrameAcceptTimeoutMs);
+        if (encoder->framesWritten() != before + 1) return QStringLiteral("frame %1 rejected").arg(i);
+    }
+    QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+    encoder->finish();
+    if (finished.isEmpty() && !finished.wait(kFinishTimeoutMs)) return QStringLiteral("did not finish");
+    if (!finished.first().at(0).toBool()) return encoder->lastError();
+    return {};
+}
+
+// Presentation times of the compressed video samples, in milliseconds, sorted.
+QList<double> videoTimestampsMs(const QString& path)
+{
+    QList<double> times;
+    ComPtr<IMFSourceReader> reader;
+    if (FAILED(MFCreateSourceReaderFromURL(reinterpret_cast<LPCWSTR>(path.utf16()), nullptr, &reader))) return times;
+    reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, FALSE);
+    reader->SetStreamSelection(MF_SOURCE_READER_FIRST_VIDEO_STREAM, TRUE);
+    for (;;) {
+        DWORD flags = 0;
+        LONGLONG time = 0;
+        ComPtr<IMFSample> sample;
+        if (FAILED(reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, nullptr, &flags, &time, &sample))) break;
+        if (flags & MF_SOURCE_READERF_ENDOFSTREAM) break;
+        if (sample) times.append(double(time) / 10000.0);
+    }
+    std::sort(times.begin(), times.end());
+    return times;
+}
+
 } // namespace
 
 class tst_MediaFoundationEncoderIntermediate : public QObject
@@ -131,6 +188,8 @@ private slots:
     void defaultModeStillRecords();
     void intermediateAverageBitrateConverges_data();
     void intermediateAverageBitrateConverges();
+    void framesKeepTheirTimestamps_data();
+    void framesKeepTheirTimestamps();
 };
 
 void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
@@ -205,6 +264,36 @@ void tst_MediaFoundationEncoderIntermediate::intermediateAverageBitrateConverges
     QVERIFY2(average <= qint64(double(ceiling) * kCeilingTolerance),
              qPrintable(QStringLiteral("average %1 bps exceeds ceiling %2 bps x %3")
                             .arg(average).arg(ceiling).arg(kCeilingTolerance)));
+}
+
+void tst_MediaFoundationEncoderIntermediate::framesKeepTheirTimestamps_data()
+{
+    QTest::addColumn<bool>("enableHardwareTransforms");
+    QTest::newRow("hardware-when-available") << true;
+    QTest::newRow("software") << false;
+}
+
+// Each frame must be presented when it was captured. Audio follows its own
+// sample clock, so any re-timing of the video drifts the two apart (#210).
+void tst_MediaFoundationEncoderIntermediate::framesKeepTheirTimestamps()
+{
+    QFETCH(bool, enableHardwareTransforms);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("timestamps.mp4"));
+    const QList<qint64> written = recorderTimestampsMs(kFrameRate * kSeconds);
+    const QString error = encodeAt(path, written, enableHardwareTransforms);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    const QList<double> read = videoTimestampsMs(path);
+    QCOMPARE(read.size(), written.size());
+    double worst = 0.0;
+    int worstIndex = 0;
+    for (int i = 0; i < read.size(); ++i) {
+        const double error = std::abs(read[i] - double(written[i]));
+        if (error > worst) { worst = error; worstIndex = i; }
+    }
+    QVERIFY2(worst <= 1.0, qPrintable(QStringLiteral("frame %1 written at %2 ms is presented at %3 ms")
+                                          .arg(worstIndex).arg(written[worstIndex]).arg(read[worstIndex])));
 }
 
 QTEST_MAIN(tst_MediaFoundationEncoderIntermediate)

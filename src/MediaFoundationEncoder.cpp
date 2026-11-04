@@ -1,6 +1,7 @@
 #include "MediaFoundationEncoder.h"
 #include "encoding/AudioSampleTiming.h"
 #include "encoding/IntermediateQuality.h"
+#include "encoding/MFSampleTimes_win.h"
 #include "encoding/VideoBitrate.h"
 #include "encoding/VideoRateControl.h"
 
@@ -407,6 +408,18 @@ public:
                 qDebug() << "MediaFoundationEncoder: Audio stream configured -"
                          << audioSampleRate << "Hz," << audioChannels << "ch,"
                          << audioBitsPerSample << "bit";
+            }
+        }
+
+        // CPU frames go in as RGB32 through a video processor that would
+        // otherwise re-time them to the nominal frame rate (and hold back the
+        // last one): each frame keeps the time it was captured at (#210).
+        // NV12 GPU input has no processor in between.
+        if (!gpuInput()) {
+            hr = SnapTray::keepSampleTimesThroughVideoProcessor(sinkWriter, videoStreamIndex);
+            if (FAILED(hr)) {
+                qWarning() << "MediaFoundationEncoder: cannot keep frame times through the video processor:"
+                           << hrText(hr);
             }
         }
 
