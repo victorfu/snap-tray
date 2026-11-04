@@ -33,6 +33,7 @@ class tst_PlacementHelpers : public QObject
 
 private slots:
     void testQmlDialog_centeredTopLeftForBounds();
+    void testQmlDialog_keptInsideBounds();
     void testColorPicker_preferredPlacementBounds();
     void testColorPicker_centeredTopLeftForBounds();
     void testQmlToast_preferredScreenGeometryForScreenToast();
@@ -49,6 +50,21 @@ void tst_PlacementHelpers::testQmlDialog_centeredTopLeftForBounds()
         QSize(200, 100));
 
     QCOMPARE(topLeft, QPoint(399, 449));
+}
+
+void tst_PlacementHelpers::testQmlDialog_keptInsideBounds()
+{
+    using SnapTray::QmlDialog;
+    const QRect bounds(0, 33, 1470, 923); // a 14-inch MacBook below its menu bar
+    // Inside: unchanged.
+    QCOMPARE(QmlDialog::keptInsideBounds(QPoint(100, 100), QSize(420, 600), bounds), QPoint(100, 100));
+    // Past the bottom/right: moved up/left just enough.
+    QCOMPARE(QmlDialog::keptInsideBounds(QPoint(524, 399), QSize(420, 719), bounds), QPoint(524, 237));
+    QCOMPARE(QmlDialog::keptInsideBounds(QPoint(1400, 100), QSize(420, 100), bounds), QPoint(1050, 100));
+    // Past the top/left (under the menu bar).
+    QCOMPARE(QmlDialog::keptInsideBounds(QPoint(-20, 0), QSize(420, 100), bounds), QPoint(0, 33));
+    // Larger than the screen: the top-left stays reachable.
+    QCOMPARE(QmlDialog::keptInsideBounds(QPoint(10, 500), QSize(420, 2000), bounds), QPoint(10, 33));
 }
 
 void tst_PlacementHelpers::testColorPicker_preferredPlacementBounds()
