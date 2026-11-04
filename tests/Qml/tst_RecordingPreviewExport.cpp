@@ -1990,6 +1990,8 @@ void tst_RecordingPreviewExport::projectThumbnailShowsTheMiddle()
     }
     const QList<SnapTray::RecordingProject> projects = SnapTray::RecordingProjects::list();
     QCOMPARE(projects.size(), 1);
+    // Written off the GUI thread, shortly after the save.
+    QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(projects.first().thumbnailPath()), 10000);
     const QImage thumbnail(projects.first().thumbnailPath());
     QVERIFY(!thumbnail.isNull());
     const QColor centre = thumbnail.pixelColor(thumbnail.width() / 2, thumbnail.height() / 2);
@@ -3004,7 +3006,7 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
     QVERIFY(QFileInfo::exists(project.videoPath() + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix)));
     // A thumbnail where a frame reader exists (not on Windows yet: the
     // library shows a placeholder there).
-    if (IVideoFrameReader::create()) QVERIFY(QFileInfo::exists(project.thumbnailPath()));
+    if (IVideoFrameReader::create()) QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(project.thumbnailPath()), 10000);
     QCOMPARE(project.savedPath, directory.filePath(QStringLiteral("first.mp4")));
     QCOMPARE(SnapTray::RecordingRecipe::editState(project.recipe)->trimStart, trimStart);
     // The background is the project's own copy, so the original can go.

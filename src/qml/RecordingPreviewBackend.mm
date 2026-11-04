@@ -23,6 +23,7 @@
 #include <QLocale>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QSaveFile>
 #include <QStorageInfo>
 #include <cmath>
 #include <QCoreApplication>
@@ -1585,22 +1586,31 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
         removeUnusedBackgrounds(m_project->dir, recipe);
         return true;
     }
-    // A small picture for the library.
-    QImage thumbnail;
-    if (auto reader = IVideoFrameReader::create(); reader && reader->load(m_videoPath)) {
-        // The middle of what is kept: the first frame is usually the desktop
-        // before anything happens (#210).
-        const SnapTray::TimelineMap map = timelineMap();
-        const qint64 middle = map.outputDurationMs() > 0 ? map.outputToSource(map.outputDurationMs() / 2) : m_trimStart;
-        const QImage frame = reader->frameAt(middle);
-        if (!frame.isNull()) thumbnail = frame.scaled(kProjectThumbnailSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    }
     // Moved with its sidecars; the caller then removes whatever is left.
-    auto project = SnapTray::RecordingProjects::create(m_videoPath, false, currentRecipe(), thumbnail, m_duration, savedPath);
+    // The thumbnail follows below.
+    auto project = SnapTray::RecordingProjects::create(m_videoPath, false, currentRecipe(), QImage(), m_duration, savedPath);
     if (!project) {
         qWarning() << "RecordingPreviewBackend: the recording could not be kept as a project";
         return false;
     }
+    // A small picture for the library, from the middle of what is kept: the
+    // first frame is usually the desktop before anything happens (#210).
+    // Off the GUI thread: frame readers decode from the start, which for the
+    // middle of a long recording takes a while (PR #232 review).
+    const SnapTray::TimelineMap map = timelineMap();
+    const qint64 middle = map.outputDurationMs() > 0 ? map.outputToSource(map.outputDurationMs() / 2) : m_trimStart;
+    (void)QtConcurrent::run([video = project->videoPath(), path = project->thumbnailPath(), middle]() {
+        const auto reader = IVideoFrameReader::create();
+        if (!reader || !reader->load(video)) return;
+        const QImage frame = reader->frameAt(middle);
+        if (frame.isNull()) return;
+        // Whole or not at all: the library may list the project meanwhile.
+        QSaveFile file(path);
+        if (file.open(QIODevice::WriteOnly)
+            && frame.scaled(kProjectThumbnailSize, Qt::KeepAspectRatio, Qt::SmoothTransformation).save(&file, "PNG")) {
+            file.commit();
+        }
+    });
     // Its own copy of a background image, now that the folder exists.
     QString copied;
     const QJsonObject recipe = recipeForProject(project->dir, &copied);
