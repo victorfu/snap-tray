@@ -1498,7 +1498,28 @@ bool nativeHevcExportAvailable()
             nullptr, &output, &encoders, &count);
         for (UINT32 i = 0; i < count; ++i) encoders[i]->Release();
         CoTaskMemFree(encoders);
-        return SUCCEEDED(hr) && count > 0;
+        if (FAILED(hr) || count == 0) return false;
+
+        // A GPU encoder may be present without the Windows HEVC extension.
+        // Only offer HEVC when native playback can open the exported file too.
+        IMFActivate** decoders = nullptr;
+        UINT32 decoderCount = 0;
+        MFT_REGISTER_TYPE_INFO input{MFMediaType_Video, MFVideoFormat_HEVC};
+        const HRESULT decoderResult = MFTEnumEx(MFT_CATEGORY_VIDEO_DECODER,
+            MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG_ASYNCMFT | MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SORTANDFILTER,
+            &input, nullptr, &decoders, &decoderCount);
+        bool canDecode = false;
+        for (UINT32 i = 0; i < decoderCount; ++i) {
+            ComPtr<IMFTransform> decoder;
+            if (SUCCEEDED(decoders[i]->ActivateObject(IID_PPV_ARGS(&decoder)))) {
+                canDecode = true;
+                decoder.Reset();
+                decoders[i]->ShutdownObject();
+            }
+            decoders[i]->Release();
+        }
+        CoTaskMemFree(decoders);
+        return SUCCEEDED(decoderResult) && canDecode;
     }();
     return available;
 }

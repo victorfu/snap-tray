@@ -367,6 +367,7 @@ private slots:
     void lowerFrameRateKeepsTheCadence();
     void fasterPartKeepsTheFrameRate();
     void hevcOutput();
+    void hevcCapabilityRequiresNativePlayback();
     void sizeEstimateAgainstActual();
     void segmentsStayInSync();
     void segmentsOfAVariableRateSource();
@@ -1140,6 +1141,22 @@ void tst_VideoTranscoder::fasterPartKeepsTheFrameRate()
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     QVERIFY2(qAbs(kept - 40) <= 2, qPrintable(QString::number(kept)));
+}
+
+void tst_VideoTranscoder::hevcCapabilityRequiresNativePlayback()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows HEVC extension capability check");
+#else
+    const QString path = QFINDTESTDATA("fixtures/hevc-main.mp4");
+    QVERIFY(!path.isEmpty());
+    auto reader = IVideoFrameReader::create();
+    QVERIFY(reader);
+    const bool readable = reader->load(path) && !reader->frameAt(0).isNull();
+    QVERIFY2(readable || !m_transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecHevc)),
+             qPrintable(QStringLiteral("HEVC export offered without native playback: %1")
+                 .arg(reader->lastError())));
+#endif
 }
 
 void tst_VideoTranscoder::hevcOutput()
