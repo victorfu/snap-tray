@@ -52,6 +52,7 @@ private slots:
     void jsonRoundTrip();
     void fromBeautify();
     void translucentColorsRenderOpaque();
+    void opaqueAndAlphaFormatsRenderIdentically();
     void costAt4K();
 };
 
@@ -256,6 +257,30 @@ void TestRecordingAppearance::fromBeautify()
     QVERIFY(!a.shadow);
     QCOMPARE(a.corners, RecordingAppearance::Amount::None);
     QCOMPARE(a.aspectRatio, BeautifyAspectRatio::Wide_16_9);
+}
+
+void TestRecordingAppearance::opaqueAndAlphaFormatsRenderIdentically()
+{
+    const QSize size(320, 180);
+    QImage picture = filled(size, Qt::darkCyan);
+    QPainter painter(&picture);
+    painter.fillRect(QRect(20, 25, 100, 60), Qt::yellow);
+    painter.end();
+    const QImage alphaPicture = picture.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    const QImage maskedBlur = RecordingAppearanceRenderer::blurSourceFor(filled(size, Qt::green));
+    for (auto corners : {RecordingAppearance::Amount::None, RecordingAppearance::Amount::Large}) {
+        RecordingAppearance appearance;
+        appearance.enabled = true;
+        appearance.background = RecordingAppearance::Background::BlurredVideo;
+        appearance.padding = RecordingAppearance::Amount::Medium;
+        appearance.corners = corners;
+        appearance.shadow = true;
+        appearance.border = true;
+        const RecordingAppearanceRenderer renderer(appearance, size);
+        // Identical opaque pixels, but the alpha format must retain the full
+        // background rendering path used by genuinely translucent inputs.
+        QCOMPARE(renderer.compose(picture, maskedBlur), renderer.compose(alphaPicture, maskedBlur));
+    }
 }
 
 void TestRecordingAppearance::costAt4K()
