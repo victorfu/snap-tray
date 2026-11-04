@@ -28,8 +28,9 @@ public:
     QQuickItem* rootItem() const { return m_rootItem; }
 
 signals:
-    // Logical, global coordinates on screen().
-    void areaChosen(const QRect& area);
+    // Logical, global coordinates on screen(), unrounded: at 150% a pixel
+    // edge can be 233.33 logical (#210).
+    void areaChosen(const QRectF& area);
     void cancelled();
 
 private slots:

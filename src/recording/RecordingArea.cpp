@@ -20,18 +20,29 @@ QRect clampToScreen(const QRect& area, const QRect& screenGeometry, qreal device
     return clipped;
 }
 
-QRect videoCrop(const QRect& area, const QRect& recordedRegion, const QSize& frameSize)
+QRect videoCrop(const QRectF& area, const QRect& recordedRegionRect, const QSize& frameSize, qreal devicePixelRatio)
 {
-    if (recordedRegion.isEmpty() || frameSize.isEmpty()) return {};
-    const QRect inside = area.normalized().intersected(recordedRegion);
+    if (recordedRegionRect.isEmpty() || frameSize.isEmpty()) return {};
+    const QRectF recordedRegion(recordedRegionRect);
+    const QRectF inside = area.normalized().intersected(recordedRegion);
     if (inside.isEmpty()) return {};
-    const qreal sx = qreal(frameSize.width()) / recordedRegion.width();
-    const qreal sy = qreal(frameSize.height()) / recordedRegion.height();
-    // Outward rounding: the crop never loses a pixel of the chosen area.
-    const int left = qFloor((inside.x() - recordedRegion.x()) * sx);
-    const int top = qFloor((inside.y() - recordedRegion.y()) * sy);
-    const int right = qCeil((inside.x() + inside.width() - recordedRegion.x()) * sx);
-    const int bottom = qCeil((inside.y() + inside.height() - recordedRegion.y()) * sy);
+    qreal sx = qreal(frameSize.width()) / recordedRegion.width();
+    qreal sy = qreal(frameSize.height()) / recordedRegion.height();
+    // The frame is the region at the screen's scale, give or take Qt's
+    // rounding of the logical size (up to a pixel at that scale).
+    if (devicePixelRatio > 0.0
+        && qAbs(recordedRegion.width() * devicePixelRatio - frameSize.width()) <= devicePixelRatio
+        && qAbs(recordedRegion.height() * devicePixelRatio - frameSize.height()) <= devicePixelRatio) {
+        sx = sy = devicePixelRatio;
+    }
+    // Outward rounding: the crop never loses a pixel of the chosen area. The
+    // tolerance keeps an edge that is a whole pixel up to float error
+    // (233.33 * 1.5) on that pixel instead of the next one out.
+    constexpr qreal kTolerance = 1e-3;
+    const int left = qFloor((inside.x() - recordedRegion.x()) * sx + kTolerance);
+    const int top = qFloor((inside.y() - recordedRegion.y()) * sy + kTolerance);
+    const int right = qMin(frameSize.width(), qCeil((inside.right() - recordedRegion.x()) * sx - kTolerance));
+    const int bottom = qMin(frameSize.height(), qCeil((inside.bottom() - recordedRegion.y()) * sy - kTolerance));
     return VideoCropGeometry::normalizeCropRect(QRect(left, top, right - left, bottom - top), frameSize);
 }
 

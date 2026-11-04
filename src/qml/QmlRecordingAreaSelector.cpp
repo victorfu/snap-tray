@@ -86,13 +86,13 @@ void QmlRecordingAreaSelector::onAccepted(qreal x, qreal y, qreal width, qreal h
     const QRect screenGeometry = m_screen ? m_screen->geometry() : QRect();
     // From where the window really is (a window manager may have moved it).
     const QPoint origin = m_view ? m_view->position() : screenGeometry.topLeft();
-    const QRect area(origin.x() + qRound(x), origin.y() + qRound(y), qRound(width), qRound(height));
-    emit areaChosen(area.intersected(screenGeometry));
+    const QRectF area(origin.x() + x, origin.y() + y, width, height);
+    emit areaChosen(area.intersected(QRectF(screenGeometry)));
 }
 
 void QmlRecordingAreaSelector::onFullScreenChosen()
 {
-    if (m_screen) emit areaChosen(m_screen->geometry());
+    if (m_screen) emit areaChosen(QRectF(m_screen->geometry()));
 }
 
 } // namespace SnapTray

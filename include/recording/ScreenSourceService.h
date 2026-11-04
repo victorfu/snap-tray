@@ -31,6 +31,9 @@ public:
     static QString sourceId(const QScreen* screen, int displayIndex);
     static QString displayName(const QScreen* screen, int displayIndex);
     static QString resolutionText(const QRect& geometry, qreal devicePixelRatio = 1.0);
+    // The screen's own pixels where the platform reports them: at 150% Qt
+    // rounds 2560 pixels to 1707 logical, and 1707 * 1.5 is 2561 (#210).
+    static QString resolutionText(const QScreen* screen);
     static QScreen* screenForId(const QString& id);
 
 private:

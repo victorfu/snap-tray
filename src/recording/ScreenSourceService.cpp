@@ -1,5 +1,6 @@
 #include "recording/ScreenSourceService.h"
 
+#include "capture/ICaptureEngine.h"
 #include "capture/ScreenSnapshot.h"
 #include "settings/ScreenCanvasSettingsManager.h"
 
@@ -34,7 +35,7 @@ QVector<ScreenSource> ScreenSourceService::availableSources(bool includeThumbnai
         info.name = displayName(screen, index);
         info.geometry = screen->geometry();
         info.devicePixelRatio = screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0;
-        info.resolutionText = resolutionText(screen->geometry(), info.devicePixelRatio);
+        info.resolutionText = resolutionText(screen);
         info.isPrimary = (screen == QGuiApplication::primaryScreen());
         info.screen = screen;
         if (includeThumbnails) {
@@ -107,6 +108,14 @@ QString ScreenSourceService::resolutionText(const QRect& geometry, qreal deviceP
     const int width = qRound(static_cast<qreal>(geometry.width()) * safeDpr);
     const int height = qRound(static_cast<qreal>(geometry.height()) * safeDpr);
     return QStringLiteral("%1 x %2").arg(width).arg(height);
+}
+
+QString ScreenSourceService::resolutionText(const QScreen* screen)
+{
+    if (!screen) return {};
+    const QSize native = CaptureScreenInfo::fromScreen(screen).physicalGeometry.size();
+    if (!native.isEmpty()) return QStringLiteral("%1 x %2").arg(native.width()).arg(native.height());
+    return resolutionText(screen->geometry(), screen->devicePixelRatio());
 }
 
 QScreen* ScreenSourceService::screenForId(const QString& id)

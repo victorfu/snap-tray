@@ -1741,7 +1741,7 @@ void MainApplication::startRecordingOn(QScreen* screen)
     m_areaSelector = selector;
     const QPointer<QScreen> target(screen);
     connect(selector, &SnapTray::QmlRecordingAreaSelector::areaChosen, this,
-        [this, target](const QRect& area) {
+        [this, target](const QRectF& area) {
             closeAreaSelector();
             if (!target) return;
             m_recordingManager->startScreenRecording(target.data(), area);

@@ -104,7 +104,8 @@ public slots:
     // Records full screen using screen-first semantics. `area` (#194, logical
     // global coordinates on `screen`) is an area chosen beforehand: the
     // preview's initial crop in edit mode, the recorded region in quick mode.
-    void startScreenRecording(QScreen* screen = nullptr, const QRect& area = QRect());
+    // Fractional: at 150% a pixel edge can be 233.33 logical (#210).
+    void startScreenRecording(QScreen* screen = nullptr, const QRectF& area = QRectF());
     void stopRecording();           // Stop and save recording
     void cancelRecording();         // Cancel without saving
     void pauseRecording();          // Pause recording
@@ -232,6 +233,8 @@ private:
     QPointer<SnapTray::QmlRecordingControlBar> m_controlBar;
     // The area chosen before recording (#194) and its frame on screen.
     QRect m_preselectedArea;
+    // The same area unrounded, for the initial crop in video pixels (#210).
+    QRectF m_preselectedAreaExact;
     QRect m_pendingInitialCrop;
     QPointer<SnapTray::QmlRecordingBoundary> m_areaBoundary;
     void showAreaBoundary();
