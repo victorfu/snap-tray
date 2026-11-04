@@ -174,6 +174,12 @@ target_sources(Qml_DialogModality PRIVATE ${CMAKE_SOURCE_DIR}/resources/resource
 add_test(NAME Qml_DialogModality COMMAND Qml_DialogModality)
 set_tests_properties(Qml_DialogModality PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
 
+add_executable(Qml_SettingsCombo Qml/tst_SettingsCombo.cpp)
+target_link_libraries(Qml_SettingsCombo PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_SettingsCombo PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_SettingsCombo COMMAND Qml_SettingsCombo)
+set_tests_properties(Qml_SettingsCombo PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
+
 add_executable(Qml_OverlayManagerLifetime Qml/tst_QmlOverlayManagerLifetime.cpp)
 target_link_libraries(Qml_OverlayManagerLifetime PRIVATE snaptray_qml Qt6::Quick Qt6::Widgets)
 add_test(NAME Qml_OverlayManagerLifetime COMMAND Qml_OverlayManagerLifetime)
