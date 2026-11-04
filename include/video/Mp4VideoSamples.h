@@ -23,8 +23,9 @@ public:
     // quality: its own samples, and, when it starts mid-GOP, the keyframe its
     // first sample was predicted from (the export starts with a whole frame).
     struct RangeBytes {
-        qint64 frames = 0;
-        qint64 leadingKeyframe = 0;
+        qint64 frames = 0;          // the samples starting in the range
+        qint64 leadingKeyframe = 0; // the keyframe before, for a mid-GOP start
+        qint64 firstKeyframe = 0;   // the first of frames, when it is a keyframe
     };
     RangeBytes rangeBytes(qint64 startMs, qint64 endMs) const;
 

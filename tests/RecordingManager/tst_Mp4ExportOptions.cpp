@@ -240,6 +240,9 @@ void TestMp4ExportOptions::samplesCountTheKeyframeAPartNeeds()
     QCOMPARE(samples.bytesToEncode(1500, 1800), 9 * kPredicted + kKey);
     QCOMPARE(samples.leadingKeyframeBytes(1500, 1800), kKey);
     QCOMPARE(samples.leadingKeyframeBytes(1000, 1300), 0);
+    // Which frame is the whole one: the first itself when it is a keyframe.
+    QCOMPARE(samples.rangeBytes(1000, 1300).firstKeyframe, kKey);
+    QCOMPARE(samples.rangeBytes(1500, 1800).firstKeyframe, 0);
     QCOMPARE(samples.leadingKeyframeBytes(4000, 5000), 0);
     // Starting on a keyframe needs nothing more.
     QCOMPARE(samples.bytesToEncode(1000, 1300), kKey + 8 * kPredicted);

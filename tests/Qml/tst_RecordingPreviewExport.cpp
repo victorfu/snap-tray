@@ -2026,6 +2026,21 @@ void tst_RecordingPreviewExport::estimateCountsTheKeptParts()
     QCOMPARE(backend.keptSourceVideoBytes(), samples.bytesToEncode(start, split) + samples.bytesBetween(split, end));
     QVERIFY(backend.mp4EstimatedBytes() > 0);
 
+    // PR #213 review: a sped-up part from the very start begins on a
+    // keyframe. That whole first frame is not sped up either.
+    {
+        RecordingPreviewBackend fromStart(inputPath);
+        fromStart.setSelectedFormat(RecordingPreviewBackend::MP4);
+        fromStart.updateVideoSize(QSize(160, 120));
+        fromStart.updateDuration(kFrameCount * kFrameIntervalMs);
+        fromStart.setPartSpeed(0, 4.0);
+        const SnapTray::Mp4VideoSamples::RangeBytes all = samples.rangeBytes(0, kFrameCount * kFrameIntervalMs);
+        QVERIFY(all.firstKeyframe > 0);
+        QTRY_VERIFY(fromStart.keptSourceVideoBytes() >= 0);
+        QCOMPARE(fromStart.keptSourceVideoBytes(),
+                 qint64(std::ceil(double(all.frames - all.firstKeyframe) / 4.0 + double(all.firstKeyframe))));
+    }
+
     // A recording made at the user's quality of the day, not an
     // intermediate, may be below what the export asks: the target alone.
     const VideoFileProbe probe = IVideoTranscoder::create()->probe(inputPath);

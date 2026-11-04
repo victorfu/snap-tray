@@ -358,10 +358,13 @@ Mp4VideoSamples::RangeBytes Mp4VideoSamples::rangeBytes(qint64 startMs, qint64 e
     }
     const size_t firstIndex = size_t(first - m_startUs.begin());
     range.frames = m_cumulativeBytes[size_t(last - m_startUs.begin())] - m_cumulativeBytes[firstIndex];
-    // The kept part starts mid-GOP: the export must encode its first frame
-    // whole, about what the keyframe it was predicted from cost.
     const auto key = std::upper_bound(m_keyframes.begin(), m_keyframes.end(), firstIndex);
-    if (key != m_keyframes.begin() && *(key - 1) != firstIndex) {
+    if (key != m_keyframes.begin() && *(key - 1) == firstIndex) {
+        // Starts on a keyframe: the whole first frame is in the range.
+        range.firstKeyframe = m_cumulativeBytes[firstIndex + 1] - m_cumulativeBytes[firstIndex];
+    } else if (key != m_keyframes.begin()) {
+        // Starts mid-GOP: the export must encode its first frame whole,
+        // about what the keyframe it was predicted from cost.
         const size_t keyIndex = *(key - 1);
         range.leadingKeyframe = m_cumulativeBytes[keyIndex + 1] - m_cumulativeBytes[keyIndex];
     }

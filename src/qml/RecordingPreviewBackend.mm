@@ -561,11 +561,18 @@ qint64 RecordingPreviewBackend::keptSourceVideoBytes() const
         // A faster part shows fewer of its frames (the output frame rate is
         // fixed); a slower one repeats them, which costs almost nothing.
         const double speed = segment.speed > 1.0 ? segment.speed : 1.0;
-        bytes += double(range.frames) / speed;
-        // A part starting mid-GOP needs a whole first frame, at any speed,
-        // unless it carries on from the part before (only the speed changed):
-        // the export's stream continues there.
-        if (segment.startMs != previousEndMs) bytes += double(range.leadingKeyframe);
+        if (segment.startMs == previousEndMs) {
+            // Carries on from the part before (only the speed changed): the
+            // export's stream continues, and its keyframes come per output
+            // second like its other frames.
+            bytes += double(range.frames) / speed;
+        } else {
+            // Starts the stream or follows a cut: a whole first frame at any
+            // speed, the keyframe it starts on or the one it was predicted
+            // from (PR #213 review).
+            bytes += double(range.frames - range.firstKeyframe) / speed
+                     + double(range.firstKeyframe + range.leadingKeyframe);
+        }
         previousEndMs = segment.endMs;
     }
     return qint64(std::ceil(bytes));
