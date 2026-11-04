@@ -24,6 +24,7 @@ private slots:
     void samplesCountWhatARangeHolds();
     void samplesCountTheKeyframeAPartNeeds();
     void samplesReadFromFragments();
+    void samplesFollowTheEditList();
 };
 
 void TestMp4ExportOptions::defaultsKeepTheExportAsBefore()
@@ -237,6 +238,9 @@ void TestMp4ExportOptions::samplesCountTheKeyframeAPartNeeds()
     // 300 ms from 1.5 s: nine predicted frames and the keyframe at 1 s.
     QCOMPARE(samples.bytesBetween(1500, 1800), 9 * kPredicted);
     QCOMPARE(samples.bytesToEncode(1500, 1800), 9 * kPredicted + kKey);
+    QCOMPARE(samples.leadingKeyframeBytes(1500, 1800), kKey);
+    QCOMPARE(samples.leadingKeyframeBytes(1000, 1300), 0);
+    QCOMPARE(samples.leadingKeyframeBytes(4000, 5000), 0);
     // Starting on a keyframe needs nothing more.
     QCOMPARE(samples.bytesToEncode(1000, 1300), kKey + 8 * kPredicted);
     // Across a keyframe: the leading one, and the one inside, once each.
@@ -334,6 +338,65 @@ void TestMp4ExportOptions::samplesReadFromFragments()
     // Not an MP4.
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
     file.write("not a video");
+    file.close();
+    QVERIFY(!Mp4VideoSamples::read(file.fileName()).isValid());
+}
+
+// A plain MP4 as AVFoundation or FFmpeg may write it: the video starts after
+// the audio (an empty edit), B-frames show after they are decoded (ctts), and
+// the edit list says where the shown media starts. Times must come out as the
+// preview's source time counts them, in order.
+void TestMp4ExportOptions::samplesFollowTheEditList()
+{
+    constexpr quint32 kMovieScale = 1000;
+    constexpr quint32 kScale = 3000; // 100 ticks a frame at 30 fps
+    const QByteArray mvhd = fullBox("mvhd", 0, 0, be32(0) + be32(0) + be32(kMovieScale) + QByteArray(88, '\0'));
+    const QByteArray tkhd = fullBox("tkhd", 0, 3, be32(0) + be32(0) + be32(1) + QByteArray(68, '\0'));
+    // 200 ms empty, then the media from tick 200 (the B-frame delay).
+    const QByteArray elst = fullBox("elst", 0, 0, be32(2) + be32(200) + be32(0xFFFFFFFF) + be32(0x00010000)
+                                                    + be32(1000) + be32(200) + be32(0x00010000));
+    const QByteArray mdhd = fullBox("mdhd", 0, 0, be32(0) + be32(0) + be32(kScale) + be32(0) + be32(0));
+    const QByteArray hdlr = fullBox("hdlr", 0, 0, be32(0) + QByteArray("vide") + QByteArray(13, '\0'));
+    // Decode order I P B B: shown at frames 0, 3, 1, 2 (after a 2-frame
+    // delay the edit list removes).
+    const QByteArray stts = fullBox("stts", 0, 0, be32(1) + be32(4) + be32(100));
+    const QByteArray stsz = fullBox("stsz", 0, 0, be32(0) + be32(4) + be32(9000) + be32(400) + be32(100) + be32(200));
+    const QByteArray ctts = fullBox("ctts", 0, 0, be32(3) + be32(1) + be32(200) + be32(1) + be32(400)
+                                                    + be32(2) + be32(100));
+    const QByteArray stss = fullBox("stss", 0, 0, be32(1) + be32(1));
+    const QByteArray stbl = box("stbl", stts + stsz + ctts + stss);
+    const QByteArray moov = box("moov", mvhd + box("trak", tkhd + box("edts", elst)
+                                                       + box("mdia", mdhd + hdlr + box("minf", stbl))));
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QFile file(dir.filePath(QStringLiteral("edited.mp4")));
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write(box("ftyp", QByteArray("isom") + be32(0)) + moov + box("mdat", QByteArray(9700, 'x')));
+    file.close();
+
+    const Mp4VideoSamples samples = Mp4VideoSamples::read(file.fileName());
+    QCOMPARE(samples.sampleCount(), 4);
+    // Shown at 200, 233, 267 and 300 ms: I, B (100), B (200), P (400).
+    QCOMPARE(samples.bytesBetween(0, 200), qint64(0));
+    QCOMPARE(samples.bytesBetween(200, 201), qint64(9000));
+    QCOMPARE(samples.bytesBetween(230, 240), qint64(100));
+    QCOMPARE(samples.bytesBetween(260, 270), qint64(200));
+    QCOMPARE(samples.bytesBetween(300, 301), qint64(400));
+    // The last frame ends a frame later.
+    QCOMPARE(samples.endMs(), qint64(333));
+    // Only the I frame is a keyframe: a part from the first B needs it.
+    QCOMPARE(samples.leadingKeyframeBytes(230, 400), qint64(9000));
+    // A part in which no frame starts still shows one, encoded whole.
+    QCOMPARE(samples.rangeBytes(205, 230).frames, qint64(0));
+    QCOMPARE(samples.rangeBytes(205, 230).leadingKeyframe, qint64(9000));
+    QCOMPARE(samples.rangeBytes(0, 150).leadingKeyframe, qint64(0)); // nothing shown yet
+
+    // A damaged count is refused, not allocated.
+    const QByteArray badStsz = fullBox("stsz", 0, 0, be32(1000) + be32(0xFFFFFFF0));
+    const QByteArray badMoov = box("moov", mvhd + box("trak", tkhd + box("mdia", mdhd + hdlr
+                                                       + box("minf", box("stbl", stts + badStsz)))));
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    file.write(box("ftyp", QByteArray("isom") + be32(0)) + badMoov);
     file.close();
     QVERIFY(!Mp4VideoSamples::read(file.fileName()).isValid());
 }

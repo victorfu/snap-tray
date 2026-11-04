@@ -586,8 +586,11 @@ public:
     QString mp4EstimateText() const;
     // True once the source has been probed (starts the probe if needed).
     bool sourceProbeReady() const;
-    // Video bytes the recording holds in the parts the export keeps.
+    // Video bytes the export needs for the parts it keeps, as the recording
+    // spent them; -1 when the recording's sample table cannot tell.
     qint64 keptSourceVideoBytes() const;
+    // Effects that add picture the recording never had.
+    bool pictureEffectsActive() const;
 
     // Anything drawn into the export: masks, pointer effects or zoom.
     bool effectsActive() const;

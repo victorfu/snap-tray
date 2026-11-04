@@ -1979,10 +1979,18 @@ void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
 // frame rate, H.264) keep an unedited recording on the move-as-is path.
 // PR #213: the estimate counts the bytes the recording holds in the kept
 // parts, read from the file (with the keyframe a part starting mid-GOP
-// needs), each at 1/speed. Walks the timeline's segments
+// needs), their frames at 1/speed. Walks the timeline's segments
 // (review: they must outlive the loop) after a trim, a split and a speed change.
 void tst_RecordingPreviewExport::estimateCountsTheKeptParts()
 {
+    // A fixed quality, so the target-only estimate can be worked out here.
+    constexpr int kQuality = 50;
+    RecordingPreviewBackend::outputQualityOverride() = []() { return kQuality; };
+    auto restoreQuality = qScopeGuard([]() { RecordingPreviewBackend::outputQualityOverride() = {}; });
+    // The frame turned on below is remembered as the next recording's look.
+    auto& settings = RecordingSettingsManager::instance();
+    const QJsonObject rememberedAppearance = settings.appearance();
+    auto restoreAppearance = qScopeGuard([&settings, rememberedAppearance]() { settings.setAppearance(rememberedAppearance); });
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
     const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
@@ -1997,6 +2005,7 @@ void tst_RecordingPreviewExport::estimateCountsTheKeptParts()
     backend.updateDuration(kFrameCount * kFrameIntervalMs);
     // Read off the GUI thread: nothing until it lands, then the whole file.
     QTRY_COMPARE(backend.keptSourceVideoBytes(), samples.totalBytes());
+    QTRY_VERIFY(backend.sourceProbeReady());
 
     const qint64 start = 4 * kFrameIntervalMs;
     const qint64 split = 7 * kFrameIntervalMs;
@@ -2004,12 +2013,45 @@ void tst_RecordingPreviewExport::estimateCountsTheKeptParts()
     backend.setTrimStart(start);
     backend.setTrimEnd(end);
     QCOMPARE(backend.keptSourceVideoBytes(), samples.bytesToEncode(start, end));
+    // PR #213 review: at 4x the second part's frames count a quarter. It
+    // carries on from the first part (only the speed changes), so the export
+    // needs no new whole frame there.
     QVERIFY(backend.splitAt(split));
-    backend.setPartSpeed(1, 2.0);
+    backend.setPartSpeed(1, 4.0);
     QCOMPARE(backend.keptSourceVideoBytes(),
              qint64(std::ceil(double(samples.bytesToEncode(start, split))
-                              + double(samples.bytesToEncode(split, end)) / 2.0)));
+                              + double(samples.bytesBetween(split, end)) / 4.0)));
+    // Slower repeats frames, which costs almost nothing: not counted twice.
+    backend.setPartSpeed(1, 0.5);
+    QCOMPARE(backend.keptSourceVideoBytes(), samples.bytesToEncode(start, split) + samples.bytesBetween(split, end));
     QVERIFY(backend.mp4EstimatedBytes() > 0);
+
+    // A recording made at the user's quality of the day, not an
+    // intermediate, may be below what the export asks: the target alone.
+    const VideoFileProbe probe = IVideoTranscoder::create()->probe(inputPath);
+    const SnapTray::Mp4ExportOptions options = SnapTray::Mp4ExportOptions::fromJson(
+        RecordingSettingsManager::instance().mp4ExportOptions());
+    const auto targetOnly = [&](const RecordingPreviewBackend& b) {
+        const int target = options.videoBitrate(b.mp4OutputSize(), b.mp4OutputFrameRate(), kQuality);
+        return SnapTray::Mp4SizeEstimate::bytes(target, probe.hasAudio, b.outputDuration());
+    };
+    {
+        RecordingPreviewBackend recordedAtQuality(inputPath, /*recordedAsIntermediate*/ false);
+        recordedAtQuality.setSelectedFormat(RecordingPreviewBackend::MP4);
+        recordedAtQuality.updateVideoSize(QSize(160, 120));
+        recordedAtQuality.updateDuration(kFrameCount * kFrameIntervalMs);
+        recordedAtQuality.setTrimStart(start);
+        recordedAtQuality.setTrimEnd(end);
+        QTRY_VERIFY(recordedAtQuality.sourceProbeReady());
+        QTRY_VERIFY(recordedAtQuality.keptSourceVideoBytes() >= 0); // the table is read
+        QCOMPARE(recordedAtQuality.mp4EstimatedBytes(), targetOnly(recordedAtQuality));
+    }
+
+    // PR #213 review: an effect that adds picture the recording never had
+    // (here a frame and its background) leaves the target as the estimate.
+    backend.setAppearanceEnabled(true);
+    QVERIFY(backend.pictureEffectsActive());
+    QCOMPARE(backend.mp4EstimatedBytes(), targetOnly(backend));
 }
 
 // PR #197 review: the MP4 options and estimate read the source's probe, which

@@ -4,6 +4,7 @@
 #include <QtEndian>
 
 #include <algorithm>
+#include <numeric>
 
 namespace SnapTray {
 
@@ -16,6 +17,8 @@ constexpr qint64 kLargeBoxHeader = 16;
 // moov and moof are read whole; mdat is skipped. A moov this big is not a
 // recording's (an hour of 60 fps is about 1 MB of sample sizes).
 constexpr qint64 kMaxMetadataBox = 64 * 1024 * 1024;
+// More samples than a day at 120 fps: a damaged count, not a recording.
+constexpr qint64 kMaxSamples = 24LL * 3600 * 120;
 
 constexpr quint32 fourcc(const char (&s)[5])
 {
@@ -23,20 +26,22 @@ constexpr quint32 fourcc(const char (&s)[5])
            | quint32(quint8(s[3]));
 }
 
-// Track-fragment header flags (ISO/IEC 14496-12, 8.8.7 and 8.8.8).
+// Track-fragment header and run flags (ISO/IEC 14496-12, 8.8.7 and 8.8.8).
 constexpr quint32 kTfhdBaseDataOffset = 0x000001;
 constexpr quint32 kTfhdSampleDescriptionIndex = 0x000002;
 constexpr quint32 kTfhdDefaultDuration = 0x000008;
 constexpr quint32 kTfhdDefaultSize = 0x000010;
 constexpr quint32 kTfhdDefaultFlags = 0x000020;
-// sample_is_non_sync_sample in the sample flags (8.8.3.1).
-constexpr quint32 kSampleNonSync = 0x00010000;
 constexpr quint32 kTrunDataOffset = 0x000001;
 constexpr quint32 kTrunFirstSampleFlags = 0x000004;
 constexpr quint32 kTrunDuration = 0x000100;
 constexpr quint32 kTrunSize = 0x000200;
 constexpr quint32 kTrunFlags = 0x000400;
 constexpr quint32 kTrunCompositionOffset = 0x000800;
+// sample_is_non_sync_sample in the sample flags (8.8.3.1).
+constexpr quint32 kSampleNonSync = 0x00010000;
+// An edit with this media time is empty: the track shows nothing for it.
+constexpr qint64 kEmptyEdit = -1;
 
 // Bounds-checked big-endian reads over one box's payload.
 class Reader
@@ -65,7 +70,6 @@ public:
         m_pos += 8;
         return v;
     }
-    const char* here() const { return m_data + m_pos; }
 
 private:
     const char* m_data;
@@ -117,14 +121,59 @@ struct VideoTrack {
     quint32 defaultDuration = 0; // from trex
     quint32 defaultSize = 0;     // from trex
     quint32 defaultFlags = 0;    // from trex
-    std::vector<qint64> startTicks;
+    // Per sample, in decode order: decode time, composition offset, size.
+    std::vector<qint64> decodeTicks;
+    std::vector<qint64> compositionOffsets;
+    std::vector<qint64> durations;
     std::vector<qint64> sizes;
     std::vector<bool> sync;
     qint64 endTicks = 0; // decode end of the last sample read
+    // Edit list: how long the track shows nothing before its media (movie
+    // time, in microseconds).
+    qint64 emptyEditUs = 0;
+
+    void add(qint64 ticks, qint64 duration, qint64 offset, qint64 size, bool keyframe)
+    {
+        decodeTicks.push_back(ticks);
+        durations.push_back(duration);
+        compositionOffsets.push_back(offset);
+        sizes.push_back(size);
+        sync.push_back(keyframe);
+    }
 };
 
+qint64 ticksToUs(qint64 ticks, qint64 timescale)
+{
+    // Whole seconds and the rest, so a large clock cannot overflow.
+    return ticks / timescale * kUsPerSecond + ticks % timescale * kUsPerSecond / timescale;
+}
+
+void readEdits(const Box& edts, quint32 movieTimescale, VideoTrack& track)
+{
+    // Held in a local: child() points into the vector.
+    const std::vector<Box> boxes = children(edts.payload, edts.size);
+    const Box* elst = child(boxes, fourcc("elst"));
+    if (!elst || movieTimescale == 0) return;
+    Reader r(elst->payload, elst->size);
+    const bool wide = (r.u32() >> 24) == 1;
+    const quint32 entries = r.u32();
+    for (quint32 e = 0; e < entries && r.ok(); ++e) {
+        const qint64 duration = wide ? qint64(r.u64()) : qint64(r.u32());
+        const qint64 mediaTime = wide ? qint64(r.u64()) : qint64(qint32(r.u32()));
+        r.skip(4); // media_rate
+        if (!r.ok()) return;
+        if (mediaTime == kEmptyEdit) {
+            track.emptyEditUs += ticksToUs(duration, movieTimescale);
+            continue;
+        }
+        // The first edit that shows media: where it starts is the first shown
+        // sample (see read()).
+        return;
+    }
+}
+
 // moov/trak: is it video, and its sample table (empty in fragmented files).
-bool readTrak(const Box& trak, VideoTrack& track)
+bool readTrak(const Box& trak, quint32 movieTimescale, VideoTrack& track)
 {
     const std::vector<Box> boxes = children(trak.payload, trak.size);
     const Box* tkhd = child(boxes, fourcc("tkhd"));
@@ -146,6 +195,7 @@ bool readTrak(const Box& trak, VideoTrack& track)
     media.skip((media.u32() >> 24) == 1 ? 16 : 8);
     track.timescale = media.u32();
     if (!header.ok() || !media.ok() || track.timescale == 0) return false;
+    if (const Box* edts = child(boxes, fourcc("edts"))) readEdits(*edts, movieTimescale, track);
 
     const Box* minf = child(mdiaBoxes, fourcc("minf"));
     const std::vector<Box> minfBoxes = minf ? children(minf->payload, minf->size) : std::vector<Box>();
@@ -159,28 +209,47 @@ bool readTrak(const Box& trak, VideoTrack& track)
     Reader sizes(stsz->payload, stsz->size);
     sizes.skip(4);
     const quint32 commonSize = sizes.u32();
-    const quint32 count = sizes.u32();
-    if (!sizes.ok() || (commonSize == 0 && sizes.remaining() < qint64(count) * 4)) return false;
+    const qint64 count = sizes.u32();
+    if (!sizes.ok() || count > kMaxSamples || (commonSize == 0 && sizes.remaining() < count * 4)) return false;
     Reader times(stts->payload, stts->size);
     times.skip(4);
     const quint32 entries = times.u32();
-    track.startTicks.reserve(count);
-    track.sizes.reserve(count);
+    track.decodeTicks.reserve(size_t(count));
+    track.compositionOffsets.reserve(size_t(count));
+    track.sizes.reserve(size_t(count));
+    track.sync.reserve(size_t(count));
     qint64 ticks = 0;
-    for (quint32 e = 0; e < entries && times.ok() && track.startTicks.size() < count; ++e) {
+    for (quint32 e = 0; e < entries && times.ok() && qint64(track.sizes.size()) < count; ++e) {
         const quint32 run = times.u32();
         const quint32 delta = times.u32();
-        for (quint32 i = 0; i < run && track.startTicks.size() < count; ++i) {
-            track.startTicks.push_back(ticks);
-            track.sizes.push_back(commonSize ? commonSize : sizes.u32());
+        for (quint32 i = 0; i < run && qint64(track.sizes.size()) < count; ++i) {
+            track.add(ticks, delta, 0, commonSize ? commonSize : sizes.u32(), true);
             ticks += delta;
         }
     }
     track.endTicks = ticks;
+    if (!times.ok() || !sizes.ok()) return false;
+
+    // Composition offsets (B-frames show after they are decoded).
+    if (const Box* ctts = child(stblBoxes, fourcc("ctts"))) {
+        Reader r(ctts->payload, ctts->size);
+        r.skip(4);
+        const quint32 cttsEntries = r.u32();
+        size_t index = 0;
+        for (quint32 e = 0; e < cttsEntries && index < track.sizes.size(); ++e) {
+            const quint32 run = r.u32();
+            const qint64 offset = qint32(r.u32()); // signed in version 1, small either way
+            // A table cut short leaves the rest at 0: a few frames' shift at
+            // most, while the sizes stay usable.
+            if (!r.ok()) break;
+            for (quint32 i = 0; i < run && index < track.sizes.size(); ++i) {
+                track.compositionOffsets[index++] = offset;
+            }
+        }
+    }
     // Keyframes: those listed in stss (1-based); without stss, every sample.
-    const Box* stss = child(stblBoxes, fourcc("stss"));
-    track.sync.assign(track.startTicks.size(), stss == nullptr);
-    if (stss) {
+    if (const Box* stss = child(stblBoxes, fourcc("stss"))) {
+        std::fill(track.sync.begin(), track.sync.end(), false);
         Reader keys(stss->payload, stss->size);
         keys.skip(4);
         const quint32 keyCount = keys.u32();
@@ -190,7 +259,7 @@ bool readTrak(const Box& trak, VideoTrack& track)
         }
         if (!keys.ok()) return false;
     }
-    return times.ok() && sizes.ok();
+    return true;
 }
 
 void readTrex(const Box& mvex, VideoTrack& track)
@@ -238,20 +307,19 @@ bool readMoof(const Box& moof, VideoTrack& track)
             if (trun.type != fourcc("trun")) continue;
             Reader r(trun.payload, trun.size);
             const quint32 trunFlags = r.u32() & 0xFFFFFF;
-            const quint32 count = r.u32();
+            const qint64 count = r.u32();
+            if (!r.ok() || qint64(track.sizes.size()) + count > kMaxSamples) return false;
             if (trunFlags & kTrunDataOffset) r.skip(4);
             const bool hasFirstFlags = trunFlags & kTrunFirstSampleFlags;
             const quint32 firstFlags = hasFirstFlags ? r.u32() : 0;
-            for (quint32 i = 0; i < count && r.ok(); ++i) {
+            for (qint64 i = 0; i < count && r.ok(); ++i) {
                 const quint32 sampleDuration = (trunFlags & kTrunDuration) ? r.u32() : duration;
                 const quint32 sampleSize = (trunFlags & kTrunSize) ? r.u32() : size;
                 quint32 thisFlags = (i == 0 && hasFirstFlags) ? firstFlags : sampleFlags;
                 if (trunFlags & kTrunFlags) thisFlags = r.u32();
-                if (trunFlags & kTrunCompositionOffset) r.skip(4);
+                const qint64 offset = (trunFlags & kTrunCompositionOffset) ? qint64(qint32(r.u32())) : 0;
                 if (!r.ok()) break;
-                track.startTicks.push_back(ticks);
-                track.sizes.push_back(sampleSize);
-                track.sync.push_back(!(thisFlags & kSampleNonSync));
+                track.add(ticks, sampleDuration, offset, sampleSize, !(thisFlags & kSampleNonSync));
                 ticks += sampleDuration;
             }
             if (!r.ok()) return false;
@@ -271,30 +339,55 @@ void Mp4VideoSamples::append(qint64 startUs, qint64 bytes, bool keyframe)
     if (keyframe) m_keyframes.push_back(m_startUs.size() - 1);
 }
 
-qint64 Mp4VideoSamples::bytesToEncode(qint64 startMs, qint64 endMs) const
+Mp4VideoSamples::RangeBytes Mp4VideoSamples::rangeBytes(qint64 startMs, qint64 endMs) const
 {
-    if (!isValid() || endMs <= startMs) return 0;
+    RangeBytes range;
+    if (!isValid() || endMs <= startMs) return range;
     const auto first = std::lower_bound(m_startUs.begin(), m_startUs.end(), startMs * kUsPerMs);
     const auto last = std::lower_bound(m_startUs.begin(), m_startUs.end(), endMs * kUsPerMs);
-    if (first == last) return 0;
+    if (first == last) {
+        // No sample starts inside (a slow or variable frame rate): the one
+        // still on screen is shown, and the export encodes it whole. Nothing
+        // is shown before the first sample or after the last one ends.
+        if (first == m_startUs.begin() || startMs >= this->endMs()) return range;
+        const size_t shown = size_t(first - m_startUs.begin()) - 1;
+        const auto key = std::upper_bound(m_keyframes.begin(), m_keyframes.end(), shown);
+        const size_t keyIndex = key == m_keyframes.begin() ? shown : *(key - 1);
+        range.leadingKeyframe = m_cumulativeBytes[keyIndex + 1] - m_cumulativeBytes[keyIndex];
+        return range;
+    }
     const size_t firstIndex = size_t(first - m_startUs.begin());
-    qint64 bytes = m_cumulativeBytes[size_t(last - m_startUs.begin())] - m_cumulativeBytes[firstIndex];
+    range.frames = m_cumulativeBytes[size_t(last - m_startUs.begin())] - m_cumulativeBytes[firstIndex];
     // The kept part starts mid-GOP: the export must encode its first frame
-    // whole, so count the keyframe it was predicted from (PR #213 review).
+    // whole, about what the keyframe it was predicted from cost.
     const auto key = std::upper_bound(m_keyframes.begin(), m_keyframes.end(), firstIndex);
     if (key != m_keyframes.begin() && *(key - 1) != firstIndex) {
         const size_t keyIndex = *(key - 1);
-        bytes += m_cumulativeBytes[keyIndex + 1] - m_cumulativeBytes[keyIndex];
+        range.leadingKeyframe = m_cumulativeBytes[keyIndex + 1] - m_cumulativeBytes[keyIndex];
     }
-    return bytes;
+    return range;
 }
 
 qint64 Mp4VideoSamples::bytesBetween(qint64 startMs, qint64 endMs) const
 {
-    if (!isValid() || endMs <= startMs) return 0;
-    const auto first = std::lower_bound(m_startUs.begin(), m_startUs.end(), startMs * kUsPerMs);
-    const auto last = std::lower_bound(m_startUs.begin(), m_startUs.end(), endMs * kUsPerMs);
-    return m_cumulativeBytes[size_t(last - m_startUs.begin())] - m_cumulativeBytes[size_t(first - m_startUs.begin())];
+    return rangeBytes(startMs, endMs).frames;
+}
+
+qint64 Mp4VideoSamples::bytesToEncode(qint64 startMs, qint64 endMs) const
+{
+    const RangeBytes range = rangeBytes(startMs, endMs);
+    return range.frames + range.leadingKeyframe;
+}
+
+qint64 Mp4VideoSamples::leadingKeyframeBytes(qint64 startMs, qint64 endMs) const
+{
+    return rangeBytes(startMs, endMs).leadingKeyframe;
+}
+
+qint64 Mp4VideoSamples::endMs() const
+{
+    if (m_startUs.empty()) return 0;
+    return std::max(m_endUs, m_startUs.back()) / kUsPerMs;
 }
 
 Mp4VideoSamples Mp4VideoSamples::read(const QString& path)
@@ -330,10 +423,16 @@ Mp4VideoSamples Mp4VideoSamples::read(const QString& path)
             if (payload.size() != boxSize - header) break;
             if (type == fourcc("moov")) {
                 const std::vector<Box> boxes = children(payload.constData(), payload.size());
+                quint32 movieTimescale = 0;
+                if (const Box* mvhd = child(boxes, fourcc("mvhd"))) {
+                    Reader r(mvhd->payload, mvhd->size);
+                    r.skip((r.u32() >> 24) == 1 ? 16 : 8); // creation, modification
+                    movieTimescale = r.u32();
+                }
                 for (const Box& box : boxes) {
                     if (box.type != fourcc("trak")) continue;
                     VideoTrack candidate;
-                    if (readTrak(box, candidate)) {
+                    if (readTrak(box, movieTimescale, candidate)) {
                         track = std::move(candidate);
                         haveTrack = true;
                         break;
@@ -347,18 +446,33 @@ Mp4VideoSamples Mp4VideoSamples::read(const QString& path)
         }
         pos += boxSize;
     }
-    if (!haveTrack || track.timescale == 0 || track.startTicks.empty()) return result;
-    // Times are decode times from the track's own clock. A fragmented file
-    // may start that clock anywhere (tfdt), so count from the first sample,
-    // which is where the preview's source time 0 is. Ticks are split into
-    // whole seconds and the rest so a large clock cannot overflow.
-    const qint64 first = *std::min_element(track.startTicks.begin(), track.startTicks.end());
+    if (!haveTrack || track.timescale == 0 || track.sizes.empty()) return result;
+
+    // Presentation times, as the preview's source time counts them: decode
+    // time plus the composition offset, counted from the first shown sample,
+    // after any empty edit (video that starts after the audio). The first
+    // shown sample is where the edit list starts the media in recordings;
+    // taking it rather than the edit's media time also holds when a
+    // fragmented file starts its decode clock elsewhere (tfdt). Edits after
+    // the first are not followed: recordings have one.
     const qint64 timescale = track.timescale;
-    for (size_t i = 0; i < track.startTicks.size(); ++i) {
-        const qint64 ticks = track.startTicks[i] - first;
-        result.append(ticks / timescale * kUsPerSecond + ticks % timescale * kUsPerSecond / timescale,
-                      track.sizes[i], i < track.sync.size() ? bool(track.sync[i]) : true);
+    std::vector<qint64> showTicks(track.sizes.size());
+    for (size_t i = 0; i < showTicks.size(); ++i) {
+        showTicks[i] = track.decodeTicks[i] + track.compositionOffsets[i];
     }
+    const qint64 originTicks = *std::min_element(showTicks.begin(), showTicks.end());
+    const qint64 originUs = track.emptyEditUs;
+    // In presentation order: fragments whose clock restarts, or B-frames, can
+    // come out of order, and the ranges are searched by time.
+    std::vector<size_t> order(showTicks.size());
+    std::iota(order.begin(), order.end(), size_t(0));
+    std::stable_sort(order.begin(), order.end(), [&showTicks](size_t a, size_t b) { return showTicks[a] < showTicks[b]; });
+    qint64 endTicks = originTicks;
+    for (const size_t i : order) {
+        result.append(originUs + ticksToUs(showTicks[i] - originTicks, timescale), track.sizes[i], track.sync[i]);
+        endTicks = std::max(endTicks, showTicks[i] + track.durations[i]);
+    }
+    result.setEndUs(originUs + ticksToUs(endTicks - originTicks, timescale));
     return result;
 }
 

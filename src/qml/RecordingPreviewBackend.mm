@@ -489,6 +489,12 @@ int RecordingPreviewBackend::mp4SourceFrameRate() const
     return SnapTray::IntermediateQuality::effectiveFrameRate(sourceProbe().frameRate);
 }
 
+namespace {
+// How far short of the recording's end its sample table may stop and still
+// be trusted (the last frame's own length, rounding).
+constexpr qint64 kSampleCoverageSlackMs = 1000;
+} // namespace
+
 qint64 RecordingPreviewBackend::mp4EstimatedBytes() const
 {
     const VideoFileProbe& probe = sourceProbe();
@@ -515,21 +521,17 @@ qint64 RecordingPreviewBackend::mp4EstimatedBytes() const
     const QSize outputSize = mp4OutputSize();
     const int target = options.videoBitrate(outputSize, mp4OutputFrameRate(), settingsQuality);
     SnapTray::Mp4SizeEstimate::Source source;
-    // The recording tells how much this content needs, unless the export asks
-    // for more than it was recorded with or zoom moves the whole picture,
-    // which a recording of a still screen never did (PR #213 review). A
-    // recording that is not an intermediate was made at the user's quality:
-    // a lower export quality is fine (the target caps it), a higher one not.
-    const bool recordedAtLeastAsWell = m_recordedAsIntermediate
-        || options.outputQuality(settingsQuality) <= settingsQuality;
-    const bool zoomMoves = zoomAvailable() && m_zoom.isActive();
-    const auto samples = sourceSamples();
-    if (recordedAtLeastAsWell && !zoomMoves && samples && samples->isValid()) {
+    // The recording tells how much this content needs (PR #213 review), when:
+    // - it is an intermediate, recorded better than any export asks for. A
+    //   recording made at the user's quality of the day could be below what
+    //   the export now asks, and that quality is not kept with it;
+    // - no effect adds picture it never had (see pictureEffectsActive());
+    // - its sample table was read and covers what is kept.
+    if (m_recordedAsIntermediate && !pictureEffectsActive()) {
         source.keptVideoBytes = keptSourceVideoBytes();
         // Scaled only for a smaller resolution: a crop is not counted down,
         // since the kept area may hold most of the detail (a busy window on a
-        // still screen), and a frame adds little. The estimate stays on the
-        // safe side.
+        // still screen). The estimate stays on the safe side.
         source.videoSize = mp4BaseSize();
         source.hevc = probe.videoCodec == QLatin1String(kVideoCodecHevc);
     }
@@ -542,17 +544,29 @@ qint64 RecordingPreviewBackend::mp4EstimatedBytes() const
 qint64 RecordingPreviewBackend::keptSourceVideoBytes() const
 {
     const auto samples = sourceSamples();
-    if (!samples) return 0;
+    if (!samples || !samples->isValid()) return -1;
+    // A table cut short (a damaged or unusual file) would count what it
+    // misses as nothing: then it does not tell.
+    const qint64 needEndMs = m_duration > 0 ? m_duration : sourceProbe().durationMs;
+    if (needEndMs <= 0 || samples->endMs() < needEndMs - kSampleCoverageSlackMs) return -1;
     if (m_duration <= 0) return samples->totalBytes(); // not loaded: nothing trimmed yet
-    double bytes = 0;
-    // A part played faster shows fewer of its frames (the output frame rate
-    // is fixed), a slower one repeats them: its share scales with 1/speed.
+
     // Held in a local: segments() refers into the map, which a temporary in
     // the range-for would destroy before the loop starts (PR #213 review).
     const SnapTray::TimelineMap map = timelineMap();
+    double bytes = 0;
+    qint64 previousEndMs = -1;
     for (const SnapTray::TimelineSegment& segment : map.segments()) {
-        const double speed = segment.speed > 0.0 ? segment.speed : 1.0;
-        bytes += double(samples->bytesToEncode(segment.startMs, segment.endMs)) / speed;
+        const SnapTray::Mp4VideoSamples::RangeBytes range = samples->rangeBytes(segment.startMs, segment.endMs);
+        // A faster part shows fewer of its frames (the output frame rate is
+        // fixed); a slower one repeats them, which costs almost nothing.
+        const double speed = segment.speed > 1.0 ? segment.speed : 1.0;
+        bytes += double(range.frames) / speed;
+        // A part starting mid-GOP needs a whole first frame, at any speed,
+        // unless it carries on from the part before (only the speed changed):
+        // the export's stream continues there.
+        if (segment.startMs != previousEndMs) bytes += double(range.leadingKeyframe);
+        previousEndMs = segment.endMs;
     }
     return qint64(std::ceil(bytes));
 }
@@ -566,11 +580,19 @@ std::shared_ptr<const SnapTray::Mp4VideoSamples> RecordingPreviewBackend::source
     const QString path = m_videoPath;
     const QPointer<RecordingPreviewBackend> weakThis(const_cast<RecordingPreviewBackend*>(this));
     (void)QtConcurrent::run([path, weakThis]() {
-        auto samples = std::make_shared<const SnapTray::Mp4VideoSamples>(SnapTray::Mp4VideoSamples::read(path));
+        // Always answer, so the estimate never waits on a read that failed.
+        std::shared_ptr<const SnapTray::Mp4VideoSamples> samples;
+        try {
+            samples = std::make_shared<const SnapTray::Mp4VideoSamples>(SnapTray::Mp4VideoSamples::read(path));
+        } catch (const std::exception& e) {
+            qWarning() << "RecordingPreviewBackend: cannot read the sample table:" << e.what();
+            samples = std::make_shared<const SnapTray::Mp4VideoSamples>();
+        }
         if (QCoreApplication* app = QCoreApplication::instance()) {
             QMetaObject::invokeMethod(app, [weakThis, samples]() {
                 if (!weakThis) return;
                 weakThis->m_sourceSamples = samples;
+                weakThis->m_sourceSamplesPending = false;
                 emit weakThis->mp4EstimateChanged();
             }, Qt::QueuedConnection);
         }
@@ -772,8 +794,16 @@ bool RecordingPreviewBackend::setPointerHideRange(int index, qint64 startMs, qin
 
 bool RecordingPreviewBackend::effectsActive() const
 {
-    return !m_redaction.isEmpty() || cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive())
-        || appearanceActive() || keyOverlayActive() || (!m_overlays.isEmpty() && overlaysAvailable());
+    return !m_redaction.isEmpty() || cursorEffectsActive() || pictureEffectsActive();
+}
+
+bool RecordingPreviewBackend::pictureEffectsActive() const
+{
+    // Zoom moves all of the picture, overlays and key hints draw new detail
+    // (and fade it), and a frame may put an image behind it. Pointer effects
+    // and masks only change what was recorded, a small part of it at that.
+    return (zoomAvailable() && m_zoom.isActive()) || appearanceActive() || keyOverlayActive()
+        || (!m_overlays.isEmpty() && overlaysAvailable());
 }
 
 QVariantList RecordingPreviewBackend::masks() const
