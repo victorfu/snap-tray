@@ -21,10 +21,35 @@ SettingsRow {
 
     signal activated(int index)
 
+    // Size to the widest option, not the selected one, so no option is cut
+    // short in the combo or its popup (which would otherwise be as narrow as
+    // a short selection).
+    readonly property int delegatePadding: 12
+    readonly property real widestTextWidth: {
+        let widest = 0
+        for (let i = 0; i < model.length; ++i)
+            widest = Math.max(widest, optionMetrics.advanceWidth(String(model[i].text)))
+        return Math.ceil(widest)
+    }
+
+    FontMetrics {
+        id: optionMetrics
+        font.pixelSize: SemanticTokens.fontSizeBody
+        font.family: SemanticTokens.fontFamily
+        font.letterSpacing: SemanticTokens.letterSpacingDefault
+    }
+
     ComboBox {
         id: combo
         anchors.verticalCenter: parent.verticalCenter
-        width: root.controlWidth > 0 ? root.controlWidth : Math.max(120, implicitWidth)
+        width: root.controlWidth > 0
+            ? root.controlWidth
+            : Math.min(Math.max(120, implicitWidth,
+                                root.widestTextWidth + contentItem.leftPadding
+                                    + contentItem.rightPadding + leftPadding + rightPadding),
+                       // Never past the row; a long option then elides here
+                       // but still shows in full in the popup.
+                       parent && parent.width > 0 ? parent.width : Number.MAX_VALUE)
         model: root.model
         currentIndex: root.currentIndex
         textRole: "text"
@@ -71,7 +96,9 @@ SettingsRow {
 
         popup: Popup {
             y: combo.height + 2
-            width: Math.max(combo.width, root.minimumPopupWidth)
+            width: Math.max(combo.width, root.minimumPopupWidth,
+                            root.widestTextWidth + SemanticTokens.spacing8
+                                + 2 * root.delegatePadding + leftPadding + rightPadding)
             padding: 1
 
             enter: Transition {
@@ -101,6 +128,7 @@ SettingsRow {
             // even when minimumPopupWidth makes the popup wider than combo.
             width: ListView.view ? ListView.view.width : combo.width
             height: ComponentTokens.inputHeight
+            horizontalPadding: root.delegatePadding
             highlighted: combo.highlightedIndex === index
 
             contentItem: Text {
