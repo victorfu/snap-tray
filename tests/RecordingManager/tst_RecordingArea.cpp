@@ -98,6 +98,11 @@ void TestRecordingArea::videoCropAtTheScreenScale_data()
     QTest::newRow("150%, fractional logical pixels")
         << QRectF(800.0 / 1.5, 350.0 / 1.5, 1000.0 / 1.5, 700.0 / 1.5) << primary << frame << 1.5
         << QRect(800, 350, 1000, 700);
+    QTest::newRow("150%, touching the right and bottom edges")
+        << QRectF(1360.0 / 1.5, 740.0 / 1.5, 1200.0 / 1.5, 700.0 / 1.5) << primary << frame << 1.5
+        << QRect(1360, 740, 1200, 700);
+    QTest::newRow("150%, to the rounded logical edge (1707 is 2560.5 pixels)")
+        << QRectF(1307, 660, 400, 300) << primary << frame << 1.5 << QRect(1960, 990, 600, 450);
     QTest::newRow("150%, near the right edge")
         << QRectF(1650.0 / 1.5, 900.0 / 1.5, 900.0 / 1.5, 540.0 / 1.5) << primary << frame << 1.5
         << QRect(1650, 900, 900, 540);

@@ -113,9 +113,19 @@ QString ScreenSourceService::resolutionText(const QRect& geometry, qreal deviceP
 QString ScreenSourceService::resolutionText(const QScreen* screen)
 {
     if (!screen) return {};
-    const QSize native = CaptureScreenInfo::fromScreen(screen).physicalGeometry.size();
-    if (!native.isEmpty()) return QStringLiteral("%1 x %2").arg(native.width()).arg(native.height());
-    return resolutionText(screen->geometry(), screen->devicePixelRatio());
+    QSize native;
+#ifdef Q_OS_WIN
+    // Only Windows has fractional scales to correct; elsewhere the lookup
+    // would cost a display-server round trip for the same answer.
+    native = CaptureScreenInfo::fromScreen(screen).physicalGeometry.size();
+#endif
+    return resolutionText(screen->geometry(), screen->devicePixelRatio(), native);
+}
+
+QString ScreenSourceService::resolutionText(const QRect& geometry, qreal devicePixelRatio, const QSize& nativeSize)
+{
+    if (!nativeSize.isEmpty()) return QStringLiteral("%1 x %2").arg(nativeSize.width()).arg(nativeSize.height());
+    return resolutionText(geometry, devicePixelRatio);
 }
 
 QScreen* ScreenSourceService::screenForId(const QString& id)
