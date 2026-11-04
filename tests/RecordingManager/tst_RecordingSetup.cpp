@@ -931,7 +931,11 @@ void TestRecordingSetup::areaSelectorChoosesAnAreaOfOneScreen()
     root = selector.rootItem();
     QVERIFY(root);
     constexpr int kNarrow = 720;
+    // macOS applies showFullScreen() asynchronously: let it land first, or it
+    // undoes the narrow size below once it does.
+    QTRY_COMPARE(root->window()->geometry(), screen->geometry());
     root->window()->showNormal();
+    QTRY_VERIFY(!(root->window()->windowStates() & Qt::WindowFullScreen));
     root->window()->resize(kNarrow, 600);
     QTRY_COMPARE(int(root->width()), kNarrow);
     QQuickItem* record = root->findChild<QQuickItem*>(QStringLiteral("areaRecordButton"));
