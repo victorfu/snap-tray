@@ -543,7 +543,10 @@ qint64 RecordingPreviewBackend::keptSourceVideoBytes() const
     double bytes = 0;
     // A part played faster shows fewer of its frames (the output frame rate
     // is fixed), a slower one repeats them: its share scales with 1/speed.
-    for (const SnapTray::TimelineSegment& segment : timelineMap().segments()) {
+    // Held in a local: segments() refers into the map, which a temporary in
+    // the range-for would destroy before the loop starts (PR #213 review).
+    const SnapTray::TimelineMap map = timelineMap();
+    for (const SnapTray::TimelineSegment& segment : map.segments()) {
         const double speed = segment.speed > 0.0 ? segment.speed : 1.0;
         bytes += double(samples->bytesBetween(segment.startMs, segment.endMs)) / speed;
     }

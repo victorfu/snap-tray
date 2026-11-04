@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <cmath>
 #include <QThread>
 
 #include "IVideoEncoder.h"
@@ -18,6 +19,7 @@
 #include "recording/OverlayTrack.h"
 #include "recording/AudioTracks.h"
 #include "recording/RecordingProject.h"
+#include "video/Mp4VideoSamples.h"
 #include "video/IVideoFrameReader.h"
 #include <QPainter>
 #include "video/IVideoTranscoder.h"
@@ -429,6 +431,7 @@ private slots:
     void mp4OptionsReachTheOutput();
     void mp4OptionsMatchingTheSourceKeepTheFastPath();
     void sourceProbeNeverBlocksTheGuiThread();
+    void estimateCountsTheKeptParts();
     void saveBeforeTheProbeDecidesTheRoomAfterIt();
     void mp4OptionsTurnAnUneditedSaveIntoAnExport_data();
     void mp4OptionsTurnAnUneditedSaveIntoAnExport();
@@ -1974,6 +1977,40 @@ void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
 
 // Options that change nothing for this recording (no smaller size, no lower
 // frame rate, H.264) keep an unedited recording on the move-as-is path.
+// PR #213: the estimate counts the bytes the recording holds in the kept
+// parts, read from the file, each at 1/speed. Walks the timeline's segments
+// (review: they must outlive the loop) after a trim, a split and a speed change.
+void tst_RecordingPreviewExport::estimateCountsTheKeptParts()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, QSize(160, 120));
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    const SnapTray::Mp4VideoSamples samples = SnapTray::Mp4VideoSamples::read(inputPath);
+    QCOMPARE(samples.sampleCount(), kFrameCount);
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(QSize(160, 120));
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    // Read off the GUI thread: nothing until it lands, then the whole file.
+    QTRY_COMPARE(backend.keptSourceVideoBytes(), samples.totalBytes());
+
+    const qint64 start = 4 * kFrameIntervalMs;
+    const qint64 split = 7 * kFrameIntervalMs;
+    const qint64 end = 10 * kFrameIntervalMs;
+    backend.setTrimStart(start);
+    backend.setTrimEnd(end);
+    QCOMPARE(backend.keptSourceVideoBytes(), samples.bytesBetween(start, end));
+    QVERIFY(backend.splitAt(split));
+    backend.setPartSpeed(1, 2.0);
+    QCOMPARE(backend.keptSourceVideoBytes(),
+             qint64(std::ceil(double(samples.bytesBetween(start, split))
+                              + double(samples.bytesBetween(split, end)) / 2.0)));
+    QVERIFY(backend.mp4EstimatedBytes() > 0);
+}
+
 // PR #197 review: the MP4 options and estimate read the source's probe, which
 // can scan a whole file (Windows reads every audio packet). It runs off the
 // GUI thread: the getters answer at once and update when the probe is ready.
