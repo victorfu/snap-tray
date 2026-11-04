@@ -163,6 +163,25 @@ qint64 bytes(int videoBitrate, bool hasAudio, qint64 durationMs)
     return qint64(bitsPerSecond / kBitsPerByte * (durationMs / kMsPerSecond) * kContainerOverhead);
 }
 
+int expectedVideoBitrate(int targetBitrate, bool outputHevc, const Source& source, const QSize& outputSize)
+{
+    if (targetBitrate <= 0 || source.fileBytes <= 0 || source.durationMs <= 0
+        || source.videoSize.isEmpty() || outputSize.isEmpty()) {
+        return targetBitrate;
+    }
+    const double total = double(source.fileBytes) * kBitsPerByte * kMsPerSecond / double(source.durationMs)
+                         / kContainerOverhead;
+    const double video = std::max(0.0, total - (source.hasAudio ? kAudioBitrate : 0));
+    const double area = double(outputSize.width()) * outputSize.height()
+                        / (double(source.videoSize.width()) * source.videoSize.height());
+    double codecScale = 1.0;
+    if (source.hevc != outputHevc) {
+        codecScale = outputHevc ? Mp4ExportOptions::kHevcBitrateFactor
+                                : 1.0 / Mp4ExportOptions::kHevcBitrateFactor;
+    }
+    return int(std::min(double(targetBitrate), std::ceil(video * area * codecScale)));
+}
+
 } // namespace Mp4SizeEstimate
 
 } // namespace SnapTray

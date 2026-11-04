@@ -64,6 +64,25 @@ namespace Mp4SizeEstimate {
 constexpr int kAudioBitrate = 192000;       // what SnapTray records AAC at
 constexpr double kContainerOverhead = 1.02; // MP4 boxes and indexes
 qint64 bytes(int videoBitrate, bool hasAudio, qint64 durationMs);
+
+// What the recording itself used, the best guide to how much this content
+// needs.
+struct Source {
+    qint64 fileBytes = 0;
+    qint64 durationMs = 0;
+    bool hasAudio = false;
+    QSize videoSize;
+    bool hevc = false;
+};
+
+// The video bitrate the export is expected to reach. Encoders treat the
+// target as a ceiling and simple content (a still screen, a terminal) stays
+// far below it, so a target-only estimate came out about 10x high for a
+// still recording. The recording's own video bitrate, scaled to the output
+// area and codec, is the estimate, never above the target. Frame rate is not
+// scaled down: still frames cost almost nothing, so fewer of them saves
+// little. Returns the target when the source cannot tell.
+int expectedVideoBitrate(int targetBitrate, bool outputHevc, const Source& source, const QSize& outputSize);
 } // namespace Mp4SizeEstimate
 
 } // namespace SnapTray

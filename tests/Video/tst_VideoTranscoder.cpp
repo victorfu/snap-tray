@@ -1164,64 +1164,82 @@ void tst_VideoTranscoder::hevcOutput()
 }
 
 // The MP4 size estimate (#190) next to what the encoder really writes, for
-// screen-like content: text blocks that scroll, at the export bitrate.
+// screen-like content: text blocks that scroll, and a still screen, which the
+// target-only estimate put about 10x too high.
 void tst_VideoTranscoder::sizeEstimateAgainstActual()
 {
     const QSize size(640, 360);
     constexpr int kFps = 30;
     constexpr int kSeconds = 4;
-    const QString input = m_dir.filePath(QStringLiteral("screen.mp4"));
-    {
-        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
-        QVERIFY(encoder);
-        encoder->setQuality(100);
-        QVERIFY2(encoder->start(input, size, kFps), qPrintable(encoder->lastError()));
-        for (int i = 0; i < kFps * kSeconds; ++i) {
-            QImage frame(size, QImage::Format_RGB32);
-            frame.fill(Qt::white);
-            QPainter painter(&frame);
-            for (int line = 0; line < 30; ++line) {
-                const int y = (line * 14 + i * 3) % size.height();
-                for (int word = 0; word < 12; ++word) {
-                    const int w = 10 + ((line * 7 + word * 13) % 30);
-                    painter.fillRect(QRect(8 + word * 52, y, w, 8), QColor((line * 37) % 200, (word * 53) % 200, 90));
-                }
+    const auto paintText = [](QImage& frame, int scroll) {
+        QPainter painter(&frame);
+        for (int line = 0; line < 30; ++line) {
+            const int y = (line * 14 + scroll) % frame.height();
+            for (int word = 0; word < 12; ++word) {
+                const int w = 10 + ((line * 7 + word * 13) % 30);
+                painter.fillRect(QRect(8 + word * 52, y, w, 8), QColor((line * 37) % 200, (word * 53) % 200, 90));
             }
-            painter.end();
-            // Native encoders apply backpressure: retry until the frame lands.
-            const qint64 before = encoder->framesWritten();
-            QElapsedTimer wait;
-            wait.start();
-            do {
-                encoder->writeFrame(frame, i * 1000 / kFps);
-                if (encoder->framesWritten() != before) break;
-                QTest::qWait(5);
-            } while (wait.elapsed() < 2000);
-            QCOMPARE(encoder->framesWritten(), before + 1);
         }
-        // macOS and Windows finish asynchronously.
-        QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
-        encoder->finish();
-        QVERIFY(!finishedSpy.isEmpty() || finishedSpy.wait(10000));
-        QVERIFY2(finishedSpy.first().at(0).toBool(), qPrintable(encoder->lastError()));
-    }
-    for (const auto quality : {SnapTray::Mp4ExportOptions::Quality::Low, SnapTray::Mp4ExportOptions::Quality::High}) {
-        SnapTray::Mp4ExportOptions options;
-        options.quality = quality;
-        VideoTranscodeRequest request;
-        request.inputPath = input;
-        request.outputPath = m_dir.filePath(QStringLiteral("estimate-%1.mp4").arg(int(quality)));
-        request.videoBitrate = options.videoBitrate(size, kFps, 0);
-        const VideoTranscodeResult result = m_transcoder->transcode(request, {});
-        QVERIFY2(result.success, qPrintable(result.errorMessage));
-        const qint64 actual = QFileInfo(request.outputPath).size();
-        const qint64 estimate = SnapTray::Mp4SizeEstimate::bytes(request.videoBitrate, false, kSeconds * 1000);
-        qInfo("MP4 estimate, quality %d: %lld bytes estimated, %lld written (%.2fx)", int(quality),
-              estimate, actual, double(actual) / double(estimate));
-        // Encoders aim at the bitrate but simple content can stay well below it:
-        // the estimate is an upper guide, never wildly under.
-        QVERIFY(actual > 0);
-        QVERIFY2(actual <= estimate * 2, "far above the estimate");
+    };
+    for (const bool still : {false, true}) {
+        const QString input = m_dir.filePath(still ? QStringLiteral("still.mp4") : QStringLiteral("screen.mp4"));
+        {
+            std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+            QVERIFY(encoder);
+            encoder->setQuality(100);
+            QVERIFY2(encoder->start(input, size, kFps), qPrintable(encoder->lastError()));
+            for (int i = 0; i < kFps * kSeconds; ++i) {
+                QImage frame(size, QImage::Format_RGB32);
+                frame.fill(Qt::white);
+                paintText(frame, still ? 0 : i * 3);
+                // Native encoders apply backpressure: retry until the frame lands.
+                const qint64 before = encoder->framesWritten();
+                QElapsedTimer wait;
+                wait.start();
+                do {
+                    encoder->writeFrame(frame, i * 1000 / kFps);
+                    if (encoder->framesWritten() != before) break;
+                    QTest::qWait(5);
+                } while (wait.elapsed() < 2000);
+                QCOMPARE(encoder->framesWritten(), before + 1);
+            }
+            // macOS and Windows finish asynchronously.
+            QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
+            encoder->finish();
+            QVERIFY(!finishedSpy.isEmpty() || finishedSpy.wait(10000));
+            QVERIFY2(finishedSpy.first().at(0).toBool(), qPrintable(encoder->lastError()));
+        }
+        const VideoFileProbe probe = m_transcoder->probe(input);
+        QVERIFY(probe.valid);
+        SnapTray::Mp4SizeEstimate::Source source;
+        source.fileBytes = QFileInfo(input).size();
+        source.durationMs = probe.durationMs;
+        source.hasAudio = probe.hasAudio;
+        source.videoSize = probe.videoSize;
+        source.hevc = probe.videoCodec == QLatin1String(kVideoCodecHevc);
+        for (const auto quality : {SnapTray::Mp4ExportOptions::Quality::Low, SnapTray::Mp4ExportOptions::Quality::High}) {
+            SnapTray::Mp4ExportOptions options;
+            options.quality = quality;
+            VideoTranscodeRequest request;
+            request.inputPath = input;
+            request.outputPath = m_dir.filePath(QStringLiteral("estimate-%1-%2.mp4").arg(still).arg(int(quality)));
+            request.videoBitrate = options.videoBitrate(size, kFps, 0);
+            const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+            QVERIFY2(result.success, qPrintable(result.errorMessage));
+            const qint64 actual = QFileInfo(request.outputPath).size();
+            const qint64 targetOnly = SnapTray::Mp4SizeEstimate::bytes(request.videoBitrate, false, kSeconds * 1000);
+            const qint64 estimate = SnapTray::Mp4SizeEstimate::bytes(
+                SnapTray::Mp4SizeEstimate::expectedVideoBitrate(request.videoBitrate, false, source, size),
+                false, kSeconds * 1000);
+            qInfo("MP4 estimate, %s, quality %d: %lld estimated (target only %lld), %lld written (%.2fx)",
+                  still ? "still" : "scrolling", int(quality), estimate, targetOnly, actual,
+                  double(actual) / double(estimate));
+            // Encoders vary with the content: the estimate is a guide, never
+            // wildly under, and not wildly over either.
+            QVERIFY(actual > 0);
+            QVERIFY2(actual <= estimate * 2, "far above the estimate");
+            QVERIFY2(actual * 4 >= estimate, "far below the estimate");
+        }
     }
 }
 

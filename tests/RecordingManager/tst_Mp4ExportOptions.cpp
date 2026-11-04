@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <cmath>
 
 #include "encoding/VideoBitrate.h"
 #include "recording/Mp4ExportOptions.h"
@@ -19,6 +20,7 @@ private slots:
     void changesStream();
     void jsonRoundTrip();
     void estimate();
+    void estimateFollowsTheRecording();
 };
 
 void TestMp4ExportOptions::defaultsKeepTheExportAsBefore()
@@ -150,6 +152,41 @@ void TestMp4ExportOptions::estimate()
     QCOMPARE(withAudio - videoOnly,
              qint64(Mp4SizeEstimate::kAudioBitrate / 8 * 10 * Mp4SizeEstimate::kContainerOverhead));
     QCOMPARE(Mp4SizeEstimate::bytes(4000000, true, 0), 0);
+}
+
+// A still recording needs far less than the target; noise reaches it.
+void TestMp4ExportOptions::estimateFollowsTheRecording()
+{
+    using namespace Mp4SizeEstimate;
+    const QSize size(1920, 1080);
+    constexpr int kTarget = 8000000;
+    // 1 Mbit/s of video for 10 s, with 192 kbit/s audio and container overhead.
+    Source still;
+    still.durationMs = 10000;
+    still.hasAudio = true;
+    still.videoSize = size;
+    still.fileBytes = qint64((1000000 + kAudioBitrate) / 8 * 10 * kContainerOverhead);
+    QCOMPARE(expectedVideoBitrate(kTarget, false, still, size), 1000000);
+    // Half the area (a crop or 0.707x scale) needs about half.
+    QCOMPARE(expectedVideoBitrate(kTarget, false, still, QSize(960, 1080)), 500000);
+    // HEVC needs less for the same look, H.264 from an HEVC recording more.
+    QCOMPARE(expectedVideoBitrate(kTarget, true, still, size),
+             int(std::ceil(1000000 * Mp4ExportOptions::kHevcBitrateFactor)));
+    Source hevc = still;
+    hevc.hevc = true;
+    QCOMPARE(expectedVideoBitrate(kTarget, false, hevc, size),
+             int(std::ceil(1000000 / Mp4ExportOptions::kHevcBitrateFactor)));
+
+    // Never above the target: the encoder will not write more.
+    Source noise = still;
+    noise.fileBytes *= 40;
+    QCOMPARE(expectedVideoBitrate(kTarget, false, noise, size), kTarget);
+
+    // Nothing to go on: the target.
+    QCOMPARE(expectedVideoBitrate(kTarget, false, Source(), size), kTarget);
+    Source noLength = still;
+    noLength.durationMs = 0;
+    QCOMPARE(expectedVideoBitrate(kTarget, false, noLength, size), kTarget);
 }
 
 QTEST_MAIN(TestMp4ExportOptions)

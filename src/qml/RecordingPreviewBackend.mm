@@ -506,7 +506,18 @@ qint64 RecordingPreviewBackend::mp4EstimatedBytes() const
             return fileBytes;
         }
     }
-    const int bitrate = options.videoBitrate(mp4OutputSize(), mp4OutputFrameRate(), settingsQuality);
+    const QSize outputSize = mp4OutputSize();
+    const int target = options.videoBitrate(outputSize, mp4OutputFrameRate(), settingsQuality);
+    SnapTray::Mp4SizeEstimate::Source source;
+    source.fileBytes = QFileInfo(m_videoPath).size();
+    source.durationMs = probe.durationMs;
+    source.hasAudio = probe.hasAudio;
+    source.videoSize = probe.videoSize;
+    source.hevc = probe.videoCodec == QLatin1String(kVideoCodecHevc);
+    // Scaled by the output area, which already carries a crop, a frame or a
+    // smaller resolution.
+    const int bitrate = SnapTray::Mp4SizeEstimate::expectedVideoBitrate(
+        target, options.codec == SnapTray::Mp4ExportOptions::Codec::Hevc, source, outputSize);
     return SnapTray::Mp4SizeEstimate::bytes(bitrate, probe.hasAudio, durationMs);
 }
 
