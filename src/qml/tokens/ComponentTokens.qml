@@ -214,6 +214,8 @@ QtObject {
     // Recessed controls (segmented tracks, fields) inside an editor surface.
     readonly property color editorControl: SemanticTokens.isDarkMode ? "#2a2b30" : "#f1f2f5"
     readonly property color editorControlHover: SemanticTokens.isDarkMode ? "#33343a" : "#e8eaee"
+    // Destructive text on an editor surface; red500 on white is only 3.8:1.
+    readonly property color editorDestructiveText: SemanticTokens.isDarkMode ? SemanticTokens.statusError : "#c62828"
     readonly property color editorScrim: SemanticTokens.isDarkMode ? "#99000000" : "#59000000"
     // Timeline lanes: a fill and an edge per kind, so lanes differ by more than hue
     // (each lane also has an icon and a name).

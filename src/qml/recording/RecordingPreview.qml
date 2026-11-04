@@ -3102,12 +3102,17 @@ Item {
                 objectName: "previewCropPanel"
                 x: SemanticTokens.spacing16
                 y: SemanticTokens.spacing16
-                spacing: SemanticTokens.spacing4
+                width: controlRowArea.width - 2 * SemanticTokens.spacing16
+                spacing: SemanticTokens.spacing16
                 visible: cropOverlay.editing
 
-                Flow {
-                    width: controlRowArea.width - 2 * SemanticTokens.spacing16
-                    spacing: 2
+                FieldGroup {
+                    title: qsTr("Aspect ratio")
+                    Grid {
+                        id: aspectGrid
+                        width: parent.width
+                        columns: 3
+                        spacing: 6
                     Repeater {
                         model: root.aspectPresetLabels
                         SegmentButton {
@@ -3115,14 +3120,24 @@ Item {
                             required property string modelData
                             objectName: "previewAspectPreset" + index
                             minimumButtonWidth: 0
+                            width: (aspectGrid.width - 2 * aspectGrid.spacing) / 3
                             text: modelData
                             tooltipText: qsTr("Crop aspect: %1").arg(modelData)
                             selected: backend.cropAspectIndex === index
                             onClicked: root.chooseAspect(index)
                         }
                     }
+                    }
                 }
 
+                FieldGroup {
+                    title: qsTr("Position and size (video pixels)")
+                    Grid {
+                        id: cropFieldGrid
+                        width: parent.width
+                        columns: 2
+                        columnSpacing: SemanticTokens.spacing12
+                        rowSpacing: 6
                 Repeater {
                     id: cropFieldRepeater
                     model: [
@@ -3133,9 +3148,11 @@ Item {
                     ]
                     delegate: Row {
                         required property var modelData
-                        spacing: 2
+                        width: (cropFieldGrid.width - cropFieldGrid.columnSpacing) / 2
+                        spacing: 6
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
+                            width: 14
                             text: modelData.label
                             color: root.textSecondary
                             font.pixelSize: SemanticTokens.fontSizeCaption
@@ -3145,6 +3162,7 @@ Item {
                         NumberField {
                             id: cropNumberField
                             objectName: "previewCrop_" + modelData.key
+                            width: parent.width - 20
                             accessibleName: qsTr("Crop %1 in pixels").arg(modelData.label)
                             value: root.draftVideoRect[modelData.key]
                             onCommitted: function(v) {
@@ -3164,6 +3182,8 @@ Item {
                                                         modelData.key === "y" ? v : r.y, w, h)
                             }
                         }
+                    }
+                }
                     }
                 }
             }
@@ -3644,14 +3664,20 @@ Item {
 
     Rectangle {
         id: errorBanner
+        objectName: "previewErrorBanner"
+        // Over the top of the workspace: never over the top bar or the inspector.
+        parent: editorShell.workspace
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.margins: SemanticTokens.spacing16
+        anchors.margins: SemanticTokens.spacing12
         height: visible ? errorRow.implicitHeight + SemanticTokens.spacing16 : 0
         visible: backend.errorMessage !== ""
         radius: SemanticTokens.radiusSmall
-        color: ComponentTokens.recordingPreviewDangerHover
+        // Solid, so it reads over any picture.
+        color: ComponentTokens.editorSurface
+        border.width: 1
+        border.color: ComponentTokens.editorDestructiveText
         z: 10
 
         Row {
@@ -3667,7 +3693,7 @@ Item {
                 text: backend.errorMessage
                 font.pixelSize: SemanticTokens.fontSizeBody
                 font.family: SemanticTokens.fontFamily
-                color: SemanticTokens.statusError
+                color: ComponentTokens.editorDestructiveText
                 anchors.verticalCenter: parent.verticalCenter
             }
 
@@ -3880,11 +3906,13 @@ Item {
         property string accessibleName: ""
         signal committed(int value)
 
-        width: 48
-        height: 24
-        padding: 2
+        width: 92
+        height: 30
+        padding: 4
+        rightPadding: 8
         horizontalAlignment: TextInput.AlignRight
-        font.pixelSize: SemanticTokens.fontSizeCaption
+        verticalAlignment: TextInput.AlignVCenter
+        font.pixelSize: SemanticTokens.fontSizeSmall
         color: root.textPrimary
         selectByMouse: true
         validator: IntValidator { bottom: 0; top: 100000 }
@@ -3892,7 +3920,7 @@ Item {
         Accessible.name: accessibleName
         background: Rectangle {
             radius: SemanticTokens.radiusSmall
-            color: root.bgPanel
+            color: ComponentTokens.editorControl
             border.width: 1
             border.color: numberField.activeFocus ? root.accent : root.borderColor
         }
@@ -4286,7 +4314,7 @@ Item {
         }
 
         readonly property color contentColor: primary ? ComponentTokens.recordingPreviewPrimaryButtonIcon
-            : destructive ? SemanticTokens.statusError
+            : destructive ? ComponentTokens.editorDestructiveText
             : root.textPrimary
         implicitWidth: Math.max(minimumButtonWidth, contentRow.implicitWidth + 2 * SemanticTokens.spacing12)
         width: implicitWidth

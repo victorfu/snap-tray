@@ -9,6 +9,8 @@
 #include <QJSValue>
 #include <QQmlComponent>
 #include <QAccessible>
+#include <QPainter>
+#include <QFile>
 #include "ToolbarStyle.h"
 #include "ui/DesignSystem.h"
 #include "IVideoEncoder.h"
@@ -40,6 +42,10 @@ private slots:
     void exportSummaryShowsSavedSize();
     void startOnlyEditKeepsOpenEnd();
     void switchKeepsToggleAccessibility();
+    void designEvidence_data();
+    void designEvidence();
+    void designEvidenceError_data();
+    void designEvidenceError();
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
     static QQuickItem* item(QQuickView* view, const char* name);
@@ -904,6 +910,209 @@ void tst_RecordingEditor::switchKeepsToggleAccessibility()
     backend.undo();
     QTRY_COMPARE(toggle->property("checked").toBool(), before);
     backend.requestDiscard();
+}
+
+// Screenshots of every editor state for review (#230). Runs only when
+// SNAPTRAY_EDITOR_DESIGN_DIR is set; SNAPTRAY_EDITOR_CONCEPT optionally names
+// the concept image to place next to the selected-effect screenshot.
+void tst_RecordingEditor::designEvidence_data()
+{
+    QTest::addColumn<bool>("dark");
+    QTest::newRow("dark") << true;
+    QTest::newRow("light") << false;
+}
+
+void tst_RecordingEditor::designEvidence()
+{
+    const QString out = qEnvironmentVariable("SNAPTRAY_EDITOR_DESIGN_DIR");
+    if (out.isEmpty()) QSKIP("Set SNAPTRAY_EDITOR_DESIGN_DIR to capture design screenshots");
+    QFETCH(bool, dark);
+    const QString theme = dark ? QStringLiteral("dark") : QStringLiteral("light");
+    const auto originalStyle = ToolbarStyleConfig::loadStyle();
+    auto restoreTheme = qScopeGuard([originalStyle] {
+        ToolbarStyleConfig::saveStyle(originalStyle);
+        DesignSystem::instance().refreshTheme();
+    });
+    ToolbarStyleConfig::saveStyle(dark ? ToolbarStyleType::Dark : ToolbarStyleType::Light);
+    DesignSystem::instance().refreshTheme();
+    QDir().mkpath(out);
+    QTemporaryDir dir;
+    const QString video = dir.filePath("demo-recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QObject* root = view->rootObject();
+    const auto settle = [&] {
+        for (int i = 0; i < 3; ++i) {
+            QSignalSpy frame(view, &QQuickWindow::afterAnimating);
+            view->requestUpdate();
+            frame.wait(500);
+        }
+        QTest::qWait(150);
+    };
+    bool saved = true;
+    const auto shot = [&](const QString& name) -> QImage {
+        settle();
+        const QImage image = view->grabWindow();
+        saved = image.save(out + "/" + name + "-" + theme + ".png") && saved;
+        return image;
+    };
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
+    shot("01-project-settings");
+
+    // A realistic timeline: two clips, a zoom, a mask and a title.
+    QVERIFY(backend.splitAt(1200));
+    backend.addZoomAt(1300);
+    const int mask = backend.addMask();
+    QVERIFY(mask >= 0);
+    QVERIFY(backend.setMaskRange(mask, 200, 1000));
+    QVERIFY(backend.addTextOverlay(600) >= 0);
+    QVERIFY(backend.setOverlayRange(0, 600, 1400));
+    backend.setOverlayText(0, QStringLiteral("Update this"));
+    backend.setSelectedMask(mask);
+    QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
+    const QImage selected = shot("02-mask-selected");
+
+    backend.setSelectedOverlay(0);
+    QTRY_VERIFY(item(view, "previewOverlayPanel")->isVisible());
+    shot("03-text-selected");
+
+    if (!backend.zoomSegments().isEmpty()) {
+        backend.setSelectedZoom(0);
+        QTRY_VERIFY(item(view, "previewZoomPanel")->isVisible());
+        shot("04-zoom-selected");
+    }
+
+    QVERIFY(QMetaObject::invokeMethod(root, "selectPart", Q_ARG(QVariant, 1)));
+    QTRY_VERIFY(item(view, "previewClipPanel")->isVisible());
+    shot("05-clip-selected");
+
+    backend.setAppearanceEnabled(true);
+    backend.setAppearancePadding(2);
+    backend.setAppearanceCorners(2);
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "appearance")));
+    QTRY_VERIFY(item(view, "previewAppearancePanel")->isVisible());
+    shot("06-canvas-settings");
+    backend.setAppearanceEnabled(false);
+
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewCropButton"), "clicked"));
+    QTRY_VERIFY(item(view, "previewCropOverlay")->property("editing").toBool());
+    settle();
+    {
+        const QRectF content = item(view, "previewVideoPlayer")->property("contentRect").toRectF();
+        item(view, "previewCropOverlay")->setProperty("draftRect",
+            QRectF(content.x() + content.width() * 0.15, content.y() + content.height() * 0.15,
+                   content.width() * 0.6, content.height() * 0.6));
+    }
+    shot("07-crop-editing");
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewCropOverlay"), "cancel"));
+
+    QObject* popup = root->findChild<QObject*>("previewExportPanel");
+    QVERIFY(popup);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QVERIFY(QMetaObject::invokeMethod(root, "openExport"));
+    QTRY_VERIFY(popup->property("opened").toBool());
+    shot("08-export-mp4");
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    shot("09-export-gif");
+    QVERIFY(QMetaObject::invokeMethod(popup, "returnRequested"));
+    QTRY_VERIFY(!popup->property("opened").toBool());
+
+    view->resize(640, 480);
+    QTRY_VERIFY(!root->property("wideEditor").toBool());
+    backend.setSelectedMask(mask);
+    root->setProperty("inspectorOpen", true);
+    shot("10-narrow-inspector");
+    root->setProperty("inspectorOpen", false);
+    shot("11-narrow-preview");
+
+    // Side by side with the approved concept's editor (Concept 01, section 03).
+    const QString concept = qEnvironmentVariable("SNAPTRAY_EDITOR_CONCEPT");
+    if (!concept.isEmpty() && QFile::exists(concept)) {
+        const QImage source(concept);
+        // The "03 Video editor" section of the 1536×1024 concept board.
+        const QRect editorArea(QPointF(36.0 / 1536 * source.width(), 565.0 / 1024 * source.height()).toPoint(),
+                               QSizeF(1475.0 / 1536 * source.width(), 420.0 / 1024 * source.height()).toSize());
+        const QImage designed = source.copy(editorArea);
+        const int width = 1600;
+        // Physical pixels on both sides: the window grab carries a device pixel ratio.
+        QImage left = designed.scaledToWidth(width, Qt::SmoothTransformation);
+        QImage right = selected.scaledToWidth(width, Qt::SmoothTransformation);
+        left.setDevicePixelRatio(1.0);
+        right.setDevicePixelRatio(1.0);
+        const int gap = 24;
+        const int label = 44;
+        QImage board(width, label + left.height() + gap + label + right.height(), QImage::Format_ARGB32);
+        board.fill(dark ? QColor("#17181b") : QColor("#f4f5f7"));
+        QPainter painter(&board);
+        painter.setRenderHint(QPainter::Antialiasing);
+        QFont font = painter.font();
+        font.setPixelSize(22);
+        font.setBold(true);
+        painter.setFont(font);
+        painter.setPen(dark ? QColor("#eeeeee") : QColor("#212121"));
+        painter.drawText(QRect(12, 0, width, label), Qt::AlignVCenter, QStringLiteral("Concept 01 · Video editor"));
+        painter.drawImage(0, label, left);
+        const int y = label + left.height() + gap;
+        painter.drawText(QRect(12, y, width, label), Qt::AlignVCenter,
+                         QStringLiteral("SnapTray editor (this PR) · %1").arg(theme));
+        painter.drawImage(0, y + label, right);
+        painter.end();
+        QVERIFY(board.save(out + "/00-concept-comparison-" + theme + ".png"));
+    }
+    QVERIFY(saved);
+    backend.requestDiscard();
+
+}
+
+void tst_RecordingEditor::designEvidenceError_data()
+{
+    designEvidence_data();
+}
+
+// The export error state, for the same review set (#216).
+void tst_RecordingEditor::designEvidenceError()
+{
+    const QString out = qEnvironmentVariable("SNAPTRAY_EDITOR_DESIGN_DIR");
+    if (out.isEmpty()) QSKIP("Set SNAPTRAY_EDITOR_DESIGN_DIR to capture design screenshots");
+    QFETCH(bool, dark);
+    const QString theme = dark ? QStringLiteral("dark") : QStringLiteral("light");
+    const auto originalStyle = ToolbarStyleConfig::loadStyle();
+    auto restoreTheme = qScopeGuard([originalStyle] {
+        ToolbarStyleConfig::saveStyle(originalStyle);
+        DesignSystem::instance().refreshTheme();
+    });
+    ToolbarStyleConfig::saveStyle(dark ? ToolbarStyleType::Dark : ToolbarStyleType::Light);
+    DesignSystem::instance().refreshTheme();
+    QDir().mkpath(out);
+    QTemporaryDir dir;
+    // An export that cannot read the recording.
+    const QString broken = dir.filePath("broken.mp4");
+    QFile file(broken);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("Incomplete recording data");
+    file.close();
+    RecordingPreviewBackend failing(broken);
+    failing.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* errorView = openPreview(failing);
+    QVERIFY(errorView);
+    errorView->resize(1200, 800);
+    failing.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!failing.isProcessing(), 20000);
+    QTRY_VERIFY(!failing.errorMessage().isEmpty());
+    for (int i = 0; i < 3; ++i) {
+        QSignalSpy frame(errorView, &QQuickWindow::afterAnimating);
+        errorView->requestUpdate();
+        frame.wait(500);
+    }
+    QTest::qWait(150);
+    QVERIFY(errorView->grabWindow().save(out + "/12-export-error-" + theme + ".png"));
+    failing.requestDiscard();
 }
 
 void tst_RecordingEditor::dialogButtonPreservesMouseFocus()
