@@ -619,18 +619,30 @@ void tst_RecordingEditor::adjacentShortEffectsStaySeparate()
     QQuickItem* second = nullptr;
     QTRY_VERIFY((first = delegate(view, "previewMaskSegment0")) && (second = delegate(view, "previewMaskSegment1")));
     QTRY_VERIFY(first->y() != second->y());
-    const QRectF a = first->mapRectToScene(QRectF(QPointF(), first->size()));
-    const QRectF b = second->mapRectToScene(QRectF(QPointF(), second->size()));
+    // The window was just resized (asynchronously on X11): take positions only
+    // once both segments have stopped moving between frames.
+    QRectF a;
+    QRectF b;
+    QTRY_VERIFY_WITH_TIMEOUT([&] {
+        const QRectF nowA = first->mapRectToScene(QRectF(QPointF(), first->size()));
+        const QRectF nowB = second->mapRectToScene(QRectF(QPointF(), second->size()));
+        QSignalSpy frame(view, &QQuickWindow::afterAnimating);
+        view->requestUpdate();
+        frame.wait(500);
+        const bool stable = nowA == a && nowB == b
+            && nowA == first->mapRectToScene(QRectF(QPointF(), first->size()))
+            && nowB == second->mapRectToScene(QRectF(QPointF(), second->size()));
+        a = nowA;
+        b = nowB;
+        return stable;
+    }(), 5000);
     QVERIFY(!a.intersects(b));
     // Dragging the first one's centre moves the first one, not the second.
-    QSignalSpy rendered(view, &QQuickWindow::afterAnimating);
-    view->requestUpdate();
-    QVERIFY(rendered.wait(2000));
     const QPoint from = a.center().toPoint();
     QTest::mousePress(view, Qt::LeftButton, Qt::NoModifier, from);
     QTest::mouseMove(view, from + QPoint(60, 0), 30);
     QTest::mouseRelease(view, Qt::LeftButton, Qt::NoModifier, from + QPoint(60, 0));
-    QVERIFY(backend.masks().at(0).toMap().value("start").toLongLong() > 500);
+    QTRY_VERIFY(backend.masks().at(0).toMap().value("start").toLongLong() > 500);
     QCOMPARE(backend.masks().at(1).toMap().value("start").toLongLong(), 501);
     backend.requestDiscard();
 }
