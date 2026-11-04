@@ -438,12 +438,12 @@ void tst_RecordingPreviewMasks::overlappingMasksAreAllSelectable()
     QTRY_VERIFY((top = walk(view->rootObject())) != nullptr);
     QTRY_VERIFY(top->width() > 10);
     const QPoint at = top->mapToScene(QPointF(top->width() / 2, top->height() / 2)).toPoint();
-    QList<int> seen;
-    for (int i = 0; i < 3; ++i) {
-        QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, at);
-        seen << backend.selectedMask();
-    }
-    QCOMPARE(seen, (QList<int>{1, 0, -1}));
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, at);
+    QCOMPARE(backend.selectedMask(), 1);
+    // Overlapping masks now occupy separate lanes and remain directly reachable.
+    const QPoint previousLane = at - QPoint(0, 30);
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, previousLane);
+    QCOMPARE(backend.selectedMask(), 0);
     backend.requestDiscard();
 }
 

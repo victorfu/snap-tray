@@ -1113,7 +1113,11 @@ set_source_files_properties(src/qml/dialogs/RecordingRecoveryDialog.qml PROPERTI
 set_source_files_properties(src/qml/dialogs/RecordingLibraryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingLibraryDialog.qml)
 
 # Recording preview
+set_source_files_properties(src/qml/recording/EditorChoice.qml PROPERTIES QT_RESOURCE_ALIAS recording/EditorChoice.qml)
+set_source_files_properties(src/qml/recording/EditorTimelineSegment.qml PROPERTIES QT_RESOURCE_ALIAS recording/EditorTimelineSegment.qml)
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
+set_source_files_properties(src/qml/recording/RecordingExportPanel.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingExportPanel.qml)
+set_source_files_properties(src/qml/recording/RecordingEditorShell.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingEditorShell.qml)
 set_source_files_properties(src/qml/recording/RecordingCropOverlay.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingCropOverlay.qml)
 
 # Recording control bar
@@ -1195,6 +1199,10 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/FilesSettings.qml
         src/qml/settings/UpdatesSettings.qml
         src/qml/settings/AboutSettings.qml
+        src/qml/recording/RecordingEditorShell.qml
+        src/qml/recording/RecordingExportPanel.qml
+        src/qml/recording/EditorChoice.qml
+        src/qml/recording/EditorTimelineSegment.qml
         src/qml/recording/RecordingPreview.qml
         src/qml/recording/RecordingCropOverlay.qml
         src/qml/recording/RecordingControlBar.qml

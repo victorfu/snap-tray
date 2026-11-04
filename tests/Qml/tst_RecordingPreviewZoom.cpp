@@ -177,9 +177,10 @@ void tst_RecordingPreviewZoom::previewControls()
         }
         return nullptr;
     };
-    const auto find = [view, &walk](const QString& name) { return walk(view->rootObject(), name); };
-    QQuickItem* autoZoom = find(QStringLiteral("previewAutoZoom"));
-    QVERIFY(autoZoom && autoZoom->isVisible() && autoZoom->isEnabled());
+    const auto find = [view, &walk](const QString& name) { return walk(view->contentItem(), name); };
+    QQuickItem* autoZoom = nullptr;
+    QVERIFY(QMetaObject::invokeMethod(find(QStringLiteral("previewAddEffect")), "clicked"));
+    QTRY_VERIFY((autoZoom = find(QStringLiteral("previewAutoZoom"))) && autoZoom->isVisible() && autoZoom->isEnabled());
     QVERIFY(QMetaObject::invokeMethod(autoZoom, "clicked"));
     QCOMPARE(backend.zoomSegments().size(), 2);
 

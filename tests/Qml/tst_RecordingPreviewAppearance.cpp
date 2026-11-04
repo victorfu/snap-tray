@@ -111,13 +111,13 @@ void tst_RecordingPreviewAppearance::panelEditsTheFrame()
              qPrintable(QStringLiteral("%1x%2 in %3x%4").arg(shown.width()).arg(shown.height())
                             .arg(stageRect.width()).arg(stageRect.height())));
 
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearancePadding"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearancePadding"), "activated", Q_ARG(int, 3)));
     QCOMPARE(backend.appearancePadding(), int(SnapTray::RecordingAppearance::Amount::Large));
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceShadow"), "clicked"));
     QCOMPARE(backend.appearanceShadow(), false);
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceBorder"), "clicked"));
     QVERIFY(backend.appearanceBorder());
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceRatio"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceRatio"), "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.appearanceAspectRatio(), 1);
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceBlur"), "clicked"));
     QCOMPARE(backend.appearanceBackground(), int(SnapTray::RecordingAppearance::Background::BlurredVideo));

@@ -175,3 +175,6 @@ screenshot_tool_windows:
 not_found:
   en: /404.html
   zh-tw: /404.html
+
+developer_ui_design:
+  en: /developer/ui-design-guidelines/

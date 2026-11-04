@@ -9,6 +9,15 @@ Rectangle {
     property string feedbackText: ""
     property bool feedbackActive: false
 
+    activeFocusOnTab: enabled
+    Accessible.role: Accessible.Button
+    Accessible.name: text
+    Accessible.onPressAction: if (enabled) clicked()
+    Keys.onSpacePressed: if (enabled) clicked()
+    Keys.onReturnPressed: if (enabled) clicked()
+    Keys.onEnterPressed: if (enabled) clicked()
+    FocusFrame { anchors.fill: parent; showFocus: root.activeFocus }
+
     signal clicked()
 
     width: implicitWidth
@@ -67,7 +76,7 @@ Rectangle {
         enabled: root.enabled
         cursorShape: root.enabled ? CursorTokens.clickable : CursorTokens.defaultCursor
         hoverEnabled: true
-        onClicked: root.clicked()
+        onClicked: { root.forceActiveFocus(); root.clicked() }
     }
 
     Timer {

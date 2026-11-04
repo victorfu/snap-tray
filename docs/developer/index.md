@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-24
+last_modified_at: 2026-11-04
 layout: docs
 title: Developer Docs
 seo_title: "SnapTray Developer Docs: Build, Package and Contribute"
@@ -18,6 +18,7 @@ This section is the canonical home for SnapTray's technical documentation. The r
 - [Build from Source](build-from-source.md): prerequisites, scripts, manual CMake flows, cache setup, and local build troubleshooting
 - [Release & Packaging](release-packaging.md): DMG / NSIS / MSIX packaging, signing, notarization, Store submission, and icon asset workflow
 - [Architecture Overview](architecture.md): repository structure, library boundaries, architecture patterns, platform-specific code, and development conventions
+- [UI Design Guidelines](ui-design-guidelines.md): shared visual direction, interaction rules, and the recording editor rollout
 - [Recording Sync Matrix](recording-sync-matrix.md): end-to-end recording verification with fault injection, reports and A/B comparison, and the real-device procedure
 
 ## Audience split

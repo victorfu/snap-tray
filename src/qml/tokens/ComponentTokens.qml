@@ -206,6 +206,12 @@ QtObject {
     // ========================================================================
     // Recording Preview
     // ========================================================================
+    // Solid work surfaces for editors and management windows; floating glass stays separate.
+    readonly property color editorSurface: SemanticTokens.isDarkMode ? "#202124" : "#ffffff"
+    readonly property color editorCanvas: SemanticTokens.isDarkMode ? "#17181b" : "#f4f5f7"
+    readonly property color editorBorder: SemanticTokens.isDarkMode ? "#3b3d44" : "#e1e4e9"
+    readonly property color editorSelection: SemanticTokens.isDarkMode ? "#343047" : "#f0ecff"
+
     readonly property color recordingPreviewBgStart: DesignSystem.recordingPreviewBgStart
     readonly property color recordingPreviewBgEnd: DesignSystem.recordingPreviewBgEnd
     readonly property color recordingPreviewPanel: DesignSystem.recordingPreviewPanel

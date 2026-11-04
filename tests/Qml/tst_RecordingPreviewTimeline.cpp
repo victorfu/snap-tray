@@ -130,8 +130,7 @@ void tst_RecordingPreviewTimeline::buttonsAndKeysEditTheTimeline()
     // Part 0 at 2x... after two clicks (1x -> 1.5x -> 2x).
     QVERIFY(seek(view, 200));
     QTRY_VERIFY(speed->isEnabled());
-    QVERIFY(QMetaObject::invokeMethod(speed, "clicked"));
-    QVERIFY(QMetaObject::invokeMethod(speed, "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(speed, "activated", Q_ARG(int, 3)));
     QCOMPARE(backend.timelineEdit().parts[0].speed, 2.0);
     QCOMPARE(backend.outputDuration(), 250);
 
@@ -305,24 +304,16 @@ void tst_RecordingPreviewTimeline::overlaysAreShownAndReachable()
     QCOMPARE(backend.addImageOverlay(QUrl::fromLocalFile(logoPath)), 1); // the whole recording
     QQuickItem* titleBar = nullptr;
     QTRY_VERIFY((titleBar = delegate(view, QStringLiteral("previewOverlaySegment0"))) != nullptr && titleBar->width() > 0);
-    const QPoint onBoth = titleBar->mapToScene(QPointF(titleBar->width() / 2, titleBar->height() / 2)).toPoint();
+    QQuickItem* imageBar = delegate(view, QStringLiteral("previewOverlaySegment1"));
+    QVERIFY(imageBar);
+    QVERIFY(titleBar->mapToScene(QPointF()).y() != imageBar->mapToScene(QPointF()).y());
     backend.setSelectedOverlay(-1);
-    // A click on the shared place reaches the bars: topmost first, the image.
-    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, onBoth);
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                     titleBar->mapToScene(QPointF(titleBar->width() / 2, titleBar->height() / 2)).toPoint());
+    QCOMPARE(backend.selectedOverlay(), 0);
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                     imageBar->mapToScene(QPointF(imageBar->width() / 2, imageBar->height() / 2)).toPoint());
     QCOMPARE(backend.selectedOverlay(), 1);
-    // Each further click there moves to the next overlay under it, then to
-    // none (checked through the same function the click uses: synthesized
-    // repeat clicks are timed differently by each system's CI).
-    const qint64 inBoth = backend.overlayTrack().segments[0].startMs + 100;
-    const auto next = [&](int current) {
-        QVariant result;
-        QMetaObject::invokeMethod(view->rootObject(), "nextOverlayAt", Q_RETURN_ARG(QVariant, result),
-                                  Q_ARG(QVariant, inBoth), Q_ARG(QVariant, current), Q_ARG(QVariant, 1));
-        return result.toInt();
-    };
-    QCOMPARE(next(1), 0);  // then the title under it
-    QCOMPARE(next(0), -1); // then none
-    QCOMPARE(next(-1), 1); // and round again
     backend.requestDiscard();
 }
 
