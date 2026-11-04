@@ -5283,6 +5283,11 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Pro nápovědy zkratek v náhledu: klávesy s Ctrl, Alt nebo Win a klávesy jako Enter nebo Esc. Uloží se jen k dočasné nahrávce.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>V tomto systému zatím není k dispozici</translation>
     </message>

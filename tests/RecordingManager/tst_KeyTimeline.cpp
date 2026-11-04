@@ -29,7 +29,9 @@ public:
     {
         for (const auto& [key, modifiers] : std::exchange(queued, {})) press(key, modifiers);
     }
+    void setTypedTextWanted(bool wanted) override { typedTextWanted = wanted; }
     bool secure = false;
+    int typedTextWanted = -1;
     std::vector<std::pair<int, Qt::KeyboardModifiers>> queued;
 };
 
@@ -48,6 +50,8 @@ class TestKeyTimeline : public QObject
 
 private slots:
     void policyKeepsOnlyWhatTheModeAllows();
+    void policyKeepsShortcutsThatMoveFocus();
+    void policyDropsTextAnInputMethodComposes();
     void labels();
     void writerRoundTripAndDamage();
     void textOnlyFromAllKeysRecordings();
@@ -102,6 +106,46 @@ void TestKeyTimeline::labels()
     stroke.key = Qt::Key_A;
     stroke.text = QStringLiteral("a");
     QCOMPARE(keyStrokeLabel(stroke, false), QStringLiteral("a"));
+    // The logo key by its name on each system (#210: Windows showed "Super").
+    stroke = {};
+    stroke.key = Qt::Key_E;
+    stroke.modifiers = Qt::MetaModifier;
+#ifdef Q_OS_WIN
+    QCOMPARE(keyStrokeLabel(stroke, false), QStringLiteral("Win + E"));
+#else
+    QCOMPARE(keyStrokeLabel(stroke, false), QStringLiteral("Super + E"));
+#endif
+}
+
+// #210: Alt+Tab and Alt+F4 move the focus themselves, and every key whose
+// focus moved before it was read was dropped. A shortcut types nothing, so
+// one pressed outside a secure field is kept; typing and AltGr (Ctrl+Alt,
+// which types characters on many layouts) are still dropped.
+void TestKeyTimeline::policyKeepsShortcutsThatMoveFocus()
+{
+    using KeyCapturePolicy::keepAfterFocusChange;
+    QVERIFY(keepAfterFocusChange(Qt::AltModifier, false));                         // Alt+Tab, Alt+F4
+    QVERIFY(keepAfterFocusChange(Qt::MetaModifier, false));                        // Win+E
+    QVERIFY(keepAfterFocusChange(Qt::ControlModifier, false));                     // Ctrl+W
+    QVERIFY(keepAfterFocusChange(Qt::ControlModifier | Qt::ShiftModifier, false)); // Ctrl+Shift+T
+    QVERIFY(!keepAfterFocusChange(Qt::NoModifier, false));                         // typing
+    QVERIFY(!keepAfterFocusChange(Qt::ShiftModifier, false));
+    QVERIFY(!keepAfterFocusChange(Qt::ControlModifier | Qt::AltModifier, false));  // AltGr
+    QVERIFY(!keepAfterFocusChange(Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier, false)); // Win+AltGr
+    QVERIFY(!keepAfterFocusChange(Qt::NoModifier, true));
+    QVERIFY(!keepAfterFocusChange(Qt::AltModifier, true));                         // from a secure field
+}
+
+// #210: with an input method composing (Chinese, Japanese, Korean...), the
+// raw keys are not what is typed; only shortcuts and named keys are kept.
+void TestKeyTimeline::policyDropsTextAnInputMethodComposes()
+{
+    using KeyCapturePolicy::keepWhileInputMethodComposes;
+    QVERIFY(!keepWhileInputMethodComposes(Qt::Key_J, Qt::NoModifier));
+    QVERIFY(!keepWhileInputMethodComposes(Qt::Key_3, Qt::ShiftModifier));
+    QVERIFY(keepWhileInputMethodComposes(Qt::Key_Return, Qt::NoModifier));
+    QVERIFY(keepWhileInputMethodComposes(Qt::Key_Escape, Qt::NoModifier));
+    QVERIFY(keepWhileInputMethodComposes(Qt::Key_C, Qt::ControlModifier));
 }
 
 void TestKeyTimeline::writerRoundTripAndDamage()
@@ -158,6 +202,7 @@ void TestKeyTimeline::recorderRespectsModeSecureInputAndPause()
     FakeKeyProbe* probe = owned.get();
     qint64 now = 0;
     KeyTimelineRecorder recorder(std::move(owned), [&now] { return now; }, KeyRecordingMode::Shortcuts, path, false);
+    QCOMPARE(probe->typedTextWanted, 0); // shortcuts only: the probe can skip text-only work
     QVERIFY(recorder.start());
     now = 100;
     probe->press(Qt::Key_C, Qt::ControlModifier);
@@ -195,6 +240,7 @@ void TestKeyTimeline::recorderDropsKeysPressedWhilePaused()
     FakeKeyProbe* probe = owned.get();
     qint64 now = 0;
     KeyTimelineRecorder recorder(std::move(owned), [&now] { return now; }, KeyRecordingMode::AllKeys, path, false);
+    QCOMPARE(probe->typedTextWanted, 1);
     QVERIFY(recorder.start());
     now = 100;
     recorder.pause(); // media time stops at 100

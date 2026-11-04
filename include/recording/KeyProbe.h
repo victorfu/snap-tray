@@ -27,6 +27,9 @@ public:
     // Reads, now, what the system has already queued, so the recorder can
     // take it while it is still paused (PR #200 review). No-op by default.
     virtual void poll() {}
+    // Whether typed text is wanted (All keys). A probe may skip work that
+    // only matters for text, such as asking an input method (#210).
+    virtual void setTypedTextWanted(bool) {}
 
 signals:
     // A key went down. `modifiers` are the ones held with it; `text` is what

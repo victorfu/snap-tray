@@ -280,7 +280,10 @@ DialogBase {
                             ? qsTr("Not available on this system yet")
                             : root.viewModel && !root.viewModel.editMode
                                 ? qsTr("Edit mode only: quick mode keeps no editing tracks.")
-                                : qsTr("For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.")
+                                : Qt.platform.os === "windows"
+                                    // The logo key by its Windows name, as the hints show it (#210).
+                                    ? qsTr("For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.")
+                                    : qsTr("For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.")
                         enabled: root.viewModel ? (root.viewModel.keyRecordingSupported && root.viewModel.editMode) : false
                         checked: root.viewModel ? root.viewModel.recordShortcutKeys : false
                         onToggled: function(checked) { root.viewModel.recordShortcutKeys = checked }

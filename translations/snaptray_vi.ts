@@ -5275,6 +5275,11 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Dùng cho gợi ý phím tắt trong bản xem trước: phím nhấn cùng Ctrl, Alt hoặc Win, và các phím như Enter hay Esc. Chỉ lưu cùng bản ghi tạm.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Chưa có trên hệ thống này</translation>
     </message>

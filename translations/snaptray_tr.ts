@@ -5275,6 +5275,11 @@ Dosya boyutu: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Önizlemedeki kısayol ipuçları için: Ctrl, Alt veya Win ile basılan tuşlar ve Enter ya da Esc gibi tuşlar. Yalnızca geçici kayıtla saklanır.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Bu sistemde henüz kullanılamıyor</translation>
     </message>

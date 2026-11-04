@@ -5282,6 +5282,11 @@ Bestandsgrootte: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Voor sneltoetshints in de voorvertoning: toetsen met Ctrl, Alt of Win, en toetsen zoals Enter of Esc. Alleen bewaard bij de tijdelijke opname.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Nog niet beschikbaar op dit systeem</translation>
     </message>
