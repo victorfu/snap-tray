@@ -4,6 +4,7 @@
 
 #include "VideoTranscoderFaultInjection.h"
 #include "MediaFoundationFrameCopy_win.h"
+#include "encoding/MFSampleTimes_win.h"
 #include "encoding/VideoBitrate.h"
 
 #include <QDebug>
@@ -665,28 +666,6 @@ HRESULT pcmMediaType(ComPtr<IMFMediaType>& type)
     return hr;
 }
 
-HRESULT preserveEditedFrameTimes(IMFSinkWriter* writer, DWORD stream)
-{
-    ComPtr<IMFSinkWriterEx> extended;
-    HRESULT hr = writer->QueryInterface(IID_PPV_ARGS(&extended));
-    if (FAILED(hr)) return hr;
-    for (DWORD index = 0;; ++index) {
-        GUID category = GUID_NULL;
-        ComPtr<IMFTransform> transform;
-        hr = extended->GetTransformForStream(stream, index, &category, &transform);
-        if (FAILED(hr)) return index > 0 ? S_OK : hr;
-        if (category != MFT_CATEGORY_VIDEO_PROCESSOR) continue;
-        // The RGB32 converter otherwise resamples to the nominal output fps,
-        // duplicating/dropping VFR pictures and changing our edit timestamps.
-        // The shared export loop already decides the cadence. Configure the
-        // processor before BeginWriting so each picture keeps its own PTS.
-        ComPtr<IMFAttributes> attributes;
-        hr = transform->GetAttributes(&attributes);
-        if (SUCCEEDED(hr)) hr = attributes->SetUINT32(MF_XVP_DISABLE_FRC, TRUE);
-        if (FAILED(hr)) return hr;
-    }
-}
-
 class MFEditMedia final : public SnapTray::NativeEditMedia, private SnapTray::NativePcmReader {
 public:
     ~MFEditMedia() override { abort(); }
@@ -731,7 +710,9 @@ public:
             if (SUCCEEDED(hr)) hr = m_audioReader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
             if (SUCCEEDED(hr)) hr = m_audioReader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, pcm.Get());
         }
-        if (SUCCEEDED(hr)) hr = preserveEditedFrameTimes(m_writer.Get(), m_videoStream);
+        // The RGB32 converter otherwise resamples to the nominal fps; the shared
+        // export loop already decides the cadence, each picture keeps its PTS.
+        if (SUCCEEDED(hr)) hr = SnapTray::keepSampleTimesThroughVideoProcessor(m_writer.Get(), m_videoStream);
         if (SUCCEEDED(hr)) hr = m_writer->BeginWriting();
         return SUCCEEDED(hr) || failed("Configure edited MP4", hr);
     }
