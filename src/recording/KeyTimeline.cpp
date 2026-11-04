@@ -77,6 +77,22 @@ bool shouldRecord(KeyRecordingMode mode, int key, Qt::KeyboardModifiers modifier
     return key != Qt::Key_Space && isNamedKey(key);
 }
 
+bool keepAfterFocusChange(Qt::KeyboardModifiers modifiers, bool secureWhenPressed)
+{
+    if (secureWhenPressed) return false;
+    const bool control = modifiers & Qt::ControlModifier;
+    const bool alt = modifiers & Qt::AltModifier;
+    const bool meta = modifiers & Qt::MetaModifier;
+    // AltGr (Ctrl+Alt) types characters on many layouts, with Win held too.
+    if (control && alt) return false;
+    return control || alt || meta;
+}
+
+bool keepWhileInputMethodComposes(int key, Qt::KeyboardModifiers modifiers)
+{
+    return (modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) || isNamedKey(key);
+}
+
 } // namespace KeyCapturePolicy
 
 QString keyStrokeLabel(const KeyStroke& stroke, bool macSymbols)
@@ -91,7 +107,11 @@ QString keyStrokeLabel(const KeyStroke& stroke, bool macSymbols)
     };
     static const Modifier kWords[] = {
         {Qt::ControlModifier, "Ctrl", 0}, {Qt::AltModifier, "Alt", 0}, {Qt::ShiftModifier, "Shift", 0},
+#ifdef Q_OS_WIN
+        {Qt::MetaModifier, "Win", 0},
+#else
         {Qt::MetaModifier, "Super", 0},
+#endif
     };
     // ⌃ ⌥ ⇧ ⌘, as code points: no source-encoding surprises.
     static const Modifier kSymbols[] = {

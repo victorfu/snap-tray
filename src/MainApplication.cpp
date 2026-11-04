@@ -399,12 +399,17 @@ void MainApplication::initialize()
             }
             updateRecoveryAction();
             if (recoverable > 0) {
+                // The tray item counts every entry, including ones that can
+                // only be discarded; the notice says both when they differ (#210).
+                const int total = int(found.size());
+                const QString message = recoverable == total
+                    ? tr("SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.")
+                          .arg(total)
+                    : tr("SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.")
+                          .arg(total)
+                          .arg(recoverable);
                 SnapTray::QmlToast::screenToast().showToast(
-                    SnapTray::QmlToast::Level::Info,
-                    tr("Unsaved Recordings Found"),
-                    tr("SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.")
-                        .arg(recoverable),
-                    8000);
+                    SnapTray::QmlToast::Level::Info, tr("Unsaved Recordings Found"), message, 8000);
             }
         });
 
@@ -1741,7 +1746,7 @@ void MainApplication::startRecordingOn(QScreen* screen)
     m_areaSelector = selector;
     const QPointer<QScreen> target(screen);
     connect(selector, &SnapTray::QmlRecordingAreaSelector::areaChosen, this,
-        [this, target](const QRect& area) {
+        [this, target](const QRectF& area) {
             closeAreaSelector();
             if (!target) return;
             m_recordingManager->startScreenRecording(target.data(), area);

@@ -628,6 +628,7 @@ add_library(snaptray_platform STATIC
         src/capture/WGCCaptureEngine_win.cpp
         src/capture/WASAPIAudioCaptureEngine_win.cpp
         src/encoding/D3D11Nv12Converter_win.cpp
+        src/encoding/MFSampleTimes_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
         src/recording/KeyProbe_win.cpp
@@ -736,6 +737,7 @@ elseif(WIN32)
             d3d11
             dxgi
             uiautomationcore
+            imm32
             winmm
             mfreadwrite
             mfplat

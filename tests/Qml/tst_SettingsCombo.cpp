@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QAccessible>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickItem>
@@ -101,6 +102,16 @@ void TestSettingsCombo::everyOptionFitsWhateverIsSelected()
                  qPrintable(QStringLiteral("delegate needs %1, list has %2")
                                 .arg(delegate->implicitWidth()).arg(list->width())));
     }
+    // #210: each option has its text as its accessible name (the font list
+    // and every setting read as unnamed list items).
+    QStringList names;
+    for (QQuickItem* delegate : delegates) {
+        QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(delegate);
+        QVERIFY(accessible);
+        names << accessible->text(QAccessible::Name);
+    }
+    names.sort();
+    QCOMPARE(names, (QStringList{QStringLiteral("Edit in the preview"), QStringLiteral("Save right away")}));
 }
 
 QTEST_MAIN(TestSettingsCombo)

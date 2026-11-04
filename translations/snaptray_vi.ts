@@ -540,6 +540,11 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <translation>SnapTray tìm thấy %1 bản ghi chưa lưu. Hãy khôi phục từ menu khay hệ thống.</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray tìm thấy %1 bản ghi chưa được lưu; có thể khôi phục %2 bản ghi từ menu khay hệ thống.</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>Tìm thấy bản ghi chưa lưu</translation>
@@ -2755,6 +2760,11 @@ Kích thước: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>Hệ thống này không hỗ trợ xuất HEVC</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>Xuất HEVC cần HEVC Video Extensions từ Microsoft Store</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5265,6 +5275,11 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Dùng cho gợi ý phím tắt trong bản xem trước: phím nhấn cùng Ctrl, Alt hoặc Win, và các phím như Enter hay Esc. Chỉ lưu cùng bản ghi tạm.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Chưa có trên hệ thống này</translation>
     </message>
@@ -5499,6 +5514,11 @@ Kích thước tệp: %3</translation>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>Hiển thị trong thư mục</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>Hiển thị %1 trong thư mục</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

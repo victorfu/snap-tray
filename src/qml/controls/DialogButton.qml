@@ -13,9 +13,28 @@ Rectangle {
     Accessible.role: Accessible.Button
     Accessible.name: text
     Accessible.onPressAction: if (enabled) clicked()
-    Keys.onSpacePressed: if (enabled) clicked()
-    Keys.onReturnPressed: if (enabled) clicked()
-    Keys.onEnterPressed: if (enabled) clicked()
+    // Like a native button: Space activates on release, Return/Enter once per
+    // press. Auto-repeat from a held key never activates again, so one long
+    // press cannot both ask for and confirm a destructive action.
+    property bool spaceArmed: false
+    onActiveFocusChanged: if (!activeFocus) spaceArmed = false
+    Keys.onPressed: function(event) {
+        const space = event.key === Qt.Key_Space
+        const confirm = event.key === Qt.Key_Return || event.key === Qt.Key_Enter
+        if (!space && !confirm) return
+        event.accepted = true
+        if (event.isAutoRepeat || !enabled) return
+        if (space) spaceArmed = true
+        else clicked()
+    }
+    Keys.onReleased: function(event) {
+        if (event.key !== Qt.Key_Space) return
+        event.accepted = true
+        if (event.isAutoRepeat) return
+        const armed = spaceArmed
+        spaceArmed = false
+        if (armed && enabled) clicked()
+    }
     FocusFrame { anchors.fill: parent; showFocus: root.activeFocus }
 
     signal clicked()

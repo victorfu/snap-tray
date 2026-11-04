@@ -611,6 +611,11 @@ File size: %3</source>
         <translation>SnapTray พบการบันทึกที่ยังไม่ได้บันทึก %1 รายการ กู้คืนได้จากเมนูถาด</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray พบการบันทึกที่ยังไม่ได้บันทึก %1 รายการ ในจำนวนนี้กู้คืนได้ %2 รายการจากเมนูถาดระบบ</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>พบการบันทึกที่ยังไม่ได้บันทึก</translation>
@@ -2742,6 +2747,11 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>ระบบนี้ไม่รองรับการส่งออก HEVC</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>การส่งออก HEVC ต้องใช้ HEVC Video Extensions จาก Microsoft Store</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5037,6 +5047,11 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>สำหรับแสดงปุ่มลัดในตัวอย่าง: ปุ่มที่กดร่วมกับ Ctrl, Alt หรือ Win และปุ่มอย่าง Enter หรือ Esc เก็บไว้กับการบันทึกชั่วคราวเท่านั้น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>ยังไม่พร้อมใช้งานบนระบบนี้</translation>
     </message>
@@ -5271,6 +5286,11 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>แสดงในโฟลเดอร์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>แสดง %1 ในโฟลเดอร์</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

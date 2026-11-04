@@ -546,6 +546,11 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <translation>SnapTray našel neuložené nahrávky (%1). Obnovte je z nabídky v oznamovací oblasti.</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray našel neuložené nahrávky: %1. Z nabídky v oznamovací oblasti lze obnovit: %2.</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>Nalezeny neuložené nahrávky</translation>
@@ -2763,6 +2768,11 @@ Velikost: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>Export HEVC není v tomto systému k dispozici</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>Export do HEVC vyžaduje HEVC Video Extensions z Microsoft Storu</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5273,6 +5283,11 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Pro nápovědy zkratek v náhledu: klávesy s Ctrl, Alt nebo Win a klávesy jako Enter nebo Esc. Uloží se jen k dočasné nahrávce.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>V tomto systému zatím není k dispozici</translation>
     </message>
@@ -5507,6 +5522,11 @@ Velikost souboru: %3</translation>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>Zobrazit ve složce</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>Zobrazit %1 ve složce</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

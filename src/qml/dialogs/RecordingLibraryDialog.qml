@@ -153,6 +153,8 @@ DialogBase {
                                         height: 30
                                         text: qsTr("Show in Folder")
                                         style: "secondary"
+                                        Accessible.role: Accessible.Button
+                                        Accessible.name: qsTr("Show %1 in Folder").arg(projectRow.modelData.title)
                                         onClicked: root.viewModel.showInFolder(projectRow.index)
                                     }
                                     DialogButton {

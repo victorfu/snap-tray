@@ -8,6 +8,7 @@
 #include <QScopeGuard>
 #include <QJSValue>
 #include <QQmlComponent>
+#include <QAccessible>
 #include "ToolbarStyle.h"
 #include "ui/DesignSystem.h"
 #include "IVideoEncoder.h"
@@ -33,6 +34,12 @@ private slots:
     void cutButtonFollowsSelectedClip();
     void adjacentShortEffectsStaySeparate();
     void narrowHeaderKeepsActionsVisible();
+    void closeWhileExportingShowsConfirmation();
+    void dialogButtonIgnoresKeyRepeat();
+    void addEffectAppliesCropFirst();
+    void exportSummaryShowsSavedSize();
+    void startOnlyEditKeepsOpenEnd();
+    void switchKeepsToggleAccessibility();
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
     static QQuickItem* item(QQuickView* view, const char* name);
@@ -675,6 +682,227 @@ void tst_RecordingEditor::narrowHeaderKeepsActionsVisible()
     QQuickItem* chip = item(view, "previewStatusChip");
     QVERIFY(chip);
     QVERIFY(chip->width() <= 120);
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::closeWhileExportingShowsConfirmation()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QSignalSpy discarded(&backend, &RecordingPreviewBackend::discardRequested);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openExport"));
+    QObject* popup = view->rootObject()->findChild<QObject*>("previewExportPanel");
+    QTRY_VERIFY(popup && popup->property("opened").toBool());
+    // The native close asks for confirmation; the export popup must not hide it.
+    view->close();
+    if (!backend.discardConfirmationPending()) backend.requestDiscard();
+    QTRY_VERIFY(backend.discardConfirmationPending());
+    QTRY_VERIFY(!popup->property("opened").toBool());
+    QQuickItem* confirmation = item(view, "discardConfirmation");
+    QVERIFY(confirmation && confirmation->isVisible());
+    // The keys go to the visible confirmation: Enter keeps the recording (the default).
+    QTest::keyClick(view, Qt::Key_Return);
+    QTRY_VERIFY(!backend.discardConfirmationPending());
+    QCOMPARE(discarded.count(), 0);
+    // And the mouse reaches its buttons.
+    backend.requestDiscard();
+    QTRY_VERIFY(confirmation->isVisible());
+    QQuickItem* keep = item(view, "discardKeepButton");
+    QVERIFY(keep);
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                      keep->mapToScene(QPointF(keep->width() / 2, keep->height() / 2)).toPoint());
+    QTRY_VERIFY(!backend.discardConfirmationPending());
+    QCOMPARE(discarded.count(), 0);
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::dialogButtonIgnoresKeyRepeat()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openExport"));
+    QQuickItem* back = item(view, "previewExportBack");
+    QVERIFY(back);
+    QTRY_VERIFY(back->isVisible());
+    QSignalSpy clicked(back, SIGNAL(clicked()));
+    const auto send = [&](QEvent::Type type, int key, bool repeat) {
+        QKeyEvent event(type, key, Qt::NoModifier, QString(), repeat);
+        QCoreApplication::sendEvent(view, &event);
+    };
+    // Space: one press held down (with auto-repeat) activates once, on release.
+    back->forceActiveFocus();
+    QVERIFY(back->hasActiveFocus());
+    send(QEvent::KeyPress, Qt::Key_Space, false);
+    send(QEvent::KeyPress, Qt::Key_Space, true);
+    send(QEvent::KeyPress, Qt::Key_Space, true);
+    QCOMPARE(clicked.count(), 0);
+    send(QEvent::KeyRelease, Qt::Key_Space, false);
+    QCOMPARE(clicked.count(), 1);
+    // Return: once per press, never on auto-repeat.
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openExport"));
+    QTRY_VERIFY(back->isVisible());
+    back->forceActiveFocus();
+    send(QEvent::KeyPress, Qt::Key_Return, false);
+    send(QEvent::KeyPress, Qt::Key_Return, true);
+    send(QEvent::KeyRelease, Qt::Key_Return, false);
+    QCOMPARE(clicked.count(), 2);
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::addEffectAppliesCropFirst()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QTRY_VERIFY(item(view, "previewCropButton")->isEnabled());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewCropButton"), "clicked"));
+    QQuickItem* crop = item(view, "previewCropOverlay");
+    QTRY_VERIFY(crop && crop->property("editing").toBool());
+    // An unreadable size typed into the crop panel blocks every Add effect entry.
+    QQuickItem* field = nullptr;
+    QTRY_VERIFY((field = delegate(view, "previewCrop_width")) != nullptr);
+    const QString width = field->property("text").toString();
+    field->setProperty("text", QString());
+    field->setProperty("edited", true);
+    const int masks = backend.masks().size();
+    for (const char* name : {"previewAddMask", "previewAddText", "previewAddZoom"}) {
+        QQuickItem* entry = item(view, name);
+        QVERIFY2(entry, name);
+        QVERIFY(QMetaObject::invokeMethod(entry, "clicked"));
+    }
+    QCOMPARE(backend.masks().size(), masks);
+    QCOMPARE(backend.overlays().size(), 0);
+    QVERIFY(crop->property("editing").toBool());
+    // With valid input the draft is applied, then the effect is added and shown.
+    field->setProperty("text", width);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAddMask"), "clicked"));
+    QTRY_VERIFY(!crop->property("editing").toBool());
+    QCOMPARE(backend.masks().size(), masks + 1);
+    QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::exportSummaryShowsSavedSize()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY(backend.duration() > 0);
+    QQuickItem* summary = item(view, "previewOutputSummary");
+    QVERIFY(summary);
+    const auto expected = [&]() {
+        const QSize size = backend.exportSize();
+        return QStringLiteral("Output %1 × %2").arg(size.width()).arg(size.height());
+    };
+    QTRY_VERIFY(summary->property("text").toString().contains(expected()));
+    if (backend.mp4OutputOptionsAvailable()) {
+        backend.setMp4Resolution(3);
+        backend.setMp4CustomWidth(80);
+        QTRY_COMPARE(backend.exportSize().width(), 80);
+        QTRY_VERIFY2(summary->property("text").toString().contains(expected()),
+                     qPrintable(summary->property("text").toString()));
+        backend.setMp4Resolution(2); // 720p: never larger than the recording
+        QTRY_VERIFY(summary->property("text").toString().contains(expected()));
+    }
+    // A frame adds padding around the picture: the summary follows the saved size.
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.setAppearanceEnabled(true);
+    backend.setAppearancePadding(3);
+    QTRY_VERIFY2(summary->property("text").toString().contains(expected()),
+                 qPrintable(summary->property("text").toString() + " vs " + expected()));
+    // The estimate is shown once, as the backend words it.
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QObject* popup = view->rootObject()->findChild<QObject*>("previewExportPanel");
+    QVERIFY(popup);
+    QTRY_VERIFY(!backend.mp4EstimateText().isEmpty());
+    QCOMPARE(popup->property("footerText").toString(), backend.mp4EstimateText());
+    QVERIFY(!popup->property("footerText").toString().contains("About About"));
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::startOnlyEditKeepsOpenEnd()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(backend.addMask() >= 0);
+    QVERIFY(backend.addTextOverlay(0) >= 0);
+    for (const QString kind : {QStringLiteral("Mask"), QStringLiteral("Overlay")}) {
+        const bool mask = kind == QStringLiteral("Mask");
+        QVERIFY(mask ? backend.setMaskRange(0, 200, -1) : backend.setOverlayRange(0, 200, -1));
+        if (mask) backend.setSelectedMask(0); else backend.setSelectedOverlay(0);
+        QQuickItem* start = item(view, qPrintable("preview" + kind + "StartField"));
+        QVERIFY(start);
+        QTRY_VERIFY(start->isVisible());
+        // Only the start is typed (not applied with Enter), then the selection changes.
+        start->setProperty("text", backend.formatPreciseTime(300));
+        start->setProperty("edited", true);
+        QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openSection", Q_ARG(QVariant, "")));
+        const QVariantMap range = (mask ? backend.masks() : backend.overlays()).at(0).toMap();
+        QCOMPARE(range.value("start").toLongLong(), 300);
+        QCOMPARE(range.value("end").toLongLong(), -1);
+    }
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::switchKeepsToggleAccessibility()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openSection", Q_ARG(QVariant, "appearance")));
+    QQuickItem* toggle = item(view, "previewAppearanceToggle");
+    QVERIFY(toggle);
+    QTRY_VERIFY(toggle->isVisible());
+    QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(toggle);
+    QVERIFY(accessible);
+    QVERIFY(accessible->state().checkable);
+    QCOMPARE(bool(accessible->state().checked), backend.appearanceEnabled());
+    QVERIFY(accessible->actionInterface());
+    QVERIFY(accessible->actionInterface()->actionNames().contains(QAccessibleActionInterface::toggleAction()));
+    const bool before = backend.appearanceEnabled();
+    accessible->actionInterface()->doAction(QAccessibleActionInterface::toggleAction());
+    QTRY_COMPARE(backend.appearanceEnabled(), !before);
+    QCOMPARE(toggle->property("checked").toBool(), !before);
+    QCOMPARE(bool(accessible->state().checked), !before);
+    // Undo still drives it.
+    backend.undo();
+    QTRY_COMPARE(toggle->property("checked").toBool(), before);
     backend.requestDiscard();
 }
 

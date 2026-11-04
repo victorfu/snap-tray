@@ -14,6 +14,8 @@ private slots:
     void videoCrop_data();
     void videoCrop();
     void videoCropNeverLosesAPixel();
+    void videoCropAtTheScreenScale_data();
+    void videoCropAtTheScreenScale();
     void clampToScreen();
 };
 
@@ -76,6 +78,51 @@ void TestRecordingArea::videoCropNeverLosesAPixel()
         QVERIFY(crop.x() <= qFloor(area.x() * s));
         QVERIFY(crop.right() + 2 >= qCeil((area.x() + area.width()) * s) - 1);
     }
+}
+
+// #210: at 150% a 2560-pixel screen is 1706.67 logical pixels, which Qt
+// shows as 1707. Scaling by 2560 / 1707 moved a 1200x750 area chosen at
+// x = 600 to 598 and made it 1202 wide; the area itself is fractional
+// (233.33 logical for pixel 350). The screen's own scale keeps it exact.
+void TestRecordingArea::videoCropAtTheScreenScale_data()
+{
+    QTest::addColumn<QRectF>("area");
+    QTest::addColumn<QRect>("recorded");
+    QTest::addColumn<QSize>("frame");
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<QRect>("expected");
+    const QRect primary(0, 0, 1707, 960);
+    const QSize frame(2560, 1440);
+    QTest::newRow("150%, whole logical pixels") << QRectF(400, 200, 800, 500) << primary << frame << 1.5
+                                               << QRect(600, 300, 1200, 750);
+    QTest::newRow("150%, fractional logical pixels")
+        << QRectF(800.0 / 1.5, 350.0 / 1.5, 1000.0 / 1.5, 700.0 / 1.5) << primary << frame << 1.5
+        << QRect(800, 350, 1000, 700);
+    QTest::newRow("150%, touching the right and bottom edges")
+        << QRectF(1360.0 / 1.5, 740.0 / 1.5, 1200.0 / 1.5, 700.0 / 1.5) << primary << frame << 1.5
+        << QRect(1360, 740, 1200, 700);
+    QTest::newRow("150%, to the rounded logical edge (1707 is 2560.5 pixels)")
+        << QRectF(1307, 660, 400, 300) << primary << frame << 1.5 << QRect(1960, 990, 600, 450);
+    QTest::newRow("150%, near the right edge")
+        << QRectF(1650.0 / 1.5, 900.0 / 1.5, 900.0 / 1.5, 540.0 / 1.5) << primary << frame << 1.5
+        << QRect(1650, 900, 900, 540);
+    // 250%: 3840 pixels are exactly 1536 logical.
+    QTest::newRow("250%, second screen on the left")
+        << QRectF(-3840.0 / 2.5 + 840.0 / 2.5, 500.0 / 2.5, 1500.0 / 2.5, 900.0 / 2.5)
+        << QRect(-1536, 0, 1536, 864) << QSize(3840, 2160) << 2.5 << QRect(840, 500, 1500, 900);
+    // A frame that does not match the screen scale (a scaled capture): its own ratio.
+    QTest::newRow("frame not at the screen scale") << QRectF(100, 50, 640, 360) << QRect(0, 0, 1920, 1080)
+                                                  << QSize(960, 540) << 1.0 << QRect(50, 24, 320, 180);
+}
+
+void TestRecordingArea::videoCropAtTheScreenScale()
+{
+    QFETCH(QRectF, area);
+    QFETCH(QRect, recorded);
+    QFETCH(QSize, frame);
+    QFETCH(qreal, dpr);
+    QFETCH(QRect, expected);
+    QCOMPARE(RecordingArea::videoCrop(area, recorded, frame, dpr), expected);
 }
 
 void TestRecordingArea::clampToScreen()

@@ -546,6 +546,11 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
         <translation>SnapTray heeft %1 niet-opgeslagen opname(n) gevonden. Herstel ze via het systeemvakmenu.</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray heeft %1 niet-opgeslagen opname(n) gevonden; %2 daarvan kunnen worden hersteld via het systeemvakmenu.</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>Niet-opgeslagen opnamen gevonden</translation>
@@ -2762,6 +2767,11 @@ Grootte: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>HEVC-export is op dit systeem niet beschikbaar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>Voor HEVC-export zijn HEVC Video Extensions uit de Microsoft Store nodig</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5272,6 +5282,11 @@ Bestandsgrootte: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Voor sneltoetshints in de voorvertoning: toetsen met Ctrl, Alt of Win, en toetsen zoals Enter of Esc. Alleen bewaard bij de tijdelijke opname.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Nog niet beschikbaar op dit systeem</translation>
     </message>
@@ -5506,6 +5521,11 @@ Bestandsgrootte: %3</translation>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>Weergeven in map</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>%1 weergeven in map</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

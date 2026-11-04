@@ -1,3 +1,4 @@
+#include <QAccessible>
 #include <QFile>
 #include <QtTest/QtTest>
 
@@ -385,6 +386,7 @@ private slots:
     void previewEscapeRestoresCommitted();
     void previewEmptyDraftApplyIsNoop();
     void previewSaveButtonExportsDraft();
+    void previewIconButtonsAreAccessible();
     void previewCtrlSExportsDraft();
     void previewEnterSavesWhenNotEditing();
     void previewProcessingBlocksSave();
@@ -1239,6 +1241,39 @@ void tst_RecordingCropOverlay::previewSaveButtonExportsDraft()
     QCOMPARE(m_backend->cropAtSave, expectedVideoCrop(draft));
     QVERIFY(!m_backend->cropAtSave.isEmpty());
     QVERIFY(!editing());
+}
+
+// #210: the preview's icon buttons (play, mute, crop, trim, discard, save)
+// had no accessible name, and none of them, Undo included, could be pressed
+// through accessibility. Each has a name now (its tooltip without the
+// shortcut) and a press action.
+void tst_RecordingCropOverlay::previewIconButtonsAreAccessible()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    const auto accessible = [this](const char* name) {
+        QQuickItem* item = previewItem(name);
+        return item ? QAccessible::queryAccessibleInterface(item) : nullptr;
+    };
+    // Saving is Export: the top-bar entry and the export panel's final action.
+    const QString exportName = QStringLiteral("Export") + QChar(0x2026);
+    for (const char* name : {"previewExportOptions", "previewSaveButton"}) {
+        QAccessibleInterface* save = accessible(name);
+        QVERIFY2(save, name);
+        QCOMPARE(save->role(), QAccessible::Button);
+        QCOMPARE(save->text(QAccessible::Name), exportName);
+        QVERIFY(save->actionInterface());
+        QVERIFY(save->actionInterface()->actionNames().contains(QAccessibleActionInterface::pressAction()));
+    }
+    QAccessibleInterface* discard = accessible("previewDiscardButton");
+    QVERIFY(discard);
+    QCOMPARE(discard->text(QAccessible::Name), QStringLiteral("Discard Recording"));
+    QVERIFY(discard->actionInterface());
+    QVERIFY(discard->actionInterface()->actionNames().contains(QAccessibleActionInterface::pressAction()));
+    discard->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(m_backend->requestDiscardCount, 1);
+    QAccessibleInterface* crop = accessible("previewCropButton");
+    QVERIFY(crop);
+    QVERIFY(!crop->text(QAccessible::Name).isEmpty());
 }
 
 void tst_RecordingCropOverlay::previewCtrlSExportsDraft()

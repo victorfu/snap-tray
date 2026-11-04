@@ -546,6 +546,11 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <translation>SnapTray hat %1 nicht gespeicherte Aufnahme(n) gefunden. Stellen Sie sie über das Tray-Menü wieder her.</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray hat %1 nicht gespeicherte Aufnahme(n) gefunden; %2 davon können über das Tray-Menü wiederhergestellt werden.</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>Nicht gespeicherte Aufnahmen gefunden</translation>
@@ -2762,6 +2767,11 @@ Größe: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>HEVC-Export ist auf diesem System nicht verfügbar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>Für den HEVC-Export werden die HEVC Video Extensions aus dem Microsoft Store benötigt</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5272,6 +5282,11 @@ Dateigröße: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Für Tastenkürzel-Hinweise in der Vorschau: Tasten mit Strg, Alt oder Win und Tasten wie Enter oder Esc. Nur bei der temporären Aufnahme gespeichert.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Auf diesem System noch nicht verfügbar</translation>
     </message>
@@ -5506,6 +5521,11 @@ Dateigröße: %3</translation>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>Im Ordner anzeigen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>%1 im Ordner anzeigen</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

@@ -111,6 +111,14 @@ Item {
         inspectorOpen = index >= 0
         return true
     }
+    // Adding an effect switches the inspector to it, so it follows the same
+    // contract as selecting one: typed ranges are committed and a crop draft is
+    // applied first; invalid input blocks the switch (PR #228 review).
+    function prepareNewEffect() {
+        if (!commitInspector()) return false
+        if (cropOverlay.editing && !applyCropWithPendingInput()) return false
+        return true
+    }
     function selectPart(index) {
         if (!commitInspector()) return false
         if (cropOverlay.editing && !applyCropWithPendingInput()) return false
@@ -381,9 +389,12 @@ Item {
         if (!startField.edited && !endField.edited)
             return true
         const start = startField.edited ? backend.parseTime(startField.text) : startField.timeMs
-        const end = endField.edited ? backend.parseTime(endField.text) : endField.timeMs
+        // An untouched open end ("until the end") keeps its -1 sentinel: the field
+        // only shows it as the duration (PR #228 review).
+        const keepsOpenEnd = !endField.edited && endField.openEnded
+        const end = endField.edited ? backend.parseTime(endField.text) : keepsOpenEnd ? -1 : endField.timeMs
         // Unreadable text marks its own field; a rejected range marks what was typed.
-        const unreadable = start < 0 || end < 0
+        const unreadable = start < 0 || (end < 0 && !keepsOpenEnd)
         if (unreadable || !apply(start, end)) {
             startField.invalid = startField.edited && (!unreadable || start < 0)
             endField.invalid = endField.edited && (!unreadable || end < 0)
@@ -1091,6 +1102,9 @@ Item {
                     highlighted: backend.hasCrop || cropOverlay.editing
                     tooltipText: cropOverlay.editing ? qsTr("Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)")
                                                      : backend.hasCrop ? qsTr("Edit Crop") : qsTr("Crop Recording")
+                    // Not the long editing tooltip: its first part, without the shortcut.
+                    accessibleName: (cropOverlay.editing ? qsTr("Apply Crop (Enter)") : tooltipText)
+                                    .replace(/\s*\([^()]*\)$/, "")
                     onClicked: {
                         root.comparingOriginal = false
                         if (cropOverlay.editing)
@@ -1205,7 +1219,7 @@ Item {
                 trailingIconSource: root.iconUrl("chevron-down")
                 text: qsTr("Add effect")
                 tooltipText: qsTr("Zoom, mask, text or image at the playhead")
-                onClicked: if (root.commitInspector()) effectMenu.open()
+                onClicked: if (root.prepareNewEffect()) effectMenu.open()
             }
             // Exact trim entry ("m:ss.mmm") while a trim range exists.
             Row {
@@ -1264,7 +1278,7 @@ Item {
                         ? qsTr("Zoom in on clicks automatically. Zooms you added or changed are kept.")
                         : qsTr("Auto zoom needs recorded clicks; add zooms by hand instead")
                     onClicked: {
-                        if (!root.commitInspector()) return
+                        if (!root.prepareNewEffect()) return
                         const count = backend.generateAutoZoom()
                         effectMenu.close()
                         // Say what happened right at the button.
@@ -1279,7 +1293,7 @@ Item {
                     text: qsTr("Add Zoom")
                     tooltipText: qsTr("Add a zoom at the playhead")
                     onClicked: {
-                        if (!root.commitInspector()) return
+                        if (!root.prepareNewEffect()) return
                         effectMenu.close()
                         root.inspectorOpen = true
                         videoPlayer.pause()
@@ -1297,7 +1311,7 @@ Item {
                         ? qsTr("Cover a sensitive area in the exported file")
                         : qsTr("Masks need GIF or WebP on this system")
                     onClicked: {
-                        if (!root.commitInspector()) return
+                        if (!root.prepareNewEffect()) return
                         effectMenu.close()
                         root.inspectorOpen = true
                         videoPlayer.pause()
@@ -1315,7 +1329,7 @@ Item {
                         ? qsTr("A title or caption at the playhead")
                         : qsTr("Overlays need GIF or WebP on this system")
                     onClicked: {
-                        if (!root.commitInspector()) return
+                        if (!root.prepareNewEffect()) return
                         effectMenu.close()
                         root.inspectorOpen = true
                         videoPlayer.pause()
@@ -1336,7 +1350,7 @@ Item {
                         ? qsTr("An image such as a logo, for the whole recording")
                         : qsTr("Overlays need GIF or WebP on this system")
                     onClicked: {
-                        if (!root.commitInspector()) return
+                        if (!root.prepareNewEffect()) return
                         effectMenu.close()
                         root.inspectorOpen = true
                         videoPlayer.pause()
@@ -2201,7 +2215,7 @@ Item {
                         objectName: "previewMaskWhole"
                         text: qsTr("Whole recording")
                         tooltipText: qsTr("Mask for the whole recording, or only for a time range")
-                        checked: maskPanel.wholeRecording
+                        on: maskPanel.wholeRecording
                         onClicked: {
                             if (maskPanel.wholeRecording) {
                                 const start = videoPlayer.position
@@ -2229,6 +2243,7 @@ Item {
                         TimeField {
                             id: maskEndField
                             objectName: "previewMaskEndField"
+                            openEnded: root.selectedMaskData !== null && root.selectedMaskData.end < 0
                             width: (maskPanel.width - 2 * 6 - 8) / 2
                             accessibleName: qsTr("Mask end")
                             timeMs: root.selectedMaskData && root.selectedMaskData.end >= 0 ? root.selectedMaskData.end : timelineArea.dur
@@ -2275,7 +2290,7 @@ Item {
                     enabled: backend.cursorEffectsAvailable
                     text: qsTr("Pointer")
                     tooltipText: backend.showCursor ? qsTr("Hide the Mouse Pointer") : qsTr("Show the Mouse Pointer")
-                    checked: backend.showCursor && backend.cursorEffectsAvailable
+                    on: backend.showCursor && backend.cursorEffectsAvailable
                     onClicked: backend.showCursor = !backend.showCursor
                 }
                 EditorChoice {
@@ -2305,7 +2320,7 @@ Item {
                     enabled: backend.clickEffectsAvailable
                     text: qsTr("Clicks")
                     tooltipText: backend.clickRipple ? qsTr("Hide Click Highlights") : qsTr("Highlight Clicks")
-                    checked: backend.clickRipple && backend.clickEffectsAvailable
+                    on: backend.clickRipple && backend.clickEffectsAvailable
                     onClicked: backend.clickRipple = !backend.clickRipple
                 }
                 EditorChoice {
@@ -2513,7 +2528,7 @@ Item {
                         objectName: "previewOverlayWhole"
                         text: qsTr("Whole recording")
                         tooltipText: qsTr("Show it for the whole recording, or only for a time range")
-                        checked: overlayPanel.wholeRecording
+                        on: overlayPanel.wholeRecording
                         onClicked: {
                             if (overlayPanel.wholeRecording) {
                                 const start = Math.min(videoPlayer.position, Math.max(0, timelineArea.dur - 3000))
@@ -2540,6 +2555,7 @@ Item {
                         TimeField {
                             id: overlayEndField
                             objectName: "previewOverlayEndField"
+                            openEnded: root.selectedOverlayData !== null && root.selectedOverlayData.end < 0
                             width: (overlayPanel.width - 2 * 6 - 8) / 2
                             accessibleName: qsTr("Overlay end")
                             timeMs: root.selectedOverlayData && root.selectedOverlayData.end >= 0 ? root.selectedOverlayData.end : timelineArea.dur
@@ -2587,7 +2603,7 @@ Item {
                     objectName: "previewMicrophoneMute"
                     text: qsTr("Mute Microphone")
                     tooltipText: qsTr("Leave the microphone out of the export")
-                    checked: backend.microphoneMuted
+                    on: backend.microphoneMuted
                     onClicked: backend.microphoneMuted = !backend.microphoneMuted
                 }
                 EditorSwitch {
@@ -2595,7 +2611,7 @@ Item {
                     enabled: !backend.microphoneMuted
                     text: qsTr("Reduce Noise")
                     tooltipText: qsTr("Turn down hiss, hum and room noise between words on the microphone")
-                    checked: backend.microphoneNoiseReduction
+                    on: backend.microphoneNoiseReduction
                     onClicked: backend.microphoneNoiseReduction = !backend.microphoneNoiseReduction
                 }
                 EditorChoice {
@@ -2612,7 +2628,7 @@ Item {
                     objectName: "previewSystemAudioMute"
                     text: qsTr("Mute System Audio")
                     tooltipText: qsTr("Leave the system audio out of the export")
-                    checked: backend.systemAudioMuted
+                    on: backend.systemAudioMuted
                     onClicked: backend.systemAudioMuted = !backend.systemAudioMuted
                 }
             }
@@ -2633,7 +2649,7 @@ Item {
                     objectName: "previewKeysToggle"
                     text: backend.keyOverlayEnabled ? qsTr("Keys: On") : qsTr("Keys: Off")
                     tooltipText: qsTr("Draw the shortcuts into the exported video")
-                    checked: backend.keyOverlayEnabled
+                    on: backend.keyOverlayEnabled
                     onClicked: backend.keyOverlayEnabled = !backend.keyOverlayEnabled
                 }
                 EditorChoice {
@@ -2687,7 +2703,7 @@ Item {
                     objectName: "previewAppearanceToggle"
                     text: backend.appearanceEnabled ? qsTr("Frame: On") : qsTr("Frame: Off")
                     tooltipText: qsTr("Draw the frame around the exported video")
-                    checked: backend.appearanceEnabled
+                    on: backend.appearanceEnabled
                     onClicked: backend.appearanceEnabled = !backend.appearanceEnabled
                 }
                 Flow {
@@ -2796,14 +2812,14 @@ Item {
                     objectName: "previewAppearanceShadow"
                     text: qsTr("Shadow")
                     tooltipText: backend.appearanceShadow ? qsTr("Remove the shadow") : qsTr("Add a shadow under the video")
-                    checked: backend.appearanceShadow
+                    on: backend.appearanceShadow
                     onClicked: backend.appearanceShadow = !backend.appearanceShadow
                 }
                 EditorSwitch {
                     objectName: "previewAppearanceBorder"
                     text: qsTr("Border")
                     tooltipText: backend.appearanceBorder ? qsTr("Remove the border") : qsTr("Add a thin border around the video")
-                    checked: backend.appearanceBorder
+                    on: backend.appearanceBorder
                     onClicked: backend.appearanceBorder = !backend.appearanceBorder
                 }
                 EditorChoice {
@@ -2888,7 +2904,10 @@ Item {
                             text: "HEVC"
                             tooltipText: backend.mp4HevcAvailable
                                 ? qsTr("Smaller files at the same quality; some older players cannot open them")
-                                : qsTr("HEVC export is not available on this system")
+                                : Qt.platform.os === "windows"
+                                    // The usual reason on Windows: playback needs the Store extension (#210).
+                                    ? qsTr("HEVC export needs HEVC Video Extensions from the Microsoft Store")
+                                    : qsTr("HEVC export is not available on this system")
                             selected: backend.mp4Codec === 1 && backend.mp4HevcAvailable
                             onClicked: backend.mp4Codec = 1
                         }
@@ -3053,14 +3072,14 @@ Item {
                         objectName: "previewZoomEnabled"
                         text: qsTr("Zoom effects")
                         tooltipText: qsTr("Turn all zooms on or off without deleting them")
-                        checked: backend.zoomEnabled
+                        on: backend.zoomEnabled
                         onClicked: backend.zoomEnabled = !backend.zoomEnabled
                     }
                     EditorSwitch {
                         objectName: "previewZoomReduceMotion"
                         text: qsTr("Less motion")
                         tooltipText: qsTr("Gentler zooms for all segments: smaller and slower, no direct pans")
-                        checked: backend.zoomReduceMotion
+                        on: backend.zoomReduceMotion
                         onClicked: backend.zoomReduceMotion = !backend.zoomReduceMotion
                     }
                 }
@@ -3165,7 +3184,9 @@ Item {
             if (backend.videoSize.width <= 0)
                 return ""
             const source = backend.videoSize.width + " × " + backend.videoSize.height
-            const out = backend.hasCrop ? backend.cropRect.width + " × " + backend.cropRect.height : source
+            // What is saved: the crop, a frame's padding and the MP4 Size option (#210).
+            const saved = backend.exportSize
+            const out = saved.width > 0 ? saved.width + " × " + saved.height : source
             const parts = [qsTr("Original %1 → Output %2").arg(source).arg(out),
                            qsTr("%1 kept").arg(backend.formatPreciseTime(backend.trimmedDuration))]
             if (backend.selectedFormat !== 0)
@@ -3179,7 +3200,7 @@ Item {
             return parts.join(" · ")
         }
         footerText: backend.selectedFormat === 0 && backend.mp4EstimateText.length > 0
-            ? qsTr("About %1").arg(backend.mp4EstimateText) : ""
+            ? backend.mp4EstimateText : ""
 
         Column {
             parent: exportPanel.formatContent
@@ -3514,8 +3535,15 @@ Item {
         onVisibleChanged: {
             if (visible) {
                 focusIndex = 0
-                const current = root.Window.activeFocusItem
-                focusBeforeOpen = current !== root ? current : null
+                // Popups sit in the window overlay, above this confirmation: close
+                // them so the confirmation is what is seen and what takes the keys
+                // (PR #228 review). Focus goes back to where editing was.
+                const exportOpen = exportPanel.opened
+                const current = exportOpen ? exportPanel.returnFocusItem : root.Window.activeFocusItem
+                exportPanel.returnFocusItem = null
+                exportPanel.close()
+                effectMenu.close()
+                focusBeforeOpen = current && current !== root ? current : null
                 root.forceActiveFocus()
             } else {
                 const previous = focusBeforeOpen
@@ -3903,6 +3931,8 @@ Item {
     component TimeField: TextField {
         id: timeField
         property real timeMs: 0
+        // Shows the duration for an open end (-1) that must stay open unless edited.
+        property bool openEnded: false
         property string accessibleName: ""
         property bool invalid: false
         signal committed(real ms)
@@ -3978,16 +4008,22 @@ Item {
         property bool destructive: false
         property bool primary: false
         property int iconSize: ComponentTokens.recordingPreviewIconSize
-        Accessible.role: Accessible.Button
-        Accessible.name: tooltipText
-        Accessible.onPressAction: if (enabled) clicked()
+        // Read by assistive technology; by default the tooltip without its
+        // "(shortcut)" hint (#210: play, save, discard had no name and could
+        // not be invoked).
+        property string accessibleName: tooltipText.replace(/\s*\([^()]*\)$/, "")
 
         signal clicked()
         activeFocusOnTab: true
-        Keys.onSpacePressed: if (enabled) clicked()
-        Keys.onReturnPressed: if (enabled) clicked()
-        Keys.onEnterPressed: if (enabled) clicked()
+        Keys.onSpacePressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
+        Keys.onReturnPressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
+        Keys.onEnterPressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
         FocusFrame { anchors.fill: parent; showFocus: parent.activeFocus }
+
+        Accessible.role: Accessible.Button
+        Accessible.name: accessibleName !== "" ? accessibleName : iconText
+        Accessible.description: tooltipText !== Accessible.name ? tooltipText : ""
+        Accessible.onPressAction: if (enabled) clicked()
 
         function updateTooltip() {
             if (!mouseArea.containsMouse || tooltipText === "") {
@@ -4086,10 +4122,21 @@ Item {
     component EditorSwitch: Switch {
         id: editorSwitch
         property string tooltipText: ""
-        // The state always comes from the bound backend value: a click only
-        // asks for the change, so a rejected or undone change never leaves
-        // the switch flipped or its binding broken.
-        checkable: false
+        // The backend value the switch shows. A toggle only asks for a change
+        // (onClicked); the shown state is re-bound to this value right away, so
+        // a rejected or undone change never leaves the switch flipped, while the
+        // control stays a checkable switch with a Toggle action for assistive
+        // technology (PR #228 review).
+        property bool on: false
+        checked: on
+        onToggled: checked = Qt.binding(function() { return editorSwitch.on })
+        // Announced as an on/off control with a Toggle action that goes through
+        // the same request path as a click.
+        Accessible.role: Accessible.CheckBox
+        Accessible.checkable: true
+        Accessible.checked: on
+        Accessible.onToggleAction: if (enabled) click()
+        Accessible.onPressAction: if (enabled) click()
         width: parent ? parent.width : implicitWidth
         padding: 0
         topPadding: 4
@@ -4152,8 +4199,8 @@ Item {
         Accessible.description: enabled ? summary : unavailableReason
         Accessible.checked: selected
         Accessible.onPressAction: if (enabled) clicked()
-        Keys.onReturnPressed: if (enabled) clicked()
-        Keys.onSpacePressed: if (enabled) clicked()
+        Keys.onReturnPressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
+        Keys.onSpacePressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
         FocusFrame { anchors.fill: parent; showFocus: categoryRow.activeFocus }
         SvgIcon {
             id: rowIcon
@@ -4224,9 +4271,9 @@ Item {
 
         signal clicked()
         activeFocusOnTab: true
-        Keys.onSpacePressed: if (enabled) clicked()
-        Keys.onReturnPressed: if (enabled) clicked()
-        Keys.onEnterPressed: if (enabled) clicked()
+        Keys.onSpacePressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
+        Keys.onReturnPressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
+        Keys.onEnterPressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
         FocusFrame { anchors.fill: parent; showFocus: parent.activeFocus }
 
         function updateTooltip() {

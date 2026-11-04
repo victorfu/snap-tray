@@ -62,8 +62,8 @@ Popup {
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Back to editing")
                 Accessible.onPressAction: root.returnRequested()
-                Keys.onReturnPressed: root.returnRequested()
-                Keys.onSpacePressed: root.returnRequested()
+                Keys.onReturnPressed: function(event) { if (!event.isAutoRepeat) root.returnRequested() }
+                Keys.onSpacePressed: function(event) { if (!event.isAutoRepeat) root.returnRequested() }
                 FocusFrame { anchors.fill: parent; showFocus: closeButton.activeFocus }
                 SvgIcon {
                     anchors.centerIn: parent

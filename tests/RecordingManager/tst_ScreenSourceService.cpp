@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 
+#include "capture/ICaptureEngine.h"
 #include "recording/ScreenSourceService.h"
 
 #include <QGuiApplication>
@@ -13,6 +14,7 @@ private slots:
     void testAvailableSourcesMatchScreens();
     void testAvailableSourcesPopulateRequiredFields();
     void testResolutionTextUsesDevicePixelRatio();
+    void testResolutionTextIsTheScreensOwnPixels();
 };
 
 void TestRecordingScreenSourceService::testAvailableSourcesMatchScreens()
@@ -54,6 +56,31 @@ void TestRecordingScreenSourceService::testResolutionTextUsesDevicePixelRatio()
              QStringLiteral("200 x 100"));
     QCOMPARE(SnapTray::ScreenSourceService::resolutionText(QRect(0, 0, 100, 50), 1.5),
              QStringLiteral("150 x 75"));
+}
+
+// #210: at 150% a 2560-pixel screen is 1707 logical pixels in Qt, so the
+// logical size times the ratio said 2561. Where the platform reports the
+// screen's pixels (Windows, X11), the label is exactly those.
+void TestRecordingScreenSourceService::testResolutionTextIsTheScreensOwnPixels()
+{
+    // The 150% primary screen of #210: 2560 pixels, 1707 logical.
+    QCOMPARE(SnapTray::ScreenSourceService::resolutionText(QRect(0, 0, 1707, 960), 1.5, QSize(2560, 1440)),
+             QStringLiteral("2560 x 1440"));
+    QCOMPARE(SnapTray::ScreenSourceService::resolutionText(QRect(0, 0, 1707, 960), 1.5, QSize()),
+             QStringLiteral("2561 x 1440")); // what the logical size alone gives
+#ifndef Q_OS_WIN
+    QSKIP("Only Windows reports the screens' own pixels for the label.");
+#endif
+    const QVector<SnapTray::ScreenSource> sources = SnapTray::ScreenSourceService::availableSources(false);
+    if (sources.isEmpty()) QSKIP("No screens available in the test environment.");
+    bool checked = false;
+    for (const SnapTray::ScreenSource& source : sources) {
+        const QSize native = CaptureScreenInfo::fromScreen(source.screen).physicalGeometry.size();
+        if (native.isEmpty()) continue;
+        QCOMPARE(source.resolutionText, QStringLiteral("%1 x %2").arg(native.width()).arg(native.height()));
+        checked = true;
+    }
+    if (!checked) QSKIP("This platform does not report the screens' own pixels.");
 }
 
 QTEST_MAIN(TestRecordingScreenSourceService)

@@ -1,5 +1,6 @@
 #include "recording/ScreenSourceService.h"
 
+#include "capture/ICaptureEngine.h"
 #include "capture/ScreenSnapshot.h"
 #include "settings/ScreenCanvasSettingsManager.h"
 
@@ -34,7 +35,7 @@ QVector<ScreenSource> ScreenSourceService::availableSources(bool includeThumbnai
         info.name = displayName(screen, index);
         info.geometry = screen->geometry();
         info.devicePixelRatio = screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0;
-        info.resolutionText = resolutionText(screen->geometry(), info.devicePixelRatio);
+        info.resolutionText = resolutionText(screen);
         info.isPrimary = (screen == QGuiApplication::primaryScreen());
         info.screen = screen;
         if (includeThumbnails) {
@@ -107,6 +108,24 @@ QString ScreenSourceService::resolutionText(const QRect& geometry, qreal deviceP
     const int width = qRound(static_cast<qreal>(geometry.width()) * safeDpr);
     const int height = qRound(static_cast<qreal>(geometry.height()) * safeDpr);
     return QStringLiteral("%1 x %2").arg(width).arg(height);
+}
+
+QString ScreenSourceService::resolutionText(const QScreen* screen)
+{
+    if (!screen) return {};
+    QSize native;
+#ifdef Q_OS_WIN
+    // Only Windows has fractional scales to correct; elsewhere the lookup
+    // would cost a display-server round trip for the same answer.
+    native = CaptureScreenInfo::fromScreen(screen).physicalGeometry.size();
+#endif
+    return resolutionText(screen->geometry(), screen->devicePixelRatio(), native);
+}
+
+QString ScreenSourceService::resolutionText(const QRect& geometry, qreal devicePixelRatio, const QSize& nativeSize)
+{
+    if (!nativeSize.isEmpty()) return QStringLiteral("%1 x %2").arg(nativeSize.width()).arg(nativeSize.height());
+    return resolutionText(geometry, devicePixelRatio);
 }
 
 QScreen* ScreenSourceService::screenForId(const QString& id)

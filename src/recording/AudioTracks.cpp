@@ -1,12 +1,19 @@
 #include "recording/AudioTracks.h"
 
 #include <QDebug>
+#include <QDir>
 #include <QFileInfo>
 #include <QMutexLocker>
 #include <QtEndian>
 
 #include <algorithm>
 #include <cmath>
+
+#ifdef Q_OS_WIN
+#include <fcntl.h>
+#include <io.h>
+#include <qt_windows.h>
+#endif
 
 namespace SnapTray {
 
@@ -162,7 +169,26 @@ void AudioTrackWriter::failForTests()
 bool AudioTrackReader::open(const QString& path)
 {
     m_file.setFileName(path);
+#ifdef Q_OS_WIN
+    // QFile does not share delete: while the preview plays the track, a save
+    // could neither move it into a project nor remove it, and a copy stayed
+    // in %TEMP% for every kept project (#210).
+    const HANDLE handle = CreateFileW(reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(path).utf16()),
+                                      GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                                      nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) return false;
+    const int fd = _open_osfhandle(reinterpret_cast<intptr_t>(handle), _O_RDONLY | _O_BINARY);
+    if (fd == -1) {
+        CloseHandle(handle);
+        return false;
+    }
+    if (!m_file.open(fd, QIODevice::ReadOnly, QFileDevice::AutoCloseHandle)) {
+        _close(fd);
+        return false;
+    }
+#else
     if (!m_file.open(QIODevice::ReadOnly)) return false;
+#endif
     const QByteArray header = m_file.read(kHeaderBytes);
     if (header.size() != kHeaderBytes || !header.startsWith(QByteArray(kMagic, sizeof(kMagic)))
         || qFromLittleEndian<qint32>(header.constData() + 8) != AudioTracks::kSampleRate

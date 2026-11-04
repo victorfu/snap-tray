@@ -1,4 +1,5 @@
 #include "recording/KeyProbe.h"
+#include "recording/KeyTimeline.h"
 #include <QMetaObject>
 #include <array>
 #include <atomic>
@@ -7,6 +8,7 @@
 #include <mutex>
 #include <thread>
 #include <windows.h>
+#include <imm.h>
 #include <uiautomation.h>
 #include <wrl/client.h>
 
@@ -21,6 +23,25 @@ HWND focusedWindow()
     GUITHREADINFO info{}; info.cbSize = sizeof(info);
     const DWORD thread = GetWindowThreadProcessId(GetForegroundWindow(), nullptr);
     return thread && GetGUIThreadInfo(thread, &info) ? info.hwndFocus : nullptr;
+}
+// Whether an input method composes for `window`: open and in its native
+// mode (Chinese, Japanese, Korean...), where raw keys are not what is typed.
+// Asked through the window's default IME window, which answers across
+// processes; a hung window counts as not composing.
+bool inputMethodComposes(HWND window)
+{
+    const HWND ime = window ? ImmGetDefaultIMEWnd(window) : nullptr;
+    if (!ime) return false;
+    constexpr UINT kTimeoutMs = 50;
+    // WM_IME_CONTROL requests from ime.h (not part of imm.h).
+    constexpr WPARAM kGetConversionMode = 0x0001; // IMC_GETCONVERSIONMODE
+    constexpr WPARAM kGetOpenStatus = 0x0005;     // IMC_GETOPENSTATUS
+    DWORD_PTR open = 0, mode = 0;
+    if (!SendMessageTimeoutW(ime, WM_IME_CONTROL, kGetOpenStatus, 0, SMTO_ABORTIFHUNG, kTimeoutMs, &open) || !open)
+        return false;
+    if (!SendMessageTimeoutW(ime, WM_IME_CONTROL, kGetConversionMode, 0, SMTO_ABORTIFHUNG, kTimeoutMs, &mode))
+        return false;
+    return (mode & IME_CMODE_NATIVE) != 0;
 }
 bool passwordWindow(HWND window)
 {
@@ -50,6 +71,8 @@ class WindowsKeyProbe final : public KeyProbe {
         HWND focus = nullptr;
         HKL layout = nullptr;
         quint64 focusEpoch = 0;
+        // Whether the focus was a secure field (or not yet known) when pressed.
+        bool secureWhenPressed = true;
         std::array<BYTE, 256> state{};
         Qt::KeyboardModifiers modifiers;
     };
@@ -79,13 +102,30 @@ public:
     }
     QString name() const override { return QStringLiteral("Windows keyboard hook"); }
     bool detectsSecureInput() const override { return true; }
+    void setTypedTextWanted(bool wanted) override { m_typedTextWanted = wanted; }
     bool secureInputActive() const override {
+        // While a shortcut that moved the focus is delivered, the state it
+        // was pressed in: the new focus is not where it was typed (#210).
+        if (m_deliveringMovedShortcut) return false;
         const HWND focused = focusedWindow();
         return !focused || passwordWindow(focused) || m_secure.load();
     }
 private:
-    static void CALLBACK focusChanged(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD) {
-        if (activeProbe) { ++activeProbe->m_focusEpoch; activeProbe->m_secure = true; }
+    static void CALLBACK focusChanged(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD eventTime) {
+        if (!activeProbe) return;
+        std::lock_guard<std::mutex> lock(activeProbe->m_mutex);
+        const quint64 epoch = ++activeProbe->m_focusEpoch;
+        activeProbe->m_focusTimes[epoch % activeProbe->m_focusTimes.size()] = {epoch, eventTime};
+        activeProbe->m_secure = true;
+    }
+    // Whether the first focus change after `epoch` happened after `pressTime`,
+    // i.e. the press itself moved the focus (Alt+Tab). Focus events arrive
+    // late: one that happened before the press (into a password field) but
+    // was delivered after it must not count (PR #234 review). Unknown: no.
+    bool focusMovedAfter(quint64 epoch, DWORD pressTime) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        const auto& next = m_focusTimes[(epoch + 1) % m_focusTimes.size()];
+        return next.first == epoch + 1 && LONG(next.second - pressTime) > 0;
     }
     static LRESULT CALLBACK keyboard(int code, WPARAM message, LPARAM data) {
         auto* self = activeProbe;
@@ -96,6 +136,8 @@ private:
                 Press p;
                 p.code = native.vkCode; p.scan = native.scanCode; p.time = native.time;
                 p.focus = focus; p.focusEpoch = self->m_focusEpoch.load();
+                // Not secure only with a check made for this very focus.
+                p.secureWhenPressed = self->m_validated.load() != (p.focusEpoch << 1);
                 p.layout = GetKeyboardLayout(GetWindowThreadProcessId(GetForegroundWindow(), nullptr));
                 // The low-level callback runs before async state is updated
                 // for this key, so apply its down bit explicitly.
@@ -137,15 +179,37 @@ private:
                 if (m_stop) break;
                 p = m_pending.front(); m_pending.pop_front();
             }
-            if (DWORD(GetTickCount() - p.time) > 250 || p.focusEpoch != m_focusEpoch.load()
-                || p.focus != focusedWindow()) continue;
-            ComPtr<IUIAutomationElement> focused;
-            BOOL password = TRUE;
-            const bool readable = SUCCEEDED(automation->GetFocusedElement(&focused)) && focused
-                && SUCCEEDED(focused->get_CurrentIsPassword(&password));
-            const bool secure = !readable || password || passwordWindow(p.focus);
-            m_secure = secure;
-            if (secure || p.focusEpoch != m_focusEpoch.load() || p.focus != focusedWindow()) continue;
+            if (DWORD(GetTickCount() - p.time) > 250) continue;
+            // A shortcut can move the focus itself (Alt+Tab, Alt+F4): one
+            // pressed outside a secure field is kept; anything else whose
+            // focus moved is dropped (#210).
+            const bool keepIfMoved = KeyCapturePolicy::keepAfterFocusChange(p.modifiers, p.secureWhenPressed);
+            const auto focusMoved = [this, &p] { return p.focusEpoch != m_focusEpoch.load() || p.focus != focusedWindow(); };
+            // For a press whose focus moved: whether it may go on. With the
+            // focus event handled, only if the press moved the focus. With
+            // only the window changed (Alt+F4 closed it) and the event not
+            // handled yet, the GUI thread decides: it handles WinEvents
+            // before the posted result (PR #234 review).
+            const auto mayContinueMoved = [&] {
+                if (!keepIfMoved) return false;
+                return p.focusEpoch == m_focusEpoch.load() || focusMovedAfter(p.focusEpoch, p.time);
+            };
+            if (focusMoved()) {
+                if (!mayContinueMoved()) continue;
+            } else {
+                ComPtr<IUIAutomationElement> focused;
+                BOOL password = TRUE;
+                const bool readable = SUCCEEDED(automation->GetFocusedElement(&focused)) && focused
+                    && SUCCEEDED(focused->get_CurrentIsPassword(&password));
+                const bool secure = !readable || password || passwordWindow(p.focus);
+                // Only for the focus it was read for: a focus event since
+                // then already made it secure until its own check (#210 review).
+                if (p.focusEpoch == m_focusEpoch.load()) {
+                    m_secure = secure;
+                    m_validated = (p.focusEpoch << 1) | (secure ? 1u : 0u);
+                }
+                if (secure || (focusMoved() && !mayContinueMoved())) continue;
+            }
             wchar_t chars[16]{};
             // Flag 4 asks ToUnicodeEx not to alter the application's dead-key
             // state (Windows 10+, the supported Windows target).
@@ -161,11 +225,28 @@ private:
                 if (points.size() == 1 && QChar::isPrint(points[0])) key = int(points[0]);
             }
             if (!key) continue;
-            QMetaObject::invokeMethod(this, [this, p, key, text] {
-                // A queued result must still belong to the same focus, and
-                // must not outlive a pause/resume boundary (ageMs handles it).
-                if (p.focusEpoch != m_focusEpoch.load() || p.focus != focusedWindow() || secureInputActive()) return;
-                emit keyPressed(key, p.modifiers, text, DWORD(GetTickCount() - p.time));
+            // Raw keys an input method composes are not the typed text (#210).
+            // Only typed text (All keys) can carry them; shortcuts mode drops
+            // plain keys anyway, so the input method is not asked there.
+            if (m_typedTextWanted.load() && !KeyCapturePolicy::keepWhileInputMethodComposes(key, p.modifiers)
+                && inputMethodComposes(p.focus))
+                continue;
+            QMetaObject::invokeMethod(this, [this, p, key, text, keepIfMoved] {
+                // A queued result must still belong to the same focus (or be
+                // a shortcut that moved it), and must not outlive a
+                // pause/resume boundary (ageMs handles it).
+                const qint64 ageMs = DWORD(GetTickCount() - p.time);
+                if (p.focusEpoch != m_focusEpoch.load() || p.focus != focusedWindow()) {
+                    if (!keepIfMoved || !focusMovedAfter(p.focusEpoch, p.time)) return;
+                    // The recorder asks secureInputActive() while it handles
+                    // this signal: answer for where the shortcut was pressed.
+                    m_deliveringMovedShortcut = true;
+                    emit keyPressed(key, p.modifiers, text, ageMs);
+                    m_deliveringMovedShortcut = false;
+                    return;
+                }
+                if (secureInputActive()) return;
+                emit keyPressed(key, p.modifiers, text, ageMs);
             }, Qt::QueuedConnection);
         }
         automation.Reset();
@@ -175,6 +256,13 @@ private:
     HWINEVENTHOOK m_focusHook = nullptr;
     std::atomic<quint64> m_focusEpoch{0};
     std::atomic<bool> m_secure{true};
+    // The last UI Automation check, for one focus epoch: epoch << 1 | secure.
+    // Starts as "secure" for no epoch, so nothing counts as checked yet.
+    std::atomic<quint64> m_validated{1};
+    // Recent focus changes: epoch and when it happened (GetTickCount ms).
+    std::array<std::pair<quint64, DWORD>, 16> m_focusTimes{};
+    bool m_deliveringMovedShortcut = false; // GUI thread only
+    std::atomic<bool> m_typedTextWanted{true};
     std::mutex m_mutex;
     std::condition_variable m_changed;
     std::deque<Press> m_pending;

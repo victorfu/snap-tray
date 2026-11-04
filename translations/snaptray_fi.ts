@@ -540,6 +540,11 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <translation>SnapTray löysi %1 tallentamatonta tallennetta. Palauta ne ilmaisinalueen valikosta.</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray löysi %1 tallentamatonta tallennetta; niistä %2 voidaan palauttaa ilmaisinalueen valikosta.</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="379" />
         <source>Unsaved Recordings Found</source>
         <translation>Tallentamattomia tallenteita löytyi</translation>
@@ -2756,6 +2761,11 @@ Koko: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>HEVC export is not available on this system</source>
         <translation>HEVC-vienti ei ole käytettävissä tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>HEVC-vienti vaatii HEVC Video Extensions -laajennukset Microsoft Storesta</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
@@ -5266,6 +5276,11 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Esikatselun pikanäppäinvihjeitä varten: Ctrl-, Alt- tai Win-näppäimen kanssa painetut sekä Enterin tai Escin kaltaiset näppäimet. Säilytetään vain väliaikaisen tallenteen kanssa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
         <source>Not available on this system yet</source>
         <translation>Ei vielä käytettävissä tässä järjestelmässä</translation>
     </message>
@@ -5500,6 +5515,11 @@ Tiedoston koko: %3</translation>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
         <source>Show in Folder</source>
         <translation>Näytä kansiossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <source>Show %1 in Folder</source>
+        <translation>Näytä %1 kansiossa</translation>
     </message>
     <message>
         <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />

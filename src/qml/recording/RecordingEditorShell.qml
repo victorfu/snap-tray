@@ -154,8 +154,8 @@ Item {
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Hide settings")
                 Accessible.onPressAction: root.inspectorCloseRequested()
-                Keys.onReturnPressed: root.inspectorCloseRequested()
-                Keys.onSpacePressed: root.inspectorCloseRequested()
+                Keys.onReturnPressed: function(event) { if (!event.isAutoRepeat) root.inspectorCloseRequested() }
+                Keys.onSpacePressed: function(event) { if (!event.isAutoRepeat) root.inspectorCloseRequested() }
                 FocusFrame { anchors.fill: parent; showFocus: closeButton.activeFocus }
                 SvgIcon {
                     anchors.centerIn: parent
@@ -216,8 +216,8 @@ Item {
             Accessible.role: Accessible.Link
             Accessible.name: linkText.text
             Accessible.onPressAction: clicked()
-            Keys.onReturnPressed: clicked()
-            Keys.onSpacePressed: clicked()
+            Keys.onReturnPressed: function(event) { if (!event.isAutoRepeat) clicked() }
+            Keys.onSpacePressed: function(event) { if (!event.isAutoRepeat) clicked() }
             FocusFrame { anchors.fill: parent; showFocus: projectLink.activeFocus }
             Row {
                 x: SemanticTokens.spacing12
