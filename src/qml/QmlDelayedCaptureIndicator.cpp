@@ -5,6 +5,7 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
+#include <QtMath>
 
 namespace SnapTray {
 
@@ -107,8 +108,12 @@ void QmlDelayedCaptureIndicator::reposition()
     }
 
     const QRect area = m_screen->availableGeometry();
-    const int width = qRound(m_rootItem->implicitWidth());
-    m_view->setPosition(area.center().x() - width / 2, area.top() + kTopMargin);
+    const QSize size(qCeil(m_rootItem->implicitWidth()),
+                     qCeil(m_rootItem->implicitHeight()));
+    // Moving between mixed-DPI screens can preserve the old native pixel size.
+    // Reapply the full logical geometry even when the QML content size is unchanged.
+    const QPoint position(area.center().x() - size.width() / 2, area.top() + kTopMargin);
+    m_view->setGeometry(QRect(position, size));
 }
 
 } // namespace SnapTray
