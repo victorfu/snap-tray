@@ -2672,6 +2672,9 @@ Item {
                     highlighted: backend.hasCrop || cropOverlay.editing
                     tooltipText: cropOverlay.editing ? qsTr("Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)")
                                                      : backend.hasCrop ? qsTr("Edit Crop") : qsTr("Crop Recording")
+                    // Not the long editing tooltip: its first part, without the shortcut.
+                    accessibleName: (cropOverlay.editing ? qsTr("Apply Crop (Enter)") : tooltipText)
+                                    .replace(/\s*\([^()]*\)$/, "")
                     onClicked: {
                         root.comparingOriginal = false
                         if (cropOverlay.editing)
@@ -3472,7 +3475,7 @@ Item {
 
         Accessible.role: Accessible.Button
         Accessible.name: accessibleName !== "" ? accessibleName : iconText
-        Accessible.description: tooltipText
+        Accessible.description: tooltipText !== Accessible.name ? tooltipText : ""
         Accessible.onPressAction: if (enabled) clicked()
 
         function updateTooltip() {

@@ -18,6 +18,7 @@
 #include "recording/KeyTimeline.h"
 #include "recording/OverlayTrack.h"
 #include "recording/AudioTracks.h"
+#include "recording/RecordingAppearance.h"
 #include "recording/RecordingProject.h"
 #include "video/Mp4VideoSamples.h"
 #include "video/IVideoFrameReader.h"
@@ -1941,12 +1942,18 @@ void tst_RecordingPreviewExport::exportSizeIsTheSavedSize()
     backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     QCOMPARE(backend.exportSize(), sourceSize);
     QVERIFY(changed.count() > 0);
-    // A frame adds its padding around the picture.
+    // A frame adds its padding around the picture, with a signal while GIF is chosen.
+    changed.clear();
+    backend.setAppearancePadding(int(SnapTray::RecordingAppearance::Amount::Large));
     backend.setAppearanceEnabled(true);
-    if (backend.appearanceEnabled() && backend.appearancePadding() > 0) {
-        QVERIFY(backend.exportSize().width() > sourceSize.width());
-        QVERIFY(backend.exportSize().height() > sourceSize.height());
-    }
+    QVERIFY(backend.appearanceEnabled());
+    SnapTray::RecordingAppearance look;
+    look.enabled = true;
+    look.padding = SnapTray::RecordingAppearance::Amount::Large;
+    const QSize framed = look.outputSize(sourceSize);
+    QVERIFY(framed.width() > sourceSize.width() && framed.height() > sourceSize.height());
+    QCOMPARE(backend.exportSize(), framed);
+    QVERIFY(changed.count() > 0);
 }
 
 // #210: the library's thumbnail was the first kept frame, usually the
