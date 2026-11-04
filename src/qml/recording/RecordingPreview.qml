@@ -1282,7 +1282,9 @@ Item {
                     if (backend.videoSize.width <= 0)
                         return ""
                     const source = backend.videoSize.width + " × " + backend.videoSize.height
-                    const out = backend.hasCrop ? backend.cropRect.width + " × " + backend.cropRect.height : source
+                    // What is saved: the crop, a frame's padding and the MP4 Size option (#210).
+                    const saved = backend.exportSize
+                    const out = saved.width > 0 ? saved.width + " × " + saved.height : source
                     const parts = [qsTr("Original %1 → Output %2").arg(source).arg(out),
                                    qsTr("%1 kept").arg(backend.formatPreciseTime(backend.trimmedDuration))]
                     if (backend.selectedFormat !== 0)
@@ -2302,7 +2304,10 @@ Item {
                     text: "HEVC"
                     tooltipText: backend.mp4HevcAvailable
                         ? qsTr("Smaller files at the same quality; some older players cannot open them")
-                        : qsTr("HEVC export is not available on this system")
+                        : Qt.platform.os === "windows"
+                            // The usual reason on Windows: playback needs the Store extension (#210).
+                            ? qsTr("HEVC export needs HEVC Video Extensions from the Microsoft Store")
+                            : qsTr("HEVC export is not available on this system")
                     selected: backend.mp4Codec === 1 && backend.mp4HevcAvailable
                     onClicked: backend.mp4Codec = 1
                 }
@@ -2667,6 +2672,9 @@ Item {
                     highlighted: backend.hasCrop || cropOverlay.editing
                     tooltipText: cropOverlay.editing ? qsTr("Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)")
                                                      : backend.hasCrop ? qsTr("Edit Crop") : qsTr("Crop Recording")
+                    // Not the long editing tooltip: its first part, without the shortcut.
+                    accessibleName: (cropOverlay.editing ? qsTr("Apply Crop (Enter)") : tooltipText)
+                                    .replace(/\s*\([^()]*\)$/, "")
                     onClicked: {
                         root.comparingOriginal = false
                         if (cropOverlay.editing)
@@ -3458,8 +3466,17 @@ Item {
         property bool destructive: false
         property bool primary: false
         property int iconSize: ComponentTokens.recordingPreviewIconSize
+        // Read by assistive technology; by default the tooltip without its
+        // "(shortcut)" hint (#210: play, save, discard had no name and could
+        // not be invoked).
+        property string accessibleName: tooltipText.replace(/\s*\([^()]*\)$/, "")
 
         signal clicked()
+
+        Accessible.role: Accessible.Button
+        Accessible.name: accessibleName !== "" ? accessibleName : iconText
+        Accessible.description: tooltipText !== Accessible.name ? tooltipText : ""
+        Accessible.onPressAction: if (enabled) clicked()
 
         function updateTooltip() {
             if (!mouseArea.containsMouse || tooltipText === "") {
