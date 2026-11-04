@@ -95,7 +95,6 @@ public:
 
     bool writeVideo(const QImage& image, qint64 timeUs, qint64 durationUs) override
     {
-        Q_UNUSED(durationUs);
         @autoreleasepool {
             if (!ready(m_video)) return false;
             CVPixelBufferRef buffer = nullptr;
@@ -115,7 +114,16 @@ public:
             CVPixelBufferUnlockBaseAddress(buffer, 0);
             const bool ok = [m_pixels appendPixelBuffer:buffer withPresentationTime:CMTimeMake(timeUs, 1000000)];
             CVPixelBufferRelease(buffer);
-            return ok || fail(m_writer.error, "Cannot encode edited video frame.");
+            if (!ok) return fail(m_writer.error, "Cannot encode edited video frame.");
+            // The exporter writes the remaining audio after this last picture.
+            // Tell AVAssetWriter the video has ended now: otherwise its audio
+            // input can wait for more video to interleave, while finish() is
+            // itself waiting for that audio to be accepted.
+            if (timeUs + durationUs >= m_format.durationMs * 1000) {
+                [m_video markAsFinished];
+                m_videoFinished = true;
+            }
+            return true;
         }
     }
 
@@ -141,7 +149,7 @@ public:
     bool finish() override
     {
         @autoreleasepool {
-            [m_video markAsFinished];
+            if (!m_videoFinished) [m_video markAsFinished];
             if (m_audio) [m_audio markAsFinished];
             [m_writer endSessionAtSourceTime:CMTimeMake(m_format.durationMs, 1000)];
             dispatch_semaphore_t done = dispatch_semaphore_create(0);
@@ -159,6 +167,7 @@ public:
             if (m_writer.status == AVAssetWriterStatusWriting) [m_writer cancelWriting];
             m_reader = nil; m_decodedAudio = nil;
             m_pixels = nil; m_video = nil; m_audio = nil; m_writer = nil;
+            m_videoFinished = false;
             if (m_pcmFormat) { CFRelease(m_pcmFormat); m_pcmFormat = nullptr; }
         }
     }
@@ -174,8 +183,12 @@ private:
         QElapsedTimer timeout; timeout.start();
         while (input && !input.readyForMoreMediaData && m_writer.status == AVAssetWriterStatusWriting
                && timeout.elapsed() < 10000) QThread::msleep(1);
-        return (input && input.readyForMoreMediaData && m_writer.status == AVAssetWriterStatusWriting)
-            || fail(m_writer.error, "Edited MP4 writer stopped accepting data.");
+        if (input && input.readyForMoreMediaData && m_writer.status == AVAssetWriterStatusWriting) return true;
+        fail(m_writer.error, "Edited MP4 writer stopped accepting data.");
+        m_error += QStringLiteral(" (%1, writer status %2, waited %3 ms)")
+            .arg(input == m_video ? QStringLiteral("video") : QStringLiteral("audio"))
+            .arg(int(m_writer.status)).arg(timeout.elapsed());
+        return false;
     }
     bool nextPacket(QByteArray& pcm, qint64& startFrame) override
     {
@@ -198,6 +211,7 @@ private:
         }
     }
     NativeEditFormat m_format;
+    bool m_videoFinished = false;
     AVAssetWriter* m_writer = nil;
     AVAssetWriterInput* m_video = nil;
     AVAssetWriterInput* m_audio = nil;

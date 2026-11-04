@@ -246,6 +246,9 @@ void tst_RecordingPreviewMasks::previewShowsTheMaskedPixels()
     // pixel measurement must stay free of stage controls across that change.
     QMetaObject::invokeMethod(player, "play");
     QTRY_VERIFY(player->property("playing").toBool());
+    // Playing is reported before the decoder delivers its first frame on
+    // Windows. Let that frame arrive before pausing the decoding thread.
+    QTRY_VERIFY_WITH_TIMEOUT(previewEdges(view, player) > 50, 10000);
     QMetaObject::invokeMethod(player, "pause");
     QTRY_VERIFY(!player->property("playing").toBool());
     QTRY_VERIFY_WITH_TIMEOUT(previewEdges(view, player) > 50, 10000);
