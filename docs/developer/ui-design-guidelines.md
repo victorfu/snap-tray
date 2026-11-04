@@ -112,7 +112,9 @@ The remaining product work is tracked by [#221](https://github.com/victorfu/snap
 
 ### Editor interaction contract
 
-- The same player survives category changes and opening export. At widths below 980 logical pixels, the inspector overlays the workspace and can be hidden; playback controls remain uncovered.
+- The same player survives category changes and opening export. At widths below 980 logical pixels, the inspector is a sheet over the preview only, opened from the top bar and closed with ✕ or a click outside; playback controls and the timeline remain uncovered.
+- The timeline keeps a fixed height (a ruler, the video lane and a fixed number of visible effect lanes); adding effects never resizes the preview, and further lanes scroll. A selected effect is scrolled into view.
+- Two to four alternatives use a full-width segmented selector; longer lists use a drop-down with a single chevron (#230).
 - Effect selection is exclusive. Switching commits valid time input; invalid input keeps its object selected and exposes correction or Escape-to-revert. Escape after text editing clears selection and returns to project settings in a wide window; in a narrow window it also hides the inspector before asking to close the recording.
 - Effects use source milliseconds, not concatenated output time. Clip cuts and speeds retain the existing backend mapping. Drag drafts mutate the backend only on release; Escape drops the draft. Exact range fields remain available for short segments. Clicking or dragging the video track only seeks and preserves the active effect/crop edit; double-clicking explicitly selects a clip. The video track stays fixed while effect rows scroll.
 - Export entry points open the same panel. The final Export action validates pending ranges, custom width, trim, and crop drafts before calling the existing guarded backend. Export cancellation, errors, project retention, and fast-path encoding remain backend responsibilities.

@@ -125,10 +125,13 @@ void tst_RecordingPreviewTimeline::buttonsAndKeysEditTheTimeline()
     QVERIFY(backend.timelineEdit().parts[1].deleted);
     QVERIFY(backend.hasTimelineEdits());
     QCOMPARE(backend.outputDuration(), 500);
-    QTRY_VERIFY(!speed->isEnabled()); // a cut part has no speed
+    // The clip inspector edits the selected clip: a cut one has no speed.
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "selectPart", Q_ARG(QVariant, 1)));
+    QTRY_VERIFY(!speed->isEnabled());
 
-    // Part 0 at 2x... after two clicks (1x -> 1.5x -> 2x).
+    // Part 0 at 2x.
     QVERIFY(seek(view, 200));
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "selectPart", Q_ARG(QVariant, 0)));
     QTRY_VERIFY(speed->isEnabled());
     QVERIFY(QMetaObject::invokeMethod(speed, "activated", Q_ARG(int, 3)));
     QCOMPARE(backend.timelineEdit().parts[0].speed, 2.0);

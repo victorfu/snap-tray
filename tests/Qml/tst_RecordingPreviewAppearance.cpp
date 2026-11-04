@@ -159,7 +159,7 @@ void tst_RecordingPreviewAppearance::panelEditsTheFrame()
     const auto saved = SnapTray::RecordingAppearance::fromJson(RecordingSettingsManager::instance().appearance());
     QCOMPARE(saved, backend.appearance());
 
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceDone"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "editorReturnToProject"), "clicked"));
     QTRY_VERIFY(!panel->isVisible());
     // MP4 on a system that cannot draw: the frame is not offered there.
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);

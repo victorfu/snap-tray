@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QSize>
 #include <QRectF>
+#include <QColor>
 
 class IVideoPlayer;
 
@@ -43,6 +44,8 @@ class VideoPlaybackItem : public QQuickPaintedItem
     Q_PROPERTY(int frameIntervalMs READ frameIntervalMs NOTIFY videoLoaded)
     Q_PROPERTY(QSize videoSize READ videoSize NOTIFY videoLoaded)
     Q_PROPERTY(QRectF contentRect READ contentRect NOTIFY contentRectChanged)
+    // Fills the area around the picture (letterbox); the editor uses its canvas colour.
+    Q_PROPERTY(QColor backgroundColor READ backgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
 
 public:
     explicit VideoPlaybackItem(QQuickItem *parent = nullptr);
@@ -74,6 +77,8 @@ public:
     int frameIntervalMs() const;
     QSize videoSize() const;
     QRectF contentRect() const { return m_contentRect; }
+    QColor backgroundColor() const { return m_backgroundColor; }
+    void setBackgroundColor(const QColor& color);
 
     // Invokable from QML
     Q_INVOKABLE void play();
@@ -105,6 +110,7 @@ signals:
     void playbackRateChanged();
     void videoLoaded();
     void contentRectChanged();
+    void backgroundColorChanged();
     void errorOccurred(const QString &message);
     void playbackFinished();
     void frameReady(const QImage &frame);
@@ -122,6 +128,7 @@ private:
 
     IVideoPlayer *m_player = nullptr;
     QString m_source;
+    QColor m_backgroundColor = Qt::black;
     QImage m_currentFrame;
     QImage m_rawFrame;
     FrameProcessor m_frameProcessor;

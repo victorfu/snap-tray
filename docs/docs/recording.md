@@ -62,13 +62,15 @@ While a recording is in progress, the tray or menu bar icon shows its state with
 
 ## Editing workspace
 
-The top **Export…** button opens the output settings. **Settings** opens the right inspector: **Frame**, **Pointer**, **Audio**, and **Keys** affect the whole recording. Missing metadata or unsupported formats are explained beside unavailable categories. Select an effect on the timeline to edit its own properties; **Project settings** returns to the whole recording. At narrow window widths the inspector overlays the workspace; **Hide** restores the unobstructed preview and timeline. Escape deselects the current effect and hides the inspector at narrow widths.
+The top bar shows the recording's file name and whether it is kept as an editable project, with **Undo**, **Redo**, the primary **Export…** button, and discard. Playback controls sit directly under the preview; the timeline is at the bottom.
+
+The right inspector starts at **Project settings**: **Canvas**, **Pointer**, **Audio**, and **Keys** affect the whole recording, each with a summary of its current state. Unavailable categories stay listed, dimmed, with the reason. Select a clip or effect on the timeline to edit its own properties; the inspector shows its type and time range, and **Return to Project settings** at the bottom goes back. At narrow window widths the inspector is a sheet over the preview, opened with the settings button in the top bar and closed with ✕ or a click outside it. Escape deselects the current effect and hides the inspector at narrow widths.
 
 **Add effect** groups Auto Zoom, Add Zoom, Add Mask, Add Text, and Add Image beside the timeline. Effects have named lanes, including separate rows for overlapping masks and overlays. Drag a segment to move it or drag an edge to change its range. Changes apply when you release; Escape during a drag cancels it. Start/end fields in the inspector remain available for precise edits and very short segments. Invalid time input must be corrected or cancelled with Escape before selecting another object.
 
 Click or drag the video track to seek without leaving the active effect or crop edit. Double-click a clip to select it in the inspector (or focus it with Tab and press Enter). Only the effect lanes scroll; the video track and time labels stay visible.
 
-The timeline and effect ranges use **source recording time**, including cut parts. Exported duration reflects cuts and speed changes; the player skips cut parts. **Preview speed** changes playback only; **Export clip speed** changes the part at the playhead in the saved file.
+The timeline and effect ranges use **source recording time**, including cut parts. Exported duration reflects cuts and speed changes; the player skips cut parts. **Preview speed** (beside the playback controls) changes playback only; a clip's **Export speed** (in the clip inspector) changes it in the saved file.
 
 **Export…**, Ctrl/Cmd+S, and Enter outside text or crop editing open the same export panel. Select MP4, GIF, or WebP there, then use **Export…** to validate pending edits and save. **Back to editing** preserves your selection. Export also updates a kept editable project; there is no separate project-only save command.
 
@@ -97,7 +99,7 @@ The timeline can do more than trim the ends. In the preview:
 
 1. Move the playhead and click **Split** (or press **S**) to divide the recording there. Splits show as small bars on the timeline; drag one to move it, double-click it to join its two parts again.
 2. With the playhead in a part, **Cut Part** (or **Delete**) leaves it out of the export; the part is shaded on the timeline. **Keep Part** puts it back.
-3. **Export clip speed** sets how fast a part plays in the export: 0.5×, 1×, 1.5×, 2× or 4×. The speed shows above the part.
+3. Double-click a part to select it. In the inspector, **Export speed** sets how fast it plays in the export: 0.5×, 1×, 1.5×, 2× or 4×. The speed shows on the part.
 
 The preview plays the edit: cut parts are skipped and each part plays at its own speed. The time under the video shows the exported length. Cuts and speeds can be undone like other edits, and **Reset Crop and Trim** removes them.
 
@@ -133,7 +135,7 @@ On Linux (X11) it includes the pointer's shape and clicks. On macOS and Windows 
 
 ### Pointer effects in the preview
 
-When a recording has this record, open **Settings → Pointer** in the inspector. What you see in the preview is what the export draws, through the same crop and trim:
+When a recording has this record, open **Pointer** in the inspector's Project settings. What you see in the preview is what the export draws, through the same crop and trim:
 
 - **Pointer**: show or hide the mouse pointer in the exported video.
 - **Size** (1×, 1.5×, 2×, 3×): draw the pointer larger.
@@ -156,7 +158,7 @@ SnapTray can show the shortcuts you pressed while recording, for tutorials ("Ctr
 
 The keys are kept next to the temporary recording, without window titles or application names, and are deleted with it: they are never in the saved file or the History. Keys pressed while the recording is paused are not kept. Keys are read passively on Linux X11, macOS and Windows. macOS asks for Input Monitoring permission only after you opt in; secure input suspends key recording. Windows suppresses keys when the focused control reports a password field, and when that check fails or focus changes during the check. If the probe cannot start, a warning explains that key hints are unavailable and the recording continues. Applications that do not expose protected fields cannot always be detected; keep All keys off when entering sensitive text.
 
-In the preview, **Settings → Keys** (enabled when the recording has keys) draws them into the export: **Keys: On/Off**, **Place** (bottom, bottom left, bottom right, top), **Size**, **Dark/Light**, and how long a hint stays (1, 1.5 or 2.5 s). Keys pressed close together show together, and a repeated shortcut shows once with a count ("Ctrl + Z ×3"). Hints follow cuts (#185): keys in a cut part never show. Hints are drawn for MP4, GIF and WebP.
+In the preview, **Keys** in Project settings (enabled when the recording has keys) draws them into the export: **Keys: On/Off**, **Place** (bottom, bottom left, bottom right, top), **Size**, **Dark/Light**, and how long a hint stays (1, 1.5 or 2.5 s). Keys pressed close together show together, and a repeated shortcut shows once with a count ("Ctrl + Z ×3"). Hints follow cuts (#185): keys in a cut part never show. Hints are drawn for MP4, GIF and WebP.
 
 ### Zoom and pan
 
@@ -164,7 +166,7 @@ Full-screen recordings often make buttons and text small once shared. The previe
 
 - **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux); actions spread over most of the screen stay at the full view. Running it again replaces the automatic zooms but keeps the ones you added or changed.
 - **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
-- Zooms appear in the Zoom lane. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less Motion** makes all zooms smaller and slower without direct pans, **Zoom On/Off** turns them all off without deleting them, and **Delete** removes one.
+- Zooms appear in the Zoom lane. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less motion** makes all zooms smaller and slower without direct pans, **Zoom effects** turns them all off without deleting them, and **Delete zoom** removes one.
 
 The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Zooms are available for MP4, GIF and WebP.
 
@@ -192,7 +194,7 @@ Overlays sit on the exported picture: they keep their place through a crop and d
 
 ### A frame around the video
 
-**Frame** in the preview puts the exported video on a background, like Beautify does for screenshots. The first time it starts from your screenshot Beautify look (switched off); after that, your last frame for recordings is remembered. It can be undone like other edits, and **Reset Crop and Trim** keeps it.
+**Canvas** in the preview puts the exported video on a background, like Beautify does for screenshots. The first time it starts from your screenshot Beautify look (switched off); after that, your last frame for recordings is remembered. It can be undone like other edits, and **Reset Crop and Trim** keeps it.
 
 - **Background**: one of the gradient presets, white, black, **Blurred Video** (the video itself, blurred, behind it) or **Image…** (a picture file).
 - **Padding**, **Corners** (None, Small, Medium, Large), **Shadow** and **Border**. Sizes follow the video, so a frame looks the same on a small or a 4K recording.
@@ -236,7 +238,7 @@ The recording is only removed once the file is saved. If you cancel the save dia
 
 ### MP4 export options
 
-With MP4 selected, the **Export…** panel sets the exported file, with its size, frame rate and an estimated file size next to the choices:
+With MP4 selected, the **Export…** panel sets the exported file, with its size, frame rate and an estimated file size below the choices and beside **Export…**:
 
 - **Size**: Original, 1080p, 720p or a custom width. The aspect ratio is kept, and the video is never made larger than it was recorded (or cropped).
 - **Frame rate**: Original, 60, 30 or 15 fps, never above the recording's own rate.

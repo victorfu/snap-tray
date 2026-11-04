@@ -211,7 +211,7 @@ void tst_RecordingPreviewZoom::previewControls()
     QVERIFY(scale);
     QVERIFY(QMetaObject::invokeMethod(scale, "clicked"));
     QCOMPARE(backend.zoomTrack().segments().at(1).scale, 2.5);
-    QVERIFY(QMetaObject::invokeMethod(find(QStringLiteral("previewZoomDone")), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(find(QStringLiteral("editorReturnToProject")), "clicked"));
     QCOMPARE(backend.selectedZoom(), -1);
     QTRY_VERIFY(!panel->isVisible());
     backend.requestDiscard();
@@ -401,7 +401,7 @@ void tst_RecordingPreviewZoom::typedTimesStayWithTheirZoom()
     // Done applies a valid typed end to the zoom being edited.
     end->setProperty("text", backend.formatPreciseTime(8500));
     end->setProperty("edited", true);
-    QQuickItem* done = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewZoomDone"));
+    QQuickItem* done = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("editorReturnToProject"));
     QVERIFY(done);
     QVERIFY(QMetaObject::invokeMethod(done, "clicked"));
     QCOMPARE(backend.zoomTrack().segments().at(1).endMs, qint64(8500));

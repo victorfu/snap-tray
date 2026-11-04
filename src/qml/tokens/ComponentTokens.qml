@@ -211,6 +211,22 @@ QtObject {
     readonly property color editorCanvas: SemanticTokens.isDarkMode ? "#17181b" : "#f4f5f7"
     readonly property color editorBorder: SemanticTokens.isDarkMode ? "#3b3d44" : "#e1e4e9"
     readonly property color editorSelection: SemanticTokens.isDarkMode ? "#343047" : "#f0ecff"
+    // Recessed controls (segmented tracks, fields) inside an editor surface.
+    readonly property color editorControl: SemanticTokens.isDarkMode ? "#2a2b30" : "#f1f2f5"
+    readonly property color editorControlHover: SemanticTokens.isDarkMode ? "#33343a" : "#e8eaee"
+    readonly property color editorScrim: SemanticTokens.isDarkMode ? "#99000000" : "#59000000"
+    // Timeline lanes: a fill and an edge per kind, so lanes differ by more than hue
+    // (each lane also has an icon and a name).
+    readonly property color editorClip: SemanticTokens.isDarkMode ? "#2c2e34" : "#e9ebef"
+    readonly property color editorClipBorder: SemanticTokens.isDarkMode ? "#4a4d55" : "#cfd3da"
+    readonly property color editorZoomFill: SemanticTokens.isDarkMode ? "#3a3360" : "#ece8ff"
+    readonly property color editorZoomEdge: SemanticTokens.isDarkMode ? "#9a8cff" : "#6e5ce6"
+    readonly property color editorMaskFill: SemanticTokens.isDarkMode ? "#1e4337" : "#dcf3ea"
+    readonly property color editorMaskEdge: SemanticTokens.isDarkMode ? "#4cc79a" : "#23946b"
+    readonly property color editorOverlayFill: SemanticTokens.isDarkMode ? "#4a3a18" : "#fdf0d5"
+    readonly property color editorOverlayEdge: SemanticTokens.isDarkMode ? "#e4b04a" : "#b97c0c"
+    readonly property color editorPointerFill: SemanticTokens.isDarkMode ? "#253a52" : "#e1edfb"
+    readonly property color editorPointerEdge: SemanticTokens.isDarkMode ? "#6aa6ec" : "#2f6fc0"
 
     readonly property color recordingPreviewBgStart: DesignSystem.recordingPreviewBgStart
     readonly property color recordingPreviewBgEnd: DesignSystem.recordingPreviewBgEnd

@@ -28,6 +28,8 @@ private slots:
     void openEndedAndTinySegments();
     void customChoicesAndFrameRate();
     void dialogButtonPreservesMouseFocus();
+    void switchFollowsUndo();
+    void deleteCutsSelectedClip();
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
     static QQuickItem* item(QQuickView* view, const char* name);
@@ -148,6 +150,14 @@ void tst_RecordingEditor::stableLayoutAndExport()
     evidence(view, "editor-wide");
     const int mask = backend.addMask();
     QVERIFY(mask >= 0);
+    QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
+    QCOMPARE(player->size(), size);
+    // More lanes never resize the preview.
+    QVERIFY(backend.splitAt(1200));
+    QVERIFY(backend.addTextOverlay(600) >= 0);
+    QVERIFY(backend.setOverlayRange(0, 600, 1400));
+    QVERIFY(backend.setMaskRange(mask, 200, 1000));
+    backend.setSelectedMask(mask);
     QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
     QCOMPARE(player->size(), size);
     evidence(view, "editor-selected");
@@ -311,7 +321,9 @@ void tst_RecordingEditor::seekPreservesEditing()
     QQuickItem* scrubber = item(view, "previewScrubber");
     QVERIFY(scrubber);
     auto trackPoint = [&](qreal fraction) {
-        return scrubber->mapToScene(QPointF(76 + fraction * (scrubber->width() - 84), 29)).toPoint();
+        const qreal left = scrubber->property("trackLeft").toReal();
+        const qreal width = scrubber->property("trackWidth").toReal();
+        return scrubber->mapToScene(QPointF(left + fraction * width, scrubber->property("laneCenterY").toReal())).toPoint();
     };
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, trackPoint(0.7));
     QCOMPARE(backend.selectedMask(), mask);
@@ -349,6 +361,19 @@ void tst_RecordingEditor::seekPreservesEditing()
     QSignalSpy cropLayout(view, &QQuickWindow::afterAnimating);
     view->requestUpdate();
     QVERIFY(cropLayout.wait(2000));
+    // The window was just resized: the draft is in picture coordinates, so set it
+    // only once the picture's geometry has stopped changing.
+    QQuickItem* player = item(view, "previewVideoPlayer");
+    QRectF settled;
+    QTRY_VERIFY_WITH_TIMEOUT([&] {
+        const QRectF now = player->property("contentRect").toRectF();
+        QSignalSpy frame(view, &QQuickWindow::afterAnimating);
+        view->requestUpdate();
+        frame.wait(500);
+        const bool stable = !now.isEmpty() && now == player->property("contentRect").toRectF() && now == settled;
+        settled = now;
+        return stable;
+    }(), 5000);
     const QRectF draft(100, 50, 180, 100);
     crop->setProperty("draftRect", draft);
     QTest::mousePress(view, Qt::LeftButton, Qt::NoModifier, trackPoint(0.2));
@@ -413,6 +438,10 @@ void tst_RecordingEditor::openEndedAndTinySegments()
     QQuickItem* tracks = item(view, "previewEffectTracks");
     QQuickItem* scrubber = item(view, "previewScrubber");
     QVERIFY(tracks && scrubber);
+    // Selecting the mask scrolled its lane into view.
+    QTRY_VERIFY(QRectF(tracks->mapToScene(QPointF()), tracks->size())
+                    .contains(segment->mapToScene(QPointF(4, 12))));
+    const qreal scrolledTo = tracks->property("contentY").toReal();
     const QPointF trackOrigin = scrubber->mapToScene(QPointF());
     const QPointF segmentOrigin = segment->mapToScene(QPointF());
     const QPoint from = segment->mapToScene(QPointF(4, 12)).toPoint();
@@ -422,10 +451,10 @@ void tst_RecordingEditor::openEndedAndTinySegments()
     const QVariantMap moved = backend.masks().at(0).toMap();
     QVERIFY(moved.value("start").toLongLong() > 500);
     QCOMPARE(moved.value("end").toLongLong() - moved.value("start").toLongLong(), 10);
-    QCOMPARE(tracks->property("contentY").toReal(), 0.0);
-    tracks->setProperty("contentY", 60);
+    QCOMPARE(tracks->property("contentY").toReal(), scrolledTo);
+    tracks->setProperty("contentY", scrolledTo - 60);
     QCOMPARE(scrubber->mapToScene(QPointF()), trackOrigin);
-    QCOMPARE(delegate(view, "previewMaskSegment0")->mapToScene(QPointF()).y(), segmentOrigin.y() - 60);
+    QCOMPARE(delegate(view, "previewMaskSegment0")->mapToScene(QPointF()).y(), segmentOrigin.y() + 60);
     backend.requestDiscard();
 }
 
@@ -478,6 +507,56 @@ void tst_RecordingEditor::customChoicesAndFrameRate()
     QCOMPARE(backend.mp4OutputFrameRate(), 15);
     QTest::keyClick(view, Qt::Key_Escape);
     QTRY_VERIFY(!popup->property("opened").toBool());
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::switchFollowsUndo()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openSection", Q_ARG(QVariant, "appearance")));
+    QQuickItem* toggle = item(view, "previewAppearanceToggle");
+    QVERIFY(toggle);
+    QTRY_VERIFY(toggle->isVisible());
+    const bool before = backend.appearanceEnabled();
+    QCOMPARE(toggle->property("checked").toBool(), before);
+    // A real click: the switch must keep following the backend afterwards.
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                      toggle->mapToScene(QPointF(toggle->width() - 10, toggle->height() / 2)).toPoint());
+    QTRY_COMPARE(backend.appearanceEnabled(), !before);
+    QCOMPARE(toggle->property("checked").toBool(), !before);
+    backend.undo();
+    QCOMPARE(backend.appearanceEnabled(), before);
+    QTRY_COMPARE(toggle->property("checked").toBool(), before);
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::deleteCutsSelectedClip()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(seek(view, 200));
+    QVERIFY(backend.splitAt(1000));
+    // The playhead is in part 0; part 1 is selected without seeking.
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "selectPart", Q_ARG(QVariant, 1)));
+    view->rootObject()->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_Delete);
+    QVERIFY(!backend.timelineEdit().parts[0].deleted);
+    QVERIFY(backend.timelineEdit().parts[1].deleted);
+    QCOMPARE(view->rootObject()->property("selectedPart").toInt(), 1);
     backend.requestDiscard();
 }
 

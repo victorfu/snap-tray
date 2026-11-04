@@ -238,7 +238,7 @@ void tst_RecordingPreviewPointer::keysPanelEditsTheHints()
     QCOMPARE(saved, backend.keyOverlay());
     backend.undo();
     QVERIFY(backend.keyOverlayEnabled());
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysDone"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "editorReturnToProject"), "clicked"));
     QTRY_VERIFY(!panel->isVisible());
     backend.requestDiscard();
 }

@@ -467,7 +467,7 @@ void tst_RecordingPreviewMasks::maskDoneAndSwitchingKeepTypedTimesRight()
     QVERIFY(backend.setMaskRange(1, 500, 700));
     backend.setSelectedMask(0);
     auto* end = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewMaskEndField"));
-    auto* done = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewMaskDone"));
+    auto* done = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("editorReturnToProject"));
     QVERIFY(end && done);
     QTRY_VERIFY(end->isVisible());
     const auto maskEnd = [&backend](int i) { return backend.masks().at(i).toMap().value(QStringLiteral("end")).toLongLong(); };

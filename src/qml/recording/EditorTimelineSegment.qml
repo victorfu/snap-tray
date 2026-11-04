@@ -16,6 +16,12 @@ Rectangle {
     property real trackX: 0
     property bool selected: false
     property string label: ""
+    // Spoken name; the visible label stays short (exact times live in the inspector).
+    property string accessibleName: label
+    // Each effect kind has its own fill, edge and icon, so lanes differ by more than hue.
+    property color fillColor: ComponentTokens.editorSurface
+    property color edgeColor: ComponentTokens.editorBorder
+    property url iconSource: ""
     property var prepareSelection: function() { return true }
     signal activated()
     signal rangeEdited(real start, real end)
@@ -25,13 +31,14 @@ Rectangle {
     x: trackX + (dragging ? draftStart : startMs) * pixelsPerMs
     width: Math.max(8, ((dragging ? draftEnd : endMs) - (dragging ? draftStart : startMs)) * pixelsPerMs)
     height: 24
-    radius: 4
-    color: selected ? ComponentTokens.editorSelection : ComponentTokens.editorSurface
-    border.color: selected ? SemanticTokens.accentDefault : ComponentTokens.editorBorder
+    radius: 5
+    color: fillColor
+    border.color: edgeColor
     border.width: selected ? 2 : 1
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
-    Accessible.name: label
+    Accessible.name: accessibleName
+    Accessible.selected: selected
     Accessible.onPressAction: if (prepareSelection()) activated()
     Keys.onReturnPressed: if (prepareSelection()) activated()
     Keys.onSpacePressed: if (prepareSelection()) activated()
@@ -39,15 +46,46 @@ Rectangle {
         if (dragging) dragging = false
         else event.accepted = false
     }
-    Text {
-        anchors.fill: parent
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
-        text: root.label
-        color: root.selected ? SemanticTokens.accentDefault : SemanticTokens.textPrimary
-        font.pixelSize: SemanticTokens.fontSizeCaption
-        verticalAlignment: Text.AlignVCenter
-        elide: Text.ElideRight
+    Row {
+        id: content
+        x: 8
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width - 16
+        spacing: 5
+        visible: parent.width > 20
+        clip: true
+        SvgIcon {
+            id: kindIcon
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.iconSource != "" && root.width > 40
+            source: root.iconSource
+            iconSize: 13
+            color: SemanticTokens.textPrimary
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            width: content.width - (kindIcon.visible ? kindIcon.width + content.spacing : 0)
+            text: root.label
+            color: SemanticTokens.textPrimary
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.weight: root.selected ? SemanticTokens.fontWeightMedium : SemanticTokens.fontWeightRegular
+            elide: Text.ElideRight
+        }
+    }
+    // Resize grips on the selected segment.
+    Repeater {
+        model: root.selected && root.width >= 16 ? 2 : 0
+        Rectangle {
+            required property int index
+            x: index === 0 ? -2 : root.width - width + 2
+            anchors.verticalCenter: parent.verticalCenter
+            width: 5
+            height: root.height - 6
+            radius: 2
+            color: root.edgeColor
+            border.width: 1
+            border.color: ComponentTokens.editorSurface
+        }
     }
     FocusFrame { anchors.fill: parent; showFocus: root.activeFocus }
     MouseArea {
