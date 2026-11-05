@@ -69,6 +69,9 @@ private slots:
     void privacyAndRetentionNote();
     void busyProjectCannotOpenOrDelete();
     void narrowLayoutUsesSectionRow();
+    void narrowLayoutReachesSmartFolders();
+    void reopeningClearsPendingDelete();
+    void openingInPreviewCancelsPendingDelete();
 
 private:
     QQuickItem* item(const char* name) const;
@@ -302,6 +305,47 @@ void tst_LibraryWindow::narrowLayoutUsesSectionRow()
     QVERIFY(item("librarySectionRow")->isVisible());
     QMetaObject::invokeMethod(item("libraryNarrowSection_recordings"), "clicked");
     QCOMPARE(library()->source(), int(LibraryModel::Recordings));
+}
+
+// Review: the narrow layout keeps the smart folders (spec: a Filter menu).
+void tst_LibraryWindow::narrowLayoutReachesSmartFolders()
+{
+    m_window->view()->resize(700, 700);
+    QTRY_COMPARE(m_window->view()->width(), 700);
+    QTRY_VERIFY(!item("librarySidebar")->isVisible());
+    QVERIFY(item("libraryNarrowFilter"));
+    QVERIFY(!item("libraryNarrowFilter")->isVisible());
+    QMetaObject::invokeMethod(item("libraryNarrowSection_screenshots"), "clicked");
+    QVERIFY(item("libraryNarrowFilter")->isVisible());
+    QMetaObject::invokeMethod(item("libraryNarrowFilter"), "activated", Q_ARG(int, 2));
+    QCOMPARE(item("libraryTitle")->property("text").toString(), QStringLiteral("Large Files"));
+    QCOMPARE(library()->source(), int(LibraryModel::Screenshots));
+}
+
+// Review: a delete left pending when the window closed does not come back.
+void tst_LibraryWindow::reopeningClearsPendingDelete()
+{
+    select(m_project);
+    click("libraryAction_deleteProject");
+    QVERIFY(item("libraryConfirmStrip")->isVisible());
+    m_window->view()->close();
+    QTRY_VERIFY(!m_window->isVisible());
+    m_window->show();
+    QVERIFY(QTest::qWaitForWindowExposed(m_window->view()));
+    QVERIFY(!item("libraryConfirmStrip")->isVisible());
+    QVERIFY(QFileInfo::exists(m_project));
+}
+
+// Review: a project opened in the preview while its delete is pending cannot
+// be deleted, so the question goes away instead of doing nothing.
+void tst_LibraryWindow::openingInPreviewCancelsPendingDelete()
+{
+    select(m_project);
+    click("libraryAction_deleteProject");
+    QVERIFY(item("libraryConfirmStrip")->isVisible());
+    m_window->setOpenProjectDir(m_project);
+    QTRY_VERIFY(!item("libraryConfirmStrip")->isVisible());
+    QVERIFY(QFileInfo::exists(m_project));
 }
 
 QTEST_MAIN(tst_LibraryWindow)

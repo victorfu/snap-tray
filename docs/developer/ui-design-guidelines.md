@@ -351,7 +351,7 @@ Applies to the Library window (#226): the former History window, now holding scr
 - Each card or row names its kind ("Screenshot", "Editable project"). A project's detail line says whether it was saved and under which name, or that the saved file was moved, or that it is open in the recording preview. A project open in the preview cannot be opened again or deleted.
 - Delete always asks, in a strip above the results that names what goes and what stays. Esc, Cancel or a new selection cancels it, and Esc closes the window only when nothing is pending.
 - Where projects are shown, a note says that projects keep the full recording, how many days unchanged projects are kept, and whether keeping is off.
-- Below 820 px the sidebar becomes a row of section buttons, and below 720 px the header stacks. The minimum window width is 640 px.
+- Below 820 px the sidebar becomes a row of section buttons and the smart folders move into a menu next to the sort (Screenshots only); below 720 px the header stacks. The minimum window width is 640 px.
 
 ### Acceptance matrix
 

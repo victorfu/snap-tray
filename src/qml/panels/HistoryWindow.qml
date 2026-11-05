@@ -221,7 +221,14 @@ Item {
         root.forceActiveFocus()
     }
 
+    // A project opened in the preview cannot be deleted: drop the question.
+    onSelectedBusyChanged: if (selectedBusy && confirming) confirmKey = ""
+
     function confirmDelete() {
+        if (selectedKind === kindRecording && selectedBusy) {
+            cancelDelete()
+            return
+        }
         var index = library ? library.indexOfKey(confirmKey) : -1
         var kind = index >= 0 ? library.kindAt(index) : -1
         var row = index >= 0 ? library.sourceRowAt(index) : -1
@@ -1280,6 +1287,52 @@ Item {
                             radius: 14
                             text: qsTr("Open History Folder")
                             onClicked: if (root.backend) root.backend.openHistoryFolder()
+                        }
+
+                        // Narrow windows have no sidebar: smart folders live here.
+                        ComboBox {
+                            id: narrowFilter
+                            objectName: "libraryNarrowFilter"
+                            visible: root.narrow && root.currentSource === root.sourceScreenshots
+                            width: 150
+                            height: 40
+                            model: [{ text: qsTr("All Screenshots"), filterValue: 0 }].concat(root.smartFolders)
+                            textRole: "text"
+                            currentIndex: root.modelObject ? root.modelObject.activeFilter : 0
+                            Accessible.name: qsTr("Smart Folders")
+
+                            onActivated: function(index) {
+                                var value = model[index].filterValue
+                                if (value === 0)
+                                    root.showSection(root.sourceScreenshots)
+                                else
+                                    root.showSmartFolder(value)
+                            }
+
+                            background: Rectangle {
+                                radius: 12
+                                color: ComponentTokens.toolbarControlBackground
+                                border.width: narrowFilter.activeFocus ? 1 : 0
+                                border.color: ComponentTokens.inputBorderFocus
+                            }
+
+                            contentItem: Text {
+                                leftPadding: 12
+                                rightPadding: 26
+                                text: narrowFilter.displayText
+                                color: SemanticTokens.textPrimary
+                                font.pixelSize: SemanticTokens.fontSizeBody
+                                font.family: SemanticTokens.fontFamily
+                                font.weight: SemanticTokens.fontWeightMedium
+                                verticalAlignment: Text.AlignVCenter
+                                elide: Text.ElideRight
+                            }
+
+                            indicator: ToolbarChevron {
+                                x: narrowFilter.width - width - 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                strokeColor: SemanticTokens.textSecondary
+                            }
                         }
 
                         ComboBox {

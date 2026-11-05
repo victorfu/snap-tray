@@ -38,6 +38,9 @@ void QmlHistoryWindow::show()
 {
     ensureView();
     if (m_hasShownOnce) {
+        // A delete left pending when the window closed is not asked again.
+        if (QObject* root = m_view->rootObject())
+            QMetaObject::invokeMethod(root, "cancelDelete");
         m_backend->refresh();
         m_recordings->refresh();
     } else {
