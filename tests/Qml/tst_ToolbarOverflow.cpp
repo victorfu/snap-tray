@@ -13,6 +13,7 @@
 #include "qml/ToolbarOverflowLayout.h"
 #include "qml/PinToolbarViewModel.h"
 #include "tools/ToolId.h"
+#include "tools/ToolbarTraits.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
@@ -28,6 +29,9 @@ private slots:
     void layout();
     void safePositioning();
     void menuActionsAndLifetime();
+    void collapsesByPriority();
+    void activeToolStaysVisible();
+    void groupGapCountsInWidth();
 };
 
 void TestToolbarOverflow::standaloneEngineCanImportModule()
@@ -129,6 +133,81 @@ void TestToolbarOverflow::textLabelsCreatedOnlyWhenNeeded()
     QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, clickPosition);
     QCOMPARE(clicked.count(), 2);
     button->setParentItem(nullptr);
+}
+
+
+static QVariantList fakeButtons()
+{
+    // id, group, priority — mirrors the Region Selector row.
+    const QList<std::tuple<int, int, int>> spec = {
+        {int(ToolId::Shape), 0, 999}, {int(ToolId::Arrow), 0, 998}, {int(ToolId::Text), 0, 996},
+        {int(ToolId::Mosaic), 0, 70}, {int(ToolId::Eraser), 0, 60}, {int(ToolId::StepBadge), 0, 50},
+        {int(ToolId::EmojiSticker), 0, 40}, {int(ToolId::Undo), 1, kNeverCollapse},
+        {int(ToolId::Redo), 1, kNeverCollapse}, {int(ToolId::OCR), 1, 20},
+        {int(ToolId::QRCode), 1, 10}, {int(ToolId::MultiRegion), 1, 30},
+        {int(ToolId::Pin), 2, kNeverCollapse}, {int(ToolId::Save), 2, kNeverCollapse},
+        {int(ToolId::Copy), 2, kNeverCollapse}};
+    QVariantList out;
+    int previous = -1;
+    for (const auto& [id, group, priority] : spec) {
+        out.append(QVariantMap{{"id", id}, {"group", group}, {"collapsePriority", priority},
+                               {"groupStart", previous != -1 && previous != group},
+                               {"separatorBefore", previous != -1 && previous != group}});
+        previous = group;
+    }
+    return out;
+}
+
+static QList<int> ids(const QVariantList& list)
+{
+    QList<int> r;
+    for (const auto& v : list) r.append(v.toMap().value("id").toInt());
+    return r;
+}
+
+void TestToolbarOverflow::collapsesByPriority()
+{
+    const QVariantList buttons = fakeButtons();
+    // One pixel short: More takes one button's room, so two collapse — QR then OCR,
+    // not Copy and Save from the tail. Overflow keeps row order.
+    auto layout = computeToolbarOverflow(buttons, toolbarContentWidth(buttons, true, false, {}) - 1, -1);
+    QCOMPARE(ids(layout.overflowButtons), (QList<int>{int(ToolId::OCR), int(ToolId::QRCode)}));
+    // Exactly four collapse: QR, OCR, Multi-Region, Emoji. Overflow keeps row order.
+    QVariantList withoutFour;
+    for (const auto& v : buttons) {
+        const int id = v.toMap().value("id").toInt();
+        if (id != int(ToolId::QRCode) && id != int(ToolId::OCR) && id != int(ToolId::MultiRegion)
+            && id != int(ToolId::EmojiSticker))
+            withoutFour.append(v);
+    }
+    const int width = toolbarContentWidth(restampGroupStarts(withoutFour), true, true, {});
+    layout = computeToolbarOverflow(buttons, width, -1);
+    QCOMPARE(ids(layout.overflowButtons),
+             (QList<int>{int(ToolId::EmojiSticker), int(ToolId::OCR), int(ToolId::QRCode),
+                         int(ToolId::MultiRegion)}));
+    for (int id : {int(ToolId::Pin), int(ToolId::Save), int(ToolId::Copy), int(ToolId::Undo),
+                   int(ToolId::Redo)})
+        QVERIFY(ids(layout.visibleButtons).contains(id));
+    QVERIFY(layout.width <= width);
+}
+
+void TestToolbarOverflow::activeToolStaysVisible()
+{
+    const QVariantList buttons = fakeButtons();
+    const int width = toolbarContentWidth(buttons, true, false, {}) - 5 * 30;
+    const auto layout = computeToolbarOverflow(buttons, width, int(ToolId::EmojiSticker));
+    QVERIFY(ids(layout.visibleButtons).contains(int(ToolId::EmojiSticker)));
+    QVERIFY(!ids(layout.overflowButtons).contains(int(ToolId::EmojiSticker)));
+    QVERIFY(layout.width <= width);
+}
+
+void TestToolbarOverflow::groupGapCountsInWidth()
+{
+    const QVariantList buttons = fakeButtons();
+    ToolbarLayoutMetrics m;
+    const int withGap = toolbarContentWidth(buttons, true, false, m);
+    m.groupGap = 0;
+    QCOMPARE(withGap - toolbarContentWidth(buttons, true, false, m), 2 * ToolbarLayoutMetrics{}.groupGap);
 }
 
 void TestToolbarOverflow::layout_data()

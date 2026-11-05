@@ -207,6 +207,9 @@ void QmlWindowedToolbar::setupConnections()
             this, &QmlWindowedToolbar::refreshScreenGeometry, Qt::UniqueConnection);
     connect(m_viewModel, &ToolbarViewModelBase::ocrAvailableChanged,
             this, &QmlWindowedToolbar::refreshScreenGeometry, Qt::UniqueConnection);
+    // The active tool never collapses into More, so a tool change can re-layout.
+    connect(m_viewModel, &ToolbarViewModelBase::activeToolChanged,
+            this, &QmlWindowedToolbar::refreshScreenGeometry, Qt::UniqueConnection);
 }
 
 void QmlWindowedToolbar::applyPlatformWindowFlags()
@@ -498,9 +501,10 @@ void QmlWindowedToolbar::applyOverflowLayout(const QRect& usableBounds)
     const ToolbarLayoutMetrics metrics{
         m_rootItem->property("buttonWidth").toInt(), m_rootItem->property("buttonSpacing").toInt(),
         m_rootItem->property("separatorWidth").toInt(), m_rootItem->property("margin").toInt(),
-        m_rootItem->property("dragHandleWidth").toInt(), m_rootItem->property("contentSpacing").toInt()};
+        m_rootItem->property("dragHandleWidth").toInt(), m_rootItem->property("contentSpacing").toInt(),
+        m_rootItem->property("groupGap").toInt()};
     const auto layout = computeToolbarOverflow(available, usableBounds.width(),
-        {int(ToolId::Save), int(ToolId::Copy), PinToolbarViewModel::ButtonDone}, metrics);
+        m_viewModel->activeTool(), metrics);
     if (m_rootItem->property("overflowButtons").toList() != layout.overflowButtons)
         hideOverflow();
     m_rootItem->setProperty("displayButtons", layout.visibleButtons);
