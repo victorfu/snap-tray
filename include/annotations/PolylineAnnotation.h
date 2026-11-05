@@ -43,6 +43,7 @@ public:
     void addPoint(const QPoint& point);
     void updateLastPoint(const QPoint& point);
     void setPoint(int index, const QPoint& point);
+    void setPoints(const QVector<QPoint>& points);
     void removeLastPoint();
     void moveBy(const QPoint& delta);
     int pointCount() const { return m_points.size(); }

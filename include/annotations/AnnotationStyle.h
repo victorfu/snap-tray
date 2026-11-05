@@ -43,4 +43,6 @@ bool apply(AnnotationItem& item, StyleProperty property, const QVariant& value);
 // `from` onto `to`; geometry, text, and visibility of `to` are untouched.
 // Returns false when the two items are not the same stylable kind.
 bool copyStyle(const AnnotationItem& from, AnnotationItem& to);
+// True when the two items are the same stylable kind with equal style values.
+bool equalStyle(const AnnotationItem& a, const AnnotationItem& b);
 } // namespace AnnotationStyle

@@ -194,6 +194,14 @@ void TextBoxAnnotation::setWrapWidth(qreal width)
     invalidateCache();
 }
 
+void TextBoxAnnotation::restoreLayout(const QString& text, const QRectF& box, qreal wrapWidth)
+{
+    m_text = text;
+    m_box = box;
+    m_wrapWidth = wrapWidth;
+    invalidateCache();
+}
+
 void TextBoxAnnotation::moveBy(const QPointF &delta)
 {
     m_position += delta;

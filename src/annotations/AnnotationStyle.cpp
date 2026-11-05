@@ -179,6 +179,15 @@ bool copyStyle(const AnnotationItem& from, AnnotationItem& to)
     return true;
 }
 
+bool equalStyle(const AnnotationItem& a, const AnnotationItem& b)
+{
+    const AnnotationStyleValues x = read(a);
+    const AnnotationStyleValues y = read(b);
+    return x.kind != StyleTargetKind::None && x.kind == y.kind && x.color == y.color
+        && x.width == y.width && x.filled == y.filled && x.arrowStyle == y.arrowStyle
+        && x.lineStyle == y.lineStyle && x.font == y.font;
+}
+
 bool apply(AnnotationItem& item, StyleProperty property, const QVariant& value)
 {
     const StyleTargetKind kind = kindOf(item);
