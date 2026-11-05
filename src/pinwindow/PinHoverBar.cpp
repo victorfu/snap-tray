@@ -132,7 +132,8 @@ bool PinHoverBar::barFits() const
     // differ by language, so this is measured, not a fixed width.
     if (!m_barRoot || !m_viewModel) return false;
     const char* mode = m_viewModel->compact() ? "compactWidth" : "fullWidth";
-    return qCeil(m_barRoot->property(mode).toReal()) <= m_pin.width() - 2 * kBottomInset;
+    return qCeil(m_barRoot->property(mode).toReal()) <= m_pin.width() - 2 * kBottomInset
+        && qCeil(m_barRoot->implicitHeight()) <= m_pin.height() - 2 * kBottomInset;
 }
 
 void PinHoverBar::positionBar()
@@ -234,8 +235,15 @@ void PinHoverBar::hideNow()
 
 void PinHoverBar::setSuppressed(bool suppressed)
 {
+    const bool lifted = m_suppressed && !suppressed;
     m_suppressed = suppressed;
-    if (suppressed) hideNow();
+    if (suppressed) {
+        hideNow();
+        return;
+    }
+    // After a click, drag, toolbar or layout session the pointer may still be
+    // on the pin: the bar comes back without leaving and re-entering.
+    if (lifted && !isBarVisible() && containsGlobal(cursorPos())) m_showTimer.start();
 }
 
 bool PinHoverBar::isBarVisible() const { return m_barView && m_barView->isVisible(); }
@@ -302,7 +310,12 @@ bool PinHoverBar::eventFilter(QObject* obj, QEvent* event)
     case QEvent::ShortcutOverride:
     case QEvent::KeyPress: {
         auto* key = static_cast<QKeyEvent*>(event);
-        if (key->key() != Qt::Key_Escape) break;
+        if (key->key() != Qt::Key_Escape) {
+            // The panel is pointer-only: any other key closes it and then
+            // reaches the pin as usual (no rotating behind an open panel).
+            if (event->type() == QEvent::KeyPress) hidePanel();
+            break;
+        }
         key->accept();
         if (event->type() == QEvent::KeyPress) hidePanel();
         return true;

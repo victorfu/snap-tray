@@ -25,6 +25,9 @@ private slots:
     void tinyPinNeverShows();
     void barNeverWiderThanPin();
     void compactWhenFullBarDoesNotFit();
+    void reappearsWhenSuppressionLifts();
+    void shortWidePinNeverShows();
+    void otherKeyClosesPanel();
     void suppressedHidesImmediately();
     void panelEscClosesIt();
     void destroyWhileOpenIsClean();
@@ -197,6 +200,43 @@ void tst_PinHoverBar::compactWhenFullBarDoesNotFit()
     // Wide again: the full bar comes back.
     m_bar->setPinGeometry(pinRect());
     QVERIFY(!m_vm->compact());
+}
+
+// Review #225-2: after a click or drag, the bar comes back while the
+// pointer is still on the pin.
+void tst_PinHoverBar::reappearsWhenSuppressionLifts()
+{
+    m_bar->showNow();
+    m_bar->setSuppressed(true);
+    QVERIFY(!m_bar->isBarVisible());
+    m_bar->setSuppressed(false);
+    QTRY_VERIFY_WITH_TIMEOUT(m_bar->isBarVisible(), 1500);
+    // Not when the pointer has gone.
+    m_bar->setSuppressed(true);
+    m_cursor = pinRect().bottomRight() + QPoint(300, 300);
+    m_bar->setSuppressed(false);
+    QTest::qWait(PinHoverBar::kShowDelayMs + 300);
+    QVERIFY(!m_bar->isBarVisible());
+}
+
+// Review #225-4: a wide but short pin (one line of text) gets no bar.
+void tst_PinHoverBar::shortWidePinNeverShows()
+{
+    m_bar->setPinGeometry(QRect(pinRect().topLeft(), QSize(600, 28)));
+    m_bar->showNow();
+    QVERIFY(!m_bar->isBarVisible());
+}
+
+// Review #225-1: the panel is pointer-only; a key other than Esc closes it
+// and reaches the pin as usual.
+void tst_PinHoverBar::otherKeyClosesPanel()
+{
+    m_bar->showNow();
+    m_vm->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QTRY_VERIFY(m_bar->isPanelVisible());
+    QTest::keyClick(m_owner.get(), Qt::Key_1);
+    QTRY_VERIFY(!m_bar->isPanelVisible());
+    QCOMPARE(m_vm->panel(), int(PinHoverBarViewModel::NoPanel));
 }
 
 QTEST_MAIN(tst_PinHoverBar)

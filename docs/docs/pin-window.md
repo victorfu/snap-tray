@@ -25,7 +25,7 @@ Rest the pointer on a pin and a small bar appears at its bottom edge:
 - **● Live** / **⏸ Paused** appears while Live Update runs; click it to pause or resume.
 - **Annotate** opens the annotation toolbar (same as `Space`), and **⋯** opens the full menu.
 
-The bar fades out when the pointer leaves the pin, and stays hidden while you drag, resize, annotate, or use click-through. On a narrow pin it keeps only the two values and **⋯**. Turn it off in **Settings → Advanced → Pin Window → Show controls on hover**. Press `Tab` on a focused pin to reach it with the keyboard.
+The bar fades out when the pointer leaves the pin, and stays hidden while you drag, resize, annotate, or use click-through. On a narrow pin it keeps only the two values and **⋯**. Turn it off in **Settings → Advanced → Pin Window → Show controls on hover**. Everything on the bar also has a keyboard shortcut (below).
 
 ### Mouse actions
 

@@ -290,8 +290,8 @@ Applies to pin windows (#225). Design: `docs/superpowers/specs/2026-11-05-pin-wi
 
 - A pin is the image. Resting the pointer on it for 300 ms shows a hover bar inside its bottom edge (`PinHoverBar`, a non-activating QML tool window): **Zoom N%**, **Opacity N%**, a Live/Paused chip while Live Update runs, **Annotate** and **⋯**. It fades 500 ms after the pointer leaves the pin, the bar and its panel, and never shows during a drag or edge resize, with the annotation toolbar open, in region-layout editing, in click-through, or with "Show controls on hover" off.
 - The bar keeps an 8 px inset on every side. When the full bar does not fit, it shows the two values and **⋯**; when even that does not fit, it is not shown. Both widths are measured (labels differ by language).
-- A value opens a panel above its button: slider, presets and **Reset to 100%**; Esc or a click outside closes it and returns focus to the button.
-- Keys on a focused pin: `Ctrl/Cmd` + `=` / `-` / `0` (zoom in, out, reset), `[` / `]` (opacity), `Ctrl/Cmd` + `]` (reset opacity). `Tab` moves into the bar.
+- A value opens a panel above its button: slider, presets and **Reset to 100%**; Esc, another key or a click outside closes it.
+- Keys on a focused pin: `Ctrl/Cmd` + `=` / `-` / `0` (zoom in, out, reset), `[` / `]` (opacity), `Ctrl/Cmd` + `]` (reset opacity), `Space` (annotate), `L` / `P` (Live). The bar and panel are pointer-only (non-activating windows); every action on them has one of these keys, and any key other than Esc closes an open panel before the pin handles it.
 - Badges name the value ("Zoom 150%", "Opacity 80%") for every change; the zoom badge moves to the top-right while Live Update holds the top-left.
 - Click-through shows "Click-through · Turn off ✕" on the shared glass at the pin's top-right; the tray adds "Turn Off Click-through for All Pins" while any pin uses it.
 - The context menu is grouped View | Output | Modes | Pins | Close, with shortcut hints.

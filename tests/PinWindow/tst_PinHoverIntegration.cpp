@@ -24,6 +24,9 @@ private slots:
     void suppressedStates();
     void moreOpensContextMenu();
     void closingPinClosesBar();
+    void rotateKeepsBarInside();
+    void clickedBarComesBack();
+    void liveTooltipOnlyOnDot();
 
 private:
     static QPixmap pixmap()
@@ -138,6 +141,40 @@ void TestPinHoverIntegration::closingPinClosesBar()
     other.show();
     QVERIFY(QTest::qWaitForWindowExposed(&other));
     QTest::keyClick(&other, Qt::Key_Escape);
+}
+
+// Review #225-3: rotating changes the pin's size without a zoom change.
+void TestPinHoverIntegration::rotateKeepsBarInside()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+    window.rotateRight();
+    QTRY_VERIFY(window.frameGeometry().size() == QSize(320, 480));
+    QTRY_VERIFY(window.frameGeometry().contains(window.m_hoverBar->barGeometry()));
+}
+
+// Review #225-2: a click on the image hides the bar only while pressed.
+void TestPinHoverIntegration::clickedBarComesBack()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+    QTest::mousePress(&window, Qt::LeftButton, Qt::NoModifier, QPoint(100, 100));
+    QTest::mouseRelease(&window, Qt::LeftButton, Qt::NoModifier, QPoint(100, 100));
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+}
+
+// Review #225-5: the Live hint belongs to the dot, not the whole image.
+void TestPinHoverIntegration::liveTooltipOnlyOnDot()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    window.m_isLiveMode = true;
+    QVERIFY(window.liveToolTipAt(QPoint(240, 160)).isEmpty());
+    QVERIFY(!window.liveToolTipAt(QPoint(PinWindow::kLiveIndicatorMargin + 3, PinWindow::kLiveIndicatorMargin + 3)).isEmpty());
+    window.m_isLiveMode = false;
+    QVERIFY(window.liveToolTipAt(QPoint(PinWindow::kLiveIndicatorMargin + 3, PinWindow::kLiveIndicatorMargin + 3)).isEmpty());
+    QVERIFY(window.toolTip().isEmpty());
 }
 
 QTEST_MAIN(TestPinHoverIntegration)

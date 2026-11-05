@@ -161,6 +161,10 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    bool event(QEvent* event) override;
+    // The Live dot's hint (#225), only over the dot; empty elsewhere.
+    QString liveToolTipAt(const QPoint& pos) const;
     void focusInEvent(QFocusEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;

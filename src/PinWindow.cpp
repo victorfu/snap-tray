@@ -2618,6 +2618,40 @@ void PinWindow::enterEvent(QEnterEvent* event)
     QWidget::enterEvent(event);
 }
 
+void PinWindow::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    // Rotation, flip, smoothing and window-manager resizes change the size
+    // without a zoom change; the bar follows (review #225-3).
+    syncHoverBar();
+}
+
+QString PinWindow::liveToolTipAt(const QPoint& pos) const
+{
+    if (!m_isLiveMode) return {};
+    const QRect dot(kLiveIndicatorMargin, kLiveIndicatorMargin,
+                    2 * kLiveIndicatorRadius, 2 * kLiveIndicatorRadius);
+    return dot.adjusted(-kLiveIndicatorMargin / 2, -kLiveIndicatorMargin / 2,
+                        kLiveIndicatorMargin / 2, kLiveIndicatorMargin / 2).contains(pos)
+        ? tr("Live Update (L to stop, P to pause)") : QString();
+}
+
+bool PinWindow::event(QEvent* event)
+{
+    if (event->type() == QEvent::ToolTip) {
+        auto* help = static_cast<QHelpEvent*>(event);
+        const QString text = liveToolTipAt(help->pos());
+        if (text.isEmpty()) {
+            QToolTip::hideText();
+            event->ignore();
+        } else {
+            QToolTip::showText(help->globalPos(), text, this);
+        }
+        return true;
+    }
+    return QWidget::event(event);
+}
+
 void PinWindow::leaveEvent(QEvent* event)
 {
     if (m_hoverBar) m_hoverBar->pointerLeft();
@@ -2663,8 +2697,6 @@ bool PinWindow::hoverBarSuppressed() const
 
 void PinWindow::syncHoverBar()
 {
-    // The Live dot explains its shortcuts (#225).
-    setToolTip(m_isLiveMode ? tr("Live Update (L to stop, P to pause)") : QString());
     if (!m_hoverBar) return;
     // The native window can be recreated (see hideEvent); follow it.
     m_hoverBar->setOwner(windowHandle());

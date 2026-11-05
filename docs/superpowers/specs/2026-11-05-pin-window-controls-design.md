@@ -46,8 +46,8 @@ Out of scope:
 ### When it appears
 
 - After the pointer has rested on the pin for **300 ms**. The delay keeps the bar from flashing as the pointer crosses the pin.
-- When the pin gets keyboard focus.
-- `Tab` from the pin moves focus into the bar. Left/Right move between buttons, and Enter/Space activate one.
+- When the pin gets keyboard focus by Tab (shown only; see the keyboard note below).
+- **Keyboard (implementation ruling, final review):** the bar and panel are non-activating windows, so they are pointer-only. Every action on them has a key on the focused pin (§2 Keyboard, `Space`, `L`/`P`), and any key other than Esc closes an open panel before the pin handles it.
 
 ### When it hides
 
@@ -77,7 +77,7 @@ Out of scope:
 ### Both panels
 
 - Each panel is a popup window anchored to its button. It installs its key/click-outside filter only while it is open, like `ToolbarOverflowPopup`.
-- Esc or a click outside closes it, and focus returns to the button.
+- Esc, any other key, or a click outside closes it.
 - Each slider and preset has an accessible name.
 
 ### Keyboard (pin focused)
