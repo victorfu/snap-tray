@@ -51,6 +51,9 @@ private slots:
     void testSaveLoadShadowEnabled_True();
     void testSaveLoadShadowEnabled_False();
 
+    // Hover controls (#225)
+    void testShowHoverControlsDefaultsOnAndRoundTrips();
+
     // Max cache files tests
     void testLoadMaxCacheFiles_DefaultValue();
     void testSaveLoadMaxCacheFiles_Roundtrip();
@@ -82,6 +85,7 @@ void tst_PinWindowSettingsManager::clearAllTestSettings()
     settings.remove("pinWindow/opacityStep");
     settings.remove("pinWindow/zoomStep");
     settings.remove("pinWindow/shadowEnabled");
+    settings.remove("pinWindow/showHoverControls");
     settings.remove("history/maxEntries");
     settings.sync();
 }
@@ -348,6 +352,17 @@ void tst_PinWindowSettingsManager::testConstants_DefaultValues()
     QCOMPARE(PinWindowSettingsManager::kDefaultZoomStep, 0.05);
     QCOMPARE(PinWindowSettingsManager::kDefaultShadowEnabled, true);
     QCOMPARE(PinWindowSettingsManager::kDefaultMaxCacheFiles, 20);
+}
+
+void tst_PinWindowSettingsManager::testShowHoverControlsDefaultsOnAndRoundTrips()
+{
+    auto& mgr = PinWindowSettingsManager::instance();
+    QVERIFY(mgr.loadShowHoverControls());
+    QCOMPARE(PinWindowSettingsManager::kDefaultShowHoverControls, true);
+    mgr.saveShowHoverControls(false);
+    QVERIFY(!mgr.loadShowHoverControls());
+    mgr.saveShowHoverControls(true);
+    QVERIFY(mgr.loadShowHoverControls());
 }
 
 QTEST_MAIN(tst_PinWindowSettingsManager)

@@ -1,4 +1,8 @@
 #include "PinWindow.h"
+#include <QScopeGuard>
+#include "pinwindow/PinHoverBar.h"
+#include "qml/PinHoverBarViewModel.h"
+#include "qml/ToolbarTooltipController.h"
 #include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationStyleEditor.h"
@@ -90,7 +94,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QScreen>
 #include <QtMath>
 #include <QDateTime>
-#include <QToolTip>
+#include <QHelpEvent>
 #include <QTextEdit>
 #include <QLabel>
 #include <QTimer>
@@ -700,12 +704,60 @@ void PinWindow::setZoomLevel(qreal zoom)
     }
     updateSize();
     syncCropHandlerImageSize();
+    syncHoverBar();
 }
 
 void PinWindow::setOpacity(qreal opacity)
 {
     m_opacity = qBound(0.1, opacity, 1.0);
     setWindowOpacity(m_opacity);
+    if (m_currentOpacityAction) {
+        m_currentOpacityAction->setText(QString("%1%").arg(qRound(m_opacity * 100)));
+    }
+    syncHoverBar();
+}
+
+void PinWindow::showZoomBadge()
+{
+    m_uiIndicators->showZoomIndicator(tr("Zoom %1%").arg(qRound(m_zoomLevel * 100)), m_isLiveMode);
+}
+
+void PinWindow::showOpacityBadge()
+{
+    m_uiIndicators->showOpacityIndicator(tr("Opacity %1%").arg(qRound(m_opacity * 100)));
+}
+
+void PinWindow::applyUserZoom(qreal zoom)
+{
+    setZoomLevel(zoom);
+    showZoomBadge();
+}
+
+void PinWindow::applyUserOpacity(qreal opacity)
+{
+    setOpacity(opacity);
+    showOpacityBadge();
+}
+
+void PinWindow::resetZoom()
+{
+    applyUserZoom(1.0);
+}
+
+void PinWindow::resetOpacity()
+{
+    applyUserOpacity(1.0);
+}
+
+void PinWindow::zoomByStep(int direction)
+{
+    if (isRegionLayoutMode()) return;
+    const qreal step = PinWindowSettingsManager::instance().loadZoomStep();
+    const qreal target = qBound(minimumPinWindowZoom(transformedContentLogicalSize()),
+                                m_zoomLevel + (direction >= 0 ? step : -step), 5.0);
+    if (qFuzzyCompare(target, m_zoomLevel)) return;
+    // Anchored at the top-left corner, like the wheel.
+    applyUserZoom(target);
 }
 
 void PinWindow::adjustOpacityByStep(int direction)
@@ -719,8 +771,7 @@ void PinWindow::adjustOpacityByStep(int direction)
         return;
     }
 
-    setOpacity(newOpacity);
-    m_uiIndicators->showOpacityIndicator(m_opacity);
+    applyUserOpacity(newOpacity);
 }
 
 void PinWindow::rotateRight()
@@ -1166,56 +1217,137 @@ void PinWindow::createContextMenu()
 {
     m_contextMenu = new QMenu(this);
 
+    // Grouped by task (#225): View | Output | Modes | Pins | Close.
     // Show Toolbar action
     m_showToolbarAction = m_contextMenu->addAction(tr("Show Toolbar"));
+    m_showToolbarAction->setObjectName(QStringLiteral("pinMenuShowToolbar"));
     m_showToolbarAction->setShortcut(QKeySequence(Qt::Key_Space));
     m_showToolbarAction->setCheckable(true);
     connect(m_showToolbarAction, &QAction::triggered, this, &PinWindow::toggleToolbar);
 
     // Show border option (placed right after Show Toolbar)
     m_showBorderAction = m_contextMenu->addAction(tr("Show Border"));
+    m_showBorderAction->setObjectName(QStringLiteral("pinMenuShowBorder"));
     m_showBorderAction->setCheckable(true);
     m_showBorderAction->setChecked(m_showBorder);
     connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
 
-    m_moveToScreenMenu = m_contextMenu->addMenu(tr("Move to Screen"));
+    // Zoom submenu
+    QMenu* zoomMenu = m_contextMenu->addMenu(tr("Zoom"));
+    zoomMenu->menuAction()->setObjectName(QStringLiteral("pinMenuZoom"));
+
+    QAction* zoomInAction = zoomMenu->addAction(tr("Zoom In"));
+    zoomInAction->setObjectName(QStringLiteral("pinMenuZoomIn"));
+    zoomInAction->setShortcut(QKeySequence::ZoomIn);
+    connect(zoomInAction, &QAction::triggered, this, [this]() { zoomByStep(1); });
+    QAction* zoomOutAction = zoomMenu->addAction(tr("Zoom Out"));
+    zoomOutAction->setObjectName(QStringLiteral("pinMenuZoomOut"));
+    zoomOutAction->setShortcut(QKeySequence::ZoomOut);
+    connect(zoomOutAction, &QAction::triggered, this, [this]() { zoomByStep(-1); });
+    QAction* zoomResetAction = zoomMenu->addAction(tr("Reset to 100%"));
+    zoomResetAction->setObjectName(QStringLiteral("pinMenuZoomReset"));
+    zoomResetAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
+    connect(zoomResetAction, &QAction::triggered, this, &PinWindow::resetZoom);
+    zoomMenu->addSeparator();
+
+    // Preset zoom levels
+    QAction* zoom33Action = zoomMenu->addAction(tr("33.3%"));
+    connect(zoom33Action, &QAction::triggered, this, [this]() { applyUserZoom(1.0 / 3.0); });
+
+    QAction* zoom50Action = zoomMenu->addAction(tr("50%"));
+    connect(zoom50Action, &QAction::triggered, this, [this]() { applyUserZoom(0.5); });
+
+    QAction* zoom67Action = zoomMenu->addAction(tr("66.7%"));
+    connect(zoom67Action, &QAction::triggered, this, [this]() { applyUserZoom(2.0 / 3.0); });
+
+    QAction* zoom100Action = zoomMenu->addAction(tr("100%"));
+    connect(zoom100Action, &QAction::triggered, this, [this]() { applyUserZoom(1.0); });
+
+    QAction* zoom200Action = zoomMenu->addAction(tr("200%"));
+    connect(zoom200Action, &QAction::triggered, this, [this]() { applyUserZoom(2.0); });
+
+    zoomMenu->addSeparator();
+
+    // Current zoom level display (disabled, for display only)
+    m_currentZoomAction = zoomMenu->addAction(QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    m_currentZoomAction->setEnabled(false);
+
+    // Smoothing option
+    QAction* smoothingAction = zoomMenu->addAction(tr("Smoothing"));
+    smoothingAction->setCheckable(true);
+    smoothingAction->setChecked(m_smoothing);
+    connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
+        m_smoothing = checked;
+        updateSize();
+        });
+
+    // Opacity sits next to Zoom (#225), not under Image processing.
+    QMenu* opacityMenu = m_contextMenu->addMenu(tr("Opacity"));
+    opacityMenu->menuAction()->setObjectName(QStringLiteral("pinMenuOpacity"));
+    const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
+    QAction* increaseOpacityAction = opacityMenu->addAction(
+        tr("Increase by %1%").arg(opacityStepPercent));
+    increaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketRight));
+    connect(increaseOpacityAction, &QAction::triggered, this, [this]() {
+        adjustOpacityByStep(1);
+        });
+
+    QAction* decreaseOpacityAction = opacityMenu->addAction(
+        tr("Decrease by %1%").arg(opacityStepPercent));
+    decreaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketLeft));
+    connect(decreaseOpacityAction, &QAction::triggered, this, [this]() {
+        adjustOpacityByStep(-1);
+        });
+
+    QAction* opacityResetAction = opacityMenu->addAction(tr("Reset to 100%"));
+    opacityResetAction->setObjectName(QStringLiteral("pinMenuOpacityReset"));
+    opacityResetAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_BracketRight));
+    connect(opacityResetAction, &QAction::triggered, this, &PinWindow::resetOpacity);
+    opacityMenu->addSeparator();
+    m_currentOpacityAction = opacityMenu->addAction(QString("%1%").arg(qRound(m_opacity * 100)));
+    m_currentOpacityAction->setEnabled(false);
+
+    // Image processing submenu
+    QMenu* imageProcessingMenu = m_contextMenu->addMenu(tr("Image processing"));
+    imageProcessingMenu->menuAction()->setObjectName(QStringLiteral("pinMenuImageProcessing"));
+
+    QAction* rotateLeftAction = imageProcessingMenu->addAction(tr("Rotate left"));
+    connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
+
+    QAction* rotateRightAction = imageProcessingMenu->addAction(tr("Rotate right"));
+    connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
+
+    QAction* horizontalFlipAction = imageProcessingMenu->addAction(tr("Horizontal flip"));
+    connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
+
+    QAction* verticalFlipAction = imageProcessingMenu->addAction(tr("Vertical flip"));
+    connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
+
+    imageProcessingMenu->addSeparator();
+    QAction* cropAction = imageProcessingMenu->addAction(tr("Crop"));
+    connect(cropAction, &QAction::triggered, this, [this]() {
+        if (!m_toolbar) {
+            initializeAnnotationComponents();
+        }
+        showToolbar();
+        handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    });
 
     m_contextMenu->addSeparator();
 
     QAction* copyAction = m_contextMenu->addAction(tr("Copy to Clipboard"));
+    copyAction->setObjectName(QStringLiteral("pinMenuCopy"));
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
 
     QAction* saveAction = m_contextMenu->addAction(tr("Save to file"));
+    saveAction->setObjectName(QStringLiteral("pinMenuSave"));
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
-    // Reuse the HistoryWindow translation context for the shared label so PinWindow
-    // stays aligned with the existing QML translation catalogs.
-    QAction* openCacheFolderAction = m_contextMenu->addAction(
-        QCoreApplication::translate("HistoryWindow", "Open History Folder"));
-    connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
-
-    // Do not advertise click-through on platforms whose native implementation
-    // cannot actually remove this window from pointer hit-testing.
-    if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
-        m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
-        m_clickThroughAction->setCheckable(true);
-        m_clickThroughAction->setChecked(m_clickThrough);
-        connect(m_clickThroughAction, &QAction::toggled,
-                this, &PinWindow::setClickThrough);
-    }
-
-    m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
-    connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
-
-    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
-    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
-
-    m_contextMenu->addSeparator();
-
     // Watermark submenu
     QMenu* watermarkMenu = m_contextMenu->addMenu(tr("Watermark"));
+    watermarkMenu->menuAction()->setObjectName(QStringLiteral("pinMenuWatermark"));
 
     // Enable watermark action
     QAction* enableWatermarkAction = watermarkMenu->addAction(tr("Enable"));
@@ -1265,83 +1397,9 @@ void PinWindow::createContextMenu()
         update();
         });
 
-    // Zoom submenu
-    QMenu* zoomMenu = m_contextMenu->addMenu(tr("Zoom"));
-
-    // Preset zoom levels
-    QAction* zoom33Action = zoomMenu->addAction(tr("33.3%"));
-    connect(zoom33Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0 / 3.0); });
-
-    QAction* zoom50Action = zoomMenu->addAction(tr("50%"));
-    connect(zoom50Action, &QAction::triggered, this, [this]() { setZoomLevel(0.5); });
-
-    QAction* zoom67Action = zoomMenu->addAction(tr("66.7%"));
-    connect(zoom67Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0 / 3.0); });
-
-    QAction* zoom100Action = zoomMenu->addAction(tr("100%"));
-    connect(zoom100Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0); });
-
-    QAction* zoom200Action = zoomMenu->addAction(tr("200%"));
-    connect(zoom200Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0); });
-
-    zoomMenu->addSeparator();
-
-    // Current zoom level display (disabled, for display only)
-    m_currentZoomAction = zoomMenu->addAction(QString("%1%").arg(qRound(m_zoomLevel * 100)));
-    m_currentZoomAction->setEnabled(false);
-
-    // Smoothing option
-    QAction* smoothingAction = zoomMenu->addAction(tr("Smoothing"));
-    smoothingAction->setCheckable(true);
-    smoothingAction->setChecked(m_smoothing);
-    connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
-        m_smoothing = checked;
-        updateSize();
-        });
-
-    // Image processing submenu
-    QMenu* imageProcessingMenu = m_contextMenu->addMenu(tr("Image processing"));
-
-    QAction* rotateLeftAction = imageProcessingMenu->addAction(tr("Rotate left"));
-    connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
-
-    QAction* rotateRightAction = imageProcessingMenu->addAction(tr("Rotate right"));
-    connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
-
-    QAction* horizontalFlipAction = imageProcessingMenu->addAction(tr("Horizontal flip"));
-    connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
-
-    QAction* verticalFlipAction = imageProcessingMenu->addAction(tr("Vertical flip"));
-    connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
-
-    imageProcessingMenu->addSeparator();
-    QAction* cropAction = imageProcessingMenu->addAction(tr("Crop"));
-    connect(cropAction, &QAction::triggered, this, [this]() {
-        if (!m_toolbar) {
-            initializeAnnotationComponents();
-        }
-        showToolbar();
-        handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
-    });
-
-    QMenu* opacityMenu = imageProcessingMenu->addMenu(tr("Opacity"));
-    const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
-    QAction* increaseOpacityAction = opacityMenu->addAction(
-        tr("Increase by %1%").arg(opacityStepPercent));
-    increaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketRight));
-    connect(increaseOpacityAction, &QAction::triggered, this, [this]() {
-        adjustOpacityByStep(1);
-        });
-
-    QAction* decreaseOpacityAction = opacityMenu->addAction(
-        tr("Decrease by %1%").arg(opacityStepPercent));
-    decreaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketLeft));
-    connect(decreaseOpacityAction, &QAction::triggered, this, [this]() {
-        adjustOpacityByStep(-1);
-        });
-
     // Info submenu - displays image properties
     m_infoMenu = m_contextMenu->addMenu(currentDisplaySizeText());
+    m_infoMenu->menuAction()->setObjectName(QStringLiteral("pinMenuInfo"));
 
     // Copy all info action
     QAction* copyAllInfoAction = m_infoMenu->addAction(tr("Copy All"));
@@ -1366,11 +1424,30 @@ void PinWindow::createContextMenu()
     m_flipHorizontalInfoAction = addInfoItem(tr("X-mirror"), m_flipHorizontal ? tr("Yes") : tr("No"));
     m_flipVerticalInfoAction = addInfoItem(tr("Y-mirror"), m_flipVertical ? tr("Yes") : tr("No"));
 
-    // Live capture section - actions are updated dynamically in contextMenuEvent
+    // Reuse the HistoryWindow translation context for the shared label so PinWindow
+    // stays aligned with the existing QML translation catalogs.
+    QAction* openCacheFolderAction = m_contextMenu->addAction(
+        QCoreApplication::translate("HistoryWindow", "Open History Folder"));
+    openCacheFolderAction->setObjectName(QStringLiteral("pinMenuHistoryFolder"));
+    connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
+
     m_contextMenu->addSeparator();
+
+    // Do not advertise click-through on platforms whose native implementation
+    // cannot actually remove this window from pointer hit-testing.
+    if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
+        m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
+        m_clickThroughAction->setObjectName(QStringLiteral("pinMenuClickThrough"));
+        m_clickThroughAction->setCheckable(true);
+        m_clickThroughAction->setChecked(m_clickThrough);
+        connect(m_clickThroughAction, &QAction::toggled,
+                this, &PinWindow::setClickThrough);
+    }
 
     // Start/Stop Live action
     m_startLiveAction = m_contextMenu->addAction(tr("Start Live Update"));
+    m_startLiveAction->setObjectName(QStringLiteral("pinMenuLive"));
+    m_startLiveAction->setShortcut(QKeySequence(Qt::Key_L));
     connect(m_startLiveAction, &QAction::triggered, this, [this]() {
         if (m_isLiveMode) {
             stopLiveCapture();
@@ -1382,6 +1459,8 @@ void PinWindow::createContextMenu()
 
     // Pause/Resume Live action
     m_pauseLiveAction = m_contextMenu->addAction(tr("Pause Live Update"));
+    m_pauseLiveAction->setObjectName(QStringLiteral("pinMenuLivePause"));
+    m_pauseLiveAction->setShortcut(QKeySequence(Qt::Key_P));
     connect(m_pauseLiveAction, &QAction::triggered, this, [this]() {
         if (m_livePaused) {
             resumeLiveCapture();
@@ -1393,6 +1472,7 @@ void PinWindow::createContextMenu()
 
     // Frame rate submenu
     m_fpsMenu = m_contextMenu->addMenu(tr("Frame Rate"));
+    m_fpsMenu->menuAction()->setObjectName(QStringLiteral("pinMenuFrameRate"));
     QActionGroup* fpsGroup = new QActionGroup(this);
     for (int fps : {5, 10, 15, 30}) {
         QAction* fpsAction = m_fpsMenu->addAction(tr("%1 FPS").arg(fps));
@@ -1407,18 +1487,32 @@ void PinWindow::createContextMenu()
         setLiveFrameRate(action->data().toInt());
         });
 
+    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
+    m_adjustRegionLayoutAction->setObjectName(QStringLiteral("pinMenuRegionLayout"));
+    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
+
     m_contextMenu->addSeparator();
 
-    QAction* closeAction = m_contextMenu->addAction(tr("Close"));
-    closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
-    connect(closeAction, &QAction::triggered, this, &PinWindow::close);
+    m_moveToScreenMenu = m_contextMenu->addMenu(tr("Move to Screen"));
+    m_moveToScreenMenu->menuAction()->setObjectName(QStringLiteral("pinMenuMoveToScreen"));
+    m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
+    m_mergePinsAction->setObjectName(QStringLiteral("pinMenuMerge"));
+    connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
 
     QAction* closeAllPinsAction = m_contextMenu->addAction(tr("Close All Pins"));
+    closeAllPinsAction->setObjectName(QStringLiteral("pinMenuCloseAll"));
     connect(closeAllPinsAction, &QAction::triggered, this, [this]() {
         if (m_pinWindowManager) {
             m_pinWindowManager->closeAllWindows();
         }
         });
+
+    m_contextMenu->addSeparator();
+
+    QAction* closeAction = m_contextMenu->addAction(tr("Close"));
+    closeAction->setObjectName(QStringLiteral("pinMenuClose"));
+    closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
+    connect(closeAction, &QAction::triggered, this, &PinWindow::close);
 }
 
 void PinWindow::refreshMoveToScreenMenu()
@@ -2269,6 +2363,7 @@ void PinWindow::setClickThrough(bool enabled)
         return;
 
     m_clickThrough = enabled;
+    syncHoverBar();
 
     if (m_clickThrough) {
         if (m_clickThroughHoverTimer) {
@@ -2518,7 +2613,129 @@ void PinWindow::enterEvent(QEnterEvent* event)
     if (!isRegionLayoutMode()) {
         rebuildManagedCursorAt(event->position().toPoint());
     }
+    ensureHoverBar();
+    syncHoverBar();
+    if (m_hoverBar) m_hoverBar->pointerEntered();
     QWidget::enterEvent(event);
+}
+
+void PinWindow::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    // Rotation, flip, smoothing and window-manager resizes change the size
+    // without a zoom change; the bar follows (review #225-3).
+    syncHoverBar();
+}
+
+QString PinWindow::liveToolTipAt(const QPoint& pos) const
+{
+    if (!m_isLiveMode) return {};
+    const QRect dot(kLiveIndicatorMargin, kLiveIndicatorMargin,
+                    2 * kLiveIndicatorRadius, 2 * kLiveIndicatorRadius);
+    return dot.adjusted(-kLiveIndicatorMargin / 2, -kLiveIndicatorMargin / 2,
+                        kLiveIndicatorMargin / 2, kLiveIndicatorMargin / 2).contains(pos)
+        ? tr("Live Update (L to stop, P to pause)") : QString();
+}
+
+bool PinWindow::event(QEvent* event)
+{
+    switch (event->type()) {
+    case QEvent::ToolTip: {
+        auto* help = static_cast<QHelpEvent*>(event);
+        const QString text = isVisible() ? liveToolTipAt(help->pos()) : QString();
+        if (text.isEmpty()) {
+            if (m_liveTooltip) m_liveTooltip->hide();
+            event->ignore();
+        } else {
+            ensureLiveTooltip();
+            m_liveTooltip->showFor(text, QRect(help->globalPos(), QSize(1, 1)), windowHandle(),
+                                   SnapTray::TooltipPlacement::Below);
+        }
+        return true;
+    }
+    case QEvent::MouseMove:
+        if (m_liveTooltip && liveToolTipAt(static_cast<QMouseEvent*>(event)->position().toPoint()).isEmpty())
+            m_liveTooltip->hide();
+        break;
+    case QEvent::Leave:
+    case QEvent::Hide:
+    case QEvent::Move:
+    case QEvent::Resize:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonDblClick:
+    case QEvent::Wheel:
+    case QEvent::KeyPress:
+    case QEvent::WindowDeactivate:
+        if (m_liveTooltip) m_liveTooltip->hide();
+        break;
+    default:
+        break;
+    }
+    return QWidget::event(event);
+}
+
+void PinWindow::ensureLiveTooltip()
+{
+    if (m_liveTooltip) return;
+    m_liveTooltip = new SnapTray::ToolbarTooltipController(this);
+    m_liveTooltip->setAssociatedWidget(this);
+}
+
+void PinWindow::leaveEvent(QEvent* event)
+{
+    if (m_hoverBar) m_hoverBar->pointerLeft();
+    QWidget::leaveEvent(event);
+}
+
+void PinWindow::focusInEvent(QFocusEvent* event)
+{
+    QWidget::focusInEvent(event);
+    // Keyboard users reach the same controls (#225).
+    if (event->reason() == Qt::TabFocusReason || event->reason() == Qt::BacktabFocusReason) {
+        ensureHoverBar();
+        syncHoverBar();
+        if (m_hoverBar) m_hoverBar->showNow();
+    }
+}
+
+void PinWindow::ensureHoverBar()
+{
+    if (m_hoverBar) return;
+    m_hoverBarViewModel = new PinHoverBarViewModel(this);
+    m_hoverBar = new PinHoverBar(m_hoverBarViewModel, windowHandle(), this);
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::zoomRequested, this, &PinWindow::applyUserZoom);
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::opacityRequested, this, &PinWindow::applyUserOpacity);
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::annotateRequested, this, [this] {
+        if (!m_toolbar) initializeAnnotationComponents();
+        showToolbar();
+    });
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::moreRequested, this, [this] {
+        if (!m_contextMenu) createContextMenu();
+        refreshContextMenuState();
+        m_contextMenu->popup(m_hoverBar->barGeometry().topLeft());
+    });
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::pauseRequested, this, &PinWindow::pauseLiveCapture);
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::resumeRequested, this, &PinWindow::resumeLiveCapture);
+}
+
+bool PinWindow::hoverBarSuppressed() const
+{
+    return m_isDragging || m_isResizing || m_toolbarVisible || isRegionLayoutMode() || m_clickThrough
+        || !PinWindowSettingsManager::instance().loadShowHoverControls();
+}
+
+void PinWindow::syncHoverBar()
+{
+    if (!m_hoverBar) return;
+    // The native window can be recreated (see hideEvent); follow it.
+    m_hoverBar->setOwner(windowHandle());
+    m_hoverBarViewModel->setValues(m_zoomLevel, minimumPinWindowZoom(transformedContentLogicalSize()), m_opacity);
+    m_hoverBarViewModel->setStatus(!m_isLiveMode ? PinHoverBarViewModel::None
+                                   : m_livePaused ? PinHoverBarViewModel::Paused
+                                                  : PinHoverBarViewModel::Live);
+    m_hoverBar->setPinGeometry(QRect(mapToGlobal(QPoint(0, 0)), size()));
+    m_hoverBar->setPinVisible(isVisible());
+    m_hoverBar->setSuppressed(hoverBarSuppressed());
 }
 
 void PinWindow::mousePressEvent(QMouseEvent* event)
@@ -2674,6 +2891,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             // Start resizing
             m_isResizing = true;
             m_resizeHandler->startResize(edge, event->globalPosition().toPoint(), size(), pos());
+            syncHoverBar();
         }
         else {
             // Start dragging
@@ -2684,6 +2902,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
                 m_dragMoveTimer->start();
             }
             CursorManager::instance().setDragStateForWidget(this, DragState::WidgetDrag);
+            syncHoverBar();
         }
     }
 }
@@ -2828,7 +3047,8 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         syncCropHandlerImageSize();
         update();
 
-        m_uiIndicators->showZoomIndicator(m_zoomLevel);
+        showZoomBadge();
+        syncHoverBar();
 
     }
     else if (m_isDragging) {
@@ -2959,6 +3179,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         if (m_isResizing) {
             m_isResizing = false;
             m_resizeHandler->finishResize();
+            syncHoverBar();
             // Flush even if the debounce already fired while the mouse was held.
             onResizeFinished();
             rebuildManagedCursorAt(event->pos());
@@ -3035,9 +3256,7 @@ void PinWindow::wheelEvent(QWheelEvent* event)
     }
 
     // Keep top-left corner fixed - no position adjustment needed
-    setZoomLevel(newZoom);
-
-    m_uiIndicators->showZoomIndicator(m_zoomLevel);
+    applyUserZoom(newZoom);
     event->accept();
 }
 
@@ -3052,7 +3271,16 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
     if (!m_contextMenu) {
         createContextMenu();
     }
+    refreshContextMenuState();
 
+    // Use popup() instead of exec() to avoid blocking the event loop.
+    // This prevents UI freeze when global hotkeys (like F2) are pressed
+    // while the context menu is open.
+    m_contextMenu->popup(event->globalPos());
+}
+
+void PinWindow::refreshContextMenuState()
+{
     refreshMoveToScreenMenu();
 
     // Update Show Toolbar checked state
@@ -3094,11 +3322,6 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
     }
 
     refreshInfoMenu();
-
-    // Use popup() instead of exec() to avoid blocking the event loop.
-    // This prevents UI freeze when global hotkeys (like F2) are pressed
-    // while the context menu is open.
-    m_contextMenu->popup(event->globalPos());
 }
 
 void PinWindow::keyPressEvent(QKeyEvent* event)
@@ -3215,6 +3438,29 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    // Zoom and resets (#225). Ctrl/Cmd+] resets opacity; plain ] steps it.
+    const bool command = event->modifiers() & Qt::ControlModifier;
+    if (event->matches(QKeySequence::ZoomIn) || (command && event->key() == Qt::Key_Equal)) {
+        zoomByStep(1);
+        event->accept();
+        return;
+    }
+    if (event->matches(QKeySequence::ZoomOut) || (command && event->key() == Qt::Key_Minus)) {
+        zoomByStep(-1);
+        event->accept();
+        return;
+    }
+    if (command && event->key() == Qt::Key_0) {
+        resetZoom();
+        event->accept();
+        return;
+    }
+    if (command && event->key() == Qt::Key_BracketRight) {
+        resetOpacity();
+        event->accept();
+        return;
+    }
+
     // Rotation and flip shortcuts
     if (event->key() == Qt::Key_1) {
         rotateRight();
@@ -3271,6 +3517,7 @@ void PinWindow::moveEvent(QMoveEvent* event)
         m_toolManager->setDevicePixelRatio(devicePixelRatioF());
     }
     updateToolbarPosition();
+    syncHoverBar();
 }
 
 void PinWindow::applyPendingDragPosition()
@@ -3291,6 +3538,7 @@ void PinWindow::endWindowDrag()
     if (m_isDragging) {
         m_isDragging = false;
         CursorManager::instance().setDragStateForWidget(this, DragState::None);
+        syncHoverBar();
     }
 }
 
@@ -3298,6 +3546,13 @@ void PinWindow::hideEvent(QHideEvent* event)
 {
     // Hidden pins can be shown again; discard work from the previous drag.
     endWindowDrag();
+    // A native window recreation (the first QQuickWidget child, e.g. a badge)
+    // hides and re-shows the pin at once: only a hide that lasts closes the bar.
+    if (m_hoverBar) {
+        QTimer::singleShot(0, this, [this] {
+            if (!isVisible() && m_hoverBar) m_hoverBar->hideNow();
+        });
+    }
     QWidget::hideEvent(event);
 }
 
@@ -3652,6 +3907,7 @@ void PinWindow::showToolbar()
     m_toolbar->show();
 
     m_toolbarVisible = m_toolbar->isVisible();
+    syncHoverBar();
     if (!m_toolbarVisible) {
         return;
     }
@@ -3673,6 +3929,7 @@ void PinWindow::hideToolbar()
         m_toolbar->hide();
     }
     m_toolbarVisible = false;
+    syncHoverBar();
     exitAnnotationMode();
 }
 
@@ -3683,6 +3940,7 @@ void PinWindow::hideToolbarPreservingToolState()
         m_toolbar->hide();
     }
     m_toolbarVisible = false;
+    syncHoverBar();
     exitAnnotationMode(false);
 }
 
@@ -5557,6 +5815,7 @@ void PinWindow::startLiveCapture()
     // might have outlived its visible processing state before frames arrive.
     invalidateAutoBlurRequest();
     m_isLiveMode = true;
+    syncHoverBar();
 
     // Create capture engine
     m_captureEngine = ICaptureEngine::createBestEngine(this);
@@ -5564,9 +5823,9 @@ void PinWindow::startLiveCapture()
     m_captureEngine->setRegion(m_sourceRegion, sourceScreen);
     m_captureEngine->setFrameRate(m_captureFrameRate);
 
-    // Exclude self from capture to avoid infinite recursion
+    // Exclude self and the hover windows from capture to avoid infinite recursion
 #ifdef Q_OS_MACOS
-    m_captureEngine->setExcludedWindows({ winId() });
+    m_captureEngine->setExcludedWindows(liveCaptureExcludedWindowIds());
 #endif
     setWindowExcludedFromCapture(this, true);
 
@@ -5586,6 +5845,19 @@ void PinWindow::startLiveCapture()
     connect(m_liveIndicatorTimer, &QTimer::timeout, this, QOverload<>::of(&QWidget::update));
     m_liveIndicatorTimer->start(50);  // ~20fps for indicator animation
     update();
+}
+
+QList<WId> PinWindow::liveCaptureExcludedWindowIds()
+{
+    // Prepare all pin controls and both tooltip windows up front: ScreenCaptureKit
+    // fixes its excluded windows when the stream starts (PR #241 review).
+    ensureHoverBar();
+    QList<WId> ids{winId()};
+    ids.append(m_hoverBar->captureExclusionWindowIds());
+    ensureLiveTooltip();
+    if (QWindow* tooltip = m_liveTooltip->prepareCaptureExclusion(windowHandle()))
+        ids.append(tooltip->winId());
+    return ids;
 }
 
 void PinWindow::connectLiveCaptureEngineSignals()
@@ -5608,6 +5880,7 @@ void PinWindow::connectLiveCaptureEngineSignals()
 
 void PinWindow::stopLiveCapture()
 {
+    if (m_liveTooltip) m_liveTooltip->hide();
     if (m_captureTimer) {
         m_captureTimer->stop();
         if (!m_isDestructing) {
@@ -5635,6 +5908,7 @@ void PinWindow::stopLiveCapture()
 
     setWindowExcludedFromCapture(this, false);
     m_isLiveMode = false;
+    syncHoverBar();
     m_livePaused = false;
     if (!m_isDestructing) {
         refreshMosaicSources();
@@ -5650,6 +5924,7 @@ void PinWindow::pauseLiveCapture()
     if (m_captureTimer) {
         m_captureTimer->stop();
     }
+    syncHoverBar();
     refreshMosaicSources();
     update();
 }
@@ -5662,6 +5937,7 @@ void PinWindow::resumeLiveCapture()
     if (m_captureTimer) {
         m_captureTimer->start(1000 / m_captureFrameRate);
     }
+    syncHoverBar();
     update();
 }
 
@@ -6005,6 +6281,8 @@ void PinWindow::prepareForMerge()
 
 void PinWindow::enterRegionLayoutMode()
 {
+    // The hover bar hides while the layout is edited (#225).
+    const auto syncBar = qScopeGuard([this] { syncHoverBar(); });
     if (!m_hasMultiRegionData || m_isLiveMode || isRegionLayoutMode()) {
         return;
     }
@@ -6050,6 +6328,8 @@ void PinWindow::enterRegionLayoutMode()
 
 void PinWindow::exitRegionLayoutMode(bool apply)
 {
+    // The hover bar hides while the layout is edited (#225).
+    const auto syncBar = qScopeGuard([this] { syncHoverBar(); });
     if (!m_regionLayoutManager || !m_regionLayoutManager->isActive()) {
         return;
     }

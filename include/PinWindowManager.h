@@ -25,6 +25,9 @@ public:
     void setAllPinsVisible(bool visible);
     void toggleAllPinsVisibility();
     QList<PinWindow*> windows() const { return m_windows; }
+    // Click-through across pins (#225): the tray's way out.
+    bool anyClickThrough() const;
+    void disableClickThroughForAll();
     int windowCount() const { return m_windows.count(); }
     bool arePinsHidden() const { return m_pinsHidden; }
     void updateOcrLanguages(const QStringList &languages);

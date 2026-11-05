@@ -110,3 +110,18 @@ void PinWindowManager::updateOcrLanguages(const QStringList &languages)
         }
     }
 }
+
+bool PinWindowManager::anyClickThrough() const
+{
+    for (PinWindow* window : m_windows) {
+        if (window && window->isClickThrough()) return true;
+    }
+    return false;
+}
+
+void PinWindowManager::disableClickThroughForAll()
+{
+    for (PinWindow* window : m_windows) {
+        if (window) window->setClickThrough(false);
+    }
+}

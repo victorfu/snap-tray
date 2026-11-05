@@ -20,8 +20,12 @@ public:
     void setShadowMargin(int margin) { m_shadowMargin = margin; }
 
     // Show indicators
-    void showZoomIndicator(qreal zoomLevel);
-    void showOpacityIndicator(qreal opacity);
+    // The text names the value ("Zoom 150%", #225). The zoom badge moves to
+    // the top-right corner while that is free and the top-left is taken (Live).
+    void showZoomIndicator(const QString& text, bool topRight = false);
+    void showOpacityIndicator(const QString& text);
+    QString zoomBadgeText() const { return m_zoomText; }
+    QString opacityBadgeText() const { return m_opacityText; }
     void showClickThroughIndicator(bool enabled);
 
 signals:
@@ -33,6 +37,8 @@ private:
     void ensureClickThroughExitButtonCreated();
 
     QWidget* m_parentWidget = nullptr;
+    QString m_zoomText;
+    QString m_opacityText;
     int m_shadowMargin = 8;
 
     // Zoom indicator

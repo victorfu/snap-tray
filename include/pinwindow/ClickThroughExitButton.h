@@ -2,7 +2,6 @@
 #define CLICKTHROUGHEXITBUTTON_H
 
 #include <QWidget>
-#include <QLabel>
 #include <QTimer>
 
 class ClickThroughExitButton : public QWidget
@@ -16,6 +15,8 @@ public:
     void attachTo(QWidget* targetWindow);
     void setClickThroughEnabled(bool enabled);
     void updatePosition();
+    // "Click-through · Turn off ✕" (#225): the state and the exit in words.
+    QString text() const;
 
 signals:
     void exitClicked();
@@ -27,15 +28,15 @@ protected:
     void leaveEvent(QEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
+    void paintEvent(QPaintEvent* event) override;
 
 private:
     void setupUI();
-    void applyLabelStyle(bool hovered);
     void updatePositionIfNeeded();
 
     QWidget* m_targetWindow = nullptr;
     bool m_clickThroughEnabled = false;
-    QLabel* m_label = nullptr;
+    bool m_hovered = false;
     QTimer* m_raiseTimer = nullptr;
     int m_shadowMargin = 8;
 };

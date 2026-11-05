@@ -92,11 +92,16 @@
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="92" />
+        <source>Show controls on hover</source>
+        <translation>Mostrar controles al pasar el cursor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="98" />
         <source>Zoom step</source>
         <translation>Paso de zoom:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="101" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="107" />
         <source>Max history entries</source>
         <translation>Máximo de entradas del historial</translation>
     </message>
@@ -355,9 +360,19 @@
 <context>
     <name>ClickThroughExitButton</name>
     <message>
-        <location filename="../src/pinwindow/ClickThroughExitButton.cpp" line="33" />
         <source>Click-through</source>
         <translation>Clic a través</translation>
+    </message>
+    <message>
+        <location filename="../src/pinwindow/ClickThroughExitButton.cpp" line="33" />
+        <source>Click-through · Turn off ✕</source>
+        <translation>Clic a través · Desactivar ✕</translation>
+    </message>
+    <message>
+        <location filename="../src/pinwindow/ClickThroughExitButton.cpp" line="39" />
+        <location filename="../src/pinwindow/ClickThroughExitButton.cpp" line="40" />
+        <source>Turn off click-through</source>
+        <translation>Desactivar clic a través</translation>
     </message>
 </context>
 <context>
@@ -572,7 +587,7 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
-        <location filename="../src/PinWindow.cpp" line="1157" />
+        <location filename="../src/PinWindow.cpp" line="1429" />
         <source>Open History Folder</source>
         <translation>Abrir carpeta del historial</translation>
     </message>
@@ -796,14 +811,14 @@ Tamaño del archivo: %3</translation>
 <context>
     <name>MainApplication</name>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1330" />
-        <location filename="../src/MainApplication.cpp" line="1388" />
+        <location filename="../src/MainApplication.cpp" line="1340" />
+        <location filename="../src/MainApplication.cpp" line="1398" />
         <source>Finish or close the current recording first.</source>
         <translation>Termina o cierra primero la grabación actual.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1329" />
-        <location filename="../src/MainApplication.cpp" line="1387" />
+        <location filename="../src/MainApplication.cpp" line="1339" />
+        <location filename="../src/MainApplication.cpp" line="1397" />
         <source>Recording Busy</source>
         <translation>Grabación ocupada</translation>
     </message>
@@ -823,48 +838,48 @@ Tamaño del archivo: %3</translation>
         <translation>Se encontraron grabaciones sin guardar</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1301" />
+        <location filename="../src/MainApplication.cpp" line="1311" />
         <source>Recover Recordings (%1)...</source>
         <translation>Recuperar grabaciones (%1)...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="493" />
+        <location filename="../src/MainApplication.cpp" line="503" />
         <source>Recover Recordings...</source>
         <translation>Recuperar grabaciones...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1595" />
+        <location filename="../src/MainApplication.cpp" line="1605" />
         <source>low disk space</source>
         <translation>poco espacio en disco</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1613" />
+        <location filename="../src/MainApplication.cpp" line="1623" />
         <source>Warning: %1</source>
         <translation>Advertencia: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1592" />
+        <location filename="../src/MainApplication.cpp" line="1602" />
         <source>dropping frames</source>
         <translation>perdiendo fotogramas</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="509" />
+        <location filename="../src/MainApplication.cpp" line="519" />
         <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
         <translation>El diagnóstico de la grabación está en el portapapeles. No contiene imágenes, audio ni nombres de archivo.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="508" />
+        <location filename="../src/MainApplication.cpp" line="518" />
         <source>Diagnostics Copied</source>
         <translation>Diagnóstico copiado</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="501" />
+        <location filename="../src/MainApplication.cpp" line="511" />
         <source>Copy Recording Diagnostics</source>
         <translation>Copiar diagnóstico de grabación</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="513" />
-        <location filename="../src/MainApplication.cpp" line="1423" />
+        <location filename="../src/MainApplication.cpp" line="523" />
+        <location filename="../src/MainApplication.cpp" line="1433" />
         <source>Show Recording Controls</source>
         <translation>Mostrar controles de grabación</translation>
     </message>
@@ -887,14 +902,14 @@ Tamaño del archivo: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="302" />
-        <location filename="../src/MainApplication.cpp" line="1658" />
-        <location filename="../src/MainApplication.cpp" line="1727" />
+        <location filename="../src/MainApplication.cpp" line="1668" />
+        <location filename="../src/MainApplication.cpp" line="1737" />
         <source>Recording Error</source>
         <translation>Error de grabación</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1545" />
-        <location filename="../src/MainApplication.cpp" line="1548" />
+        <location filename="../src/MainApplication.cpp" line="1555" />
+        <location filename="../src/MainApplication.cpp" line="1558" />
         <source>Recording Warning</source>
         <translation>Advertencia de grabación</translation>
     </message>
@@ -930,37 +945,37 @@ Tamaño del archivo: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="423" />
-        <location filename="../src/MainApplication.cpp" line="1275" />
+        <location filename="../src/MainApplication.cpp" line="1285" />
         <source>Region Capture</source>
         <translation>Captura de región</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="453" />
-        <location filename="../src/MainApplication.cpp" line="1284" />
+        <location filename="../src/MainApplication.cpp" line="1294" />
         <source>Screen Canvas</source>
         <translation>Lienzo de pantalla</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="456" />
-        <location filename="../src/MainApplication.cpp" line="1287" />
+        <location filename="../src/MainApplication.cpp" line="1297" />
         <source>Paste</source>
         <translation>Pegar</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="459" />
-        <location filename="../src/MainApplication.cpp" line="1290" />
+        <location filename="../src/MainApplication.cpp" line="1300" />
         <source>Pin from Image...</source>
         <translation>Fijar desde imagen...</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="462" />
-        <location filename="../src/MainApplication.cpp" line="1293" />
+        <location filename="../src/MainApplication.cpp" line="1303" />
         <source>History</source>
         <translation>Historial</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="465" />
-        <location filename="../src/MainApplication.cpp" line="1259" />
+        <location filename="../src/MainApplication.cpp" line="1269" />
         <source>Hide All Pins</source>
         <translation>Ocultar todos los pines</translation>
     </message>
@@ -970,144 +985,149 @@ Tamaño del archivo: %3</translation>
         <translation>Cerrar todos los fijados</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="481" />
-        <location filename="../src/MainApplication.cpp" line="1429" />
+        <location filename="../src/MainApplication.cpp" line="472" />
+        <source>Turn Off Click-through for All Pins</source>
+        <translation>Desactivar clic a través en todos los fijados</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="491" />
+        <location filename="../src/MainApplication.cpp" line="1439" />
         <source>Record Screen</source>
         <translation>Grabar pantalla completa</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1441" />
-        <location filename="../src/MainApplication.cpp" line="1452" />
+        <location filename="../src/MainApplication.cpp" line="1451" />
+        <location filename="../src/MainApplication.cpp" line="1462" />
         <source>Cancel Recording</source>
         <translation>Cancelar grabación</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1447" />
+        <location filename="../src/MainApplication.cpp" line="1457" />
         <source>Stop Recording</source>
         <translation>Detener grabación</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1569" />
+        <location filename="../src/MainApplication.cpp" line="1579" />
         <source>Preparing to record</source>
         <translation>Preparando la grabación</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1570" />
+        <location filename="../src/MainApplication.cpp" line="1580" />
         <source>Recording starts soon</source>
         <translation>La grabación empezará pronto</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1571" />
+        <location filename="../src/MainApplication.cpp" line="1581" />
         <source>Recording</source>
         <translation>Grabando</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1572" />
+        <location filename="../src/MainApplication.cpp" line="1582" />
         <source>Recording paused</source>
         <translation>Grabación en pausa</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1573" />
+        <location filename="../src/MainApplication.cpp" line="1583" />
         <source>Finishing recording</source>
         <translation>Finalizando la grabación</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1659" />
-        <location filename="../src/MainApplication.cpp" line="1728" />
+        <location filename="../src/MainApplication.cpp" line="1669" />
+        <location filename="../src/MainApplication.cpp" line="1738" />
         <source>No screen available for recording.</source>
         <translation>No hay pantalla disponible para grabar.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="523" />
+        <location filename="../src/MainApplication.cpp" line="533" />
         <source>Check for Updates</source>
         <translation>Verificación de actualización</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="527" />
+        <location filename="../src/MainApplication.cpp" line="537" />
         <source>Settings</source>
         <translation>Configuración</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="532" />
+        <location filename="../src/MainApplication.cpp" line="542" />
         <source>Exit</source>
         <translation>Salir</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="540" />
-        <location filename="../src/MainApplication.cpp" line="1506" />
-        <location filename="../src/MainApplication.cpp" line="1508" />
+        <location filename="../src/MainApplication.cpp" line="550" />
+        <location filename="../src/MainApplication.cpp" line="1516" />
+        <location filename="../src/MainApplication.cpp" line="1518" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - Utilidad de capturas de pantalla</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1480" />
+        <location filename="../src/MainApplication.cpp" line="1490" />
         <source>Not set</source>
         <translation>No asignado</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1482" />
+        <location filename="../src/MainApplication.cpp" line="1492" />
         <source>Region Capture hotkey</source>
         <translation>Atajo de captura de región</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1484" />
+        <location filename="../src/MainApplication.cpp" line="1494" />
         <source>Paste hotkey</source>
         <translation>Atajo de pegar</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1486" />
+        <location filename="../src/MainApplication.cpp" line="1496" />
         <source>Screen Canvas hotkey</source>
         <translation>Atajo de lienzo de pantalla</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="549" />
+        <location filename="../src/MainApplication.cpp" line="559" />
         <source>OCR Success</source>
         <translation>OCR exitoso</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="550" />
+        <location filename="../src/MainApplication.cpp" line="560" />
         <source>OCR Failed</source>
         <translation>OCR fallido</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="826" />
+        <location filename="../src/MainApplication.cpp" line="836" />
         <source>Select Image to Pin</source>
         <translation>Seleccionar imagen para fijar</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="828" />
+        <location filename="../src/MainApplication.cpp" line="838" />
         <source>Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;All Files (*)</source>
         <translation>Imágenes (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;Todos los archivos (*)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="843" />
+        <location filename="../src/MainApplication.cpp" line="853" />
         <source>Loading Image</source>
         <translation>Cargando imagen</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="893" />
-        <location filename="../src/MainApplication.cpp" line="913" />
+        <location filename="../src/MainApplication.cpp" line="903" />
+        <location filename="../src/MainApplication.cpp" line="923" />
         <source>Failed to Load Image</source>
         <translation>Error al cargar la imagen</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1054" />
+        <location filename="../src/MainApplication.cpp" line="1064" />
         <source>Hotkey Registration Failed</source>
         <translation>Error al registrar atajo de teclado</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1055" />
+        <location filename="../src/MainApplication.cpp" line="1065" />
         <source> failed to register.</source>
         <translation> no se pudo registrar.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1241" />
-        <location filename="../src/MainApplication.cpp" line="1265" />
+        <location filename="../src/MainApplication.cpp" line="1251" />
+        <location filename="../src/MainApplication.cpp" line="1275" />
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1258" />
+        <location filename="../src/MainApplication.cpp" line="1268" />
         <source>Show All Pins</source>
         <translation>Mostrar todos los pines</translation>
     </message>
@@ -1128,27 +1148,27 @@ Tamaño del archivo: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="426" />
-        <location filename="../src/MainApplication.cpp" line="1278" />
+        <location filename="../src/MainApplication.cpp" line="1288" />
         <source>Full Screen Capture</source>
         <translation>Captura de pantalla completa</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1600" />
+        <location filename="../src/MainApplication.cpp" line="1610" />
         <source>recording keys</source>
         <translation>grabando teclas</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="498" />
+        <location filename="../src/MainApplication.cpp" line="508" />
         <source>Recording Library...</source>
         <translation>Biblioteca de grabaciones...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1381" />
+        <location filename="../src/MainApplication.cpp" line="1391" />
         <source>Project Unavailable</source>
         <translation>Proyecto no disponible</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1382" />
+        <location filename="../src/MainApplication.cpp" line="1392" />
         <source>This project's recording is missing or damaged.</source>
         <translation>La grabación de este proyecto falta o está dañada.</translation>
     </message>
@@ -1163,18 +1183,18 @@ Tamaño del archivo: %3</translation>
         <translation>Guardado en %1 y copiado: pégalo en un chat o una carpeta.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1589" />
+        <location filename="../src/MainApplication.cpp" line="1599" />
         <source>edit mode</source>
         <translation>modo de edición</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1589" />
+        <location filename="../src/MainApplication.cpp" line="1599" />
         <source>quick mode</source>
         <translation>modo rápido</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="431" />
-        <location filename="../src/MainApplication.cpp" line="1281" />
+        <location filename="../src/MainApplication.cpp" line="1291" />
         <source>Delayed Capture</source>
         <translation>Captura con retraso</translation>
     </message>
@@ -1461,6 +1481,60 @@ Tamaño: %2</translation>
     </message>
 </context>
 <context>
+    <name>PinHoverBar</name>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="16" />
+        <source>Pin controls</source>
+        <translation>Controles del fijado</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="79" />
+        <source>Zoom %1%</source>
+        <translation>Zoom %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="88" />
+        <source>Opacity %1%</source>
+        <translation>Opacidad %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="100" />
+        <source>⏸ Paused</source>
+        <translation>⏸ En pausa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="100" />
+        <source>● Live</source>
+        <translation>● En vivo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="101" />
+        <source>Resume Live Update (P)</source>
+        <translation>Reanudar actualización en vivo (P)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="102" />
+        <source>Pause Live Update (P)</source>
+        <translation>Pausar actualización en vivo (P)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="113" />
+        <source>Annotate (Space)</source>
+        <translation>Anotar (Space)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="116" />
+        <source>Annotate</source>
+        <translation>Anotar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="126" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="129" />
+        <source>More</source>
+        <translation>Más</translation>
+    </message>
+</context>
+<context>
     <name>PinToolOptionsViewModel</name>
     <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="135" />
@@ -1505,29 +1579,85 @@ Tamaño: %2</translation>
     </message>
 </context>
 <context>
+    <name>PinValuePanel</name>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="24" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="41" />
+        <source>Zoom</source>
+        <translation>Zoom</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="24" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="41" />
+        <source>Opacity</source>
+        <translation>Opacidad</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="50" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="82" />
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="65" />
+        <source>Zoom level</source>
+        <translation>Nivel de zoom</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="65" />
+        <source>Opacity level</source>
+        <translation>Nivel de opacidad</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="85" />
+        <source>Zoom to %1%</source>
+        <translation>Zoom al %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="85" />
+        <source>Opacity %1%</source>
+        <translation>Opacidad %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="93" />
+        <source>Reset to 100%</source>
+        <translation>Restablecer a 100%</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="96" />
+        <source>Reset zoom to 100%</source>
+        <translation>Restablecer zoom a 100%</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="96" />
+        <source>Reset opacity to 100%</source>
+        <translation>Restablecer opacidad a 100%</translation>
+    </message>
+</context>
+<context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1131" />
+        <location filename="../src/PinWindow.cpp" line="1221" />
         <source>Show Toolbar</source>
         <translation>Mostrar barra de herramientas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1137" />
+        <location filename="../src/PinWindow.cpp" line="1228" />
         <source>Show Border</source>
         <translation>Mostrar borde</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1173" />
+        <location filename="../src/PinWindow.cpp" line="1489" />
         <source>Adjust Region Layout</source>
         <translation>Ajustar diseño de región</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1146" />
+        <location filename="../src/PinWindow.cpp" line="1337" />
         <source>Copy to Clipboard</source>
         <translation>Copiar al portapapeles</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1150" />
+        <location filename="../src/PinWindow.cpp" line="1342" />
         <source>Save to file</source>
         <translation>Guardar en archivo</translation>
     </message>
@@ -1541,326 +1671,357 @@ Tamaño: %2</translation>
         <translation>Embellecer</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1163" />
+        <location filename="../src/qml/PinToolbarViewModel.cpp" line="40" />
+        <source>Done (Space/Esc)</source>
+        <translation>Listo (Space/Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1438" />
         <source>Click-through</source>
         <translation>Clic a través</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1170" />
-        <location filename="../src/PinWindow.cpp" line="1524" />
-        <location filename="../src/PinWindow.cpp" line="1532" />
-        <location filename="../src/PinWindow.cpp" line="1546" />
-        <location filename="../src/PinWindow.cpp" line="1563" />
-        <location filename="../src/PinWindow.cpp" line="1575" />
+        <location filename="../src/PinWindow.cpp" line="1497" />
+        <location filename="../src/PinWindow.cpp" line="1656" />
+        <location filename="../src/PinWindow.cpp" line="1664" />
+        <location filename="../src/PinWindow.cpp" line="1678" />
+        <location filename="../src/PinWindow.cpp" line="1695" />
+        <location filename="../src/PinWindow.cpp" line="1707" />
         <source>Merge Pins</source>
         <translation>Combinar fijados</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1179" />
+        <location filename="../src/PinWindow.cpp" line="1348" />
         <source>Watermark</source>
         <translation>Marca de agua</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1182" />
+        <location filename="../src/PinWindow.cpp" line="1352" />
         <source>Enable</source>
         <translation>Activar</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1193" />
+        <location filename="../src/PinWindow.cpp" line="1363" />
         <source>Position</source>
         <translation>Posición</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1196" />
+        <location filename="../src/PinWindow.cpp" line="1366" />
         <source>Top-Left</source>
         <translation>Superior izquierda</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1201" />
+        <location filename="../src/PinWindow.cpp" line="1371" />
         <source>Top-Right</source>
         <translation>Superior derecha</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1206" />
+        <location filename="../src/PinWindow.cpp" line="1376" />
         <source>Bottom-Left</source>
         <translation>Inferior izquierda</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1211" />
+        <location filename="../src/PinWindow.cpp" line="1381" />
         <source>Bottom-Right</source>
         <translation>Inferior derecha</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1230" />
-        <location filename="../src/PinWindow.cpp" line="1324" />
-        <location filename="../src/PinWindow.cpp" line="2165" />
+        <location filename="../src/PinWindow.cpp" line="1235" />
+        <location filename="../src/PinWindow.cpp" line="1420" />
+        <location filename="../src/PinWindow.cpp" line="2297" />
         <source>Zoom</source>
         <translation>Zoom</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1233" />
+        <location filename="../src/PinWindow.cpp" line="1253" />
         <source>33.3%</source>
         <translation>33.3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1236" />
+        <location filename="../src/PinWindow.cpp" line="1256" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1239" />
+        <location filename="../src/PinWindow.cpp" line="1259" />
         <source>66.7%</source>
         <translation>66.7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1242" />
+        <location filename="../src/PinWindow.cpp" line="1262" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1245" />
+        <location filename="../src/PinWindow.cpp" line="1265" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1255" />
+        <location filename="../src/PinWindow.cpp" line="1275" />
         <source>Smoothing</source>
         <translation>Suavizado</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1264" />
+        <location filename="../src/PinWindow.cpp" line="1310" />
         <source>Image processing</source>
         <translation>Procesamiento de imagen</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1266" />
+        <location filename="../src/PinWindow.cpp" line="1313" />
         <source>Rotate left</source>
         <translation>Rotar a la izquierda</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1269" />
+        <location filename="../src/PinWindow.cpp" line="1316" />
         <source>Rotate right</source>
         <translation>Rotar a la derecha</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1272" />
+        <location filename="../src/PinWindow.cpp" line="1319" />
         <source>Horizontal flip</source>
         <translation>Voltear horizontalmente</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1275" />
+        <location filename="../src/PinWindow.cpp" line="1322" />
         <source>Vertical flip</source>
         <translation>Voltear verticalmente</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1279" />
+        <location filename="../src/PinWindow.cpp" line="1326" />
         <source>Crop</source>
         <translation>Recortar</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1288" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1284" />
+        <location filename="../src/PinWindow.cpp" line="1422" />
+        <location filename="../src/PinWindow.cpp" line="2299" />
         <source>Opacity</source>
         <translation>Opacidad</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1291" />
+        <location filename="../src/PinWindow.cpp" line="1288" />
         <source>Increase by %1%</source>
         <translation>Aumentar %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1298" />
+        <location filename="../src/PinWindow.cpp" line="1295" />
         <source>Decrease by %1%</source>
         <translation>Disminuir %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1308" />
+        <location filename="../src/PinWindow.cpp" line="1404" />
         <source>Copy All</source>
         <translation>Copiar todo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1323" />
-        <location filename="../src/PinWindow.cpp" line="2164" />
+        <location filename="../src/PinWindow.cpp" line="1419" />
+        <location filename="../src/PinWindow.cpp" line="2296" />
         <source>Size</source>
         <translation>Tamaño</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
+        <location filename="../src/PinWindow.cpp" line="1421" />
+        <location filename="../src/PinWindow.cpp" line="2298" />
         <source>Rotation</source>
         <translation>Rotación</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1327" />
-        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="1423" />
+        <location filename="../src/PinWindow.cpp" line="2300" />
         <source>X-mirror</source>
         <translation>Espejo X</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1328" />
-        <location filename="../src/PinWindow.cpp" line="2169" />
+        <location filename="../src/PinWindow.cpp" line="1424" />
+        <location filename="../src/PinWindow.cpp" line="2301" />
         <source>Y-mirror</source>
         <translation>Espejo Y</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1327" />
-        <location filename="../src/PinWindow.cpp" line="1328" />
-        <location filename="../src/PinWindow.cpp" line="1974" />
-        <location filename="../src/PinWindow.cpp" line="1975" />
-        <location filename="../src/PinWindow.cpp" line="2168" />
-        <location filename="../src/PinWindow.cpp" line="2169" />
+        <location filename="../src/PinWindow.cpp" line="1423" />
+        <location filename="../src/PinWindow.cpp" line="1424" />
+        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="2107" />
+        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="2301" />
         <source>Yes</source>
         <translation>Sí</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1327" />
-        <location filename="../src/PinWindow.cpp" line="1328" />
-        <location filename="../src/PinWindow.cpp" line="1974" />
-        <location filename="../src/PinWindow.cpp" line="1975" />
-        <location filename="../src/PinWindow.cpp" line="2168" />
-        <location filename="../src/PinWindow.cpp" line="2169" />
+        <location filename="../src/PinWindow.cpp" line="1423" />
+        <location filename="../src/PinWindow.cpp" line="1424" />
+        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="2107" />
+        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="2301" />
         <source>No</source>
         <translation>No</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1334" />
-        <location filename="../src/PinWindow.cpp" line="3042" />
+        <location filename="../src/PinWindow.cpp" line="1447" />
+        <location filename="../src/PinWindow.cpp" line="3245" />
         <source>Start Live Update</source>
         <translation>Iniciar actualización en vivo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1970" />
+        <location filename="../src/PinWindow.cpp" line="2102" />
         <source>Size: %1</source>
         <translation>Tamaño: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3042" />
+        <location filename="../src/PinWindow.cpp" line="3245" />
         <source>Stop Live Update</source>
         <translation>Detener actualización en vivo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1345" />
-        <location filename="../src/PinWindow.cpp" line="3046" />
+        <location filename="../src/PinWindow.cpp" line="1460" />
+        <location filename="../src/PinWindow.cpp" line="3249" />
         <source>Pause Live Update</source>
         <translation>Pausar actualización en vivo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3046" />
+        <location filename="../src/PinWindow.cpp" line="3249" />
         <source>Resume Live Update</source>
         <translation>Reanudar actualización en vivo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1356" />
+        <location filename="../src/PinWindow.cpp" line="1473" />
         <source>Frame Rate</source>
         <translation>Velocidad de cuadros</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1142" />
+        <location filename="../src/PinWindow.cpp" line="1495" />
         <source>Move to Screen</source>
         <translation>Mover a la pantalla</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1359" />
+        <location filename="../src/PinWindow.cpp" line="1477" />
         <source>%1 FPS</source>
         <translation>%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1373" />
+        <location filename="../src/PinWindow.cpp" line="1511" />
         <source>Close</source>
         <translation>Cerrar</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1377" />
+        <location filename="../src/PinWindow.cpp" line="1501" />
         <source>Close All Pins</source>
         <translation>Cerrar todos los fijados</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1477" />
+        <location filename="../src/PinWindow.cpp" line="721" />
+        <source>Zoom %1%</source>
+        <translation>Zoom %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="726" />
+        <source>Opacity %1%</source>
+        <translation>Opacidad %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1238" />
+        <source>Zoom In</source>
+        <translation>Acercar</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1242" />
+        <source>Zoom Out</source>
+        <translation>Alejar</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1246" />
+        <location filename="../src/PinWindow.cpp" line="1301" />
+        <source>Reset to 100%</source>
+        <translation>Restablecer a 100%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1609" />
         <source>Screen %1</source>
         <translation>Pantalla %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1479" />
+        <location filename="../src/PinWindow.cpp" line="1611" />
         <source> (Primary)</source>
         <translation> (Principal)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1525" />
+        <location filename="../src/PinWindow.cpp" line="1657" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>No se pueden combinar más de %1 fijados a la vez</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1533" />
+        <location filename="../src/PinWindow.cpp" line="1665" />
         <source>Need at least 2 pins to merge</source>
         <translation>Se necesitan al menos 2 fijados para combinar</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1547" />
+        <location filename="../src/PinWindow.cpp" line="1679" />
         <source>No primary screen available</source>
         <translation>No hay pantalla principal disponible</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1576" />
+        <location filename="../src/PinWindow.cpp" line="1708" />
         <source>Failed to create merged pin</source>
         <translation>Error al crear fijado combinado</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1646" />
-        <location filename="../src/PinWindow.cpp" line="1678" />
+        <location filename="../src/PinWindow.cpp" line="1778" />
+        <location filename="../src/PinWindow.cpp" line="1810" />
         <source>Failed to save screenshot: %1</source>
         <translation>Error al guardar la captura de pantalla: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1659" />
+        <location filename="../src/PinWindow.cpp" line="1791" />
         <source>Save Screenshot</source>
         <translation>Guardar captura de pantalla</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1661" />
-        <location filename="../src/PinWindow.cpp" line="6205" />
+        <location filename="../src/PinWindow.cpp" line="1793" />
+        <location filename="../src/PinWindow.cpp" line="6467" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>Imagen PNG (*.png);;Imagen JPEG (*.jpg *.jpeg);;Todos los archivos (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1691" />
-        <location filename="../src/PinWindow.cpp" line="1712" />
-        <location filename="../src/PinWindow.cpp" line="6109" />
-        <location filename="../src/PinWindow.cpp" line="6134" />
+        <location filename="../src/PinWindow.cpp" line="1823" />
+        <location filename="../src/PinWindow.cpp" line="1844" />
+        <location filename="../src/PinWindow.cpp" line="6371" />
+        <location filename="../src/PinWindow.cpp" line="6396" />
         <source>Copy failed</source>
         <translation>Error al copiar</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1712" />
+        <location filename="../src/PinWindow.cpp" line="1844" />
         <source>Copied to clipboard</source>
         <translation>Copiado al portapapeles</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1724" />
-        <location filename="../src/PinWindow.cpp" line="5478" />
+        <location filename="../src/PinWindow.cpp" line="1856" />
+        <location filename="../src/PinWindow.cpp" line="5728" />
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Espera a que termine el desenfoque automático</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1866" />
-        <location filename="../src/PinWindow.cpp" line="1944" />
+        <location filename="../src/PinWindow.cpp" line="1998" />
+        <location filename="../src/PinWindow.cpp" line="2076" />
         <source>Copied %1 characters</source>
         <translation>%1 caracteres copiados</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1870" />
+        <location filename="../src/PinWindow.cpp" line="2002" />
         <source>No text found</source>
         <translation>No se encontró texto</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1875" />
-        <location filename="../src/PinWindow.cpp" line="1891" />
+        <location filename="../src/PinWindow.cpp" line="2007" />
+        <location filename="../src/PinWindow.cpp" line="2023" />
         <source>Text copied</source>
         <translation>Texto copiado</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1955" />
+        <location filename="../src/PinWindow.cpp" line="2087" />
         <source>No QR code found</source>
         <translation>No se encontró código QR</translation>
     </message>
@@ -1869,85 +2030,90 @@ Tamaño: %2</translation>
         <translation>Tamaño: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1971" />
+        <location filename="../src/PinWindow.cpp" line="2103" />
         <source>Zoom: %1%</source>
         <translation>Zoom: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1972" />
+        <location filename="../src/PinWindow.cpp" line="2104" />
         <source>Rotation: %1°</source>
         <translation>Rotación: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1973" />
+        <location filename="../src/PinWindow.cpp" line="2105" />
         <source>Opacity: %1%</source>
         <translation>Opacidad: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="2106" />
         <source>X-mirror: %1</source>
         <translation>Espejo X: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2107" />
         <source>Y-mirror: %1</source>
         <translation>Espejo Y: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4873" />
+        <location filename="../src/PinWindow.cpp" line="2667" />
+        <source>Live Update (L to stop, P to pause)</source>
+        <translation>Actualización en vivo (L para detener, P para pausar)</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="5121" />
         <source>Stop live capture before running auto-blur</source>
         <translation>Detén la captura en vivo antes de aplicar el desenfoque automático</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4896" />
+        <location filename="../src/PinWindow.cpp" line="5144" />
         <source>Face detection unavailable</source>
         <translation>Detección de rostros no disponible</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4906" />
+        <location filename="../src/PinWindow.cpp" line="5154" />
         <source>Detection unavailable</source>
         <translation>Detección no disponible</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4936" />
+        <location filename="../src/PinWindow.cpp" line="5184" />
         <source>Unable to snapshot the current image</source>
         <translation>No se pudo tomar una instantánea de la imagen actual</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6114" />
-        <location filename="../src/PinWindow.cpp" line="6178" />
-        <location filename="../src/PinWindow.cpp" line="6214" />
+        <location filename="../src/PinWindow.cpp" line="6376" />
+        <location filename="../src/PinWindow.cpp" line="6440" />
+        <location filename="../src/PinWindow.cpp" line="6476" />
         <source>Beautify rendering failed</source>
         <translation>Error al renderizar el embellecimiento</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6003" />
+        <location filename="../src/PinWindow.cpp" line="6265" />
         <source>Unable to apply region layout</source>
         <translation>No se pudo aplicar el diseño de regiones</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6134" />
+        <location filename="../src/PinWindow.cpp" line="6396" />
         <source>Beautified image copied</source>
         <translation>Imagen embellecida copiada</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1594" />
-        <location filename="../src/PinWindow.cpp" line="1632" />
-        <location filename="../src/PinWindow.cpp" line="1666" />
-        <location filename="../src/PinWindow.cpp" line="6147" />
-        <location filename="../src/PinWindow.cpp" line="6173" />
-        <location filename="../src/PinWindow.cpp" line="6209" />
+        <location filename="../src/PinWindow.cpp" line="1726" />
+        <location filename="../src/PinWindow.cpp" line="1764" />
+        <location filename="../src/PinWindow.cpp" line="1798" />
+        <location filename="../src/PinWindow.cpp" line="6409" />
+        <location filename="../src/PinWindow.cpp" line="6435" />
+        <location filename="../src/PinWindow.cpp" line="6471" />
         <source>No image available to save</source>
         <translation>No hay imagen disponible para guardar</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6193" />
-        <location filename="../src/PinWindow.cpp" line="6228" />
+        <location filename="../src/PinWindow.cpp" line="6455" />
+        <location filename="../src/PinWindow.cpp" line="6490" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>Error al guardar la captura embellecida: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6203" />
+        <location filename="../src/PinWindow.cpp" line="6465" />
         <source>Save Beautified Screenshot</source>
         <translation>Guardar captura embellecida</translation>
     </message>
@@ -2375,15 +2541,15 @@ Tamaño: %2</translation>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="38" />
         <location filename="../src/qml/QmlRecordingControlBar.mm" line="33" />
-        <location filename="../src/MainApplication.cpp" line="1407" />
+        <location filename="../src/MainApplication.cpp" line="1417" />
         <source>Resume Recording</source>
         <translation>Reanudar grabación</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="37" />
         <location filename="../src/qml/QmlRecordingControlBar.mm" line="35" />
-        <location filename="../src/MainApplication.cpp" line="486" />
-        <location filename="../src/MainApplication.cpp" line="1408" />
+        <location filename="../src/MainApplication.cpp" line="496" />
+        <location filename="../src/MainApplication.cpp" line="1418" />
         <source>Pause Recording</source>
         <translation>Pausar grabación</translation>
     </message>
@@ -3097,28 +3263,28 @@ Tamaño: %2</translation>
         <translation>Suavizado: No</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3929" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3946" />
         <source>Save again with the current settings</source>
         <translation>Volver a guardar con la configuración actual</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3927" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3944" />
         <source>Try Again</source>
         <translation>Reintentar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3745" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3761" />
         <source>Keep Exporting</source>
         <translation>Seguir exportando</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3735" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3751" />
         <source>An export is in progress. Keep exporting or cancel it?</source>
         <translation>Hay una exportación en curso. ¿Continuar o cancelarla?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3722" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3753" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3738" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3769" />
         <source>Cancel Export</source>
         <translation>Cancelar exportación</translation>
     </message>
@@ -3231,22 +3397,22 @@ Tamaño: %2</translation>
         <translation>Libre</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3890" />
         <source>Discard</source>
         <translation>Descartar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3877" />
         <source>Keep Recording</source>
         <translation>Conservar grabación</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3848" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3865" />
         <source>The video will be deleted and cannot be recovered.</source>
         <translation>El video se eliminará y no se podrá recuperar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3852" />
         <source>Discard this recording?</source>
         <translation>¿Descartar esta grabación?</translation>
     </message>
@@ -3336,12 +3502,12 @@ Tamaño: %2</translation>
         <translation>Guardar grabación (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3717" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3733" />
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3943" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3960" />
         <source>Dismiss Error</source>
         <translation>Cerrar error</translation>
     </message>
@@ -4769,22 +4935,22 @@ Tamaño: %2</translation>
         <translation>Animación sin sonido, más pequeña que GIF. Admite todas las ediciones.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3852" />
         <source>Close without saving your changes?</source>
         <translation>¿Cerrar sin guardar los cambios?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3847" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3864" />
         <source>The project stays in Recording Library as it was last saved.</source>
         <translation>El proyecto se queda en la Biblioteca de grabaciones tal como se guardó por última vez.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3877" />
         <source>Keep Editing</source>
         <translation>Seguir editando</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3890" />
         <source>Close</source>
         <translation>Cerrar</translation>
     </message>
@@ -5473,96 +5639,96 @@ El audio no es compatible con grabaciones GIF.</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3160" />
+        <location filename="../src/RegionSelector.cpp" line="3164" />
         <source>%1 region</source>
         <translation>%1 región</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3161" />
+        <location filename="../src/RegionSelector.cpp" line="3165" />
         <source>%1 regions</source>
         <translation>%1 regiones</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3950" />
+        <location filename="../src/RegionSelector.cpp" line="3954" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Espera a que termine el desenfoque automático</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4111" />
+        <location filename="../src/RegionSelector.cpp" line="4115" />
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4111" />
+        <location filename="../src/RegionSelector.cpp" line="4115" />
         <source>Failed to merge regions. Please try again.</source>
         <translation>Error al combinar regiones. Por favor, intenta de nuevo.</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4144" />
-        <location filename="../src/RegionSelector.cpp" line="4875" />
-        <location filename="../src/RegionSelector.cpp" line="4963" />
-        <location filename="../src/RegionSelector.cpp" line="5069" />
+        <location filename="../src/RegionSelector.cpp" line="4148" />
+        <location filename="../src/RegionSelector.cpp" line="4892" />
+        <location filename="../src/RegionSelector.cpp" line="4980" />
+        <location filename="../src/RegionSelector.cpp" line="5086" />
         <source>Failed to process selected region</source>
         <translation>Error al procesar la región seleccionada</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4253" />
+        <location filename="../src/RegionSelector.cpp" line="4257" />
         <source>Failed to save screenshot: unable to process selection</source>
         <translation>No se pudo guardar la captura de pantalla: no se pudo procesar la selección</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4904" />
-        <location filename="../src/RegionSelector.cpp" line="4932" />
+        <location filename="../src/RegionSelector.cpp" line="4921" />
+        <location filename="../src/RegionSelector.cpp" line="4949" />
         <source>Copied %1 characters</source>
         <translation>%1 caracteres copiados</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4908" />
+        <location filename="../src/RegionSelector.cpp" line="4925" />
         <source>No text found</source>
         <translation>No se encontró texto</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4931" />
+        <location filename="../src/RegionSelector.cpp" line="4948" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5027" />
+        <location filename="../src/RegionSelector.cpp" line="5044" />
         <source>No QR code found</source>
         <translation>No se encontró código QR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5094" />
+        <location filename="../src/RegionSelector.cpp" line="5111" />
         <source>Face detection unavailable</source>
         <translation>Detección de rostros no disponible</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5102" />
+        <location filename="../src/RegionSelector.cpp" line="5119" />
         <source>Detection unavailable</source>
         <translation>Detección no disponible</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5312" />
+        <location filename="../src/RegionSelector.cpp" line="5329" />
         <source>Blurred %1 face(s), %2 credential(s)</source>
         <translation>Se difuminaron %1 rostro(s) y %2 credencial(es)</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5316" />
+        <location filename="../src/RegionSelector.cpp" line="5333" />
         <source>Blurred %1 face(s)</source>
         <translation>Se difuminaron %1 cara(s)</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5320" />
+        <location filename="../src/RegionSelector.cpp" line="5337" />
         <source>Blurred %1 credential(s)</source>
         <translation>Se difuminaron %1 credencial(es)</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5324" />
+        <location filename="../src/RegionSelector.cpp" line="5341" />
         <source>No faces or credentials detected</source>
         <translation>No se detectaron rostros ni credenciales</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5328" />
+        <location filename="../src/RegionSelector.cpp" line="5345" />
         <source>Detection failed</source>
         <translation>Error en la detección</translation>
     </message>
@@ -5598,7 +5764,7 @@ El audio no es compatible con grabaciones GIF.</translation>
 <context>
     <name>ScreenCanvasSession</name>
     <message>
-        <location filename="../src/ScreenCanvasSession.cpp" line="1447" />
+        <location filename="../src/ScreenCanvasSession.cpp" line="1485" />
         <source>Copy failed</source>
         <translation>Error al copiar</translation>
     </message>
@@ -6148,37 +6314,37 @@ Puede estar en uso por otra aplicación.</translation>
 <context>
     <name>SnapTray::SettingsBackend</name>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1008" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1018" />
         <source>Never</source>
         <translation>Nunca</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1096" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1106" />
         <source>Could not install the CLI. Check permissions and try again.</source>
         <translation>No se pudo instalar la CLI. Revisa los permisos e inténtalo de nuevo.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1097" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1107" />
         <source>Could not uninstall the CLI. Check permissions and try again.</source>
         <translation>No se pudo desinstalar la CLI. Revisa los permisos e inténtalo de nuevo.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1130" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1140" />
         <source>Select Screenshot Folder</source>
         <translation>Seleccionar carpeta de capturas de pantalla</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1138" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1148" />
         <source>Select Recording Folder</source>
         <translation>Seleccionar carpeta de grabaciones</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1146" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1156" />
         <source>Select Watermark Image</source>
         <translation>Seleccionar imagen de marca de agua</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1147" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1157" />
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>Imágenes (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
     </message>
@@ -6244,37 +6410,37 @@ Puede estar en uso por otra aplicación.</translation>
         <translation>Reinicia SnapTray para usar Print Screen. Si sigue abriendo Snipping Tool, cierra sesión en Windows y vuelve a iniciarla.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="347" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="348" />
         <source>Checking start on login status...</source>
         <translation>Comprobando el estado de inicio al iniciar sesión...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="375" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="376" />
         <source>Updating start on login status...</source>
         <translation>Actualizando el estado de inicio al iniciar sesión...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="426" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="427" />
         <source>Start on login status error: %1</source>
         <translation>Error del estado de inicio al iniciar sesión: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="436" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="437" />
         <source>Disabled in system startup settings. Re-enable it there.</source>
         <translation>Desactivado en la configuración de inicio del sistema. Vuelve a activarlo ahí.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="439" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="440" />
         <source>Disabled by your organization.</source>
         <translation>Desactivado por tu organización.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="442" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="443" />
         <source>Enabled by your organization.</source>
         <translation>Activado por tu organización.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="445" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="446" />
         <source>Start on login is unavailable for this package.</source>
         <translation>El inicio al iniciar sesión no está disponible para este paquete.</translation>
     </message>

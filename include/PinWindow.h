@@ -41,12 +41,15 @@ struct OCRResult;
 class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
+class PinHoverBar;
+class PinHoverBarViewModel;
 namespace SnapTray {
 class QmlToast;
 class QmlWindowedToolbar;
 class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
+class ToolbarTooltipController;
 }
 class PinToolbarViewModel;
 class PinToolOptionsViewModel;
@@ -93,6 +96,10 @@ public:
 
     void setOpacity(qreal opacity);
     qreal opacity() const { return m_opacity; }
+    // User-facing value changes (#225): apply and show the named badge.
+    void resetZoom();
+    void resetOpacity();
+    void zoomByStep(int direction);
 
     void rotateRight();  // Rotate clockwise by 90 degrees
     void rotateLeft();   // Rotate counter-clockwise by 90 degrees
@@ -125,6 +132,7 @@ public:
     void setSourceRegion(const QRect& region, QScreen* screen);
     void startLiveCapture();
     void stopLiveCapture();
+    QList<WId> liveCaptureExcludedWindowIds();
     void pauseLiveCapture();
     void resumeLiveCapture();
     bool isLiveMode() const { return m_isLiveMode; }
@@ -154,6 +162,12 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    bool event(QEvent* event) override;
+    // The Live dot's hint (#225), only over the dot; empty elsewhere.
+    QString liveToolTipAt(const QPoint& pos) const;
+    void focusInEvent(QFocusEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -170,6 +184,9 @@ private:
     friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
+    friend class TestPinHoverIntegration;
+    friend class TestPinContextMenuLayout;
+    friend class TestPinWindowEvidence;
     friend class TestPinWindowTextToolFormatting;
     friend class TestEraserHostRouting;
     struct CropUndoEntry;
@@ -436,11 +453,25 @@ private:
 
     // Zoom menu members
     QAction* m_currentZoomAction;
+    QAction* m_currentOpacityAction = nullptr;
     bool m_smoothing;
 
     // Components
     ResizeHandler* m_resizeHandler;
     UIIndicators* m_uiIndicators;
+    // The hover bar (#225), created on first hover or focus.
+    PinHoverBarViewModel* m_hoverBarViewModel = nullptr;
+    PinHoverBar* m_hoverBar = nullptr;
+    SnapTray::ToolbarTooltipController* m_liveTooltip = nullptr;
+    void ensureHoverBar();
+    void ensureLiveTooltip();
+    void syncHoverBar();
+    bool hoverBarSuppressed() const;
+    void applyUserZoom(qreal zoom);
+    void applyUserOpacity(qreal opacity);
+    void showZoomBadge();
+    void showOpacityBadge();
+    void refreshContextMenuState();
     SnapTray::QmlToast* m_toast;
 
     // Resize state

@@ -30,6 +30,10 @@ public:
     bool loadShadowEnabled() const;
     void saveShadowEnabled(bool enabled);
 
+    // The hover bar with zoom/opacity values (#225).
+    bool loadShowHoverControls() const;
+    void saveShowHoverControls(bool enabled);
+
     // Max history entries (5 - 200)
     int loadMaxCacheFiles() const;
     void saveMaxCacheFiles(int maxFiles);
@@ -39,6 +43,7 @@ public:
     static constexpr qreal kDefaultOpacityStep = 0.05;
     static constexpr qreal kDefaultZoomStep = 0.05;
     static constexpr bool kDefaultShadowEnabled = true;
+    static constexpr bool kDefaultShowHoverControls = true;
     static constexpr int kDefaultMaxCacheFiles = 20;
 
 private:
@@ -50,6 +55,7 @@ private:
     static constexpr const char* kSettingsKeyOpacityStep = "pinWindow/opacityStep";
     static constexpr const char* kSettingsKeyZoomStep = "pinWindow/zoomStep";
     static constexpr const char* kSettingsKeyShadowEnabled = "pinWindow/shadowEnabled";
+    static constexpr const char* kSettingsKeyShowHoverControls = "pinWindow/showHoverControls";
     static constexpr const char* kSettingsKeyMaxCacheFiles = "history/maxEntries";
 };
 

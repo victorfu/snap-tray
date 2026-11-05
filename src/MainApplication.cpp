@@ -468,6 +468,16 @@ void MainApplication::initialize()
     m_closeAllPinsAction = m_trayMenu->addAction(tr("Close All Pins"));
     connect(m_closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
 
+    // A way out of click-through that never needs the pin itself (#225).
+    m_disableClickThroughAction = m_trayMenu->addAction(tr("Turn Off Click-through for All Pins"));
+    m_disableClickThroughAction->setVisible(false);
+    connect(m_disableClickThroughAction, &QAction::triggered, this, [this] {
+        m_pinWindowManager->disableClickThroughForAll();
+    });
+    connect(m_trayMenu, &QMenu::aboutToShow, this, [this] {
+        m_disableClickThroughAction->setVisible(m_pinWindowManager->anyClickThrough());
+    });
+
     connect(m_pinWindowManager, &PinWindowManager::windowCreated,
             this, [this](PinWindow*) { updatePinsVisibilityActionText(); });
     connect(m_pinWindowManager, &PinWindowManager::windowClosed,

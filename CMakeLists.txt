@@ -897,6 +897,7 @@ add_library(snaptray_ui STATIC
     src/pinwindow/PinWindowPlacement.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
+    src/pinwindow/PinHoverBar.cpp
     src/pinwindow/ClickThroughExitButton.cpp
     src/pinwindow/RegionLayoutManager.cpp
     src/pinwindow/RegionLayoutRenderer.cpp
@@ -982,6 +983,7 @@ add_library(snaptray_ui STATIC
     include/pinwindow/PinWindowPlacement.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
+    include/pinwindow/PinHoverBar.h
     include/pinwindow/ClickThroughExitButton.h
     include/pinwindow/RegionLayoutManager.h
     include/pinwindow/PinMergeHelper.h
@@ -1068,6 +1070,8 @@ set_source_files_properties(src/qml/components/ThumbnailCard.qml PROPERTIES QT_R
 # Floating toolbar
 set_source_files_properties(src/qml/toolbar/FloatingToolbar.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/FloatingToolbar.qml)
 set_source_files_properties(src/qml/toolbar/ToolbarOverflowMenu.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolbarOverflowMenu.qml)
+set_source_files_properties(src/qml/pin/PinHoverBar.qml PROPERTIES QT_RESOURCE_ALIAS pin/PinHoverBar.qml)
+set_source_files_properties(src/qml/pin/PinValuePanel.qml PROPERTIES QT_RESOURCE_ALIAS pin/PinValuePanel.qml)
 set_source_files_properties(src/qml/toolbar/ToolbarButtonState.js PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolbarButtonState.js)
 set_source_files_properties(src/qml/toolbar/ToolOptionsStrip.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolOptionsStrip.qml)
 set_source_files_properties(src/qml/toolbar/ColorPaletteSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ColorPaletteSection.qml)
@@ -1225,6 +1229,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/RecordingLibraryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolbarOverflowMenu.qml
+        src/qml/pin/PinHoverBar.qml
+        src/qml/pin/PinValuePanel.qml
         src/qml/toolbar/ToolOptionsStrip.qml
         src/qml/toolbar/ColorPaletteSection.qml
         src/qml/toolbar/WidthSection.qml
@@ -1283,6 +1289,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/ToolbarViewModelBase.h
         src/qml/PinToolbarViewModel.cpp
         include/qml/PinToolbarViewModel.h
+        src/qml/PinHoverBarViewModel.cpp
+        include/qml/PinHoverBarViewModel.h
         include/qml/QmlWindowedToolbar.h
         include/qml/ToolbarOverflowPopup.h
         src/qml/PinToolOptionsViewModel.cpp

@@ -2,14 +2,15 @@
 #include "platform/WindowLevel.h"
 #include "cursor/CursorManager.h"
 #include <QMouseEvent>
-#include <QVBoxLayout>
+#include <QPainter>
+#include "GlassRenderer.h"
+#include "ToolbarStyle.h"
 #include <QShowEvent>
 #include <QHideEvent>
 
 namespace {
-constexpr int kPurpleR = 88;
-constexpr int kPurpleG = 86;
-constexpr int kPurpleB = 214;
+constexpr int kPaddingX = 12;
+constexpr int kPaddingY = 5;
 }
 
 ClickThroughExitButton::ClickThroughExitButton(QWidget* parent)
@@ -27,39 +28,32 @@ ClickThroughExitButton::ClickThroughExitButton(QWidget* parent)
     connect(m_raiseTimer, &QTimer::timeout, this, &ClickThroughExitButton::updatePositionIfNeeded);
 }
 
-void ClickThroughExitButton::setupUI()
+QString ClickThroughExitButton::text() const
 {
-    m_label = new QLabel(this);
-    m_label->setText(QStringLiteral("%1  \u2715").arg(tr("Click-through")));
-    applyLabelStyle(false);
-    m_label->adjustSize();
-
-    auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(m_label);
-
-    adjustSize();
+    return tr("Click-through \u00b7 Turn off \u2715");
 }
 
-void ClickThroughExitButton::applyLabelStyle(bool hovered)
+void ClickThroughExitButton::setupUI()
 {
-    const int alpha = hovered ? 220 : 200;
-    const int brighten = hovered ? 20 : 0;
-    m_label->setStyleSheet(
-        QStringLiteral(
-            "QLabel {"
-            "  background-color: rgba(%1, %2, %3, %4);"
-            "  color: white;"
-            "  padding: 4px 10px;"
-            "  border-radius: 4px;"
-            "  font-size: 11px;"
-            "  font-weight: bold;"
-            "}")
-        .arg(qMin(kPurpleR + brighten, 255))
-        .arg(qMin(kPurpleG + brighten, 255))
-        .arg(qMin(kPurpleB + brighten, 255))
-        .arg(alpha)
-    );
+    // The shared glass surface (#225), not a local stylesheet.
+    setAccessibleName(tr("Turn off click-through"));
+    setToolTip(tr("Turn off click-through"));
+    QFont labelFont = font();
+    labelFont.setPixelSize(11);
+    labelFont.setBold(true);
+    setFont(labelFont);
+    const QFontMetrics metrics(labelFont);
+    setFixedSize(metrics.horizontalAdvance(text()) + 2 * kPaddingX, metrics.height() + 2 * kPaddingY);
+}
+
+void ClickThroughExitButton::paintEvent(QPaintEvent*)
+{
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    const ToolbarStyleConfig& style = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    GlassRenderer::drawGlassPanel(painter, rect().adjusted(0, 0, -1, -1), style, height() / 2);
+    painter.setPen(m_hovered ? style.iconHoveredColor : style.iconNormalColor);
+    painter.drawText(rect(), Qt::AlignCenter, text());
 }
 
 void ClickThroughExitButton::attachTo(QWidget* targetWindow)
@@ -131,14 +125,16 @@ void ClickThroughExitButton::mousePressEvent(QMouseEvent* event)
 
 void ClickThroughExitButton::enterEvent(QEnterEvent* event)
 {
-    applyLabelStyle(true);
+    m_hovered = true;
+    update();
     CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
     QWidget::enterEvent(event);
 }
 
 void ClickThroughExitButton::leaveEvent(QEvent* event)
 {
-    applyLabelStyle(false);
+    m_hovered = false;
+    update();
     CursorManager::instance().clearAllForWidget(this);
     QWidget::leaveEvent(event);
 }
