@@ -75,6 +75,27 @@ public:
         return true;
     }
 
+    // Folds `state` into the newest step, so a gesture that recorded its first
+    // change stays one undo step as it continues (a held arrow key). A gesture
+    // back where it started removes its step. After an undo there is no step
+    // of its own to fold into: it is recorded as a new one.
+    bool amend(const PreviewEditState& state)
+    {
+        if (m_index == 0 || canRedo()) {
+            return record(state);
+        }
+        if (state == current()) {
+            return false;
+        }
+        if (state == m_states.at(m_index - 1)) {
+            m_states.removeLast();
+            --m_index;
+            return true;
+        }
+        m_states[m_index] = state;
+        return true;
+    }
+
     bool canUndo() const { return m_index > 0; }
     bool canRedo() const { return m_index + 1 < m_states.size(); }
 

@@ -340,7 +340,12 @@ void tst_RecordingPreviewPointer::audioPanelMixesTheTracks()
     }
     QVERIFY(QMetaObject::invokeMethod(audio, "clicked"));
     QTRY_VERIFY(panel->isVisible());
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMicrophoneGain"), "activated", Q_ARG(int, 3)));
+    // Every step the mixer accepts is offered, ends included.
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMicrophoneGain"), "activated", Q_ARG(int, 0)));
+    QCOMPARE(backend.microphoneGainDb(), -24.0);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMicrophoneGain"), "activated", Q_ARG(int, 6)));
+    QCOMPARE(backend.microphoneGainDb(), 12.0);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMicrophoneGain"), "activated", Q_ARG(int, 5)));
     QCOMPARE(backend.microphoneGainDb(), 6.0);
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewSystemAudioMute"), "clicked"));
     QVERIFY(backend.systemAudioMuted());

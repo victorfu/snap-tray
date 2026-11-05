@@ -6,37 +6,37 @@
         <location filename="../src/qml/settings/AboutSettings.qml" line="47" />
         <source>Version </source>
         <translation>Versio </translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/AboutSettings.qml" line="59" />
         <source>Copyright 2026 Victor Fu</source>
         <translation>Tekijänoikeus 2026 Victor Fu</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/AboutSettings.qml" line="69" />
         <source>Author: Victor Fu</source>
         <translation>Tekijä: Victor Fu</translation>
-        </message>
+    </message>
 </context>
 <context>
     <name>AdvancedSettings</name>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24"/>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
         <source>Cursor companion</source>
         <translation>Kohdistimen apuri</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26"/>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26" />
         <source>Off</source>
         <translation>Pois</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27"/>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27" />
         <source>Magnifier</source>
         <translation>Suurennuslasi</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28"/>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28" />
         <source>Beaver</source>
         <translation>Majava</translation>
     </message>
@@ -44,62 +44,66 @@
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>
         <translation>Kaappaus</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="35" />
         <source>Show shortcut hints</source>
         <translation>Näytä pikanäppäinvihjeet</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="51" />
         <source>Blur</source>
         <translation>Sumennus</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="48" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="54" />
         <source>Blur intensity</source>
         <translation>Sumennuksen voimakkuus:</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="56" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="62" />
         <source>Blur type</source>
         <translation>Sumennustyyppi:</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="58" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="64" />
         <source>Pixelate</source>
         <translation>Pikselöi</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="59" />
-        <source>Gaussian</source>
-        <translation>Gaussinen</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="65" />
+        <source>Gaussian</source>
+        <translation>Gaussinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="71" />
         <source>Pin Window</source>
         <translation>Kiinnitysikkuna</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="68" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="74" />
         <source>Default opacity</source>
         <translation>Oletusläpinäkyvyys:</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="77" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="83" />
         <source>Opacity step</source>
         <translation>Läpinäkyvyyden askel:</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="86" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="92" />
         <source>Zoom step</source>
         <translation>Zoomausaskel:</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="95" />
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="101" />
+        <source>Max history entries</source>
+        <translation>Historiamerkintöjen enimmäismäärä</translation>
+    </message>
+    <message>
         <source>Max cache files</source>
         <translation>Välimuistitiedostojen enimmäismäärä:</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
         <source>After full screen capture</source>
@@ -122,154 +126,228 @@
     </message>
 </context>
 <context>
-    <name>BeautifyPanel</name>
+    <name>AppImageUpdateDialog</name>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="55" />
-        <source>Ocean</source>
-        <translation>Valtameri</translation>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="9" />
+        <source>SnapTray Update</source>
+        <translation>SnapTray-päivitys</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="56" />
-        <source>Sunset</source>
-        <translation>Auringonlasku</translation>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="10" />
+        <source>Version %1</source>
+        <translation>Versio %1</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="57" />
-        <source>Lavender</source>
-        <translation>Laventeli</translation>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="42" />
+        <source>Discard Download</source>
+        <translation>Hylkää lataus</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="58" />
-        <source>Forest</source>
-        <translation>Metsä</translation>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="77" />
+        <source>Later</source>
+        <translation>Myöhemmin</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="59" />
-        <source>Midnight</source>
-        <translation>Keskiyö</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="60" />
-        <source>Rose</source>
-        <translation>Ruusu</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="61" />
-        <source>Sky</source>
-        <translation>Taivas</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="62" />
-        <source>Charcoal</source>
-        <translation>Hiilenharmaa</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="92" />
-        <source>Background:</source>
-        <translation>Tausta:</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="94" />
-        <source>Solid</source>
-        <translation>Yksivärinen</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="95" />
-        <source>Linear Gradient</source>
-        <translation>Lineaarinen liukuväri</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="96" />
-        <source>Radial Gradient</source>
-        <translation>Säteittäinen liukuväri</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="102" />
-        <source>Colors:</source>
-        <translation>Värit:</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="116" />
-        <source>Padding:</source>
-        <translation>Täyte:</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="127" />
-        <source>Corners:</source>
-        <translation>Kulmat:</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="138" />
-        <source>Ratio:</source>
-        <translation>Suhde:</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="140" />
-        <source>Auto</source>
-        <translation>Automaattinen</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="150" />
-        <source>Shadow</source>
-        <translation>Varjo</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="154" />
-        <source>  Blur:</source>
-        <translation>  Sumennus:</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="165" />
-        <source>Copy</source>
-        <translation>Kopioi</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="166" />
-        <source>Save</source>
-        <translation>Tallenna</translation>
-    </message>
-    <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="167" />
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="77" />
         <source>Close</source>
         <translation>Sulje</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="387" />
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="88" />
+        <source>Download Update</source>
+        <translation>Lataa päivitys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="89" />
+        <source>Restart and Update</source>
+        <translation>Käynnistä uudelleen ja päivitä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="90" />
+        <source>Cancel Download</source>
+        <translation>Peruuta lataus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="92" />
+        <source>Check Again</source>
+        <translation>Tarkista uudelleen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="93" />
+        <source>Try Again</source>
+        <translation>Yritä uudelleen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="109" />
+        <source>Downloads</source>
+        <translation>Lataussivu</translation>
+    </message>
+</context>
+<context>
+    <name>BeautifyPanel</name>
+    <message>
+        <source>Ocean</source>
+        <translation>Valtameri</translation>
+    </message>
+    <message>
+        <source>Sunset</source>
+        <translation>Auringonlasku</translation>
+    </message>
+    <message>
+        <source>Lavender</source>
+        <translation>Laventeli</translation>
+    </message>
+    <message>
+        <source>Forest</source>
+        <translation>Metsä</translation>
+    </message>
+    <message>
+        <source>Midnight</source>
+        <translation>Keskiyö</translation>
+    </message>
+    <message>
+        <source>Rose</source>
+        <translation>Ruusu</translation>
+    </message>
+    <message>
+        <source>Sky</source>
+        <translation>Taivas</translation>
+    </message>
+    <message>
+        <source>Charcoal</source>
+        <translation>Hiilenharmaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="191" />
+        <source>Background:</source>
+        <translation>Tausta:</translation>
+    </message>
+    <message>
+        <source>Solid</source>
+        <translation>Yksivärinen</translation>
+    </message>
+    <message>
+        <source>Linear Gradient</source>
+        <translation>Lineaarinen liukuväri</translation>
+    </message>
+    <message>
+        <source>Radial Gradient</source>
+        <translation>Säteittäinen liukuväri</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="202" />
+        <source>Colors:</source>
+        <translation>Värit:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="244" />
+        <source>Padding:</source>
+        <translation>Täyte:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="258" />
+        <source>Corners:</source>
+        <translation>Kulmat:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="271" />
+        <source>Ratio:</source>
+        <translation>Suhde:</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <translation>Automaattinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="79" />
+        <source>Beautify</source>
+        <translation>Kaunista</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="282" />
+        <source>Shadow</source>
+        <translation>Varjo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="323" />
+        <source>  Blur:</source>
+        <translation>  Sumennus:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <source>Copy</source>
+        <translation>Kopioi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="348" />
+        <source>Save</source>
+        <translation>Tallenna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="355" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
+    <message>
         <source>Select Color</source>
         <translation>Valitse väri</translation>
     </message>
 </context>
 <context>
+    <name>CanvasToolbarViewModel</name>
+    <message>
+        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="32" />
+        <source>Laser Pointer</source>
+        <translation>Laserosoitin</translation>
+    </message>
+</context>
+<context>
     <name>CaptureShortcutHintsOverlay</name>
     <message>
+        <location filename="../src/qml/ShortcutHintsViewModel.cpp" line="9" />
+        <location filename="../src/region/CaptureShortcutHintsOverlay.cpp" line="33" />
         <source>Cancel capture</source>
         <translation>Peruuta kaappaus</translation>
     </message>
     <message>
+        <location filename="../src/qml/ShortcutHintsViewModel.cpp" line="11" />
+        <location filename="../src/region/CaptureShortcutHintsOverlay.cpp" line="35" />
         <source>Confirm selection (after selection)</source>
         <translation>Vahvista valinta (valinnan jälkeen)</translation>
     </message>
     <message>
+        <location filename="../src/qml/ShortcutHintsViewModel.cpp" line="13" />
+        <location filename="../src/region/CaptureShortcutHintsOverlay.cpp" line="37" />
         <source>Replay capture history</source>
         <translation>Toista kaappaushistoria</translation>
     </message>
     <message>
+        <location filename="../src/qml/ShortcutHintsViewModel.cpp" line="15" />
+        <location filename="../src/region/CaptureShortcutHintsOverlay.cpp" line="39" />
         <source>Toggle multi-region mode</source>
         <translation>Vaihda monialuetila</translation>
     </message>
     <message>
+        <location filename="../src/qml/ShortcutHintsViewModel.cpp" line="17" />
+        <location filename="../src/region/CaptureShortcutHintsOverlay.cpp" line="41" />
         <source>Switch RGB/HEX (when magnifier visible)</source>
         <translation>Vaihda RGB/HEX (kun suurennuslasi on näkyvissä)</translation>
     </message>
     <message>
+        <location filename="../src/qml/ShortcutHintsViewModel.cpp" line="19" />
+        <location filename="../src/region/CaptureShortcutHintsOverlay.cpp" line="43" />
         <source>Copy color value (before selection)</source>
         <translation>Kopioi värin arvo (ennen valintaa)</translation>
     </message>
     <message>
+        <location filename="../src/qml/ShortcutHintsViewModel.cpp" line="21" />
+        <location filename="../src/region/CaptureShortcutHintsOverlay.cpp" line="45" />
         <source>Move selection by 1 pixel (after selection)</source>
         <translation>Siirrä valintaa 1 pikseli (valinnan jälkeen)</translation>
     </message>
     <message>
+        <location filename="../src/qml/ShortcutHintsViewModel.cpp" line="23" />
+        <location filename="../src/region/CaptureShortcutHintsOverlay.cpp" line="47" />
         <source>Resize selection by 1 pixel (after selection)</source>
         <translation>Muuta valinnan kokoa 1 pikseli (valinnan jälkeen)</translation>
     </message>
@@ -291,72 +369,101 @@
     </message>
 </context>
 <context>
+    <name>EditorChoice</name>
+    <message>
+        <location filename="../src/qml/recording/EditorChoice.qml" line="62" />
+        <source>Current: %1</source>
+        <translation>Nykyinen: %1</translation>
+    </message>
+</context>
+<context>
+    <name>EditorTimelineSegment</name>
+    <message>
+        <location filename="../src/qml/recording/EditorTimelineSegment.qml" line="47" />
+        <source>Not exported: it lies in a cut part</source>
+        <translation>Ei viedä: on pois leikatussa osassa</translation>
+    </message>
+</context>
+<context>
+    <name>EncoderFactory</name>
+    <message>
+        <location filename="../src/encoding/EncoderFactory.cpp" line="71" />
+        <source>Audio encoding is unavailable. This recording will be silent.</source>
+        <translation>Äänen koodaus ei ole käytettävissä. Tämä tallenne on äänetön.</translation>
+    </message>
+</context>
+<context>
     <name>FilesSettings</name>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
         <source>Save Locations</source>
         <translation>Tallennussijainnit</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="24" />
         <source>Screenshots</source>
         <translation>Kuvakaappaukset:</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="30" />
         <source>Recordings</source>
         <translation>Tallennukset:</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="35" />
+        <location filename="../src/qml/settings/FilesSettings.qml" line="36" />
         <source>Filename Format</source>
         <translation>Tiedostonimen muoto</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="38" />
+        <location filename="../src/qml/settings/FilesSettings.qml" line="39" />
         <source>Template</source>
         <translation>Malli:</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="71" />
+        <location filename="../src/qml/settings/FilesSettings.qml" line="74" />
         <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>Tunnisteet: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="81" />
+        <location filename="../src/qml/settings/FilesSettings.qml" line="84" />
         <source>Preview: </source>
         <translation>Esikatselu: </translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="89" />
-        <source>Save Behavior</source>
-        <translation>Tallennuskäyttäytyminen</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="92" />
+        <source>Save Behavior</source>
+        <translation>Tallennuskäyttäytyminen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="95" />
         <source>Auto-save screenshots</source>
         <translation>Tallenna kuvakaappaukset automaattisesti</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
         <source>Remember last folder</source>
         <translation>Muista viimeksi käytetty kansio</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
         <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
         <translation>Kun kuva tallennetaan manuaalisesti, valintaikkuna avautuu viimeksi onnistuneessa tallennuksessa käytettyyn kansioon. Automaattinen tallennus käyttää edelleen yllä määritettyä kuvakaappauskansiota.</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
+        <location filename="../src/qml/settings/FilesSettings.qml" line="109" />
         <source>Auto-save recordings</source>
         <translation>Tallenna tallenteet automaattisesti</translation>
-        </message>
+    </message>
 </context>
 <context>
-    <name>FormatSelectionWidget</name>
+    <name>FloatingToolbar</name>
+    <message>
+        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="224" />
+        <source>More</source>
+        <translation>Lisää</translation>
+    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -364,4658 +471,212 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
         <source>Start on login</source>
         <translation>Käynnistä kirjautuessa</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="36" />
-        <source>Language</source>
-        <translation>Kieli</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/GeneralSettings.qml" line="39" />
+        <source>Language</source>
+        <translation>Kieli</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="42" />
         <source>Display language</source>
         <translation>Näyttökieli:</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="50" />
-        <source>Appearance</source>
-        <translation>Ulkoasu</translation>
-        </message>
+    </message>
     <message>
         <location filename="../src/qml/settings/GeneralSettings.qml" line="53" />
-        <source>App theme</source>
-        <translation>Sovelluksen teema</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="55" />
-        <source>Dark</source>
-        <translation>Tumma</translation>
-        </message>
+        <source>Appearance</source>
+        <translation>Ulkoasu</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/GeneralSettings.qml" line="56" />
+        <source>App theme</source>
+        <translation>Sovelluksen teema</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
+        <source>Dark</source>
+        <translation>Tumma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="59" />
         <source>Light</source>
         <translation>Vaalea</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="64" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
         <source>Permissions</source>
         <translation>Käyttöoikeudet</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="69" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
         <source>Screen Recording</source>
         <translation>Näytön tallennus</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="70" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="73" />
         <source>Required for capturing screenshots and recording your screen.</source>
         <translation>Vaaditaan kuvakaappausten ottamiseen ja näytön tallentamiseen.</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="77" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="80" />
         <source>Accessibility</source>
         <translation>Esteettömyys:</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="81" />
         <source>Required for global hotkeys and window detection.</source>
         <translation>Vaaditaan globaaleihin pikanäppäimiin ja ikkunoiden tunnistukseen.</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="84" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="87" />
         <source>Command Line</source>
         <translation>Komentorivirajapinta</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="88" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
         <source>CLI Status</source>
         <translation>CLI-tila</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="108" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="116" />
         <source>Please wait...</source>
         <translation>Odota hetki...</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="110" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="118" />
         <source>'snaptray' command is available</source>
         <translation>'snaptray'-komento on käytettävissä päätteessä</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="111" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="119" />
         <source>'snaptray' command is not installed</source>
         <translation>'snaptray'-komentoa ei ole asennettu</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
         <source>Uninstall CLI</source>
         <translation>Poista CLI</translation>
-        </message>
+    </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
         <source>Install CLI</source>
         <translation>Asenna CLI</translation>
-        </message>
-</context>
-<context>
-    <name>HotkeyManager</name>
-</context>
-<context>
-    <name>HotkeySettings</name>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="46" />
-        <source>Keyboard Shortcuts</source>
-        <translation>Pikanäppäimet</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="58" />
-        <source>Restore All Defaults</source>
-        <translation>Palauta kaikki oletukset</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="144" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="155" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="177" />
-        <source>Not Set</source>
-        <translation>Ei asetettu</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="174" />
-        <source>Conflict</source>
-        <translation>Ristiriita</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="176" />
-        <source>Active</source>
-        <translation>Aktiivinen</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="199" />
-        <source>Edit</source>
-        <translation>Muokkaa</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="204" />
-        <source>Clear</source>
-        <translation>Tyhjennä</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="209" />
-        <source>Reset</source>
-        <translation>Palauta</translation>
-        </message>
-</context>
-<context>
-    <name>MagnifierPanel</name>
-    <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="132" />
-        <source>RGB: %1,%2,%3</source>
-        <translation>RGB: %1,%2,%3</translation>
-    </message>
-    <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="328" />
-        <source>Shift: Switch color format</source>
-        <translation>Shift: vaihda värimuotoa</translation>
-    </message>
-    <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="332" />
-        <source>C: Copy color value</source>
-        <translation>C: kopioi väriarvo</translation>
-    </message>
-</context>
-<context>
-    <name>MainApplication</name>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1207" />
-        <source>Finish or close the current recording first.</source>
-        <translation>Lopeta tai sulje nykyinen tallennus ensin.</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1206" />
-        <source>Recording Busy</source>
-        <translation>Tallennus on varattu</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="380" />
-        <source>SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.</source>
-        <translation>SnapTray löysi %1 tallentamatonta tallennetta. Palauta ne ilmaisinalueen valikosta.</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
-        <translation>SnapTray löysi %1 tallentamatonta tallennetta; niistä %2 voidaan palauttaa ilmaisinalueen valikosta.</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="379" />
-        <source>Unsaved Recordings Found</source>
-        <translation>Tallentamattomia tallenteita löytyi</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1178" />
-        <source>Recover Recordings (%1)...</source>
-        <translation>Palauta tallenteet (%1)...</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="440" />
-        <source>Recover Recordings...</source>
-        <translation>Palauta tallenteet...</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1287" />
-        <source>low disk space</source>
-        <translation>levytila vähissä</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>Warning: %1</source>
-        <translation>Varoitus: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1282" />
-        <source>dropping frames</source>
-        <translation>pudottaa kuvia</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="425" />
-        <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
-        <translation>Tallennuksen diagnostiikka on leikepöydällä. Se ei sisällä kuvia, ääntä eikä tiedostonimiä.</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="424" />
-        <source>Diagnostics Copied</source>
-        <translation>Diagnostiikka kopioitu</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="417" />
-        <source>Copy Recording Diagnostics</source>
-        <translation>Kopioi tallennuksen diagnostiikka</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="411" />
-        <source>Show Recording Controls</source>
-        <translation>Näytä tallennuksen ohjaimet</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="130" />
-        <source>SnapTray is already running</source>
-        <translation>SnapTray on jo käynnissä</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="280" />
-        <source>Recording Saved</source>
-        <translation>Tallennus tallennettu</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="281" />
-        <location filename="../src/MainApplication.cpp" line="298" />
-        <location filename="../src/MainApplication.cpp" line="314" />
-        <source>Saved to: %1</source>
-        <translation>Tallennettu kohteeseen: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="288" />
-        <source>Recording Error</source>
-        <translation>Tallennusvirhe</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="262" />
-        <source>Recording Warning</source>
-        <translation>Tallennusvaroitus</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="297" />
-        <location filename="../src/MainApplication.cpp" line="313" />
-        <source>Screenshot Saved</source>
-        <translation>Kuvakaappaus tallennettu</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="304" />
-        <location filename="../src/MainApplication.cpp" line="320" />
-        <source>Screenshot Save Failed</source>
-        <translation>Kuvakaappauksen tallennus epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="305" />
-        <location filename="../src/MainApplication.cpp" line="321" />
-        <source>%1
-%2</source>
-        <translation>%1
-%2</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="356" />
-        <location filename="../src/MainApplication.cpp" line="955" />
-        <source>Region Capture</source>
-        <translation>Alueen kaappaus</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="359" />
-        <location filename="../src/MainApplication.cpp" line="958" />
-        <source>Screen Canvas</source>
-        <translation>Näytön piirtoalue</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="407" />
-        <location filename="../src/MainApplication.cpp" line="1086" />
-        <source>Paste</source>
-        <translation>Liitä</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="362" />
-        <location filename="../src/MainApplication.cpp" line="961" />
-        <source>Pin from Image...</source>
-        <translation>Kiinnitä kuvasta...</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="413" />
-        <location filename="../src/MainApplication.cpp" line="1092" />
-        <source>History</source>
-        <translation>Historia</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="368" />
-        <location filename="../src/MainApplication.cpp" line="939" />
-        <source>Hide All Pins</source>
-        <translation>Piilota kaikki kiinnitykset</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="371" />
-        <source>Close All Pins</source>
-        <translation>Sulje kaikki kiinnitykset</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="383" />
-        <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Screen</source>
-        <translation>Tallenna koko näyttö</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1177" />
-        <source>Preparing to record</source>
-        <translation>Valmistellaan tallennusta</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1178" />
-        <source>Recording starts soon</source>
-        <translation>Tallennus alkaa pian</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1179" />
-        <source>Recording</source>
-        <translation>Tallennetaan</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1180" />
-        <source>Recording paused</source>
-        <translation>Tallennus keskeytetty</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1181" />
-        <source>Finishing recording</source>
-        <translation>Viimeistellään tallennusta</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="436" />
-        <source>Check for Updates</source>
-        <translation>Päivitystarkistus</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="388" />
-        <source>Settings</source>
-        <translation>Asetukset</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="393" />
-        <source>Exit</source>
-        <translation>Lopeta</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="398" />
-        <source>SnapTray - Screenshot Utility</source>
-        <translation>SnapTray - Kuvakaappaustyökalu</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1105" />
-        <source>Not set</source>
-        <translation>Ei asetettu</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1107" />
-        <source>Region Capture hotkey</source>
-        <translation>Alueen kaappauksen pikanäppäin</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1109" />
-        <source>Paste hotkey</source>
-        <translation>Liittämisen pikanäppäin</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="1111" />
-        <source>Screen Canvas hotkey</source>
-        <translation>Näytön piirtoalueen pikanäppäin</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="407" />
-        <source>OCR Success</source>
-        <translation>OCR onnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="408" />
-        <source>OCR Failed</source>
-        <translation>OCR epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="584" />
-        <source>Select Image to Pin</source>
-        <translation>Valitse kuva kiinnitettäväksi</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="586" />
-        <source>Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;All Files (*)</source>
-        <translation>Kuvat (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;Kaikki tiedostot (*)</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="596" />
-        <source>Loading Image</source>
-        <translation>Ladataan kuvaa</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="644" />
-        <location filename="../src/MainApplication.cpp" line="663" />
-        <source>Failed to Load Image</source>
-        <translation>Kuvan lataus epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="770" />
-        <source>Hotkey Registration Failed</source>
-        <translation>Pikanäppäimen rekisteröinti epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="771" />
-        <source> failed to register.</source>
-        <translation> rekisteröinti epäonnistui.</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="921" />
-        <location filename="../src/MainApplication.cpp" line="945" />
-        <source>%1 (%2)</source>
-        <translation>%1 (%2)</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="938" />
-        <source>Show All Pins</source>
-        <translation>Näytä kaikki kiinnitykset</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="264" />
-        <source>Screenshot Copied</source>
-        <translation>Kuvakaappaus kopioitu</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="265" />
-        <source>Copied to clipboard</source>
-        <translation>Kopioitu leikepöydälle</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="271" />
-        <source>Copy failed</source>
-        <translation>Kopiointi epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="323" />
-        <source>Full Screen Capture</source>
-        <translation>Koko näytön kaappaus</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>recording keys</source>
-        <translation>näppäimiä tallennetaan</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>Recording Library...</source>
-        <translation>Tallennekirjasto...</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>Project Unavailable</source>
-        <translation>Projekti ei ole käytettävissä</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>This project's recording is missing or damaged.</source>
-        <translation>Tämän projektin tallenne puuttuu tai on vioittunut.</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>Recording Copied</source>
-        <translation>Tallenne kopioitu</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
-        <translation>Tallennettu kohteeseen %1 ja kopioitu: liitä se keskusteluun tai kansioon.</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>edit mode</source>
-        <translation>muokkaustila</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="0" />
-        <source>quick mode</source>
-        <translation>pikatila</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="350" />
-        <source>Delayed Capture</source>
-        <translation>Viivästetty kaappaus</translation>
-    </message>
-    <message numerus="yes">
-        <location filename="../src/MainApplication.cpp" line="355" />
-        <source>%n seconds</source>
-        <translation>
-            <numerusform>%n sekunti</numerusform>
-            <numerusform>%n sekuntia</numerusform>
-        </translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="364" />
-        <source>Cancel Delayed Capture</source>
-        <translation>Peruuta viivästetty kaappaus</translation>
-    </message>
-</context>
-<context>
-    <name>MosaicBlurTypeSection</name>
-    <message>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65" />
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91" />
-        <source>Pixelate</source>
-        <translation>Pikselöi</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65" />
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91" />
-        <source>Gaussian</source>
-        <translation>Gaussinen</translation>
-    </message>
-</context>
-<context>
-    <name>MultiRegionListPanel</name>
-    <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="53" />
-        <source>Regions</source>
-        <translation>Alueet</translation>
-    </message>
-    <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="260" />
-        <source>Region %1</source>
-        <translation>Alue %1</translation>
-    </message>
-    <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="270" />
-        <source>%1 x %2</source>
-        <translation>%1 × %2</translation>
-    </message>
-    <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="283" />
-        <source>Replace</source>
-        <translation>Korvaa</translation>
-    </message>
-    <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="290" />
-        <source>Delete</source>
-        <translation>Poista</translation>
-    </message>
-</context>
-<context>
-    <name>OCRResultDialog</name>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="64" />
-        <source>OCR</source>
-        <translation>OCR</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="74" />
-        <source>OCR Result</source>
-        <translation>OCR-tulos</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="78" />
-        <source>0 characters</source>
-        <translation>0 merkkiä</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="91" />
-        <source>No text recognized</source>
-        <translation>Tekstiä ei tunnistettu</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="104" />
-        <source>Close</source>
-        <translation>Sulje</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="110" />
-        <source>Copy</source>
-        <translation>Kopioi</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="116" />
-        <source>Copy as TSV</source>
-        <translation>Kopioi TSV-muodossa</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="276" />
-        <source>✓ Copied!</source>
-        <translation>✓ Kopioitu!</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="293" />
-        <source>✓ Copied TSV!</source>
-        <translation>✓ TSV kopioitu!</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="316" />
-        <source>%1 character</source>
-        <translation>%1 merkki</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="317" />
-        <source>%1 characters</source>
-        <translation>%1 merkkiä</translation>
-    </message>
-    <message>
-        <location filename="../src/OCRResultDialog.cpp" line="320" />
-        <source>%1 (edited)</source>
-        <translation>%1 (muokattu)</translation>
-    </message>
-</context>
-<context>
-    <name>OCRSettings</name>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="49" />
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed.</source>
-        <translation>Valitse ja järjestä OCR-tunnistuksessa käytettävät kielet.
-Englanti sisältyy aina eikä sitä voi poistaa.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="75" />
-        <source>Loading languages...</source>
-        <translation>Ladataan kieliä...</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="104" />
-        <source>Available Languages</source>
-        <translation>Saatavilla olevat kielet</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="181" />
-        <source>Add selected language</source>
-        <translation>Lisää valittu kieli</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="195" />
-        <source>Remove selected language</source>
-        <translation>Poista valittu kieli</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="214" />
-        <source>Selected Languages</source>
-        <translation>Valitut kielet</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="333" />
-        <source>After OCR Recognition</source>
-        <translation>OCR-tunnistuksen jälkeen</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="338" />
-        <source>Copy text directly to clipboard</source>
-        <translation>Kopioi teksti suoraan leikepöydälle</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="339" />
-        <source>Show editor to review and edit text</source>
-        <translation>Näytä editori tekstin tarkistamiseen ja muokkaamiseen</translation>
-        </message>
-</context>
-<context>
-    <name>PinHistoryWindow</name>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="68" />
-        <source>Pin History</source>
-        <translation>Kiinnityshistoria</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="78" />
-        <source>Open Cache Folder</source>
-        <translation>Avaa välimuistikansio</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="104" />
-        <source>No pinned screenshots yet</source>
-        <translation>Ei kiinnitettyjä kuvakaappauksia vielä</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="162" />
-        <source>Pin</source>
-        <translation>Kiinnitä</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="163" />
-        <source>Copy</source>
-        <translation>Kopioi</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="164" />
-        <source>Save As</source>
-        <translation>Tallenna nimellä</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="166" />
-        <source>Delete</source>
-        <translation>Poista</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196" />
-        <source>Delete Failed</source>
-        <translation>Poisto epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196" />
-        <source>Failed to delete cached screenshot.</source>
-        <translation>Välimuistissa olevan kuvakaappauksen poisto epäonnistui.</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223" />
-        <source>Pin Failed</source>
-        <translation>Kiinnitys epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223" />
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255" />
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272" />
-        <source>Failed to load cached screenshot.</source>
-        <translation>Välimuistissa olevan kuvakaappauksen lataus epäonnistui.</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255" />
-        <source>Copy Failed</source>
-        <translation>Kopiointi epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272" />
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="308" />
-        <source>Save Failed</source>
-        <translation>Tallennus epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="298" />
-        <source>Save Screenshot</source>
-        <translation>Tallenna kuvakaappaus</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="300" />
-        <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
-        <translation>PNG-kuva (*.png);;JPEG-kuva (*.jpg *.jpeg);;Kaikki tiedostot (*)</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="309" />
-        <source>Failed to save screenshot: %1</source>
-        <translation>Kuvakaappauksen tallennus epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="359" />
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="362" />
-        <source>Unknown</source>
-        <translation>Tuntematon</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="361" />
-        <source>%1 x %2</source>
-        <translation>%1 × %2</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="364" />
-        <source>Time: %1
-Size: %2</source>
-        <translation>Aika: %1
-Koko: %2</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="388" />
-        <source>Unknown time</source>
-        <translation>Tuntematon aika</translation>
-    </message>
-</context>
-<context>
-    <name>PinWindow</name>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="887" />
-        <source>Show Toolbar</source>
-        <translation>Näytä työkalupalkki</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="893" />
-        <source>Show Border</source>
-        <translation>Näytä reunus</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="925" />
-        <source>Adjust Region Layout</source>
-        <translation>Säädä alueen asettelua</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="902" />
-        <source>Copy to Clipboard</source>
-        <translation>Kopioi leikepöydälle</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="906" />
-        <source>Save to file</source>
-        <translation>Tallenna tiedostoon</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="910" />
-        <source>Open Cache Folder</source>
-        <translation>Avaa välimuistikansio</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="913" />
-        <source>Beautify</source>
-        <translation>Kaunista</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="917" />
-        <source>Click-through</source>
-        <translation>Klikkaus läpi</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="922" />
-        <location filename="../src/PinWindow.cpp" line="1257" />
-        <location filename="../src/PinWindow.cpp" line="1265" />
-        <location filename="../src/PinWindow.cpp" line="1279" />
-        <location filename="../src/PinWindow.cpp" line="1296" />
-        <location filename="../src/PinWindow.cpp" line="1310" />
-        <source>Merge Pins</source>
-        <translation>Yhdistä kiinnitykset</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="931" />
-        <source>Watermark</source>
-        <translation>Vesileima</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="934" />
-        <source>Enable</source>
-        <translation>Ota käyttöön</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="945" />
-        <source>Position</source>
-        <translation>Sijainti</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="948" />
-        <source>Top-Left</source>
-        <translation>Vasen yläkulma</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="953" />
-        <source>Top-Right</source>
-        <translation>Oikea yläkulma</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="958" />
-        <source>Bottom-Left</source>
-        <translation>Vasen alakulma</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="963" />
-        <source>Bottom-Right</source>
-        <translation>Oikea alakulma</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="982" />
-        <location filename="../src/PinWindow.cpp" line="1076" />
-        <source>Zoom</source>
-        <translation>Zoomaus</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="985" />
-        <source>33.3%</source>
-        <translation>33,3%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="988" />
-        <source>50%</source>
-        <translation>50%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="991" />
-        <source>66.7%</source>
-        <translation>66,7%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="994" />
-        <source>100%</source>
-        <translation>100%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="997" />
-        <source>200%</source>
-        <translation>200%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1007" />
-        <source>Smoothing</source>
-        <translation>Tasoitus</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1016" />
-        <source>Image processing</source>
-        <translation>Kuvankäsittely</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1018" />
-        <source>Rotate left</source>
-        <translation>Kierrä vasemmalle</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1021" />
-        <source>Rotate right</source>
-        <translation>Kierrä oikealle</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1024" />
-        <source>Horizontal flip</source>
-        <translation>Käännä vaakasuunnassa</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1027" />
-        <source>Vertical flip</source>
-        <translation>Käännä pystysuunnassa</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1031" />
-        <source>Crop</source>
-        <translation>Rajaa</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1040" />
-        <location filename="../src/PinWindow.cpp" line="1078" />
-        <source>Opacity</source>
-        <translation>Läpinäkyvyys</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1043" />
-        <source>Increase by %1%</source>
-        <translation>Lisää %1%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1050" />
-        <source>Decrease by %1%</source>
-        <translation>Vähennä %1%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1062" />
-        <source>Copy All</source>
-        <translation>Kopioi kaikki</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1075" />
-        <source>Size</source>
-        <translation>Koko</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1077" />
-        <source>Rotation</source>
-        <translation>Kierto</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1079" />
-        <source>X-mirror</source>
-        <translation>X-peilaus</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1080" />
-        <source>Y-mirror</source>
-        <translation>Y-peilaus</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1079" />
-        <location filename="../src/PinWindow.cpp" line="1080" />
-        <location filename="../src/PinWindow.cpp" line="1628" />
-        <location filename="../src/PinWindow.cpp" line="1629" />
-        <source>Yes</source>
-        <translation>Kyllä</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1079" />
-        <location filename="../src/PinWindow.cpp" line="1080" />
-        <location filename="../src/PinWindow.cpp" line="1628" />
-        <location filename="../src/PinWindow.cpp" line="1629" />
-        <source>No</source>
-        <translation>Ei</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1086" />
-        <location filename="../src/PinWindow.cpp" line="2485" />
-        <source>Start Live Update</source>
-        <translation>Aloita reaaliaikainen päivitys</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="2485" />
-        <source>Stop Live Update</source>
-        <translation>Lopeta reaaliaikainen päivitys</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1097" />
-        <location filename="../src/PinWindow.cpp" line="2489" />
-        <source>Pause Live Update</source>
-        <translation>Keskeytä reaaliaikainen päivitys</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="2489" />
-        <source>Resume Live Update</source>
-        <translation>Jatka reaaliaikaista päivitystä</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1108" />
-        <source>Frame Rate</source>
-        <translation>Kuvataajuus</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="898" />
-        <source>Move to Screen</source>
-        <translation>Siirrä näytölle</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1111" />
-        <source>%1 FPS</source>
-        <translation>%1 FPS</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1125" />
-        <source>Close</source>
-        <translation>Sulje</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1129" />
-        <source>Close All Pins</source>
-        <translation>Sulje kaikki kiinnitykset</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1210" />
-        <source>Screen %1</source>
-        <translation>Näyttö %1</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1212" />
-        <source> (Primary)</source>
-        <translation> (Päänäyttö)</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1258" />
-        <source>Cannot merge more than %1 pins at once</source>
-        <translation>Enintään %1 kiinnitystä voidaan yhdistää kerralla</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1266" />
-        <source>Need at least 2 pins to merge</source>
-        <translation>Yhdistämiseen tarvitaan vähintään 2 kiinnitystä</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1280" />
-        <source>No primary screen available</source>
-        <translation>Ensisijaista näyttöä ei ole käytettävissä</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1311" />
-        <source>Failed to create merged pin</source>
-        <translation>Yhdistetyn kiinnityksen luonti epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1372" />
-        <location filename="../src/PinWindow.cpp" line="1393" />
-        <source>Failed to save screenshot: %1</source>
-        <translation>Kuvakaappauksen tallennus epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1382" />
-        <source>Save Screenshot</source>
-        <translation>Tallenna kuvakaappaus</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1384" />
-        <location filename="../src/PinWindow.cpp" line="4724" />
-        <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
-        <translation>PNG-kuva (*.png);;JPEG-kuva (*.jpg *.jpeg);;Kaikki tiedostot (*)</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1402" />
-        <location filename="../src/PinWindow.cpp" line="4652" />
-        <source>Copy failed</source>
-        <translation>Kopiointi epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1415" />
-        <source>Copied to clipboard</source>
-        <translation>Kopioitu leikepöydälle</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1427" />
-        <source>Please wait for auto-blur to finish</source>
-        <translation>Odota, että automaattinen sumennus valmistuu</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1523" />
-        <location filename="../src/PinWindow.cpp" line="1546" />
-        <location filename="../src/PinWindow.cpp" line="1599" />
-        <source>Copied %1 characters</source>
-        <translation>%1 merkkiä kopioitu</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1527" />
-        <source>No text found</source>
-        <translation>Tekstiä ei löytynyt</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1532" />
-        <location filename="../src/PinWindow.cpp" line="1547" />
-        <source>Text copied</source>
-        <translation>Teksti kopioitu</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1608" />
-        <source>No QR code found</source>
-        <translation>QR-koodia ei löytynyt</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1624" />
-        <source>Size: %1 × %2</source>
-        <translation>Koko: %1 × %2</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1625" />
-        <source>Zoom: %1%</source>
-        <translation>Zoomaus: %1%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1626" />
-        <source>Rotation: %1°</source>
-        <translation>Kierto: %1°</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1627" />
-        <source>Opacity: %1%</source>
-        <translation>Läpinäkyvyys: %1%</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1628" />
-        <source>X-mirror: %1</source>
-        <translation>X-peilaus: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1629" />
-        <source>Y-mirror: %1</source>
-        <translation>Y-peilaus: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="3594" />
-        <source>Face detection unavailable</source>
-        <translation>Kasvojentunnistus ei ole käytettävissä</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="3603" />
-        <source>Detection unavailable</source>
-        <translation>Tunnistus ei ole käytettävissä</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="4657" />
-        <location filename="../src/PinWindow.cpp" line="4682" />
-        <source>Beautify rendering failed</source>
-        <translation>Kaunistuksen renderöinti epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="5508" />
-        <source>Unable to apply region layout</source>
-        <translation>Alueasettelua ei voitu ottaa käyttöön</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="4669" />
-        <source>Beautified image copied</source>
-        <translation>Kaunistettu kuva kopioitu</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="4677" />
-        <source>No image available to save</source>
-        <translation>Ei kuvaa tallennettavaksi</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="4717" />
-        <location filename="../src/PinWindow.cpp" line="4733" />
-        <source>Failed to save beautified screenshot: %1</source>
-        <translation>Kaunistetun kuvakaappauksen tallennus epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="4723" />
-        <source>Save Beautified Screenshot</source>
-        <translation>Tallenna kaunistettu kuvakaappaus</translation>
-    </message>
-</context>
-<context>
-    <name>QObject</name>
-    <message>
-        <location filename="../src/ToolbarStyle.cpp" line="138" />
-        <source>Light</source>
-        <translation>Vaalea</translation>
-    </message>
-    <message>
-        <location filename="../src/ToolbarStyle.cpp" line="141" />
-        <source>Dark</source>
-        <translation>Tumma</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="157" />
-        <source>Cannot merge more than %1 pins at once</source>
-        <translation>Enintään %1 kiinnitystä voidaan yhdistää kerralla</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="162" />
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="187" />
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="219" />
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="230" />
-        <source>Need at least 2 pins to merge</source>
-        <translation>Yhdistämiseen tarvitaan vähintään 2 kiinnitystä</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="236" />
-        <source>Merged layout exceeds maximum size (%1x%1)</source>
-        <translation>Yhdistetty asettelu ylittää enimmäiskoon (%1x%1)</translation>
-    </message>
-    <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="280" />
-        <source>Failed to merge pins</source>
-        <translation>Kiinnitysten yhdistäminen epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeManager.cpp" line="200" />
-        <source>No barcode found in image</source>
-        <translation>Kuvasta ei löytynyt viivakoodia</translation>
-    </message>
-</context>
-<context>
-    <name>QRCodeManager</name>
-    <message>
-        <location filename="../src/QRCodeManager.cpp" line="137" />
-        <location filename="../src/QRCodeManager.cpp" line="225" />
-        <source>Invalid image</source>
-        <translation>Virheellinen kuva</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeManager.cpp" line="258" />
-        <source>No barcode found</source>
-        <translation>Viivakoodia ei löytynyt</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeManager.cpp" line="273" />
-        <source>Failed to load image from file</source>
-        <translation>Kuvan lataaminen tiedostosta epäonnistui</translation>
-    </message>
-</context>
-<context>
-    <name>QRCodeResultDialog</name>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="86" />
-        <location filename="../src/QRCodeResultDialog.cpp" line="519" />
-        <source>QR Code</source>
-        <translation>QR-koodi</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="90" />
-        <source>0 characters</source>
-        <translation>0 merkkiä</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="103" />
-        <source>No content</source>
-        <translation>Ei sisältöä</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="112" />
-        <location filename="../src/QRCodeResultDialog.cpp" line="448" />
-        <location filename="../src/QRCodeResultDialog.cpp" line="458" />
-        <source>Generate QR to preview</source>
-        <translation>Luo QR esikatselua varten</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="124" />
-        <source>Close</source>
-        <translation>Sulje</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="130" />
-        <source>Copy</source>
-        <translation>Kopioi</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="136" />
-        <source>Open URL</source>
-        <translation>Avaa URL-osoite</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="143" />
-        <source>Generate QR</source>
-        <translation>Luo QR</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="149" />
-        <source>Pin QR</source>
-        <translation>Kiinnitä QR</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="201" />
-        <source>QR</source>
-        <translation>QR</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="411" />
-        <source>%1 character</source>
-        <translation>%1 merkki</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="412" />
-        <source>%1 characters</source>
-        <translation>%1 merkkiä</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="415" />
-        <source>%1 (edited)</source>
-        <translation>%1 (muokattu)</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="426" />
-        <source>✓ Copied!</source>
-        <translation>✓ Kopioitu!</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="451" />
-        <source>Content too long (max %1 bytes)</source>
-        <translation>Sisältö on liian pitkä (enintään %1 tavua)</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="520" />
-        <source>Data Matrix</source>
-        <translation>Data Matrix</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="521" />
-        <source>Aztec Code</source>
-        <translation>Aztec-koodi</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="522" />
-        <source>PDF417</source>
-        <translation>PDF417</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="523" />
-        <source>EAN-8</source>
-        <translation>EAN-8</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="524" />
-        <source>EAN-13</source>
-        <translation>EAN-13</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="525" />
-        <source>UPC-A</source>
-        <translation>UPC-A</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="526" />
-        <source>UPC-E</source>
-        <translation>UPC-E</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="527" />
-        <source>Code 39</source>
-        <translation>Code 39</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="528" />
-        <source>Code 93</source>
-        <translation>Code 93</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="529" />
-        <source>Code 128</source>
-        <translation>Code 128</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="530" />
-        <source>ITF</source>
-        <translation>ITF</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="531" />
-        <source>Codabar</source>
-        <translation>Codabar</translation>
-    </message>
-    <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="534" />
-        <source>Barcode</source>
-        <translation>Viivakoodi</translation>
-    </message>
-</context>
-<context>
-    <name>RecordingControlBar</name>
-    <message>
-        <location filename="../src/qml/recording/RecordingControlBar.qml" line="260" />
-        <source>Paused %1</source>
-        <translation>Keskeytetty %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/QmlRecordingControlBar.mm" line="43" />
-        <source>%1 (%2)</source>
-        <translation>%1 (%2)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/QmlRecordingControlBar.mm" line="41" />
-        <source>Stop and Review</source>
-        <translation>Pysäytä ja tarkista</translation>
-    </message>
-    <message>
-        <source>-- fps</source>
-        <translation>-- fps</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
-        <source>Preparing...</source>
-        <translation>Valmistellaan...</translation>
-    </message>
-    <message>
-        <source>%1 fps</source>
-        <translation>%1 fps</translation>
-    </message>
-    <message>
-        <source>Resume Recording</source>
-        <translation>Jatka tallennusta</translation>
-    </message>
-    <message>
-        <source>Pause Recording</source>
-        <translation>Keskeytä tallennus</translation>
-    </message>
-    <message>
-        <source>Stop Recording</source>
-        <translation>Lopeta tallennus</translation>
-    </message>
-    <message>
-        <source>Cancel Recording</source>
-        <translation>Peruuta tallennus</translation>
-    </message>
-</context>
-<context>
-    <name>RecordingInitTask</name>
-    <message>
-        <location filename="../src/RecordingInitTask.cpp" line="82" />
-        <source>Initializing...</source>
-        <translation>Alustetaan...</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingInitTask.cpp" line="99" />
-        <source>Setting up audio capture...</source>
-        <translation>Määritetään äänen kaappausta...</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingInitTask.cpp" line="111" />
-        <source>Creating video encoder...</source>
-        <translation>Luodaan videoenkooderia...</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingInitTask.cpp" line="141" />
-        <source>Ready</source>
-        <translation>Valmis</translation>
-    </message>
-</context>
-<context>
-    <name>RecordingManager</name>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="0" />
-        <source>Nothing usable could be kept.</source>
-        <translation>Mitään käyttökelpoista ei voitu säilyttää.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="0" />
-        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
-        <translation>Tallennusta ei voitu viimeistellä. Tähän mennessä tallennettu osa säilytettiin; palauta se ilmaisinalueen valikosta.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="0" />
-        <source>Recording could not start. %1</source>
-        <translation>Tallennusta ei voitu aloittaa. %1</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="0" />
-        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
-        <translation>Mikrofoni irrotettiin. Tallennus jatkuu ilman sitä, joten sen ääni loppuu tästä kohdasta.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="2106" />
-        <source>The recording is kept at %1.</source>
-        <translation>Tallenne on tallessa sijainnissa %1.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="2105" />
-        <source>Your recording is kept; choose another location.</source>
-        <translation>Tallenne säilyy; valitse toinen sijainti.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="2101" />
-        <source>Not enough free space at the chosen location (%1 free, %2 needed).</source>
-        <translation>Valitussa sijainnissa ei ole tarpeeksi tilaa (%1 vapaana, tarvitaan %2).</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1547" />
-        <source>Recording stopped because the disk is almost full. Everything recorded so far is kept.</source>
-        <translation>Tallennus pysäytettiin, koska levy on lähes täynnä. Kaikki tähän asti tallennettu säilyy.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1536" />
-        <source>Disk space is running low: %1 free. Stop soon to keep this recording.</source>
-        <translation>Levytila on vähissä: %1 vapaana. Lopeta pian, jotta tallenne säilyy.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1534" />
-        <source>Disk space is running low: about %1 min of recording left (estimate). Stop soon to keep this recording.</source>
-        <translation>Levytila on vähissä: noin %1 min tallennusaikaa jäljellä (arvio). Lopeta pian, jotta tallenne säilyy.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1524" />
-        <source>SnapTray can't check the free disk space for this recording. Keep an eye on it during long recordings.</source>
-        <translation>SnapTray ei voi tarkistaa tämän tallennuksen vapaata levytilaa. Seuraa sitä pitkissä tallennuksissa.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="806" />
-        <source>Not enough free disk space to start recording (%1 free).</source>
-        <translation>Levyllä ei ole tarpeeksi tilaa tallennuksen aloittamiseen (%1 vapaana).</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1460" />
-        <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
-        <translation>Tallennus ei pysy perässä ja pudottaa kuvia. Kokeile pienempää kuvataajuutta tai sulje muita raskaita sovelluksia.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1145" />
-        <source>The selected microphone was not found. Recording from the default microphone.</source>
-        <translation>Valittua mikrofonia ei löytynyt. Tallennetaan oletusmikrofonilla.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="312" />
-        <source>No screen available for region selection.</source>
-        <translation>Näyttöä ei ole käytettävissä alueen valintaan.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="345" />
-        <location filename="../src/RecordingManager.cpp" line="370" />
-        <source>No screen available for recording.</source>
-        <translation>Näyttöä ei ole käytettävissä tallennukseen.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="353" />
-        <location filename="../src/RecordingManager.cpp" line="377" />
-        <source>Failed to normalize recording region.</source>
-        <translation>Tallennusalueen normalisointi epäonnistui.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="411" />
-        <location filename="../src/RecordingManager.cpp" line="482" />
-        <location filename="../src/RecordingManager.cpp" line="866" />
-        <location filename="../src/RecordingManager.cpp" line="898" />
-        <source>Recording screen is no longer available.</source>
-        <translation>Tallennusnäyttö ei ole enää käytettävissä.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="491" />
-        <source>Recording region is invalid.</source>
-        <translation>Tallennusalue ei ole kelvollinen.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="662" />
-        <source>Internal error: initialization task is null</source>
-        <translation>Sisäinen virhe: alustamistehtävä on null</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="747" />
-        <source>Failed to start encoding thread</source>
-        <translation>Enkoodaussäikeen käynnistys epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="783" />
-        <source>Failed to start encoding worker</source>
-        <translation>Koodaustyöntekijän käynnistys epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="824" />
-        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
-        <translation>Äänen tallennuksessa ilmeni ongelma. Tästä tallenteesta saattaa puuttua ääntä.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="831" />
-        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
-        <translation>Järjestelmän ääni ei ole käytettävissä. Vain mikrofonin ääni tallennetaan. Tarkista näytön tallennuksen käyttöoikeus Järjestelmäasetuksista.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="816" />
-        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
-        <translation>Järjestelmän ääni ei ole käytettävissä. Vain mikrofonin ääni tallennetaan. Tarkista oletustoistolaite.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="836" />
-        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
-        <translation>Mikrofoni ei ole käytettävissä. Vain järjestelmän ääni tallennetaan. Tarkista mikrofonin käyttöoikeus ja valittu syöttölaite.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="845" />
-        <location filename="../src/RecordingManager.cpp" line="858" />
-        <location filename="../src/RecordingManager.cpp" line="877" />
-        <location filename="../src/RecordingManager.cpp" line="976" />
-        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
-        <translation>Ääntä ei ole käytettävissä. Tähän tallenteeseen ei tule ääntä. Tarkista järjestelmän käyttöoikeudet ja valittu äänilaite.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="986" />
-        <source>Recording screen disconnected during capture.</source>
-        <translation>Tallennusnäyttö irtosi kaappauksen aikana.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1238" />
-        <source>Failed to encode video</source>
-        <translation>Videon koodaus epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1367" />
-        <source>GIF Files (*.gif)</source>
-        <translation>GIF-tiedostot (*.gif)</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1368" />
-        <source>WebP Files (*.webp)</source>
-        <translation>WebP-tiedostot (*.webp)</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1369" />
-        <source>MP4 Files (*.mp4)</source>
-        <translation>MP4-tiedostot (*.mp4)</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1375" />
-        <source>Save Recording</source>
-        <translation>Tallenna tallennus</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="1407" />
-        <source>Failed to save recording to selected location</source>
-        <translation>Tallennuksen tallennus valittuun sijaintiin epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="223" />
-        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
-        <translation>Levytilaa ei ole tarpeeksi korkealaatuiseen tallennukseen. Tallennetaan valitulla laadulla.</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingManager.cpp" line="0" />
-        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
-        <translation>Tallenteita ei voi tallentaa tallennekirjaston projektikansioon.</translation>
-    </message>
-    <message>
-        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
-        <translation>Näppäinten tallennus ei ole käytettävissä. Tarkista syötteen seurannan käyttöoikeudet. Tallennus jatkuu ilman näppäinvihjeitä.</translation>
-    </message>
-    <message>
-        <source>Key hints could not be saved. The recording will continue without them.</source>
-        <translation>Näppäinvihjeitä ei voitu tallentaa. Tallennus jatkuu ilman niitä.</translation>
-    </message>
-</context>
-<context>
-    <name>RecordingPreview</name>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Cover a sensitive area in the exported file</source>
-        <translation>Peitä arkaluonteinen alue viedyssä tiedostossa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
-        <translation>peitteet: %1, poltettu vientiin; peittämätön väliaikainen tiedosto poistetaan tallennuksen jälkeen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Selected mask</source>
-        <translation>Valittu peite</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>the end</source>
-        <translation>loppuun</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Mask from %1 to %2</source>
-        <translation>Peite %1–%2</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Drag the mask to move it, or its corner to resize it. Done finishes editing.</source>
-        <translation>Siirrä peitettä vetämällä tai muuta kokoa vetämällä kulmasta. Valmis lopettaa muokkauksen.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Delete this mask</source>
-        <translation>Poista tämä peite</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Mask end</source>
-        <translation>Peitteen loppu</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Mask start</source>
-        <translation>Peitteen alku</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Mask for the whole recording, or only for a time range</source>
-        <translation>Peite koko tallenteelle tai vain aikavälille</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Whole Recording</source>
-        <translation>Koko tallenne</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Weaken detail; it may still be possible to recognise or recover</source>
-        <translation>Heikentää yksityiskohtia; tunnistaminen tai palauttaminen voi silti olla mahdollista</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Cover with solid black</source>
-        <translation>Peitä mustalla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Blur</source>
-        <translation>Sumenna</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Pixelate</source>
-        <translation>Pikselöi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Solid</source>
-        <translation>Peittävä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>masks: %1, burned into the export; the original keeps everything</source>
-        <translation>peitteet: %1, poltettu vientiin; alkuperäinen säilyttää kaiken</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>masks need GIF or WebP on this system</source>
-        <translation>peitteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Masks need GIF or WebP on this system</source>
-        <translation>Peitteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Cover a sensitive area in the export. The original recording is not changed.</source>
-        <translation>Peitä arkaluonteinen alue viennissä. Alkuperäinen tallenne ei muutu.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Add Mask</source>
-        <translation>Lisää peite</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>No room for a new zoom here</source>
-        <translation>Uudelle zoomaukselle ei ole tässä tilaa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Zoom %1× from %2 to %3</source>
-        <translation>Zoomaus %1× %2–%3</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Click the video to move the zoom's centre. Done finishes editing.</source>
-        <translation>Siirrä zoomauksen keskikohtaa napsauttamalla videota. Valmis lopettaa muokkauksen.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Done</source>
-        <translation>Valmis</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Delete this zoom</source>
-        <translation>Poista tämä zoomaus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Delete</source>
-        <translation>Poista</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Turn all zooms on or off without deleting them</source>
-        <translation>Ota kaikki zoomaukset käyttöön tai pois poistamatta niitä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Zoom Off</source>
-        <translation>Zoomaus pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Zoom On</source>
-        <translation>Zoomaus päällä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
-        <translation>Hellävaraisemmat zoomaukset kaikkiin osiin: pienempiä ja hitaampia, ei suoria panorointeja</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Less Motion</source>
-        <translation>Vähemmän liikettä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Zoom end</source>
-        <translation>Zoomauksen loppu</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Zoom start</source>
-        <translation>Zoomauksen alku</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Zoom: %1</source>
-        <translation>Zoomaus: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Add a zoom at the playhead</source>
-        <translation>Lisää zoomaus toistokohtaan</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Add Zoom</source>
-        <translation>Lisää zoomaus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>No clicks to zoom in on</source>
-        <translation>Ei napsautuksia zoomattavaksi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Zooms added: %1</source>
-        <translation>Lisätyt zoomaukset: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
-        <translation>Automaattinen zoomaus vaatii tallennetut napsautukset; lisää zoomaukset käsin</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
-        <translation>Zoomaa napsautuksiin automaattisesti. Lisäämäsi tai muuttamasi zoomaukset säilyvät.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Auto Zoom</source>
-        <translation>Automaattinen zoomaus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Highlight Clicks</source>
-        <translation>Korosta napsautukset</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hide Click Highlights</source>
-        <translation>Piilota napsautusten korostus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Clicks</source>
-        <translation>Napsautukset</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Smooths the pointer's path; clicks stay where they happened</source>
-        <translation>Pehmentää osoittimen reittiä; napsautukset pysyvät paikallaan</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Pointer Size: %1</source>
-        <translation>Osoittimen koko: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Show the Mouse Pointer</source>
-        <translation>Näytä hiiren osoitin</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hide the Mouse Pointer</source>
-        <translation>Piilota hiiren osoitin</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Pointer</source>
-        <translation>Osoitin</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>pointer effects need GIF or WebP on this system</source>
-        <translation>osoitintehosteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Smooth: High</source>
-        <translation>Pehmennys: Korkea</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Smooth: Medium</source>
-        <translation>Pehmennys: Keskitaso</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Smooth: Low</source>
-        <translation>Pehmennys: Matala</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Smooth: Off</source>
-        <translation>Pehmennys: Pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1151" />
-        <source>Save again with the current settings</source>
-        <translation>Tallenna uudelleen nykyisillä asetuksilla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1149" />
-        <source>Try Again</source>
-        <translation>Yritä uudelleen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="998" />
-        <source>Keep Exporting</source>
-        <translation>Jatka vientiä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="988" />
-        <source>An export is in progress. Keep exporting or cancel it?</source>
-        <translation>Vienti on käynnissä. Jatketaanko vai perutaanko?</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="975" />
-        <source>Cancel Export</source>
-        <translation>Peruuta vienti</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
-        <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
-        <translation>Käytä rajausta (Enter) · nuolinäppäimet siirtävät 2 px (Vaihto: 10 px)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="827" />
-        <source>Compare with Original (\)</source>
-        <translation>Vertaa alkuperäiseen (\)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="823" />
-        <source>Compare with Original</source>
-        <translation>Vertaa alkuperäiseen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="809" />
-        <source>Reset Crop and Trim</source>
-        <translation>Palauta rajaus ja leikkaus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="801" />
-        <source>Redo Edit</source>
-        <translation>Tee muokkaus uudelleen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="799" />
-        <source>Redo Edit (Ctrl+Shift+Z)</source>
-        <translation>Tee muokkaus uudelleen (Ctrl+Shift+Z)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="790" />
-        <source>Undo Edit</source>
-        <translation>Kumoa muokkaus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="788" />
-        <source>Undo Edit (Ctrl+Z)</source>
-        <translation>Kumoa muokkaus (Ctrl+Z)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="715" />
-        <source>Crop %1 in pixels</source>
-        <translation>Rajaus %1 pikseleinä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="700" />
-        <source>H</source>
-        <translation>K</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="699" />
-        <source>W</source>
-        <translation>L</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="698" />
-        <source>Y</source>
-        <translation>Y</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
-        <source>X</source>
-        <translation>X</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="688" />
-        <source>Crop aspect: %1</source>
-        <translation>Rajauksen kuvasuhde: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="633" />
-        <source>Trim end</source>
-        <translation>Rajauksen loppu</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="621" />
-        <source>Trim start</source>
-        <translation>Rajauksen alku</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="604" />
-        <source>no audio</source>
-        <translation>ei ääntä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="602" />
-        <source>%1 kept</source>
-        <translation>Säilytetään %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="601" />
-        <source>Original %1 → Output %2</source>
-        <translation>Alkuperäinen %1 → Tuloste %2</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
-        <source>Original</source>
-        <translation>Alkuperäinen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
-        <source>Free</source>
-        <translation>Vapaa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
-        <source>Discard</source>
-        <translation>Hylkää</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="767" />
-        <source>Keep Recording</source>
-        <translation>Säilytä tallenne</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="755" />
-        <source>The video will be deleted and cannot be recovered.</source>
-        <translation>Video poistetaan, eikä sitä voi palauttaa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="744" />
-        <source>Discard this recording?</source>
-        <translation>Hylätäänkö tämä tallenne?</translation>
-    </message>
-    <message>
-        <source>Clear Crop</source>
-        <translation>Poista rajaus</translation>
-    </message>
-    <message>
-        <source>Click a window to crop to it, or drag to draw</source>
-        <translation>Rajaa ikkunaan napsauttamalla sitä tai piirrä alue vetämällä</translation>
-    </message>
-    <message>
-        <source>Audio playback is unavailable in this preview.</source>
-        <translation>Äänen toisto ei ole käytettävissä tässä esikatselussa.</translation>
-    </message>
-    <message>
-        <source>Export as MP4</source>
-        <translation>Vie MP4-muodossa</translation>
-    </message>
-    <message>
-        <source>Export as GIF</source>
-        <translation>Vie GIF-muodossa</translation>
-    </message>
-    <message>
-        <source>Export as WebP</source>
-        <translation>Vie WebP-muodossa</translation>
-    </message>
-    <message>
-        <source>Pause Preview (Space)</source>
-        <translation>Keskeytä esikatselu (Välilyönti)</translation>
-    </message>
-    <message>
-        <source>Play Preview (Space)</source>
-        <translation>Toista esikatselu (Välilyönti)</translation>
-    </message>
-    <message>
-        <source>Playback Speed: %1x</source>
-        <translation>Toistonopeus: %1x</translation>
-    </message>
-    <message>
-        <source>Unmute Preview (M)</source>
-        <translation>Poista esikatselun mykistys (M)</translation>
-    </message>
-    <message>
-        <source>Mute Preview (M)</source>
-        <translation>Mykistä esikatselu (M)</translation>
-    </message>
-    <message>
-        <source>Apply Crop (Enter)</source>
-        <translation>Käytä rajausta (Enter)</translation>
-    </message>
-    <message>
-        <source>Edit Crop</source>
-        <translation>Muokkaa rajausta</translation>
-    </message>
-    <message>
-        <source>Crop Recording</source>
-        <translation>Rajaa tallenne</translation>
-    </message>
-    <message>
-        <source>Clear Trim Selection</source>
-        <translation>Tyhjennä leikkausvalinta</translation>
-    </message>
-    <message>
-        <source>Trim Recording</source>
-        <translation>Leikkaa tallenne</translation>
-    </message>
-    <message>
-        <source>Discard Recording (Esc)</source>
-        <translation>Hylkää tallenne (Esc)</translation>
-    </message>
-    <message>
-        <source>Save Recording (Enter / Ctrl+S)</source>
-        <translation>Tallenna tallenne (Enter / Ctrl+S)</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation>Peruuta</translation>
-    </message>
-    <message>
-        <source>Dismiss Error</source>
-        <translation>Sulje virhe</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Motion Blur: Off</source>
-        <translation>Liikesumennus: Pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Motion Blur: Low</source>
-        <translation>Liikesumennus: Matala</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Motion Blur: Medium</source>
-        <translation>Liikesumennus: Keskitaso</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Motion Blur: High</source>
-        <translation>Liikesumennus: Korkea</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Pointer hidden from %1 to %2</source>
-        <translation>Osoitin piilotettu %1–%2</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Pointer Options</source>
-        <translation>Osoittimen asetukset</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hide when idle, motion blur, a still ending and time ranges without a pointer</source>
-        <translation>Piilota käyttämättömänä, liikesumennus, liikkumaton loppu ja aikavälit ilman osoitinta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hide When Idle: %1 s</source>
-        <translation>Piilota käyttämättömänä: %1 s</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hide When Idle: Off</source>
-        <translation>Piilota käyttämättömänä: Pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
-        <translation>Häivytä osoitin, kun se pysähtyy; se palaa ennen kuin se liikkuu tai napsauttaa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>A short trail behind a fast-moving pointer</source>
-        <translation>Lyhyt jälki nopeasti liikkuvan osoittimen perässä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Still End: %1 s</source>
-        <translation>Liikkumaton loppu: %1 s</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Still End: Off</source>
-        <translation>Liikkumaton loppu: Pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
-        <translation>Pidä osoitin paikallaan lopussa, jottei siirtyminen tallennuksen pysäyttämiseen näy</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hide Pointer Here</source>
-        <translation>Piilota osoitin tässä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hide the pointer for a while from the playhead</source>
-        <translation>Piilota osoitin hetkeksi toistokohdasta alkaen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>No room for a hidden range here</source>
-        <translation>Tässä ei ole tilaa piilotetulle välille</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Back to the export options</source>
-        <translation>Takaisin vientiasetuksiin</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>No pointer</source>
-        <translation>Ei osoitinta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hidden pointer start</source>
-        <translation>Piilotuksen alku</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Hidden pointer end</source>
-        <translation>Piilotuksen loppu</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Show the pointer here again</source>
-        <translation>Näytä osoitin tässä taas</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Finish editing this range</source>
-        <translation>Lopeta tämän välin muokkaus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Size: Original</source>
-        <translation>Koko: Alkuperäinen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Size: 1080p</source>
-        <translation>Koko: 1080p</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Size: 720p</source>
-        <translation>Koko: 720p</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Size: Custom Width</source>
-        <translation>Koko: Oma leveys</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Quality: Default</source>
-        <translation>Laatu: Oletus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Quality: Low</source>
-        <translation>Laatu: Matala</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Quality: Medium</source>
-        <translation>Laatu: Keskitaso</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Quality: High</source>
-        <translation>Laatu: Korkea</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>MP4 Options</source>
-        <translation>MP4-asetukset</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Size, frame rate, quality and codec of the MP4, with an estimated file size</source>
-        <translation>MP4:n koko, kuvataajuus, laatu ja koodekki sekä arvioitu tiedostokoko</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
-        <translation>MP4:n koon ja kuvataajuuden muuttamista ei vielä tueta tässä järjestelmässä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Make the video smaller; it is never made larger than recorded</source>
-        <translation>Pienennä videota; sitä ei koskaan suurenneta tallennettua suuremmaksi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Video width in pixels</source>
-        <translation>Videon leveys pikseleinä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>%1 fps</source>
-        <translation>%1 fps</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>FPS: Original</source>
-        <translation>FPS: Alkuperäinen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
-        <translation>Pienempi kuvataajuus pienentää tiedostoa; se ei koskaan ole tallennettua suurempi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Default uses the quality from the Recording settings</source>
-        <translation>Oletus käyttää tallennusasetusten laatua</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Plays everywhere</source>
-        <translation>Toistuu kaikkialla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Smaller files at the same quality; some older players cannot open them</source>
-        <translation>Pienempiä tiedostoja samalla laadulla; jotkin vanhemmat soittimet eivät avaa niitä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>HEVC export is not available on this system</source>
-        <translation>HEVC-vienti ei ole käytettävissä tässä järjestelmässä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
-        <translation>HEVC-vienti vaatii HEVC Video Extensions -laajennukset Microsoft Storesta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>%1 × %2, %3 fps · %4 (estimate)</source>
-        <translation>%1 × %2, %3 fps · %4 (arvio)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>A background, padding, rounded corners, a shadow and a border around the video</source>
-        <translation>Tausta, reunus, pyöristetyt kulmat, varjo ja kehys videon ympärille</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Add a shadow under the video</source>
-        <translation>Lisää varjo videon alle</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Add a thin border around the video</source>
-        <translation>Lisää ohut kehys videon ympärille</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>A frame needs GIF or WebP on this system</source>
-        <translation>Kehys vaatii tässä järjestelmässä GIF- tai WebP-muodon</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Background: %1</source>
-        <translation>Tausta: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Background: Black</source>
-        <translation>Tausta: Musta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Background image: %1</source>
-        <translation>Taustakuva: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Background: White</source>
-        <translation>Tausta: Valkoinen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Blurred Video</source>
-        <translation>Sumennettu video</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Border</source>
-        <translation>Kehys</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Corners: %1</source>
-        <translation>Kulmat: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Draw the frame around the exported video</source>
-        <translation>Piirrä kehys viedyn videon ympärille</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Frame</source>
-        <translation>Kehys</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Frame: Off</source>
-        <translation>Kehys: Pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Frame: On</source>
-        <translation>Kehys: Päällä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>How round the video's corners are</source>
-        <translation>Kuinka pyöreät videon kulmat ovat</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Image…</source>
-        <translation>Kuva…</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Large</source>
-        <translation>Suuri</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Medium</source>
-        <translation>Keskikokoinen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>None</source>
-        <translation>Ei mitään</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Padding: %1</source>
-        <translation>Reunus: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Ratio: Auto</source>
-        <translation>Suhde: Automaattinen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Remove the border</source>
-        <translation>Poista kehys</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Remove the shadow</source>
-        <translation>Poista varjo</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Small</source>
-        <translation>Pieni</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Space around the video</source>
-        <translation>Tilaa videon ympärillä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>The shape of the exported video; the background fills the extra space</source>
-        <translation>Viedyn videon muoto; tausta täyttää ylimääräisen tilan</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>The video itself, blurred, behind it (masks applied)</source>
-        <translation>Itse video sumennettuna taustalla (maskit käytössä)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Use an image file as the background</source>
-        <translation>Käytä kuvatiedostoa taustana</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Cut from %1 to %2</source>
-        <translation>Leikattu pois %1–%2</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Cut Part</source>
-        <translation>Leikkaa osa pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Cuts and speed changes need GIF or WebP on this system</source>
-        <translation>Leikkaukset ja nopeuden muutokset vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Exported: %1</source>
-        <translation>Vienti: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>How fast the part at the playhead plays in the export; changed parts are silent</source>
-        <translation>Kuinka nopeasti toistokohdan osa toistuu viennissä; muutetut osat ovat äänettömiä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Keep Part</source>
-        <translation>Säilytä osa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Leave the part at the playhead out of the export (Delete)</source>
-        <translation>Jätä toistokohdan osa pois viennistä (Delete)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Part from %1 to %2 at %3</source>
-        <translation>Osa %1–%2 nopeudella %3</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Part Speed: %1</source>
-        <translation>Osan nopeus: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Put the part at the playhead back (Delete)</source>
-        <translation>Palauta toistokohdan osa (Delete)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Split</source>
-        <translation>Jaa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Split at %1</source>
-        <translation>Jako kohdassa %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Split the recording at the playhead (S)</source>
-        <translation>Jaa tallenne toistokohdasta (S)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Too close to another split or an end</source>
-        <translation>Liian lähellä toista jakoa tai päätä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Bottom</source>
-        <translation>Alhaalla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Bottom Left</source>
-        <translation>Alhaalla vasemmalla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Bottom Right</source>
-        <translation>Alhaalla oikealla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Dark</source>
-        <translation>Tumma</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Dark or light keys</source>
-        <translation>Tummat tai vaaleat näppäimet</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Draw the shortcuts into the exported video</source>
-        <translation>Piirrä pikanäppäimet viety videoon</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>How large the shortcuts are</source>
-        <translation>Kuinka suuria pikanäppäimet ovat</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
-        <translation>Kuinka kauan pikanäppäin näkyy painalluksen jälkeen; peräkkäin painetut näppäimet näkyvät yhdessä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Keys</source>
-        <translation>Näppäimet</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Keys: Off</source>
-        <translation>Näppäimet: Pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Keys: On</source>
-        <translation>Näppäimet: Päällä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Light</source>
-        <translation>Vaalea</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Place: %1</source>
-        <translation>Sijainti: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Shortcut hints need GIF or WebP on this system</source>
-        <translation>Pikanäppäinvihjeet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Show for %1 s</source>
-        <translation>Näytä %1 s</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Show the shortcuts pressed while recording (%1 recorded)</source>
-        <translation>Näytä tallennuksen aikana painetut pikanäppäimet (%1 tallennettu)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Size: %1</source>
-        <translation>Koko: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Top</source>
-        <translation>Ylhäällä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Where the shortcuts appear</source>
-        <translation>Missä pikanäppäimet näkyvät</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Shadow</source>
-        <translation>Varjo</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>A box behind the text, so it reads on any picture</source>
-        <translation>Laatikko tekstin takana, jotta se erottuu mistä tahansa kuvasta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>A title or caption at the playhead</source>
-        <translation>Otsikko tai kuvateksti toistokohtaan</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Add Image</source>
-        <translation>Lisää kuva</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Add Text</source>
-        <translation>Lisää teksti</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Align Center</source>
-        <translation>Keskitä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Align Left</source>
-        <translation>Tasaa vasemmalle</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Align Right</source>
-        <translation>Tasaa oikealle</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>An image such as a logo, for the whole recording</source>
-        <translation>Kuva, kuten logo, koko tallenteen ajaksi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Dark Background</source>
-        <translation>Tumma tausta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Delete this overlay</source>
-        <translation>Poista tämä päällyste</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
-        <translation>Vedä päällystettä siirtääksesi sitä tai kulmasta muuttaaksesi kokoa. Valmis lopettaa muokkauksen.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>How lines line up</source>
-        <translation>Miten rivit tasataan</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>How see-through the image is</source>
-        <translation>Kuinka läpikuultava kuva on</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Image overlay</source>
-        <translation>Kuvapäällyste</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Larger</source>
-        <translation>Suurempi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Light Background</source>
-        <translation>Vaalea tausta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>No Background</source>
-        <translation>Ei taustaa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Opacity: %1%</source>
-        <translation>Peittävyys: %1 %</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Overlay end</source>
-        <translation>Päällysteen loppu</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Overlay start</source>
-        <translation>Päällysteen alku</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Overlay text</source>
-        <translation>Päällysteen teksti</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Overlays need GIF or WebP on this system</source>
-        <translation>Päällysteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Selected overlay</source>
-        <translation>Valittu päällyste</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Show it for the whole recording, or only for a time range</source>
-        <translation>Näytä koko tallenteen ajan tai vain aikavälillä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Smaller</source>
-        <translation>Pienempi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Text</source>
-        <translation>Teksti</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Text colour %1</source>
-        <translation>Tekstin väri %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Text overlay "%1"</source>
-        <translation>Tekstipäällyste ”%1”</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>from %1 to %2</source>
-        <translation>%1–%2</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Audio</source>
-        <translation>Ääni</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Leave the microphone out of the export</source>
-        <translation>Jätä mikrofoni pois viennistä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Leave the system audio out of the export</source>
-        <translation>Jätä järjestelmän ääni pois viennistä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Microphone and system audio volume, mute, and noise reduction</source>
-        <translation>Mikrofonin ja järjestelmän äänen voimakkuus, mykistys ja kohinanvaimennus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Microphone volume in the export</source>
-        <translation>Mikrofonin voimakkuus viennissä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Microphone: %1</source>
-        <translation>Mikrofoni: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Mixing the two tracks is not supported for MP4 on this system yet</source>
-        <translation>Kahden raidan miksausta ei vielä tueta MP4:lle tässä järjestelmässä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Mute Microphone</source>
-        <translation>Mykistä mikrofoni</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Mute System Audio</source>
-        <translation>Mykistä järjestelmän ääni</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Reduce Noise</source>
-        <translation>Vaimenna kohinaa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>System Audio: %1</source>
-        <translation>Järjestelmän ääni: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>System audio volume in the export</source>
-        <translation>Järjestelmän äänen voimakkuus viennissä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Turn down hiss, hum and room noise between words on the microphone</source>
-        <translation>Vaimenna sihinää, huminaa ja huoneen kohinaa sanojen välissä mikrofonista</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Close Without Saving (Esc)</source>
-        <translation>Sulje tallentamatta (Esc)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Close without saving your changes?</source>
-        <translation>Suljetaanko tallentamatta muutoksia?</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>The project stays in Recording Library as it was last saved.</source>
-        <translation>Projekti jää tallennekirjastoon sellaisena kuin se viimeksi tallennettiin.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Keep Editing</source>
-        <translation>Jatka muokkausta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
-        <source>Close</source>
-        <translation>Sulje</translation>
-    </message>
-    <message>
-        <source>Font</source>
-        <translation>Fontti</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation>Oletus</translation>
-    </message>
-</context>
-<context>
-    <name>RecordingPreviewBackend</name>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
-        <translation>Peitteitä ei vielä voi käyttää MP4-muodossa tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista peitteet viedäksesi MP4:n. Mitään ei viety.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
-        <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
-        <translation>Levytilaa ei ole tarpeeksi vientiin (%1 vapaana, tarvitaan noin %2). Vapauta tilaa ja yritä uudelleen; tallenne säilyy.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
-        <source>Writing file...</source>
-        <translation>Kirjoitetaan tiedostoa...</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
-        <source>Converting to WebP...</source>
-        <translation>Muunnetaan WebP-muotoon...</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="885" />
-        <source>Converting to GIF...</source>
-        <translation>Muunnetaan GIF-muotoon...</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="471" />
-        <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
-        <translation>Tiedostoa ei voitu tallentaa. Tallenne säilyy; yritä tallentaa uudelleen tai valitse toinen sijainti.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="436" />
-        <source>Saving...</source>
-        <translation>Tallennetaan...</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
-        <source>Recording Preview</source>
-        <translation>Tallennuksen esikatselu</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
-        <source>Converting video...</source>
-        <translation>Muunnetaan videota...</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
-        <source>Failed to create video player for conversion</source>
-        <translation>Videotoistinta ei voitu luoda muuntamista varten</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
-        <source>Failed to load video for conversion</source>
-        <translation>Videota ei voitu ladata muuntamista varten</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
-        <source>Video not loaded properly for conversion</source>
-        <translation>Video ei latautunut oikein muuntamista varten</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
-        <source>Failed to start encoder</source>
-        <translation>Kooderin käynnistäminen epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
-        <source>Conversion failed: output file is missing or empty</source>
-        <translation>Muuntaminen epäonnistui: tulostiedosto puuttuu tai on tyhjä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
-        <source>Trimming video...</source>
-        <translation>Leikataan videota...</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
-        <source>Trim failed: %1</source>
-        <translation>Videon leikkaus epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
-        <source>Trim failed: output file is missing or empty</source>
-        <translation>Videon leikkaus epäonnistui: tulostiedosto puuttuu tai on tyhjä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
-        <source>Trim failed</source>
-        <translation>Videon leikkaus epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
-        <source>Exporting video...</source>
-        <translation>Viedään videota...</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
-        <source>Video export is not supported on this platform</source>
-        <translation>Videon vienti ei ole tuettu tällä alustalla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
-        <source>Export failed: %1</source>
-        <translation>Vienti epäonnistui: %1</translation>
-    </message>
-    <message>
-        <source>Export failed; the original recording was kept.</source>
-        <translation>Vienti epäonnistui; alkuperäinen tallenne säilytettiin.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
-        <source>Cancelling...</source>
-        <translation>Peruutetaan...</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>About %1</source>
-        <translation>Noin %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
-        <translation>Kuvat (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Select Background Image</source>
-        <translation>Valitse taustakuva</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>The image could not be read.</source>
-        <translation>Kuvaa ei voitu lukea.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
-        <translation>Leikkauksia ja nopeuden muutoksia ei vielä voi käyttää MP4:ssä tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista ne viedäksesi MP4:n. Mitään ei viety.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Every part is cut out: there is nothing to export.</source>
-        <translation>Kaikki osat on leikattu pois: vietävää ei ole.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
-        <translation>Kuvat (*.png *.svg *.jpg *.jpeg *.webp)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Select Image</source>
-        <translation>Valitse kuva</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Title</source>
-        <translation>Otsikko</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
-        <translation>Teksti- ja kuvapäällysteitä ei vielä voi piirtää MP4:ään tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista ne viedäksesi MP4:n. Mitään ei viety.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
-        <translation>Projektin tallennetta ei voitu kopioida tallennusta varten. Mitään ei tallennettu.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
-        <translation>Tallennettu kohteeseen %1, mutta projektia ei voitu päivittää. Tallenna uudelleen, jotta muokkaukset säilyvät projektissa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
-        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
-        <translation>Tallennettu kohteeseen %1, mutta tallennetta ei voitu säilyttää muokattavana projektina. Se on yhä auki tässä: tallenna uudelleen tai hylkää se sulkemalla.</translation>
-    </message>
-</context>
-<context>
-    <name>RecordingPreviewWindow</name>
-</context>
-<context>
-    <name>RecordingRegionSelector</name>
-    <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="65" />
-        <source>Start Recording (Enter)</source>
-        <translation>Aloita tallennus (Enter)</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="66" />
-        <source>Cancel (Esc)</source>
-        <translation>Peruuta (Esc)</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="253" />
-        <source>%1 x %2</source>
-        <translation>%1 × %2</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="299" />
-        <source>Press Enter or click Start Recording, Escape to cancel</source>
-        <translation>Paina Enter tai napsauta Aloita tallennus, peruuta Escillä</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="301" />
-        <source>Release to confirm selection</source>
-        <translation>Vapauta vahvistaaksesi valinnan</translation>
-    </message>
-    <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="303" />
-        <source>Click and drag to select recording region</source>
-        <translation>Valitse tallennusalue napsauttamalla ja vetämällä</translation>
-    </message>
-</context>
-<context>
-    <name>RecordingSettings</name>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="245" />
-        <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
-        <translation>Vahvista näyttö, mikrofoni ja järjestelmän ääni ennen jokaista tallennusta. Kun pois päältä, tallennus alkaa heti näillä asetuksilla.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="244" />
-        <source>Show setup before recording</source>
-        <translation>Näytä asetukset ennen tallennusta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="31" />
-        <source>Frame rate</source>
-        <translation>Kuvataajuus</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="33" />
-        <source>10 FPS</source>
-        <translation>10 FPS</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="34" />
-        <source>15 FPS</source>
-        <translation>15 FPS</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="35" />
-        <source>24 FPS</source>
-        <translation>24 FPS</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="36" />
-        <source>30 FPS</source>
-        <translation>30 FPS</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="45" />
-        <source>Output format</source>
-        <translation>Tulostemuoto:</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="47" />
-        <source>MP4 (H.264)</source>
-        <translation>MP4 (H.264)</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="48" />
-        <source>GIF</source>
-        <translation>GIF</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="49" />
-        <source>WebP</source>
-        <translation>WebP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="57" />
-        <source>Quality</source>
-        <translation>Laatu:</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="80" />
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation>WebP-muoto luo GIF:iä pienempiä tiedostoja paremmalla laadulla.
-Paras lyhyille leikkeille ja verkkojakoon.
-WebP-tallennuksissa ääntä ei tueta.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="81" />
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation>GIF-muoto luo MP4:ää suurempia tiedostoja.
-Paras lyhyille leikkeille ja verkkojakoon.
-GIF-tallennuksissa ääntä ei tueta.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="90" />
-        <source>Audio</source>
-        <translation>Ääni</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
-        <source>Record audio</source>
-        <translation>Tallenna ääni</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
-        <source>Source</source>
-        <translation>Lähde:</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
-        <source>Microphone</source>
-        <translation>Mikrofoni</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
-        <source>System Audio</source>
-        <translation>Järjestelmän ääni</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="103" />
-        <source>Both (Mixed)</source>
-        <translation>Molemmat (Miksattu)</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
-        <source>Default output format</source>
-        <translation>Oletusvientimuoto</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
-        <source>Recording quality</source>
-        <translation>Tallennuslaatu</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
-        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
-        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. MP4 on ainoa vientimuoto, joka säilyttää äänen.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
-        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
-        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. WebP-viennit eivät sisällä ääntä.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
-        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
-        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. GIF-viennit eivät sisällä ääntä.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
-        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
-        <translation>WebP-viennit tuottavat lyhyissä leikkeissä GIF:iä pienempiä tiedostoja paremmalla laadulla. Ääntä ei tueta suorassa WebP-tallennuksessa.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
-        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
-        <translation>GIF-viennit sopivat parhaiten lyhyisiin leikkeisiin ja nopeaan jakamiseen. Ääntä ei tueta suorassa GIF-tallennuksessa.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
-        <source>MP4 records directly with H.264 video and optional audio.</source>
-        <translation>MP4 tallentaa suoraan H.264-videolla ja valinnaisella äänellä.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
-        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
-        <translation>Ääni tallennetaan väliaikaiseen MP4-tallenteeseen. Vain MP4-vienti säilyttää äänen.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
-        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
-        <translation>Ääni on käytettävissä vain suorassa MP4-tallennuksessa tai kun Näytä esikatselu on käytössä.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
-        <source>Loading audio devices...</source>
-        <translation>Ladataan äänilaitteita...</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
-        <source>The recording page is ready. Input devices are loading in the background.</source>
-        <translation>Tallennussivu on valmis. Syöttölaitteita ladataan taustalla.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
-        <source>Input device</source>
-        <translation>Syöttölaite</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
-        <source>System Default</source>
-        <translation>Järjestelmän oletus</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
-        <source>Show preview</source>
-        <translation>Näytä esikatselu</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
-        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
-        <translation>Pidä tämä käytössä, jotta voit rajata tai viedä tallenteen tallennuksen jälkeen. Esikatselutallenteet kaapataan aina ensin MP4-muodossa.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
-        <source>Countdown</source>
-        <translation>Lähtölaskenta</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="122" />
-        <source>Show countdown</source>
-        <translation>Näytä lähtölaskenta</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="128" />
-        <source>Duration</source>
-        <translation>Lähtölaskennan kesto:</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="130" />
-        <source>1 second</source>
-        <translation>1 sekunti</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="131" />
-        <source>2 seconds</source>
-        <translation>2 sekuntia</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="132" />
-        <source>3 seconds</source>
-        <translation>3 sekuntia</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="133" />
-        <source>4 seconds</source>
-        <translation>4 sekuntia</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="134" />
-        <source>5 seconds</source>
-        <translation>5 sekuntia</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
-        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
-        <translation>Tallennetun videon laatu. Kun esikatselu on käytössä, tallenteet kaapataan korkealaatuisina ja muunnetaan tähän laatuun tallennettaessa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>All keys, including typed text</source>
-        <translation>Kaikki näppäimet, myös kirjoitettu teksti</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
-        <translation>Esikatselun pikanäppäinvihjeitä varten. Näppäimet säilyvät väliaikaisen tallenteen kanssa ja poistetaan sen mukana; ne eivät koskaan ole tallennetussa tiedostossa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Not available on this system yet</source>
-        <translation>Ei vielä käytettävissä tässä järjestelmässä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Off</source>
-        <translation>Pois</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Record keys</source>
-        <translation>Tallenna näppäimet</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Shortcuts only</source>
-        <translation>Vain pikanäppäimet</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Never</source>
-        <translation>Ei koskaan</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>7 days</source>
-        <translation>7 päivää</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>30 days</source>
-        <translation>30 päivää</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>90 days</source>
-        <translation>90 päivää</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Keep editable projects</source>
-        <translation>Säilytä muokattavat projektit</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
-        <translation>Tallennuksen jälkeen säilytä tallenne ja muokkauksesi, jotta voit muuttaa ja viedä sen uudelleen tallennekirjastosta. Projektit säilyttävät koko näytön tallenteen, sen osoittimen, näppäimet ja ääniraidat, myös sen, minkä sumensit tai rajasit pois, ja vievät levytilaa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Delete projects not changed for</source>
-        <translation>Poista projektit, joita ei ole muutettu</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>After recording</source>
-        <translation>Tallennuksen jälkeen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Edit in the preview</source>
-        <translation>Muokkaa esikatselussa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Save right away</source>
-        <translation>Tallenna heti</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
-        <translation>Pikatila: tiedosto tallennetaan lopulliseen muotoonsa heti, kun lopetat, ilman esikatselua ja muokkausraitoja.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>After saving</source>
-        <translation>Tallennuksen jälkeen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Do nothing</source>
-        <translation>Älä tee mitään</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Copy the file</source>
-        <translation>Kopioi tiedosto</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Show in folder</source>
-        <translation>Näytä kansiossa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
-        <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Esikatseltavat tallenteet tallennetaan aina ensin MP4-muodossa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Choose an area before recording</source>
-        <translation>Valitse alue ennen tallennusta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
-        <translation>Valitse tallennettava vetämällä näytön yli. Muokkaustila tallentaa silti koko näytön ja avaa esikatselun alueeseen rajattuna, joten voit muuttaa sitä; pikatila tallentaa vain alueen.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="0" />
-        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
-        <translation>Projektit säilytetään, kun tallennat esikatselusta. Ota Näytä esikatselu käyttöön, jotta voit käyttää niitä.</translation>
-    </message>
-</context>
-<context>
-    <name>RegionExportManager</name>
-    <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="203" />
-        <source>Failed to save screenshot: %1</source>
-        <translation>Kuvakaappauksen tallennus epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="217" />
-        <source>Save Screenshot</source>
-        <translation>Tallenna kuvakaappaus</translation>
-    </message>
-    <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="219" />
-        <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
-        <translation>PNG-kuva (*.png);;JPEG-kuva (*.jpg *.jpeg);;Kaikki tiedostot (*)</translation>
-    </message>
-</context>
-<context>
-    <name>RegionPainter</name>
-    <message>
-        <location filename="../src/region/RegionPainter.cpp" line="253" />
-        <location filename="../src/region/RegionPainter.cpp" line="263" />
-        <location filename="../src/region/RegionPainter.cpp" line="275" />
-        <location filename="../src/region/RegionPainter.cpp" line="363" />
-        <source>%1 x %2 pt</source>
-        <translation>%1 × %2 pt</translation>
-    </message>
-</context>
-<context>
-    <name>RegionSelector</name>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="1560" />
-        <source>%1 region</source>
-        <translation>%1 alue</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="1561" />
-        <source>%1 regions</source>
-        <translation>%1 aluetta</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="1857" />
-        <source>Error</source>
-        <translation>Virhe</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="1857" />
-        <source>Failed to merge regions. Please try again.</source>
-        <translation>Alueiden yhdistäminen epäonnistui. Yritä uudelleen.</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="1916" />
-        <location filename="../src/RegionSelector.cpp" line="2413" />
-        <location filename="../src/RegionSelector.cpp" line="2503" />
-        <location filename="../src/RegionSelector.cpp" line="2598" />
-        <source>Failed to process selected region</source>
-        <translation>Valitun alueen käsittely epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2444" />
-        <location filename="../src/RegionSelector.cpp" line="2469" />
-        <source>Copied %1 characters</source>
-        <translation>%1 merkkiä kopioitu</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2448" />
-        <source>No text found</source>
-        <translation>Tekstiä ei löytynyt</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2468" />
-        <source>OCR</source>
-        <translation>OCR</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2565" />
-        <source>No QR code found</source>
-        <translation>QR-koodia ei löytynyt</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2613" />
-        <source>Face detection unavailable</source>
-        <translation>Kasvojentunnistus ei ole käytettävissä</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2625" />
-        <source>Detection unavailable</source>
-        <translation>Tunnistus ei ole käytettävissä</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2803" />
-        <source>Blurred %1 face(s), %2 credential(s)</source>
-        <translation>Sumennettu %1 kasvo(a), %2 tunnistetietoa</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2807" />
-        <source>Blurred %1 face(s)</source>
-        <translation>%1 kasvot sumennettu</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2811" />
-        <source>Blurred %1 credential(s)</source>
-        <translation>Sumennettu %1 tunnistetietoa</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2815" />
-        <source>No faces or credentials detected</source>
-        <translation>Kasvoja tai tunnistetietoja ei havaittu</translation>
-    </message>
-    <message>
-        <location filename="../src/RegionSelector.cpp" line="2819" />
-        <source>Detection failed</source>
-        <translation>Tunnistus epäonnistui</translation>
-    </message>
-</context>
-<context>
-    <name>RegionSettingsHelper</name>
-    <message>
-        <location filename="../src/region/RegionSettingsHelper.cpp" line="130" />
-        <source>Default</source>
-        <translation>Oletus</translation>
-    </message>
-</context>
-<context>
-    <name>SCKCaptureEngine</name>
-    <message>
-        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="389" />
-        <source>Could not match the selected screen. Recording from main display instead.</source>
-        <translation>Valittua näyttöä ei voitu täsmätä. Tallennetaan sen sijaan päänäytöltä.</translation>
-    </message>
-</context>
-<context>
-    <name>ScreenCanvas</name>
-    <message>
-        <location filename="../src/ScreenCanvas.cpp" line="304" />
-        <location filename="../src/ScreenCanvas.cpp" line="333" />
-        <source>Laser Pointer</source>
-        <translation>Laserosoitin</translation>
-    </message>
-</context>
-<context>
-    <name>SettingsDialog</name>
-</context>
-<context>
-    <name>SettingsPathPicker</name>
-    <message>
-        <location filename="../src/qml/controls/SettingsPathPicker.qml" line="48" />
-        <source>Browse...</source>
-        <translation>Selaa...</translation>
-        </message>
-</context>
-<context>
-    <name>SettingsPermissionRow</name>
-    <message>
-        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="31" />
-        <source>Granted</source>
-        <translation>Myönnetty</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="31" />
-        <source>Not Granted</source>
-        <translation>Ei myönnetty</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="40" />
-        <source>Open Settings</source>
-        <translation>Avaa asetukset</translation>
-        </message>
-</context>
-<context>
-    <name>SettingsSidebar</name>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="27" />
-        <source>General</source>
-        <translation>Yleiset</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="28" />
-        <source>Hotkeys</source>
-        <translation>Pikanäppäimet</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="29" />
-        <source>Advanced</source>
-        <translation>Lisäasetukset</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="30" />
-        <source>Watermark</source>
-        <translation>Vesileima</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="31" />
-        <source>OCR</source>
-        <translation>OCR</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="32" />
-        <source>Recording</source>
-        <translation>Tallennus</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
-        <source>Files</source>
-        <translation>Tiedostot</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="34" />
-        <source>Updates</source>
-        <translation>Päivitykset</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
-        <source>About</source>
-        <translation>Tietoja</translation>
-        </message>
-</context>
-<context>
-    <name>SettingsWindow</name>
-    <message>
-        <location filename="../src/qml/settings/SettingsWindow.qml" line="85" />
-        <source>Cancel</source>
-        <translation>Peruuta</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsWindow.qml" line="90" />
-        <source>Save</source>
-        <translation>Tallenna</translation>
-        </message>
-</context>
-<context>
-    <name>SnapTray::HotkeyManager</name>
-    <message>
-        <location filename="../include/hotkey/HotkeyTypes.h" line="194" />
-        <source>Bring the recording control bar back into view</source>
-        <translation>Tuo tallennuksen ohjauspalkki takaisin näkyviin</translation>
-    </message>
-    <message>
-        <location filename="../include/hotkey/HotkeyTypes.h" line="193" />
-        <source>Show Recording Controls</source>
-        <translation>Näytä tallennuksen ohjaimet</translation>
-    </message>
-    <message>
-        <location filename="../include/hotkey/HotkeyTypes.h" line="186" />
-        <source>Pause or resume the current screen recording</source>
-        <translation>Keskeytä tai jatka nykyistä näytön tallennusta</translation>
-    </message>
-    <message>
-        <location filename="../include/hotkey/HotkeyTypes.h" line="185" />
-        <source>Pause/Resume Recording</source>
-        <translation>Keskeytä/jatka tallennusta</translation>
-    </message>
-    <message>
-        <location filename="../src/hotkey/HotkeyManager.cpp" line="371" />
-        <source>Conflicts with: %1</source>
-        <translation>Ristiriita kohteen kanssa: %1</translation>
-    </message>
-    <message>
-        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
-        <source>Full Screen Capture</source>
-        <translation>Koko näytön kaappaus</translation>
-    </message>
-    <message>
-        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
-        <source>Capture the screen under the cursor</source>
-        <translation>Kaappaa kohdistimen alla oleva näyttö</translation>
-    </message>
-    <message>
-        <location filename="../include/hotkey/HotkeyTypes.h" line="128" />
-        <source>Delayed Capture</source>
-        <translation>Viivästetty kaappaus</translation>
-    </message>
-    <message>
-        <location filename="../include/hotkey/HotkeyTypes.h" line="129" />
-        <source>Start a countdown, then capture a region</source>
-        <translation>Aloita lähtölaskenta ja kaappaa sitten alue</translation>
-    </message>
-</context>
-<context>
-    <name>SnapTray::HotkeySettingsTab</name>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="50" />
-        <source>Action</source>
-        <translation>Toiminto</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="51" />
-        <source>Hotkey</source>
-        <translation>Pikanäppäin</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="52" />
-        <source>Status</source>
-        <translation>Tila</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="71" />
-        <source>Double-click a hotkey to edit, or select and press Enter</source>
-        <translation>Muokkaa pikanäppäintä kaksoisnapsauttamalla tai valitse se ja paina Enter</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="84" />
-        <source>Edit...</source>
-        <translation>Muokkaa...</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="88" />
-        <source>Clear</source>
-        <translation>Tyhjennä</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="92" />
-        <source>Reset to Default</source>
-        <translation>Palauta oletus</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="98" />
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="384" />
-        <source>Restore All Defaults</source>
-        <translation>Palauta kaikki oletukset</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="208" />
-        <source>(Optional)</source>
-        <translation>(Valinnainen)</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="208" />
-        <source>(Not set)</source>
-        <translation>(Ei asetettu)</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="234" />
-        <source>Active</source>
-        <translation>Aktiivinen</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="238" />
-        <source>Conflict</source>
-        <translation>Ristiriita</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="242" />
-        <source>Disabled</source>
-        <translation>Poistettu käytöstä</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="248" />
-        <source>Not Set</source>
-        <translation>Ei asetettu</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="347" />
-        <source>Clear Hotkey</source>
-        <translation>Tyhjennä pikanäppäin</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="348" />
-        <source>Are you sure you want to clear the hotkey for '%1'?
-This hotkey is required for normal operation.</source>
-        <translation>Haluatko varmasti poistaa pikanäppäimen toiminnolle '%1'?
-Tämä pikanäppäin on välttämätön normaalille toiminnalle.</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="385" />
-        <source>Are you sure you want to reset all hotkeys to their default values?</source>
-        <translation>Haluatko varmasti palauttaa kaikki pikanäppäimet oletusarvoihin?</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="415" />
-        <source>Failed to register: %1</source>
-        <translation>Rekisteröinti epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="453" />
-        <source>Hotkey Conflict</source>
-        <translation>Pikanäppäinristiriita</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="454" />
-        <source>The hotkey '%1' is already assigned to '%2'.
-Please choose a different hotkey.</source>
-        <translation>Pikanäppäin '%1' on jo määritetty toiminnolle '%2'.
-Valitse toinen pikanäppäin.</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="465" />
-        <source>Registration Failed</source>
-        <translation>Rekisteröinti epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="466" />
-        <source>Failed to register the hotkey '%1'.
-It may be in use by another application.</source>
-        <translation>Pikanäppäimen '%1' rekisteröinti epäonnistui.
-Se saattaa olla toisen sovelluksen käytössä.</translation>
-    </message>
-</context>
-<context>
-    <name>SnapTray::QmlSettingsWindow</name>
-    <message>
-        <location filename="../src/qml/QmlSettingsWindow.cpp" line="39" />
-        <source>Settings</source>
-        <translation>Asetukset</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/QmlSettingsWindow.cpp" line="49" />
-        <source>Settings saved. Language change will apply after restart.</source>
-        <translation>Asetukset tallennettiin. Kielimuutos tulee voimaan uudelleenkäynnistyksen jälkeen.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/QmlSettingsWindow.cpp" line="50" />
-        <source>Settings saved</source>
-        <translation>Asetukset tallennettiin</translation>
-        </message>
-</context>
-<context>
-    <name>SnapTray::SettingsBackend</name>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="375" />
-        <source>Never</source>
-        <translation>Ei koskaan</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="537" />
-        <source>Select Screenshot Folder</source>
-        <translation>Valitse kuvakaappauskansio</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="545" />
-        <source>Select Recording Folder</source>
-        <translation>Valitse tallennuskansio</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="553" />
-        <source>Select Watermark Image</source>
-        <translation>Valitse vesileimakuva</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="554" />
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
-        <translation>Kuvat (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="147" />
-        <source>Disable Windows Print Screen Shortcut?</source>
-        <translation>Poistetaanko Windowsin Print Screen -pikanäppäin käytöstä?</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="159" />
-        <source>Windows Print Screen Shortcut Disabled</source>
-        <translation>Windowsin Print Screen -pikanäppäin poistettiin käytöstä</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="166" />
-        <source>Windows Setting Not Changed</source>
-        <translation>Windows-asetusta ei muutettu</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="168" />
-        <source>SnapTray could not change the Windows Print Screen setting.</source>
-        <translation>SnapTray ei voinut muuttaa Windowsin Print Screen -asetusta.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
-        <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
-        <translation>%1 tallennettiin, mutta sitä ei voitu aktivoida, koska pikanäppäin on jo toisen sovelluksen tai järjestelmän käytössä.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
-        <source>%1 was saved, but it could not be activated. %2</source>
-        <translation>%1 tallennettiin, mutta sitä ei voitu aktivoida. %2</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
-        <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
-        <translation>Windows käyttää Print Screen -näppäintä avatakseen Snipping Tool -työkalun, mikä estää SnapTrayta käyttämästä Print Screeniä pikanäppäimenä. Poistetaanko tämä käytöstä, jotta SnapTray voi käyttää Print Screen -näppäintä?</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="211" />
-        <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
-        <translation>Käynnistä tämän jälkeen SnapTray uudelleen. Jos Windows avaa edelleen Snipping Toolin, kirjaudu ulos Windowsista (tai käynnistä uudelleen) ja yritä uudelleen.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="215" />
-        <source>No, don't ask again</source>
-        <translation>Ei, älä kysy uudelleen</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="224" />
-        <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
-        <translation>Käynnistä SnapTray uudelleen käyttääksesi Print Screeniä. Jos Snipping Tool avautuu edelleen, kirjaudu ulos Windowsista ja takaisin sisään.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
-        <source>Checking start on login status...</source>
-        <translation>Tarkistetaan kirjautumisen yhteydessä käynnistämisen tilaa...</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
-        <source>Updating start on login status...</source>
-        <translation>Päivitetään kirjautumisen yhteydessä käynnistämisen tilaa...</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
-        <source>Start on login status error: %1</source>
-        <translation>Kirjautumisen yhteydessä käynnistämisen tilavirhe: %1</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
-        <source>Disabled in system startup settings. Re-enable it there.</source>
-        <translation>Poistettu käytöstä järjestelmän käynnistysasetuksissa. Ota se uudelleen käyttöön siellä.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
-        <source>Disabled by your organization.</source>
-        <translation>Organisaatiosi on poistanut tämän käytöstä.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
-        <source>Enabled by your organization.</source>
-        <translation>Organisaatiosi on ottanut tämän käyttöön.</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
-        <source>Start on login is unavailable for this package.</source>
-        <translation>Kirjautumisen yhteydessä käynnistäminen ei ole käytettävissä tälle paketille.</translation>
-        </message>
-</context>
-<context>
-    <name>SnapTray::TypeHotkeyDialog</name>
-    <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="59" />
-        <source>Press a key combination...</source>
-        <translation>Paina näppäinyhdistelmää...</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="98" />
-        <source>Cancel</source>
-        <translation>Peruuta</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="117" />
-        <source>OK</source>
-        <translation>OK</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="198" />
-        <source>Set Hotkey for: %1</source>
-        <translation>Aseta pikanäppäin toiminnolle: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="319" />
-        <source>(Press keys)</source>
-        <translation>(Paina näppäimiä)</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="338" />
-        <source>Press Enter or click OK to confirm</source>
-        <translation>Vahvista painamalla Enter tai napsauttamalla OK</translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="340" />
-        <source>Press a key combination, then press Enter to confirm</source>
-        <translation>Paina näppäinyhdistelmää ja vahvista Enterillä</translation>
-    </message>
-</context>
-<context>
-    <name>TextSection</name>
-    <message>
-        <location filename="../src/ui/sections/TextSection.cpp" line="162" />
-        <source>Default</source>
-        <translation>Oletus</translation>
-    </message>
-</context>
-<context>
-    <name>ToolRegistry</name>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="14" />
-        <source>Unknown Tool</source>
-        <translation>Tuntematon työkalu</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="25" />
-        <source>Selection</source>
-        <translation>Valinta</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="37" />
-        <source>Arrow</source>
-        <translation>Nuoli</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="48" />
-        <source>Polyline</source>
-        <translation>Murtoviiva</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="59" />
-        <source>Pencil</source>
-        <translation>Kynä</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="70" />
-        <source>Marker</source>
-        <translation>Korostuskynä</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="81" />
-        <source>Shape</source>
-        <translation>Muoto</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="92" />
-        <source>Text</source>
-        <translation>Teksti</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="103" />
-        <source>Mosaic</source>
-        <translation>Mosaiikki</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="114" />
-        <source>Eraser</source>
-        <translation>Pyyhekumi</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="125" />
-        <source>Step Badge</source>
-        <translation>Vaihemerkki</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="136" />
-        <source>Emoji Sticker</source>
-        <translation>Emoji-tarra</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="147" />
-        <source>Crop</source>
-        <translation>Rajaa</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="158" />
-        <source>Measure</source>
-        <translation>Mittaa</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="170" />
-        <source>Whiteboard</source>
-        <translation>Valkotaulu</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="181" />
-        <source>Blackboard</source>
-        <translation>Liitutaulu</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="201" />
-        <source>Undo</source>
-        <translation>Kumoa</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="212" />
-        <source>Redo</source>
-        <translation>Tee uudelleen</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="223" />
-        <source>Clear All</source>
-        <translation>Tyhjennä kaikki</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="234" />
-        <source>Cancel</source>
-        <translation>Peruuta</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="245" />
-        <source>Recognize Text</source>
-        <translation>Tunnista teksti</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="256" />
-        <source>QR Code Scan</source>
-        <translation>QR-koodin skannaus</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="267" />
-        <source>Pin to Desktop</source>
-        <translation>Kiinnitä työpöydälle</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="278" />
-        <source>Screen Recording</source>
-        <translation>Näytön tallennus</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="301" />
-        <location filename="../src/tools/ToolRegistry.cpp" line="323" />
-        <source>Save</source>
-        <translation>Tallenna</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="312" />
-        <location filename="../src/tools/ToolRegistry.cpp" line="334" />
-        <source>Copy to Clipboard</source>
-        <translation>Kopioi leikepöydälle</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="346" />
-        <source>Exit</source>
-        <translation>Lopeta</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="358" />
-        <source>Multi-Region Capture</source>
-        <translation>Usean alueen kaappaus</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="369" />
-        <source>Complete Multi-Region</source>
-        <translation>Viimeistele usean alueen kaappaus</translation>
-    </message>
-</context>
-<context>
-    <name>UpdateChecker</name>
-    <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="180" />
-        <source>Failed to parse update information</source>
-        <translation>Päivitystietojen jäsentäminen epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="188" />
-        <source>Invalid update response</source>
-        <translation>Virheellinen päivitysvastaus</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="198" />
-        <source>Could not parse release information</source>
-        <translation>Julkaisutietoja ei voitu jäsentää</translation>
-    </message>
-</context>
-<context>
-    <name>UpdateDialog</name>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="93" />
-        <source>Update Available</source>
-        <translation>Päivitys saatavilla</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="116" />
-        <source>New Version Available!</source>
-        <translation>Uusi versio saatavilla!</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="130" />
-        <source>%1 %2 is now available.</source>
-        <translation>%1 %2 on nyt saatavilla.</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="139" />
-        <source>You are currently using %1</source>
-        <translation>Käytössäsi on tällä hetkellä %1</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="149" />
-        <source>What's New</source>
-        <translation>Mitä uutta</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="175" />
-        <source>Download</source>
-        <translation>Lataa</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="179" />
-        <source>Remind Later</source>
-        <translation>Muistuta myöhemmin</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="183" />
-        <source>Skip Version</source>
-        <translation>Ohita versio</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="218" />
-        <source>You're up to date!</source>
-        <translation>Käytössäsi on uusin versio!</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="228" />
-        <source>%1 %2 is the latest version.</source>
-        <translation>%1 %2 on uusin versio.</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="239" />
-        <source>OK</source>
-        <translation>OK</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="272" />
-        <source>Unable to check for updates</source>
-        <translation>Päivitysten tarkistus ei onnistunut</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="282" />
-        <source>Please check your internet connection and try again.</source>
-        <translation>Tarkista internetyhteys ja yritä uudelleen.</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="299" />
-        <source>Try Again</source>
-        <translation>Yritä uudelleen</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="303" />
-        <source>Close</source>
-        <translation>Sulje</translation>
-    </message>
-</context>
-<context>
-    <name>UpdatesSettings</name>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="30" />
-        <source>Version</source>
-        <translation>Versio</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="33" />
-        <source>Current Version</source>
-        <translation>Nykyinen versio</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="45" />
-        <source>Automatic Updates</source>
-        <translation>Automaattiset päivitykset</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
-        <source>Auto-check updates</source>
-        <translation>Autotarkistus</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />
-        <source>Check frequency</source>
-        <translation>Tarkistusväli</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="56" />
-        <source>Every day</source>
-        <translation>Joka päivä</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="57" />
-        <source>Every 3 days</source>
-        <translation>Joka 3. päivä</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="58" />
-        <source>Every week</source>
-        <translation>Joka viikko</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="59" />
-        <source>Every 2 weeks</source>
-        <translation>Joka 2. viikko</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="60" />
-        <source>Every month</source>
-        <translation>Joka kuukausi</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="101" />
-        <source>Checking...</source>
-        <translation>Tarkistetaan...</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="101" />
-        <source>Check Now</source>
-        <translation>Tarkista nyt</translation>
-        </message>
-</context>
-<context>
-    <name>WatermarkSettings</name>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="23" />
-        <source>Apply to images</source>
-        <translation>Käytä kuviin</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="29" />
-        <source>Apply to recordings</source>
-        <translation>Käytä tallennuksiin</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="47" />
-        <source>Image</source>
-        <translation>Kuva:</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="53" />
-        <source>Scale</source>
-        <translation>Mittakaava:</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="62" />
-        <source>Opacity</source>
-        <translation>Läpinäkyvyys</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="71" />
-        <source>Margin</source>
-        <translation>Marginaali:</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="80" />
-        <source>Position</source>
-        <translation>Sijainti</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="82" />
-        <source>Top-Left</source>
-        <translation>Vasen yläkulma</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="83" />
-        <source>Top-Right</source>
-        <translation>Oikea yläkulma</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="84" />
-        <source>Bottom-Left</source>
-        <translation>Vasen alakulma</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="85" />
-        <source>Bottom-Right</source>
-        <translation>Oikea alakulma</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="116" />
-        <source>No image</source>
-        <translation>Ei kuvaa</translation>
-        </message>
-</context>
-<context>
-    <name>main</name>
-    <message>
-        <location filename="../src/qml/main.qml" line="10" />
-        <source>SnapTray QML</source>
-        <translation>SnapTray QML</translation>
-    </message>
-</context>
-<context>
-    <name>snaptray::colorwidgets::ColorDialog</name>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="37" />
-        <source>Select Color</source>
-        <translation>Valitse väri</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="77" />
-        <source>Hue</source>
-        <translation>Sävy</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="86" />
-        <source>Saturation</source>
-        <translation>Kylläisyys</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="95" />
-        <source>Value</source>
-        <translation>Arvo</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="105" />
-        <source>Red</source>
-        <translation>Punainen</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="114" />
-        <source>Green</source>
-        <translation>Vihreä</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="123" />
-        <source>Blue</source>
-        <translation>Sininen</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="132" />
-        <source>Alpha</source>
-        <translation>Alfa</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="141" />
-        <source>Hex</source>
-        <translation>Hex</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="163" />
-        <source>Reset</source>
-        <translation>Palauta</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="164" />
-        <source>OK</source>
-        <translation>OK</translation>
-    </message>
-    <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="166" />
-        <source>Cancel</source>
-        <translation>Peruuta</translation>
-    </message>
-</context>
-<context>
-    <name>snaptray::colorwidgets::ColorPickerDialogCompat</name>
-    <message>
-        <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="29" />
-        <source>Select Color</source>
-        <translation>Valitse väri</translation>
     </message>
 </context>
 <context>
     <name>HistoryWindow</name>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1012" />
         <source>History</source>
         <translation>Historia</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
+        <location filename="../src/PinWindow.cpp" line="1155" />
         <source>Open History Folder</source>
         <translation>Avaa historiakansio</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="651" />
         <source>No history items yet</source>
         <translation>Historiakohteita ei ole vielä</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="661" />
         <source>Screenshots you capture in SnapTray will appear here.</source>
         <translation>SnapTraylla ottamasi kuvakaappaukset näkyvät täällä.</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="685" />
         <source>No results</source>
         <translation>Ei tuloksia</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="695" />
         <source>Try a different smart folder.</source>
         <translation>Kokeile toista älykansiota.</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="890" />
         <source>Smart Folders</source>
         <translation>Älykansiot</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="23" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="50" />
         <source>All Screenshots</source>
         <translation>Kaikki kuvakaappaukset</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="27" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="43" />
         <source>Last 7 Days</source>
         <translation>Viimeiset 7 päivää</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="28" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="45" />
         <source>Large Files</source>
         <translation>Suuret tiedostot</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="29" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="47" />
         <source>Replayable</source>
         <translation>Toistettavissa</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="846" />
+        <source>SnapTray</source>
+        <translation>SnapTray</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="963" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1184" />
         <source>Edit</source>
         <translation>Muokkaa</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="970" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1185" />
         <source>Pin</source>
         <translation>Kiinnitä</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="977" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1186" />
         <source>Copy</source>
         <translation>Kopioi</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="984" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1187" />
         <source>Save As</source>
         <translation>Tallenna nimellä</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="991" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1189" />
         <source>Delete</source>
         <translation>Poista</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="33" />
         <source>Newest First</source>
         <translation>Uusimmat ensin</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="34" />
         <source>Oldest First</source>
         <translation>Vanhimmat ensin</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="35" />
         <source>Largest First</source>
         <translation>Suurimmat ensin</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="458" />
         <source>Preview unavailable</source>
         <translation>Esikatselu ei ole saatavilla</translation>
     </message>
@@ -5065,401 +726,1731 @@ Tiedoston koko: %3</translation>
     </message>
 </context>
 <context>
+    <name>HotkeySettings</name>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="53" />
+        <source>Keyboard Shortcuts</source>
+        <translation>Pikanäppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="65" />
+        <source>Restore All Defaults</source>
+        <translation>Palauta kaikki oletukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="151" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="162" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="186" />
+        <source>Not Set</source>
+        <translation>Ei asetettu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="181" />
+        <source>Conflict</source>
+        <translation>Ristiriita</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="183" />
+        <source>Active</source>
+        <translation>Aktiivinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="185" />
+        <source>Disabled</source>
+        <translation>Poistettu käytöstä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="208" />
+        <source>Edit</source>
+        <translation>Muokkaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="213" />
+        <source>Clear</source>
+        <translation>Tyhjennä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="218" />
+        <source>Reset</source>
+        <translation>Palauta</translation>
+    </message>
+</context>
+<context>
+    <name>MagnifierPanel</name>
+    <message>
+        <location filename="../src/region/MagnifierPanel.cpp" line="132" />
+        <source>RGB: %1,%2,%3</source>
+        <translation>RGB: %1,%2,%3</translation>
+    </message>
+    <message>
+        <location filename="../src/region/MagnifierPanel.cpp" line="334" />
+        <source>Shift: Switch color format</source>
+        <translation>Shift: vaihda värimuotoa</translation>
+    </message>
+    <message>
+        <location filename="../src/region/MagnifierPanel.cpp" line="338" />
+        <source>C: Copy color value</source>
+        <translation>C: kopioi väriarvo</translation>
+    </message>
+</context>
+<context>
+    <name>MainApplication</name>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1330" />
+        <location filename="../src/MainApplication.cpp" line="1388" />
+        <source>Finish or close the current recording first.</source>
+        <translation>Lopeta tai sulje nykyinen tallennus ensin.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1329" />
+        <location filename="../src/MainApplication.cpp" line="1387" />
+        <source>Recording Busy</source>
+        <translation>Tallennus on varattu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="406" />
+        <source>SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.</source>
+        <translation>SnapTray löysi %1 tallentamatonta tallennetta. Palauta ne ilmaisinalueen valikosta.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="408" />
+        <source>SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray löysi %1 tallentamatonta tallennetta; niistä %2 voidaan palauttaa ilmaisinalueen valikosta.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="412" />
+        <source>Unsaved Recordings Found</source>
+        <translation>Tallentamattomia tallenteita löytyi</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1301" />
+        <source>Recover Recordings (%1)...</source>
+        <translation>Palauta tallenteet (%1)...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="493" />
+        <source>Recover Recordings...</source>
+        <translation>Palauta tallenteet...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1595" />
+        <source>low disk space</source>
+        <translation>levytila vähissä</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1613" />
+        <source>Warning: %1</source>
+        <translation>Varoitus: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1592" />
+        <source>dropping frames</source>
+        <translation>pudottaa kuvia</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="509" />
+        <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
+        <translation>Tallennuksen diagnostiikka on leikepöydällä. Se ei sisällä kuvia, ääntä eikä tiedostonimiä.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="508" />
+        <source>Diagnostics Copied</source>
+        <translation>Diagnostiikka kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="501" />
+        <source>Copy Recording Diagnostics</source>
+        <translation>Kopioi tallennuksen diagnostiikka</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="513" />
+        <location filename="../src/MainApplication.cpp" line="1423" />
+        <source>Show Recording Controls</source>
+        <translation>Näytä tallennuksen ohjaimet</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="185" />
+        <source>SnapTray is already running</source>
+        <translation>SnapTray on jo käynnissä</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="281" />
+        <source>Recording Saved</source>
+        <translation>Tallennus tallennettu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="282" />
+        <location filename="../src/MainApplication.cpp" line="314" />
+        <location filename="../src/MainApplication.cpp" line="344" />
+        <source>Saved to: %1</source>
+        <translation>Tallennettu kohteeseen: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="302" />
+        <location filename="../src/MainApplication.cpp" line="1658" />
+        <location filename="../src/MainApplication.cpp" line="1727" />
+        <source>Recording Error</source>
+        <translation>Tallennusvirhe</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1545" />
+        <location filename="../src/MainApplication.cpp" line="1548" />
+        <source>Recording Warning</source>
+        <translation>Tallennusvaroitus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="313" />
+        <location filename="../src/MainApplication.cpp" line="343" />
+        <source>Screenshot Saved</source>
+        <translation>Kuvakaappaus tallennettu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="127" />
+        <source>%1 unavailable</source>
+        <translation>%1 ei käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="129" />
+        <source>Disabled</source>
+        <translation>Poistettu käytöstä</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="320" />
+        <location filename="../src/MainApplication.cpp" line="350" />
+        <source>Screenshot Save Failed</source>
+        <translation>Kuvakaappauksen tallennus epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="321" />
+        <location filename="../src/MainApplication.cpp" line="351" />
+        <source>%1
+%2</source>
+        <translation>%1
+%2</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="423" />
+        <location filename="../src/MainApplication.cpp" line="1275" />
+        <source>Region Capture</source>
+        <translation>Alueen kaappaus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="453" />
+        <location filename="../src/MainApplication.cpp" line="1284" />
+        <source>Screen Canvas</source>
+        <translation>Näytön piirtoalue</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="456" />
+        <location filename="../src/MainApplication.cpp" line="1287" />
+        <source>Paste</source>
+        <translation>Liitä</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="459" />
+        <location filename="../src/MainApplication.cpp" line="1290" />
+        <source>Pin from Image...</source>
+        <translation>Kiinnitä kuvasta...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="462" />
+        <location filename="../src/MainApplication.cpp" line="1293" />
+        <source>History</source>
+        <translation>Historia</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="465" />
+        <location filename="../src/MainApplication.cpp" line="1259" />
+        <source>Hide All Pins</source>
+        <translation>Piilota kaikki kiinnitykset</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="468" />
+        <source>Close All Pins</source>
+        <translation>Sulje kaikki kiinnitykset</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="481" />
+        <location filename="../src/MainApplication.cpp" line="1429" />
+        <source>Record Screen</source>
+        <translation>Tallenna koko näyttö</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1441" />
+        <location filename="../src/MainApplication.cpp" line="1452" />
+        <source>Cancel Recording</source>
+        <translation>Peruuta tallennus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1447" />
+        <source>Stop Recording</source>
+        <translation>Lopeta tallennus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1569" />
+        <source>Preparing to record</source>
+        <translation>Valmistellaan tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1570" />
+        <source>Recording starts soon</source>
+        <translation>Tallennus alkaa pian</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1571" />
+        <source>Recording</source>
+        <translation>Tallennetaan</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1572" />
+        <source>Recording paused</source>
+        <translation>Tallennus keskeytetty</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1573" />
+        <source>Finishing recording</source>
+        <translation>Viimeistellään tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1659" />
+        <location filename="../src/MainApplication.cpp" line="1728" />
+        <source>No screen available for recording.</source>
+        <translation>Näyttöä ei ole käytettävissä tallennukseen.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="523" />
+        <source>Check for Updates</source>
+        <translation>Päivitystarkistus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="527" />
+        <source>Settings</source>
+        <translation>Asetukset</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="532" />
+        <source>Exit</source>
+        <translation>Lopeta</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="540" />
+        <location filename="../src/MainApplication.cpp" line="1506" />
+        <location filename="../src/MainApplication.cpp" line="1508" />
+        <source>SnapTray - Screenshot Utility</source>
+        <translation>SnapTray - Kuvakaappaustyökalu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1480" />
+        <source>Not set</source>
+        <translation>Ei asetettu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1482" />
+        <source>Region Capture hotkey</source>
+        <translation>Alueen kaappauksen pikanäppäin</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1484" />
+        <source>Paste hotkey</source>
+        <translation>Liittämisen pikanäppäin</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1486" />
+        <source>Screen Canvas hotkey</source>
+        <translation>Näytön piirtoalueen pikanäppäin</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="549" />
+        <source>OCR Success</source>
+        <translation>OCR onnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="550" />
+        <source>OCR Failed</source>
+        <translation>OCR epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="826" />
+        <source>Select Image to Pin</source>
+        <translation>Valitse kuva kiinnitettäväksi</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="828" />
+        <source>Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;All Files (*)</source>
+        <translation>Kuvat (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;Kaikki tiedostot (*)</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="843" />
+        <source>Loading Image</source>
+        <translation>Ladataan kuvaa</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="893" />
+        <location filename="../src/MainApplication.cpp" line="913" />
+        <source>Failed to Load Image</source>
+        <translation>Kuvan lataus epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1054" />
+        <source>Hotkey Registration Failed</source>
+        <translation>Pikanäppäimen rekisteröinti epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1055" />
+        <source> failed to register.</source>
+        <translation> rekisteröinti epäonnistui.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1241" />
+        <location filename="../src/MainApplication.cpp" line="1265" />
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1258" />
+        <source>Show All Pins</source>
+        <translation>Näytä kaikki kiinnitykset</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="327" />
+        <source>Screenshot Copied</source>
+        <translation>Kuvakaappaus kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="328" />
+        <source>Copied to clipboard</source>
+        <translation>Kopioitu leikepöydälle</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="334" />
+        <source>Copy failed</source>
+        <translation>Kopiointi epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="426" />
+        <location filename="../src/MainApplication.cpp" line="1278" />
+        <source>Full Screen Capture</source>
+        <translation>Koko näytön kaappaus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1600" />
+        <source>recording keys</source>
+        <translation>näppäimiä tallennetaan</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="498" />
+        <source>Recording Library...</source>
+        <translation>Tallennekirjasto...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1381" />
+        <source>Project Unavailable</source>
+        <translation>Projekti ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1382" />
+        <source>This project's recording is missing or damaged.</source>
+        <translation>Tämän projektin tallenne puuttuu tai on vioittunut.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="293" />
+        <source>Recording Copied</source>
+        <translation>Tallenne kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="294" />
+        <source>Saved to %1 and copied: paste it into a chat or folder.</source>
+        <translation>Tallennettu kohteeseen %1 ja kopioitu: liitä se keskusteluun tai kansioon.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1589" />
+        <source>edit mode</source>
+        <translation>muokkaustila</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1589" />
+        <source>quick mode</source>
+        <translation>pikatila</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="431" />
+        <location filename="../src/MainApplication.cpp" line="1281" />
+        <source>Delayed Capture</source>
+        <translation>Viivästetty kaappaus</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/MainApplication.cpp" line="436" />
+        <source>%n seconds</source>
+        <translation>
+            <numerusform>%n sekunti</numerusform>
+            <numerusform>%n sekuntia</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="445" />
+        <source>Cancel Delayed Capture</source>
+        <translation>Peruuta viivästetty kaappaus</translation>
+    </message>
+</context>
+<context>
+    <name>MosaicBlurTypeSection</name>
+    <message>
+        <source>Pixelate</source>
+        <translation>Pikselöi</translation>
+    </message>
+    <message>
+        <source>Gaussian</source>
+        <translation>Gaussinen</translation>
+    </message>
+</context>
+<context>
+    <name>MultiRegionListPanel</name>
+    <message>
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="44" />
+        <source>Regions</source>
+        <translation>Alueet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="172" />
+        <source>Region %1</source>
+        <translation>Alue %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 × %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="215" />
+        <source>Replace</source>
+        <translation>Korvaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="241" />
+        <source>Delete</source>
+        <translation>Poista</translation>
+    </message>
+</context>
+<context>
+    <name>OCRResultDialog</name>
+    <message>
+        <source>OCR</source>
+        <translation>OCR</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/OCRResultDialog.qml" line="9" />
+        <source>OCR Result</source>
+        <translation>OCR-tulos</translation>
+    </message>
+    <message>
+        <source>0 characters</source>
+        <translation>0 merkkiä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/OCRResultDialog.qml" line="33" />
+        <source>No text recognized</source>
+        <translation>Tekstiä ei tunnistettu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/OCRResultDialog.qml" line="67" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/OCRResultDialog.qml" line="77" />
+        <source>Copy</source>
+        <translation>Kopioi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/OCRResultDialog.qml" line="92" />
+        <source>Copy as TSV</source>
+        <translation>Kopioi TSV-muodossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/OCRResultDialog.qml" line="79" />
+        <location filename="../src/qml/dialogs/OCRResultDialog.qml" line="94" />
+        <source>✓ Copied!</source>
+        <translation>✓ Kopioitu!</translation>
+    </message>
+    <message>
+        <source>✓ Copied TSV!</source>
+        <translation>✓ TSV kopioitu!</translation>
+    </message>
+    <message>
+        <source>%1 character</source>
+        <translation>%1 merkki</translation>
+    </message>
+    <message>
+        <source>%1 characters</source>
+        <translation>%1 merkkiä</translation>
+    </message>
+    <message>
+        <source>%1 (edited)</source>
+        <translation>%1 (muokattu)</translation>
+    </message>
+</context>
+<context>
+    <name>OCRResultViewModel</name>
+    <message>
+        <location filename="../src/qml/OCRResultViewModel.cpp" line="38" />
+        <source>%1 character</source>
+        <translation>%1 merkki</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/OCRResultViewModel.cpp" line="39" />
+        <source>%1 characters</source>
+        <translation>%1 merkkiä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
+        <source>%1 (edited)</source>
+        <translation>%1 (muokattu)</translation>
+    </message>
+</context>
+<context>
+    <name>OCRSettings</name>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="57" />
+        <source>Select and order the languages for OCR recognition.
+English is always included and cannot be removed.</source>
+        <translation>Valitse ja järjestä OCR-tunnistuksessa käytettävät kielet.
+Englanti sisältyy aina eikä sitä voi poistaa.</translation>
+    </message>
+    <message>
+        <source>Loading languages...</source>
+        <translation>Ladataan kieliä...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="92" />
+        <source>Preparing OCR languages...</source>
+        <translation>Valmistellaan OCR-kieliä...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="105" />
+        <source>The settings window is ready. OCR languages are loading in the background.</source>
+        <translation>Asetusikkuna on valmis. OCR-kieliä ladataan taustalla.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="107" />
+        <source>No OCR languages are available on this device right now.</source>
+        <translation>Tällä laitteella ei ole tällä hetkellä käytettävissä OCR-kieliä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="108" />
+        <source>OCR is not available on this device.</source>
+        <translation>OCR ei ole käytettävissä tällä laitteella.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="137" />
+        <source>Available Languages</source>
+        <translation>Saatavilla olevat kielet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="217" />
+        <source>Add selected language</source>
+        <translation>Lisää valittu kieli</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="231" />
+        <source>Remove selected language</source>
+        <translation>Poista valittu kieli</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="250" />
+        <source>Selected Languages</source>
+        <translation>Valitut kielet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="372" />
+        <source>After OCR Recognition</source>
+        <translation>OCR-tunnistuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
+        <source>Copy text directly to clipboard</source>
+        <translation>Kopioi teksti suoraan leikepöydälle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="378" />
+        <source>Show editor to review and edit text</source>
+        <translation>Näytä editori tekstin tarkistamiseen ja muokkaamiseen</translation>
+    </message>
+</context>
+<context>
+    <name>PinHistoryWindow</name>
+    <message>
+        <source>Pin History</source>
+        <translation>Kiinnityshistoria</translation>
+    </message>
+    <message>
+        <source>Open Cache Folder</source>
+        <translation>Avaa välimuistikansio</translation>
+    </message>
+    <message>
+        <source>No pinned screenshots yet</source>
+        <translation>Ei kiinnitettyjä kuvakaappauksia vielä</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Kiinnitä</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopioi</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Tallenna nimellä</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Poista</translation>
+    </message>
+    <message>
+        <source>Delete Failed</source>
+        <translation>Poisto epäonnistui</translation>
+    </message>
+    <message>
+        <source>Failed to delete cached screenshot.</source>
+        <translation>Välimuistissa olevan kuvakaappauksen poisto epäonnistui.</translation>
+    </message>
+    <message>
+        <source>Pin Failed</source>
+        <translation>Kiinnitys epäonnistui</translation>
+    </message>
+    <message>
+        <source>Failed to load cached screenshot.</source>
+        <translation>Välimuistissa olevan kuvakaappauksen lataus epäonnistui.</translation>
+    </message>
+    <message>
+        <source>Copy Failed</source>
+        <translation>Kopiointi epäonnistui</translation>
+    </message>
+    <message>
+        <source>Save Failed</source>
+        <translation>Tallennus epäonnistui</translation>
+    </message>
+    <message>
+        <source>Save Screenshot</source>
+        <translation>Tallenna kuvakaappaus</translation>
+    </message>
+    <message>
+        <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
+        <translation>PNG-kuva (*.png);;JPEG-kuva (*.jpg *.jpeg);;Kaikki tiedostot (*)</translation>
+    </message>
+    <message>
+        <source>Failed to save screenshot: %1</source>
+        <translation>Kuvakaappauksen tallennus epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Tuntematon</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 × %2</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Size: %2</source>
+        <translation>Aika: %1
+Koko: %2</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Tuntematon aika</translation>
+    </message>
+</context>
+<context>
     <name>PinToolOptionsViewModel</name>
     <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134" />
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Tunnista ja sumenna kasvot ja tunnistetiedot automaattisesti</translation>
     </message>
 </context>
 <context>
+    <name>PinWindow</name>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1129" />
+        <source>Show Toolbar</source>
+        <translation>Näytä työkalupalkki</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1135" />
+        <source>Show Border</source>
+        <translation>Näytä reunus</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1171" />
+        <source>Adjust Region Layout</source>
+        <translation>Säädä alueen asettelua</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1144" />
+        <source>Copy to Clipboard</source>
+        <translation>Kopioi leikepöydälle</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1148" />
+        <source>Save to file</source>
+        <translation>Tallenna tiedostoon</translation>
+    </message>
+    <message>
+        <source>Open Cache Folder</source>
+        <translation>Avaa välimuistikansio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolbarViewModel.cpp" line="30" />
+        <source>Beautify</source>
+        <translation>Kaunista</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1161" />
+        <source>Click-through</source>
+        <translation>Klikkaus läpi</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1168" />
+        <location filename="../src/PinWindow.cpp" line="1522" />
+        <location filename="../src/PinWindow.cpp" line="1530" />
+        <location filename="../src/PinWindow.cpp" line="1544" />
+        <location filename="../src/PinWindow.cpp" line="1561" />
+        <location filename="../src/PinWindow.cpp" line="1573" />
+        <source>Merge Pins</source>
+        <translation>Yhdistä kiinnitykset</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1177" />
+        <source>Watermark</source>
+        <translation>Vesileima</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1180" />
+        <source>Enable</source>
+        <translation>Ota käyttöön</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1191" />
+        <source>Position</source>
+        <translation>Sijainti</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1194" />
+        <source>Top-Left</source>
+        <translation>Vasen yläkulma</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1199" />
+        <source>Top-Right</source>
+        <translation>Oikea yläkulma</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1204" />
+        <source>Bottom-Left</source>
+        <translation>Vasen alakulma</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1209" />
+        <source>Bottom-Right</source>
+        <translation>Oikea alakulma</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1228" />
+        <location filename="../src/PinWindow.cpp" line="1322" />
+        <location filename="../src/PinWindow.cpp" line="2163" />
+        <source>Zoom</source>
+        <translation>Zoomaus</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1231" />
+        <source>33.3%</source>
+        <translation>33,3%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1234" />
+        <source>50%</source>
+        <translation>50%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1237" />
+        <source>66.7%</source>
+        <translation>66,7%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1240" />
+        <source>100%</source>
+        <translation>100%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1243" />
+        <source>200%</source>
+        <translation>200%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1253" />
+        <source>Smoothing</source>
+        <translation>Tasoitus</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1262" />
+        <source>Image processing</source>
+        <translation>Kuvankäsittely</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1264" />
+        <source>Rotate left</source>
+        <translation>Kierrä vasemmalle</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1267" />
+        <source>Rotate right</source>
+        <translation>Kierrä oikealle</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1270" />
+        <source>Horizontal flip</source>
+        <translation>Käännä vaakasuunnassa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1273" />
+        <source>Vertical flip</source>
+        <translation>Käännä pystysuunnassa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1277" />
+        <source>Crop</source>
+        <translation>Rajaa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1286" />
+        <location filename="../src/PinWindow.cpp" line="1324" />
+        <location filename="../src/PinWindow.cpp" line="2165" />
+        <source>Opacity</source>
+        <translation>Läpinäkyvyys</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1289" />
+        <source>Increase by %1%</source>
+        <translation>Lisää %1%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1296" />
+        <source>Decrease by %1%</source>
+        <translation>Vähennä %1%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1306" />
+        <source>Copy All</source>
+        <translation>Kopioi kaikki</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1321" />
+        <location filename="../src/PinWindow.cpp" line="2162" />
+        <source>Size</source>
+        <translation>Koko</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1323" />
+        <location filename="../src/PinWindow.cpp" line="2164" />
+        <source>Rotation</source>
+        <translation>Kierto</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1325" />
+        <location filename="../src/PinWindow.cpp" line="2166" />
+        <source>X-mirror</source>
+        <translation>X-peilaus</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="2167" />
+        <source>Y-mirror</source>
+        <translation>Y-peilaus</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1325" />
+        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="1972" />
+        <location filename="../src/PinWindow.cpp" line="1973" />
+        <location filename="../src/PinWindow.cpp" line="2166" />
+        <location filename="../src/PinWindow.cpp" line="2167" />
+        <source>Yes</source>
+        <translation>Kyllä</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1325" />
+        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="1972" />
+        <location filename="../src/PinWindow.cpp" line="1973" />
+        <location filename="../src/PinWindow.cpp" line="2166" />
+        <location filename="../src/PinWindow.cpp" line="2167" />
+        <source>No</source>
+        <translation>Ei</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1332" />
+        <location filename="../src/PinWindow.cpp" line="3040" />
+        <source>Start Live Update</source>
+        <translation>Aloita reaaliaikainen päivitys</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1968" />
+        <source>Size: %1</source>
+        <translation>Koko: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="3040" />
+        <source>Stop Live Update</source>
+        <translation>Lopeta reaaliaikainen päivitys</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1343" />
+        <location filename="../src/PinWindow.cpp" line="3044" />
+        <source>Pause Live Update</source>
+        <translation>Keskeytä reaaliaikainen päivitys</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="3044" />
+        <source>Resume Live Update</source>
+        <translation>Jatka reaaliaikaista päivitystä</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1354" />
+        <source>Frame Rate</source>
+        <translation>Kuvataajuus</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1140" />
+        <source>Move to Screen</source>
+        <translation>Siirrä näytölle</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1357" />
+        <source>%1 FPS</source>
+        <translation>%1 FPS</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1371" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1375" />
+        <source>Close All Pins</source>
+        <translation>Sulje kaikki kiinnitykset</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1475" />
+        <source>Screen %1</source>
+        <translation>Näyttö %1</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1477" />
+        <source> (Primary)</source>
+        <translation> (Päänäyttö)</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1523" />
+        <source>Cannot merge more than %1 pins at once</source>
+        <translation>Enintään %1 kiinnitystä voidaan yhdistää kerralla</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1531" />
+        <source>Need at least 2 pins to merge</source>
+        <translation>Yhdistämiseen tarvitaan vähintään 2 kiinnitystä</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1545" />
+        <source>No primary screen available</source>
+        <translation>Ensisijaista näyttöä ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1574" />
+        <source>Failed to create merged pin</source>
+        <translation>Yhdistetyn kiinnityksen luonti epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1644" />
+        <location filename="../src/PinWindow.cpp" line="1676" />
+        <source>Failed to save screenshot: %1</source>
+        <translation>Kuvakaappauksen tallennus epäonnistui: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1657" />
+        <source>Save Screenshot</source>
+        <translation>Tallenna kuvakaappaus</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1659" />
+        <location filename="../src/PinWindow.cpp" line="6155" />
+        <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
+        <translation>PNG-kuva (*.png);;JPEG-kuva (*.jpg *.jpeg);;Kaikki tiedostot (*)</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1689" />
+        <location filename="../src/PinWindow.cpp" line="1710" />
+        <location filename="../src/PinWindow.cpp" line="6059" />
+        <location filename="../src/PinWindow.cpp" line="6084" />
+        <source>Copy failed</source>
+        <translation>Kopiointi epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1710" />
+        <source>Copied to clipboard</source>
+        <translation>Kopioitu leikepöydälle</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1722" />
+        <location filename="../src/PinWindow.cpp" line="5428" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
+        <source>Please wait for auto-blur to finish</source>
+        <translation>Odota, että automaattinen sumennus valmistuu</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1864" />
+        <location filename="../src/PinWindow.cpp" line="1942" />
+        <source>Copied %1 characters</source>
+        <translation>%1 merkkiä kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1868" />
+        <source>No text found</source>
+        <translation>Tekstiä ei löytynyt</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1873" />
+        <location filename="../src/PinWindow.cpp" line="1889" />
+        <source>Text copied</source>
+        <translation>Teksti kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1953" />
+        <source>No QR code found</source>
+        <translation>QR-koodia ei löytynyt</translation>
+    </message>
+    <message>
+        <source>Size: %1 × %2</source>
+        <translation>Koko: %1 × %2</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1969" />
+        <source>Zoom: %1%</source>
+        <translation>Zoomaus: %1%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1970" />
+        <source>Rotation: %1°</source>
+        <translation>Kierto: %1°</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1971" />
+        <source>Opacity: %1%</source>
+        <translation>Läpinäkyvyys: %1%</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1972" />
+        <source>X-mirror: %1</source>
+        <translation>X-peilaus: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1973" />
+        <source>Y-mirror: %1</source>
+        <translation>Y-peilaus: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="4828" />
+        <source>Stop live capture before running auto-blur</source>
+        <translation>Pysäytä live-kaappaus ennen automaattista sumennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="4851" />
+        <source>Face detection unavailable</source>
+        <translation>Kasvojentunnistus ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="4861" />
+        <source>Detection unavailable</source>
+        <translation>Tunnistus ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="4891" />
+        <source>Unable to snapshot the current image</source>
+        <translation>Nykyisestä kuvasta ei voitu ottaa tilannevedosta</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="6064" />
+        <location filename="../src/PinWindow.cpp" line="6128" />
+        <location filename="../src/PinWindow.cpp" line="6164" />
+        <source>Beautify rendering failed</source>
+        <translation>Kaunistuksen renderöinti epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="5953" />
+        <source>Unable to apply region layout</source>
+        <translation>Alueasettelua ei voitu ottaa käyttöön</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="6084" />
+        <source>Beautified image copied</source>
+        <translation>Kaunistettu kuva kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="1592" />
+        <location filename="../src/PinWindow.cpp" line="1630" />
+        <location filename="../src/PinWindow.cpp" line="1664" />
+        <location filename="../src/PinWindow.cpp" line="6097" />
+        <location filename="../src/PinWindow.cpp" line="6123" />
+        <location filename="../src/PinWindow.cpp" line="6159" />
+        <source>No image available to save</source>
+        <translation>Ei kuvaa tallennettavaksi</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="6143" />
+        <location filename="../src/PinWindow.cpp" line="6178" />
+        <source>Failed to save beautified screenshot: %1</source>
+        <translation>Kaunistetun kuvakaappauksen tallennus epäonnistui: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="6153" />
+        <source>Save Beautified Screenshot</source>
+        <translation>Tallenna kaunistettu kuvakaappaus</translation>
+    </message>
+</context>
+<context>
+    <name>PlatformCapabilities</name>
+    <message>
+        <location filename="../src/platform/PlatformCapabilities.cpp" line="92" />
+        <source>Live Update requires Windows 10 version 2004 or later.</source>
+        <translation>Live-päivitys vaatii Windows 10:n version 2004 tai uudemman.</translation>
+    </message>
+    <message>
+        <location filename="../src/platform/PlatformCapabilities.cpp" line="109" />
+        <source>Live Update is not supported on this platform.</source>
+        <translation>Live-päivitystä ei tueta tällä alustalla.</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <location filename="../src/ToolbarStyle.cpp" line="41" />
+        <source>Light</source>
+        <translation>Vaalea</translation>
+    </message>
+    <message>
+        <location filename="../src/ToolbarStyle.cpp" line="44" />
+        <source>Dark</source>
+        <translation>Tumma</translation>
+    </message>
+    <message>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="158" />
+        <source>Cannot merge more than %1 pins at once</source>
+        <translation>Enintään %1 kiinnitystä voidaan yhdistää kerralla</translation>
+    </message>
+    <message>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="163" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="198" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="230" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="241" />
+        <source>Need at least 2 pins to merge</source>
+        <translation>Yhdistämiseen tarvitaan vähintään 2 kiinnitystä</translation>
+    </message>
+    <message>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="247" />
+        <source>Merged layout exceeds maximum size (%1x%1)</source>
+        <translation>Yhdistetty asettelu ylittää enimmäiskoon (%1x%1)</translation>
+    </message>
+    <message>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="291" />
+        <source>Failed to merge pins</source>
+        <translation>Kiinnitysten yhdistäminen epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/QRCodeManager.cpp" line="186" />
+        <source>No barcode found in image</source>
+        <translation>Kuvasta ei löytynyt viivakoodia</translation>
+    </message>
+</context>
+<context>
+    <name>QRCodeManager</name>
+    <message>
+        <location filename="../src/QRCodeManager.cpp" line="123" />
+        <location filename="../src/QRCodeManager.cpp" line="211" />
+        <source>Invalid image</source>
+        <translation>Virheellinen kuva</translation>
+    </message>
+    <message>
+        <location filename="../src/QRCodeManager.cpp" line="244" />
+        <source>No barcode found</source>
+        <translation>Viivakoodia ei löytynyt</translation>
+    </message>
+    <message>
+        <location filename="../src/QRCodeManager.cpp" line="259" />
+        <source>Failed to load image from file</source>
+        <translation>Kuvan lataaminen tiedostosta epäonnistui</translation>
+    </message>
+</context>
+<context>
+    <name>QRCodeResultDialog</name>
+    <message>
+        <source>QR Code</source>
+        <translation>QR-koodi</translation>
+    </message>
+    <message>
+        <source>0 characters</source>
+        <translation>0 merkkiä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="40" />
+        <source>No content</source>
+        <translation>Ei sisältöä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="80" />
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="83" />
+        <source>Generate QR to preview</source>
+        <translation>Luo QR esikatselua varten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="82" />
+        <source>Content too long</source>
+        <translation>Sisältö on liian pitkä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="104" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="112" />
+        <source>Copy</source>
+        <translation>Kopioi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="124" />
+        <source>Open URL</source>
+        <translation>Avaa URL-osoite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="131" />
+        <source>Generate</source>
+        <translation>Luo</translation>
+    </message>
+    <message>
+        <source>Generate QR</source>
+        <translation>Luo QR</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="140" />
+        <source>Pin QR</source>
+        <translation>Kiinnitä QR</translation>
+    </message>
+    <message>
+        <source>QR</source>
+        <translation>QR</translation>
+    </message>
+    <message>
+        <source>%1 character</source>
+        <translation>%1 merkki</translation>
+    </message>
+    <message>
+        <source>%1 characters</source>
+        <translation>%1 merkkiä</translation>
+    </message>
+    <message>
+        <source>%1 (edited)</source>
+        <translation>%1 (muokattu)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/QRCodeResultDialog.qml" line="114" />
+        <source>✓ Copied!</source>
+        <translation>✓ Kopioitu!</translation>
+    </message>
+    <message>
+        <source>Content too long (max %1 bytes)</source>
+        <translation>Sisältö on liian pitkä (enintään %1 tavua)</translation>
+    </message>
+    <message>
+        <source>Data Matrix</source>
+        <translation>Data Matrix</translation>
+    </message>
+    <message>
+        <source>Aztec Code</source>
+        <translation>Aztec-koodi</translation>
+    </message>
+    <message>
+        <source>PDF417</source>
+        <translation>PDF417</translation>
+    </message>
+    <message>
+        <source>EAN-8</source>
+        <translation>EAN-8</translation>
+    </message>
+    <message>
+        <source>EAN-13</source>
+        <translation>EAN-13</translation>
+    </message>
+    <message>
+        <source>UPC-A</source>
+        <translation>UPC-A</translation>
+    </message>
+    <message>
+        <source>UPC-E</source>
+        <translation>UPC-E</translation>
+    </message>
+    <message>
+        <source>Code 39</source>
+        <translation>Code 39</translation>
+    </message>
+    <message>
+        <source>Code 93</source>
+        <translation>Code 93</translation>
+    </message>
+    <message>
+        <source>Code 128</source>
+        <translation>Code 128</translation>
+    </message>
+    <message>
+        <source>ITF</source>
+        <translation>ITF</translation>
+    </message>
+    <message>
+        <source>Codabar</source>
+        <translation>Codabar</translation>
+    </message>
+    <message>
+        <source>Barcode</source>
+        <translation>Viivakoodi</translation>
+    </message>
+</context>
+<context>
+    <name>QRCodeResultViewModel</name>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="84" />
+        <source>%1 character</source>
+        <translation>%1 merkki</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="85" />
+        <source>%1 characters</source>
+        <translation>%1 merkkiä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="87" />
+        <source>%1 (edited)</source>
+        <translation>%1 (muokattu)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="205" />
+        <source>QR Code</source>
+        <translation>QR-koodi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="206" />
+        <source>Data Matrix</source>
+        <translation>Data Matrix</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="207" />
+        <source>Aztec Code</source>
+        <translation>Aztec-koodi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="208" />
+        <source>PDF417</source>
+        <translation>PDF417</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="209" />
+        <source>EAN-8</source>
+        <translation>EAN-8</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="210" />
+        <source>EAN-13</source>
+        <translation>EAN-13</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="211" />
+        <source>UPC-A</source>
+        <translation>UPC-A</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="212" />
+        <source>UPC-E</source>
+        <translation>UPC-E</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="213" />
+        <source>Code 39</source>
+        <translation>Code 39</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="214" />
+        <source>Code 93</source>
+        <translation>Code 93</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="215" />
+        <source>Code 128</source>
+        <translation>Code 128</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="216" />
+        <source>ITF</source>
+        <translation>ITF</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="217" />
+        <source>Codabar</source>
+        <translation>Codabar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QRCodeResultViewModel.cpp" line="219" />
+        <source>Barcode</source>
+        <translation>Viivakoodi</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAreaSelector</name>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="29" />
+        <source>Free</source>
+        <translation>Vapaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="223" />
+        <source>Drag to move or redraw</source>
+        <translation>Siirrä tai piirrä uudelleen vetämällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="223" />
+        <source>Drag to choose the area to record</source>
+        <translation>Valitse tallennettava alue vetämällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="240" />
+        <source>Ratio %1</source>
+        <translation>Suhde %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="248" />
+        <source>Full Screen</source>
+        <translation>Koko näyttö</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="255" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="263" />
+        <source>Record</source>
+        <translation>Tallenna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="266" />
+        <source>Record this area</source>
+        <translation>Tallenna tämä alue</translation>
+    </message>
+</context>
+<context>
     <name>RecordingAudioStatus</name>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="70" />
         <source>System audio</source>
         <translation>Järjestelmän ääni</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="68" />
         <source>Microphone</source>
         <translation>Mikrofoni</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="66" />
         <source>%1: %2</source>
         <translation>%1: %2</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="28" />
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="26" />
         <source>Not supported by GIF/WebP</source>
         <translation>GIF/WebP ei tue</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="27" />
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="25" />
         <source>Unavailable</source>
         <translation>Ei käytettävissä</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="26" />
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="24" />
         <source>Device not found</source>
         <translation>Laitetta ei löydy</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="25" />
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="23" />
         <source>Permission denied</source>
         <translation>Lupa evätty</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="24" />
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="22" />
         <source>Recording</source>
         <translation>Tallentuu</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="23" />
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="21" />
         <source>Starting</source>
         <translation>Käynnistyy</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingAudioStatus.cpp" line="22" />
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="20" />
         <source>Off</source>
         <translation>Pois</translation>
     </message>
 </context>
 <context>
-    <name>SnapTray::ScreenPickerViewModel</name>
+    <name>RecordingControlBar</name>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="212" />
-        <source>Not connected: %1</source>
-        <translation>Ei yhdistetty: %1</translation>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="260" />
+        <source>Paused %1</source>
+        <translation>Keskeytetty %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="166" />
-        <source>Audio is recorded for the preview; GIF and WebP exports are silent.</source>
-        <translation>Ääni tallennetaan esikatselua varten; GIF- ja WebP-viennit ovat äänettömiä.</translation>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="43" />
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="163" />
-        <source>GIF and WebP recordings have no sound. Turn on preview or choose MP4 to record audio.</source>
-        <translation>GIF- ja WebP-tallenteissa ei ole ääntä. Ota esikatselu käyttöön tai valitse MP4 äänen tallentamiseksi.</translation>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="41" />
+        <source>Stop and Review</source>
+        <translation>Pysäytä ja tarkista</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="155" />
-        <source>No countdown</source>
-        <translation>Ei lähtölaskentaa</translation>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="31" />
+        <source>-- fps</source>
+        <translation>-- fps</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="154" />
-        <source>Countdown: %1 s</source>
-        <translation>Lähtölaskenta: %1 s</translation>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="259" />
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="29" />
+        <source>Preparing...</source>
+        <translation>Valmistellaan...</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="152" />
-        <source>Saved without preview</source>
-        <translation>Tallennetaan ilman esikatselua</translation>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="31" />
+        <source>%1 fps</source>
+        <translation>%1 fps</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="151" />
-        <source>Preview after recording</source>
-        <translation>Esikatselu tallennuksen jälkeen</translation>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="38" />
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="33" />
+        <location filename="../src/MainApplication.cpp" line="1407" />
+        <source>Resume Recording</source>
+        <translation>Jatka tallennusta</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="42" />
-        <source>Microphone unavailable</source>
-        <translation>Mikrofoni ei käytettävissä</translation>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="37" />
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="35" />
+        <location filename="../src/MainApplication.cpp" line="486" />
+        <location filename="../src/MainApplication.cpp" line="1408" />
+        <source>Pause Recording</source>
+        <translation>Keskeytä tallennus</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="40" />
-        <source>Selected microphone not found</source>
-        <translation>Valittua mikrofonia ei löydy</translation>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="39" />
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="37" />
+        <source>Stop Recording</source>
+        <translation>Lopeta tallennus</translation>
     </message>
     <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="38" />
-        <source>Microphone permission denied</source>
-        <translation>Mikrofonin käyttölupa evätty</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="36" />
-        <source>Speak to test the microphone</source>
-        <translation>Puhu testataksesi mikrofonia</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="34" />
-        <source>Waiting for microphone permission...</source>
-        <translation>Odotetaan mikrofonin käyttölupaa...</translation>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="39" />
+        <source>Cancel Recording</source>
+        <translation>Peruuta tallennus</translation>
     </message>
 </context>
 <context>
-    <name>ScreenPickerDialog</name>
+    <name>RecordingEditorShell</name>
     <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="236" />
-        <source>Cancel</source>
-        <translation>Peruuta</translation>
+        <location filename="../src/qml/recording/RecordingEditorShell.qml" line="155" />
+        <source>Hide settings</source>
+        <translation>Piilota asetukset</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="228" />
-        <source>Start Recording</source>
-        <translation>Aloita tallennus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="204" />
-        <source>Show this setup before every recording</source>
-        <translation>Näytä tämä asetus ennen jokaista tallennusta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="172" />
-        <source>Not supported on this system</source>
-        <translation>Ei tuettu tässä järjestelmässä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="170" />
-        <source>System audio</source>
-        <translation>Järjestelmän ääni</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="148" />
-        <source>Microphone level</source>
-        <translation>Mikrofonin taso</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="131" />
-        <source>Test Microphone</source>
-        <translation>Testaa mikrofonia</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="130" />
-        <source>Stop Test</source>
-        <translation>Lopeta testi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="112" />
-        <source>Input device</source>
-        <translation>Syöttölaite</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="102" />
-        <source>Not recorded with the current output format</source>
-        <translation>Ei tallennu nykyisellä tulostemuodolla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="100" />
-        <source>Microphone</source>
-        <translation>Mikrofoni</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="16" />
-        <source>System Default</source>
-        <translation>Järjestelmän oletus</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="38" />
-        <source>Choose a screen to start recording</source>
-        <translation>Valitse näyttö aloittaaksesi tallennuksen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
-        <source>Record Screen</source>
-        <translation>Tallenna näyttö</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Also record typed text</source>
-        <translation>Tallenna myös kirjoitettu teksti</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Every key, including what you type. Do not use while entering passwords.</source>
-        <translation>Jokainen näppäin, myös kirjoittamasi. Älä käytä salasanoja kirjoittaessa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.</source>
-        <translation>Esikatselun pikanäppäinvihjeitä varten: Ctrl-, Alt- tai Super-näppäimen kanssa painetut sekä Enterin tai Escin kaltaiset näppäimet. Säilytetään vain väliaikaisen tallenteen kanssa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
-        <translation>Esikatselun pikanäppäinvihjeitä varten: Ctrl-, Alt- tai Win-näppäimen kanssa painetut sekä Enterin tai Escin kaltaiset näppäimet. Säilytetään vain väliaikaisen tallenteen kanssa.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Not available on this system yet</source>
-        <translation>Ei vielä käytettävissä tässä järjestelmässä</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Record shortcut keys</source>
-        <translation>Tallenna pikanäppäimet</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>After recording</source>
-        <translation>Tallennuksen jälkeen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Edit in the preview</source>
-        <translation>Muokkaa esikatselussa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Save right away</source>
-        <translation>Tallenna heti</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
-        <translation>Pikatila: tiedosto tallennetaan lopulliseen muotoonsa heti, kun lopetat, ilman esikatselua ja muokkausraitoja.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>After saving</source>
-        <translation>Tallennuksen jälkeen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Do nothing</source>
-        <translation>Älä tee mitään</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Copy the file</source>
-        <translation>Kopioi tiedosto</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Show in folder</source>
-        <translation>Näytä kansiossa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
-        <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Osoittimen, ikkunoiden ja näppäinten raidat säilytetään muokkausta varten.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Edit mode only: quick mode keeps no editing tracks.</source>
-        <translation>Vain muokkaustilassa: pikatila ei säilytä muokkausraitoja.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Choose an area first</source>
-        <translation>Valitse ensin alue</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
-        <translation>Koko näyttö tallennetaan silti; esikatselu avautuu alueeseen rajattuna.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="0" />
-        <source>Only the area is recorded.</source>
-        <translation>Vain alue tallennetaan.</translation>
+        <location filename="../src/qml/recording/RecordingEditorShell.qml" line="235" />
+        <source>Return to Project settings</source>
+        <translation>Palaa projektin asetuksiin</translation>
     </message>
 </context>
 <context>
-    <name>SnapTray::RecordingRecoveryViewModel</name>
+    <name>RecordingExportPanel</name>
     <message>
-        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="60" />
-        <source>Open in another SnapTray window. Close it there, then try again.</source>
-        <translation>Avoinna toisessa SnapTray-ikkunassa. Sulje se siellä ja yritä uudelleen.</translation>
+        <location filename="../src/qml/recording/RecordingExportPanel.qml" line="49" />
+        <source>Export recording</source>
+        <translation>Vie tallenne</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
-        <source>Unknown date</source>
-        <translation>Tuntematon päivä</translation>
+        <location filename="../src/qml/recording/RecordingExportPanel.qml" line="63" />
+        <location filename="../src/qml/recording/RecordingExportPanel.qml" line="124" />
+        <source>Back to editing</source>
+        <translation>Takaisin muokkaukseen</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="41" />
-        <source>audio is missing</source>
-        <translation>ääni puuttuu</translation>
+        <location filename="../src/qml/recording/RecordingExportPanel.qml" line="85" />
+        <source>Create a video or image file. Your edits stay in this recording.</source>
+        <translation>Luo video- tai kuvatiedosto. Muokkauksesi säilyvät tässä tallenteessa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="38" />
-        <source>Interrupted: %1 can be recovered</source>
-        <translation>Keskeytynyt: %1 voidaan palauttaa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="37" />
-        <source>Complete, %1 long</source>
-        <translation>Valmis, kesto %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
-        <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
-        <translation>Ei palautettavissa: tallennus keskeytyi ennen kuin toistettavaa osaa tallentui.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="0" />
-        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
-        <translation>koko näyttö tallennettiin; avautuu valittuun alueeseen rajattuna</translation>
+        <location filename="../src/qml/recording/RecordingExportPanel.qml" line="138" />
+        <source>Export…</source>
+        <translation>Vie…</translation>
     </message>
 </context>
 <context>
-    <name>RecordingRecoveryDialog</name>
+    <name>RecordingInitTask</name>
     <message>
-        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="109" />
-        <source>Later</source>
-        <translation>Myöhemmin</translation>
+        <location filename="../src/RecordingInitTask.cpp" line="90" />
+        <source>Initializing...</source>
+        <translation>Alustetaan...</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="88" />
-        <source>Discard %1</source>
-        <translation>Hylkää %1</translation>
+        <location filename="../src/RecordingInitTask.cpp" line="107" />
+        <source>Setting up audio capture...</source>
+        <translation>Määritetään äänen kaappausta...</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="85" />
-        <source>Discard</source>
-        <translation>Hylkää</translation>
+        <location filename="../src/RecordingInitTask.cpp" line="119" />
+        <source>Creating video encoder...</source>
+        <translation>Luodaan videoenkooderia...</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="79" />
-        <source>Recover %1</source>
-        <translation>Palauta %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="76" />
-        <source>Recover</source>
-        <translation>Palauta</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="12" />
-        <source>SnapTray stopped before these recordings were saved.</source>
-        <translation>SnapTray pysähtyi ennen kuin nämä tallenteet tallennettiin.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
-        <source>Recover Recordings</source>
-        <translation>Palauta tallenteet</translation>
+        <location filename="../src/RecordingInitTask.cpp" line="149" />
+        <source>Ready</source>
+        <translation>Valmis</translation>
     </message>
 </context>
 <context>
     <name>RecordingInterruption</name>
     <message>
-        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <location filename="../src/recording/RecordingInterruption.cpp" line="29" />
         <source>The disk is almost full.</source>
         <translation>Levy on melkein täynnä.</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <location filename="../src/recording/RecordingInterruption.cpp" line="27" />
         <source>Screen capture stopped working.</source>
         <translation>Näytön kaappaus lakkasi toimimasta.</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <location filename="../src/recording/RecordingInterruption.cpp" line="24" />
         <source>The recorded screen's resolution, scaling or orientation changed.</source>
         <translation>Tallennettavan näytön tarkkuus, skaalaus tai suunta muuttui.</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <location filename="../src/recording/RecordingInterruption.cpp" line="22" />
         <source>The recorded screen was disconnected.</source>
         <translation>Tallennettava näyttö irrotettiin.</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <location filename="../src/recording/RecordingInterruption.cpp" line="20" />
         <source>Screen recording was stopped from the system's controls.</source>
         <translation>Näytön tallennus pysäytettiin järjestelmän ohjaimista.</translation>
     </message>
     <message>
-        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
         <source>Recording stopped. %1 Everything recorded so far is kept.</source>
         <translation>Tallennus pysähtyi. %1 Kaikki tähän mennessä tallennettu säilyy.</translation>
     </message>
@@ -5467,140 +2458,4358 @@ Tiedoston koko: %3</translation>
 <context>
     <name>RecordingLibraryDialog</name>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="14" />
         <source>Recording Library</source>
         <translation>Tallennekirjasto</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="16" />
         <source>Editable projects: %1 on this computer</source>
         <translation>Muokattavat projektit: %1 tällä tietokoneella</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="17" />
         <source>No editable projects</source>
         <translation>Ei muokattavia projekteja</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="57" />
         <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>Uusien projektien säilytys on pois päältä. Projektit säilyttävät koko tallenteen, myös sen, minkä sumensit tai rajasit pois.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="58" />
         <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>Projektit säilyttävät koko tallenteen, myös sen, minkä sumensit tai rajasit pois.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="69" />
         <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
         <translation>Ota Säilytä muokattavat projektit käyttöön kohdassa Asetukset &gt; Tallennus, niin voit muokata tallenteita uudelleen tallennuksen jälkeen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="128" />
         <source>Delete this project? The file you saved from it stays.</source>
         <translation>Poistetaanko tämä projekti? Siitä tallentamasi tiedosto säilyy.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="144" />
         <source>Open</source>
         <translation>Avaa</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="147" />
         <source>Open %1</source>
         <translation>Avaa %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="154" />
         <source>Show in Folder</source>
         <translation>Näytä kansiossa</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="157" />
         <source>Show %1 in Folder</source>
         <translation>Näytä %1 kansiossa</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="164" />
         <source>Delete</source>
         <translation>Poista</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="164" />
         <source>Delete...</source>
         <translation>Poista...</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="167" />
         <source>Delete %1</source>
         <translation>Poista %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="181" />
         <source>Cancel</source>
         <translation>Peruuta</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="0" />
+        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="205" />
         <source>Close</source>
         <translation>Sulje</translation>
     </message>
 </context>
 <context>
+    <name>RecordingManager</name>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2361" />
+        <source>Nothing usable could be kept.</source>
+        <translation>Mitään käyttökelpoista ei voitu säilyttää.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2369" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>Tallennusta ei voitu viimeistellä. Tähän mennessä tallennettu osa säilytettiin; palauta se ilmaisinalueen valikosta.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1577" />
+        <source>Recording could not start. %1</source>
+        <translation>Tallennusta ei voitu aloittaa. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1281" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>Mikrofoni irrotettiin. Tallennus jatkuu ilman sitä, joten sen ääni loppuu tästä kohdasta.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2539" />
+        <location filename="../src/RecordingManager.cpp" line="2561" />
+        <location filename="../src/RecordingManager.cpp" line="2579" />
+        <source>The recording is kept at %1.</source>
+        <translation>Tallenne on tallessa sijainnissa %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2538" />
+        <location filename="../src/RecordingManager.cpp" line="2560" />
+        <source>Your recording is kept; choose another location.</source>
+        <translation>Tallenne säilyy; valitse toinen sijainti.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2556" />
+        <source>Not enough free space at the chosen location (%1 free, %2 needed).</source>
+        <translation>Valitussa sijainnissa ei ole tarpeeksi tilaa (%1 vapaana, tarvitaan %2).</translation>
+    </message>
+    <message>
+        <source>Recording stopped because the disk is almost full. Everything recorded so far is kept.</source>
+        <translation>Tallennus pysäytettiin, koska levy on lähes täynnä. Kaikki tähän asti tallennettu säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1882" />
+        <source>Disk space is running low: %1 free. Stop soon to keep this recording.</source>
+        <translation>Levytila on vähissä: %1 vapaana. Lopeta pian, jotta tallenne säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1880" />
+        <source>Disk space is running low: about %1 min of recording left (estimate). Stop soon to keep this recording.</source>
+        <translation>Levytila on vähissä: noin %1 min tallennusaikaa jäljellä (arvio). Lopeta pian, jotta tallenne säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1870" />
+        <source>SnapTray can't check the free disk space for this recording. Keep an eye on it during long recordings.</source>
+        <translation>SnapTray ei voi tarkistaa tämän tallennuksen vapaata levytilaa. Seuraa sitä pitkissä tallennuksissa.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="882" />
+        <source>Not enough free disk space to start recording (%1 free).</source>
+        <translation>Levyllä ei ole tarpeeksi tilaa tallennuksen aloittamiseen (%1 vapaana).</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1928" />
+        <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
+        <translation>Tallennus ei pysy perässä ja pudottaa kuvia. Kokeile pienempää kuvataajuutta tai sulje muita raskaita sovelluksia.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1305" />
+        <source>The selected microphone was not found. Recording from the default microphone.</source>
+        <translation>Valittua mikrofonia ei löytynyt. Tallennetaan oletusmikrofonilla.</translation>
+    </message>
+    <message>
+        <source>No screen available for region selection.</source>
+        <translation>Näyttöä ei ole käytettävissä alueen valintaan.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="438" />
+        <source>No screen available for recording.</source>
+        <translation>Näyttöä ei ole käytettävissä tallennukseen.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="445" />
+        <source>Failed to normalize recording region.</source>
+        <translation>Tallennusalueen normalisointi epäonnistui.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="560" />
+        <location filename="../src/RecordingManager.cpp" line="747" />
+        <location filename="../src/RecordingManager.cpp" line="781" />
+        <location filename="../src/RecordingManager.cpp" line="1360" />
+        <location filename="../src/RecordingManager.cpp" line="1397" />
+        <source>Recording screen is no longer available.</source>
+        <translation>Tallennusnäyttö ei ole enää käytettävissä.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="676" />
+        <source>Recording controls and tooltips may appear in videos on this platform.</source>
+        <translation>Tallennuksen ohjaimet ja työkaluvihjeet voivat näkyä videoissa tällä alustalla.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="677" />
+        <source>Recording controls and tooltips may appear in videos on this Windows version.</source>
+        <translation>Tallennuksen ohjaimet ja työkaluvihjeet voivat näkyä videoissa tässä Windows-versiossa.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="710" />
+        <source>Audio encoding is unavailable. This recording will be silent.</source>
+        <translation>Äänen koodaus ei ole käytettävissä. Tämä tallenne on äänetön.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="730" />
+        <source>Waiting for microphone permission...</source>
+        <translation>Odotetaan mikrofonin käyttölupaa...</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="757" />
+        <source>Microphone permission is unavailable. Recording system audio only.</source>
+        <translation>Mikrofonin käyttölupa ei ole käytettävissä. Tallennetaan vain järjestelmän ääni.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="760" />
+        <source>Microphone permission is unavailable. This recording will be silent.</source>
+        <translation>Mikrofonin käyttölupa ei ole käytettävissä. Tämä tallenne on äänetön.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="764" />
+        <source>Preparing recording...</source>
+        <translation>Valmistellaan tallennusta...</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="790" />
+        <source>Recording screen information is unavailable.</source>
+        <translation>Tallennusnäytön tiedot eivät ole käytettävissä.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="800" />
+        <source>Recording region is invalid.</source>
+        <translation>Tallennusalue ei ole kelvollinen.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="845" />
+        <source>Recording region could not be mapped to the target screen.</source>
+        <translation>Tallennusaluetta ei voitu kohdistaa kohdenäyttöön.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="901" />
+        <source>Failed to prepare recording controls for capture.</source>
+        <translation>Tallennuksen ohjaimia ei voitu valmistella kaappausta varten.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="995" />
+        <source>Internal error: initialization task is null</source>
+        <translation>Sisäinen virhe: alustamistehtävä on null</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1008" />
+        <source>Recording screen was disconnected during initialization.</source>
+        <translation>Tallennusnäytön yhteys katkesi alustuksen aikana.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1109" />
+        <source>Failed to start encoding thread</source>
+        <translation>Enkoodaussäikeen käynnistys epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1145" />
+        <source>Failed to start encoding worker</source>
+        <translation>Koodaustyöntekijän käynnistys epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1207" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Äänen tallennuksessa ilmeni ongelma. Tästä tallenteesta saattaa puuttua ääntä.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1235" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Järjestelmän ääni ei ole käytettävissä. Vain mikrofonin ääni tallennetaan. Tarkista näytön tallennuksen käyttöoikeus Järjestelmäasetuksista.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1239" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Järjestelmän ääni ei ole käytettävissä. Vain mikrofonin ääni tallennetaan. Tarkista oletustoistolaite.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1245" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Mikrofoni ei ole käytettävissä. Vain järjestelmän ääni tallennetaan. Tarkista mikrofonin käyttöoikeus ja valittu syöttölaite.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1254" />
+        <location filename="../src/RecordingManager.cpp" line="1292" />
+        <location filename="../src/RecordingManager.cpp" line="1319" />
+        <location filename="../src/RecordingManager.cpp" line="1431" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Ääntä ei ole käytettävissä. Tähän tallenteeseen ei tule ääntä. Tarkista järjestelmän käyttöoikeudet ja valittu äänilaite.</translation>
+    </message>
+    <message>
+        <source>Recording screen disconnected during capture.</source>
+        <translation>Tallennusnäyttö irtosi kaappauksen aikana.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2299" />
+        <source>Failed to encode video</source>
+        <translation>Videon koodaus epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2507" />
+        <source>GIF Files (*.gif)</source>
+        <translation>GIF-tiedostot (*.gif)</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2508" />
+        <source>WebP Files (*.webp)</source>
+        <translation>WebP-tiedostot (*.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2509" />
+        <source>MP4 Files (*.mp4)</source>
+        <translation>MP4-tiedostot (*.mp4)</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2515" />
+        <source>Save Recording</source>
+        <translation>Tallenna tallennus</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2577" />
+        <location filename="../src/RecordingManager.cpp" line="2578" />
+        <source>Failed to save recording to selected location</source>
+        <translation>Tallennuksen tallennus valittuun sijaintiin epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="247" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Levytilaa ei ole tarpeeksi korkealaatuiseen tallennukseen. Tallennetaan valitulla laadulla.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2536" />
+        <source>Recordings cannot be saved in the Recording Library's project folder.</source>
+        <translation>Tallenteita ei voi tallentaa tallennekirjaston projektikansioon.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2723" />
+        <source>Keyboard recording is unavailable. Check input monitoring permissions. The recording will continue without key hints.</source>
+        <translation>Näppäinten tallennus ei ole käytettävissä. Tarkista syötteen seurannan käyttöoikeudet. Tallennus jatkuu ilman näppäinvihjeitä.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2737" />
+        <source>Key hints could not be saved. The recording will continue without them.</source>
+        <translation>Näppäinvihjeitä ei voitu tallentaa. Tallennus jatkuu ilman niitä.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPreview</name>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Peitä arkaluonteinen alue viedyssä tiedostossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3410" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>peitteet: %1, poltettu vientiin; peittämätön väliaikainen tiedosto poistetaan tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1028" />
+        <source>Selected mask</source>
+        <translation>Valittu peite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="70" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1967" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2008" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2010" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2048" />
+        <source>the end</source>
+        <translation>loppuun</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1966" />
+        <source>Mask from %1 to %2</source>
+        <translation>Peite %1–%2</translation>
+    </message>
+    <message>
+        <source>Drag the mask to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Siirrä peitettä vetämällä tai muuta kokoa vetämällä kulmasta. Valmis lopettaa muokkauksen.</translation>
+    </message>
+    <message>
+        <source>Delete this mask</source>
+        <translation>Poista tämä peite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2396" />
+        <source>Mask end</source>
+        <translation>Peitteen loppu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
+        <source>Mask start</source>
+        <translation>Peitteen alku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2365" />
+        <source>Mask for the whole recording, or only for a time range</source>
+        <translation>Peite koko tallenteelle tai vain aikavälille</translation>
+    </message>
+    <message>
+        <source>Whole Recording</source>
+        <translation>Koko tallenne</translation>
+    </message>
+    <message>
+        <source>Weaken detail; it may still be possible to recognise or recover</source>
+        <translation>Heikentää yksityiskohtia; tunnistaminen tai palauttaminen voi silti olla mahdollista</translation>
+    </message>
+    <message>
+        <source>Cover with solid black</source>
+        <translation>Peitä mustalla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="275" />
+        <source>Blur</source>
+        <translation>Sumenna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="275" />
+        <source>Pixelate</source>
+        <translation>Pikselöi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="275" />
+        <source>Solid</source>
+        <translation>Peittävä</translation>
+    </message>
+    <message>
+        <source>masks: %1, burned into the export; the original keeps everything</source>
+        <translation>peitteet: %1, poltettu vientiin; alkuperäinen säilyttää kaiken</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3411" />
+        <source>masks need GIF or WebP on this system</source>
+        <translation>peitteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
+        <source>Masks need GIF or WebP on this system</source>
+        <translation>Peitteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <source>Cover a sensitive area in the export. The original recording is not changed.</source>
+        <translation>Peitä arkaluonteinen alue viennissä. Alkuperäinen tallenne ei muutu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1403" />
+        <source>Add Mask</source>
+        <translation>Lisää peite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1396" />
+        <source>No room for a new zoom here</source>
+        <translation>Uudelle zoomaukselle ei ole tässä tilaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1929" />
+        <source>Zoom %1× from %2 to %3</source>
+        <translation>Zoomaus %1× %2–%3</translation>
+    </message>
+    <message>
+        <source>Click the video to move the zoom's centre. Done finishes editing.</source>
+        <translation>Siirrä zoomauksen keskikohtaa napsauttamalla videota. Valmis lopettaa muokkauksen.</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Valmis</translation>
+    </message>
+    <message>
+        <source>Delete this zoom</source>
+        <translation>Poista tämä zoomaus</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Poista</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3266" />
+        <source>Turn all zooms on or off without deleting them</source>
+        <translation>Ota kaikki zoomaukset käyttöön tai pois poistamatta niitä</translation>
+    </message>
+    <message>
+        <source>Zoom Off</source>
+        <translation>Zoomaus pois</translation>
+    </message>
+    <message>
+        <source>Zoom On</source>
+        <translation>Zoomaus päällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3273" />
+        <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
+        <translation>Hellävaraisemmat zoomaukset kaikkiin osiin: pienempiä ja hitaampia, ei suoria panorointeja</translation>
+    </message>
+    <message>
+        <source>Less Motion</source>
+        <translation>Vähemmän liikettä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3231" />
+        <source>Zoom end</source>
+        <translation>Zoomauksen loppu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3220" />
+        <source>Zoom start</source>
+        <translation>Zoomauksen alku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3254" />
+        <source>Zoom: %1</source>
+        <translation>Zoomaus: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
+        <source>Add a zoom at the playhead</source>
+        <translation>Lisää zoomaus toistokohtaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1387" />
+        <source>Add Zoom</source>
+        <translation>Lisää zoomaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1380" />
+        <source>No clicks to zoom in on</source>
+        <translation>Ei napsautuksia zoomattavaksi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1379" />
+        <source>Zooms added: %1</source>
+        <translation>Lisätyt zoomaukset: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1373" />
+        <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
+        <translation>Automaattinen zoomaus vaatii tallennetut napsautukset; lisää zoomaukset käsin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1372" />
+        <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
+        <translation>Zoomaa napsautuksiin automaattisesti. Lisäämäsi tai muuttamasi zoomaukset säilyvät.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1370" />
+        <source>Auto Zoom</source>
+        <translation>Automaattinen zoomaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <source>Highlight Clicks</source>
+        <translation>Korosta napsautukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <source>Hide Click Highlights</source>
+        <translation>Piilota napsautusten korostus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
+        <source>Clicks</source>
+        <translation>Napsautukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2459" />
+        <source>Smooths the pointer's path; clicks stay where they happened</source>
+        <translation>Pehmentää osoittimen reittiä; napsautukset pysyvät paikallaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
+        <source>Pointer Size: %1</source>
+        <translation>Osoittimen koko: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <source>Show the Mouse Pointer</source>
+        <translation>Näytä hiiren osoitin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <source>Hide the Mouse Pointer</source>
+        <translation>Piilota hiiren osoitin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1524" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2230" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2439" />
+        <source>Pointer</source>
+        <translation>Osoitin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3407" />
+        <source>pointer effects need GIF or WebP on this system</source>
+        <translation>osoitintehosteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <source>Smooth: High</source>
+        <translation>Pehmennys: Korkea</translation>
+    </message>
+    <message>
+        <source>Smooth: Medium</source>
+        <translation>Pehmennys: Keskitaso</translation>
+    </message>
+    <message>
+        <source>Smooth: Low</source>
+        <translation>Pehmennys: Matala</translation>
+    </message>
+    <message>
+        <source>Smooth: Off</source>
+        <translation>Pehmennys: Pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3898" />
+        <source>Save again with the current settings</source>
+        <translation>Tallenna uudelleen nykyisillä asetuksilla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3896" />
+        <source>Try Again</source>
+        <translation>Yritä uudelleen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3714" />
+        <source>Keep Exporting</source>
+        <translation>Jatka vientiä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3704" />
+        <source>An export is in progress. Keep exporting or cancel it?</source>
+        <translation>Vienti on käynnissä. Jatketaanko vai perutaanko?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3691" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3722" />
+        <source>Cancel Export</source>
+        <translation>Peruuta vienti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1195" />
+        <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
+        <translation>Käytä rajausta (Enter) · nuolinäppäimet siirtävät 2 px (Vaihto: 10 px)</translation>
+    </message>
+    <message>
+        <source>Compare with Original (\)</source>
+        <translation>Vertaa alkuperäiseen (\)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1224" />
+        <source>Compare with Original</source>
+        <translation>Vertaa alkuperäiseen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1236" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1239" />
+        <source>Reset Crop and Trim</source>
+        <translation>Palauta rajaus ja leikkaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
+        <source>Redo Edit</source>
+        <translation>Tee muokkaus uudelleen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="658" />
+        <source>Redo Edit (Ctrl+Shift+Z)</source>
+        <translation>Tee muokkaus uudelleen (Ctrl+Shift+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="648" />
+        <source>Undo Edit</source>
+        <translation>Kumoa muokkaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="647" />
+        <source>Undo Edit (Ctrl+Z)</source>
+        <translation>Kumoa muokkaus (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3358" />
+        <source>Crop %1 in pixels</source>
+        <translation>Rajaus %1 pikseleinä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3339" />
+        <source>H</source>
+        <translation>K</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3338" />
+        <source>W</source>
+        <translation>L</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3337" />
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3336" />
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3317" />
+        <source>Crop aspect: %1</source>
+        <translation>Rajauksen kuvasuhde: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1351" />
+        <source>Trim end</source>
+        <translation>Rajauksen loppu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1337" />
+        <source>Trim start</source>
+        <translation>Rajauksen alku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3405" />
+        <source>no audio</source>
+        <translation>ei ääntä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3403" />
+        <source>%1 kept</source>
+        <translation>Säilytetään %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3402" />
+        <source>Original %1 → Output %2</source>
+        <translation>Alkuperäinen %1 → Tuloste %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="203" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="248" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3064" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3542" />
+        <source>Original</source>
+        <translation>Alkuperäinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="203" />
+        <source>Free</source>
+        <translation>Vapaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <source>Discard</source>
+        <translation>Hylkää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <source>Keep Recording</source>
+        <translation>Säilytä tallenne</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3817" />
+        <source>The video will be deleted and cannot be recovered.</source>
+        <translation>Video poistetaan, eikä sitä voi palauttaa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <source>Discard this recording?</source>
+        <translation>Hylätäänkö tämä tallenne?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3517" />
+        <source>Clear Crop</source>
+        <translation>Poista rajaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3567" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Rajaa ikkunaan napsauttamalla sitä tai piirrä alue vetämällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3593" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>Äänen toisto ei ole käytettävissä tässä esikatselussa.</translation>
+    </message>
+    <message>
+        <source>Export as MP4</source>
+        <translation>Vie MP4-muodossa</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Vie GIF-muodossa</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Vie WebP-muodossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <source>Pause Preview (Space)</source>
+        <translation>Keskeytä esikatselu (Välilyönti)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <source>Play Preview (Space)</source>
+        <translation>Toista esikatselu (Välilyönti)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Toistonopeus: %1x</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <source>Unmute Preview (M)</source>
+        <translation>Poista esikatselun mykistys (M)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <source>Mute Preview (M)</source>
+        <translation>Mykistä esikatselu (M)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1198" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Käytä rajausta (Enter)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <source>Edit Crop</source>
+        <translation>Muokkaa rajausta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <source>Crop Recording</source>
+        <translation>Rajaa tallenne</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <source>Clear Trim Selection</source>
+        <translation>Tyhjennä leikkausvalinta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <source>Trim Recording</source>
+        <translation>Leikkaa tallenne</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <source>Discard Recording (Esc)</source>
+        <translation>Hylkää tallenne (Esc)</translation>
+    </message>
+    <message>
+        <source>Save Recording (Enter / Ctrl+S)</source>
+        <translation>Tallenna tallenne (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3686" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3912" />
+        <source>Dismiss Error</source>
+        <translation>Sulje virhe</translation>
+    </message>
+    <message>
+        <source>Motion Blur: Off</source>
+        <translation>Liikesumennus: Pois</translation>
+    </message>
+    <message>
+        <source>Motion Blur: Low</source>
+        <translation>Liikesumennus: Matala</translation>
+    </message>
+    <message>
+        <source>Motion Blur: Medium</source>
+        <translation>Liikesumennus: Keskitaso</translation>
+    </message>
+    <message>
+        <source>Motion Blur: High</source>
+        <translation>Liikesumennus: Korkea</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2047" />
+        <source>Pointer hidden from %1 to %2</source>
+        <translation>Osoitin piilotettu %1–%2</translation>
+    </message>
+    <message>
+        <source>Pointer Options</source>
+        <translation>Osoittimen asetukset</translation>
+    </message>
+    <message>
+        <source>Hide when idle, motion blur, a still ending and time ranges without a pointer</source>
+        <translation>Piilota käyttämättömänä, liikesumennus, liikkumaton loppu ja aikavälit ilman osoitinta</translation>
+    </message>
+    <message>
+        <source>Hide When Idle: %1 s</source>
+        <translation>Piilota käyttämättömänä: %1 s</translation>
+    </message>
+    <message>
+        <source>Hide When Idle: Off</source>
+        <translation>Piilota käyttämättömänä: Pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2476" />
+        <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
+        <translation>Häivytä osoitin, kun se pysähtyy; se palaa ennen kuin se liikkuu tai napsauttaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2485" />
+        <source>A short trail behind a fast-moving pointer</source>
+        <translation>Lyhyt jälki nopeasti liikkuvan osoittimen perässä</translation>
+    </message>
+    <message>
+        <source>Still End: %1 s</source>
+        <translation>Liikkumaton loppu: %1 s</translation>
+    </message>
+    <message>
+        <source>Still End: Off</source>
+        <translation>Liikkumaton loppu: Pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2493" />
+        <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
+        <translation>Pidä osoitin paikallaan lopussa, jottei siirtyminen tallennuksen pysäyttämiseen näy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2503" />
+        <source>Hide Pointer Here</source>
+        <translation>Piilota osoitin tässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2504" />
+        <source>Hide the pointer for a while from the playhead</source>
+        <translation>Piilota osoitin hetkeksi toistokohdasta alkaen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <source>No room for a hidden range here</source>
+        <translation>Tässä ei ole tilaa piilotetulle välille</translation>
+    </message>
+    <message>
+        <source>Back to the export options</source>
+        <translation>Takaisin vientiasetuksiin</translation>
+    </message>
+    <message>
+        <source>No pointer</source>
+        <translation>Ei osoitinta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3158" />
+        <source>Hidden pointer start</source>
+        <translation>Piilotuksen alku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3170" />
+        <source>Hidden pointer end</source>
+        <translation>Piilotuksen loppu</translation>
+    </message>
+    <message>
+        <source>Show the pointer here again</source>
+        <translation>Näytä osoitin tässä taas</translation>
+    </message>
+    <message>
+        <source>Finish editing this range</source>
+        <translation>Lopeta tämän välin muokkaus</translation>
+    </message>
+    <message>
+        <source>Size: Original</source>
+        <translation>Koko: Alkuperäinen</translation>
+    </message>
+    <message>
+        <source>Size: 1080p</source>
+        <translation>Koko: 1080p</translation>
+    </message>
+    <message>
+        <source>Size: 720p</source>
+        <translation>Koko: 720p</translation>
+    </message>
+    <message>
+        <source>Size: Custom Width</source>
+        <translation>Koko: Oma leveys</translation>
+    </message>
+    <message>
+        <source>Quality: Default</source>
+        <translation>Laatu: Oletus</translation>
+    </message>
+    <message>
+        <source>Quality: Low</source>
+        <translation>Laatu: Matala</translation>
+    </message>
+    <message>
+        <source>Quality: Medium</source>
+        <translation>Laatu: Keskitaso</translation>
+    </message>
+    <message>
+        <source>Quality: High</source>
+        <translation>Laatu: Korkea</translation>
+    </message>
+    <message>
+        <source>MP4 Options</source>
+        <translation>MP4-asetukset</translation>
+    </message>
+    <message>
+        <source>Size, frame rate, quality and codec of the MP4, with an estimated file size</source>
+        <translation>MP4:n koko, kuvataajuus, laatu ja koodekki sekä arvioitu tiedostokoko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
+        <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
+        <translation>MP4:n koon ja kuvataajuuden muuttamista ei vielä tueta tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3042" />
+        <source>Make the video smaller; it is never made larger than recorded</source>
+        <translation>Pienennä videota; sitä ei koskaan suurenneta tallennettua suuremmaksi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3053" />
+        <source>Video width in pixels</source>
+        <translation>Videon leveys pikseleinä</translation>
+    </message>
+    <message>
+        <source>%1 fps</source>
+        <translation>%1 fps</translation>
+    </message>
+    <message>
+        <source>FPS: Original</source>
+        <translation>FPS: Alkuperäinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3061" />
+        <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
+        <translation>Pienempi kuvataajuus pienentää tiedostoa; se ei koskaan ole tallennettua suurempi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3070" />
+        <source>Default uses the quality from the Recording settings</source>
+        <translation>Oletus käyttää tallennusasetusten laatua</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3087" />
+        <source>Plays everywhere</source>
+        <translation>Toistuu kaikkialla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3098" />
+        <source>Smaller files at the same quality; some older players cannot open them</source>
+        <translation>Pienempiä tiedostoja samalla laadulla; jotkin vanhemmat soittimet eivät avaa niitä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
+        <source>HEVC export is not available on this system</source>
+        <translation>HEVC-vienti ei ole käytettävissä tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
+        <translation>HEVC-vienti vaatii HEVC Video Extensions -laajennukset Microsoft Storesta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3113" />
+        <source>%1 × %2, %3 fps · %4 (estimate)</source>
+        <translation>%1 × %2, %3 fps · %4 (arvio)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2222" />
+        <source>A background, padding, rounded corners, a shadow and a border around the video</source>
+        <translation>Tausta, reunus, pyöristetyt kulmat, varjo ja kehys videon ympärille</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <source>Add a shadow under the video</source>
+        <translation>Lisää varjo videon alle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <source>Add a thin border around the video</source>
+        <translation>Lisää ohut kehys videon ympärille</translation>
+    </message>
+    <message>
+        <source>A frame needs GIF or WebP on this system</source>
+        <translation>Kehys vaatii tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2883" />
+        <source>Background: %1</source>
+        <translation>Tausta: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <source>Background: Black</source>
+        <translation>Tausta: Musta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2946" />
+        <source>Background image: %1</source>
+        <translation>Taustakuva: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <source>Background: White</source>
+        <translation>Tausta: Valkoinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2936" />
+        <source>Blurred Video</source>
+        <translation>Sumennettu video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3012" />
+        <source>Border</source>
+        <translation>Kehys</translation>
+    </message>
+    <message>
+        <source>Corners: %1</source>
+        <translation>Kulmat: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
+        <source>Draw the frame around the exported video</source>
+        <translation>Piirrä kehys viedyn videon ympärille</translation>
+    </message>
+    <message>
+        <source>Frame</source>
+        <translation>Kehys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <source>Frame: Off</source>
+        <translation>Kehys: Pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <source>Frame: On</source>
+        <translation>Kehys: Päällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2997" />
+        <source>How round the video's corners are</source>
+        <translation>Kuinka pyöreät videon kulmat ovat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2944" />
+        <source>Image…</source>
+        <translation>Kuva…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="233" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="237" />
+        <source>Large</source>
+        <translation>Suuri</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="208" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="212" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="233" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="237" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="252" />
+        <source>Medium</source>
+        <translation>Keskikokoinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="237" />
+        <source>None</source>
+        <translation>Ei mitään</translation>
+    </message>
+    <message>
+        <source>Padding: %1</source>
+        <translation>Reunus: %1</translation>
+    </message>
+    <message>
+        <source>Ratio: Auto</source>
+        <translation>Suhde: Automaattinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <source>Remove the border</source>
+        <translation>Poista kehys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <source>Remove the shadow</source>
+        <translation>Poista varjo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="233" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="237" />
+        <source>Small</source>
+        <translation>Pieni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2989" />
+        <source>Space around the video</source>
+        <translation>Tilaa videon ympärillä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3019" />
+        <source>The shape of the exported video; the background fills the extra space</source>
+        <translation>Viedyn videon muoto; tausta täyttää ylimääräisen tilan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2937" />
+        <source>The video itself, blurred, behind it (masks applied)</source>
+        <translation>Itse video sumennettuna taustalla (maskit käytössä)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2947" />
+        <source>Use an image file as the background</source>
+        <translation>Käytä kuvatiedostoa taustana</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1689" />
+        <source>Cut from %1 to %2</source>
+        <translation>Leikattu pois %1–%2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <source>Cut Part</source>
+        <translation>Leikkaa osa pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1286" />
+        <source>Cuts and speed changes need GIF or WebP on this system</source>
+        <translation>Leikkaukset ja nopeuden muutokset vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <source>Exported: %1</source>
+        <translation>Vienti: %1</translation>
+    </message>
+    <message>
+        <source>How fast the part at the playhead plays in the export; changed parts are silent</source>
+        <translation>Kuinka nopeasti toistokohdan osa toistuu viennissä; muutetut osat ovat äänettömiä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <source>Keep Part</source>
+        <translation>Säilytä osa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1305" />
+        <source>Leave the part at the playhead out of the export (Delete)</source>
+        <translation>Jätä toistokohdan osa pois viennistä (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1691" />
+        <source>Part from %1 to %2 at %3</source>
+        <translation>Osa %1–%2 nopeudella %3</translation>
+    </message>
+    <message>
+        <source>Part Speed: %1</source>
+        <translation>Osan nopeus: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
+        <source>Put the part at the playhead back (Delete)</source>
+        <translation>Palauta toistokohdan osa (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1283" />
+        <source>Split</source>
+        <translation>Jaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1844" />
+        <source>Split at %1</source>
+        <translation>Jako kohdassa %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1285" />
+        <source>Split the recording at the playhead (S)</source>
+        <translation>Jaa tallenne toistokohdasta (S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1290" />
+        <source>Too close to another split or an end</source>
+        <translation>Liian lähellä toista jakoa tai päätä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="232" />
+        <source>Bottom</source>
+        <translation>Alhaalla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="232" />
+        <source>Bottom Left</source>
+        <translation>Alhaalla vasemmalla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="232" />
+        <source>Bottom Right</source>
+        <translation>Alhaalla oikealla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <source>Dark</source>
+        <translation>Tumma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2825" />
+        <source>Dark or light keys</source>
+        <translation>Tummat tai vaaleat näppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
+        <source>Draw the shortcuts into the exported video</source>
+        <translation>Piirrä pikanäppäimet viety videoon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2817" />
+        <source>How large the shortcuts are</source>
+        <translation>Kuinka suuria pikanäppäimet ovat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
+        <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
+        <translation>Kuinka kauan pikanäppäin näkyy painalluksen jälkeen; peräkkäin painetut näppäimet näkyvät yhdessä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
+        <source>Keys</source>
+        <translation>Näppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <source>Keys: Off</source>
+        <translation>Näppäimet: Pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <source>Keys: On</source>
+        <translation>Näppäimet: Päällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <source>Light</source>
+        <translation>Vaalea</translation>
+    </message>
+    <message>
+        <source>Place: %1</source>
+        <translation>Sijainti: %1</translation>
+    </message>
+    <message>
+        <source>Shortcut hints need GIF or WebP on this system</source>
+        <translation>Pikanäppäinvihjeet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <source>Show for %1 s</source>
+        <translation>Näytä %1 s</translation>
+    </message>
+    <message>
+        <source>Show the shortcuts pressed while recording (%1 recorded)</source>
+        <translation>Näytä tallennuksen aikana painetut pikanäppäimet (%1 tallennettu)</translation>
+    </message>
+    <message>
+        <source>Size: %1</source>
+        <translation>Koko: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="232" />
+        <source>Top</source>
+        <translation>Ylhäällä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2809" />
+        <source>Where the shortcuts appear</source>
+        <translation>Missä pikanäppäimet näkyvät</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
+        <source>Shadow</source>
+        <translation>Varjo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2652" />
+        <source>A box behind the text, so it reads on any picture</source>
+        <translation>Laatikko tekstin takana, jotta se erottuu mistä tahansa kuvasta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
+        <source>A title or caption at the playhead</source>
+        <translation>Otsikko tai kuvateksti toistokohtaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <source>Add Image</source>
+        <translation>Lisää kuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
+        <source>Add Text</source>
+        <translation>Lisää teksti</translation>
+    </message>
+    <message>
+        <source>Align Center</source>
+        <translation>Keskitä</translation>
+    </message>
+    <message>
+        <source>Align Left</source>
+        <translation>Tasaa vasemmalle</translation>
+    </message>
+    <message>
+        <source>Align Right</source>
+        <translation>Tasaa oikealle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1444" />
+        <source>An image such as a logo, for the whole recording</source>
+        <translation>Kuva, kuten logo, koko tallenteen ajaksi</translation>
+    </message>
+    <message>
+        <source>Dark Background</source>
+        <translation>Tumma tausta</translation>
+    </message>
+    <message>
+        <source>Delete this overlay</source>
+        <translation>Poista tämä päällyste</translation>
+    </message>
+    <message>
+        <source>Drag the overlay to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Vedä päällystettä siirtääksesi sitä tai kulmasta muuttaaksesi kokoa. Valmis lopettaa muokkauksen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2661" />
+        <source>How lines line up</source>
+        <translation>Miten rivit tasataan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2670" />
+        <source>How see-through the image is</source>
+        <translation>Kuinka läpikuultava kuva on</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="52" />
+        <source>Image overlay</source>
+        <translation>Kuvapäällyste</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2606" />
+        <source>Larger</source>
+        <translation>Suurempi</translation>
+    </message>
+    <message>
+        <source>Light Background</source>
+        <translation>Vaalea tausta</translation>
+    </message>
+    <message>
+        <source>No Background</source>
+        <translation>Ei taustaa</translation>
+    </message>
+    <message>
+        <source>Opacity: %1%</source>
+        <translation>Peittävyys: %1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
+        <source>Overlay end</source>
+        <translation>Päällysteen loppu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2700" />
+        <source>Overlay start</source>
+        <translation>Päällysteen alku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2553" />
+        <source>Overlay text</source>
+        <translation>Päällysteen teksti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1445" />
+        <source>Overlays need GIF or WebP on this system</source>
+        <translation>Päällysteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="936" />
+        <source>Selected overlay</source>
+        <translation>Valittu päällyste</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2682" />
+        <source>Show it for the whole recording, or only for a time range</source>
+        <translation>Näytä koko tallenteen ajan tai vain aikavälillä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2598" />
+        <source>Smaller</source>
+        <translation>Pienempi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2536" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2552" />
+        <source>Text</source>
+        <translation>Teksti</translation>
+    </message>
+    <message>
+        <source>Text colour %1</source>
+        <translation>Tekstin väri %1</translation>
+    </message>
+    <message>
+        <source>Text overlay "%1"</source>
+        <translation>Tekstipäällyste ”%1”</translation>
+    </message>
+    <message>
+        <source>from %1 to %2</source>
+        <translation>%1–%2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
+        <source>Audio</source>
+        <translation>Ääni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
+        <source>Leave the microphone out of the export</source>
+        <translation>Jätä mikrofoni pois viennistä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2782" />
+        <source>Leave the system audio out of the export</source>
+        <translation>Jätä järjestelmän ääni pois viennistä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2256" />
+        <source>Microphone and system audio volume, mute, and noise reduction</source>
+        <translation>Mikrofonin ja järjestelmän äänen voimakkuus, mykistys ja kohinanvaimennus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2747" />
+        <source>Microphone volume in the export</source>
+        <translation>Mikrofonin voimakkuus viennissä</translation>
+    </message>
+    <message>
+        <source>Microphone: %1</source>
+        <translation>Mikrofoni: %1</translation>
+    </message>
+    <message>
+        <source>Mixing the two tracks is not supported for MP4 on this system yet</source>
+        <translation>Kahden raidan miksausta ei vielä tueta MP4:lle tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2756" />
+        <source>Mute Microphone</source>
+        <translation>Mykistä mikrofoni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2781" />
+        <source>Mute System Audio</source>
+        <translation>Mykistä järjestelmän ääni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2764" />
+        <source>Reduce Noise</source>
+        <translation>Vaimenna kohinaa</translation>
+    </message>
+    <message>
+        <source>System Audio: %1</source>
+        <translation>Järjestelmän ääni: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2772" />
+        <source>System audio volume in the export</source>
+        <translation>Järjestelmän äänen voimakkuus viennissä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2765" />
+        <source>Turn down hiss, hum and room noise between words on the microphone</source>
+        <translation>Vaimenna sihinää, huminaa ja huoneen kohinaa sanojen välissä mikrofonista</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="51" />
+        <source>Crop</source>
+        <translation>Rajaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="51" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1522" />
+        <source>Mask</source>
+        <translation>Peite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="51" />
+        <source>Zoom segment</source>
+        <translation>Zoomausjakso</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="52" />
+        <source>Text overlay</source>
+        <translation>Tekstipäällyste</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="52" />
+        <source>Hidden pointer</source>
+        <translation>Piilotettu osoitin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
+        <source>Video clip</source>
+        <translation>Videoleike</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2217" />
+        <source>Canvas</source>
+        <translation>Kangas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
+        <source>Project settings</source>
+        <translation>Projektin asetukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="63" />
+        <source>Project</source>
+        <translation>Projekti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="64" />
+        <source>Editable project</source>
+        <translation>Muokattava projekti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="64" />
+        <source>Unsaved recording</source>
+        <translation>Tallentamaton tallenne</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="68" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="80" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2364" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2681" />
+        <source>Whole recording</source>
+        <translation>Koko tallenne</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="69" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2289" />
+        <source>%1 – %2</source>
+        <comment>time range</comment>
+        <translation>%1 – %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="79" />
+        <source>Applies to the whole recording</source>
+        <translation>Koskee koko tallennetta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="208" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="212" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
+        <source>Off</source>
+        <translation>Pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="208" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="212" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="252" />
+        <source>Low</source>
+        <translation>Matala</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="208" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="212" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="252" />
+        <source>High</source>
+        <translation>Korkea</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="219" />
+        <source>White</source>
+        <translation>Valkoinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="219" />
+        <source>Black</source>
+        <translation>Musta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="219" />
+        <source>Yellow</source>
+        <translation>Keltainen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="219" />
+        <source>Red</source>
+        <translation>Punainen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="219" />
+        <source>Blue</source>
+        <translation>Sininen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="221" />
+        <source>Left</source>
+        <translation>Vasen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="221" />
+        <source>Center</source>
+        <translation>Keski</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="221" />
+        <source>Right</source>
+        <translation>Oikea</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="238" />
+        <source>Auto</source>
+        <translation>Automaattinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="249" />
+        <source>Custom</source>
+        <translation>Mukautettu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="600" />
+        <source>Recording</source>
+        <translation>Tallenne</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <source>Hide settings</source>
+        <translation>Piilota asetukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <source>Show settings</source>
+        <translation>Näytä asetukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="679" />
+        <source>Export…</source>
+        <translation>Vie…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="683" />
+        <source>Choose a format and export (Ctrl+S)</source>
+        <translation>Valitse muoto ja vie (Ctrl+S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <source>Close Without Saving (Esc)</source>
+        <translation>Sulje tallentamatta (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1161" />
+        <source>Not exported · export %1</source>
+        <translation>Ei viedä · vienti %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1162" />
+        <source>Export %1 / %2</source>
+        <translation>Vienti %1 / %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1165" />
+        <source>The playhead is in a part that is not exported. The export is %1 long.</source>
+        <translation>Toistokohta on osassa, jota ei viedä. Viennin pituus on %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1167" />
+        <source>Exported time %1 of %2</source>
+        <translation>Viety aika %1 / %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1229" />
+        <source>Compare with Original (%1)</source>
+        <translation>Vertaa alkuperäiseen (%1)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1258" />
+        <source>Preview speed</source>
+        <translation>Esikatselun nopeus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1259" />
+        <source>Playback speed of this preview only; the export is not changed</source>
+        <translation>Vain tämän esikatselun toistonopeus; vientiä ei muuteta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
+        <source>Put the selected clip back (Delete)</source>
+        <translation>Palauta valittu leike (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1302" />
+        <source>Leave the selected clip out of the export (Delete)</source>
+        <translation>Jätä valittu leike pois viennistä (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1314" />
+        <source>Add effect</source>
+        <translation>Lisää tehoste</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1315" />
+        <source>Zoom, mask, text or image at the playhead</source>
+        <translation>Zoomaus, peite, teksti tai kuva toistokohtaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1328" />
+        <source>Trim</source>
+        <translation>Lyhennys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1521" />
+        <source>Zoom</source>
+        <translation>Zoomaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1523" />
+        <source>Text &amp; image</source>
+        <translation>Teksti ja kuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1581" />
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1674" />
+        <source>Cut</source>
+        <translation>Leikattu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1808" />
+        <source>No effects yet. Use Add effect to zoom, mask, or add text at the playhead.</source>
+        <translation>Ei vielä tehosteita. Lisää zoomaus, peite tai teksti toistokohtaan Lisää tehoste -painikkeella.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1845" />
+        <source>Arrow keys move the split; Delete joins the two clips</source>
+        <translation>Nuolinäppäimet siirtävät jakokohtaa; Delete yhdistää leikkeet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1928" />
+        <source>Zoom %1</source>
+        <translation>Zoomaus %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1965" />
+        <source>Mask · %1</source>
+        <translation>Peite · %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
+        <source>Image</source>
+        <translation>Kuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2006" />
+        <source>Text overlay "%1" from %2 to %3</source>
+        <translation>Tekstipäällyste ”%1” %2–%3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2009" />
+        <source>Image overlay from %1 to %2</source>
+        <translation>Kuvapäällyste %1–%2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2046" />
+        <source>Pointer hidden</source>
+        <translation>Osoitin piilotettu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2204" />
+        <source>These settings apply to the whole recording. Select a clip or effect on the timeline to edit just that part.</source>
+        <translation>Nämä asetukset koskevat koko tallennetta. Valitse aikajanalta leike tai tehoste, jos haluat muokata vain sitä osaa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2219" />
+        <source>Frame on · padding %1</source>
+        <translation>Kehys päällä · reunus %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2220" />
+        <source>No frame</source>
+        <translation>Ei kehystä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2221" />
+        <source>A frame needs GIF or WebP on this system.</source>
+        <translation>Kehys vaatii tässä järjestelmässä GIF- tai WebP-muodon.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2231" />
+        <source>Hidden</source>
+        <translation>Piilotettu</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2233" />
+        <source>Shown · %1 · %n hidden range(s)</source>
+        <translation>
+            <numerusform>Näytetään · %1 · %n piilotettu väli</numerusform>
+            <numerusform>Näytetään · %1 · %n piilotettua väliä</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2235" />
+        <source>Shown · %1</source>
+        <translation>Näytetään · %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2236" />
+        <source>No pointer data was recorded.</source>
+        <translation>Osoitintietoja ei tallennettu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2237" />
+        <source>Pointer effects need GIF or WebP on this system.</source>
+        <translation>Osoitintehosteet vaativat tässä järjestelmässä GIF- tai WebP-muodon.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2238" />
+        <source>Size, smoothing, click highlights, hide when idle, motion blur and a still ending</source>
+        <translation>Koko, pehmennys, napsautusten korostus, piilotus käyttämättömänä, liikesumennus ja liikkumaton loppu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2248" />
+        <source>Microphone %1 · System %2</source>
+        <translation>Mikrofoni %1 · Järjestelmä %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
+        <source>muted</source>
+        <translation>mykistetty</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
+        <source>No separate microphone and system tracks. The recorded audio is kept as it is.</source>
+        <translation>Ei erillisiä mikrofoni- ja järjestelmäraitoja. Tallennettu ääni säilyy sellaisenaan.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2254" />
+        <source>GIF and WebP have no sound. Choose MP4 to adjust the audio.</source>
+        <translation>GIF ja WebP eivät sisällä ääntä. Valitse MP4 säätääksesi ääntä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2255" />
+        <source>Mixing the two tracks is not supported for MP4 on this system yet.</source>
+        <translation>Kahden raidan miksausta ei vielä tueta MP4:lle tässä järjestelmässä.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
+        <source>Shown · %n shortcut(s) recorded</source>
+        <translation>
+            <numerusform>Näytetään · %n pikanäppäin tallennettu</numerusform>
+            <numerusform>Näytetään · %n pikanäppäintä tallennettu</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
+        <source>Off · %n shortcut(s) recorded</source>
+        <translation>
+            <numerusform>Pois · %n pikanäppäin tallennettu</numerusform>
+            <numerusform>Pois · %n pikanäppäintä tallennettu</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2269" />
+        <source>No shortcuts were recorded.</source>
+        <translation>Pikanäppäimiä ei tallennettu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2270" />
+        <source>Shortcut hints need GIF or WebP on this system.</source>
+        <translation>Pikanäppäinvihjeet vaativat tässä järjestelmässä GIF- tai WebP-muodon.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2271" />
+        <source>Show the shortcuts pressed while recording</source>
+        <translation>Näytä tallennuksen aikana painetut pikanäppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
+        <source>Source range</source>
+        <translation>Lähdeväli</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
+        <source>Export speed</source>
+        <translation>Vientinopeus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
+        <source>How fast this clip plays in the exported file. Changed-speed clips are silent.</source>
+        <translation>Kuinka nopeasti tämä leike toistuu viedyssä tiedostossa. Leikkeet, joiden nopeutta on muutettu, ovat äänettömiä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2314" />
+        <source>Cuts and speed changes need GIF or WebP on this system.</source>
+        <translation>Leikkaukset ja nopeuden muutokset vaativat tässä järjestelmässä GIF- tai WebP-muodon.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <source>Keep clip</source>
+        <translation>Säilytä leike</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <source>Cut clip</source>
+        <translation>Leikkaa leike pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2324" />
+        <source>Leave this clip out of the export, or put it back (Delete)</source>
+        <translation>Jätä tämä leike pois viennistä tai palauta se (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
+        <source>Style</source>
+        <translation>Tyyli</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2355" />
+        <source>Solid covers with black; pixelate and blur weaken detail, which may still be recoverable</source>
+        <translation>Peittävä peittää mustalla; pikselöinti ja sumennus heikentävät yksityiskohtia, jotka voivat silti olla palautettavissa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2361" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2678" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3151" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3213" />
+        <source>Time range</source>
+        <translation>Aikaväli</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2406" />
+        <source>Drag the mask on the preview to move it, or its corner to resize it.</source>
+        <translation>Siirrä peitettä vetämällä sitä esikatselussa tai muuta kokoa vetämällä kulmasta.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2417" />
+        <source>Delete mask</source>
+        <translation>Poista peite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2418" />
+        <source>Delete this mask (Delete)</source>
+        <translation>Poista tämä peite (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2449" />
+        <source>Pointer size</source>
+        <translation>Osoittimen koko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2460" />
+        <source>Smoothing</source>
+        <translation>Pehmennys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2477" />
+        <source>Hide when idle</source>
+        <translation>Piilota käyttämättömänä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2480" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2497" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2835" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2837" />
+        <source>%1 s</source>
+        <translation>%1 s</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2486" />
+        <source>Motion blur</source>
+        <translation>Liikesumennus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2494" />
+        <source>Still ending</source>
+        <translation>Liikkumaton loppu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2571" />
+        <source>Font and size</source>
+        <translation>Fontti ja koko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2597" />
+        <source>Smaller text</source>
+        <translation>Pienempi teksti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2605" />
+        <source>Larger text</source>
+        <translation>Suurempi teksti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2612" />
+        <source>Colour</source>
+        <translation>Väri</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2633" />
+        <source>Text colour: %1</source>
+        <translation>Tekstin väri: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2653" />
+        <source>Background</source>
+        <translation>Tausta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2662" />
+        <source>Alignment</source>
+        <translation>Tasaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2671" />
+        <source>Opacity</source>
+        <translation>Peittävyys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2674" />
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <source>Delete text</source>
+        <translation>Poista teksti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <source>Delete image</source>
+        <translation>Poista kuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2727" />
+        <source>Delete this overlay (Delete)</source>
+        <translation>Poista tämä päällyste (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2748" />
+        <source>Microphone volume</source>
+        <translation>Mikrofonin voimakkuus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2773" />
+        <source>System audio volume</source>
+        <translation>Järjestelmän äänen voimakkuus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2810" />
+        <source>Position</source>
+        <translation>Sijainti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2818" />
+        <source>Size</source>
+        <translation>Koko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2826" />
+        <source>Appearance</source>
+        <translation>Ulkoasu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
+        <source>Display duration</source>
+        <translation>Näyttöaika</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2974" />
+        <source>Background image</source>
+        <translation>Taustakuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <source>Padding</source>
+        <translation>Reunus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2998" />
+        <source>Corners</source>
+        <translation>Kulmat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3302" />
+        <source>Aspect ratio</source>
+        <translation>Kuvasuhde</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
+        <source>Resolution</source>
+        <translation>Tarkkuus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3063" />
+        <source>Frame rate</source>
+        <translation>Kuvataajuus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3071" />
+        <source>Quality</source>
+        <translation>Laatu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3077" />
+        <source>Codec</source>
+        <translation>Koodekki</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3145" />
+        <source>The pointer is left out of the export during this time.</source>
+        <translation>Osoitin jätetään pois viennistä tänä aikana.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3185" />
+        <source>Show the pointer again</source>
+        <translation>Näytä osoitin taas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3186" />
+        <source>Delete this hidden range (Delete)</source>
+        <translation>Poista tämä piilotettu väli (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3240" />
+        <source>Zoom amount</source>
+        <translation>Zoomauksen määrä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
+        <source>All zooms</source>
+        <translation>Kaikki zoomaukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3265" />
+        <source>Zoom effects</source>
+        <translation>Zoomaustehosteet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3272" />
+        <source>Less motion</source>
+        <translation>Vähemmän liikettä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3284" />
+        <source>Delete zoom</source>
+        <translation>Poista zoomaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
+        <source>Delete this zoom (Delete)</source>
+        <translation>Poista tämä zoomaus (Delete)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3326" />
+        <source>Position and size (video pixels)</source>
+        <translation>Sijainti ja koko (videon pikseleinä)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3423" />
+        <source>Format</source>
+        <translation>Muoto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3430" />
+        <source>Video with sound. Best for sharing and long recordings.</source>
+        <translation>Video äänellä. Paras jakamiseen ja pitkiin tallenteisiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3431" />
+        <source>Silent animation that plays almost anywhere. Large files.</source>
+        <translation>Äänetön animaatio, joka toistuu lähes kaikkialla. Suuret tiedostot.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3432" />
+        <source>Silent animation, smaller than GIF. Supports every edit.</source>
+        <translation>Äänetön animaatio, GIF:iä pienempi. Tukee kaikkia muokkauksia.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <source>Close without saving your changes?</source>
+        <translation>Suljetaanko tallentamatta muutoksia?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3816" />
+        <source>The project stays in Recording Library as it was last saved.</source>
+        <translation>Projekti jää tallennekirjastoon sellaisena kuin se viimeksi tallennettiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <source>Keep Editing</source>
+        <translation>Jatka muokkausta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2580" />
+        <source>Font</source>
+        <translation>Fontti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="252" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
+        <source>Default</source>
+        <translation>Oletus</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2148" />
+        <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
+        <translation>Peitteitä ei vielä voi käyttää MP4-muodossa tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista peitteet viedäksesi MP4:n. Mitään ei viety.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2202" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3348" />
+        <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
+        <translation>Levytilaa ei ole tarpeeksi vientiin (%1 vapaana, tarvitaan noin %2). Vapauta tilaa ja yritä uudelleen; tallenne säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2856" />
+        <source>Writing file...</source>
+        <translation>Kirjoitetaan tiedostoa...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <source>Converting to WebP...</source>
+        <translation>Muunnetaan WebP-muotoon...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <source>Converting to GIF...</source>
+        <translation>Muunnetaan GIF-muotoon...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2360" />
+        <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
+        <translation>Tiedostoa ei voitu tallentaa. Tallenne säilyy; yritä tallentaa uudelleen tai valitse toinen sijainti.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2285" />
+        <source>Saving...</source>
+        <translation>Tallennetaan...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="1281" />
+        <source>Recording Preview</source>
+        <translation>Tallennuksen esikatselu</translation>
+    </message>
+    <message>
+        <source>Converting video...</source>
+        <translation>Muunnetaan videota...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2870" />
+        <source>Failed to create video player for conversion</source>
+        <translation>Videotoistinta ei voitu luoda muuntamista varten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2871" />
+        <source>Failed to load video for conversion</source>
+        <translation>Videota ei voitu ladata muuntamista varten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2872" />
+        <source>Video not loaded properly for conversion</source>
+        <translation>Video ei latautunut oikein muuntamista varten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2873" />
+        <source>Failed to start encoder</source>
+        <translation>Kooderin käynnistäminen epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2874" />
+        <source>Conversion failed: no video frames were encoded</source>
+        <translation>Muuntaminen epäonnistui: videokuvia ei koodattu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2875" />
+        <source>Conversion failed while extracting video frames</source>
+        <translation>Muuntaminen epäonnistui videokuvia purettaessa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2876" />
+        <source>Conversion failed while saving the output file</source>
+        <translation>Muuntaminen epäonnistui tulostiedostoa tallennettaessa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
+        <source>Conversion failed: output file is missing or empty</source>
+        <translation>Muuntaminen epäonnistui: tulostiedosto puuttuu tai on tyhjä</translation>
+    </message>
+    <message>
+        <source>Trimming video...</source>
+        <translation>Leikataan videota...</translation>
+    </message>
+    <message>
+        <source>Trim failed: %1</source>
+        <translation>Videon leikkaus epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>Trim failed: output file is missing or empty</source>
+        <translation>Videon leikkaus epäonnistui: tulostiedosto puuttuu tai on tyhjä</translation>
+    </message>
+    <message>
+        <source>Trim failed</source>
+        <translation>Videon leikkaus epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3249" />
+        <source>Exporting video...</source>
+        <translation>Viedään videota...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3277" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Videon vienti ei ole tuettu tällä alustalla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3278" />
+        <source>Export failed: %1</source>
+        <translation>Vienti epäonnistui: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3281" />
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Vienti epäonnistui; alkuperäinen tallenne säilytettiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2385" />
+        <source>Cancelling...</source>
+        <translation>Peruutetaan...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="624" />
+        <source>About %1</source>
+        <translation>Noin %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="341" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.webp)</source>
+        <translation>Kuvat (*.png *.jpg *.jpeg *.bmp *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="340" />
+        <source>Select Background Image</source>
+        <translation>Valitse taustakuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="344" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="1790" />
+        <source>The image could not be read.</source>
+        <translation>Kuvaa ei voitu lukea.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2160" />
+        <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Leikkauksia ja nopeuden muutoksia ei vielä voi käyttää MP4:ssä tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista ne viedäksesi MP4:n. Mitään ei viety.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2156" />
+        <source>Every part is cut out: there is nothing to export.</source>
+        <translation>Kaikki osat on leikattu pois: vietävää ei ole.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="1787" />
+        <source>Images (*.png *.svg *.jpg *.jpeg *.webp)</source>
+        <translation>Kuvat (*.png *.svg *.jpg *.jpeg *.webp)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="1786" />
+        <source>Select Image</source>
+        <translation>Valitse kuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="1752" />
+        <source>Title</source>
+        <translation>Otsikko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2069" />
+        <source>Failed to load preview video: %1</source>
+        <translation>Esikatseluvideon lataaminen epäonnistui: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2140" />
+        <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
+        <translation>Teksti- ja kuvapäällysteitä ei vielä voi piirtää MP4:ään tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista ne viedäksesi MP4:n. Mitään ei viety.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2273" />
+        <source>The project's recording could not be copied for saving. Nothing was saved.</source>
+        <translation>Projektin tallennetta ei voitu kopioida tallennusta varten. Mitään ei tallennettu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2308" />
+        <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
+        <translation>Tallennettu kohteeseen %1, mutta projektia ei voitu päivittää. Tallenna uudelleen, jotta muokkaukset säilyvät projektissa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2333" />
+        <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
+        <translation>Tallennettu kohteeseen %1, mutta tallennetta ei voitu säilyttää muokattavana projektina. Se on yhä auki tässä: tallenna uudelleen tai hylkää se sulkemalla.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingRecoveryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="131" />
+        <source>Later</source>
+        <translation>Myöhemmin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="108" />
+        <source>Discard %1</source>
+        <translation>Hylkää %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="105" />
+        <source>Discard</source>
+        <translation>Hylkää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="99" />
+        <source>Recover %1</source>
+        <translation>Palauta %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="96" />
+        <source>Recover</source>
+        <translation>Palauta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="13" />
+        <source>SnapTray stopped before these recordings were saved.</source>
+        <translation>SnapTray pysähtyi ennen kuin nämä tallenteet tallennettiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="12" />
+        <source>Recover Recordings</source>
+        <translation>Palauta tallenteet</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingRegionSelector</name>
+    <message>
+        <source>Start Recording (Enter)</source>
+        <translation>Aloita tallennus (Enter)</translation>
+    </message>
+    <message>
+        <source>Cancel (Esc)</source>
+        <translation>Peruuta (Esc)</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 × %2</translation>
+    </message>
+    <message>
+        <source>Press Enter or click Start Recording, Escape to cancel</source>
+        <translation>Paina Enter tai napsauta Aloita tallennus, peruuta Escillä</translation>
+    </message>
+    <message>
+        <source>Release to confirm selection</source>
+        <translation>Vapauta vahvistaaksesi valinnan</translation>
+    </message>
+    <message>
+        <source>Click and drag to select recording region</source>
+        <translation>Valitse tallennusalue napsauttamalla ja vetämällä</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="251" />
+        <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
+        <translation>Vahvista näyttö, mikrofoni ja järjestelmän ääni ennen jokaista tallennusta. Kun pois päältä, tallennus alkaa heti näillä asetuksilla.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="250" />
+        <source>Show setup before recording</source>
+        <translation>Näytä asetukset ennen tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <source>Frame rate</source>
+        <translation>Kuvataajuus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="94" />
+        <source>10 FPS</source>
+        <translation>10 FPS</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="95" />
+        <source>15 FPS</source>
+        <translation>15 FPS</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>24 FPS</source>
+        <translation>24 FPS</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
+        <source>30 FPS</source>
+        <translation>30 FPS</translation>
+    </message>
+    <message>
+        <source>Output format</source>
+        <translation>Tulostemuoto:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="109" />
+        <source>MP4 (H.264)</source>
+        <translation>MP4 (H.264)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="110" />
+        <source>GIF</source>
+        <translation>GIF</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
+        <source>WebP</source>
+        <translation>WebP</translation>
+    </message>
+    <message>
+        <source>Quality</source>
+        <translation>Laatu:</translation>
+    </message>
+    <message>
+        <source>WebP format creates smaller files than GIF with better quality.
+Best for short clips and sharing on web.
+Audio is not supported for WebP recordings.</source>
+        <translation>WebP-muoto luo GIF:iä pienempiä tiedostoja paremmalla laadulla.
+Paras lyhyille leikkeille ja verkkojakoon.
+WebP-tallennuksissa ääntä ei tueta.</translation>
+    </message>
+    <message>
+        <source>GIF format creates larger files than MP4.
+Best for short clips and sharing on web.
+Audio is not supported for GIF recordings.</source>
+        <translation>GIF-muoto luo MP4:ää suurempia tiedostoja.
+Paras lyhyille leikkeille ja verkkojakoon.
+GIF-tallennuksissa ääntä ei tueta.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="159" />
+        <source>Audio</source>
+        <translation>Ääni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="162" />
+        <source>Record audio</source>
+        <translation>Tallenna ääni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="176" />
+        <source>Source</source>
+        <translation>Lähde:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="179" />
+        <source>Microphone</source>
+        <translation>Mikrofoni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="180" />
+        <source>System Audio</source>
+        <translation>Järjestelmän ääni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
+        <source>Both (Mixed)</source>
+        <translation>Molemmat (Miksattu)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="106" />
+        <source>Default output format</source>
+        <translation>Oletusvientimuoto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
+        <source>Recording quality</source>
+        <translation>Tallennuslaatu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="68" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. MP4 on ainoa vientimuoto, joka säilyttää äänen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="65" />
+        <source>Recording saves silent MP4 files directly, without a preview.</source>
+        <translation>Tallennus tallentaa äänettömät MP4-tiedostot suoraan ilman esikatselua.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="71" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. WebP-viennit eivät sisällä ääntä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="73" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. GIF-viennit eivät sisällä ääntä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="77" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>WebP-viennit tuottavat lyhyissä leikkeissä GIF:iä pienempiä tiedostoja paremmalla laadulla. Ääntä ei tueta suorassa WebP-tallennuksessa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="80" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>GIF-viennit sopivat parhaiten lyhyisiin leikkeisiin ja nopeaan jakamiseen. Ääntä ei tueta suorassa GIF-tallennuksessa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="82" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4 tallentaa suoraan H.264-videolla ja valinnaisella äänellä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="166" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>Ääni tallennetaan väliaikaiseen MP4-tallenteeseen. Vain MP4-vienti säilyttää äänen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="168" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>Ääni on käytettävissä vain suorassa MP4-tallennuksessa tai kun Näytä esikatselu on käytössä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="213" />
+        <source>Loading audio devices...</source>
+        <translation>Ladataan äänilaitteita...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="225" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>Tallennussivu on valmis. Syöttölaitteita ladataan taustalla.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="236" />
+        <source>Input device</source>
+        <translation>Syöttölaite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="48" />
+        <source>System Default</source>
+        <translation>Järjestelmän oletus</translation>
+    </message>
+    <message>
+        <source>Show preview</source>
+        <translation>Näytä esikatselu</translation>
+    </message>
+    <message>
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>Pidä tämä käytössä, jotta voit rajata tai viedä tallenteen tallennuksen jälkeen. Esikatselutallenteet kaapataan aina ensin MP4-muodossa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="355" />
+        <source>Countdown</source>
+        <translation>Lähtölaskenta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="358" />
+        <source>Show countdown</source>
+        <translation>Näytä lähtölaskenta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="364" />
+        <source>Duration</source>
+        <translation>Lähtölaskennan kesto:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="366" />
+        <source>1 second</source>
+        <translation>1 sekunti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="367" />
+        <source>2 seconds</source>
+        <translation>2 sekuntia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="368" />
+        <source>3 seconds</source>
+        <translation>3 sekuntia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
+        <source>4 seconds</source>
+        <translation>4 sekuntia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="370" />
+        <source>5 seconds</source>
+        <translation>5 sekuntia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="130" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Tallennetun videon laatu. Kun esikatselu on käytössä, tallenteet kaapataan korkealaatuisina ja muunnetaan tähän laatuun tallennettaessa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
+        <source>All keys, including typed text</source>
+        <translation>Kaikki näppäimet, myös kirjoitettu teksti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="273" />
+        <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
+        <translation>Esikatselun pikanäppäinvihjeitä varten. Näppäimet säilyvät väliaikaisen tallenteen kanssa ja poistetaan sen mukana; ne eivät koskaan ole tallennetussa tiedostossa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
+        <source>Not available on this system yet</source>
+        <translation>Ei vielä käytettävissä tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="261" />
+        <source>Off</source>
+        <translation>Pois</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="258" />
+        <source>Record keys</source>
+        <translation>Tallenna näppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="262" />
+        <source>Shortcuts only</source>
+        <translation>Vain pikanäppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="17" />
+        <source>Never</source>
+        <translation>Ei koskaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="18" />
+        <source>7 days</source>
+        <translation>7 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="19" />
+        <source>30 days</source>
+        <translation>30 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="20" />
+        <source>90 days</source>
+        <translation>90 päivää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="332" />
+        <source>Keep editable projects</source>
+        <translation>Säilytä muokattavat projektit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
+        <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
+        <translation>Tallennuksen jälkeen säilytä tallenne ja muokkauksesi, jotta voit muuttaa ja viedä sen uudelleen tallennekirjastosta. Projektit säilyttävät koko näytön tallenteen, sen osoittimen, näppäimet ja ääniraidat, myös sen, minkä sumensit tai rajasit pois, ja vievät levytilaa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="345" />
+        <source>Delete projects not changed for</source>
+        <translation>Poista projektit, joita ei ole muutettu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="284" />
+        <source>After recording</source>
+        <translation>Tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
+        <source>Edit in the preview</source>
+        <translation>Muokkaa esikatselussa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="288" />
+        <source>Save right away</source>
+        <translation>Tallenna heti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="300" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Pikatila: tiedosto tallennetaan lopulliseen muotoonsa heti, kun lopetat, ilman esikatselua ja muokkausraitoja.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="309" />
+        <source>After saving</source>
+        <translation>Tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="312" />
+        <source>Do nothing</source>
+        <translation>Älä tee mitään</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
+        <source>Copy the file</source>
+        <translation>Kopioi tiedosto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
+        <source>Show in folder</source>
+        <translation>Näytä kansiossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="299" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
+        <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Esikatseltavat tallenteet tallennetaan aina ensin MP4-muodossa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
+        <source>Choose an area before recording</source>
+        <translation>Valitse alue ennen tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="324" />
+        <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
+        <translation>Valitse tallennettava vetämällä näytön yli. Muokkaustila tallentaa silti koko näytön ja avaa esikatselun alueeseen rajattuna, joten voit muuttaa sitä; pikatila tallentaa vain alueen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
+        <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
+        <translation>Projektit säilytetään, kun tallennat esikatselusta. Ota Näytä esikatselu käyttöön, jotta voit käyttää niitä.</translation>
+    </message>
+</context>
+<context>
+    <name>RegionExportManager</name>
+    <message>
+        <location filename="../src/region/RegionExportManager.cpp" line="292" />
+        <source>Failed to save screenshot: %1</source>
+        <translation>Kuvakaappauksen tallennus epäonnistui: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/region/RegionExportManager.cpp" line="231" />
+        <source>Save Screenshot</source>
+        <translation>Tallenna kuvakaappaus</translation>
+    </message>
+    <message>
+        <location filename="../src/region/RegionExportManager.cpp" line="215" />
+        <source>Failed to determine screenshot output path</source>
+        <translation>Kuvakaappauksen tallennuspolkua ei voitu määrittää</translation>
+    </message>
+    <message>
+        <location filename="../src/region/RegionExportManager.cpp" line="233" />
+        <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
+        <translation>PNG-kuva (*.png);;JPEG-kuva (*.jpg *.jpeg);;Kaikki tiedostot (*)</translation>
+    </message>
+    <message>
+        <location filename="../src/region/RegionExportManager.cpp" line="244" />
+        <source>Failed to save screenshot: unable to process selection</source>
+        <translation>Kuvakaappauksen tallennus epäonnistui: valintaa ei voitu käsitellä</translation>
+    </message>
+    <message>
+        <location filename="../src/region/RegionExportManager.cpp" line="249" />
+        <source>Failed to save screenshot: output path is empty</source>
+        <translation>Kuvakaappauksen tallennus epäonnistui: tallennuspolku on tyhjä</translation>
+    </message>
+    <message>
+        <location filename="../src/region/RegionExportManager.cpp" line="257" />
+        <source>Failed to save screenshot: another save is already in progress</source>
+        <translation>Kuvakaappauksen tallennus epäonnistui: toinen tallennus on jo käynnissä</translation>
+    </message>
+</context>
+<context>
+    <name>RegionPainter</name>
+    <message>
+        <source>%1 x %2 pt</source>
+        <translation>%1 × %2 pt</translation>
+    </message>
+</context>
+<context>
+    <name>RegionSelector</name>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="3136" />
+        <source>%1 region</source>
+        <translation>%1 alue</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="3137" />
+        <source>%1 regions</source>
+        <translation>%1 aluetta</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="3926" />
+        <source>Please wait for auto-blur to finish</source>
+        <translation>Odota, että automaattinen sumennus valmistuu</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <source>Error</source>
+        <translation>Virhe</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <source>Failed to merge regions. Please try again.</source>
+        <translation>Alueiden yhdistäminen epäonnistui. Yritä uudelleen.</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="4109" />
+        <location filename="../src/RegionSelector.cpp" line="4840" />
+        <location filename="../src/RegionSelector.cpp" line="4928" />
+        <location filename="../src/RegionSelector.cpp" line="5034" />
+        <source>Failed to process selected region</source>
+        <translation>Valitun alueen käsittely epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="4218" />
+        <source>Failed to save screenshot: unable to process selection</source>
+        <translation>Kuvakaappauksen tallennus epäonnistui: valintaa ei voitu käsitellä</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="4869" />
+        <location filename="../src/RegionSelector.cpp" line="4897" />
+        <source>Copied %1 characters</source>
+        <translation>%1 merkkiä kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="4873" />
+        <source>No text found</source>
+        <translation>Tekstiä ei löytynyt</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="4896" />
+        <source>OCR</source>
+        <translation>OCR</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="4992" />
+        <source>No QR code found</source>
+        <translation>QR-koodia ei löytynyt</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="5059" />
+        <source>Face detection unavailable</source>
+        <translation>Kasvojentunnistus ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="5067" />
+        <source>Detection unavailable</source>
+        <translation>Tunnistus ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="5277" />
+        <source>Blurred %1 face(s), %2 credential(s)</source>
+        <translation>Sumennettu %1 kasvo(a), %2 tunnistetietoa</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="5281" />
+        <source>Blurred %1 face(s)</source>
+        <translation>%1 kasvot sumennettu</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="5285" />
+        <source>Blurred %1 credential(s)</source>
+        <translation>Sumennettu %1 tunnistetietoa</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="5289" />
+        <source>No faces or credentials detected</source>
+        <translation>Kasvoja tai tunnistetietoja ei havaittu</translation>
+    </message>
+    <message>
+        <location filename="../src/RegionSelector.cpp" line="5293" />
+        <source>Detection failed</source>
+        <translation>Tunnistus epäonnistui</translation>
+    </message>
+</context>
+<context>
+    <name>RegionSettingsHelper</name>
+    <message>
+        <location filename="../src/region/RegionSettingsHelper.cpp" line="345" />
+        <source>Default</source>
+        <translation>Oletus</translation>
+    </message>
+</context>
+<context>
+    <name>SCKCaptureEngine</name>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="573" />
+        <source>Could not match the selected screen. Recording from main display instead.</source>
+        <translation>Valittua näyttöä ei voitu täsmätä. Tallennetaan sen sijaan päänäytöltä.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="617" />
+        <source>Recording controls could not be excluded from capture. Please try again.</source>
+        <translation>Tallennuksen ohjaimia ei voitu jättää pois kaappauksesta. Yritä uudelleen.</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenCanvas</name>
+    <message>
+        <source>Laser Pointer</source>
+        <translation>Laserosoitin</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenCanvasSession</name>
+    <message>
+        <location filename="../src/ScreenCanvasSession.cpp" line="1438" />
+        <source>Copy failed</source>
+        <translation>Kopiointi epäonnistui</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenPickerDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="337" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="330" />
+        <source>Start Recording</source>
+        <translation>Aloita tallennus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="305" />
+        <source>Show this setup before every recording</source>
+        <translation>Näytä tämä asetus ennen jokaista tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="246" />
+        <source>Not supported on this system</source>
+        <translation>Ei tuettu tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="244" />
+        <source>System audio</source>
+        <translation>Järjestelmän ääni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="222" />
+        <source>Microphone level</source>
+        <translation>Mikrofonin taso</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="204" />
+        <source>Test Microphone</source>
+        <translation>Testaa mikrofonia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="204" />
+        <source>Stop Test</source>
+        <translation>Lopeta testi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="186" />
+        <source>Input device</source>
+        <translation>Syöttölaite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="176" />
+        <source>Not recorded with the current output format</source>
+        <translation>Ei tallennu nykyisellä tulostemuodolla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="174" />
+        <source>Microphone</source>
+        <translation>Mikrofoni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="17" />
+        <source>System Default</source>
+        <translation>Järjestelmän oletus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="39" />
+        <source>Choose a screen to start recording</source>
+        <translation>Valitse näyttö aloittaaksesi tallennuksen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="38" />
+        <source>Record Screen</source>
+        <translation>Tallenna näyttö</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="296" />
+        <source>Also record typed text</source>
+        <translation>Tallenna myös kirjoitettu teksti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="297" />
+        <source>Every key, including what you type. Do not use while entering passwords.</source>
+        <translation>Jokainen näppäin, myös kirjoittamasi. Älä käytä salasanoja kirjoittaessa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="286" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Super, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Esikatselun pikanäppäinvihjeitä varten: Ctrl-, Alt- tai Super-näppäimen kanssa painetut sekä Enterin tai Escin kaltaiset näppäimet. Säilytetään vain väliaikaisen tallenteen kanssa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="285" />
+        <source>For shortcut hints in the preview: keys held with Ctrl, Alt or Win, and keys like Enter or Esc. Kept with the temporary recording only.</source>
+        <translation>Esikatselun pikanäppäinvihjeitä varten: Ctrl-, Alt- tai Win-näppäimen kanssa painetut sekä Enterin tai Escin kaltaiset näppäimet. Säilytetään vain väliaikaisen tallenteen kanssa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="280" />
+        <source>Not available on this system yet</source>
+        <translation>Ei vielä käytettävissä tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="278" />
+        <source>Record shortcut keys</source>
+        <translation>Tallenna pikanäppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="123" />
+        <source>After recording</source>
+        <translation>Tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="126" />
+        <source>Edit in the preview</source>
+        <translation>Muokkaa esikatselussa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="127" />
+        <source>Save right away</source>
+        <translation>Tallenna heti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="140" />
+        <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
+        <translation>Pikatila: tiedosto tallennetaan lopulliseen muotoonsa heti, kun lopetat, ilman esikatselua ja muokkausraitoja.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="149" />
+        <source>After saving</source>
+        <translation>Tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="152" />
+        <source>Do nothing</source>
+        <translation>Älä tee mitään</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="153" />
+        <source>Copy the file</source>
+        <translation>Kopioi tiedosto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="154" />
+        <source>Show in folder</source>
+        <translation>Näytä kansiossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="139" />
+        <source>Edit mode: trim, crop and add effects in the preview, then save. Pointer, window and key tracks are kept for editing.</source>
+        <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Osoittimen, ikkunoiden ja näppäinten raidat säilytetään muokkausta varten.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="282" />
+        <source>Edit mode only: quick mode keeps no editing tracks.</source>
+        <translation>Vain muokkaustilassa: pikatila ei säilytä muokkausraitoja.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="163" />
+        <source>Choose an area first</source>
+        <translation>Valitse ensin alue</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="165" />
+        <source>The whole screen is still recorded; the preview opens cropped to the area.</source>
+        <translation>Koko näyttö tallennetaan silti; esikatselu avautuu alueeseen rajattuna.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
+        <source>Only the area is recorded.</source>
+        <translation>Vain alue tallennetaan.</translation>
+    </message>
+</context>
+<context>
+    <name>SelectionDimensionLabel</name>
+    <message>
+        <location filename="../src/region/SelectionDimensionLabel.cpp" line="23" />
+        <source>%1 x %2 %3</source>
+        <translation>%1 x %2 %3</translation>
+    </message>
+    <message>
+        <location filename="../src/region/SelectionDimensionLabel.cpp" line="31" />
+        <source>%1×%2 %3</source>
+        <translation>%1×%2 %3</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPathPicker</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsPathPicker.qml" line="48" />
+        <source>Browse...</source>
+        <translation>Selaa...</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPermissionRow</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="31" />
+        <source>Granted</source>
+        <translation>Myönnetty</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="31" />
+        <source>Not Granted</source>
+        <translation>Ei myönnetty</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="40" />
+        <source>Open Settings</source>
+        <translation>Avaa asetukset</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsSidebar</name>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="23" />
+        <source>General</source>
+        <translation>Yleiset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
+        <source>Hotkeys</source>
+        <translation>Pikanäppäimet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
+        <source>Advanced</source>
+        <translation>Lisäasetukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
+        <source>Watermark</source>
+        <translation>Vesileima</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="29" />
+        <source>OCR</source>
+        <translation>OCR</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="32" />
+        <source>Recording</source>
+        <translation>Tallennus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="34" />
+        <source>Files</source>
+        <translation>Tiedostot</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
+        <source>Updates</source>
+        <translation>Päivitykset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
+        <source>About</source>
+        <translation>Tietoja</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsWindow</name>
+    <message>
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Tallenna</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::HotkeyManager</name>
+    <message>
+        <source>Bring the recording control bar back into view</source>
+        <translation>Tuo tallennuksen ohjauspalkki takaisin näkyviin</translation>
+    </message>
+    <message>
+        <source>Show Recording Controls</source>
+        <translation>Näytä tallennuksen ohjaimet</translation>
+    </message>
+    <message>
+        <source>Pause or resume the current screen recording</source>
+        <translation>Keskeytä tai jatka nykyistä näytön tallennusta</translation>
+    </message>
+    <message>
+        <source>Pause/Resume Recording</source>
+        <translation>Keskeytä/jatka tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/hotkey/HotkeyManager.cpp" line="660" />
+        <source>Conflicts with: %1</source>
+        <translation>Ristiriita kohteen kanssa: %1</translation>
+    </message>
+    <message>
+        <source>Full Screen Capture</source>
+        <translation>Koko näytön kaappaus</translation>
+    </message>
+    <message>
+        <source>Capture the screen under the cursor</source>
+        <translation>Kaappaa kohdistimen alla oleva näyttö</translation>
+    </message>
+    <message>
+        <source>Delayed Capture</source>
+        <translation>Viivästetty kaappaus</translation>
+    </message>
+    <message>
+        <source>Start a countdown, then capture a region</source>
+        <translation>Aloita lähtölaskenta ja kaappaa sitten alue</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::HotkeySettingsTab</name>
+    <message>
+        <source>Action</source>
+        <translation>Toiminto</translation>
+    </message>
+    <message>
+        <source>Hotkey</source>
+        <translation>Pikanäppäin</translation>
+    </message>
+    <message>
+        <source>Status</source>
+        <translation>Tila</translation>
+    </message>
+    <message>
+        <source>Double-click a hotkey to edit, or select and press Enter</source>
+        <translation>Muokkaa pikanäppäintä kaksoisnapsauttamalla tai valitse se ja paina Enter</translation>
+    </message>
+    <message>
+        <source>Edit...</source>
+        <translation>Muokkaa...</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Tyhjennä</translation>
+    </message>
+    <message>
+        <source>Reset to Default</source>
+        <translation>Palauta oletus</translation>
+    </message>
+    <message>
+        <source>Restore All Defaults</source>
+        <translation>Palauta kaikki oletukset</translation>
+    </message>
+    <message>
+        <source>(Optional)</source>
+        <translation>(Valinnainen)</translation>
+    </message>
+    <message>
+        <source>(Not set)</source>
+        <translation>(Ei asetettu)</translation>
+    </message>
+    <message>
+        <source>Active</source>
+        <translation>Aktiivinen</translation>
+    </message>
+    <message>
+        <source>Conflict</source>
+        <translation>Ristiriita</translation>
+    </message>
+    <message>
+        <source>Disabled</source>
+        <translation>Poistettu käytöstä</translation>
+    </message>
+    <message>
+        <source>Not Set</source>
+        <translation>Ei asetettu</translation>
+    </message>
+    <message>
+        <source>Clear Hotkey</source>
+        <translation>Tyhjennä pikanäppäin</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to clear the hotkey for '%1'?
+This hotkey is required for normal operation.</source>
+        <translation>Haluatko varmasti poistaa pikanäppäimen toiminnolle '%1'?
+Tämä pikanäppäin on välttämätön normaalille toiminnalle.</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to reset all hotkeys to their default values?</source>
+        <translation>Haluatko varmasti palauttaa kaikki pikanäppäimet oletusarvoihin?</translation>
+    </message>
+    <message>
+        <source>Failed to register: %1</source>
+        <translation>Rekisteröinti epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>Hotkey Conflict</source>
+        <translation>Pikanäppäinristiriita</translation>
+    </message>
+    <message>
+        <source>The hotkey '%1' is already assigned to '%2'.
+Please choose a different hotkey.</source>
+        <translation>Pikanäppäin '%1' on jo määritetty toiminnolle '%2'.
+Valitse toinen pikanäppäin.</translation>
+    </message>
+    <message>
+        <source>Registration Failed</source>
+        <translation>Rekisteröinti epäonnistui</translation>
+    </message>
+    <message>
+        <source>Failed to register the hotkey '%1'.
+It may be in use by another application.</source>
+        <translation>Pikanäppäimen '%1' rekisteröinti epäonnistui.
+Se saattaa olla toisen sovelluksen käytössä.</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::QmlHistoryWindow</name>
+    <message>
+        <location filename="../src/qml/QmlHistoryWindow.cpp" line="96" />
+        <source>History</source>
+        <translation>Historia</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::QmlSettingsWindow</name>
+    <message>
+        <location filename="../src/qml/QmlSettingsWindow.cpp" line="126" />
+        <source>Settings</source>
+        <translation>Asetukset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlSettingsWindow.cpp" line="141" />
+        <source>Settings saved. Language change will apply after restart.</source>
+        <translation>Asetukset tallennettiin. Kielimuutos tulee voimaan uudelleenkäynnistyksen jälkeen.</translation>
+    </message>
+    <message>
+        <source>Settings saved</source>
+        <translation>Asetukset tallennettiin</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::RecordingLibraryViewModel</name>
     <message>
-        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="53" />
         <source>%1, %2, created %3</source>
         <translation>%1, %2, luotu %3</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="0" />
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="58" />
         <source>Open in the preview</source>
         <translation>Auki esikatselussa</translation>
     </message>
 </context>
 <context>
-    <name>RecordingAreaSelector</name>
+    <name>SnapTray::RecordingRecoveryViewModel</name>
     <message>
-        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
-        <source>Free</source>
-        <translation>Vapaa</translation>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="64" />
+        <source>Open in another SnapTray window. Close it there, then try again.</source>
+        <translation>Avoinna toisessa SnapTray-ikkunassa. Sulje se siellä ja yritä uudelleen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
-        <source>Drag to move or redraw</source>
-        <translation>Siirrä tai piirrä uudelleen vetämällä</translation>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="61" />
+        <source>Unknown date</source>
+        <translation>Tuntematon päivä</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
-        <source>Drag to choose the area to record</source>
-        <translation>Valitse tallennettava alue vetämällä</translation>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="43" />
+        <source>audio is missing</source>
+        <translation>ääni puuttuu</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
-        <source>Ratio %1</source>
-        <translation>Suhde %1</translation>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="40" />
+        <source>Interrupted: %1 can be recovered</source>
+        <translation>Keskeytynyt: %1 voidaan palauttaa</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
-        <source>Full Screen</source>
-        <translation>Koko näyttö</translation>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="39" />
+        <source>Complete, %1 long</source>
+        <translation>Valmis, kesto %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="36" />
+        <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
+        <translation>Ei palautettavissa: tallennus keskeytyi ennen kuin toistettavaa osaa tallentui.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
+        <source>the whole screen was recorded; it opens cropped to the chosen area</source>
+        <translation>koko näyttö tallennettiin; avautuu valittuun alueeseen rajattuna</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ScreenPickerViewModel</name>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="284" />
+        <source>Not connected: %1</source>
+        <translation>Ei yhdistetty: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="209" />
+        <source>Audio is recorded for the preview; GIF and WebP exports are silent.</source>
+        <translation>Ääni tallennetaan esikatselua varten; GIF- ja WebP-viennit ovat äänettömiä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="206" />
+        <source>GIF and WebP recordings have no sound. Turn on preview or choose MP4 to record audio.</source>
+        <translation>GIF- ja WebP-tallenteissa ei ole ääntä. Ota esikatselu käyttöön tai valitse MP4 äänen tallentamiseksi.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="198" />
+        <source>No countdown</source>
+        <translation>Ei lähtölaskentaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="197" />
+        <source>Countdown: %1 s</source>
+        <translation>Lähtölaskenta: %1 s</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="195" />
+        <source>Saved without preview</source>
+        <translation>Tallennetaan ilman esikatselua</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="194" />
+        <source>Preview after recording</source>
+        <translation>Esikatselu tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="64" />
+        <source>Microphone unavailable</source>
+        <translation>Mikrofoni ei käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="62" />
+        <source>Selected microphone not found</source>
+        <translation>Valittua mikrofonia ei löydy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="60" />
+        <source>Microphone permission denied</source>
+        <translation>Mikrofonin käyttölupa evätty</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="58" />
+        <source>Speak to test the microphone</source>
+        <translation>Puhu testataksesi mikrofonia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
+        <source>Waiting for microphone permission...</source>
+        <translation>Odotetaan mikrofonin käyttölupaa...</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::SettingsBackend</name>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="1008" />
+        <source>Never</source>
+        <translation>Ei koskaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="1096" />
+        <source>Could not install the CLI. Check permissions and try again.</source>
+        <translation>CLI:n asentaminen epäonnistui. Tarkista käyttöoikeudet ja yritä uudelleen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="1097" />
+        <source>Could not uninstall the CLI. Check permissions and try again.</source>
+        <translation>CLI:n asennuksen poistaminen epäonnistui. Tarkista käyttöoikeudet ja yritä uudelleen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="1130" />
+        <source>Select Screenshot Folder</source>
+        <translation>Valitse kuvakaappauskansio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="1138" />
+        <source>Select Recording Folder</source>
+        <translation>Valitse tallennuskansio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="1146" />
+        <source>Select Watermark Image</source>
+        <translation>Valitse vesileimakuva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="1147" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
+        <translation>Kuvat (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <source>Disable Windows Print Screen Shortcut?</source>
+        <translation>Poistetaanko Windowsin Print Screen -pikanäppäin käytöstä?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="227" />
+        <source>Windows Print Screen Shortcut Disabled</source>
+        <translation>Windowsin Print Screen -pikanäppäin poistettiin käytöstä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="234" />
+        <source>Windows Setting Not Changed</source>
+        <translation>Windows-asetusta ei muutettu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="235" />
+        <source>SnapTray could not change the Windows Print Screen setting.</source>
+        <translation>SnapTray ei voinut muuttaa Windowsin Print Screen -asetusta.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="176" />
+        <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
+        <translation>%1 tallennettiin, mutta sitä ei voitu aktivoida, koska pikanäppäin on jo toisen sovelluksen tai järjestelmän käytössä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="145" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <source>Hotkey Conflict</source>
+        <translation>Pikanäppäinristiriita</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="156" />
+        <source>Defaults were restored, but these shortcuts are still inactive: %1</source>
+        <translation>Oletukset palautettiin, mutta nämä pikanäppäimet ovat yhä passiivisia: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="181" />
+        <source>%1 was saved, but it could not be activated. %2</source>
+        <translation>%1 tallennettiin, mutta sitä ei voitu aktivoida. %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="210" />
+        <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
+        <translation>Windows käyttää Print Screen -näppäintä avatakseen Snipping Tool -työkalun, mikä estää SnapTrayta käyttämästä Print Screeniä pikanäppäimenä. Poistetaanko tämä käytöstä, jotta SnapTray voi käyttää Print Screen -näppäintä?</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="214" />
+        <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
+        <translation>Käynnistä tämän jälkeen SnapTray uudelleen. Jos Windows avaa edelleen Snipping Toolin, kirjaudu ulos Windowsista (tai käynnistä uudelleen) ja yritä uudelleen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="219" />
+        <source>No, don't ask again</source>
+        <translation>Ei, älä kysy uudelleen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="228" />
+        <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
+        <translation>Käynnistä SnapTray uudelleen käyttääksesi Print Screeniä. Jos Snipping Tool avautuu edelleen, kirjaudu ulos Windowsista ja takaisin sisään.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="347" />
+        <source>Checking start on login status...</source>
+        <translation>Tarkistetaan kirjautumisen yhteydessä käynnistämisen tilaa...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="375" />
+        <source>Updating start on login status...</source>
+        <translation>Päivitetään kirjautumisen yhteydessä käynnistämisen tilaa...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="426" />
+        <source>Start on login status error: %1</source>
+        <translation>Kirjautumisen yhteydessä käynnistämisen tilavirhe: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="436" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>Poistettu käytöstä järjestelmän käynnistysasetuksissa. Ota se uudelleen käyttöön siellä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="439" />
+        <source>Disabled by your organization.</source>
+        <translation>Organisaatiosi on poistanut tämän käytöstä.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="442" />
+        <source>Enabled by your organization.</source>
+        <translation>Organisaatiosi on ottanut tämän käyttöön.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="445" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>Kirjautumisen yhteydessä käynnistäminen ei ole käytettävissä tälle paketille.</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::TypeHotkeyDialog</name>
+    <message>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="101" />
+        <source>Press a key combination...</source>
+        <translation>Paina näppäinyhdistelmää...</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="140" />
         <source>Cancel</source>
         <translation>Peruuta</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
-        <source>Record</source>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="159" />
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="239" />
+        <source>Set Hotkey for: %1</source>
+        <translation>Aseta pikanäppäin toiminnolle: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="438" />
+        <source>(Press keys)</source>
+        <translation>(Paina näppäimiä)</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="457" />
+        <source>Press Enter or click OK to confirm</source>
+        <translation>Vahvista painamalla Enter tai napsauttamalla OK</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="459" />
+        <source>Press a key combination, then press Enter to confirm</source>
+        <translation>Paina näppäinyhdistelmää ja vahvista Enterillä</translation>
+    </message>
+</context>
+<context>
+    <name>SparkleUpdateService</name>
+    <message>
+        <location filename="../src/update/SparkleUpdateService_mac.mm" line="127" />
+        <source>Sparkle is not configured. Set the Sparkle feed URL and public key at build time.</source>
+        <translation>Sparklea ei ole määritetty. Aseta Sparkle-syötteen URL-osoite ja julkinen avain käännösvaiheessa.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/SparkleUpdateService_mac.mm" line="143" />
+        <source>Sparkle.framework is missing from the application bundle.</source>
+        <translation>Sparkle.framework puuttuu sovelluspaketista.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/SparkleUpdateService_mac.mm" line="154" />
+        <source>Sparkle.framework loaded, but the updater controller class is unavailable.</source>
+        <translation>Sparkle.framework ladattiin, mutta päivitysohjaimen luokka ei ole käytettävissä.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/SparkleUpdateService_mac.mm" line="171" />
+        <source>Failed to create the Sparkle updater controller.</source>
+        <translation>Sparkle-päivitysohjaimen luominen epäonnistui.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/SparkleUpdateService_mac.mm" line="247" />
+        <source>Sparkle is available, but interactive update checks are unsupported.</source>
+        <translation>Sparkle on käytettävissä, mutta vuorovaikutteisia päivitystarkistuksia ei tueta.</translation>
+    </message>
+</context>
+<context>
+    <name>TextFormattingSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" line="19" />
+        <source>Default</source>
+        <translation>Oletus</translation>
+    </message>
+</context>
+<context>
+    <name>TextSection</name>
+    <message>
+        <source>Default</source>
+        <translation>Oletus</translation>
+    </message>
+</context>
+<context>
+    <name>ThumbnailCard</name>
+    <message>
+        <location filename="../src/qml/components/ThumbnailCard.qml" line="125" />
+        <source>Preview unavailable</source>
+        <translation>Esikatselu ei ole saatavilla</translation>
+    </message>
+</context>
+<context>
+    <name>ToolRegistry</name>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="29" />
+        <source>Unknown Tool</source>
+        <translation>Tuntematon työkalu</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="40" />
+        <source>Selection</source>
+        <translation>Valinta</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="52" />
+        <source>Arrow</source>
+        <translation>Nuoli</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="63" />
+        <source>Polyline</source>
+        <translation>Murtoviiva</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="74" />
+        <source>Pencil</source>
+        <translation>Kynä</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="85" />
+        <source>Marker</source>
+        <translation>Korostuskynä</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="96" />
+        <source>Shape</source>
+        <translation>Muoto</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="107" />
+        <source>Text</source>
+        <translation>Teksti</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="118" />
+        <source>Mosaic</source>
+        <translation>Mosaiikki</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="129" />
+        <source>Eraser</source>
+        <translation>Pyyhekumi</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="140" />
+        <source>Step Badge</source>
+        <translation>Vaihemerkki</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="151" />
+        <source>Emoji Sticker</source>
+        <translation>Emoji-tarra</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="162" />
+        <source>Crop</source>
+        <translation>Rajaa</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="173" />
+        <source>Measure</source>
+        <translation>Mittaa</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="185" />
+        <source>Whiteboard</source>
+        <translation>Valkotaulu</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="196" />
+        <source>Blackboard</source>
+        <translation>Liitutaulu</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="216" />
+        <source>Undo</source>
+        <translation>Kumoa</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="227" />
+        <source>Redo</source>
+        <translation>Tee uudelleen</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="238" />
+        <source>Clear All</source>
+        <translation>Tyhjennä kaikki</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="249" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="260" />
+        <source>Recognize Text</source>
+        <translation>Tunnista teksti</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="271" />
+        <source>QR Code Scan</source>
+        <translation>QR-koodin skannaus</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="282" />
+        <source>Pin to Desktop</source>
+        <translation>Kiinnitä työpöydälle</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="373" />
+        <source>Beautify</source>
+        <translation>Kaunista</translation>
+    </message>
+    <message>
+        <source>Screen Recording</source>
+        <translation>Näytön tallennus</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="294" />
+        <location filename="../src/tools/ToolRegistry.cpp" line="316" />
+        <source>Save</source>
         <translation>Tallenna</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/RecordingAreaSelector.qml" line="0" />
-        <source>Record this area</source>
-        <translation>Tallenna tämä alue</translation>
+        <location filename="../src/tools/ToolRegistry.cpp" line="305" />
+        <location filename="../src/tools/ToolRegistry.cpp" line="327" />
+        <source>Copy to Clipboard</source>
+        <translation>Kopioi leikepöydälle</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="339" />
+        <source>Exit</source>
+        <translation>Lopeta</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="351" />
+        <source>Multi-Region Capture</source>
+        <translation>Usean alueen kaappaus</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="362" />
+        <source>Complete Multi-Region</source>
+        <translation>Viimeistele usean alueen kaappaus</translation>
+    </message>
+</context>
+<context>
+    <name>UpdateChecker</name>
+    <message>
+        <source>Failed to parse update information</source>
+        <translation>Päivitystietojen jäsentäminen epäonnistui</translation>
+    </message>
+    <message>
+        <source>Invalid update response</source>
+        <translation>Virheellinen päivitysvastaus</translation>
+    </message>
+    <message>
+        <source>Could not parse release information</source>
+        <translation>Julkaisutietoja ei voitu jäsentää</translation>
+    </message>
+</context>
+<context>
+    <name>UpdateCoordinator</name>
+    <message>
+        <location filename="../src/update/UpdateCoordinator.cpp" line="79" />
+        <location filename="../src/update/UpdateCoordinator.cpp" line="97" />
+        <source>In-app updates are unavailable for this platform.</source>
+        <translation>Sovelluksen sisäiset päivitykset eivät ole käytettävissä tällä alustalla.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/UpdateCoordinator.cpp" line="145" />
+        <source>Updates for this installation are managed by %1.</source>
+        <translation>Tämän asennuksen päivityksiä hallitsee %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/UpdateCoordinator.cpp" line="150" />
+        <source>Updates for this installation are managed by Homebrew.</source>
+        <translation>Tämän asennuksen päivityksiä hallitsee Homebrew.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/UpdateCoordinator.cpp" line="154" />
+        <source>Updates for this Linux beta are provided as AppImage downloads.</source>
+        <translation>Tämän Linux-betan päivitykset toimitetaan AppImage-latauksina.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/UpdateCoordinator.cpp" line="158" />
+        <source>In-app updates are unavailable for development builds.</source>
+        <translation>Sovelluksen sisäiset päivitykset eivät ole käytettävissä kehitysversioissa.</translation>
+    </message>
+    <message>
+        <location filename="../src/update/UpdateCoordinator.cpp" line="162" />
+        <source>In-app updates are unavailable for this installation.</source>
+        <translation>Sovelluksen sisäiset päivitykset eivät ole käytettävissä tässä asennuksessa.</translation>
+    </message>
+</context>
+<context>
+    <name>UpdateDialog</name>
+    <message>
+        <source>Update Available</source>
+        <translation>Päivitys saatavilla</translation>
+    </message>
+    <message>
+        <source>New Version Available!</source>
+        <translation>Uusi versio saatavilla!</translation>
+    </message>
+    <message>
+        <source>%1 %2 is now available.</source>
+        <translation>%1 %2 on nyt saatavilla.</translation>
+    </message>
+    <message>
+        <source>You are currently using %1</source>
+        <translation>Käytössäsi on tällä hetkellä %1</translation>
+    </message>
+    <message>
+        <source>What's New</source>
+        <translation>Mitä uutta</translation>
+    </message>
+    <message>
+        <source>Download</source>
+        <translation>Lataa</translation>
+    </message>
+    <message>
+        <source>Remind Later</source>
+        <translation>Muistuta myöhemmin</translation>
+    </message>
+    <message>
+        <source>Skip Version</source>
+        <translation>Ohita versio</translation>
+    </message>
+    <message>
+        <source>You're up to date!</source>
+        <translation>Käytössäsi on uusin versio!</translation>
+    </message>
+    <message>
+        <source>%1 %2 is the latest version.</source>
+        <translation>%1 %2 on uusin versio.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/UpdateDialog.qml" line="120" />
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/UpdateDialog.qml" line="15" />
+        <source>Unable to check for updates</source>
+        <translation>Päivitysten tarkistus ei onnistunut</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/UpdateDialog.qml" line="14" />
+        <source>Update Checks Unavailable</source>
+        <translation>Päivitystarkistukset eivät ole käytettävissä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/UpdateDialog.qml" line="56" />
+        <source>Please check your internet connection and try again.</source>
+        <translation>Tarkista internetyhteys ja yritä uudelleen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/UpdateDialog.qml" line="102" />
+        <source>Try Again</source>
+        <translation>Yritä uudelleen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/UpdateDialog.qml" line="95" />
+        <source>Close</source>
+        <translation>Sulje</translation>
+    </message>
+</context>
+<context>
+    <name>UpdatesSettings</name>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="30" />
+        <source>Version</source>
+        <translation>Versio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="33" />
+        <source>Current Version</source>
+        <translation>Nykyinen versio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="58" />
+        <source>Automatic Updates</source>
+        <translation>Automaattiset päivitykset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="61" />
+        <source>Auto-check updates</source>
+        <translation>Autotarkistus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="68" />
+        <source>Check frequency</source>
+        <translation>Tarkistusväli</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="70" />
+        <source>Every day</source>
+        <translation>Joka päivä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="71" />
+        <source>Every 3 days</source>
+        <translation>Joka 3. päivä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="72" />
+        <source>Every week</source>
+        <translation>Joka viikko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
+        <source>Every 2 weeks</source>
+        <translation>Joka 2. viikko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="74" />
+        <source>Every month</source>
+        <translation>Joka kuukausi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <source>Checking...</source>
+        <translation>Tarkistetaan...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <source>Check Now</source>
+        <translation>Tarkista nyt</translation>
+    </message>
+</context>
+<context>
+    <name>WatermarkSettings</name>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="23" />
+        <source>Apply to images</source>
+        <translation>Käytä kuviin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="29" />
+        <source>Apply to recordings</source>
+        <translation>Käytä tallennuksiin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="48" />
+        <source>Image</source>
+        <translation>Kuva:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="54" />
+        <source>Scale</source>
+        <translation>Mittakaava:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="63" />
+        <source>Opacity</source>
+        <translation>Läpinäkyvyys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="72" />
+        <source>Margin</source>
+        <translation>Marginaali:</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="81" />
+        <source>Position</source>
+        <translation>Sijainti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="83" />
+        <source>Top-Left</source>
+        <translation>Vasen yläkulma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="84" />
+        <source>Top-Right</source>
+        <translation>Oikea yläkulma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="85" />
+        <source>Bottom-Left</source>
+        <translation>Vasen alakulma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="86" />
+        <source>Bottom-Right</source>
+        <translation>Oikea alakulma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="117" />
+        <source>No image</source>
+        <translation>Ei kuvaa</translation>
+    </message>
+</context>
+<context>
+    <name>main</name>
+    <message>
+        <source>SnapTray QML</source>
+        <translation>SnapTray QML</translation>
+    </message>
+</context>
+<context>
+    <name>snaptray::colorwidgets::ColorDialog</name>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="38" />
+        <source>Select Color</source>
+        <translation>Valitse väri</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="78" />
+        <source>Hue</source>
+        <translation>Sävy</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="88" />
+        <source>Saturation</source>
+        <translation>Kylläisyys</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="98" />
+        <source>Value</source>
+        <translation>Arvo</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="109" />
+        <source>Red</source>
+        <translation>Punainen</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="119" />
+        <source>Green</source>
+        <translation>Vihreä</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="129" />
+        <source>Blue</source>
+        <translation>Sininen</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="139" />
+        <source>Alpha</source>
+        <translation>Alfa</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="148" />
+        <source>Hex</source>
+        <translation>Hex</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="170" />
+        <source>Reset</source>
+        <translation>Palauta</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="171" />
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="173" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+</context>
+<context>
+    <name>snaptray::colorwidgets::ColorPickerDialogCompat</name>
+    <message>
+        <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="54" />
+        <source>Select Color</source>
+        <translation>Valitse väri</translation>
     </message>
 </context>
 </TS>

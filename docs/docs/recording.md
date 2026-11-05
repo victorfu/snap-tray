@@ -64,13 +64,13 @@ While a recording is in progress, the tray or menu bar icon shows its state with
 
 The top bar shows the recording's file name and whether it is kept as an editable project, with **Undo**, **Redo**, the primary **Export…** button, and discard. Playback controls sit directly under the preview; the timeline is at the bottom.
 
-The right inspector starts at **Project settings**: **Canvas**, **Pointer**, **Audio**, and **Keys** affect the whole recording, each with a summary of its current state. Unavailable categories stay listed, dimmed, with the reason. Select a clip or effect on the timeline to edit its own properties; the inspector shows its type and time range, and **Return to Project settings** at the bottom goes back. At narrow window widths the inspector is a sheet over the preview, opened with the settings button in the top bar and closed with ✕ or a click outside it. Escape deselects the current effect and hides the inspector at narrow widths.
+The right inspector starts at **Project settings**: **Canvas**, **Pointer**, **Audio**, and **Keys** affect the whole recording, each with a summary of its current state. Unavailable categories stay listed, dimmed, with the reason. Select a clip or effect on the timeline, or click a text, image, or mask on the picture, to edit its own properties; the inspector shows its type and time range, and **Return to Project settings** at the bottom goes back. At narrow window widths the inspector is a sheet over the preview, opened with the settings button in the top bar and closed with ✕ or a click outside it. Escape deselects the current effect or closes the open category and returns to Project settings; at narrow widths it also hides the inspector.
 
-**Add effect** groups Auto Zoom, Add Zoom, Add Mask, Add Text, and Add Image beside the timeline. Effects have named lanes, including separate rows for overlapping masks and overlays. Drag a segment to move it or drag an edge to change its range. Changes apply when you release; Escape during a drag cancels it. Start/end fields in the inspector remain available for precise edits and very short segments. Invalid time input must be corrected or cancelled with Escape before selecting another object.
+**Add effect** groups Auto Zoom, Add Zoom, Add Mask, Add Text, and Add Image beside the timeline. Effects have named lanes, including separate rows for overlapping masks and overlays. Drag a segment to move it or drag an edge to change its range. Changes apply when you release, as one undo step; Escape during a drag (of an effect, a split, or a trim handle) cancels it and nothing changes. An effect that lies only in a cut part is crossed out: it is kept but not exported. Start/end fields in the inspector remain available for precise edits and very short segments. Invalid time input must be corrected or cancelled with Escape before selecting another object.
 
 Click or drag the video track to seek without leaving the active effect or crop edit. Double-click a clip to select it in the inspector (or focus it with Tab and press Enter). Only the effect lanes scroll; the video track and time labels stay visible.
 
-The timeline and effect ranges use **source recording time**, including cut parts. Exported duration reflects cuts and speed changes; the player skips cut parts. **Preview speed** (beside the playback controls) changes playback only; a clip's **Export speed** (in the clip inspector) changes it in the saved file.
+The timeline and effect ranges use **source recording time**, including cut parts. Exported duration reflects cuts and speed changes; the player skips cut parts. Once something is trimmed, cut, or sped up, the time beside the playback controls also shows where the playhead lands in the export (**Export 0:01.500 / 0:04.000**), or **Not exported** inside a cut part. **Preview speed** (beside the playback controls) changes playback only; a clip's **Export speed** (in the clip inspector) changes it in the saved file.
 
 **Export…**, Ctrl/Cmd+S, and Enter outside text or crop editing open the same export panel. Select MP4, GIF, or WebP there, then use **Export…** to validate pending edits and save. **Back to editing** preserves your selection. Export also updates a kept editable project; there is no separate project-only save command.
 
@@ -97,7 +97,7 @@ Every applied crop and trim change can be undone (**Ctrl+Z**) and redone (**Ctrl
 
 The timeline can do more than trim the ends. In the preview:
 
-1. Move the playhead and click **Split** (or press **S**) to divide the recording there. Splits show as small bars on the timeline; drag one to move it, double-click it to join its two parts again.
+1. Move the playhead and click **Split** (or press **S**) to divide the recording there. Splits show as small bars on the timeline; drag one to move it, double-click it to join its two parts again. With the keyboard, Tab to a split, then use the arrow keys to move it (Shift: 1 s) and **Delete** to join its parts.
 2. **Cut Part** (or **Delete**) leaves a part out of the export: the selected clip if one is selected, otherwise the part at the playhead. The part is crossed out on the timeline. **Keep Part** puts it back.
 3. Double-click a part to select it. In the inspector, **Export speed** sets how fast it plays in the export: 0.5×, 1×, 1.5×, 2× or 4×. The speed shows on the part.
 
@@ -263,10 +263,10 @@ When a recording that opens in the preview has both the microphone and system au
 
 In the preview, **Audio** (MP4) sets each one for the export:
 
-- **Microphone** and **System Audio** volume (−12, −6, 0, +6 dB), and **Mute** for either.
+- **Microphone** and **System Audio** volume in 6 dB steps from −24 to +12 dB, and **Mute** for either.
 - **Reduce Noise** turns down hiss, hum and room noise between words on the microphone (a high-pass filter and a soft noise gate). It uses very little processor time.
 
-The preview plays the new mix as you change it. With everything at 0 dB and nothing muted, the recording is saved as recorded. A changed mix re-encodes the sound, and stays in sync with the video, cuts and speed changes included (parts at another speed stay silent). The two tracks are deleted with the temporary recording, and crash recovery keeps them with the recording it recovers. Recordings with only one source, or made before this, have just the mixed sound; the Audio category explains why separate-track controls are unavailable. Separate tracks are supported on macOS, Windows and Linux. On Windows the new mix can be previewed for recordings with separate tracks; playback of older recordings with only a mixed track remains unchanged.
+The preview plays the new mix as you change it. With everything at 0 dB and nothing muted, the recording is saved as recorded. A changed mix re-encodes the sound, and stays in sync with the video, cuts and speed changes included (parts at another speed stay silent). The two tracks are deleted with the temporary recording, and crash recovery keeps them with the recording it recovers. Recordings with only one source, or made before this, have just the mixed sound; the Audio category explains why separate-track controls are unavailable. GIF and WebP have no sound, so Audio is available only with MP4. Separate tracks are supported on macOS, Windows and Linux. On Windows the new mix can be previewed for recordings with separate tracks; playback of older recordings with only a mixed track remains unchanged.
 
 ### Check audio before you record
 

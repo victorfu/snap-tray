@@ -48,6 +48,7 @@ class tst_RecordingPreviewZoom : public QObject
 
 private slots:
     void autoZoomKeepsTheUsersZooms();
+    void autoZoomNeverLeavesAStaleSelection();
     void withoutPointerDataOnlyManualZoom();
     void rangeEditsStayLegal();
     void formatsThatCannotDrawDisableZoom();
@@ -92,6 +93,32 @@ void tst_RecordingPreviewZoom::autoZoomKeepsTheUsersZooms()
     backend.commitTrimEdit();
     backend.resetEdits();
     QCOMPARE(backend.zoomSegments().size(), 2);
+}
+
+// Auto Zoom rebuilds the segments, so a kept index could name another zoom
+// (#218): an automatic zoom's selection is dropped, a manual one follows its
+// segment.
+void tst_RecordingPreviewZoom::autoZoomNeverLeavesAStaleSelection()
+{
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    QCOMPARE(backend.generateAutoZoom(), 2);
+    backend.setSelectedZoom(1);
+    QCOMPARE(backend.selectedZoom(), 1);
+    QCOMPARE(backend.generateAutoZoom(), 2);
+    QCOMPARE(backend.selectedZoom(), -1);
+
+    // A manual zoom stays selected on the same segment.
+    backend.setZoomScale(1, 3.0);
+    backend.setSelectedZoom(1);
+    QCOMPARE(backend.generateAutoZoom(), 2);
+    QVERIFY(backend.selectedZoom() >= 0);
+    const QVariantMap selected = backend.zoomSegments().at(backend.selectedZoom()).toMap();
+    QVERIFY(selected.value(QStringLiteral("manual")).toBool());
+    QCOMPARE(selected.value(QStringLiteral("scale")).toDouble(), 3.0);
 }
 
 void tst_RecordingPreviewZoom::withoutPointerDataOnlyManualZoom()

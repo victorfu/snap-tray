@@ -16,6 +16,8 @@ SettingsRow {
     property var currentValue: model.length > 0 && currentIndex >= 0 && currentIndex < model.length
         ? model[currentIndex].value : undefined
 
+    // Spoken name; defaults to the label (set it when the label is hidden).
+    property string accessibleName: label
     property int minimumPopupWidth: 0
     property int controlWidth: 0 // 0 keeps the content-based settings layout
 
@@ -55,7 +57,7 @@ SettingsRow {
         textRole: "text"
 
         Accessible.role: Accessible.ComboBox
-        Accessible.name: root.label
+        Accessible.name: root.accessibleName
 
         onActivated: function(index) {
             root.activated(index)

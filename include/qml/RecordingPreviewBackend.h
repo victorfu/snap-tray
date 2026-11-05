@@ -184,6 +184,9 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(QColor appearanceSolidColor READ appearanceSolidColor WRITE setAppearanceSolidColor
                    NOTIFY appearanceChanged)
     Q_PROPERTY(QString appearanceImagePath READ appearanceImagePath NOTIFY appearanceChanged)
+    // The same file as a URL and a name, for the thumbnail (any file name, UNC paths too).
+    Q_PROPERTY(QUrl appearanceImageUrl READ appearanceImageUrl NOTIFY appearanceChanged)
+    Q_PROPERTY(QString appearanceImageName READ appearanceImageName NOTIFY appearanceChanged)
     Q_PROPERTY(int appearancePadding READ appearancePadding WRITE setAppearancePadding NOTIFY appearanceChanged)
     Q_PROPERTY(int appearanceCorners READ appearanceCorners WRITE setAppearanceCorners NOTIFY appearanceChanged)
     Q_PROPERTY(bool appearanceShadow READ appearanceShadow WRITE setAppearanceShadow NOTIFY appearanceChanged)
@@ -328,6 +331,9 @@ public:
     Q_INVOKABLE bool setTrimFromInput(qint64 startMs, qint64 endMs);
     // Records the trim after a handle drag as one undo step.
     Q_INVOKABLE void commitTrimEdit();
+    // Puts the trim back to the last recorded edit (a handle drag that was
+    // cancelled leaves nothing behind).
+    Q_INVOKABLE void cancelTrimEdit();
 
     bool canUndo() const { return m_editHistory.canUndo(); }
     bool canRedo() const { return m_editHistory.canRedo(); }
@@ -518,6 +524,9 @@ public:
     // neighbours (each part at least TimelineEdit::kMinPartMs); -1 if none.
     Q_INVOKABLE qint64 legalSplitPosition(int index, qint64 sourceMs) const;
     Q_INVOKABLE void commitTimelineEdit();
+    // Folds the timeline into the step the same gesture recorded first, so a
+    // held arrow key on a split is one undo step, kept up to date per repeat.
+    Q_INVOKABLE void amendTimelineEdit();
     Q_INVOKABLE void setPartDeleted(int part, bool deleted);
     Q_INVOKABLE void setPartSpeed(int part, qreal speed);
     // Playback follows the edit: where to continue from positionMs (itself
@@ -541,6 +550,11 @@ public:
     QColor appearanceSolidColor() const { return m_appearance.solidColor; }
     void setAppearanceSolidColor(const QColor& value);
     QString appearanceImagePath() const { return m_appearance.imagePath; }
+    QUrl appearanceImageUrl() const
+    {
+        return m_appearance.imagePath.isEmpty() ? QUrl() : QUrl::fromLocalFile(m_appearance.imagePath);
+    }
+    QString appearanceImageName() const;
     // Uses an image file as the background; false (nothing changes) when it cannot be read.
     Q_INVOKABLE bool setAppearanceImage(const QUrl& file);
     // Asks for an image file and uses it as the background; false when cancelled or unreadable.

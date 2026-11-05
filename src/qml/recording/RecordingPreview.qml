@@ -40,10 +40,12 @@ Item {
         : backend.selectedOverlay >= 0 ? (selectedOverlayData && selectedOverlayData.kind === 1 ? "image" : "text")
         : backend.selectedPointerHide >= 0 ? "pointerHide"
         : selectedPart >= 0 ? "clip"
-        : appearanceOpen ? "appearance"
-        : pointerOptionsOpen ? "pointer"
-        : audioOpen ? "audio"
-        : keysOpen ? "keys"
+        // A category whose panel is hidden (the format changed under it) is
+        // not shown in the title either.
+        : appearanceOpen && backend.appearanceAvailable ? "appearance"
+        : pointerOptionsOpen && backend.cursorEffectsAvailable ? "pointer"
+        : audioOpen && backend.audioMixAvailable ? "audio"
+        : keysOpen && backend.keyOverlayAvailable ? "keys"
         : "project"
     readonly property var inspectorTitles: ({
         crop: qsTr("Crop"), mask: qsTr("Mask"), zoom: qsTr("Zoom segment"),
@@ -145,6 +147,19 @@ Item {
         else if (kind === "overlay") backend.setOverlayRange(index, start, end)
         else if (kind === "pointer") backend.setPointerHideRange(index, start, end)
     }
+    // Whether any of [start, end) reaches the export: inside the trim and
+    // in a kept (not cut) part. An end of -1 runs to the end.
+    function rangeExported(start, end) {
+        const from = Math.max(start, backend.trimStart)
+        const to = Math.min(end < 0 ? backend.duration : end, backend.trimEnd)
+        if (to <= from) return false
+        const parts = backend.timelineParts
+        if (parts.length === 0) return true
+        for (const part of parts) {
+            if (!part.deleted && part.start < to && from < part.end) return true
+        }
+        return false
+    }
     function openSection(section) {
         if (!commitInspector()) return false
         if (cropOverlay.editing && !applyCropWithPendingInput()) return false
@@ -201,11 +216,14 @@ Item {
     readonly property var selectedOverlayData: backend.selectedOverlay >= 0 && backend.selectedOverlay < backend.overlays.length
         ? backend.overlays[backend.selectedOverlay] : null
     readonly property var overlayColors: ["#ffffff", "#000000", "#ffd60a", "#ff453a", "#0a84ff"]
+    readonly property var overlayColorNames: [qsTr("White"), qsTr("Black"), qsTr("Yellow"), qsTr("Red"), qsTr("Blue")]
     readonly property var overlayBackgroundLabels: [qsTr("None"), qsTr("Dark"), qsTr("Light")]
     readonly property var overlayAlignLabels: [qsTr("Left"), qsTr("Center"), qsTr("Right")]
     // Separate audio tracks (#189).
     property bool audioOpen: false
-    readonly property var audioGainChoices: [-12, -6, 0, 6]
+    // 6 dB steps over the whole range the mixer accepts
+    // (AudioMixSettings::kMinGainDb..kMaxGainDb).
+    readonly property var audioGainChoices: [-24, -18, -12, -6, 0, 6, 12]
     function gainLabel(db) {
         return (db > 0 ? "+" : "") + Number(db).toLocaleString(Qt.locale(), "g", 6) + " dB"
     }
@@ -271,6 +289,30 @@ Item {
                                            : Qt.rect(0, 0, 0, 0)
     property bool isDraggingTrimStart: false
     property bool isDraggingTrimEnd: false
+    // The split marker being dragged, if any.
+    property Item splitDragItem: null
+    readonly property bool timelineDragActive: splitDragItem !== null || isDraggingTrimStart || isDraggingTrimEnd
+    // Escape during a split or trim drag: nothing changes, and the release
+    // that follows commits nothing.
+    function cancelTimelineDrag() {
+        if (splitDragItem) {
+            splitDragItem.dragMs = -1
+            splitDragItem = null
+        }
+        if (isDraggingTrimStart || isDraggingTrimEnd) scrubber.cancelTrimDrag()
+    }
+    // Escape cancels a drag in progress first, even in a focused field or
+    // text box that would take it for itself; the field keeps its text.
+    function cancelTimelineDragOnEscape(event) {
+        if (!timelineDragActive) return false
+        cancelTimelineDrag()
+        event.accepted = true
+        return true
+    }
+    // A held arrow key on a split: its first move was recorded as an undo
+    // step and its repeats are folded into it. Kept here because each move
+    // rebuilds the marker.
+    property bool splitNudgeHeld: false
 
     readonly property var speedOptions: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
     property int speedIndex: 3
@@ -804,9 +846,37 @@ Item {
                 objectName: "previewVideoClickArea"
                 anchors.fill: parent
                 // Video clicks belong to the crop editor while editing; Space and the play button still work.
-                // While a mask is selected its editor owns the video.
-                enabled: !cropOverlay.editing && !(backend.selectedMask >= 0)
+                enabled: !cropOverlay.editing
                 cursorShape: backend.selectedZoom >= 0 ? CursorTokens.pickPoint : CursorTokens.clickable
+                // The text, image or mask shown under a point, topmost first (#218).
+                function objectAt(x, y) {
+                    // Only the exported picture shows them (not a cropped-away edge).
+                    const t = root.zoomTarget
+                    if (x < t.x || x >= t.x + t.width || y < t.y || y >= t.y + t.height) return null
+                    // The shown frame's time, as the overlays and masks are drawn by;
+                    // the player's position is reported less often.
+                    const now = videoPlayer.framePosition
+                    const showing = function(item) {
+                        return item.start <= now && (item.end < 0 || now < item.end)
+                    }
+                    const inside = function(r, px, py) {
+                        return px >= r.x && px < r.x + r.width && py >= r.y && py < r.y + r.height
+                    }
+                    // Overlays sit on the exported picture, never zoomed; hidden while comparing.
+                    const overlays = root.comparingOriginal ? [] : backend.overlays
+                    for (let i = overlays.length - 1; i >= 0; --i) {
+                        if (showing(overlays[i]) && inside(backend.overlayRectInView(i, t), x, y))
+                            return {kind: "overlay", index: i}
+                    }
+                    // Masks are burned into the video, which a zoom scales: map the click back.
+                    const p = root.unzoomPoint(x, y)
+                    const masks = backend.masks
+                    for (let j = masks.length - 1; j >= 0; --j) {
+                        if (showing(masks[j]) && inside(backend.maskRectInView(j, videoPlayer.contentRect), p.x, p.y))
+                            return {kind: "mask", index: j}
+                    }
+                    return null
+                }
                 onClicked: function(mouse) {
                     // With a zoom selected, a click moves its centre there.
                     if (backend.selectedZoom >= 0) {
@@ -814,6 +884,19 @@ Item {
                         backend.setZoomFocusFromView(backend.selectedZoom, p, videoPlayer.contentRect)
                         return
                     }
+                    // A click on a text, image or mask selects it, like its timeline block.
+                    const hit = objectAt(mouse.x, mouse.y)
+                    if (hit) {
+                        videoPlayer.pause()
+                        // The keyboard follows the selection, so Delete and the arrows
+                        // act on it, not on a split marker that had the focus. Input
+                        // that blocks the switch keeps its field focused.
+                        if (root.selectEffect(hit.kind, hit.index))
+                            root.forceActiveFocus(Qt.MouseFocusReason)
+                        return
+                    }
+                    // While a mask is selected its editor owns the video.
+                    if (backend.selectedMask >= 0) return
                     videoPlayer.togglePlayPause()
                 }
             }
@@ -1084,6 +1167,33 @@ Item {
                     color: root.textPrimary
                 }
 
+                // The timecode above is source time; once something is trimmed,
+                // cut or sped up, this says where the playhead lands in the file.
+                Text {
+                    objectName: "previewOutputTime"
+                    visible: backend.hasTrim || backend.hasTimelineEdits
+                    // Reads outputDuration so it follows every trim/cut/speed edit.
+                    readonly property real outputMs: backend.outputDuration >= 0
+                        ? backend.outputTimeAt(videoPlayer.position) : -1
+                    text: outputMs < 0
+                        ? qsTr("Not exported · export %1").arg(backend.formatPreciseTime(backend.outputDuration))
+                        : qsTr("Export %1 / %2").arg(backend.formatPreciseTime(outputMs))
+                            .arg(backend.formatPreciseTime(backend.outputDuration))
+                    Accessible.name: outputMs < 0
+                        ? qsTr("The playhead is in a part that is not exported. The export is %1 long.")
+                            .arg(backend.formatPreciseTime(backend.outputDuration))
+                        : qsTr("Exported time %1 of %2").arg(backend.formatPreciseTime(outputMs))
+                            .arg(backend.formatPreciseTime(backend.outputDuration))
+                    elide: Text.ElideRight
+                    Layout.leftMargin: SemanticTokens.spacing4
+                    Layout.maximumWidth: 220
+                    Layout.minimumWidth: 0 // gives way first in a narrow window
+                    font.pixelSize: SemanticTokens.fontSizeSmall
+                    font.family: SemanticTokens.fontFamily
+                    font.features: { "tnum": 1 }
+                    color: root.textSecondary
+                }
+
                 Item { Layout.fillWidth: true }
 
                 IconButton {
@@ -1133,7 +1243,8 @@ Item {
                     enabled: backend.hasCrop
                     opacity: enabled ? 1.0 : root.disabledControlOpacity
                     highlighted: root.comparingOriginal
-                    tooltipText: qsTr("Compare with Original (\\)")
+                    // The shortcut goes in through %1: lupdate drops a "\\" inside qsTr().
+                    tooltipText: qsTr("Compare with Original (%1)").arg("\\")
                     onClicked: root.comparingOriginal = !root.comparingOriginal
                 }
 
@@ -1161,6 +1272,7 @@ Item {
                     // Room for the label and a usable control, whatever the translation.
                     Layout.preferredWidth: implicitWidth
                     inlineLabel: true
+                    maximumInlineLabelWidth: root.wideEditor ? 220 : 140
                     label: qsTr("Preview speed")
                     tooltipText: qsTr("Playback speed of this preview only; the export is not changed")
                     choices: root.speedOptions.map(v => root.speedLabel(v))
@@ -1719,7 +1831,16 @@ Item {
 
             // Split points; drag to move one, double-click to join its parts.
             Repeater {
+                id: splitMarkers
                 model: backend.timelineSplits
+                // A moved, removed or rebuilt marker takes the keyboard with it:
+                // give it to the marker now at that place, the last one, or the
+                // editor, so its shortcuts keep working.
+                function refocus(index) {
+                    const marker = itemAt(Math.min(index, count - 1))
+                    if (marker) marker.forceActiveFocus(Qt.OtherFocusReason)
+                    else root.forceActiveFocus(Qt.OtherFocusReason)
+                }
                 Rectangle {
                     required property int index
                     required property var modelData
@@ -1735,27 +1856,76 @@ Item {
                     radius: 1
                     z: 4
                     color: root.textPrimary
+                    // Reachable by keyboard: arrows move it (Shift: 1 s), Delete removes it.
+                    activeFocusOnTab: true
                     Accessible.role: Accessible.Button
                     Accessible.name: qsTr("Split at %1").arg(backend.formatPreciseTime(modelData))
-                    Accessible.onPressAction: backend.removeSplit(index)
+                    Accessible.description: qsTr("Arrow keys move the split; Delete joins the two clips")
+                    Accessible.onPressAction: forceActiveFocus()
+                    Component.onDestruction: if (activeFocus) Qt.callLater(splitMarkers.refocus, index)
+                    // One undo step per press, a held key included: its first move
+                    // records the step and each repeat is folded into it at once,
+                    // so nothing waits for a release that focus may take elsewhere.
+                    // moveSplit() rebuilds this marker at once: everything it
+                    // needs afterwards is read before.
+                    function nudge(event, direction) {
+                        event.accepted = true
+                        const editor = backend
+                        const preview = root
+                        // A new press never folds into an older step.
+                        if (!event.isAutoRepeat) preview.splitNudgeHeld = false
+                        const step = (event.modifiers & Qt.ShiftModifier) ? 1000 : 100
+                        const legal = editor.legalSplitPosition(index, modelData + direction * step)
+                        if (legal < 0 || legal === modelData || !editor.moveSplit(index, legal)) return
+                        if (preview.splitNudgeHeld) {
+                            editor.amendTimelineEdit()
+                        } else {
+                            editor.commitTimelineEdit()
+                            preview.splitNudgeHeld = true
+                        }
+                    }
+                    Keys.onLeftPressed: function(event) { nudge(event, -1) }
+                    Keys.onRightPressed: function(event) { nudge(event, 1) }
+                    Keys.onReleased: function(event) {
+                        if ((event.key === Qt.Key_Left || event.key === Qt.Key_Right) && !event.isAutoRepeat)
+                            root.splitNudgeHeld = false
+                    }
+                    Keys.onDeletePressed: function(event) { event.accepted = true; backend.removeSplit(index) }
+                    Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Backspace) {
+                            event.accepted = true
+                            backend.removeSplit(index)
+                        }
+                    }
+                    FocusFrame { anchors.fill: parent; anchors.margins: -3; showFocus: parent.activeFocus }
                     MouseArea {
                         anchors.fill: parent
                         anchors.margins: -4
                         cursorShape: CursorTokens.resizeHorizontal
-                        onPressed: { parent.dragMs = -1; videoPlayer.pause() }
+                        onPressed: {
+                            parent.dragMs = -1
+                            root.splitDragItem = parent
+                            videoPlayer.pause()
+                        }
                         onPositionChanged: function(mouse) {
+                            if (root.splitDragItem !== parent) return // cancelled with Escape
                             const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
                             const legal = backend.legalSplitPosition(parent.index, ms)
                             if (legal >= 0) parent.dragMs = legal
                         }
                         function finishDrag() {
                             const target = parent.dragMs
+                            const active = root.splitDragItem === parent
                             parent.dragMs = -1
-                            if (target >= 0 && backend.moveSplit(parent.index, target))
+                            if (active) root.splitDragItem = null
+                            if (active && target >= 0 && backend.moveSplit(parent.index, target))
                                 backend.commitTimelineEdit()
                         }
                         onReleased: finishDrag()
-                        onCanceled: parent.dragMs = -1
+                        onCanceled: {
+                            parent.dragMs = -1
+                            if (root.splitDragItem === parent) root.splitDragItem = null
+                        }
                         onDoubleClicked: backend.removeSplit(parent.index)
                     }
                 }
@@ -1773,6 +1943,7 @@ Item {
                     z: 2
                     startMs: modelData.start
                     endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
+                    exported: root.rangeExported(modelData.start, modelData.end)
                     lowerMs: index > 0 ? backend.zoomSegments[index - 1].end : 0
                     upperMs: index + 1 < backend.zoomSegments.length ? backend.zoomSegments[index + 1].start : timelineArea.dur
                     minimumDuration: 500
@@ -1810,6 +1981,7 @@ Item {
                     openEnded: modelData.end < 0
                     startMs: modelData.start
                     endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
+                    exported: root.rangeExported(modelData.start, modelData.end)
                     lowerMs: 0
                     upperMs: timelineArea.dur
                     minimumDuration: 1
@@ -1847,6 +2019,7 @@ Item {
                     openEnded: modelData.end < 0
                     startMs: modelData.start
                     endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
+                    exported: root.rangeExported(modelData.start, modelData.end)
                     lowerMs: 0
                     upperMs: timelineArea.dur
                     minimumDuration: 100
@@ -1888,6 +2061,7 @@ Item {
                     z: 2
                     startMs: modelData.start
                     endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
+                    exported: root.rangeExported(modelData.start, modelData.end)
                     lowerMs: 0
                     upperMs: timelineArea.dur
                     minimumDuration: 100
@@ -1993,12 +2167,14 @@ Item {
                         backend.commitTrimEdit()
                 }
 
-                onCanceled: {
+                // A lost grab or Escape leaves the trim as it was before the drag.
+                function cancelTrimDrag() {
                     const trimmed = draggingTrimStart || draggingTrimEnd
                     resetInteractionState()
                     if (trimmed)
-                        backend.commitTrimEdit()
+                        backend.cancelTrimEdit()
                 }
+                onCanceled: cancelTrimDrag()
             }
 
             // The playhead crosses every lane.
@@ -2066,7 +2242,7 @@ Item {
 
                 CategoryRow {
                     objectName: "previewAppearanceOptions"
-                    enabled: backend.appearanceAvailable
+                    available: backend.appearanceAvailable
                     iconSource: root.iconUrl("frame")
                     text: qsTr("Canvas")
                     summary: backend.appearanceEnabled
@@ -2079,7 +2255,7 @@ Item {
                 }
                 CategoryRow {
                     objectName: "previewPointerOptions"
-                    enabled: backend.hasPointerData && backend.cursorEffectsAvailable
+                    available: backend.hasPointerData && backend.cursorEffectsAvailable
                     iconSource: root.iconUrl("mouse-pointer")
                     text: qsTr("Pointer")
                     summary: !backend.showCursor ? qsTr("Hidden")
@@ -2096,7 +2272,7 @@ Item {
                 }
                 CategoryRow {
                     objectName: "previewAudioOptions"
-                    enabled: backend.hasSeparateTracks && backend.audioMixAvailable
+                    available: backend.hasSeparateTracks && backend.audioMixAvailable
                     iconSource: root.iconUrl("volume-2")
                     text: qsTr("Audio")
                     summary: qsTr("Microphone %1 · System %2")
@@ -2104,7 +2280,9 @@ Item {
                         .arg(backend.systemAudioMuted ? qsTr("muted") : root.gainLabel(backend.systemAudioGainDb))
                     unavailableReason: !backend.hasSeparateTracks
                         ? qsTr("No separate microphone and system tracks. The recorded audio is kept as it is.")
-                        : qsTr("Mixing the two tracks is not supported for MP4 on this system yet.")
+                        : backend.selectedFormat !== 0
+                          ? qsTr("GIF and WebP have no sound. Choose MP4 to adjust the audio.")
+                          : qsTr("Mixing the two tracks is not supported for MP4 on this system yet.")
                     tooltipText: qsTr("Microphone and system audio volume, mute, and noise reduction")
                     selected: backend.audioMixAvailable && (backend.microphoneGainDb !== 0 || backend.systemAudioGainDb !== 0
                               || backend.microphoneMuted || backend.systemAudioMuted || backend.microphoneNoiseReduction)
@@ -2112,7 +2290,7 @@ Item {
                 }
                 CategoryRow {
                     objectName: "previewKeyOptions"
-                    enabled: backend.hasKeyData && backend.keyOverlayAvailable
+                    available: backend.hasKeyData && backend.keyOverlayAvailable
                     iconSource: root.iconUrl("keyboard")
                     text: qsTr("Keys")
                     summary: backend.keyOverlayEnabled
@@ -2407,6 +2585,7 @@ Item {
                             // Applied as typed; one undo step per edit.
                             onTextEdited: backend.setOverlayText(backend.selectedOverlay, text)
                             Keys.onEscapePressed: function(event) {
+                                if (root.cancelTimelineDragOnEscape(event)) return
                                 root.forceActiveFocus()
                                 event.accepted = true
                             }
@@ -2429,6 +2608,7 @@ Item {
                         controlWidth: parent.width
                         minimumPopupWidth: 260
                         label: ""
+                        accessibleName: qsTr("Font")
                         readonly property var families: [""].concat(Qt.fontFamilies())
                         model: families.map(function(family) {
                             return {text: family || qsTr("Default"), value: family}
@@ -2445,6 +2625,7 @@ Item {
                             objectName: "previewOverlaySmaller"
                             minimumButtonWidth: 44
                             text: "A\u2212"
+                            accessibleName: qsTr("Smaller text")
                             tooltipText: qsTr("Smaller")
                             onClicked: backend.setOverlaySize(backend.selectedOverlay, root.selectedOverlayData.size / 1.25)
                         }
@@ -2452,6 +2633,7 @@ Item {
                             objectName: "previewOverlayLarger"
                             minimumButtonWidth: 44
                             text: "A+"
+                            accessibleName: qsTr("Larger text")
                             tooltipText: qsTr("Larger")
                             onClicked: backend.setOverlaySize(backend.selectedOverlay, root.selectedOverlayData.size * 1.25)
                         }
@@ -2479,7 +2661,8 @@ Item {
                                 border.color: chosen ? root.accent : root.borderColor
                                 activeFocusOnTab: true
                                 Accessible.role: Accessible.Button
-                                Accessible.name: qsTr("Text colour %1").arg(index + 1)
+                                Accessible.name: qsTr("Text colour: %1").arg(root.overlayColorNames[index])
+                                Accessible.checkable: true
                                 Accessible.checked: chosen
                                 Accessible.onPressAction: backend.setOverlayColor(backend.selectedOverlay, modelData)
                                 Keys.onSpacePressed: backend.setOverlayColor(backend.selectedOverlay, modelData)
@@ -2729,6 +2912,8 @@ Item {
                         }
                         Accessible.role: Accessible.Button
                         Accessible.name: qsTr("Background: %1").arg(modelData.name)
+                        Accessible.checkable: true
+                        Accessible.checked: chosen
                         Accessible.onPressAction: backend.appearanceGradientPreset = index
                         activeFocusOnTab: true
                         Keys.onSpacePressed: backend.appearanceGradientPreset = index
@@ -2761,6 +2946,8 @@ Item {
                         border.color: chosen ? root.accent : root.borderColor
                         Accessible.role: Accessible.Button
                         Accessible.name: index === 0 ? qsTr("Background: White") : qsTr("Background: Black")
+                        Accessible.checkable: true
+                        Accessible.checked: chosen
                         Accessible.onPressAction: backend.appearanceSolidColor = modelData
                         activeFocusOnTab: true
                         Keys.onSpacePressed: backend.appearanceSolidColor = modelData
@@ -2791,6 +2978,42 @@ Item {
                         : qsTr("Use an image file as the background")
                     selected: backend.appearanceEnabled && backend.appearanceBackground === 3
                     onClicked: backend.chooseAppearanceImage()
+                }
+                // The chosen image, so it is recognisable without opening the file dialog.
+                Row {
+                    objectName: "previewAppearanceImageChosen"
+                    width: parent.width
+                    spacing: 8
+                    visible: backend.appearanceImagePath.length > 0
+                    Rectangle {
+                        width: 48
+                        height: 30
+                        radius: SemanticTokens.radiusSmall
+                        color: ComponentTokens.editorCanvas
+                        border.width: backend.appearanceEnabled && backend.appearanceBackground === 3 ? 2 : 1
+                        border.color: border.width > 1 ? root.accent : root.borderColor
+                        clip: true
+                        Image {
+                            objectName: "previewAppearanceImageThumbnail"
+                            anchors.fill: parent
+                            anchors.margins: parent.border.width
+                            source: backend.appearanceImageUrl
+                            sourceSize: Qt.size(96, 60)
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            Accessible.role: Accessible.Graphic
+                            Accessible.name: qsTr("Background image")
+                        }
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - 56
+                        text: backend.appearanceImageName
+                        elide: Text.ElideMiddle
+                        color: root.textSecondary
+                        font.pixelSize: SemanticTokens.fontSizeSmall
+                        font.family: SemanticTokens.fontFamily
+                    }
                 }
                 EditorChoice {
                     objectName: "previewAppearancePadding"
@@ -3767,6 +3990,11 @@ Item {
         if (root.textEntryActive)
             return
 
+        // A drag in progress is cancelled by Escape before anything else:
+        // never by closing the editor, nor by dropping a crop draft.
+        if (event.key === Qt.Key_Escape && root.cancelTimelineDragOnEscape(event))
+            return
+
         if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Z) {
             if (event.modifiers & Qt.ShiftModifier)
                 root.redoEdit()
@@ -3818,8 +4046,8 @@ Item {
             event.accepted = true
             break
         case Qt.Key_Escape:
-            if (backend.selectedZoom >= 0 || backend.selectedMask >= 0
-                    || backend.selectedOverlay >= 0 || backend.selectedPointerHide >= 0 || root.selectedPart >= 0) {
+            // (A drag in progress was cancelled above.)
+            if (root.inspectorKind !== "project") {
                 if (root.openSection("") && !root.wideEditor)
                     root.inspectorOpen = false
             }
@@ -3947,6 +4175,7 @@ Item {
         // pending (focus returns here if the recording is kept).
         onEditingFinished: if (!backend.discardConfirmationPending) commitText()
         Keys.onEscapePressed: function(event) {
+            if (root.cancelTimelineDragOnEscape(event)) return
             edited = false
             text = Qt.binding(function() { return numberField.value })
             if (exportPanel.opened) exportPanel.contentItem.forceActiveFocus()
@@ -4021,6 +4250,7 @@ Item {
             text = backend.formatPreciseTime(timeMs)
         }
         Keys.onEscapePressed: function(event) {
+            if (root.cancelTimelineDragOnEscape(event)) return
             discardEdit()
             root.forceActiveFocus()
             event.accepted = true
@@ -4213,6 +4443,11 @@ Item {
         property string text: ""
         property string summary: ""
         property string unavailableReason: ""
+        // False when this category cannot be used (no data, format). The
+        // reason shows only then: a whole editor disabled during an export
+        // keeps the summaries.
+        property bool available: true
+        enabled: available
         property string tooltipText: ""
         property bool selected: false
         signal clicked()
@@ -4224,7 +4459,7 @@ Item {
         activeFocusOnTab: enabled
         Accessible.role: Accessible.Button
         Accessible.name: text
-        Accessible.description: enabled ? summary : unavailableReason
+        Accessible.description: available ? summary : unavailableReason
         Accessible.checked: selected
         Accessible.onPressAction: if (enabled) clicked()
         Keys.onReturnPressed: function(event) { if (enabled && !event.isAutoRepeat) clicked() }
@@ -4255,14 +4490,14 @@ Item {
             Text {
                 width: parent.width
                 visible: text.length > 0
-                text: categoryRow.enabled ? categoryRow.summary : categoryRow.unavailableReason
+                text: categoryRow.available ? categoryRow.summary : categoryRow.unavailableReason
                 color: root.textSecondary
                 font.pixelSize: SemanticTokens.fontSizeCaption
                 wrapMode: Text.WordWrap
             }
         }
         SvgIcon {
-            visible: categoryRow.enabled
+            visible: categoryRow.available
             anchors.right: parent.right
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
@@ -4287,6 +4522,8 @@ Item {
         id: segmentButton
         property string text: ""
         property string tooltipText: ""
+        // Spoken name when the visible text is a symbol ("A+") or empty.
+        property string accessibleName: ""
         property bool tooltipPreferredAbove: true
         property bool selected: false
         property bool primary: false
@@ -4323,7 +4560,8 @@ Item {
         opacity: enabled ? 1.0 : root.disabledControlOpacity
 
         Accessible.role: Accessible.Button
-        Accessible.name: text
+        Accessible.name: accessibleName !== "" ? accessibleName
+            : (text !== "" ? text : tooltipText)
         Accessible.description: tooltipText
         Accessible.checked: selected
         Accessible.onPressAction: if (enabled) clicked()
