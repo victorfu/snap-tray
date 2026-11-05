@@ -2201,8 +2201,16 @@ void ScreenCanvasSession::syncTextFormattingToSubToolbar()
         return;
     }
 
+    const bool inlineEditing =
+        surface->inlineTextEditor() && surface->inlineTextEditor()->isEditing();
+    if (!inlineEditing && m_styleEditor && m_styleEditor->hasTarget()) {
+        // The strip shows the selected annotation (#224); the editor defaults
+        // of whichever surface is active must not overwrite it.
+        return;
+    }
+
     const auto formatting = surface->textAnnotationEditor()->formatting();
-    if (surface->inlineTextEditor() && surface->inlineTextEditor()->isEditing()) {
+    if (inlineEditing) {
         m_toolOptionsViewModel->setCurrentColor(surface->inlineTextEditor()->color());
     }
     m_toolOptionsViewModel->setBold(formatting.bold);
