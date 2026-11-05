@@ -42,6 +42,9 @@ public:
     void setAssociatedWidget(QWidget* widget);
 
     QWindow* window() const;
+    // Register the tooltip before a capture filter is built. Until destruction,
+    // hide() hides only its content so the native window and exclusion stay valid.
+    QWindow* prepareCaptureExclusion(QQuickView* owner);
 
 private:
     void ensureView();
@@ -51,6 +54,7 @@ private:
     QQuickItem* m_rootItem = nullptr;
     QPointer<QWidget> m_associatedWidget;
     quint64 m_requestId = 0;
+    bool m_captureExclusionPrepared = false;
 };
 
 } // namespace SnapTray

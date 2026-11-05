@@ -270,10 +270,15 @@ QWindow* PinHoverBar::panelWindow() const { return m_panelView; }
 QWindow* PinHoverBar::tooltipWindow() const { return m_tooltip ? m_tooltip->window() : nullptr; }
 QString PinHoverBar::tooltipText() const { return m_tooltipText; }
 
+void PinHoverBar::ensureTooltip()
+{
+    if (!m_tooltip) m_tooltip = new SnapTray::ToolbarTooltipController(this);
+}
+
 void PinHoverBar::onIconHovered(const QString& text, double x, double y, double w, double h)
 {
     if (!m_barView || !m_barView->isVisible()) return;
-    if (!m_tooltip) m_tooltip = new SnapTray::ToolbarTooltipController(this);
+    ensureTooltip();
     m_tooltipText = text;
     const QPoint topLeft = m_barView->mapToGlobal(QPointF(x, y)).toPoint();
     m_tooltip->showFor(text, QRect(topLeft, QSize(qRound(w), qRound(h))), m_barView,
@@ -301,6 +306,11 @@ QList<WId> PinHoverBar::captureExclusionWindowIds()
     QList<WId> ids;
     if (ensureBar()) ids.append(m_barView->winId());
     if (ensurePanel()) ids.append(m_panelView->winId());
+    if (m_barView) {
+        ensureTooltip();
+        if (QWindow* tooltip = m_tooltip->prepareCaptureExclusion(m_barView))
+            ids.append(tooltip->winId());
+    }
     return ids;
 }
 

@@ -1,6 +1,10 @@
 #include <QtTest/QtTest>
 
 #import <Cocoa/Cocoa.h>
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
+
+#include <atomic>
+#include <memory>
 
 #include "pinwindow/PinHoverBar.h"
 #include "qml/CanvasToolbarViewModel.h"
@@ -38,6 +42,7 @@ private slots:
     void testSubToolbarWindowExcludedFromCapture();
     void testEmojiPickerWindowExcludedFromCapture();
     void testPinHoverWindowsExcludedFromCapture();
+    void testPinTooltipDiscoverableBeforeHover();
     void testPinHoverWindowsStayOnDeactivate();
 };
 
@@ -86,18 +91,54 @@ void tst_FloatingOverlayCaptureExclusion::testEmojiPickerWindowExcludedFromCaptu
     QCOMPARE((NSInteger)[window sharingType], (NSInteger)NSWindowSharingNone);
 }
 
-// PR #241 review: the pin hover bar and value panel are never captured.
+// PR #241 review: the pin hover bar, value panel and tooltip are never captured.
 void tst_FloatingOverlayCaptureExclusion::testPinHoverWindowsExcludedFromCapture()
 {
     PinHoverBarViewModel viewModel;
     PinHoverBar bar(&viewModel, nullptr);
 
     const QList<WId> ids = bar.captureExclusionWindowIds();
-    QCOMPARE(ids.size(), 2);
-    for (QWindow* w : {bar.barWindow(), bar.panelWindow()}) {
+    QCOMPARE(ids.size(), 3);
+    for (QWindow* w : {bar.barWindow(), bar.panelWindow(), bar.tooltipWindow()}) {
         NSWindow* window = nsWindowForQWindow(w);
         QVERIFY(window != nil);
         QCOMPARE((NSInteger)[window sharingType], (NSInteger)NSWindowSharingNone);
+    }
+}
+
+void tst_FloatingOverlayCaptureExclusion::testPinTooltipDiscoverableBeforeHover()
+{
+    if (QGuiApplication::platformName() != "cocoa") QSKIP("Requires native Cocoa windows.");
+    if (@available(macOS 14.4, *)) {
+        PinHoverBarViewModel viewModel;
+        PinHoverBar bar(&viewModel, nullptr);
+        const QList<WId> ids = bar.captureExclusionWindowIds();
+        QCOMPARE(ids.size(), 3);
+        QVERIFY(bar.tooltipWindow());
+        NSWindow* tooltip = nsWindowForQWindow(bar.tooltipWindow());
+        QVERIFY(tooltip != nil);
+        QVERIFY([tooltip windowNumber] > 0);
+        QVERIFY(![tooltip hasShadow]);
+        QVERIFY([tooltip ignoresMouseEvents]);
+
+        struct Result {
+            QSet<quintptr> windowIds;
+            QString error;
+            std::atomic<bool> done{false};
+        };
+        const auto result = std::make_shared<Result>();
+        [SCShareableContent getCurrentProcessShareableContentWithCompletionHandler:
+            ^(SCShareableContent* content, NSError* error) {
+                if (error) result->error = QString::fromNSString(error.localizedDescription);
+                for (SCWindow* window in content.windows) result->windowIds.insert(window.windowID);
+                result->done = true;
+            }];
+        QTRY_VERIFY_WITH_TIMEOUT(result->done.load(), 10000);
+        QVERIFY2(result->error.isEmpty(), qPrintable(result->error));
+        QVERIFY2(result->windowIds.contains(static_cast<quintptr>([tooltip windowNumber])),
+                 "Tooltip must be discoverable by SCK before the first hover");
+    } else {
+        QSKIP("Current-process SCK enumeration requires macOS 14.4.");
     }
 }
 

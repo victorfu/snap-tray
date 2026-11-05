@@ -56,8 +56,8 @@ public:
     QRect barGeometry() const;
     QWindow* tooltipWindow() const;
     QString tooltipText() const;
-    // Creates the bar and panel windows if needed and returns their native
-    // ids, so a live capture can exclude them before they are first shown.
+    // Prepares the bar, panel and tooltip windows and returns their native ids,
+    // so a live capture can exclude them before their controls are first shown.
     QList<WId> captureExclusionWindowIds();
     bool containsGlobal(const QPoint& pos) const;
     // Moves keyboard focus to a bar button (QML objectName).
@@ -78,6 +78,7 @@ private:
     bool sliderPressed() const;
     bool ensureBar();
     bool ensurePanel();
+    void ensureTooltip();
     bool barFits() const;
     void updateCompact();
     void positionBar();

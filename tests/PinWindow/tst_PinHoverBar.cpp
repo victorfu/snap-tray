@@ -10,6 +10,11 @@
 #include "pinwindow/PinHoverBar.h"
 #include "qml/PinHoverBarViewModel.h"
 
+#ifdef Q_OS_WIN
+#include "platform/CaptureExclusionPolicy.h"
+#include <Windows.h>
+#endif
+
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 // #225: the pin hover bar's windows, timing and placement.
@@ -32,6 +37,7 @@ private slots:
     void suppressedHidesImmediately();
     void panelEscClosesIt();
     void destroyWhileOpenIsClean();
+    void iconButtonHoverShowsTooltip_data();
     void iconButtonHoverShowsTooltip();
 
 private:
@@ -242,21 +248,66 @@ void tst_PinHoverBar::otherKeyClosesPanel()
 }
 
 // PR #241 review: the icon-only buttons show their name and shortcut on hover.
+void tst_PinHoverBar::iconButtonHoverShowsTooltip_data()
+{
+    QTest::addColumn<bool>("prepareCapture");
+    QTest::newRow("lazy-tooltip") << false;
+    QTest::newRow("prepared-for-live-capture") << true;
+}
+
 void tst_PinHoverBar::iconButtonHoverShowsTooltip()
 {
+    QFETCH(bool, prepareCapture);
+    QList<WId> excludedIds;
+    WId tooltipId = 0;
+    if (prepareCapture) {
+        excludedIds = m_bar->captureExclusionWindowIds();
+        QCOMPARE(excludedIds.size(), 3);
+        auto* tooltip = qobject_cast<QQuickView*>(m_bar->tooltipWindow());
+        QVERIFY(tooltip);
+        tooltipId = tooltip->winId();
+        QVERIFY(excludedIds.contains(tooltipId));
+        QVERIFY(tooltip->isVisible()); // Registered with WindowServer for SCK.
+        QVERIFY(!tooltip->rootObject()->isVisible()); // No visible tooltip yet.
+    }
     m_bar->showNow();
     QVERIFY(m_bar->isBarVisible());
     auto* view = qobject_cast<QQuickView*>(m_bar->barWindow());
     QVERIFY(view);
     QVERIFY(QTest::qWaitForWindowExposed(view));
-    auto* annotate = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("pinHoverAnnotate"));
-    QVERIFY(annotate);
-    const QPoint center = annotate->mapToScene(QPointF(annotate->width() / 2, annotate->height() / 2)).toPoint();
-    QTest::mouseMove(view, center);
-    QTRY_VERIFY(m_bar->tooltipWindow() && m_bar->tooltipWindow()->isVisible());
-    QCOMPARE(m_bar->tooltipText(), QStringLiteral("Annotate (Space)"));
+    for (const QString& name : {QStringLiteral("pinHoverAnnotate"), QStringLiteral("pinHoverMore")}) {
+        auto* button = view->rootObject()->findChild<QQuickItem*>(name);
+        QVERIFY(button);
+        const QPoint center = button->mapToScene(QPointF(button->width() / 2, button->height() / 2)).toPoint();
+        QTest::mouseMove(view, center);
+        QTRY_VERIFY(m_bar->tooltipWindow() && m_bar->tooltipWindow()->isVisible());
+        auto* tooltip = qobject_cast<QQuickView*>(m_bar->tooltipWindow());
+        QVERIFY(tooltip);
+        QTRY_VERIFY(tooltip->rootObject()->isVisible());
+        QCOMPARE(m_bar->tooltipText(), button->property("tooltipText").toString());
+        if (prepareCapture) {
+            QCOMPARE(tooltip->winId(), tooltipId);
+            QCOMPARE(m_bar->captureExclusionWindowIds(), excludedIds);
+            QVERIFY(tooltip->rootObject()->isVisible());
+        }
+#ifdef Q_OS_WIN
+        const DWORD expected = SnapTray::windowsCaptureAffinity(true, QOperatingSystemVersion::current());
+        DWORD affinity = 0;
+        QVERIFY(GetWindowDisplayAffinity(reinterpret_cast<HWND>(tooltip->winId()), &affinity));
+        QCOMPARE(affinity, expected);
+#endif
+        // Leaving the button hides content without changing a prepared window's ID.
+        QTest::mouseMove(view, QPoint(1, 1));
+        QTRY_VERIFY(!tooltip->isVisible() || !tooltip->rootObject()->isVisible());
+        if (prepareCapture) {
+            QVERIFY(tooltip->isVisible());
+            QCOMPARE(tooltip->winId(), tooltipId);
+        }
+    }
     m_bar->hideNow();
-    QVERIFY(!m_bar->tooltipWindow()->isVisible());
+    auto* tooltip = qobject_cast<QQuickView*>(m_bar->tooltipWindow());
+    QVERIFY(!tooltip->isVisible() || !tooltip->rootObject()->isVisible());
+    if (prepareCapture) QCOMPARE(m_bar->captureExclusionWindowIds(), excludedIds);
 }
 
 QTEST_MAIN(tst_PinHoverBar)

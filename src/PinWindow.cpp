@@ -5820,8 +5820,8 @@ void PinWindow::startLiveCapture()
 
 QList<WId> PinWindow::liveCaptureExcludedWindowIds()
 {
-    // The hover bar and panel are created up front: ScreenCaptureKit fixes its
-    // excluded windows when the stream starts (PR #241 review).
+    // Prepare the hover bar, panel and tooltip up front: ScreenCaptureKit fixes
+    // its excluded windows when the stream starts (PR #241 review).
     ensureHoverBar();
     QList<WId> ids{winId()};
     ids.append(m_hoverBar->captureExclusionWindowIds());

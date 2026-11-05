@@ -1,5 +1,6 @@
 #include "qml/ToolbarTooltipController.h"
 #include "qml/QmlOverlayManager.h"
+#include "platform/WindowLevel.h"
 
 #include <QGuiApplication>
 #include <QPointer>
@@ -30,7 +31,7 @@ int boundedCoordinate(int requested, int minimum, int maximum)
 #ifdef Q_OS_MACOS
 NSWindow* nsWindowForWidget(const QWidget* widget)
 {
-    if (!widget) {
+    if (!widget || QGuiApplication::platformName() != QStringLiteral("cocoa")) {
         return nil;
     }
 
@@ -40,7 +41,7 @@ NSWindow* nsWindowForWidget(const QWidget* widget)
 
 NSWindow* nsWindowForQuickView(const QQuickView* view)
 {
-    if (!view) {
+    if (!view || QGuiApplication::platformName() != QStringLiteral("cocoa")) {
         return nil;
     }
 
@@ -87,6 +88,28 @@ void ToolbarTooltipController::ensureView()
     }
 
     m_rootItem = m_view->rootObject();
+    setWindowExcludedFromCapture(m_view, true);
+}
+
+QWindow* ToolbarTooltipController::prepareCaptureExclusion(QQuickView* owner)
+{
+    if (!owner) return nullptr;
+    ensureView();
+    if (!m_rootItem) return nullptr;
+
+    if (!m_captureExclusionPrepared) {
+        m_captureExclusionPrepared = true;
+        m_view->setTransientParent(owner);
+        if (!m_view->isVisible()) {
+            // SCK must discover this window before the first hover. Keep its
+            // native surface registered, with no content or input interception.
+            m_rootItem->setVisible(false);
+            m_view->setPosition(owner->position());
+            m_view->show();
+        }
+        applyWindowFlags(owner);
+    }
+    return m_view;
 }
 
 void ToolbarTooltipController::showFor(const QString& text,
@@ -170,6 +193,7 @@ void ToolbarTooltipController::showFor(const QString& text,
                                             usableTop,
                                             usableBottomExclusive - tipHeight);
             m_view->setGeometry(x, y, tipWidth, tipHeight);
+            m_rootItem->setVisible(true);
             m_view->show();
             applyWindowFlags(ownerGuard.data());
             m_view->raise();
@@ -179,7 +203,10 @@ void ToolbarTooltipController::showFor(const QString& text,
 void ToolbarTooltipController::hide()
 {
     ++m_requestId;
-    if (m_view) {
+    if (m_captureExclusionPrepared && m_rootItem) {
+        m_rootItem->setVisible(false);
+        applyWindowFlags(qobject_cast<QQuickView*>(m_view->transientParent()));
+    } else if (m_view) {
         m_view->hide();
     }
 }
@@ -209,14 +236,14 @@ void ToolbarTooltipController::applyWindowFlags(QQuickView* owner)
         [window setLevel:targetLevel];
         [window setHidesOnDeactivate:NO];
         [window setIgnoresMouseEvents:YES];
-        [window setHasShadow:YES];
-        [window setSharingType:NSWindowSharingNone];
+        [window setHasShadow:m_rootItem && m_rootItem->isVisible()];
     }
 #else
     Q_UNUSED(owner)
 #endif
 
     QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+    setWindowExcludedFromCapture(m_view, true);
 }
 
 } // namespace SnapTray

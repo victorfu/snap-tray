@@ -183,19 +183,22 @@ void TestPinHoverIntegration::liveTooltipOnlyOnDot()
 }
 
 // PR #241 review: a live pin overlapping its source must not capture its own
-// hover bar or value panel, even before either has been shown.
+// hover bar, value panel or tooltip, even before the first hover.
 void TestPinHoverIntegration::liveCaptureExcludesHoverWindows()
 {
     PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
     window.show();
     QVERIFY(QTest::qWaitForWindowExposed(&window));
     const QList<WId> ids = window.liveCaptureExcludedWindowIds();
+    QCOMPARE(ids.size(), 4);
     QVERIFY(ids.contains(window.winId()));
     QVERIFY(window.m_hoverBar);
     QVERIFY(window.m_hoverBar->barWindow());
     QVERIFY(window.m_hoverBar->panelWindow());
+    QVERIFY(window.m_hoverBar->tooltipWindow());
     QVERIFY(ids.contains(window.m_hoverBar->barWindow()->winId()));
     QVERIFY(ids.contains(window.m_hoverBar->panelWindow()->winId()));
+    QVERIFY(ids.contains(window.m_hoverBar->tooltipWindow()->winId()));
 }
 
 // PR #241 review: zooming from the slider resizes the pin, which moves the bar.
