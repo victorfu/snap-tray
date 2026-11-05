@@ -837,6 +837,9 @@ bool PinWindow::cancelAnnotationGesture()
         m_activePolylineVertexIndex = -1;
         cancelled = true;
     }
+    // The button is still down: its release must not reach a single-click
+    // tool (Emoji, StepBadge) and place a new annotation.
+    if (cancelled) m_consumeNextToolRelease = true;
     // A text re-edit's gesture belongs to the inline editor, not to a drag.
     const bool reEditing = m_textAnnotationEditor && m_textAnnotationEditor->isEditing();
     if (!cancelled || reEditing || !m_annotationLayer) return cancelled;

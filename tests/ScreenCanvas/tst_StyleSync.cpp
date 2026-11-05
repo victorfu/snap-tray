@@ -304,8 +304,10 @@ void TestScreenCanvasStyleSync::escapeMidDragRestores()
     QVERIFY(session.handleArrowAnnotationPress(QPoint(40, 20)));
     session.handleArrowAnnotationMove(QPoint(50, 50));
     QCOMPARE(arrow()->start(), QPoint(30, 50));
+    QVERIFY(!session.m_consumeNextToolRelease);
     QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
     session.handleSurfaceKeyPress(surface, &escape);
+    QVERIFY(session.m_consumeNextToolRelease);   // the held button's release places nothing
     QCOMPARE(arrow()->start(), QPoint(20, 20));
     QCOMPARE(session.m_annotationLayer->historyStateToken(), token);
     QCOMPARE(closed.count(), 0);

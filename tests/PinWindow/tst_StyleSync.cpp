@@ -1164,7 +1164,9 @@ void TestPinWindowStyleSync::escapeMidDragRestores()
     QVERIFY(window->handleArrowAnnotationPress(view(QPoint(40, 20))));
     window->handleArrowAnnotationMove(view(QPoint(50, 50)));
     QCOMPARE(arrow()->start(), QPoint(30, 50));
+    QVERIFY(!window->m_consumeNextToolRelease);
     QTest::keyClick(window.get(), Qt::Key_Escape);
+    QVERIFY(window->m_consumeNextToolRelease);   // the held button's release places nothing
     QCOMPARE(arrow()->start(), QPoint(20, 20));
     QCOMPARE(window->m_annotationLayer->historyStateToken(), token);
     window->handleArrowAnnotationMove(view(QPoint(70, 70)));   // the rest of the drag does nothing
@@ -1200,6 +1202,7 @@ void TestPinWindowStyleSync::textDragEscapeRestores()
     window->m_textAnnotationEditor->updateDragging(QPoint(65, 55));
     QCOMPARE(text()->position(), QPointF(60, 50));
     QTest::keyClick(window.get(), Qt::Key_Escape);
+    QVERIFY(window->m_consumeNextToolRelease);
     QCOMPARE(text()->position(), QPointF(30, 30));
     QVERIFY(!window->m_textAnnotationEditor->isDragging());
     QVERIFY(!window->m_annotationLayer->isGestureActive());

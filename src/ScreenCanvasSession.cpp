@@ -857,6 +857,9 @@ bool ScreenCanvasSession::cancelAnnotationGesture()
         m_activePolylineVertexIndex = -1;
         cancelled = true;
     }
+    // The button is still down: its release must not reach a single-click
+    // tool (Emoji, StepBadge) and place a new annotation.
+    if (cancelled) m_consumeNextToolRelease = true;
     if (!cancelled || !m_annotationLayer) return cancelled;
     // Escape during an inline re-edit is handled before this (it cancels the edit).
     m_annotationLayer->cancelGesture();
