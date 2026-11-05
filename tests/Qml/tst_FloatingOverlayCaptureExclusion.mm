@@ -38,6 +38,7 @@ private slots:
     void testSubToolbarWindowExcludedFromCapture();
     void testEmojiPickerWindowExcludedFromCapture();
     void testPinHoverWindowsExcludedFromCapture();
+    void testPinHoverWindowsStayOnDeactivate();
 };
 
 void tst_FloatingOverlayCaptureExclusion::initTestCase()
@@ -97,6 +98,25 @@ void tst_FloatingOverlayCaptureExclusion::testPinHoverWindowsExcludedFromCapture
         NSWindow* window = nsWindowForQWindow(w);
         QVERIFY(window != nil);
         QCOMPARE((NSInteger)[window sharingType], (NSInteger)NSWindowSharingNone);
+    }
+}
+
+// PR #241 review: Cocoa hides Qt::Tool windows when the app deactivates; the
+// pin stays, so its hover bar and panel stay too.
+void tst_FloatingOverlayCaptureExclusion::testPinHoverWindowsStayOnDeactivate()
+{
+    PinHoverBarViewModel viewModel;
+    PinHoverBar bar(&viewModel, nullptr);
+    const QRect screen = QGuiApplication::primaryScreen()->availableGeometry();
+    bar.setPinGeometry(QRect(screen.topLeft() + QPoint(200, 200), QSize(480, 320)));
+    bar.showNow();
+    QVERIFY(bar.isBarVisible());
+    viewModel.openPanel(PinHoverBarViewModel::ZoomPanel);
+    QVERIFY(bar.isPanelVisible());
+    for (QWindow* w : {bar.barWindow(), bar.panelWindow()}) {
+        NSWindow* window = nsWindowForQWindow(w);
+        QVERIFY(window != nil);
+        QVERIFY(![window hidesOnDeactivate]);
     }
 }
 

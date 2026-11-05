@@ -2,6 +2,7 @@
 
 #include "qml/PinHoverBarViewModel.h"
 #include "qml/QmlOverlayManager.h"
+#include "qml/ToolbarTooltipController.h"
 #include "platform/WindowLevel.h"
 
 #include <QCoreApplication>
@@ -87,6 +88,9 @@ bool PinHoverBar::ensureBar()
     }
     // The bar sits on the pin; a live pin over its source must not capture it.
     setWindowExcludedFromCapture(m_barView, true);
+    connect(m_barRoot, SIGNAL(iconHovered(QString,double,double,double,double)),
+            this, SLOT(onIconHovered(QString,double,double,double,double)));
+    connect(m_barRoot, SIGNAL(iconUnhovered()), this, SLOT(onIconUnhovered()));
     // The bar's width follows its content (compact layout, labels); a value
     // change can make the full bar too wide for the pin.
     connect(m_barRoot, &QQuickItem::widthChanged, this, &PinHoverBar::positionBar);
@@ -112,6 +116,11 @@ bool PinHoverBar::ensurePanel()
         return false;
     }
     setWindowExcludedFromCapture(m_panelView, true);
+    // A slider drag resizes the pin, which moves the bar; the panel stays put
+    // until release so the slider keeps its input coordinates (PR #241 review).
+    m_panelSlider = m_panelRoot->findChild<QObject*>(QStringLiteral("pinValueSlider"));
+    if (m_panelSlider)
+        connect(m_panelSlider, SIGNAL(pressedChanged()), this, SLOT(onSliderPressedChanged()));
     connect(m_panelRoot, &QQuickItem::heightChanged, this, &PinHoverBar::positionPanel);
     return true;
 }
@@ -164,6 +173,7 @@ void PinHoverBar::positionBar()
 void PinHoverBar::positionPanel()
 {
     if (!m_panelView || !m_panelView->isVisible() || !m_barView) return;
+    if (sliderPressed()) return;
     QVariant rect;
     QMetaObject::invokeMethod(m_barRoot, "buttonRect", Q_RETURN_ARG(QVariant, rect),
                               Q_ARG(QVariant, panelButtonName(m_lastPanel)));
@@ -196,7 +206,7 @@ void PinHoverBar::pointerLeft()
 
 void PinHoverBar::onShowTimeout()
 {
-    if (m_suppressed || !containsGlobal(cursorPos())) return;
+    if (m_suppressed || !m_pinVisible || !containsGlobal(cursorPos())) return;
     showNow();
 }
 
@@ -213,7 +223,7 @@ void PinHoverBar::onHideTimeout()
 
 void PinHoverBar::showNow()
 {
-    if (m_suppressed || m_pin.isEmpty() || !m_viewModel) return;
+    if (m_suppressed || !m_pinVisible || m_pin.isEmpty() || !m_viewModel) return;
     if (!ensureBar()) return;
     updateCompact();
     m_hideTimer.stop();
@@ -222,6 +232,8 @@ void PinHoverBar::showNow()
     positionBar();
     m_barView->show();
     QmlOverlayManager::applyShownOverlayWindowPolicy(m_barView);
+    // The pin stays when the app deactivates; so does its bar (PR #241 review).
+    QmlOverlayManager::preventWindowHideOnDeactivate(m_barView);
     m_barView->raise();
     emit barShown();
 }
@@ -230,6 +242,7 @@ void PinHoverBar::hideNow()
 {
     m_showTimer.stop();
     m_hideTimer.stop();
+    onIconUnhovered();
     hidePanel();
     if (m_barView && m_barView->isVisible()) {
         m_barView->hide();
@@ -254,6 +267,34 @@ bool PinHoverBar::isBarVisible() const { return m_barView && m_barView->isVisibl
 bool PinHoverBar::isPanelVisible() const { return m_panelView && m_panelView->isVisible(); }
 QWindow* PinHoverBar::barWindow() const { return m_barView; }
 QWindow* PinHoverBar::panelWindow() const { return m_panelView; }
+QWindow* PinHoverBar::tooltipWindow() const { return m_tooltip ? m_tooltip->window() : nullptr; }
+QString PinHoverBar::tooltipText() const { return m_tooltipText; }
+
+void PinHoverBar::onIconHovered(const QString& text, double x, double y, double w, double h)
+{
+    if (!m_barView || !m_barView->isVisible()) return;
+    if (!m_tooltip) m_tooltip = new SnapTray::ToolbarTooltipController(this);
+    m_tooltipText = text;
+    const QPoint topLeft = m_barView->mapToGlobal(QPointF(x, y)).toPoint();
+    m_tooltip->showFor(text, QRect(topLeft, QSize(qRound(w), qRound(h))), m_barView,
+                       SnapTray::TooltipPlacement::Above);
+}
+
+void PinHoverBar::onIconUnhovered()
+{
+    m_tooltipText.clear();
+    if (m_tooltip) m_tooltip->hide();
+}
+
+bool PinHoverBar::sliderPressed() const
+{
+    return m_panelSlider && m_panelSlider->property("pressed").toBool();
+}
+
+void PinHoverBar::onSliderPressedChanged()
+{
+    if (!sliderPressed()) positionPanel();
+}
 
 QList<WId> PinHoverBar::captureExclusionWindowIds()
 {
@@ -294,6 +335,7 @@ void PinHoverBar::onPanelChanged()
     }
     m_panelView->show();
     QmlOverlayManager::applyShownOverlayWindowPolicy(m_panelView);
+    QmlOverlayManager::preventWindowHideOnDeactivate(m_panelView);
     QmlOverlayManager::enableNativeShadow(m_panelView);
     positionPanel();
     m_panelView->raise();

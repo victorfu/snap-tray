@@ -27,6 +27,10 @@ GlassSurface {
     Accessible.name: qsTr("Pin controls")
 
     // Window coordinates of a named button, for anchoring the value panel.
+    // Icon-only buttons name themselves in a tooltip; the controller shows it.
+    signal iconHovered(string text, real x, real y, real w, real h)
+    signal iconUnhovered()
+
     function buttonRect(name) {
         const item = buttonFor(name)
         if (!item || !item.visible) return Qt.rect(0, 0, 0, 0)
@@ -129,6 +133,8 @@ GlassSurface {
             Keys.onReturnPressed: root.viewModel.requestAnnotate()
             Keys.onSpacePressed: root.viewModel.requestAnnotate()
             onClicked: root.viewModel.requestAnnotate()
+            onHovered: function(id, x, y, w, h) { root.iconHovered(tooltipText, x, y, w, h) }
+            onUnhovered: root.iconUnhovered()
         }
         ToolbarButton {
             id: moreButton
@@ -142,6 +148,8 @@ GlassSurface {
             Keys.onReturnPressed: root.viewModel.requestMore()
             Keys.onSpacePressed: root.viewModel.requestMore()
             onClicked: root.viewModel.requestMore()
+            onHovered: function(id, x, y, w, h) { root.iconHovered(tooltipText, x, y, w, h) }
+            onUnhovered: root.iconUnhovered()
         }
     }
 }

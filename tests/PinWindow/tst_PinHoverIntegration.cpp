@@ -3,6 +3,8 @@
 #include <QGuiApplication>
 #include <QMenu>
 #include <QScreen>
+#include <QQuickItem>
+#include <QQuickView>
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "PinWindow.h"
@@ -28,6 +30,8 @@ private slots:
     void clickedBarComesBack();
     void liveTooltipOnlyOnDot();
     void liveCaptureExcludesHoverWindows();
+    void sliderDragKeepsPanelInPlace();
+    void transientHideKeepsPanel();
 
 private:
     static QPixmap pixmap()
@@ -192,6 +196,65 @@ void TestPinHoverIntegration::liveCaptureExcludesHoverWindows()
     QVERIFY(window.m_hoverBar->panelWindow());
     QVERIFY(ids.contains(window.m_hoverBar->barWindow()->winId()));
     QVERIFY(ids.contains(window.m_hoverBar->panelWindow()->winId()));
+}
+
+// PR #241 review: zooming from the slider resizes the pin, which moves the bar.
+// The panel under the pointer stays put during the drag, so the slider keeps
+// its input coordinates; it follows the bar again on release.
+void TestPinHoverIntegration::sliderDragKeepsPanelInPlace()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+    window.m_hoverBarViewModel->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QTRY_VERIFY(window.m_hoverBar->isPanelVisible());
+    auto* panel = qobject_cast<QQuickView*>(window.m_hoverBar->panelWindow());
+    QVERIFY(panel);
+    QVERIFY(QTest::qWaitForWindowExposed(panel));
+    auto* slider = panel->rootObject()->findChild<QQuickItem*>(QStringLiteral("pinValueSlider"));
+    QVERIFY(slider);
+    const QPoint start = slider->mapToScene(QPointF(slider->width() * 0.3, slider->height() / 2)).toPoint();
+    const QPoint before = panel->position();
+
+    QTest::mousePress(panel, Qt::LeftButton, Qt::NoModifier, start);
+    QTest::mouseMove(panel, start + QPoint(10, 0));
+    QTRY_VERIFY(window.zoomLevel() > 1.0);
+    const qreal first = window.zoomLevel();
+    QCOMPARE(panel->position(), before);
+    QTest::mouseMove(panel, start + QPoint(20, 0));
+    QTRY_VERIFY(window.zoomLevel() > first);
+    QCOMPARE(panel->position(), before);
+    QVERIFY(window.m_hoverBar->isPanelVisible());
+
+    QTest::mouseRelease(panel, Qt::LeftButton, Qt::NoModifier, start + QPoint(20, 0));
+    const QRect bar = window.m_hoverBar->barGeometry();
+    QTRY_VERIFY(panel->geometry().bottom() < bar.top() || panel->geometry().top() > bar.bottom());
+    QTRY_COMPARE(qAbs(panel->geometry().bottom() + 1 + PinHoverBar::kPanelGap - bar.top()) <= 1
+                     || qAbs(bar.bottom() + 1 + PinHoverBar::kPanelGap - panel->geometry().top()) <= 1,
+                 true);
+}
+
+// Windows CI (PR #241): a native window recreation hides and re-shows the
+// pin at once, and the pin can sync the bar in between. Only a hide that
+// lasts closes the bar and the panel.
+void TestPinHoverIntegration::transientHideKeepsPanel()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+    window.m_hoverBarViewModel->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QTRY_VERIFY(window.m_hoverBar->isPanelVisible());
+    window.setVisible(false);
+    window.syncHoverBar();
+    window.setVisible(true);
+    window.syncHoverBar();
+    QTest::qWait(50);
+    QVERIFY(window.m_hoverBar->isBarVisible());
+    QVERIFY(window.m_hoverBar->isPanelVisible());
+    // A lasting hide still closes both.
+    window.hide();
+    QTRY_VERIFY(!window.m_hoverBar->isBarVisible());
+    QVERIFY(!window.m_hoverBar->isPanelVisible());
 }
 
 QTEST_MAIN(TestPinHoverIntegration)

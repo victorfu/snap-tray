@@ -9,6 +9,7 @@
 #include <functional>
 
 class PinHoverBarViewModel;
+namespace SnapTray { class ToolbarTooltipController; }
 class QQuickItem;
 class QQuickView;
 
@@ -41,6 +42,10 @@ public:
     // While suppressed the bar and panel are hidden and nothing shows them.
     void setSuppressed(bool suppressed);
     bool isSuppressed() const { return m_suppressed; }
+    // A hidden pin never shows the bar. Unlike suppression this does not hide
+    // it: a native window recreation hides and re-shows the pin at once, and
+    // the pin closes the bar itself when a hide lasts.
+    void setPinVisible(bool visible) { m_pinVisible = visible; }
     void showNow();
     void hideNow();
 
@@ -49,6 +54,8 @@ public:
     QWindow* barWindow() const;
     QWindow* panelWindow() const;
     QRect barGeometry() const;
+    QWindow* tooltipWindow() const;
+    QString tooltipText() const;
     // Creates the bar and panel windows if needed and returns their native
     // ids, so a live capture can exclude them before they are first shown.
     QList<WId> captureExclusionWindowIds();
@@ -62,7 +69,13 @@ signals:
     void barShown();
     void barHidden();
 
+private slots:
+    void onIconHovered(const QString& text, double x, double y, double w, double h);
+    void onIconUnhovered();
+    void onSliderPressedChanged();
+
 private:
+    bool sliderPressed() const;
     bool ensureBar();
     bool ensurePanel();
     bool barFits() const;
@@ -81,6 +94,10 @@ private:
     QQuickView* m_barView = nullptr;
     QQuickItem* m_barRoot = nullptr;
     QQuickView* m_panelView = nullptr;
+    QObject* m_panelSlider = nullptr;
+    SnapTray::ToolbarTooltipController* m_tooltip = nullptr;
+    QString m_tooltipText;
+    bool m_pinVisible = true;
     QQuickItem* m_panelRoot = nullptr;
     QRect m_pin;
     QTimer m_showTimer;

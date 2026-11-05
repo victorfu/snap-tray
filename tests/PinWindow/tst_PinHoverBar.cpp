@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QElapsedTimer>
 #include <QGuiApplication>
+#include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
 #include <QWindow>
@@ -31,6 +32,7 @@ private slots:
     void suppressedHidesImmediately();
     void panelEscClosesIt();
     void destroyWhileOpenIsClean();
+    void iconButtonHoverShowsTooltip();
 
 private:
     QRect pinRect() const;
@@ -237,6 +239,24 @@ void tst_PinHoverBar::otherKeyClosesPanel()
     QTest::keyClick(m_owner.get(), Qt::Key_1);
     QTRY_VERIFY(!m_bar->isPanelVisible());
     QCOMPARE(m_vm->panel(), int(PinHoverBarViewModel::NoPanel));
+}
+
+// PR #241 review: the icon-only buttons show their name and shortcut on hover.
+void tst_PinHoverBar::iconButtonHoverShowsTooltip()
+{
+    m_bar->showNow();
+    QVERIFY(m_bar->isBarVisible());
+    auto* view = qobject_cast<QQuickView*>(m_bar->barWindow());
+    QVERIFY(view);
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    auto* annotate = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("pinHoverAnnotate"));
+    QVERIFY(annotate);
+    const QPoint center = annotate->mapToScene(QPointF(annotate->width() / 2, annotate->height() / 2)).toPoint();
+    QTest::mouseMove(view, center);
+    QTRY_VERIFY(m_bar->tooltipWindow() && m_bar->tooltipWindow()->isVisible());
+    QCOMPARE(m_bar->tooltipText(), QStringLiteral("Annotate (Space)"));
+    m_bar->hideNow();
+    QVERIFY(!m_bar->tooltipWindow()->isVisible());
 }
 
 QTEST_MAIN(tst_PinHoverBar)

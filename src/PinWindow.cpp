@@ -2705,7 +2705,8 @@ void PinWindow::syncHoverBar()
                                    : m_livePaused ? PinHoverBarViewModel::Paused
                                                   : PinHoverBarViewModel::Live);
     m_hoverBar->setPinGeometry(QRect(mapToGlobal(QPoint(0, 0)), size()));
-    m_hoverBar->setSuppressed(hoverBarSuppressed() || !isVisible());
+    m_hoverBar->setPinVisible(isVisible());
+    m_hoverBar->setSuppressed(hoverBarSuppressed());
 }
 
 void PinWindow::mousePressEvent(QMouseEvent* event)
