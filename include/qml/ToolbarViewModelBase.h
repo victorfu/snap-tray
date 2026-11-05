@@ -47,6 +47,12 @@ public:
     int activeTool() const;
     void setActiveTool(int toolId);
 
+    // A tool that must stay out of More besides activeTool, for toolbars whose
+    // highlight can sit on a mode button (canvas whiteboard/blackboard) while
+    // another tool is in use. -1 when unused.
+    int overflowKeepTool() const { return m_overflowKeepTool; }
+    void setOverflowKeepTool(int toolId);
+
     bool canUndo() const;
     void setCanUndo(bool value);
 
@@ -62,6 +68,7 @@ public:
 signals:
     void buttonsChanged();
     void activeToolChanged();
+    void overflowKeepToolChanged();
     void canUndoChanged();
     void canRedoChanged();
     void ocrAvailableChanged();
@@ -82,6 +89,7 @@ protected:
 private:
     QVariantList m_buttons;
     int m_activeTool = -1;
+    int m_overflowKeepTool = -1;
     bool m_canUndo = false;
     bool m_canRedo = false;
     bool m_ocrAvailable = true;

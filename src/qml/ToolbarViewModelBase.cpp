@@ -43,6 +43,14 @@ void ToolbarViewModelBase::setActiveTool(int toolId)
     }
 }
 
+void ToolbarViewModelBase::setOverflowKeepTool(int toolId)
+{
+    if (m_overflowKeepTool != toolId) {
+        m_overflowKeepTool = toolId;
+        emit overflowKeepToolChanged();
+    }
+}
+
 bool ToolbarViewModelBase::canUndo() const
 {
     return m_canUndo;

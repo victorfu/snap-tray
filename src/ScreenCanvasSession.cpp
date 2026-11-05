@@ -2231,6 +2231,9 @@ void ScreenCanvasSession::updateQmlToolbarState()
         }
     }
 
+    // The background mode takes the highlight, but the tool in use must still
+    // stay out of More (#224).
+    const int toolInUseId = activeToolId;
     if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
         activeToolId = static_cast<int>(ToolId::CanvasWhiteboard);
     }
@@ -2238,6 +2241,7 @@ void ScreenCanvasSession::updateQmlToolbarState()
         activeToolId = static_cast<int>(ToolId::CanvasBlackboard);
     }
     if (m_toolbarViewModel) {
+        m_toolbarViewModel->setOverflowKeepTool(toolInUseId);
         m_toolbarViewModel->setActiveTool(activeToolId);
     }
 
@@ -2364,10 +2368,12 @@ void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
             toolbarSize);
         if (!resolution.screenId.isEmpty()) {
             m_qmlToolbar->setPosition(resolution.globalTopLeft);
-            refitToolbarToCurrentScreen();
             m_toolbarPlacementInitialized = true;
         }
     }
+    // Restored placement can land on another screen, and a state change can
+    // widen the collapsed row; either way keep the toolbar on its screen.
+    refitToolbarToCurrentScreen();
 
     refreshFloatingUiParentWidget();
     if (!m_qmlToolbar->isVisible()) {

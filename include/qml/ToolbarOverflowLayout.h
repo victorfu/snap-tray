@@ -73,10 +73,12 @@ inline QVariantList restampGroupStarts(QVariantList list)
 }
 
 // Collapses buttons into More by collapsePriority (lowest first, later in the
-// row first on ties). kNeverCollapse buttons and the active tool stay visible.
+// row first on ties). kNeverCollapse buttons, the active tool and
+// `keepToolId` (the tool in use when the highlight is elsewhere) stay visible.
 inline ToolbarOverflowLayout computeToolbarOverflow(const QVariantList& buttons, int maximumWidth,
                                                      int activeToolId,
-                                                     const ToolbarLayoutMetrics& metrics = {})
+                                                     const ToolbarLayoutMetrics& metrics = {},
+                                                     int keepToolId = -1)
 {
     ToolbarOverflowLayout result;
     result.visibleButtons = buttons;
@@ -87,7 +89,8 @@ inline ToolbarOverflowLayout computeToolbarOverflow(const QVariantList& buttons,
     for (int i = 0; i < buttons.size(); ++i) {
         const QVariantMap b = buttons[i].toMap();
         if (b.value("collapsePriority").toInt() == kNeverCollapse) continue;
-        if (b.value("id").toInt() == activeToolId) continue;
+        const int id = b.value("id").toInt();
+        if (id == activeToolId || (keepToolId >= 0 && id == keepToolId)) continue;
         order.append(i);
     }
     std::stable_sort(order.begin(), order.end(), [&buttons](int a, int b) {

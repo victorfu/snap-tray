@@ -34,6 +34,7 @@ private slots:
     void menuActionsAndLifetime();
     void collapsesByPriority();
     void activeToolStaysVisible();
+    void keepToolStaysVisibleBesideActiveTool();
     void groupGapCountsInWidth();
     void finishGroupIsTinted();
     void captureToolbarOverflows();
@@ -207,6 +208,22 @@ void TestToolbarOverflow::activeToolStaysVisible()
     const auto layout = computeToolbarOverflow(buttons, width, int(ToolId::EmojiSticker));
     QVERIFY(ids(layout.visibleButtons).contains(int(ToolId::EmojiSticker)));
     QVERIFY(!ids(layout.overflowButtons).contains(int(ToolId::EmojiSticker)));
+    QVERIFY(layout.width <= width);
+}
+
+void TestToolbarOverflow::keepToolStaysVisibleBesideActiveTool()
+{
+    // Canvas whiteboard/blackboard holds the highlight (activeTool) while the
+    // drawing tool in use is passed as keepToolId; neither may collapse.
+    const QVariantList buttons = fakeButtons();
+    const int width = toolbarContentWidth(buttons, true, false, {}) - 5 * 30;
+    const auto layout = computeToolbarOverflow(buttons, width, int(ToolId::MultiRegion), {},
+                                               int(ToolId::EmojiSticker));
+    for (int id : {int(ToolId::MultiRegion), int(ToolId::EmojiSticker)}) {
+        QVERIFY(ids(layout.visibleButtons).contains(id));
+        QVERIFY(!ids(layout.overflowButtons).contains(id));
+    }
+    QVERIFY(!layout.overflowButtons.isEmpty());
     QVERIFY(layout.width <= width);
 }
 

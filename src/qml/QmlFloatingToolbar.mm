@@ -468,6 +468,7 @@ void QmlFloatingToolbar::setupConnections()
             if (!m_overflowBounds.isEmpty()) applyOverflowLayout(m_overflowBounds);
         };
         connect(vm, &ToolbarViewModelBase::activeToolChanged, this, relayout);
+        connect(vm, &ToolbarViewModelBase::overflowKeepToolChanged, this, relayout);
         connect(vm, &ToolbarViewModelBase::buttonsChanged, this, relayout);
         connect(vm, &ToolbarViewModelBase::ocrAvailableChanged, this, relayout);
     }
@@ -489,7 +490,8 @@ void QmlFloatingToolbar::applyOverflowLayout(const QRect& usableBoundsGlobal)
         m_rootItem->property("dragHandleWidth").toInt(), m_rootItem->property("contentSpacing").toInt(),
         m_rootItem->property("groupGap").toInt()};
     const auto layout = computeToolbarOverflow(available, usableBoundsGlobal.width(),
-                                               vm->activeTool(), metrics);
+                                               vm->activeTool(), metrics,
+                                               vm->overflowKeepTool());
     if (m_overflow && (boundsChanged
             || m_rootItem->property("overflowButtons").toList() != layout.overflowButtons))
         m_overflow->hide();
