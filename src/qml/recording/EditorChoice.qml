@@ -21,7 +21,8 @@ Item {
     readonly property int controlHeight: 32
     // Inline: a long translated label elides before the control gets too small.
     readonly property int minimumControlWidth: 88
-    readonly property int maximumInlineLabelWidth: 140
+    // Wider where there is room (a long translation then shows in full).
+    property int maximumInlineLabelWidth: 140
     signal activated(int index)
 
     implicitWidth: inlineLabel ? Math.min(labelText.implicitWidth, maximumInlineLabelWidth) + 8 + minimumControlWidth : 240

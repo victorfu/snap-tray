@@ -1060,6 +1060,11 @@ void RecordingPreviewBackend::setSelectedZoom(int index)
     emit selectedZoomChanged();
 }
 
+QString RecordingPreviewBackend::appearanceImageName() const
+{
+    return QFileInfo(m_appearance.imagePath).fileName();
+}
+
 int RecordingPreviewBackend::generateAutoZoom()
 {
     if (isProcessing() || !autoZoomAvailable()) return 0;
@@ -1068,6 +1073,14 @@ int RecordingPreviewBackend::generateAutoZoom()
     options.durationMs = m_duration;
     auto generated = SnapTray::generateAutoZoom(*m_cursorTimeline, options);
     const int count = int(generated.size());
+    // The segments are rebuilt, so an index would point at a different zoom:
+    // drop the selection while they change, then restore it only on the same
+    // (manual) segment.
+    std::optional<SnapTray::ZoomSegment> selected;
+    if (m_selectedZoom >= 0 && m_selectedZoom < int(m_zoom.segments().size())) {
+        selected = m_zoom.segments()[size_t(m_selectedZoom)];
+    }
+    setSelectedZoom(-1);
     editZoom([&generated](SnapTray::ZoomTrack& z) {
         // The user's own segments win; automatic ones that collide with them go.
         std::vector<SnapTray::ZoomSegment> segments;
@@ -1085,6 +1098,12 @@ int RecordingPreviewBackend::generateAutoZoom()
         z.enabled = true;
         z.setSegments(std::move(segments));
     });
+    if (selected && selected->manual) {
+        const auto& segments = m_zoom.segments();
+        for (size_t i = 0; i < segments.size(); ++i) {
+            if (segments[i] == *selected) setSelectedZoom(int(i));
+        }
+    }
     return count;
 }
 
@@ -2619,6 +2638,15 @@ bool RecordingPreviewBackend::setTrimFromInput(qint64 startMs, qint64 endMs)
 void RecordingPreviewBackend::commitTrimEdit()
 {
     recordEdit();
+}
+
+void RecordingPreviewBackend::cancelTrimEdit()
+{
+    const SnapTray::PreviewEditState& recorded = m_editHistory.current();
+    if (m_trimStart == recorded.trimStart && m_trimEnd == recorded.trimEnd) return;
+    m_trimStart = recorded.trimStart;
+    m_trimEnd = recorded.trimEnd;
+    emit trimRangeChanged();
 }
 
 SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const

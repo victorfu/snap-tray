@@ -115,8 +115,9 @@ The remaining product work is tracked by [#221](https://github.com/victorfu/snap
 - The same player survives category changes and opening export. At widths below 980 logical pixels, the inspector is a sheet over the preview only, opened from the top bar and closed with ✕ or a click outside; playback controls and the timeline remain uncovered.
 - The timeline keeps a fixed height (a ruler, the video lane and a fixed number of visible effect lanes); adding effects never resizes the preview, and further lanes scroll. A selected effect is scrolled into view.
 - Two to four alternatives use a full-width segmented selector; longer lists use a drop-down with a single chevron (#230).
-- Effect selection is exclusive. Switching commits valid time input; invalid input keeps its object selected and exposes correction or Escape-to-revert. Escape after text editing clears selection and returns to project settings in a wide window; in a narrow window it also hides the inspector before asking to close the recording.
-- Effects use source milliseconds, not concatenated output time. Clip cuts and speeds retain the existing backend mapping. Drag drafts mutate the backend only on release; Escape drops the draft. Exact range fields remain available for short segments. Clicking or dragging the video track only seeks and preserves the active effect/crop edit; double-clicking explicitly selects a clip. The video track stays fixed while effect rows scroll.
+- Effect selection is exclusive, and the picture, the timeline and the inspector show the same object: clicking a text, image or mask on the picture selects it like its timeline block (#218). Switching commits valid time input; invalid input keeps its object selected and exposes correction or Escape-to-revert. Escape clears the selection or closes the open category and returns to Project settings; in a narrow window it also hides the inspector before asking to close the recording. Rebuilding segments (Auto Zoom) never leaves an index on a different object.
+- A category that the format or the recording cannot use stays listed with its real reason (for example "GIF and WebP have no sound" for Audio). The reason shows only for that cause; a whole editor disabled during an export keeps the summaries.
+- Effects use source milliseconds, not concatenated output time. Clip cuts and speeds retain the existing backend mapping. Drag drafts mutate the backend only on release, as one undo step; Escape drops an effect, split or trim-handle draft, and a lost grab restores the trim. Split markers are keyboard reachable (arrows move, Delete joins). Once the edit trims, cuts or changes speed, the playback bar also shows the exported time and length, or "Not exported" in a cut part; an effect lying only in cut parts is crossed out. Exact range fields remain available for short segments. Clicking or dragging the video track only seeks and preserves the active effect/crop edit; double-clicking explicitly selects a clip. The video track stays fixed while effect rows scroll.
 - Export entry points open the same panel. The final Export action validates pending ranges, custom width, trim, and crop drafts before calling the existing guarded backend. Export cancellation, errors, project retention, and fast-path encoding remain backend responsibilities.
 
 ### Acceptance matrix
@@ -125,11 +126,14 @@ Record actual environment, results, and evidence for each implementation; a blan
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
-| Build and repository tests | See implementation verification record | Pending native/CI run | Pending native/CI run |
-| Wide/narrow, light/dark, selection/export | Local QML screenshot fixtures | Pending | Pending |
-| Pending input, drag/undo, close/cancel | Automated preview suites | Pending | Pending |
-| New recording and reopened project end-to-end | Preview/export fixtures; manual full-session check pending | Pending | Pending |
-| Long translations and multiple DPI scales | Pending dedicated manual pass | Pending | Pending |
+| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | CI build and tests only | CI build and tests only |
+| Wide/narrow, light/dark, selection/export | QML screenshot fixtures (below) | Pending manual pass | Pending manual pass |
+| Pending input, drag/undo, close/cancel | Automated preview suites; operation videos (below) | CI tests only | CI tests only |
+| New recording end-to-end (trim → split/speed → canvas → text/mask/zoom → export) | Scripted real-input session, `editor-220-flow` | Pending manual pass | Pending manual pass |
+| Reopened project (reopen → change → undo/redo → save → reopen) | `tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits`, `tst_RecordingEditor::redoAndReopenKeepSelectionHonest` | CI tests only | CI tests only |
+| Long translations | de, fi, ru, el at 1200 × 800 and 640 × 480 (below) | Pending | Pending |
+| Multiple DPI scales | 2× only (Retina) | Pending (100/150/200 %) | Pending |
+| Screen reader names | Inspector sweep `inspectorControlsAreNamed`; no VoiceOver session yet | Pending (Narrator) | Pending (Orca) |
 | Floating tools at screen edges/multiple displays | Outside this editor change | Pending follow-up | Pending follow-up |
 
 Keep #220 and #221 open until their remaining acceptance and follow-up tracking are complete.
@@ -145,3 +149,42 @@ Captured from the QML integration fixture on macOS 27.0.1 / Qt 6.12.0 at 2× dev
 ![Export panel, dark appearance](/assets/images/developer/editor-export-dark.png)
 
 ![Narrow editor, dark appearance](/assets/images/developer/editor-narrow-dark.png)
+
+### Operation videos
+
+Recorded on macOS 27.0.1 / Qt 6.12.0 from a scripted session that sends real mouse and key events to the editor; the pointer and the caption are drawn into each frame. The solid-colour video is generated test media. MP4 versions sit next to each GIF.
+
+- Selection (#218): timeline, picture and inspector stay on one object; Delete, Undo, typing in a time field, Escape.
+
+  ![Selection](/assets/images/developer/editor/videos/editor-218-selection.gif)
+
+- Timeline (#219): move, resize, one undo step per drag, Escape cancels a drag, exact times, cuts and speed with the exported time.
+
+  ![Timeline](/assets/images/developer/editor/videos/editor-219-timeline.gif)
+
+- New recording end to end (#220): trim, split, 2× speed, canvas, text, mask, zoom, export.
+
+  ![New recording](/assets/images/developer/editor/videos/editor-220-flow.gif)
+
+### Long translations
+
+German, Finnish, Russian and Greek are the longest editor translations. Wide (German) and narrow (all four) windows keep every control reachable; the file name, status chip and an inline label elide by design and keep their full text in the tooltip and accessible name.
+
+![German, wide](/assets/images/developer/editor/13-long-translation-wide-de.png)
+
+![German, Greek, Finnish and Russian, narrow](/assets/images/developer/editor/14-long-translation-narrow.png)
+
+### Regenerating the evidence
+
+All of these come from `tests/Qml/tst_RecordingEditor.cpp` and run only when their variable is set:
+
+```bash
+cd build
+# Screenshots of every editor state (light and dark); add the concept board with SNAPTRAY_EDITOR_CONCEPT=<png>.
+SNAPTRAY_EDITOR_DESIGN_DIR=/tmp/editor ./bin/Qml_RecordingEditor designEvidence designEvidenceError
+# The same in another language.
+SNAPTRAY_EDITOR_DESIGN_DIR=/tmp/editor SNAPTRAY_EDITOR_TRANSLATION=$PWD/snaptray_de.qm ./bin/Qml_RecordingEditor designEvidence
+# Operation video frames, then a video per scenario.
+SNAPTRAY_EDITOR_VIDEO_DIR=/tmp/videos ./bin/Qml_RecordingEditor operationVideo
+ffmpeg -framerate 10 -i /tmp/videos/218-selection/frame-%05d.png -c:v libx264 -pix_fmt yuv420p editor-218-selection.mp4
+```

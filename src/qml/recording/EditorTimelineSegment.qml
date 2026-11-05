@@ -22,6 +22,9 @@ Rectangle {
     property color fillColor: ComponentTokens.editorSurface
     property color edgeColor: ComponentTokens.editorBorder
     property url iconSource: ""
+    // False when the whole segment lies in cut-out time: it stays editable
+    // but is crossed out like a cut clip, since the export never shows it.
+    property bool exported: true
     property var prepareSelection: function() { return true }
     signal activated()
     signal rangeEdited(real start, real end)
@@ -41,6 +44,7 @@ Rectangle {
     Accessible.role: Accessible.Button
     Accessible.name: accessibleName
     Accessible.selected: selected
+    Accessible.description: exported ? "" : qsTr("Not exported: it lies in a cut part")
     Accessible.onPressAction: if (prepareSelection()) activated()
     Keys.onReturnPressed: if (prepareSelection()) activated()
     Keys.onSpacePressed: if (prepareSelection()) activated()
@@ -88,6 +92,21 @@ Rectangle {
             border.width: 1
             border.color: ComponentTokens.editorSurface
         }
+    }
+    Rectangle {
+        anchors.fill: parent
+        radius: parent.radius
+        visible: !root.exported
+        color: ComponentTokens.editorSurface
+        opacity: 0.55
+    }
+    Rectangle {
+        anchors.verticalCenter: parent.verticalCenter
+        x: 2
+        width: parent.width - 4
+        height: 1.5
+        visible: !root.exported
+        color: root.edgeColor
     }
     FocusFrame { anchors.fill: parent; showFocus: root.activeFocus }
     MouseArea {

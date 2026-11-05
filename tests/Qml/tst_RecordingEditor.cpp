@@ -10,11 +10,17 @@
 #include <QQmlComponent>
 #include <QAccessible>
 #include <QPainter>
+#include <QPainterPath>
 #include <QFile>
+#include <QFileInfo>
+#include <QTranslator>
 #include "ToolbarStyle.h"
 #include "ui/DesignSystem.h"
 #include "IVideoEncoder.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "recording/AudioTracks.h"
+#include "recording/PreviewEditHistory.h"
+#include "recording/RecordingProject.h"
 
 class tst_RecordingEditor : public QObject
 {
@@ -42,10 +48,22 @@ private slots:
     void exportSummaryShowsSavedSize();
     void startOnlyEditKeepsOpenEnd();
     void switchKeepsToggleAccessibility();
+    void escapeCancelsTimelineDrags();
+    void escapeLeavesCategory();
+    void categoryFollowsFormat();
+    void timeFieldsKeepTypedKeys();
+    void redoAndReopenKeepSelectionHonest();
+    void inspectorControlsAreNamed();
+    void outputTimeFollowsCutsAndSpeed();
+    void canvasClickSelectsObjects();
+    void backgroundImageShowsThumbnail();
+    void splitMarkerKeepsKeyboard();
     void designEvidence_data();
     void designEvidence();
     void designEvidenceError_data();
     void designEvidenceError();
+    void operationVideo_data();
+    void operationVideo();
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
     static QQuickItem* item(QQuickView* view, const char* name);
@@ -82,6 +100,133 @@ bool writeRecording(const QString& path, int fps = 10)
     if (finishedSpy.isEmpty() && !finishedSpy.wait(10000)) return false;
     return finishedSpy.first().at(0).toBool();
 }
+
+// Frames of a scripted session for the operation videos (#218-#220): real
+// mouse and key events, with the pointer and a caption drawn in (a window
+// grab has neither).
+class FrameRecorder
+{
+public:
+    FrameRecorder(QQuickView* view, const QString& dir) : m_view(view), m_dir(dir) { QDir().mkpath(dir); }
+    void caption(const QString& text) { m_caption = text; }
+    void frame(int hold = 1)
+    {
+        for (int i = 0; i < 2; ++i) {
+            QSignalSpy rendered(m_view, &QQuickWindow::afterAnimating);
+            m_view->requestUpdate();
+            rendered.wait(200);
+        }
+        QImage image = m_view->grabWindow();
+        const qreal dpr = image.devicePixelRatio();
+        image = image.scaledToWidth(qRound(image.width() / dpr), Qt::SmoothTransformation);
+        image.setDevicePixelRatio(1.0);
+        QImage out(image.width(), image.height() + kCaption, QImage::Format_RGB32);
+        out.fill(QColor("#101114"));
+        QPainter painter(&out);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.drawImage(0, 0, image);
+        if (m_cursor.x() >= 0) {
+            QPainterPath arrow;
+            const QPointF p = m_cursor;
+            arrow.moveTo(p);
+            arrow.lineTo(p + QPointF(0, 17));
+            arrow.lineTo(p + QPointF(4.5, 13));
+            arrow.lineTo(p + QPointF(8, 20));
+            arrow.lineTo(p + QPointF(10.5, 19));
+            arrow.lineTo(p + QPointF(7, 12));
+            arrow.lineTo(p + QPointF(12.5, 12));
+            arrow.closeSubpath();
+            if (m_pressed) {
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(QColor(255, 196, 0, 110));
+                painter.drawEllipse(p, 14, 14);
+            }
+            painter.setPen(QPen(Qt::white, 1.5));
+            painter.setBrush(Qt::black);
+            painter.drawPath(arrow);
+        }
+        QFont font = painter.font();
+        font.setPixelSize(18);
+        font.setBold(true);
+        painter.setFont(font);
+        painter.setPen(QColor("#f2f2f2"));
+        painter.drawText(QRect(16, image.height(), image.width() - 32, kCaption), Qt::AlignVCenter, m_caption);
+        painter.end();
+        for (int i = 0; i < hold; ++i) {
+            out.save(QStringLiteral("%1/frame-%2.png").arg(m_dir).arg(m_count++, 5, 10, QLatin1Char('0')));
+        }
+    }
+    void moveTo(const QPoint& to, int steps = 8)
+    {
+        const QPoint from = m_cursor.x() < 0 ? QPoint(m_view->width() / 2, m_view->height() / 2) : m_cursor;
+        for (int i = 1; i <= steps; ++i) {
+            m_cursor = from + (to - from) * i / steps;
+            QTest::mouseMove(m_view, m_cursor);
+            frame();
+        }
+    }
+    void click(const QPoint& at, int hold = 6)
+    {
+        moveTo(at);
+        m_pressed = true;
+        QTest::mousePress(m_view, Qt::LeftButton, Qt::NoModifier, at);
+        frame(2);
+        QTest::mouseRelease(m_view, Qt::LeftButton, Qt::NoModifier, at);
+        m_pressed = false;
+        frame(hold);
+    }
+    void doubleClick(const QPoint& at, int hold = 6)
+    {
+        moveTo(at);
+        m_pressed = true;
+        QTest::mouseDClick(m_view, Qt::LeftButton, Qt::NoModifier, at);
+        frame(2);
+        m_pressed = false;
+        frame(hold);
+    }
+    // A drag; `escape` presses Escape before letting go.
+    void drag(const QPoint& from, const QPoint& to, bool escape = false, int steps = 12)
+    {
+        moveTo(from);
+        m_pressed = true;
+        QTest::mousePress(m_view, Qt::LeftButton, Qt::NoModifier, from);
+        frame(2);
+        for (int i = 1; i <= steps; ++i) {
+            m_cursor = from + (to - from) * i / steps;
+            QTest::mouseMove(m_view, m_cursor);
+            frame();
+        }
+        if (escape) {
+            QTest::keyClick(m_view, Qt::Key_Escape);
+            frame(6);
+        }
+        QTest::mouseRelease(m_view, Qt::LeftButton, Qt::NoModifier, to);
+        m_pressed = false;
+        frame(8);
+    }
+    void key(Qt::Key key, Qt::KeyboardModifiers modifiers = Qt::NoModifier, int hold = 6)
+    {
+        QTest::keyClick(m_view, key, modifiers);
+        frame(hold);
+    }
+    void type(const QString& text)
+    {
+        for (const QChar c : text) {
+            QTest::keyClick(m_view, c.toLatin1());
+            frame(2);
+        }
+    }
+    QPoint centerOf(QQuickItem* item) const { return item->mapToScene(QPointF(item->width() / 2, item->height() / 2)).toPoint(); }
+
+private:
+    static constexpr int kCaption = 44;
+    QQuickView* m_view;
+    QString m_dir;
+    QString m_caption;
+    QPoint m_cursor{-1, -1};
+    bool m_pressed = false;
+    int m_count = 0;
+};
 } // namespace
 
 QQuickView* tst_RecordingEditor::openPreview(RecordingPreviewBackend& backend)
@@ -912,6 +1057,487 @@ void tst_RecordingEditor::switchKeepsToggleAccessibility()
     backend.requestDiscard();
 }
 
+// #219: Escape during a split or trim drag drops the drag: nothing changes,
+// no undo step, and the editor does not ask to close.
+void tst_RecordingEditor::escapeCancelsTimelineDrags()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(backend.splitAt(1000));
+    const QVariantList splits = backend.timelineSplits();
+    QQuickItem* marker = nullptr;
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr);
+    QTRY_VERIFY(marker->isVisible() && marker->height() > 0);
+    const QPoint center = marker->mapToScene(QPointF(marker->width() / 2, marker->height() / 2)).toPoint();
+    QTest::mousePress(view, Qt::LeftButton, Qt::NoModifier, center);
+    QTest::mouseMove(view, center + QPoint(60, 0), 30);
+    QTRY_VERIFY(view->rootObject()->property("timelineDragActive").toBool());
+    QTest::keyClick(view, Qt::Key_Escape);
+    QTest::mouseRelease(view, Qt::LeftButton, Qt::NoModifier, center + QPoint(60, 0));
+    QCOMPARE(backend.timelineSplits(), splits);
+    QVERIFY(!backend.discardConfirmationPending());
+
+    // A trim handle: the live change is undone.
+    backend.setTrimStart(300);
+    backend.commitTrimEdit();
+    QQuickItem* timeline = item(view, "previewTimeline");
+    QQuickItem* scrubber = item(view, "previewScrubber");
+    QVERIFY(timeline && scrubber);
+    QVariant handleX;
+    QVERIFY(QMetaObject::invokeMethod(timeline, "posToX", Q_RETURN_ARG(QVariant, handleX), Q_ARG(QVariant, 300)));
+    const QPoint handle = scrubber->mapToScene(
+        QPointF(handleX.toReal(), scrubber->property("laneCenterY").toReal())).toPoint();
+    QTest::mousePress(view, Qt::LeftButton, Qt::NoModifier, handle);
+    QTest::mouseMove(view, handle + QPoint(80, 0), 30);
+    QTRY_VERIFY(backend.trimStart() > 300);
+    QTest::keyClick(view, Qt::Key_Escape);
+    QCOMPARE(backend.trimStart(), qint64(300));
+    QTest::mouseRelease(view, Qt::LeftButton, Qt::NoModifier, handle + QPoint(80, 0));
+    QCOMPARE(backend.trimStart(), qint64(300));
+    QVERIFY(!backend.discardConfirmationPending());
+    // The drag left no step of its own: one undo goes back past the trim.
+    backend.undo();
+    QCOMPARE(backend.trimStart(), qint64(0));
+    backend.requestDiscard();
+}
+
+// #218: Escape in a whole-recording category returns to Project settings
+// instead of asking to close the editor.
+void tst_RecordingEditor::escapeLeavesCategory()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QObject* root = view->rootObject();
+    QTRY_VERIFY(root->property("wideEditor").toBool());
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "appearance")));
+    QTRY_COMPARE(root->property("inspectorKind").toString(), QStringLiteral("appearance"));
+    QTest::keyClick(view, Qt::Key_Escape);
+    QTRY_COMPARE(root->property("inspectorKind").toString(), QStringLiteral("project"));
+    QVERIFY(!backend.discardConfirmationPending());
+    QVERIFY(view->isVisible());
+    backend.requestDiscard();
+}
+
+// #217: a category the new format cannot use is not left in the title, and
+// the reason names the real cause.
+void tst_RecordingEditor::categoryFollowsFormat()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    for (const auto track : {SnapTray::AudioTracks::Track::Microphone, SnapTray::AudioTracks::Track::SystemAudio}) {
+        SnapTray::AudioTrackWriter writer(SnapTray::AudioTracks::pathFor(video, track));
+        QVERIFY(writer.open());
+    }
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QVERIFY(backend.hasSeparateTracks());
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QObject* root = view->rootObject();
+    QQuickItem* audio = item(view, "previewAudioOptions");
+    QVERIFY(audio);
+    QTRY_VERIFY(audio->isVisible());
+    QVERIFY(!audio->isEnabled());
+    QVERIFY2(audio->property("unavailableReason").toString().contains(QStringLiteral("no sound")),
+             qPrintable(audio->property("unavailableReason").toString()));
+
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "appearance")));
+    QTRY_COMPARE(root->property("inspectorKind").toString(), QStringLiteral("appearance"));
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    const QString expected = backend.appearanceAvailable() ? QStringLiteral("appearance") : QStringLiteral("project");
+    QTRY_COMPARE(root->property("inspectorKind").toString(), expected);
+    QCOMPARE(item(view, "previewAppearancePanel")->isVisible(), backend.appearanceAvailable());
+    if (!backend.audioMixAvailable()) {
+        QVERIFY2(audio->property("unavailableReason").toString().contains(QStringLiteral("MP4")),
+                 qPrintable(audio->property("unavailableReason").toString()));
+    }
+    // A whole editor disabled (as during an export) keeps the summaries: no
+    // category claims a missing capability it has.
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
+    QQuickItem* canvas = item(view, "previewAppearanceOptions");
+    QQuickItem* inspector = item(view, "editorInspector");
+    QTRY_VERIFY(canvas->isEnabled());
+    inspector->setEnabled(false);
+    QVERIFY(!canvas->isEnabled());
+    QVERIFY(canvas->property("available").toBool());
+    QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(canvas);
+    QVERIFY(accessible);
+    QCOMPARE(accessible->text(QAccessible::Description), canvas->property("summary").toString());
+    inspector->setEnabled(true);
+    backend.requestDiscard();
+}
+
+// #218: typing in a time field never plays, splits, cuts or seeks.
+void tst_RecordingEditor::timeFieldsKeepTypedKeys()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(seek(view, 800));
+    const int mask = backend.addMask();
+    QVERIFY(mask >= 0);
+    QVERIFY(backend.setMaskRange(mask, 200, 1500)); // a range shows the time fields
+    backend.setSelectedMask(mask);
+    QQuickItem* field = item(view, "previewMaskStartField");
+    QQuickItem* player = item(view, "previewVideoPlayer");
+    QVERIFY(field && player);
+    QTRY_VERIFY(field->isVisible());
+    field->forceActiveFocus();
+    QTRY_VERIFY(field->hasActiveFocus());
+    QMetaObject::invokeMethod(field, "selectAll");
+    QTest::keyClick(view, Qt::Key_Home);
+    for (const Qt::Key key : {Qt::Key_Space, Qt::Key_S, Qt::Key_Left, Qt::Key_Right, Qt::Key_Delete,
+                              Qt::Key_Backspace, Qt::Key_Period, Qt::Key_M}) {
+        QTest::keyClick(view, key);
+    }
+    QVERIFY(!player->property("playing").toBool());
+    QVERIFY(qAbs(player->property("position").toLongLong() - 800) <= 100);
+    QVERIFY(backend.timelineSplits().isEmpty());
+    QCOMPARE(backend.masks().size(), 1);
+    QCOMPARE(backend.selectedMask(), mask);
+    QVERIFY(!player->property("muted").toBool());
+    QVERIFY(field->hasActiveFocus());
+    backend.requestDiscard();
+}
+
+// #218: undo/redo and reopening a project never leave the inspector on an
+// object that changed under it.
+void tst_RecordingEditor::redoAndReopenKeepSelectionHonest()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    {
+        RecordingPreviewBackend backend(video);
+        backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+        QQuickView* view = openPreview(backend);
+        QVERIFY(view);
+        view->resize(1200, 800);
+        QTRY_VERIFY(backend.duration() > 0);
+        QObject* root = view->rootObject();
+        QVERIFY(backend.addMask() >= 0);
+        QVERIFY(backend.setMaskRange(0, 0, 900));
+        QVERIFY(backend.addMask() >= 0);
+        QVERIFY(backend.setMaskRange(1, 1000, 1800));
+        backend.setSelectedMask(1);
+        QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
+        QTest::keyClick(view, Qt::Key_Delete);
+        QTRY_COMPARE(backend.masks().size(), 1);
+        QCOMPARE(backend.selectedMask(), -1);
+        QVERIFY(QMetaObject::invokeMethod(root, "undoEdit"));
+        QTRY_COMPARE(backend.masks().size(), 2);
+        QCOMPARE(backend.selectedMask(), -1);
+        backend.setSelectedMask(0);
+        QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
+        QVERIFY(QMetaObject::invokeMethod(root, "redoEdit"));
+        QTRY_COMPARE(backend.masks().size(), 1);
+        QCOMPARE(backend.selectedMask(), -1);
+        QTRY_COMPARE(root->property("inspectorKind").toString(), QStringLiteral("project"));
+        backend.requestDiscard();
+    }
+
+    // A reopened project starts on Project settings; its masks select normally.
+    SnapTray::PreviewEditState state;
+    SnapTray::RedactionMask first;
+    first.rect = QRect(10, 10, 40, 30);
+    first.startMs = 0;
+    first.endMs = 900;
+    SnapTray::RedactionMask second = first;
+    second.startMs = 1000;
+    second.endMs = 1800;
+    second.style = SnapTray::RedactionMask::Style::Blur;
+    state.redaction.masks = {first, second};
+    SnapTray::RecordingProject project;
+    project.dir = dir.path();
+    project.videoName = QStringLiteral("recording.mp4");
+    project.recipe = SnapTray::RecordingRecipe::toJson(state, {});
+    RecordingPreviewBackend reopened(project.videoPath(), true);
+    reopened.setSelectedFormat(RecordingPreviewBackend::GIF);
+    reopened.setProject(project);
+    QQuickView* view = openPreview(reopened);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY_WITH_TIMEOUT(!reopened.projectLoading(), 10000);
+    QTRY_COMPARE(reopened.masks().size(), 2);
+    QCOMPARE(reopened.selectedMask(), -1);
+    QObject* root = view->rootObject();
+    QCOMPARE(root->property("inspectorKind").toString(), QStringLiteral("project"));
+    reopened.setSelectedMask(1);
+    QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
+    QTRY_COMPARE(item(view, "previewMaskStartField")->property("text").toString(),
+                 reopened.formatPreciseTime(1000));
+    reopened.requestDiscard();
+}
+
+// #217/#218: every keyboard-reachable control in each inspector has a
+// spoken name.
+void tst_RecordingEditor::inspectorControlsAreNamed()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QObject* root = view->rootObject();
+    QQuickItem* inspector = item(view, "editorInspector");
+    QVERIFY(inspector);
+    QStringList unnamed;
+    const auto sweep = [&](const QString& state) {
+        QTest::qWait(100);
+        std::function<void(QQuickItem*)> walk = [&](QQuickItem* node) {
+            if (!node->isVisible()) return;
+            if (node->activeFocusOnTab() && node->isEnabled()) {
+                QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(node);
+                const QString name = accessible ? accessible->text(QAccessible::Name).trimmed() : QString();
+                if (name.isEmpty()) {
+                    unnamed << QStringLiteral("%1: %2 (%3)").arg(state, node->objectName(),
+                                                                QString::fromLatin1(node->metaObject()->className()));
+                }
+            }
+            for (QQuickItem* child : node->childItems()) walk(child);
+        };
+        walk(inspector);
+    };
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
+    sweep(QStringLiteral("project"));
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "appearance")));
+    QTRY_VERIFY(item(view, "previewAppearancePanel")->isVisible());
+    sweep(QStringLiteral("appearance"));
+    QVERIFY(backend.splitAt(1000));
+    QVERIFY(QMetaObject::invokeMethod(root, "selectPart", Q_ARG(QVariant, 1)));
+    QTRY_VERIFY(item(view, "previewClipPanel")->isVisible());
+    sweep(QStringLiteral("clip"));
+    const int mask = backend.addMask();
+    backend.setSelectedMask(mask);
+    QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
+    sweep(QStringLiteral("mask"));
+    const int overlay = backend.addTextOverlay(0);
+    QVERIFY(overlay >= 0);
+    backend.setSelectedOverlay(overlay);
+    QTRY_VERIFY(item(view, "previewOverlayPanel")->isVisible());
+    sweep(QStringLiteral("text"));
+    if (backend.addZoomAt(1500) >= 0) {
+        backend.setSelectedZoom(0);
+        QTRY_VERIFY(item(view, "previewZoomPanel")->isVisible());
+        sweep(QStringLiteral("zoom"));
+    }
+    QVERIFY2(unnamed.isEmpty(), qPrintable(unnamed.join(QLatin1String("\n"))));
+    backend.requestDiscard();
+}
+
+// #219: after cutting the middle and speeding up the end, the editor shows
+// where the playhead lands in the export, and an effect that lies only in
+// the cut part is marked as not exported.
+void tst_RecordingEditor::outputTimeFollowsCutsAndSpeed()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    const qint64 duration = backend.duration();
+    QQuickItem* output = item(view, "previewOutputTime");
+    QVERIFY(output);
+    QVERIFY(!output->isVisible()); // nothing edited: source and export agree
+    QVERIFY(backend.splitAt(600));
+    QVERIFY(backend.splitAt(1400));
+    backend.setPartDeleted(1, true);
+    backend.setPartSpeed(2, 2.0);
+    QTRY_VERIFY(output->isVisible());
+    const qint64 expectedLength = 600 + (duration - 1400) / 2;
+    QVERIFY(qAbs(backend.outputDuration() - expectedLength) <= 1);
+
+    QVERIFY(seek(view, 1000)); // inside the cut part
+    QTRY_VERIFY2(output->property("text").toString().startsWith(QStringLiteral("Not exported")),
+                 qPrintable(output->property("text").toString()));
+    QVERIFY(seek(view, 1600));
+    const qint64 at = backend.outputTimeAt(1600);
+    QVERIFY(qAbs(at - 700) <= 1); // 600 kept + 200 ms at 2×
+    QTRY_VERIFY2(output->property("text").toString().contains(backend.formatPreciseTime(at)),
+                 qPrintable(output->property("text").toString()));
+
+    const int cutOnly = backend.addMask();
+    QVERIFY(backend.setMaskRange(cutOnly, 700, 1300));
+    const int kept = backend.addMask();
+    QVERIFY(backend.setMaskRange(kept, 100, 500));
+    QQuickItem* hidden = nullptr;
+    QQuickItem* shown = nullptr;
+    QTRY_VERIFY((hidden = delegate(view, QStringLiteral("previewMaskSegment%1").arg(cutOnly))) != nullptr);
+    QTRY_VERIFY((shown = delegate(view, QStringLiteral("previewMaskSegment%1").arg(kept))) != nullptr);
+    QTRY_VERIFY(!hidden->property("exported").toBool());
+    QVERIFY(shown->property("exported").toBool());
+    // Putting the part back brings the effect back.
+    backend.setPartDeleted(1, false);
+    QTRY_VERIFY(hidden->property("exported").toBool());
+    backend.requestDiscard();
+}
+
+// #218: clicking a text or mask on the picture selects it, like its block
+// on the timeline; a click on nothing still plays.
+void tst_RecordingEditor::canvasClickSelectsObjects()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QObject* root = view->rootObject();
+    QQuickItem* area = item(view, "previewVideoClickArea");
+    QQuickItem* player = item(view, "previewVideoPlayer");
+    QVERIFY(area && player);
+    const int overlay = backend.addTextOverlay(0);
+    QVERIFY(overlay >= 0);
+    backend.setOverlayText(overlay, QStringLiteral("Click me"));
+    QVERIFY(backend.setOverlayRange(overlay, 0, 600));
+    const int mask = backend.addMask();
+    QVERIFY(mask >= 0);
+    QVERIFY(backend.setMaskRange(mask, 0, 1800));
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
+    QVERIFY(seek(view, 300));
+    QTRY_VERIFY(player->property("contentRect").toRectF().width() > 0);
+    const auto centerOf = [&](const QRectF& r) { return area->mapToScene(r.center()).toPoint(); };
+
+    QRectF overlayRect;
+    QVERIFY(QMetaObject::invokeMethod(&backend, "overlayRectInView", Q_RETURN_ARG(QRectF, overlayRect),
+                                      Q_ARG(int, overlay), Q_ARG(QRectF, root->property("zoomTarget").toRectF())));
+    QVERIFY(!overlayRect.isEmpty());
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, centerOf(overlayRect));
+    QTRY_COMPARE(backend.selectedOverlay(), overlay);
+    QVERIFY(!player->property("playing").toBool());
+
+    // The text is gone at 1.0 s; the mask under it is what a click picks.
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
+    QVERIFY(seek(view, 1000));
+    const QRectF maskRect = backend.maskRectInView(mask, player->property("contentRect").toRectF());
+    QVERIFY(!maskRect.isEmpty());
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, centerOf(maskRect));
+    QTRY_COMPARE(backend.selectedMask(), mask);
+    QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
+    QVERIFY(!player->property("playing").toBool());
+
+    // Inside a zoom the picture is scaled: the click still finds the mask
+    // where it is drawn.
+    QVERIFY(backend.addZoomAt(1000) >= 0); // GIF draws zooms everywhere
+    {
+        QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
+        QVERIFY(seek(view, 1500));
+        QTRY_VERIFY(root->property("zoomFactor").toReal() > 1.01);
+        const QRectF target = root->property("zoomTarget").toRectF();
+        const QRectF viewport = root->property("zoomView").toRectF();
+        const qreal factor = root->property("zoomFactor").toReal();
+        const QRectF masked = backend.maskRectInView(mask, player->property("contentRect").toRectF());
+        // The visible part of the mask, in zoomed (screen) coordinates.
+        const QRectF shown = QRectF(target.x() + (masked.x() - viewport.x()) * factor,
+                                    target.y() + (masked.y() - viewport.y()) * factor,
+                                    masked.width() * factor, masked.height() * factor).intersected(target);
+        QVERIFY(!shown.isEmpty());
+        QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, centerOf(shown));
+        QTRY_COMPARE(backend.selectedMask(), mask);
+    }
+    backend.requestDiscard();
+}
+
+// #217: a chosen background image is shown as a thumbnail with its name.
+void tst_RecordingEditor::backgroundImageShowsThumbnail()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    // '#' and a space: a hand-built file URL would cut the name at the '#'.
+    const QString picture = dir.filePath("beach #1 background.png");
+    QImage image(QSize(64, 40), QImage::Format_ARGB32);
+    image.fill(QColor("#2a9d8f"));
+    QVERIFY(image.save(picture));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openSection", Q_ARG(QVariant, "appearance")));
+    QQuickItem* chosen = item(view, "previewAppearanceImageChosen");
+    QVERIFY(chosen);
+    QTRY_VERIFY(item(view, "previewAppearancePanel")->isVisible());
+    QVERIFY(!chosen->isVisible());
+    QVERIFY(backend.setAppearanceImage(QUrl::fromLocalFile(picture)));
+    QTRY_VERIFY(chosen->isVisible());
+    QQuickItem* thumbnail = item(view, "previewAppearanceImageThumbnail");
+    QVERIFY(thumbnail);
+    QTRY_COMPARE(thumbnail->property("status").toInt(), 1); // Image.Ready
+    QCOMPARE(backend.appearanceImageName(), QStringLiteral("beach #1 background.png"));
+    backend.requestDiscard();
+}
+
+// #219: a split moved or joined from the keyboard leaves the keyboard on
+// the timeline or the editor, so its shortcuts keep working.
+void tst_RecordingEditor::splitMarkerKeepsKeyboard()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(backend.splitAt(1000));
+    QQuickItem* marker = nullptr;
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr);
+    marker->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(marker->hasActiveFocus());
+    QTest::keyClick(view, Qt::Key_Right);
+    QTRY_COMPARE(backend.timelineSplits().value(0).toLongLong(), qint64(1100));
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
+    backend.undo();
+    QCOMPARE(backend.timelineSplits().value(0).toLongLong(), qint64(1000)); // one step per press
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
+    QTest::keyClick(view, Qt::Key_Delete);
+    QTRY_VERIFY(backend.timelineSplits().isEmpty());
+    QTRY_VERIFY(view->rootObject()->hasActiveFocus());
+    // The editor's shortcuts work again: S splits at the playhead.
+    QVERIFY(seek(view, 800));
+    QTest::keyClick(view, Qt::Key_S);
+    QTRY_COMPARE(backend.timelineSplits().size(), 1);
+    backend.requestDiscard();
+}
+
 // Screenshots of every editor state for review (#230). Runs only when
 // SNAPTRAY_EDITOR_DESIGN_DIR is set; SNAPTRAY_EDITOR_CONCEPT optionally names
 // the concept image to place next to the selected-effect screenshot.
@@ -927,7 +1553,17 @@ void tst_RecordingEditor::designEvidence()
     const QString out = qEnvironmentVariable("SNAPTRAY_EDITOR_DESIGN_DIR");
     if (out.isEmpty()) QSKIP("Set SNAPTRAY_EDITOR_DESIGN_DIR to capture design screenshots");
     QFETCH(bool, dark);
-    const QString theme = dark ? QStringLiteral("dark") : QStringLiteral("light");
+    QString theme = dark ? QStringLiteral("dark") : QStringLiteral("light");
+    // SNAPTRAY_EDITOR_TRANSLATION names a .qm (e.g. build/snaptray_de.qm) to
+    // check long translations; its language is added to the file names.
+    QTranslator translator;
+    const QString qm = qEnvironmentVariable("SNAPTRAY_EDITOR_TRANSLATION");
+    if (!qm.isEmpty()) {
+        QVERIFY2(translator.load(qm), qPrintable(qm));
+        QCoreApplication::installTranslator(&translator);
+        theme += QLatin1Char('-') + QFileInfo(qm).completeBaseName().section(QLatin1Char('_'), 1);
+    }
+    auto removeTranslator = qScopeGuard([&translator] { QCoreApplication::removeTranslator(&translator); });
     const auto originalStyle = ToolbarStyleConfig::loadStyle();
     auto restoreTheme = qScopeGuard([originalStyle] {
         ToolbarStyleConfig::saveStyle(originalStyle);
@@ -1113,6 +1749,234 @@ void tst_RecordingEditor::designEvidenceError()
     QTest::qWait(150);
     QVERIFY(errorView->grabWindow().save(out + "/12-export-error-" + theme + ".png"));
     failing.requestDiscard();
+}
+
+
+void tst_RecordingEditor::operationVideo_data()
+{
+    QTest::addColumn<QString>("scenario");
+    QTest::newRow("218-selection") << QStringLiteral("selection");
+    QTest::newRow("219-timeline") << QStringLiteral("timeline");
+    QTest::newRow("220-flow") << QStringLiteral("flow");
+}
+
+// Frames for the operation videos attached to #218, #219 and #220. Runs only
+// when SNAPTRAY_EDITOR_VIDEO_DIR is set; each row writes <dir>/<row>/frame-*.png
+// (turned into a video with ffmpeg, see docs/developer/ui-design-guidelines.md).
+void tst_RecordingEditor::operationVideo()
+{
+    const QString out = qEnvironmentVariable("SNAPTRAY_EDITOR_VIDEO_DIR");
+    if (out.isEmpty()) QSKIP("Set SNAPTRAY_EDITOR_VIDEO_DIR to record the operation videos");
+    QFETCH(QString, scenario);
+    const auto originalStyle = ToolbarStyleConfig::loadStyle();
+    auto restoreTheme = qScopeGuard([originalStyle] {
+        ToolbarStyleConfig::saveStyle(originalStyle);
+        DesignSystem::instance().refreshTheme();
+    });
+    ToolbarStyleConfig::saveStyle(ToolbarStyleType::Dark);
+    DesignSystem::instance().refreshTheme();
+    QTemporaryDir dir;
+    const QString video = dir.filePath("demo-recording.mp4");
+    QVERIFY(writeRecording(video, 5)); // 4 s
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QObject* root = view->rootObject();
+    QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
+    FrameRecorder rec(view, out + "/" + QString::fromLatin1(QTest::currentDataTag()));
+    const auto find = [&](const QString& name) -> QQuickItem* {
+        QQuickItem* found = nullptr;
+        if (!QTest::qWaitFor([&] { return (found = delegate(view, name)) != nullptr && found->isVisible(); }, 3000))
+            return nullptr;
+        return found;
+    };
+    const auto at = [&](QQuickItem* target, qreal fx, qreal fy) {
+        return target->mapToScene(QPointF(target->width() * fx, target->height() * fy)).toPoint();
+    };
+    QQuickItem* timeline = item(view, "previewTimeline");
+    QQuickItem* scrubber = item(view, "previewScrubber");
+    const auto timelinePoint = [&](qint64 ms) {
+        QVariant x;
+        QMetaObject::invokeMethod(timeline, "posToX", Q_RETURN_ARG(QVariant, x), Q_ARG(QVariant, ms));
+        return scrubber->mapToScene(QPointF(x.toReal(), scrubber->property("laneCenterY").toReal())).toPoint();
+    };
+    QVERIFY(timeline && scrubber);
+
+    if (scenario == QLatin1String("selection")) {
+        QVERIFY(backend.splitAt(2000));
+        const int mask = backend.addMask();
+        QVERIFY(backend.setMaskRange(mask, 300, 1800));
+        const int text = backend.addTextOverlay(0);
+        backend.setOverlayText(text, QStringLiteral("Release notes"));
+        QVERIFY(backend.setOverlayRange(text, 1000, 3200));
+        backend.addZoomAt(2600);
+        QVERIFY(seek(view, 1300));
+        rec.caption(QStringLiteral("#218 · One selection drives the picture, the timeline and the inspector"));
+        rec.frame(12);
+        rec.caption(QStringLiteral("Click a mask on the timeline: the inspector shows that mask"));
+        QQuickItem* maskBlock = find(QStringLiteral("previewMaskSegment%1").arg(mask));
+        QVERIFY(maskBlock);
+        rec.click(rec.centerOf(maskBlock), 14);
+        QCOMPARE(backend.selectedMask(), mask);
+        QVERIFY(seek(view, 1300)); // selecting moved the playhead to the mask's start
+        rec.caption(QStringLiteral("Click the text on the picture: the same text is selected"));
+        QRectF textRect;
+        QVERIFY(QMetaObject::invokeMethod(&backend, "overlayRectInView", Q_RETURN_ARG(QRectF, textRect),
+                                          Q_ARG(int, text), Q_ARG(QRectF, root->property("zoomTarget").toRectF())));
+        rec.click(item(view, "previewVideoClickArea")->mapToScene(textRect.center()).toPoint(), 14);
+        QCOMPARE(backend.selectedOverlay(), text);
+        if (!backend.zoomSegments().isEmpty()) {
+            rec.caption(QStringLiteral("Click a zoom block"));
+            QQuickItem* zoomBlock = find(QStringLiteral("previewZoomSegment0"));
+            QVERIFY(zoomBlock);
+            rec.click(rec.centerOf(zoomBlock), 12);
+        }
+        rec.caption(QStringLiteral("Double-click a clip on the video lane"));
+        rec.doubleClick(timelinePoint(2900), 12);
+        QTRY_VERIFY(item(view, "previewClipPanel")->isVisible());
+        rec.caption(QStringLiteral("Delete leaves the selected clip out of the export"));
+        rec.key(Qt::Key_Delete, Qt::NoModifier, 14);
+        rec.caption(QStringLiteral("Undo puts it back; the selection never points at another object"));
+        rec.click(rec.centerOf(item(view, "previewUndoButton")), 14);
+        rec.caption(QStringLiteral("Typing a time: Space and S are text, not play or split"));
+        rec.click(rec.centerOf(find(QStringLiteral("previewMaskSegment%1").arg(mask))), 6);
+        QQuickItem* startField = item(view, "previewMaskStartField");
+        QTRY_VERIFY(startField->isVisible());
+        rec.click(rec.centerOf(startField), 4);
+        QMetaObject::invokeMethod(startField, "selectAll");
+        rec.type(QStringLiteral("0.5 s"));
+        rec.frame(8);
+        rec.key(Qt::Key_Return, Qt::NoModifier, 10);
+        rec.caption(QStringLiteral("Escape returns to Project settings"));
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 6);
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 16);
+        QTRY_COMPARE(root->property("inspectorKind").toString(), QStringLiteral("project"));
+    } else if (scenario == QLatin1String("timeline")) {
+        const int mask = backend.addMask();
+        QVERIFY(backend.setMaskRange(mask, 500, 1500));
+        const int text = backend.addTextOverlay(0);
+        backend.setOverlayText(text, QStringLiteral("Title"));
+        QVERIFY(backend.setOverlayRange(text, 1800, 3000));
+        QVERIFY(seek(view, 900));
+        rec.caption(QStringLiteral("#219 · Effects sit on their own lanes and are edited in place"));
+        rec.frame(12);
+        QQuickItem* maskBlock = find(QStringLiteral("previewMaskSegment%1").arg(mask));
+        QVERIFY(maskBlock);
+        rec.caption(QStringLiteral("Drag a block to move it"));
+        rec.click(rec.centerOf(maskBlock), 4);
+        rec.drag(rec.centerOf(maskBlock), rec.centerOf(maskBlock) + QPoint(90, 0));
+        maskBlock = find(QStringLiteral("previewMaskSegment%1").arg(mask));
+        rec.caption(QStringLiteral("Drag an edge to change its length"));
+        rec.drag(at(maskBlock, 1.0, 0.5) - QPoint(2, 0), at(maskBlock, 1.0, 0.5) + QPoint(70, 0));
+        rec.caption(QStringLiteral("Each drag is one undo step"));
+        rec.click(rec.centerOf(item(view, "previewUndoButton")), 14);
+        QQuickItem* textBlock = find(QStringLiteral("previewOverlaySegment%1").arg(text));
+        QVERIFY(textBlock);
+        rec.caption(QStringLiteral("Escape during a drag cancels it: nothing changes"));
+        rec.click(rec.centerOf(textBlock), 4);
+        rec.drag(rec.centerOf(textBlock), rec.centerOf(textBlock) - QPoint(120, 0), true);
+        QCOMPARE(backend.overlays().at(text).toMap().value("start").toLongLong(), qint64(1800));
+        rec.caption(QStringLiteral("Exact times in the inspector, for short or overlapping blocks"));
+        rec.click(rec.centerOf(find(QStringLiteral("previewMaskSegment%1").arg(mask))), 6);
+        QQuickItem* startField = item(view, "previewMaskStartField");
+        QTRY_VERIFY(startField->isVisible());
+        rec.click(rec.centerOf(startField), 4);
+        QMetaObject::invokeMethod(startField, "selectAll");
+        rec.type(QStringLiteral("0.25"));
+        rec.key(Qt::Key_Return, Qt::NoModifier, 12);
+        rec.caption(QStringLiteral("Split twice and cut the middle clip"));
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
+        QVERIFY(seek(view, 1200));
+        rec.click(rec.centerOf(item(view, "previewSplit")), 6);
+        QVERIFY(seek(view, 2400));
+        rec.click(rec.centerOf(item(view, "previewSplit")), 6);
+        rec.doubleClick(timelinePoint(1800), 6);
+        rec.click(rec.centerOf(item(view, "previewPartCut")), 14);
+        rec.caption(QStringLiteral("The export time follows cuts: the playhead in a cut part is not exported"));
+        rec.click(timelinePoint(1700), 14);
+        rec.click(timelinePoint(3000), 14);
+        rec.caption(QStringLiteral("2× on the last clip: the export gets shorter"));
+        rec.doubleClick(timelinePoint(3200), 6);
+        QQuickItem* speed = item(view, "previewPartSpeed");
+        QTRY_VERIFY(speed->isVisible());
+        QQuickItem* speedControl = speed->findChild<QQuickItem*>("editorChoiceControl");
+        rec.click(rec.centerOf(speedControl), 6);
+        rec.key(Qt::Key_Down, Qt::NoModifier, 3);
+        rec.key(Qt::Key_Down, Qt::NoModifier, 3);
+        rec.key(Qt::Key_Return, Qt::NoModifier, 16);
+    } else {
+        QVERIFY(seek(view, 0)); // the first frame is on screen
+        rec.caption(QStringLiteral("#220 · A new recording, from trim to export"));
+        rec.frame(12);
+        rec.caption(QStringLiteral("Trim: turn on the handles, then drag the start"));
+        rec.click(rec.centerOf(item(view, "previewTrimButton")), 8);
+        rec.drag(timelinePoint(backend.trimStart()), timelinePoint(backend.trimStart() + 300));
+        rec.caption(QStringLiteral("Split at the playhead, then play the second clip at 2×"));
+        QVERIFY(seek(view, 2000));
+        rec.click(rec.centerOf(item(view, "previewSplit")), 8);
+        rec.doubleClick(timelinePoint(2800), 6);
+        QQuickItem* speed = item(view, "previewPartSpeed");
+        QTRY_VERIFY(speed->isVisible());
+        rec.click(rec.centerOf(speed->findChild<QQuickItem*>("editorChoiceControl")), 6);
+        rec.key(Qt::Key_Down, Qt::NoModifier, 3);
+        rec.key(Qt::Key_Down, Qt::NoModifier, 3);
+        rec.key(Qt::Key_Return, Qt::NoModifier, 10);
+        rec.caption(QStringLiteral("Canvas: a frame and a background for the whole recording"));
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
+        rec.click(rec.centerOf(item(view, "previewAppearanceOptions")), 8);
+        QQuickItem* toggle = item(view, "previewAppearanceToggle");
+        QTRY_VERIFY(toggle->isVisible());
+        if (!backend.appearanceEnabled()) rec.click(rec.centerOf(toggle), 8);
+        if (QQuickItem* swatch = find(QStringLiteral("previewAppearanceGradient2"))) rec.click(rec.centerOf(swatch), 12);
+        QVERIFY(seek(view, 1000));
+        rec.caption(QStringLiteral("Add effect: text at the playhead"));
+        rec.click(rec.centerOf(item(view, "previewAddEffect")), 6);
+        QQuickItem* addText = item(view, "previewAddText");
+        QTRY_VERIFY(addText->isVisible());
+        rec.click(rec.centerOf(addText), 6);
+        QQuickItem* textField = item(view, "previewOverlayText");
+        QTRY_VERIFY(textField->isVisible());
+        rec.click(rec.centerOf(textField), 4);
+        QMetaObject::invokeMethod(textField, "selectAll");
+        rec.type(QStringLiteral("New in 2.0"));
+        rec.frame(8);
+        rec.caption(QStringLiteral("Add effect: a mask, then a zoom"));
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
+        QVERIFY(seek(view, 1500));
+        rec.click(rec.centerOf(item(view, "previewAddEffect")), 6);
+        QQuickItem* addMask = item(view, "previewAddMask");
+        QTRY_VERIFY(addMask->isVisible());
+        rec.click(rec.centerOf(addMask), 10);
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
+        QVERIFY(seek(view, 3000));
+        rec.click(rec.centerOf(item(view, "previewAddEffect")), 6);
+        QQuickItem* addZoom = item(view, "previewAddZoom");
+        QTRY_VERIFY(addZoom->isVisible());
+        rec.click(rec.centerOf(addZoom), 12);
+        rec.caption(QStringLiteral("Export: choose GIF, then Export"));
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
+        rec.click(rec.centerOf(item(view, "previewExportOptions")), 10);
+        QObject* panel = root->findChild<QObject*>("previewExportPanel");
+        QTRY_VERIFY(panel->property("opened").toBool());
+        rec.frame(10);
+        QSignalSpy saveRequested(&backend, &RecordingPreviewBackend::saveRequested);
+        QQuickItem* saveButton = delegate(view, QStringLiteral("previewSaveButton"));
+        QVERIFY(saveButton);
+        rec.click(rec.centerOf(saveButton), 2);
+        rec.caption(QStringLiteral("Exporting… the edits stay in the recording"));
+        for (int i = 0; i < 300 && saveRequested.isEmpty(); ++i) {
+            rec.frame();
+            QTest::qWait(50);
+        }
+        QVERIFY(!saveRequested.isEmpty());
+        rec.caption(QStringLiteral("Exported: next, SnapTray asks where to save the GIF"));
+        rec.frame(16);
+        QFile::remove(saveRequested.first().at(0).toString());
+    }
+    backend.discard();
 }
 
 void tst_RecordingEditor::dialogButtonPreservesMouseFocus()
