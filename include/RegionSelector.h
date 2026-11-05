@@ -43,6 +43,7 @@
 class QScreen;
 class RegionToolbarViewModel;
 class PinToolOptionsViewModel;
+class AnnotationStyleEditor;
 namespace SnapTray {
 class QmlFloatingToolbar;
 class QmlFloatingSubToolbar;
@@ -360,6 +361,7 @@ private:
     // QML toolbar (floating QQuickView windows)
     RegionToolbarViewModel* m_toolbarViewModel = nullptr;
     PinToolOptionsViewModel* m_toolOptionsViewModel = nullptr;
+    AnnotationStyleEditor* m_styleEditor = nullptr;   // Qt parent owns lifetime
     std::unique_ptr<SnapTray::QmlFloatingToolbar> m_qmlToolbar;
     std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_qmlSubToolbar;
     bool m_toolbarUserDragged = false;
