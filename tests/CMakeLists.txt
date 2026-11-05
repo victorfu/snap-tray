@@ -140,6 +140,11 @@ add_dependencies(Qml_PinToolbarViewModel SnapTray_lrelease)
 add_test(NAME Qml_PinToolbarViewModel COMMAND Qml_PinToolbarViewModel)
 set_tests_properties(Qml_PinToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_PinHoverBarViewModel Qml/tst_PinHoverBarViewModel.cpp)
+target_link_libraries(Qml_PinHoverBarViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_PinHoverBarViewModel COMMAND Qml_PinHoverBarViewModel)
+set_tests_properties(Qml_PinHoverBarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_RegionToolbarViewModel Qml/tst_RegionToolbarViewModel.cpp)
 target_link_libraries(Qml_RegionToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_RegionToolbarViewModel COMMAND Qml_RegionToolbarViewModel)

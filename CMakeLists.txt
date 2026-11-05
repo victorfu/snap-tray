@@ -1283,6 +1283,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/ToolbarViewModelBase.h
         src/qml/PinToolbarViewModel.cpp
         include/qml/PinToolbarViewModel.h
+        src/qml/PinHoverBarViewModel.cpp
+        include/qml/PinHoverBarViewModel.h
         include/qml/QmlWindowedToolbar.h
         include/qml/ToolbarOverflowPopup.h
         src/qml/PinToolOptionsViewModel.cpp
