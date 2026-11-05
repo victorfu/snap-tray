@@ -1136,6 +1136,11 @@ void tst_RecordingEditor::escapeCancelsTimelineDrags()
     // While a crop is edited, Escape cancels the drag and keeps the draft.
     view->rootObject()->forceActiveFocus();
     QTRY_VERIFY(view->rootObject()->hasActiveFocus());
+    // Cropping needs a frame on screen.
+    QVERIFY(seek(view, 500));
+    QQuickItem* player = item(view, "previewVideoPlayer");
+    QVERIFY(player);
+    QTRY_VERIFY(player->property("contentRect").toRectF().width() > 0);
     QTRY_VERIFY(item(view, "previewCropButton")->isEnabled());
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewCropButton"), "clicked"));
     QQuickItem* crop = item(view, "previewCropOverlay");
