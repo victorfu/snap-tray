@@ -697,7 +697,7 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <location filename="../src/qml/panels/HistoryWindow.qml" line="52" />
         <location filename="../src/qml/panels/HistoryWindow.qml" line="96" />
         <source>All Captures</source>
-        <translation>Visi įrašai</translation>
+        <translation>Visi elementai</translation>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="53" />

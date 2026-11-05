@@ -697,7 +697,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="52" />
         <location filename="../src/qml/panels/HistoryWindow.qml" line="96" />
         <source>All Captures</source>
-        <translation>Все снимки</translation>
+        <translation>Все материалы</translation>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="53" />

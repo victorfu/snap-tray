@@ -697,7 +697,7 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <location filename="../src/qml/panels/HistoryWindow.qml" line="52" />
         <location filename="../src/qml/panels/HistoryWindow.qml" line="96" />
         <source>All Captures</source>
-        <translation>Alle Aufnahmen</translation>
+        <translation>Alle Inhalte</translation>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="53" />

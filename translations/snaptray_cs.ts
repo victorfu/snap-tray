@@ -697,7 +697,7 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="52" />
         <location filename="../src/qml/panels/HistoryWindow.qml" line="96" />
         <source>All Captures</source>
-        <translation>Všechny záznamy</translation>
+        <translation>Všechny položky</translation>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="53" />

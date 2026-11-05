@@ -1215,26 +1215,13 @@ Item {
                             }
                         }
 
-                        Text {
-                            id: selectionLabel
-                            objectName: "librarySelectionLabel"
-                            height: 34
-                            verticalAlignment: Text.AlignVCenter
-                            leftPadding: 6
-                            text: root.selectedKind === root.kindRecording ? qsTr("Editable project selected")
-                                : root.selectedKind === root.kindScreenshot ? qsTr("Screenshot selected")
-                                : qsTr("Nothing selected")
-                            color: SemanticTokens.textTertiary
-                            font.pixelSize: SemanticTokens.fontSizeCaption
-                            font.family: SemanticTokens.fontFamily
-                        }
                     }
                 }
 
                 Item {
                     id: headerRow
                     width: parent.width
-                    readonly property bool compactLayout: width < 620
+                    readonly property bool compactLayout: width < 720
                     height: compactLayout ? 96 : 52
 
                     Column {
@@ -1244,13 +1231,29 @@ Item {
                         y: headerRow.compactLayout ? 0 : Math.max(0, (headerRow.height - height) / 2)
                         spacing: 4
 
-                        Text {
-                            text: qsTr("Library")
-                            color: SemanticTokens.textTertiary
-                            font.pixelSize: SemanticTokens.fontSizeCaption
-                            font.family: SemanticTokens.fontFamily
-                            font.weight: SemanticTokens.fontWeightSemiBold
-                            font.letterSpacing: SemanticTokens.letterSpacingWide
+                        Row {
+                            spacing: 8
+
+                            Text {
+                                text: qsTr("Library")
+                                color: SemanticTokens.textTertiary
+                                font.pixelSize: SemanticTokens.fontSizeCaption
+                                font.family: SemanticTokens.fontFamily
+                                font.weight: SemanticTokens.fontWeightSemiBold
+                                font.letterSpacing: SemanticTokens.letterSpacingWide
+                            }
+
+                            // What the command bar acts on.
+                            Text {
+                                id: selectionLabel
+                                objectName: "librarySelectionLabel"
+                                text: root.selectedKind === root.kindRecording ? qsTr("Editable project selected")
+                                    : root.selectedKind === root.kindScreenshot ? qsTr("Screenshot selected")
+                                    : qsTr("Nothing selected")
+                                color: SemanticTokens.textTertiary
+                                font.pixelSize: SemanticTokens.fontSizeCaption
+                                font.family: SemanticTokens.fontFamily
+                            }
                         }
 
                         Text {

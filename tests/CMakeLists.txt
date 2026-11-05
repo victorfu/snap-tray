@@ -728,6 +728,12 @@ target_sources(Qml_LibraryWindow PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources
 add_test(NAME Qml_LibraryWindow COMMAND Qml_LibraryWindow)
 set_tests_properties(Qml_LibraryWindow PROPERTIES TIMEOUT 120 LABELS "unit;integration")
 
+add_executable(Qml_LibraryEvidence Qml/tst_LibraryEvidence.cpp)
+target_link_libraries(Qml_LibraryEvidence PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_LibraryEvidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_LibraryEvidence COMMAND Qml_LibraryEvidence)
+set_tests_properties(Qml_LibraryEvidence PROPERTIES TIMEOUT 120 LABELS "unit")
+
 add_executable(PinWindow_HistoryRecorder PinWindow/tst_HistoryRecorder.cpp)
 target_link_libraries(PinWindow_HistoryRecorder PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_HistoryRecorder COMMAND PinWindow_HistoryRecorder)

@@ -697,7 +697,7 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <location filename="../src/qml/panels/HistoryWindow.qml" line="52" />
         <location filename="../src/qml/panels/HistoryWindow.qml" line="96" />
         <source>All Captures</source>
-        <translation>Tất cả ảnh chụp</translation>
+        <translation>Tất cả nội dung</translation>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="53" />

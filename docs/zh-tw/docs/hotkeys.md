@@ -25,7 +25,7 @@ doc_order: 3
 - Full Screen Capture
 - Delayed Capture
 - Pin from Image
-- Pin History
+- 素材庫（Library）
 - Toggle Hide/Show All Pins
 - Record Screen（僅 macOS/Windows）
 

@@ -25,7 +25,7 @@ doc_order: 3
 - Full Screen Capture
 - Delayed Capture
 - Pin from Image
-- Pin History
+- Library
 - Toggle Hide/Show All Pins
 - Record Screen: starts a recording; pressing it again stops (or cancels while preparing)
 - Pause/Resume Recording
