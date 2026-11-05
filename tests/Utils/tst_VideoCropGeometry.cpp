@@ -244,6 +244,28 @@ void tst_VideoCropGeometry::editHistoryUndoRedo()
     QVERIFY(!history.canRedo());
     QCOMPARE(history.undo(), crop);
 
+    // A continued gesture (a held key) folds into the step it recorded first.
+    SnapTray::PreviewEditHistory held;
+    SnapTray::PreviewEditState first, second, third;
+    first.trimStart = 100;
+    second.trimStart = 200;
+    third.trimStart = 300;
+    QVERIFY(held.amend(first));          // nothing to fold into: its own step
+    QVERIFY(held.record(second));
+    QVERIFY(held.amend(third));
+    QVERIFY(!held.amend(third));         // unchanged
+    QCOMPARE(held.current(), third);
+    QCOMPARE(held.undo(), first);        // one step for the whole gesture
+    QVERIFY(held.canRedo());
+    QVERIFY(held.amend(second));         // after an undo: a new step
+    QVERIFY(!held.canRedo());
+    QCOMPARE(held.undo(), first);
+    QCOMPARE(held.redo(), second);
+    QVERIFY(held.amend(first));          // back where it started: no step left
+    QCOMPARE(held.current(), first);
+    QVERIFY(!held.canRedo());
+    QCOMPARE(held.undo(), SnapTray::PreviewEditState{});
+
     // Bounded.
     SnapTray::PreviewEditHistory bounded;
     for (int i = 1; i <= SnapTray::PreviewEditHistory::kMaxSteps + 20; ++i) {

@@ -1105,6 +1105,33 @@ void tst_RecordingEditor::escapeCancelsTimelineDrags()
     // The drag left no step of its own: one undo goes back past the trim.
     backend.undo();
     QCOMPARE(backend.trimStart(), qint64(0));
+
+    // A focused time field takes Escape for itself, but not from a drag.
+    backend.setTrimStart(300);
+    backend.commitTrimEdit();
+    QQuickItem* field = item(view, "previewTrimStartField");
+    QVERIFY(field);
+    QTRY_VERIFY(field->isVisible());
+    field->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(field->hasActiveFocus());
+    QTest::mousePress(view, Qt::LeftButton, Qt::NoModifier, handle);
+    QTest::mouseMove(view, handle + QPoint(80, 0), 30);
+    QTRY_VERIFY(backend.trimStart() > 300);
+    QTest::keyClick(view, Qt::Key_Escape);
+    QCOMPARE(backend.trimStart(), qint64(300));
+    QTest::mouseRelease(view, Qt::LeftButton, Qt::NoModifier, handle + QPoint(80, 0));
+    QCOMPARE(backend.trimStart(), qint64(300));
+    // A split drag too.
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr);
+    QVERIFY(field->hasActiveFocus());
+    const QPoint split = marker->mapToScene(QPointF(marker->width() / 2, marker->height() / 2)).toPoint();
+    QTest::mousePress(view, Qt::LeftButton, Qt::NoModifier, split);
+    QTest::mouseMove(view, split + QPoint(60, 0), 30);
+    QTRY_VERIFY(view->rootObject()->property("timelineDragActive").toBool());
+    QTest::keyClick(view, Qt::Key_Escape);
+    QTest::mouseRelease(view, Qt::LeftButton, Qt::NoModifier, split + QPoint(60, 0));
+    QCOMPARE(backend.timelineSplits(), splits);
+    QVERIFY(!backend.discardConfirmationPending());
     backend.requestDiscard();
 }
 
@@ -1429,10 +1456,23 @@ void tst_RecordingEditor::canvasClickSelectsObjects()
     QVERIFY(mask >= 0);
     QVERIFY(backend.setMaskRange(mask, 0, 1800));
     QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
-    QVERIFY(seek(view, 300));
+    // Hit-testing follows the shown frame, as the objects are drawn.
+    const auto showFrame = [&](qint64 ms) {
+        return seek(view, ms) && QTest::qWaitFor([player, ms] {
+            return qAbs(player->property("framePosition").toLongLong() - ms) <= 100;
+        }, 5000);
+    };
+    QVERIFY(showFrame(300));
     QTRY_VERIFY(player->property("contentRect").toRectF().width() > 0);
     const auto centerOf = [&](const QRectF& r) { return area->mapToScene(r.center()).toPoint(); };
 
+    // A split marker has the keyboard; the selection takes it, so Delete
+    // would act on the object and not join the clips.
+    QVERIFY(backend.splitAt(1200));
+    QQuickItem* marker = nullptr;
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr);
+    marker->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(marker->hasActiveFocus());
     QRectF overlayRect;
     QVERIFY(QMetaObject::invokeMethod(&backend, "overlayRectInView", Q_RETURN_ARG(QRectF, overlayRect),
                                       Q_ARG(int, overlay), Q_ARG(QRectF, root->property("zoomTarget").toRectF())));
@@ -1440,10 +1480,13 @@ void tst_RecordingEditor::canvasClickSelectsObjects()
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, centerOf(overlayRect));
     QTRY_COMPARE(backend.selectedOverlay(), overlay);
     QVERIFY(!player->property("playing").toBool());
+    QTRY_VERIFY(view->rootObject()->hasActiveFocus());
+    QVERIFY(!marker->hasActiveFocus());
+    QCOMPARE(backend.timelineSplits().size(), 1);
 
     // The text is gone at 1.0 s; the mask under it is what a click picks.
     QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
-    QVERIFY(seek(view, 1000));
+    QVERIFY(showFrame(1000));
     const QRectF maskRect = backend.maskRectInView(mask, player->property("contentRect").toRectF());
     QVERIFY(!maskRect.isEmpty());
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, centerOf(maskRect));
@@ -1456,7 +1499,7 @@ void tst_RecordingEditor::canvasClickSelectsObjects()
     QVERIFY(backend.addZoomAt(1000) >= 0); // GIF draws zooms everywhere
     {
         QVERIFY(QMetaObject::invokeMethod(root, "openSection", Q_ARG(QVariant, "")));
-        QVERIFY(seek(view, 1500));
+        QVERIFY(showFrame(1500));
         QTRY_VERIFY(root->property("zoomFactor").toReal() > 1.01);
         const QRectF target = root->property("zoomTarget").toRectF();
         const QRectF viewport = root->property("zoomView").toRectF();
@@ -1527,6 +1570,20 @@ void tst_RecordingEditor::splitMarkerKeepsKeyboard()
     QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
     backend.undo();
     QCOMPARE(backend.timelineSplits().value(0).toLongLong(), qint64(1000)); // one step per press
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
+    // A held key: the press, its repeats and the release are one undo step.
+    QTest::keyPress(view, Qt::Key_Right);
+    QTRY_COMPARE(backend.timelineSplits().value(0).toLongLong(), qint64(1100));
+    for (const qint64 expected : {qint64(1200), qint64(1300)}) {
+        QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
+        QKeyEvent repeat(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier, QString(), true);
+        QCoreApplication::sendEvent(view, &repeat);
+        QTRY_COMPARE(backend.timelineSplits().value(0).toLongLong(), expected);
+    }
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
+    QTest::keyRelease(view, Qt::Key_Right);
+    backend.undo();
+    QCOMPARE(backend.timelineSplits().value(0).toLongLong(), qint64(1000));
     QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
     QTest::keyClick(view, Qt::Key_Delete);
     QTRY_VERIFY(backend.timelineSplits().isEmpty());

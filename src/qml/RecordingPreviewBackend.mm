@@ -2005,6 +2005,13 @@ void RecordingPreviewBackend::commitTimelineEdit()
     recordEdit();
 }
 
+void RecordingPreviewBackend::amendTimelineEdit()
+{
+    if (m_editHistory.amend(currentEditState())) {
+        emit editHistoryChanged();
+    }
+}
+
 void RecordingPreviewBackend::setPartDeleted(int part, bool deleted)
 {
     const qint64 start = m_trimStart, end = trimEnd();

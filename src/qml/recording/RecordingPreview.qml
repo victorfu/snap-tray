@@ -301,6 +301,18 @@ Item {
         }
         if (isDraggingTrimStart || isDraggingTrimEnd) scrubber.cancelTrimDrag()
     }
+    // Escape cancels a drag in progress first, even in a focused field or
+    // text box that would take it for itself; the field keeps its text.
+    function cancelTimelineDragOnEscape(event) {
+        if (!timelineDragActive) return false
+        cancelTimelineDrag()
+        event.accepted = true
+        return true
+    }
+    // A held arrow key on a split: its first move was recorded as an undo
+    // step, and the release folds the rest into it. Kept here because each
+    // move rebuilds the marker.
+    property bool splitNudgeHeld: false
 
     readonly property var speedOptions: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
     property int speedIndex: 3
@@ -841,7 +853,9 @@ Item {
                     // Only the exported picture shows them (not a cropped-away edge).
                     const t = root.zoomTarget
                     if (x < t.x || x >= t.x + t.width || y < t.y || y >= t.y + t.height) return null
-                    const now = videoPlayer.position
+                    // The shown frame's time, as the overlays and masks are drawn by;
+                    // the player's position is reported less often.
+                    const now = videoPlayer.framePosition
                     const showing = function(item) {
                         return item.start <= now && (item.end < 0 || now < item.end)
                     }
@@ -874,7 +888,11 @@ Item {
                     const hit = objectAt(mouse.x, mouse.y)
                     if (hit) {
                         videoPlayer.pause()
-                        root.selectEffect(hit.kind, hit.index)
+                        // The keyboard follows the selection, so Delete and the arrows
+                        // act on it, not on a split marker that had the focus. Input
+                        // that blocks the switch keeps its field focused.
+                        if (root.selectEffect(hit.kind, hit.index))
+                            root.forceActiveFocus(Qt.MouseFocusReason)
                         return
                     }
                     // While a mask is selected its editor owns the video.
@@ -1845,23 +1863,31 @@ Item {
                     Accessible.description: qsTr("Arrow keys move the split; Delete joins the two clips")
                     Accessible.onPressAction: forceActiveFocus()
                     Component.onDestruction: if (activeFocus) Qt.callLater(splitMarkers.refocus, index)
-                    // One undo step per press; a held key records once, on release.
+                    // One undo step per press, a held key included: its first move
+                    // records the step, the release folds the repeats into it.
                     // moveSplit() rebuilds this marker at once: everything it
                     // needs afterwards is read before.
                     function nudge(event, direction) {
                         event.accepted = true
                         const editor = backend
+                        const preview = root
                         const step = (event.modifiers & Qt.ShiftModifier) ? 1000 : 100
-                        const record = !event.isAutoRepeat
+                        const first = !event.isAutoRepeat || !preview.splitNudgeHeld
                         const legal = editor.legalSplitPosition(index, modelData + direction * step)
-                        if (legal >= 0 && legal !== modelData && editor.moveSplit(index, legal) && record)
+                        if (legal < 0 || legal === modelData || !editor.moveSplit(index, legal)) return
+                        if (first) {
                             editor.commitTimelineEdit()
+                            preview.splitNudgeHeld = true
+                        }
                     }
                     Keys.onLeftPressed: function(event) { nudge(event, -1) }
                     Keys.onRightPressed: function(event) { nudge(event, 1) }
                     Keys.onReleased: function(event) {
-                        if ((event.key === Qt.Key_Left || event.key === Qt.Key_Right) && !event.isAutoRepeat)
-                            backend.commitTimelineEdit()
+                        if ((event.key === Qt.Key_Left || event.key === Qt.Key_Right) && !event.isAutoRepeat
+                                && root.splitNudgeHeld) {
+                            root.splitNudgeHeld = false
+                            backend.amendTimelineEdit()
+                        }
                     }
                     Keys.onDeletePressed: function(event) { event.accepted = true; backend.removeSplit(index) }
                     Keys.onPressed: function(event) {
@@ -2558,6 +2584,7 @@ Item {
                             // Applied as typed; one undo step per edit.
                             onTextEdited: backend.setOverlayText(backend.selectedOverlay, text)
                             Keys.onEscapePressed: function(event) {
+                                if (root.cancelTimelineDragOnEscape(event)) return
                                 root.forceActiveFocus()
                                 event.accepted = true
                             }
@@ -4145,6 +4172,7 @@ Item {
         // pending (focus returns here if the recording is kept).
         onEditingFinished: if (!backend.discardConfirmationPending) commitText()
         Keys.onEscapePressed: function(event) {
+            if (root.cancelTimelineDragOnEscape(event)) return
             edited = false
             text = Qt.binding(function() { return numberField.value })
             if (exportPanel.opened) exportPanel.contentItem.forceActiveFocus()
@@ -4219,6 +4247,7 @@ Item {
             text = backend.formatPreciseTime(timeMs)
         }
         Keys.onEscapePressed: function(event) {
+            if (root.cancelTimelineDragOnEscape(event)) return
             discardEdit()
             root.forceActiveFocus()
             event.accepted = true
