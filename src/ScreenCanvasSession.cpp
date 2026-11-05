@@ -5,6 +5,8 @@
 #include "PlatformFeatures.h"
 #include "ScreenCanvas.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationStyleEditor.h"
+#include "annotations/AnnotationStyle.h"
 #include "qml/ToolbarOverflowLayout.h"
 #include "annotation/AnnotationRenderHelper.h"
 #include "annotations/AnnotationLayer.h"
@@ -299,6 +301,12 @@ void ScreenCanvasSession::initializeSharedState()
     m_toolOptionsViewModel->setArrowStyle(static_cast<int>(savedArrowStyle));
     m_toolOptionsViewModel->setLineStyle(static_cast<int>(savedLineStyle));
     m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(m_stepBadgeSize));
+
+    // Selected-annotation styling (#224): strip edits go to the selection.
+    m_styleEditor = new AnnotationStyleEditor(m_annotationLayer, m_toolOptionsViewModel, this);
+    m_styleEditor->setInlineEditingPredicate([this] { return editingSurface() != nullptr; });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetShown, this, [this] { updateQmlToolbarState(); });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetCleared, this, [this] { updateQmlToolbarState(); });
 
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorSelected,
             this, &ScreenCanvasSession::onColorSelected);
@@ -2043,7 +2051,10 @@ void ScreenCanvasSession::onColorSelected(const QColor& color)
 
 void ScreenCanvasSession::onMoreColorsRequested()
 {
-    m_toolOptionsViewModel->setCurrentColor(m_toolManager->color());
+    const bool editingSelection = m_toolOptionsViewModel->editingSelection();
+    if (!editingSelection) {
+        m_toolOptionsViewModel->setCurrentColor(m_toolManager->color());
+    }
 
     QWidget* hostWidget = toolbarHostSurface();
     if (!hostWidget) {
@@ -2053,9 +2064,12 @@ void ScreenCanvasSession::onMoreColorsRequested()
     AnnotationContext::showColorPickerDialog(
         hostWidget,
         m_colorPickerDialog,
-        m_toolManager->color(),
+        editingSelection ? m_toolOptionsViewModel->currentColor() : m_toolManager->color(),
         colorPickerAnchorPoint(),
         [this](const QColor& color) {
+            if (m_toolOptionsViewModel->routeToSelection(StyleProperty::Color, color)) {
+                return;
+            }
             onColorSelected(color);
         });
 }
@@ -2090,6 +2104,9 @@ void ScreenCanvasSession::onLineWidthChanged(int width)
 
 void ScreenCanvasSession::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::ArrowStyle, static_cast<int>(style))) {
+        return;
+    }
     m_toolOptionsViewModel->setArrowStyle(static_cast<int>(style));
     m_toolManager->setArrowStyle(style);
     AnnotationSettingsManager::instance().saveArrowStyle(style);
@@ -2098,6 +2115,9 @@ void ScreenCanvasSession::onArrowStyleChanged(LineEndStyle style)
 
 void ScreenCanvasSession::onLineStyleChanged(LineStyle style)
 {
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::LineStyle, static_cast<int>(style))) {
+        return;
+    }
     m_toolOptionsViewModel->setLineStyle(static_cast<int>(style));
     m_toolManager->setLineStyle(style);
     AnnotationSettingsManager::instance().saveLineStyle(style);
@@ -2126,6 +2146,9 @@ void ScreenCanvasSession::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void ScreenCanvasSession::onFontSizeSelected(int size)
 {
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::FontSize, size)) {
+        return;
+    }
     m_toolOptionsViewModel->setFontSize(size);
     for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
         if (surface && surface->textAnnotationEditor()) {
@@ -2137,6 +2160,9 @@ void ScreenCanvasSession::onFontSizeSelected(int size)
 
 void ScreenCanvasSession::onFontFamilySelected(const QString& family)
 {
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::FontFamily, family)) {
+        return;
+    }
     m_toolOptionsViewModel->setFontFamily(family);
     for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
         if (surface && surface->textAnnotationEditor()) {
@@ -2152,6 +2178,10 @@ void ScreenCanvasSession::onTextEditingFinished(ScreenCanvas* surface,
 {
     if (surface && surface->textAnnotationEditor()) {
         surface->textAnnotationEditor()->finishEditing(text, position, m_toolManager->color());
+    }
+    // Inline editing owned styling while it ran; the selection may be stylable now.
+    if (m_styleEditor) {
+        m_styleEditor->refreshTarget();
     }
 }
 
@@ -2211,7 +2241,10 @@ void ScreenCanvasSession::updateQmlToolbarState()
         return;
     }
 
-    if (m_showSubToolbar && !m_laserPointerActive) {
+    if (m_styleEditor && m_styleEditor->hasTarget()) {
+        // The strip shows the selected annotation; don't reset it to the tool.
+        m_qmlSubToolbar->show();
+    } else if (m_showSubToolbar && !m_laserPointerActive) {
         m_qmlSubToolbar->showForTool(static_cast<int>(m_currentToolId));
     } else if (m_showSubToolbar && m_laserPointerActive) {
         m_toolOptionsViewModel->showLaserPointerOptions();
