@@ -196,6 +196,7 @@ private:
     void updateQmlToolbarState();
     bool initializeToolbarPlacement();
     void relayoutFloatingUi(bool restoreToolbarPosition = false);
+    void refitToolbarToCurrentScreen();
     void saveToolbarPlacement() const;
     void connectScreenTopologySignals();
     void connectApplicationStateSignal();

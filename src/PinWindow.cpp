@@ -3445,7 +3445,11 @@ void PinWindow::initializeAnnotationComponents()
     m_styleEditor = new AnnotationStyleEditor(m_annotationLayer, optionsVM, this);
     m_styleEditor->setInlineEditingPredicate(
         [this] { return m_textEditor && m_textEditor->isEditing(); });
-    connect(m_styleEditor, &AnnotationStyleEditor::styleApplied, this, [this] { update(); });
+    connect(m_styleEditor, &AnnotationStyleEditor::styleApplied, this, [this] {
+        // A style edit pushes a Modify command, which clears redo.
+        updateUndoRedoState();
+        update();
+    });
     connect(m_styleEditor, &AnnotationStyleEditor::targetShown, this, [this] {
         if (m_subToolbar && m_annotationMode) {
             m_subToolbar->show();

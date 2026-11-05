@@ -404,6 +404,7 @@ void ScreenCanvasSession::initializeSharedState()
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
             this, [this]() {
                 m_toolbarDragging = false;
+                refitToolbarToCurrentScreen();
                 refreshFloatingUiParentWidget();
                 saveToolbarPlacement();
                 relayoutFloatingUi(false);
@@ -2302,6 +2303,28 @@ bool ScreenCanvasSession::initializeToolbarPlacement()
     m_qmlToolbar->setPosition(resolution.globalTopLeft);
     m_toolbarPlacementInitialized = true;
     return true;
+}
+
+void ScreenCanvasSession::refitToolbarToCurrentScreen()
+{
+    if (!m_qmlToolbar) {
+        return;
+    }
+    const QRect toolbarGeometry = m_qmlToolbar->geometry();
+    QScreen* screen = QGuiApplication::screenAt(toolbarGeometry.center());
+    if (!screen) {
+        return;
+    }
+    // Re-collapse for the screen the toolbar was dragged to, so More keeps
+    // the right buttons and its menu is clamped to this screen, not the
+    // activation screen.
+    const QRect bounds = SnapTray::toolbarUsableBounds(screen->availableGeometry());
+    m_qmlToolbar->applyOverflowLayout(bounds);
+    const QRect refitted = m_qmlToolbar->geometry();
+    const QPoint bounded = SnapTray::boundToolbarPosition(refitted.topLeft(), refitted.size(), bounds);
+    if (bounded != refitted.topLeft()) {
+        m_qmlToolbar->setPosition(bounded);
+    }
 }
 
 void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
