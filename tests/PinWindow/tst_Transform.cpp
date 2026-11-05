@@ -1,3 +1,4 @@
+#include <QMenu>
 #include <QtTest/QtTest>
 #include <QGuiApplication>
 #include <QSignalSpy>
@@ -7,6 +8,7 @@
 #include <QClipboard>
 
 #include "PinWindow.h"
+#include "settings/PinWindowSettingsManager.h"
 #include "PinWindowManager.h"
 #include "PlatformFeatures.h"
 #include "annotations/MosaicStroke.h"
@@ -48,6 +50,48 @@ private:
     }
 
 private slots:
+    // #225: keyboard zoom and resets.
+    void testKeyboardZoomAndReset() {
+        PinWindow window(createTestPixmap(200, 150), QPoint(), nullptr, false, false);
+        const qreal step = PinWindowSettingsManager::instance().loadZoomStep();
+        QTest::keyClick(&window, Qt::Key_Equal, Qt::ControlModifier);
+        QCOMPARE(window.zoomLevel(), 1.0 + step);
+        QTest::keyClick(&window, Qt::Key_Minus, Qt::ControlModifier);
+        QCOMPARE(window.zoomLevel(), 1.0);
+        window.setZoomLevel(2.0);
+        QTest::keyClick(&window, Qt::Key_0, Qt::ControlModifier);
+        QCOMPARE(window.zoomLevel(), 1.0);
+    }
+    void testOpacityReset() {
+        PinWindow window(createTestPixmap(200, 150), QPoint(), nullptr, false, false);
+        window.setOpacity(0.4);
+        QTest::keyClick(&window, Qt::Key_BracketRight, Qt::ControlModifier);
+        QCOMPARE(window.opacity(), 1.0);
+        // Plain ] still steps up.
+        window.setOpacity(0.4);
+        QTest::keyClick(&window, Qt::Key_BracketRight);
+        QVERIFY(window.opacity() > 0.4 && window.opacity() < 1.0);
+    }
+    // Badges say which value they show, for every way the value changes.
+    void testBadgeNamesValueForEverySource() {
+        PinWindow window(createTestPixmap(200, 150), QPoint(), nullptr, false, false);
+        window.createContextMenu();
+        QAction* preset200 = nullptr;
+        for (QAction* action : window.m_contextMenu->findChildren<QAction*>())
+            if (action->text() == QStringLiteral("200%")) preset200 = action;
+        QVERIFY(preset200);
+        preset200->trigger();
+        QCOMPARE(window.m_uiIndicators->zoomBadgeText(), QStringLiteral("Zoom 200%"));
+        window.resetZoom();
+        QCOMPARE(window.m_uiIndicators->zoomBadgeText(), QStringLiteral("Zoom 100%"));
+        window.setOpacity(1.0);
+        window.adjustOpacityByStep(-1);
+        QCOMPARE(window.m_uiIndicators->opacityBadgeText(),
+                 QStringLiteral("Opacity %1%").arg(qRound(window.opacity() * 100)));
+        window.resetOpacity();
+        QCOMPARE(window.m_uiIndicators->opacityBadgeText(), QStringLiteral("Opacity 100%"));
+    }
+
     void testClickThroughExitAfterShowAllPins() {
         if (!PlatformFeatures::instance().capabilities().supportsClickThrough) {
             QSKIP("Click-through is not supported on this platform");

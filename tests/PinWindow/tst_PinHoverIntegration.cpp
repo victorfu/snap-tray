@@ -1,0 +1,138 @@
+#include <QtTest>
+#include <QEnterEvent>
+#include <QGuiApplication>
+#include <QMenu>
+#include <QScreen>
+#include <QtQml/qqmlextensionplugin.h>
+
+#include "PinWindow.h"
+#include "pinwindow/PinHoverBar.h"
+#include "PlatformFeatures.h"
+#include "qml/PinHoverBarViewModel.h"
+#include "settings/PinWindowSettingsManager.h"
+
+Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
+
+// #225: the hover bar inside a real pin.
+class TestPinHoverIntegration : public QObject
+{
+    Q_OBJECT
+private slots:
+    void hoverShowsBarWithValues();
+    void barZoomRequestZoomsPin();
+    void suppressedStates_data();
+    void suppressedStates();
+    void moreOpensContextMenu();
+    void closingPinClosesBar();
+
+private:
+    static QPixmap pixmap()
+    {
+        QPixmap p(480, 320);
+        p.fill(Qt::darkCyan);
+        return p;
+    }
+    // Shows the pin and hovers it with the controller's cursor on the pin.
+    static void hover(PinWindow& window)
+    {
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QEnterEvent enter(QPointF(100, 100), QPointF(100, 100), window.mapToGlobal(QPointF(100, 100)));
+        QCoreApplication::sendEvent(&window, &enter);
+        QVERIFY(window.m_hoverBar);
+        window.m_hoverBar->setCursorPositionProvider([&window] { return window.mapToGlobal(QPoint(100, 100)); });
+    }
+};
+
+void TestPinHoverIntegration::hoverShowsBarWithValues()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+    QCOMPARE(window.m_hoverBarViewModel->zoomPercent(), 100);
+    QCOMPARE(window.m_hoverBarViewModel->opacityPercent(), 100);
+    QVERIFY(window.frameGeometry().contains(window.m_hoverBar->barGeometry()));
+}
+
+void TestPinHoverIntegration::barZoomRequestZoomsPin()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+    window.m_hoverBarViewModel->requestZoomPercent(150);
+    QCOMPARE(window.zoomLevel(), 1.5);
+    QCOMPARE(window.m_hoverBarViewModel->zoomPercent(), 150);
+    // The bar follows the larger pin.
+    QTRY_VERIFY(window.frameGeometry().contains(window.m_hoverBar->barGeometry()));
+    window.m_hoverBarViewModel->requestOpacityPercent(60);
+    QCOMPARE(window.opacity(), 0.6);
+}
+
+void TestPinHoverIntegration::suppressedStates_data()
+{
+    QTest::addColumn<QString>("state");
+    QTest::newRow("dragging") << "dragging";
+    QTest::newRow("toolbar") << "toolbar";
+    QTest::newRow("setting-off") << "setting-off";
+    QTest::newRow("click-through") << "click-through";
+}
+
+void TestPinHoverIntegration::suppressedStates()
+{
+    QFETCH(QString, state);
+    auto& settings = PinWindowSettingsManager::instance();
+    const bool savedSetting = settings.loadShowHoverControls();
+    auto restore = qScopeGuard([&] { settings.saveShowHoverControls(savedSetting); });
+    if (state == "click-through" && !PlatformFeatures::instance().capabilities().supportsClickThrough)
+        QSKIP("Click-through is not supported on this platform");
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    if (state == "setting-off") settings.saveShowHoverControls(false);
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(state == "setting-off" || window.m_hoverBar->isBarVisible(), 1500);
+    if (state == "dragging") {
+        QTest::mousePress(&window, Qt::LeftButton, Qt::NoModifier, QPoint(200, 150));
+        QTest::mouseMove(&window, QPoint(230, 170));
+    } else if (state == "toolbar") {
+        window.showToolbar();
+    } else if (state == "click-through") {
+        window.setClickThrough(true);
+    }
+    QVERIFY(!window.m_hoverBar->isBarVisible());
+    QTest::qWait(PinHoverBar::kShowDelayMs + 300);
+    QVERIFY(!window.m_hoverBar->isBarVisible());
+    if (state == "dragging") QTest::mouseRelease(&window, Qt::LeftButton, Qt::NoModifier, QPoint(230, 170));
+}
+
+void TestPinHoverIntegration::moreOpensContextMenu()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+    window.m_hoverBarViewModel->requestMore();
+    QVERIFY(window.m_contextMenu);
+    QTRY_VERIFY(window.m_contextMenu->isVisible());
+    window.m_contextMenu->hide();
+}
+
+void TestPinHoverIntegration::closingPinClosesBar()
+{
+    auto* window = new PinWindow(pixmap(), QPoint(150, 150), nullptr, false, false);
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    hover(*window);
+    QTRY_VERIFY_WITH_TIMEOUT(window->m_hoverBar->isBarVisible(), 1500);
+    window->m_hoverBarViewModel->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QPointer<QWindow> bar = window->m_hoverBar->barWindow();
+    QTRY_VERIFY(window->m_hoverBar->isPanelVisible());
+    QPointer<QWindow> panel = window->m_hoverBar->panelWindow();
+    window->close();
+    QTRY_VERIFY(bar.isNull() || !bar->isVisible());
+    QVERIFY(panel.isNull() || !panel->isVisible());
+    // No event filter is left behind: a later key event is harmless.
+    QWindow other;
+    other.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&other));
+    QTest::keyClick(&other, Qt::Key_Escape);
+}
+
+QTEST_MAIN(TestPinHoverIntegration)
+#include "tst_PinHoverIntegration.moc"

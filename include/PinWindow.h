@@ -41,6 +41,8 @@ struct OCRResult;
 class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
+class PinHoverBar;
+class PinHoverBarViewModel;
 namespace SnapTray {
 class QmlToast;
 class QmlWindowedToolbar;
@@ -93,6 +95,10 @@ public:
 
     void setOpacity(qreal opacity);
     qreal opacity() const { return m_opacity; }
+    // User-facing value changes (#225): apply and show the named badge.
+    void resetZoom();
+    void resetOpacity();
+    void zoomByStep(int direction);
 
     void rotateRight();  // Rotate clockwise by 90 degrees
     void rotateLeft();   // Rotate counter-clockwise by 90 degrees
@@ -154,6 +160,8 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+    void focusInEvent(QFocusEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -170,6 +178,7 @@ private:
     friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
+    friend class TestPinHoverIntegration;
     friend class TestPinWindowTextToolFormatting;
     friend class TestEraserHostRouting;
     struct CropUndoEntry;
@@ -441,6 +450,17 @@ private:
     // Components
     ResizeHandler* m_resizeHandler;
     UIIndicators* m_uiIndicators;
+    // The hover bar (#225), created on first hover or focus.
+    PinHoverBarViewModel* m_hoverBarViewModel = nullptr;
+    PinHoverBar* m_hoverBar = nullptr;
+    void ensureHoverBar();
+    void syncHoverBar();
+    bool hoverBarSuppressed() const;
+    void applyUserZoom(qreal zoom);
+    void applyUserOpacity(qreal opacity);
+    void showZoomBadge();
+    void showOpacityBadge();
+    void refreshContextMenuState();
     SnapTray::QmlToast* m_toast;
 
     // Resize state
