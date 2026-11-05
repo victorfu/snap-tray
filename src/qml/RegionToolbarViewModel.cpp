@@ -23,8 +23,9 @@ void RegionToolbarViewModel::buildButtonList()
         }
 
         auto options = defaultToolButtonOptions(toolId);
-        options.separatorBefore = registry.get(toolId).showSeparatorBefore
-                                  || toolId == ToolId::OCR;
+        // Group boundaries (ToolbarTraits) supply the separators; OCR keeps the
+        // sub-block break inside Assist (Undo/Redo | OCR/QR/Multi-Region).
+        options.separatorBefore = (toolId == ToolId::OCR);
         options.isAction = (toolId == ToolId::Pin
                             || toolId == ToolId::Save
                             || toolId == ToolId::Copy);

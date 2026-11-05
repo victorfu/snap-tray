@@ -4,7 +4,10 @@
 #include <QVariantList>
 #include <QVariantMap>
 
+#include <optional>
+
 #include "tools/ToolId.h"
+#include "tools/ToolbarTraits.h"
 
 /**
  * Shared base for QML toolbar view models.
@@ -33,6 +36,8 @@ public:
         bool isAction = false;
         bool isExportAction = false;
         bool isCancel = false;
+        std::optional<ToolbarGroup> group;      // custom buttons must set it
+        std::optional<int> collapsePriority;    // custom buttons must set it
     };
 
     explicit ToolbarViewModelBase(QObject* parent = nullptr);
