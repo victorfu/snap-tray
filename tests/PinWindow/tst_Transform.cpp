@@ -92,6 +92,20 @@ private slots:
         QCOMPARE(window.m_uiIndicators->opacityBadgeText(), QStringLiteral("Opacity 100%"));
     }
 
+    // #225: the pill says what it does, in words and for screen readers.
+    void testClickThroughPillTextAndName() {
+        if (!PlatformFeatures::instance().capabilities().supportsClickThrough) {
+            QSKIP("Click-through is not supported on this platform");
+        }
+        PinWindow window(createTestPixmap(200, 150), QPoint(), nullptr, false, false);
+        window.setClickThrough(true);
+        auto* button = window.findChild<ClickThroughExitButton*>();
+        QVERIFY(button);
+        QVERIFY(button->text().contains(QStringLiteral("Turn off")));
+        QVERIFY(!button->accessibleName().isEmpty());
+        window.setClickThrough(false);
+    }
+
     void testClickThroughExitAfterShowAllPins() {
         if (!PlatformFeatures::instance().capabilities().supportsClickThrough) {
             QSKIP("Click-through is not supported on this platform");

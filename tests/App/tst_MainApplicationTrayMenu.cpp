@@ -1,4 +1,5 @@
 #include "MainApplication.h"
+#include "PlatformFeatures.h"
 #include "qml/QmlRecordingAreaSelector.h"
 #include "platform/PlatformCapabilities.h"
 #include "ImageColorSpaceHelper.h"
@@ -158,6 +159,7 @@ private slots:
     void handleCLICommand_removedRecordCommandIsIgnored();
     void handleCLICommand_deferredUntilFullScreenExportFinishes();
     void screenPickerClosed_deletesWrapperAndViewModel();
+    void trayDisableClickThroughItem();
     void queuedHistoryEntryRechecksCaptureMode();
     void areaSelectorHoldsOtherCaptures();
     void previewCloseDiscardsTemporaryFile_data();
@@ -1016,6 +1018,29 @@ void tst_MainApplicationTrayMenu::recordingWarnings_stayOffTheRecordedScreen()
     // Outside a recording, warnings show immediately.
     emit recording->recordingWarning(QStringLiteral("Later warning."));
     QCOMPARE(shown.size(), 2);
+}
+
+// #225: a tray exit for click-through, shown only when a pin uses it.
+void tst_MainApplicationTrayMenu::trayDisableClickThroughItem()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    QVERIFY(application.m_disableClickThroughAction);
+    emit application.m_trayMenu->aboutToShow();
+    QVERIFY(!application.m_disableClickThroughAction->isVisible());
+    if (!PlatformFeatures::instance().capabilities().supportsClickThrough)
+        return;
+    QPixmap pixmap(120, 80);
+    pixmap.fill(Qt::red);
+    PinWindow* pin = application.m_pinWindowManager->createPinWindow(pixmap, QPoint(100, 100));
+    QVERIFY(pin);
+    pin->setClickThrough(true);
+    emit application.m_trayMenu->aboutToShow();
+    QVERIFY(application.m_disableClickThroughAction->isVisible());
+    application.m_disableClickThroughAction->trigger();
+    QVERIFY(!pin->isClickThrough());
+    application.m_pinWindowManager->closeAllWindows();
 }
 
 QTEST_MAIN(tst_MainApplicationTrayMenu)

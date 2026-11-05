@@ -137,6 +137,7 @@ private:
     QAction *m_historyAction;
     QAction *m_togglePinsVisibilityAction;
     QAction *m_closeAllPinsAction;
+    QAction *m_disableClickThroughAction = nullptr;
     QAction *m_fullScreenRecordingAction;
     QAction *m_pauseRecordingAction = nullptr;
     QAction *m_showRecordingControlsAction = nullptr;
