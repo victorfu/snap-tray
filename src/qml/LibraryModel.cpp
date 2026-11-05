@@ -99,6 +99,8 @@ void LibraryModel::rebuild()
         }
     });
     endResetModel();
+    ++m_revision;
+    emit revisionChanged();
     if (before != m_rows.size()) emit countChanged();
 }
 
@@ -187,6 +189,15 @@ int LibraryModel::kindAt(int row) const
 int LibraryModel::sourceRowAt(int row) const
 {
     return row >= 0 && row < m_rows.size() ? m_rows.at(row).sourceRow : -1;
+}
+
+QVariant LibraryModel::roleAt(int row, const QString& roleName) const
+{
+    const QByteArray name = roleName.toUtf8();
+    const auto roles = roleNames();
+    for (auto it = roles.cbegin(); it != roles.cend(); ++it)
+        if (it.value() == name) return data(index(row), it.key());
+    return {};
 }
 
 int LibraryModel::indexOfKey(const QString& key) const

@@ -145,7 +145,6 @@ private:
     QAction *m_recoverRecordingsAction = nullptr;
     QPointer<SnapTray::QmlDialog> m_recoveryDialog;
     QAction *m_recordingLibraryAction = nullptr;
-    QPointer<SnapTray::QmlDialog> m_libraryDialog;
     QStringList m_recoverablePaths;  // left-behind recordings still offered
     QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;

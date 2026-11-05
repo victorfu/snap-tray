@@ -23,6 +23,8 @@ class LibraryModel : public QAbstractListModel
     Q_PROPERTY(int screenshotCount READ screenshotCount NOTIFY countsChanged)
     Q_PROPERTY(int recordingCount READ recordingCount NOTIFY countsChanged)
     Q_PROPERTY(int allCount READ allCount NOTIFY countsChanged)
+    // Bumped on every rebuild, for QML bindings that read roles by row.
+    Q_PROPERTY(int revision READ revision NOTIFY revisionChanged)
 
 public:
     enum Source { AllCaptures = 0, Screenshots, Recordings };
@@ -54,16 +56,20 @@ public:
     int screenshotCount() const;
     int recordingCount() const;
     int allCount() const { return screenshotCount() + recordingCount(); }
+    int revision() const { return m_revision; }
 
     Q_INVOKABLE QString keyAt(int row) const;
     Q_INVOKABLE int kindAt(int row) const;
     Q_INVOKABLE int sourceRowAt(int row) const;
     Q_INVOKABLE int indexOfKey(const QString& key) const;
+    // A role by its QML name ("busy", "savedFileExists", ...).
+    Q_INVOKABLE QVariant roleAt(int row, const QString& roleName) const;
 
 signals:
     void sourceChanged();
     void countChanged();
     void countsChanged();
+    void revisionChanged();
 
 private:
     struct Row {
@@ -79,6 +85,7 @@ private:
     QPointer<RecordingLibraryViewModel> m_recordings;
     int m_source = AllCaptures;
     QVector<Row> m_rows;
+    int m_revision = 0;
 };
 
 } // namespace SnapTray

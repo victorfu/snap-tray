@@ -14,6 +14,7 @@ class RecordingLibraryViewModel : public QObject
     Q_PROPERTY(QVariantList projects READ projects NOTIFY projectsChanged)
     Q_PROPERTY(QString totalSizeText READ totalSizeText NOTIFY projectsChanged)
     Q_PROPERTY(bool keepProjects READ keepProjects CONSTANT)
+    Q_PROPERTY(int cleanupDays READ cleanupDays CONSTANT)
 
 public:
     explicit RecordingLibraryViewModel(QObject* parent = nullptr);
@@ -23,6 +24,7 @@ public:
     QVariantList projects() const { return m_rows; }
     QString totalSizeText() const;
     bool keepProjects() const;
+    int cleanupDays() const;
     int count() const { return m_items.size(); }
     const QList<RecordingProject>& items() const { return m_items; }
     QString openProjectDir() const { return m_openProjectDir; }
@@ -36,6 +38,8 @@ public:
     // file saved from it stays.
     Q_INVOKABLE void remove(int index);
     Q_INVOKABLE void showInFolder(int index);
+    // Opens the folder of the file last saved from the project, if it exists.
+    Q_INVOKABLE void showSavedFile(int index);
     Q_INVOKABLE void close();
 
 signals:

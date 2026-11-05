@@ -624,8 +624,8 @@ void TestRecordingSetup::recoveryDialogScrollsManyRecordings()
 
 void TestRecordingSetup::libraryListsOpensAndDeletesProjects()
 {
-    // #191: the Recording Library lists kept projects, opens one, and deletes
-    // one only after a second, confirming click.
+    // #191: the kept projects are listed, opened and deleted; the one open in
+    // the preview is protected. The confirmation lives in the Library (#226).
     QTemporaryDir dir;
     SnapTray::RecordingProjects::setRootForTests(dir.filePath(QStringLiteral("projects")));
     auto resetRoot = qScopeGuard([] { SnapTray::RecordingProjects::setRootForTests(QString()); });
@@ -652,67 +652,29 @@ void TestRecordingSetup::libraryListsOpensAndDeletesProjects()
     QVERIFY(first.value(QStringLiteral("thumbnail")).toString().startsWith(QStringLiteral("file:")));
     QVERIFY(!viewModel->totalSizeText().isEmpty());
 
-    SnapTray::QmlDialog dialog(QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingLibraryDialog.qml")),
-                               viewModel, QStringLiteral("viewModel"));
-    viewModel->setParent(&dialog);
-    dialog.showCenteredOnScreen(QGuiApplication::primaryScreen());
-    QQuickView* view = nullptr;
-    for (QWindow* window : QGuiApplication::topLevelWindows()) {
-        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
-            view = candidate;
-    }
-    QVERIFY(view);
-    QVERIFY(view->rootObject()->findChild<QQuickItem*>(QStringLiteral("libraryPrivacyNote")));
-    const auto buttons = [view](const char* name) {
-        QList<QQuickItem*> found;
-        std::function<void(QQuickItem*)> walk = [&](QQuickItem* item) {
-            if (item->objectName() == QLatin1String(name) && item->isVisible()) found.append(item);
-            for (QQuickItem* child : item->childItems()) walk(child);
-        };
-        walk(qobject_cast<QQuickItem*>(view->rootObject()));
-        return found;
-    };
-    QTRY_COMPARE(buttons("libraryOpenButton").size(), 2);
-    // #210: Show in Folder had no accessible name; like Open and Delete it
-    // names its project.
-    for (QQuickItem* folder : buttons("libraryFolderButton")) {
-        QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(folder);
-        QVERIFY(accessible);
-        QVERIFY2(accessible->text(QAccessible::Name).startsWith(QStringLiteral("Show ")),
-                 qPrintable(accessible->text(QAccessible::Name)));
-        QVERIFY(accessible->text(QAccessible::Name).endsWith(QStringLiteral(" in Folder")));
-    }
-
+    // The Library window's UI is covered by Qml_LibraryWindow (#226).
+    std::unique_ptr<SnapTray::RecordingLibraryViewModel> owner(viewModel);
     QSignalSpy open(viewModel, &SnapTray::RecordingLibraryViewModel::openRequested);
-    QMetaObject::invokeMethod(buttons("libraryOpenButton").first(), "clicked");
+    viewModel->open(0);
     QCOMPARE(open.count(), 1);
     QCOMPARE(open.first().first().toString(), dirs.first());
 
-    // The first click only asks; Cancel keeps it; the second click deletes.
-    QMetaObject::invokeMethod(buttons("libraryDeleteButton").first(), "clicked");
-    QCOMPARE(viewModel->count(), 2);
-    QCOMPARE(buttons("libraryCancelDeleteButton").size(), 1);
-    QMetaObject::invokeMethod(buttons("libraryCancelDeleteButton").first(), "clicked");
-    QCOMPARE(buttons("libraryCancelDeleteButton").size(), 0);
-    QMetaObject::invokeMethod(buttons("libraryDeleteButton").first(), "clicked");
-    QMetaObject::invokeMethod(buttons("libraryDeleteButton").first(), "clicked");
+    viewModel->remove(0);
     QCOMPARE(viewModel->count(), 1);
     QVERIFY(!QFileInfo::exists(dirs.first()));
     QVERIFY(QFileInfo::exists(dirs.last()));
-    QTRY_COMPARE(buttons("libraryOpenButton").size(), 1);
 
     // The project open in the preview can be neither opened nor deleted.
     viewModel->setOpenProjectDir(dirs.last());
     QVERIFY(viewModel->projects().first().toMap().value(QStringLiteral("open")).toBool());
-    QTRY_COMPARE(buttons("libraryOpenButton").size(), 0);
-    QCOMPARE(buttons("libraryDeleteButton").size(), 0);
     open.clear();
     viewModel->open(0);
     viewModel->remove(0);
     QCOMPARE(open.count(), 0);
     QVERIFY(QFileInfo::exists(dirs.last()));
     viewModel->setOpenProjectDir(QString());
-    QTRY_COMPARE(buttons("libraryDeleteButton").size(), 1);
+    viewModel->remove(0);
+    QCOMPARE(viewModel->count(), 0);
 }
 
 void TestRecordingSetup::recordingModeIsTheSameSettingEverywhere()

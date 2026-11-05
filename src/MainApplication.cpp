@@ -11,7 +11,7 @@
 #include "qml/QmlHistoryWindow.h"
 #include "qml/ScreenPickerViewModel.h"
 #include "qml/RecordingRecoveryViewModel.h"
-#include "qml/RecordingLibraryViewModel.h"
+#include "qml/LibraryModel.h"
 #include "qml/QuickSaveAction.h"
 #include "qml/QmlRecordingAreaSelector.h"
 #include "qml/QmlSettingsWindow.h"
@@ -459,7 +459,7 @@ void MainApplication::initialize()
     m_pinFromImageAction = m_trayMenu->addAction(tr("Pin from Image..."));
     connect(m_pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
 
-    m_historyAction = m_trayMenu->addAction(tr("History"));
+    m_historyAction = m_trayMenu->addAction(tr("Library"));
     connect(m_historyAction, &QAction::triggered, this, &MainApplication::onHistoryWindow);
 
     m_togglePinsVisibilityAction = m_trayMenu->addAction(tr("Hide All Pins"));
@@ -889,6 +889,9 @@ void MainApplication::onHistoryWindow()
             return startHistoryReplay(entryId);
         },
         this);
+    m_historyWindow->setOpenProjectDir(m_previewBackend ? m_previewBackend->projectDir() : QString());
+    connect(m_historyWindow, &SnapTray::QmlHistoryWindow::openProjectRequested, this,
+            &MainApplication::openRecordingProject);
     m_historyWindow->show();
     m_historyWindow->raise();
     m_historyWindow->activateWindow();
@@ -1196,6 +1199,8 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
             m_recordingManager->onPreviewClosed(saved);
             m_previewBackend->deleteLater();
             m_previewBackend = nullptr;
+            // A save may have kept a new project; none is open any more.
+            if (m_historyWindow) m_historyWindow->setOpenProjectDir(QString());
         });
 
     m_previewBackend->show();
@@ -1300,7 +1305,7 @@ void MainApplication::updateTrayMenuHotkeyText()
                            tr("Pin from Image..."));
     updateActionHotkeyText(m_historyAction,
                            SnapTray::HotkeyAction::HistoryWindow,
-                           tr("History"));
+                           tr("Library"));
     updateRecordingActionText();
 }
 
@@ -1358,29 +1363,9 @@ void MainApplication::showRecoveryDialog()
 
 void MainApplication::showRecordingLibrary()
 {
-    const QString openProject = m_previewBackend ? m_previewBackend->projectDir() : QString();
-    if (m_libraryDialog) {
-        if (auto* model = m_libraryDialog->findChild<SnapTray::RecordingLibraryViewModel*>()) {
-            model->setOpenProjectDir(openProject);
-            model->refresh();
-        }
-        m_libraryDialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
-        return;
-    }
-    auto* viewModel = new SnapTray::RecordingLibraryViewModel(this);
-    viewModel->setOpenProjectDir(openProject);
-    auto* dialog = new SnapTray::QmlDialog(
-        QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingLibraryDialog.qml")),
-        viewModel, QStringLiteral("viewModel"), this);
-    viewModel->setParent(dialog);
-    m_libraryDialog = dialog;
-    connect(dialog, &SnapTray::QmlDialog::closed, dialog, &QObject::deleteLater);
-    connect(viewModel, &SnapTray::RecordingLibraryViewModel::openRequested, this,
-        &MainApplication::openRecordingProject);
-    connect(viewModel, &SnapTray::RecordingLibraryViewModel::closeRequested, dialog, [this] {
-        if (m_libraryDialog) m_libraryDialog->close();
-    });
-    dialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+    // The Library's Recordings section (#226): one window for every capture.
+    onHistoryWindow();
+    m_historyWindow->showSection(SnapTray::LibraryModel::Recordings);
 }
 
 void MainApplication::openRecordingProject(const QString& projectDir)
@@ -1401,7 +1386,7 @@ void MainApplication::openRecordingProject(const QString& projectDir)
     // A project is always the full-quality recording: Save re-encodes as needed.
     showRecordingPreview(project->videoPath(), RecordingSettingsManager::instance().outputFormat(), true);
     if (m_previewBackend) m_previewBackend->setProject(*project);
-    if (m_libraryDialog) m_libraryDialog->close();
+    if (m_historyWindow) m_historyWindow->setOpenProjectDir(m_previewBackend ? m_previewBackend->projectDir() : QString());
 }
 
 void MainApplication::updateRecordingActionText()
