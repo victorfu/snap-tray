@@ -1074,6 +1074,12 @@ bool AnnotationLayer::modifyItem(AnnotationId id, const QString& coalesceKey,
     std::unique_ptr<AnnotationItem> before = extend ? nullptr : sceneIt->item->clone();
     if (!mutate(*sceneIt->item)) return false;
 
+    // A style edit during a drag is its own step: keep it out of the
+    // gesture, so cancelling the drag does not revert it.
+    if (m_gestureId == id && m_gestureSnapshot && !gestureIsReEdit()
+        && AnnotationStyle::kindOf(*sceneIt->item) != StyleTargetKind::None)
+        AnnotationStyle::copyStyle(*sceneIt->item, *m_gestureSnapshot);
+
     if (extend) {
         HistoryCommand& open = m_undoStack.back();
         const std::size_t beforeBytes = open.retainedBytes;

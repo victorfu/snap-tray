@@ -104,6 +104,8 @@ private slots:
     void ensureGestureOnAnotherItemCommitsStale();
     void newAnnotationCommitsStaleGesture();
     void hiddenReEditGestureIsNotTakenOver();
+    void gestureSnapshotKeepsFractionalShapeRect();
+    void cancelGestureKeepsStyleEditMadeDuringDrag();
     void modifyIsUndoable();
     void modifyKeepsSelectionAcrossUndo();
     void modifyCoalesces();
@@ -1569,6 +1571,49 @@ ShapeAnnotation* addShape(AnnotationLayer& layer, QRect rect = QRect(10, 10, 40,
     return static_cast<ShapeAnnotation*>(layer.itemAt(int(layer.itemCount()) - 1));
 }
 } // namespace
+
+void TestAnnotationLayer::gestureSnapshotKeepsFractionalShapeRect()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const QRectF fractional(10.25, 10.5, 40.5, 30.25);
+    shape->setRectF(fractional);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(!layer.commitGesture(AnnotationLayer::ModifyGeometry));   // unchanged: no step
+    QCOMPARE(layer.historyStateToken(), before);
+
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(5, 0));
+    layer.cancelGesture();
+    QCOMPARE(shape->rectF(), fractional);
+
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(5, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF(), fractional);
+}
+
+void TestAnnotationLayer::cancelGestureKeepsStyleEditMadeDuringDrag()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.beginGesture(id));
+    shape->moveBy(QPointF(20, 0));
+    QVERIFY(layer.modifyItem(id, QString(), [](AnnotationItem& item) {   // e.g. wheel width
+        static_cast<ShapeAnnotation&>(item).setWidth(9);
+        return true;
+    }));
+    layer.cancelGesture();
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));   // the drag is reverted
+    QCOMPARE(shape->width(), 9);                            // the style step is kept
+    layer.undo();                                           // undoes the style step
+    QCOMPARE(shape->width(), 3);
+    layer.redo();
+    QCOMPARE(shape->width(), 9);
+}
 
 void TestAnnotationLayer::gestureCommitIsOneStep()
 {
