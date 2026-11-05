@@ -1365,6 +1365,8 @@ void ScreenCanvasSession::handleLaserPointerClick()
     if (m_laserPointerActive) {
         m_showSubToolbar = !m_showSubToolbar;
     } else {
+        // Picking a tool ends selected-annotation styling (#224).
+        m_annotationLayer->clearSelection();
         m_laserPointerActive = true;
         m_showSubToolbar = true;
         if (m_toolManager->isDrawing()) {
@@ -2301,6 +2303,8 @@ bool ScreenCanvasSession::initializeToolbarPlacement()
     }
 
     m_qmlToolbar->setPosition(resolution.globalTopLeft);
+    // A saved placement can land on another screen than the activation one.
+    refitToolbarToCurrentScreen();
     m_toolbarPlacementInitialized = true;
     return true;
 }
@@ -2315,9 +2319,9 @@ void ScreenCanvasSession::refitToolbarToCurrentScreen()
     if (!screen) {
         return;
     }
-    // Re-collapse for the screen the toolbar was dragged to, so More keeps
-    // the right buttons and its menu is clamped to this screen, not the
-    // activation screen.
+    // Re-collapse for the screen the toolbar sits on (after placement or a
+    // drag), so More keeps the right buttons and its menu is clamped to this
+    // screen, not the activation screen.
     const QRect bounds = SnapTray::toolbarUsableBounds(screen->availableGeometry());
     m_qmlToolbar->applyOverflowLayout(bounds);
     const QRect refitted = m_qmlToolbar->geometry();
@@ -2352,6 +2356,7 @@ void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
             toolbarSize);
         if (!resolution.screenId.isEmpty()) {
             m_qmlToolbar->setPosition(resolution.globalTopLeft);
+            refitToolbarToCurrentScreen();
             m_toolbarPlacementInitialized = true;
         }
     }
