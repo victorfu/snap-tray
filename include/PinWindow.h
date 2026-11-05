@@ -50,6 +50,7 @@ class QmlBeautifyPanel;
 }
 class PinToolbarViewModel;
 class PinToolOptionsViewModel;
+class AnnotationStyleEditor;
 class AnnotationLayer;
 class AnnotationItem;
 class ToolManager;
@@ -498,6 +499,7 @@ private:
     RegionSettingsHelper* m_settingsHelper = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;
+    AnnotationStyleEditor* m_styleEditor = nullptr;   // Qt parent owns lifetime
     struct CropUndoEntry {
         QPixmap pixmap;
         QSize contentLogicalSize;
