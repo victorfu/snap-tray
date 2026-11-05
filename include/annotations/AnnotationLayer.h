@@ -193,7 +193,7 @@ private:
     enum class HistoryCommandKind {
         Add,
         Remove,
-        Modify   // items[0] holds the other state of the annotation with that id
+        Modify   // items[0] holds the other STYLE of the annotation with that id
     };
 
     struct HistoryCommand {
@@ -211,6 +211,7 @@ private:
     HistoryStateToken allocateHistoryState();
     void pushAppliedCommand(HistoryCommand command);
     bool undoCommand(HistoryCommand& command);
+    bool swapModifiedStyle(HistoryCommand& command);
     bool redoCommand(HistoryCommand& command);
     std::size_t calculateCommandRetainedBytes(const HistoryCommand& command) const;
     void refreshCommandRetainedBytes(HistoryCommand& command);

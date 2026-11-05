@@ -39,4 +39,8 @@ AnnotationStyleValues read(const AnnotationItem& item);
 bool supports(StyleTargetKind kind, StyleProperty property);
 // Returns false without changing the item when unsupported or unchanged.
 bool apply(AnnotationItem& item, StyleProperty property, const QVariant& value);
+// Copies only the style (colour, width, fill, line ends, line style, font) of
+// `from` onto `to`; geometry, text, and visibility of `to` are untouched.
+// Returns false when the two items are not the same stylable kind.
+bool copyStyle(const AnnotationItem& from, AnnotationItem& to);
 } // namespace AnnotationStyle

@@ -153,6 +153,32 @@ bool supports(StyleTargetKind kind, StyleProperty property)
     return (kSupported[static_cast<int>(kind)] & bit(property)) != 0;
 }
 
+bool copyStyle(const AnnotationItem& from, AnnotationItem& to)
+{
+    const StyleTargetKind kind = kindOf(from);
+    if (kind == StyleTargetKind::None || kind != kindOf(to)) return false;
+    const AnnotationStyleValues v = read(from);
+    if (auto* text = dynamic_cast<TextBoxAnnotation*>(&to)) {
+        text->setColor(v.color);
+        text->setFont(v.font);
+    } else if (auto* arrow = dynamic_cast<ArrowAnnotation*>(&to)) {
+        arrow->setColor(v.color);
+        arrow->setWidth(v.width);
+        arrow->setLineEndStyle(static_cast<LineEndStyle>(v.arrowStyle));
+        arrow->setLineStyle(static_cast<LineStyle>(v.lineStyle));
+    } else if (auto* line = dynamic_cast<PolylineAnnotation*>(&to)) {
+        line->setColor(v.color);
+        line->setWidth(v.width);
+        line->setLineEndStyle(static_cast<LineEndStyle>(v.arrowStyle));
+        line->setLineStyle(static_cast<LineStyle>(v.lineStyle));
+    } else if (auto* shape = dynamic_cast<ShapeAnnotation*>(&to)) {
+        shape->setColor(v.color);
+        shape->setWidth(v.width);
+        shape->setFilled(v.filled);
+    }
+    return true;
+}
+
 bool apply(AnnotationItem& item, StyleProperty property, const QVariant& value)
 {
     const StyleTargetKind kind = kindOf(item);

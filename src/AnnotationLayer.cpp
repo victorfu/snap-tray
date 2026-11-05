@@ -1,4 +1,5 @@
 #include "annotations/AnnotationLayer.h"
+#include "annotations/AnnotationStyle.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/PencilStroke.h"
 #include "annotations/MarkerStroke.h"
@@ -574,15 +575,24 @@ void AnnotationLayer::removeCommandItems(HistoryCommand& command)
     }
 }
 
+bool AnnotationLayer::swapModifiedStyle(HistoryCommand& command)
+{
+    // Undo and redo are the same exchange of STYLE between the scene item and
+    // the stored state. The scene object itself stays: moves, text edits, and
+    // visibility made after the style change are not history and must survive.
+    if (command.items.size() != 1 || !command.items.front().item) return false;
+    auto sceneIt = findSceneItem(command.items.front().id);
+    if (sceneIt == m_items.end() || !sceneIt->item) return false;
+    std::unique_ptr<AnnotationItem> current = sceneIt->item->clone();
+    if (!AnnotationStyle::copyStyle(*command.items.front().item, *sceneIt->item)) return false;
+    command.items.front().item = std::move(current);
+    return true;
+}
+
 bool AnnotationLayer::undoCommand(HistoryCommand& command)
 {
     if (command.kind == HistoryCommandKind::Modify) {
-        // Undo and redo are the same swap between the scene and the stored state.
-        if (command.items.size() != 1 || !command.items.front().item) return false;
-        auto sceneIt = findSceneItem(command.items.front().id);
-        if (sceneIt == m_items.end()) return false;
-        std::swap(sceneIt->item, command.items.front().item);
-        return true;
+        return swapModifiedStyle(command);
     }
     if (command.kind == HistoryCommandKind::Add) {
         if (command.items.size() != 1 || command.items.front().item) {
@@ -618,12 +628,7 @@ bool AnnotationLayer::undoCommand(HistoryCommand& command)
 bool AnnotationLayer::redoCommand(HistoryCommand& command)
 {
     if (command.kind == HistoryCommandKind::Modify) {
-        // Undo and redo are the same swap between the scene and the stored state.
-        if (command.items.size() != 1 || !command.items.front().item) return false;
-        auto sceneIt = findSceneItem(command.items.front().id);
-        if (sceneIt == m_items.end()) return false;
-        std::swap(sceneIt->item, command.items.front().item);
-        return true;
+        return swapModifiedStyle(command);
     }
     if (command.kind == HistoryCommandKind::Add) {
         if (command.items.size() != 1 || !command.items.front().item) {

@@ -97,6 +97,8 @@ private slots:
     void modifyRejectedMutationLeavesNoHistory();
     void selectionChangedSignal();
     void selectionFollowsItemAfterErase();
+    void modifyUndoKeepsLaterGeometry();
+    void modifyUndoKeepsVisibility();
     void testAddItem_PreservesAnnotationsBeyondFifty();
     void testDraw_CullsPencilStrokesOutsidePainterClip();
     void testDrawCached_AppendsWithoutRebuildingExistingItems();
@@ -1507,6 +1509,42 @@ void TestAnnotationLayer::selectionFollowsItemAfterErase()
     QVERIFY(layer.commitEraseTransaction(std::move(removed)));
     QCOMPARE(layer.selectedIndex(), -1);
     QCOMPARE(layer.selectedItem(), nullptr);
+}
+
+
+void TestAnnotationLayer::modifyUndoKeepsLaterGeometry()
+{
+    // Moves are not undoable yet; undoing a colour change must not revert them.
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::blue); return true; });
+    arrowAt(layer, 0)->translate(QPointF(30, 40));
+    const QRect moved = arrowAt(layer, 0)->boundingRect();
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::red));
+    QCOMPARE(arrowAt(layer, 0)->boundingRect(), moved);
+    layer.redo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::blue));
+    QCOMPARE(arrowAt(layer, 0)->boundingRect(), moved);
+}
+
+void TestAnnotationLayer::modifyUndoKeepsVisibility()
+{
+    // A text hidden for inline re-editing must stay hidden across a style undo/redo.
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Hi"),
+                                                      QFont(), Qt::black));
+    layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem& i) {
+        static_cast<TextBoxAnnotation&>(i).setColor(Qt::red); return true; });
+    auto* text = static_cast<TextBoxAnnotation*>(layer.itemAt(0));
+    text->setVisible(false);
+    layer.undo();
+    QVERIFY(!layer.itemAt(0)->isVisible());
+    QCOMPARE(static_cast<TextBoxAnnotation*>(layer.itemAt(0))->color(), QColor(Qt::black));
+    layer.redo();
+    QVERIFY(!layer.itemAt(0)->isVisible());
+    QCOMPARE(layer.itemAt(0), text); // the same object stays in the scene
 }
 
 QTEST_MAIN(TestAnnotationLayer)
