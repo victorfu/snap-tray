@@ -186,10 +186,19 @@ void TestEraserHostRouting::pinWindow()
     }
     window.m_annotationMode = true;
     window.m_currentToolId = eraser ? ToolId::Eraser : ToolId::Pencil;
+    // Selecting an annotation shows the style strip (#224). With no toolbar to
+    // anchor it, the strip sits at the platform default position, which can
+    // cover the synthetic global points; presses over floating UI are ignored.
+    // Keep it out of the way, as the ScreenCanvas case drops its floating UI.
+    auto hideStrip = [&] {
+        if (window.m_subToolbar) {
+            window.m_subToolbar->hide();
+        }
+    };
     verifyRouting(window.m_annotationLayer, window.m_toolManager,
-        [&](QMouseEvent* event) { window.mousePressEvent(event); },
-        [&](QMouseEvent* event) { window.mouseMoveEvent(event); },
-        [&](QMouseEvent* event) { window.mouseReleaseEvent(event); });
+        [&](QMouseEvent* event) { hideStrip(); window.mousePressEvent(event); },
+        [&](QMouseEvent* event) { hideStrip(); window.mouseMoveEvent(event); },
+        [&](QMouseEvent* event) { hideStrip(); window.mouseReleaseEvent(event); });
 }
 
 void TestEraserHostRouting::screenCanvas()
