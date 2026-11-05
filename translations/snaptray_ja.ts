@@ -296,7 +296,7 @@
 <context>
     <name>CanvasToolbarViewModel</name>
     <message>
-        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="32" />
+        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="34" />
         <source>Laser Pointer</source>
         <translation>レーザーポインター</translation>
     </message>
@@ -460,7 +460,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>FloatingToolbar</name>
     <message>
-        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="224" />
+        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="241" />
         <source>More</source>
         <translation>その他</translation>
     </message>
@@ -572,7 +572,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
-        <location filename="../src/PinWindow.cpp" line="1155" />
+        <location filename="../src/PinWindow.cpp" line="1157" />
         <source>Open History Folder</source>
         <translation>履歴フォルダーを開く</translation>
     </message>
@@ -1462,35 +1462,71 @@ Size: %2</source>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134" />
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="135" />
         <source>Automatically detect and blur faces and credentials</source>
         <translation>顔と認証情報を自動検出してぼかす</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="474" />
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="483" />
+        <source>New object</source>
+        <translation>新しいオブジェクト</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="477" />
+        <source>Text</source>
+        <translation>テキスト</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="478" />
+        <source>Arrow</source>
+        <translation>矢印</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="479" />
+        <source>Line</source>
+        <translation>線</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="481" />
+        <source>Ellipse</source>
+        <translation>楕円</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="481" />
+        <source>Rectangle</source>
+        <translation>四角形</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="485" />
+        <source>Selected: %1</source>
+        <translation>選択中：%1</translation>
     </message>
 </context>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1129" />
+        <location filename="../src/PinWindow.cpp" line="1131" />
         <source>Show Toolbar</source>
         <translation>ツールバーを表示</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1135" />
+        <location filename="../src/PinWindow.cpp" line="1137" />
         <source>Show Border</source>
         <translation>枠線を表示</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1171" />
+        <location filename="../src/PinWindow.cpp" line="1173" />
         <source>Adjust Region Layout</source>
         <translation>リージョンレイアウトを調整</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1144" />
+        <location filename="../src/PinWindow.cpp" line="1146" />
         <source>Copy to Clipboard</source>
         <translation>クリップボードにコピー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1148" />
+        <location filename="../src/PinWindow.cpp" line="1150" />
         <source>Save to file</source>
         <translation>ファイルに保存</translation>
     </message>
@@ -1499,331 +1535,331 @@ Size: %2</source>
         <translation>キャッシュフォルダーを開く</translation>
     </message>
     <message>
-        <location filename="../src/qml/PinToolbarViewModel.cpp" line="30" />
+        <location filename="../src/qml/PinToolbarViewModel.cpp" line="27" />
         <source>Beautify</source>
         <translation>美化</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1161" />
+        <location filename="../src/PinWindow.cpp" line="1163" />
         <source>Click-through</source>
         <translation>クリックスルー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1168" />
-        <location filename="../src/PinWindow.cpp" line="1522" />
-        <location filename="../src/PinWindow.cpp" line="1530" />
-        <location filename="../src/PinWindow.cpp" line="1544" />
-        <location filename="../src/PinWindow.cpp" line="1561" />
-        <location filename="../src/PinWindow.cpp" line="1573" />
+        <location filename="../src/PinWindow.cpp" line="1170" />
+        <location filename="../src/PinWindow.cpp" line="1524" />
+        <location filename="../src/PinWindow.cpp" line="1532" />
+        <location filename="../src/PinWindow.cpp" line="1546" />
+        <location filename="../src/PinWindow.cpp" line="1563" />
+        <location filename="../src/PinWindow.cpp" line="1575" />
         <source>Merge Pins</source>
         <translation>ピンを結合</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1177" />
+        <location filename="../src/PinWindow.cpp" line="1179" />
         <source>Watermark</source>
         <translation>ウォーターマーク</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1180" />
+        <location filename="../src/PinWindow.cpp" line="1182" />
         <source>Enable</source>
         <translation>有効</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1191" />
+        <location filename="../src/PinWindow.cpp" line="1193" />
         <source>Position</source>
         <translation>位置</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1194" />
+        <location filename="../src/PinWindow.cpp" line="1196" />
         <source>Top-Left</source>
         <translation>左上</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1199" />
+        <location filename="../src/PinWindow.cpp" line="1201" />
         <source>Top-Right</source>
         <translation>右上</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1204" />
+        <location filename="../src/PinWindow.cpp" line="1206" />
         <source>Bottom-Left</source>
         <translation>左下</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1209" />
+        <location filename="../src/PinWindow.cpp" line="1211" />
         <source>Bottom-Right</source>
         <translation>右下</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1228" />
-        <location filename="../src/PinWindow.cpp" line="1322" />
-        <location filename="../src/PinWindow.cpp" line="2163" />
+        <location filename="../src/PinWindow.cpp" line="1230" />
+        <location filename="../src/PinWindow.cpp" line="1324" />
+        <location filename="../src/PinWindow.cpp" line="2165" />
         <source>Zoom</source>
         <translation>ズーム</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1231" />
+        <location filename="../src/PinWindow.cpp" line="1233" />
         <source>33.3%</source>
         <translation>33.3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1234" />
+        <location filename="../src/PinWindow.cpp" line="1236" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1237" />
+        <location filename="../src/PinWindow.cpp" line="1239" />
         <source>66.7%</source>
         <translation>66.7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1240" />
+        <location filename="../src/PinWindow.cpp" line="1242" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1243" />
+        <location filename="../src/PinWindow.cpp" line="1245" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1253" />
+        <location filename="../src/PinWindow.cpp" line="1255" />
         <source>Smoothing</source>
         <translation>スムージング</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1262" />
+        <location filename="../src/PinWindow.cpp" line="1264" />
         <source>Image processing</source>
         <translation>画像処理</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1264" />
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>Rotate left</source>
         <translation>左に回転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1267" />
+        <location filename="../src/PinWindow.cpp" line="1269" />
         <source>Rotate right</source>
         <translation>右に回転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1270" />
+        <location filename="../src/PinWindow.cpp" line="1272" />
         <source>Horizontal flip</source>
         <translation>水平反転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1273" />
+        <location filename="../src/PinWindow.cpp" line="1275" />
         <source>Vertical flip</source>
         <translation>垂直反転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1277" />
+        <location filename="../src/PinWindow.cpp" line="1279" />
         <source>Crop</source>
         <translation>切り抜き</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1286" />
-        <location filename="../src/PinWindow.cpp" line="1324" />
-        <location filename="../src/PinWindow.cpp" line="2165" />
+        <location filename="../src/PinWindow.cpp" line="1288" />
+        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="2167" />
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1289" />
+        <location filename="../src/PinWindow.cpp" line="1291" />
         <source>Increase by %1%</source>
         <translation>%1% 増加</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1296" />
+        <location filename="../src/PinWindow.cpp" line="1298" />
         <source>Decrease by %1%</source>
         <translation>%1% 減少</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1306" />
+        <location filename="../src/PinWindow.cpp" line="1308" />
         <source>Copy All</source>
         <translation>すべてコピー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1321" />
-        <location filename="../src/PinWindow.cpp" line="2162" />
+        <location filename="../src/PinWindow.cpp" line="1323" />
+        <location filename="../src/PinWindow.cpp" line="2164" />
         <source>Size</source>
         <translation>サイズ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1323" />
-        <location filename="../src/PinWindow.cpp" line="2164" />
+        <location filename="../src/PinWindow.cpp" line="1325" />
+        <location filename="../src/PinWindow.cpp" line="2166" />
         <source>Rotation</source>
         <translation>回転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
         <source>X-mirror</source>
         <translation>X軸ミラー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>Y-mirror</source>
         <translation>Y軸ミラー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="1972" />
-        <location filename="../src/PinWindow.cpp" line="1973" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>Yes</source>
         <translation>はい</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="1972" />
-        <location filename="../src/PinWindow.cpp" line="1973" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>No</source>
         <translation>いいえ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1332" />
-        <location filename="../src/PinWindow.cpp" line="3040" />
+        <location filename="../src/PinWindow.cpp" line="1334" />
+        <location filename="../src/PinWindow.cpp" line="3042" />
         <source>Start Live Update</source>
         <translation>ライブ更新を開始</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1968" />
+        <location filename="../src/PinWindow.cpp" line="1970" />
         <source>Size: %1</source>
         <translation>サイズ：%1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3040" />
+        <location filename="../src/PinWindow.cpp" line="3042" />
         <source>Stop Live Update</source>
         <translation>ライブ更新を停止</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1343" />
-        <location filename="../src/PinWindow.cpp" line="3044" />
+        <location filename="../src/PinWindow.cpp" line="1345" />
+        <location filename="../src/PinWindow.cpp" line="3046" />
         <source>Pause Live Update</source>
         <translation>ライブ更新を一時停止</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3044" />
+        <location filename="../src/PinWindow.cpp" line="3046" />
         <source>Resume Live Update</source>
         <translation>ライブ更新を再開</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1354" />
+        <location filename="../src/PinWindow.cpp" line="1356" />
         <source>Frame Rate</source>
         <translation>フレームレート</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1140" />
+        <location filename="../src/PinWindow.cpp" line="1142" />
         <source>Move to Screen</source>
         <translation>画面へ移動</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1357" />
+        <location filename="../src/PinWindow.cpp" line="1359" />
         <source>%1 FPS</source>
         <translation>%1 フレーム/秒</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1371" />
+        <location filename="../src/PinWindow.cpp" line="1373" />
         <source>Close</source>
         <translation>閉じる</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1375" />
+        <location filename="../src/PinWindow.cpp" line="1377" />
         <source>Close All Pins</source>
         <translation>すべてのピンを閉じる</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1475" />
+        <location filename="../src/PinWindow.cpp" line="1477" />
         <source>Screen %1</source>
         <translation>画面 %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1477" />
+        <location filename="../src/PinWindow.cpp" line="1479" />
         <source> (Primary)</source>
         <translation> （メイン）</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1523" />
+        <location filename="../src/PinWindow.cpp" line="1525" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>一度に%1個以上のピンを結合できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1531" />
+        <location filename="../src/PinWindow.cpp" line="1533" />
         <source>Need at least 2 pins to merge</source>
         <translation>結合するには少なくとも2つのピンが必要です</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1545" />
+        <location filename="../src/PinWindow.cpp" line="1547" />
         <source>No primary screen available</source>
         <translation>プライマリスクリーンが利用できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1574" />
+        <location filename="../src/PinWindow.cpp" line="1576" />
         <source>Failed to create merged pin</source>
         <translation>結合ピンの作成に失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1644" />
-        <location filename="../src/PinWindow.cpp" line="1676" />
+        <location filename="../src/PinWindow.cpp" line="1646" />
+        <location filename="../src/PinWindow.cpp" line="1678" />
         <source>Failed to save screenshot: %1</source>
         <translation>スクリーンショットの保存に失敗しました: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1659" />
         <source>Save Screenshot</source>
         <translation>スクリーンショットを保存</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1659" />
-        <location filename="../src/PinWindow.cpp" line="6155" />
+        <location filename="../src/PinWindow.cpp" line="1661" />
+        <location filename="../src/PinWindow.cpp" line="6205" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG 画像 (*.png);;JPEG 画像 (*.jpg *.jpeg);;すべてのファイル (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1689" />
-        <location filename="../src/PinWindow.cpp" line="1710" />
-        <location filename="../src/PinWindow.cpp" line="6059" />
-        <location filename="../src/PinWindow.cpp" line="6084" />
+        <location filename="../src/PinWindow.cpp" line="1691" />
+        <location filename="../src/PinWindow.cpp" line="1712" />
+        <location filename="../src/PinWindow.cpp" line="6109" />
+        <location filename="../src/PinWindow.cpp" line="6134" />
         <source>Copy failed</source>
         <translation>コピーに失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1710" />
+        <location filename="../src/PinWindow.cpp" line="1712" />
         <source>Copied to clipboard</source>
         <translation>クリップボードにコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1722" />
-        <location filename="../src/PinWindow.cpp" line="5428" />
+        <location filename="../src/PinWindow.cpp" line="1724" />
+        <location filename="../src/PinWindow.cpp" line="5478" />
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
         <source>Please wait for auto-blur to finish</source>
         <translation>自動ぼかしが完了するまでお待ちください</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1864" />
-        <location filename="../src/PinWindow.cpp" line="1942" />
+        <location filename="../src/PinWindow.cpp" line="1866" />
+        <location filename="../src/PinWindow.cpp" line="1944" />
         <source>Copied %1 characters</source>
         <translation>%1文字をコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1868" />
+        <location filename="../src/PinWindow.cpp" line="1870" />
         <source>No text found</source>
         <translation>テキストが見つかりません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1873" />
-        <location filename="../src/PinWindow.cpp" line="1889" />
+        <location filename="../src/PinWindow.cpp" line="1875" />
+        <location filename="../src/PinWindow.cpp" line="1891" />
         <source>Text copied</source>
         <translation>テキストをコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1953" />
+        <location filename="../src/PinWindow.cpp" line="1955" />
         <source>No QR code found</source>
         <translation>QRコードが見つかりません</translation>
     </message>
@@ -1832,85 +1868,85 @@ Size: %2</source>
         <translation>サイズ: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1969" />
+        <location filename="../src/PinWindow.cpp" line="1971" />
         <source>Zoom: %1%</source>
         <translation>ズーム: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1970" />
+        <location filename="../src/PinWindow.cpp" line="1972" />
         <source>Rotation: %1°</source>
         <translation>回転: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1971" />
+        <location filename="../src/PinWindow.cpp" line="1973" />
         <source>Opacity: %1%</source>
         <translation>不透明度: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1972" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
         <source>X-mirror: %1</source>
         <translation>X軸ミラー: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1973" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
         <source>Y-mirror: %1</source>
         <translation>Y軸ミラー: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4828" />
+        <location filename="../src/PinWindow.cpp" line="4873" />
         <source>Stop live capture before running auto-blur</source>
         <translation>自動ぼかしを実行する前にライブキャプチャを停止してください</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4851" />
+        <location filename="../src/PinWindow.cpp" line="4896" />
         <source>Face detection unavailable</source>
         <translation>顔検出を利用できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4861" />
+        <location filename="../src/PinWindow.cpp" line="4906" />
         <source>Detection unavailable</source>
         <translation>検出を利用できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4891" />
+        <location filename="../src/PinWindow.cpp" line="4936" />
         <source>Unable to snapshot the current image</source>
         <translation>現在の画像のスナップショットを取得できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6064" />
-        <location filename="../src/PinWindow.cpp" line="6128" />
-        <location filename="../src/PinWindow.cpp" line="6164" />
+        <location filename="../src/PinWindow.cpp" line="6114" />
+        <location filename="../src/PinWindow.cpp" line="6178" />
+        <location filename="../src/PinWindow.cpp" line="6214" />
         <source>Beautify rendering failed</source>
         <translation>美化レンダリングに失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5953" />
+        <location filename="../src/PinWindow.cpp" line="6003" />
         <source>Unable to apply region layout</source>
         <translation>領域レイアウトを適用できませんでした</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6084" />
+        <location filename="../src/PinWindow.cpp" line="6134" />
         <source>Beautified image copied</source>
         <translation>美化画像をコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1592" />
-        <location filename="../src/PinWindow.cpp" line="1630" />
-        <location filename="../src/PinWindow.cpp" line="1664" />
-        <location filename="../src/PinWindow.cpp" line="6097" />
-        <location filename="../src/PinWindow.cpp" line="6123" />
-        <location filename="../src/PinWindow.cpp" line="6159" />
+        <location filename="../src/PinWindow.cpp" line="1594" />
+        <location filename="../src/PinWindow.cpp" line="1632" />
+        <location filename="../src/PinWindow.cpp" line="1666" />
+        <location filename="../src/PinWindow.cpp" line="6147" />
+        <location filename="../src/PinWindow.cpp" line="6173" />
+        <location filename="../src/PinWindow.cpp" line="6209" />
         <source>No image available to save</source>
         <translation>保存できる画像がありません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6143" />
-        <location filename="../src/PinWindow.cpp" line="6178" />
+        <location filename="../src/PinWindow.cpp" line="6193" />
+        <location filename="../src/PinWindow.cpp" line="6228" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>美化スクリーンショットの保存に失敗しました: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6153" />
+        <location filename="../src/PinWindow.cpp" line="6203" />
         <source>Save Beautified Screenshot</source>
         <translation>美化スクリーンショットを保存</translation>
     </message>
@@ -2796,31 +2832,31 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>書き出すファイルで機密領域を隠す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3410" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3441" />
         <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
         <translation>マスク：%1、書き出しに焼き込み。マスクなしの一時ファイルは保存後に削除されます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1028" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1046" />
         <source>Selected mask</source>
         <translation>選択中のマスク</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="70" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1967" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2008" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2010" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2048" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1997" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2038" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2040" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2078" />
         <source>the end</source>
         <translation>最後</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1966" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1996" />
         <source>Mask from %1 to %2</source>
         <translation>マスク（%1〜%2）</translation>
     </message>
@@ -2833,17 +2869,17 @@ Size: %2</source>
         <translation>このマスクを削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2396" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2426" />
         <source>Mask end</source>
         <translation>マスク終了</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2414" />
         <source>Mask start</source>
         <translation>マスク開始</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2365" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2395" />
         <source>Mask for the whole recording, or only for a time range</source>
         <translation>録画全体、または時間範囲のみにマスク</translation>
     </message>
@@ -2879,12 +2915,12 @@ Size: %2</source>
         <translation>マスク：%1、書き出しに焼き込み。元の録画はそのまま</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3411" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3442" />
         <source>masks need GIF or WebP on this system</source>
         <translation>このシステムではマスクに GIF または WebP が必要です</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
         <source>Masks need GIF or WebP on this system</source>
         <translation>このシステムではマスクに GIF または WebP が必要です</translation>
     </message>
@@ -2893,17 +2929,17 @@ Size: %2</source>
         <translation>書き出しで機密領域を隠します。元の録画は変更されません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1403" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
         <source>Add Mask</source>
         <translation>マスクを追加</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1396" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1414" />
         <source>No room for a new zoom here</source>
         <translation>ここには新しいズームを追加できません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1929" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1959" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>ズーム %1×（%2〜%3）</translation>
     </message>
@@ -2924,7 +2960,7 @@ Size: %2</source>
         <translation>削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3266" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3297" />
         <source>Turn all zooms on or off without deleting them</source>
         <translation>すべてのズームを削除せずにオン/オフ</translation>
     </message>
@@ -2937,7 +2973,7 @@ Size: %2</source>
         <translation>ズームオン</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3273" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3304" />
         <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
         <translation>すべての区間でズームを穏やかに：小さく遅くし、直接パンしません</translation>
     </message>
@@ -2946,100 +2982,100 @@ Size: %2</source>
         <translation>動きを減らす</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3231" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
         <source>Zoom end</source>
         <translation>ズーム終了</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3251" />
         <source>Zoom start</source>
         <translation>ズーム開始</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
         <source>Zoom: %1</source>
         <translation>ズーム：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
         <source>Add a zoom at the playhead</source>
         <translation>再生位置にズームを追加</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1387" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
         <source>Add Zoom</source>
         <translation>ズームを追加</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1380" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1398" />
         <source>No clicks to zoom in on</source>
         <translation>ズームするクリックがありません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1379" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1397" />
         <source>Zooms added: %1</source>
         <translation>追加されたズーム：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1373" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1391" />
         <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
         <translation>自動ズームには記録されたクリックが必要です。手動でズームを追加してください</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1372" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1390" />
         <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
         <translation>クリック箇所を自動でズームします。追加または変更したズームは保持されます。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1370" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
         <source>Auto Zoom</source>
         <translation>自動ズーム</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2500" />
         <source>Highlight Clicks</source>
         <translation>クリックを強調表示</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2500" />
         <source>Hide Click Highlights</source>
         <translation>クリックの強調表示を隠す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2499" />
         <source>Clicks</source>
         <translation>クリック</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2459" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2489" />
         <source>Smooths the pointer's path; clicks stay where they happened</source>
         <translation>ポインターの軌跡を滑らかにします。クリック位置は変わりません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
         <source>Pointer Size: %1</source>
         <translation>ポインターのサイズ：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
         <source>Show the Mouse Pointer</source>
         <translation>マウスポインターを表示</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
         <source>Hide the Mouse Pointer</source>
         <translation>マウスポインターを隠す</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1524" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2230" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2439" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1542" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2260" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
         <source>Pointer</source>
         <translation>ポインター</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3407" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3438" />
         <source>pointer effects need GIF or WebP on this system</source>
         <translation>このシステムではポインター効果に GIF または WebP が必要です</translation>
     </message>
@@ -3060,33 +3096,33 @@ Size: %2</source>
         <translation>スムーズ：オフ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3898" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3929" />
         <source>Save again with the current settings</source>
         <translation>現在の設定でもう一度保存</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3896" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3927" />
         <source>Try Again</source>
         <translation>再試行</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3714" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3745" />
         <source>Keep Exporting</source>
         <translation>書き出しを続行</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3704" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3735" />
         <source>An export is in progress. Keep exporting or cancel it?</source>
         <translation>書き出し中です。続行しますか、キャンセルしますか？</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3691" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="3722" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3753" />
         <source>Cancel Export</source>
         <translation>書き出しをキャンセル</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1195" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1213" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>切り抜きを適用 (Enter) · 矢印キーで 2 px 移動 (Shift: 10 px)</translation>
     </message>
@@ -3095,96 +3131,96 @@ Size: %2</source>
         <translation>オリジナルと比較 (\)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1224" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1242" />
         <source>Compare with Original</source>
         <translation>オリジナルと比較</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1236" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1239" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1257" />
         <source>Reset Crop and Trim</source>
         <translation>切り抜きとトリムをリセット</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="671" />
         <source>Redo Edit</source>
         <translation>編集をやり直す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="658" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
         <source>Redo Edit (Ctrl+Shift+Z)</source>
         <translation>編集をやり直す (Ctrl+Shift+Z)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="648" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="660" />
         <source>Undo Edit</source>
         <translation>編集を元に戻す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="647" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
         <source>Undo Edit (Ctrl+Z)</source>
         <translation>編集を元に戻す (Ctrl+Z)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3358" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3389" />
         <source>Crop %1 in pixels</source>
         <translation>切り抜き %1（ピクセル）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3339" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3370" />
         <source>H</source>
         <translation>高さ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3338" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3369" />
         <source>W</source>
         <translation>幅</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3337" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3368" />
         <source>Y</source>
         <translation>Y</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3336" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3367" />
         <source>X</source>
         <translation>X</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3317" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3348" />
         <source>Crop aspect: %1</source>
         <translation>切り抜き比率: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1351" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1369" />
         <source>Trim end</source>
         <translation>トリム終了</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1337" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1355" />
         <source>Trim start</source>
         <translation>トリム開始</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3405" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3436" />
         <source>no audio</source>
         <translation>音声なし</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3403" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3434" />
         <source>%1 kept</source>
         <translation>%1 を保持</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3402" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3433" />
         <source>Original %1 → Output %2</source>
         <translation>元 %1 → 出力 %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="203" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="248" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3064" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3542" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3095" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3573" />
         <source>Original</source>
         <translation>オリジナル</translation>
     </message>
@@ -3194,37 +3230,37 @@ Size: %2</source>
         <translation>自由</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
         <source>Discard</source>
         <translation>破棄</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
         <source>Keep Recording</source>
         <translation>録画を保持</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3817" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3848" />
         <source>The video will be deleted and cannot be recovered.</source>
         <translation>動画は削除され、元に戻せません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
         <source>Discard this recording?</source>
         <translation>この録画を破棄しますか？</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3517" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3548" />
         <source>Clear Crop</source>
         <translation>切り抜きをクリア</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3567" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3598" />
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>ウィンドウをクリックするとその範囲に切り抜き、ドラッグで自由に描けます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3593" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3624" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>このプレビューでは音声を再生できません。</translation>
     </message>
@@ -3241,12 +3277,12 @@ Size: %2</source>
         <translation>WebP として書き出す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1152" />
         <source>Pause Preview (Space)</source>
         <translation>プレビューを一時停止 (スペース)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1152" />
         <source>Play Preview (Space)</source>
         <translation>プレビューを再生 (スペース)</translation>
     </message>
@@ -3255,42 +3291,42 @@ Size: %2</source>
         <translation>再生速度: %1x</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1203" />
         <source>Unmute Preview (M)</source>
         <translation>プレビューのミュートを解除 (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1203" />
         <source>Mute Preview (M)</source>
         <translation>プレビューをミュート (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1198" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1216" />
         <source>Apply Crop (Enter)</source>
         <translation>切り抜きを適用 (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1214" />
         <source>Edit Crop</source>
         <translation>切り抜きを編集</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1214" />
         <source>Crop Recording</source>
         <translation>録画を切り抜き</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1235" />
         <source>Clear Trim Selection</source>
         <translation>トリミング範囲をクリア</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1235" />
         <source>Trim Recording</source>
         <translation>録画をトリミング</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="709" />
         <source>Discard Recording (Esc)</source>
         <translation>録画を破棄 (Esc)</translation>
     </message>
@@ -3299,12 +3335,12 @@ Size: %2</source>
         <translation>録画を保存 (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3686" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3717" />
         <source>Cancel</source>
         <translation>キャンセル</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3912" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3943" />
         <source>Dismiss Error</source>
         <translation>エラーを閉じる</translation>
     </message>
@@ -3325,7 +3361,7 @@ Size: %2</source>
         <translation>モーションブラー：強</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2047" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2077" />
         <source>Pointer hidden from %1 to %2</source>
         <translation>%1 から %2 までポインターを非表示</translation>
     </message>
@@ -3346,12 +3382,12 @@ Size: %2</source>
         <translation>停止時に隠す：オフ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2476" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2506" />
         <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
         <translation>ポインターが止まるとフェードアウトし、動く前やクリックする前に再表示します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2485" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2515" />
         <source>A short trail behind a fast-moving pointer</source>
         <translation>速く動くポインターの後ろに短い残像を付けます</translation>
     </message>
@@ -3364,22 +3400,22 @@ Size: %2</source>
         <translation>終了時に静止：オフ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2493" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2523" />
         <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
         <translation>最後はポインターを静止させ、録画停止のための移動を映さないようにします</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2503" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2533" />
         <source>Hide Pointer Here</source>
         <translation>ここでポインターを隠す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2504" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2534" />
         <source>Hide the pointer for a while from the playhead</source>
         <translation>再生位置からしばらくポインターを隠します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2538" />
         <source>No room for a hidden range here</source>
         <translation>ここには非表示範囲を追加できません</translation>
     </message>
@@ -3392,12 +3428,12 @@ Size: %2</source>
         <translation>ポインターなし</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3158" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3189" />
         <source>Hidden pointer start</source>
         <translation>ポインター非表示の開始</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3170" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3201" />
         <source>Hidden pointer end</source>
         <translation>ポインター非表示の終了</translation>
     </message>
@@ -3450,17 +3486,17 @@ Size: %2</source>
         <translation>MP4 のサイズ、フレームレート、画質、コーデックと推定ファイルサイズ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3067" />
         <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
         <translation>このシステムでは MP4 のサイズとフレームレートの変更にまだ対応していません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3042" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3073" />
         <source>Make the video smaller; it is never made larger than recorded</source>
         <translation>動画を小さくします。録画より大きくなることはありません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3053" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3084" />
         <source>Video width in pixels</source>
         <translation>動画の幅（ピクセル）</translation>
     </message>
@@ -3473,52 +3509,52 @@ Size: %2</source>
         <translation>fps：元のまま</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3061" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3092" />
         <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
         <translation>フレームレートを下げるとファイルが小さくなります。録画より高くなることはありません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3070" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
         <source>Default uses the quality from the Recording settings</source>
         <translation>既定は録画設定の画質を使います</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3087" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3118" />
         <source>Plays everywhere</source>
         <translation>どこでも再生できます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3098" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3129" />
         <source>Smaller files at the same quality; some older players cannot open them</source>
         <translation>同じ画質でファイルが小さくなります。古いプレーヤーでは開けない場合があります</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3133" />
         <source>HEVC export is not available on this system</source>
         <translation>このシステムでは HEVC で書き出せません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3132" />
         <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
         <translation>HEVC で書き出すには Microsoft Store の HEVC Video Extensions が必要です</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3113" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3144" />
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2、%3 fps · %4（推定）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2222" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
         <source>A background, padding, rounded corners, a shadow and a border around the video</source>
         <translation>動画の周りに背景、余白、角丸、影、枠線を付けます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
         <source>Add a shadow under the video</source>
         <translation>動画の下に影を付けます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
         <source>Add a thin border around the video</source>
         <translation>動画の周りに細い枠線を付けます</translation>
     </message>
@@ -3527,32 +3563,32 @@ Size: %2</source>
         <translation>このシステムではフレームに GIF または WebP が必要です</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2883" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2914" />
         <source>Background: %1</source>
         <translation>背景：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
         <source>Background: Black</source>
         <translation>背景：黒</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2946" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2977" />
         <source>Background image: %1</source>
         <translation>背景画像：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
         <source>Background: White</source>
         <translation>背景：白</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2936" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2967" />
         <source>Blurred Video</source>
         <translation>ぼかした動画</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3012" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3043" />
         <source>Border</source>
         <translation>枠線</translation>
     </message>
@@ -3561,7 +3597,7 @@ Size: %2</source>
         <translation>角丸：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2888" />
         <source>Draw the frame around the exported video</source>
         <translation>書き出す動画の周りにフレームを描きます</translation>
     </message>
@@ -3570,22 +3606,22 @@ Size: %2</source>
         <translation>フレーム</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2887" />
         <source>Frame: Off</source>
         <translation>フレーム：オフ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2887" />
         <source>Frame: On</source>
         <translation>フレーム：オン</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2997" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3028" />
         <source>How round the video's corners are</source>
         <translation>動画の角の丸み</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2944" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
         <source>Image…</source>
         <translation>画像…</translation>
     </message>
@@ -3619,12 +3655,12 @@ Size: %2</source>
         <translation>比率：自動</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
         <source>Remove the border</source>
         <translation>枠線を消します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
         <source>Remove the shadow</source>
         <translation>影を消します</translation>
     </message>
@@ -3635,37 +3671,37 @@ Size: %2</source>
         <translation>小</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2989" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
         <source>Space around the video</source>
         <translation>動画の周りの余白</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3019" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3050" />
         <source>The shape of the exported video; the background fills the extra space</source>
         <translation>書き出す動画の形。余った部分は背景で埋めます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2937" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2968" />
         <source>The video itself, blurred, behind it (masks applied)</source>
         <translation>動画自体をぼかして背景にします（マスク適用後）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2947" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2978" />
         <source>Use an image file as the background</source>
         <translation>画像ファイルを背景にします</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1689" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1707" />
         <source>Cut from %1 to %2</source>
         <translation>%1 から %2 までカット</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1317" />
         <source>Cut Part</source>
         <translation>部分をカット</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1286" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
         <source>Cuts and speed changes need GIF or WebP on this system</source>
         <translation>このシステムではカットと速度変更に GIF または WebP が必要です</translation>
     </message>
@@ -3678,17 +3714,17 @@ Size: %2</source>
         <translation>再生位置の部分を書き出しで再生する速さ。変更した部分は無音になります</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1317" />
         <source>Keep Part</source>
         <translation>部分を残す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1305" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1323" />
         <source>Leave the part at the playhead out of the export (Delete)</source>
         <translation>再生位置の部分を書き出しから外します（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1691" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1709" />
         <source>Part from %1 to %2 at %3</source>
         <translation>%1 から %2 の部分（%3）</translation>
     </message>
@@ -3697,27 +3733,27 @@ Size: %2</source>
         <translation>部分の速度：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1322" />
         <source>Put the part at the playhead back (Delete)</source>
         <translation>再生位置の部分を元に戻します（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1283" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
         <source>Split</source>
         <translation>分割</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1844" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1862" />
         <source>Split at %1</source>
         <translation>%1 で分割</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1285" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1303" />
         <source>Split the recording at the playhead (S)</source>
         <translation>再生位置で録画を分割します（S）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1290" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1308" />
         <source>Too close to another split or an end</source>
         <translation>ほかの分割点または端に近すぎます</translation>
     </message>
@@ -3738,49 +3774,49 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2858" />
         <source>Dark</source>
         <translation>ダーク</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2825" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
         <source>Dark or light keys</source>
         <translation>暗いキーか明るいキー</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
         <source>Draw the shortcuts into the exported video</source>
         <translation>書き出す動画にショートカットを描きます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2817" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2848" />
         <source>How large the shortcuts are</source>
         <translation>ショートカットの大きさ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2864" />
         <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
         <translation>押した後にショートカットを表示しておく時間。続けて押したキーはまとめて表示します</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2295" />
         <source>Keys</source>
         <translation>キー</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
         <source>Keys: Off</source>
         <translation>キー：オフ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
         <source>Keys: On</source>
         <translation>キー：オン</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2858" />
         <source>Light</source>
         <translation>ライト</translation>
     </message>
@@ -3810,32 +3846,32 @@ Size: %2</source>
         <translation>上</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2809" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2840" />
         <source>Where the shortcuts appear</source>
         <translation>ショートカットを表示する位置</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
         <source>Shadow</source>
         <translation>影</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2652" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2683" />
         <source>A box behind the text, so it reads on any picture</source>
         <translation>どんな画面でも読めるよう文字の後ろに背景を付けます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1441" />
         <source>A title or caption at the playhead</source>
         <translation>再生位置にタイトルや説明を追加します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1460" />
         <source>Add Image</source>
         <translation>画像を追加</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1439" />
         <source>Add Text</source>
         <translation>テキストを追加</translation>
     </message>
@@ -3852,7 +3888,7 @@ Size: %2</source>
         <translation>右揃え</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1444" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1462" />
         <source>An image such as a logo, for the whole recording</source>
         <translation>ロゴなどの画像を録画全体に表示します</translation>
     </message>
@@ -3869,12 +3905,12 @@ Size: %2</source>
         <translation>ドラッグで移動、角のドラッグで大きさを変えます。「完了」で編集を終えます。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2661" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2692" />
         <source>How lines line up</source>
         <translation>行の揃え方</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2701" />
         <source>How see-through the image is</source>
         <translation>画像の透け具合</translation>
     </message>
@@ -3884,7 +3920,7 @@ Size: %2</source>
         <translation>画像オーバーレイ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2606" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2637" />
         <source>Larger</source>
         <translation>大きく</translation>
     </message>
@@ -3901,45 +3937,45 @@ Size: %2</source>
         <translation>不透明度：%1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2743" />
         <source>Overlay end</source>
         <translation>オーバーレイの終了</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2700" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2731" />
         <source>Overlay start</source>
         <translation>オーバーレイの開始</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2553" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
         <source>Overlay text</source>
         <translation>オーバーレイの文字</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1445" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1463" />
         <source>Overlays need GIF or WebP on this system</source>
         <translation>このシステムではオーバーレイに GIF または WebP が必要です</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="936" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="954" />
         <source>Selected overlay</source>
         <translation>選択中のオーバーレイ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2682" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2713" />
         <source>Show it for the whole recording, or only for a time range</source>
         <translation>録画全体に表示するか、一定の時間だけ表示します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2598" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2629" />
         <source>Smaller</source>
         <translation>小さく</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2536" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2552" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2034" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2566" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2582" />
         <source>Text</source>
         <translation>テキスト</translation>
     </message>
@@ -3957,27 +3993,27 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2277" />
         <source>Audio</source>
         <translation>オーディオ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2788" />
         <source>Leave the microphone out of the export</source>
         <translation>書き出しからマイクを外します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2782" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2813" />
         <source>Leave the system audio out of the export</source>
         <translation>書き出しからシステム音声を外します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2256" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
         <source>Microphone and system audio volume, mute, and noise reduction</source>
         <translation>マイクとシステム音声の音量、ミュート、ノイズ低減</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2747" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2778" />
         <source>Microphone volume in the export</source>
         <translation>書き出しでのマイク音量</translation>
     </message>
@@ -3990,17 +4026,17 @@ Size: %2</source>
         <translation>このシステムでは MP4 で 2 つのトラックのミックスにまだ対応していません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2756" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2787" />
         <source>Mute Microphone</source>
         <translation>マイクをミュート</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2781" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2812" />
         <source>Mute System Audio</source>
         <translation>システム音声をミュート</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2764" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2795" />
         <source>Reduce Noise</source>
         <translation>ノイズを低減</translation>
     </message>
@@ -4009,12 +4045,12 @@ Size: %2</source>
         <translation>システム音声：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2772" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
         <source>System audio volume in the export</source>
         <translation>書き出しでのシステム音声の音量</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2765" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2796" />
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>マイクの言葉の合間のヒスノイズ、ハム、室内のノイズを下げます</translation>
     </message>
@@ -4025,7 +4061,7 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="51" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1522" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1540" />
         <source>Mask</source>
         <translation>マスク</translation>
     </message>
@@ -4051,7 +4087,7 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
         <source>Canvas</source>
         <translation>キャンバス</translation>
     </message>
@@ -4078,14 +4114,14 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="68" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="80" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2364" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2681" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2394" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
         <source>Whole recording</source>
         <translation>録画全体</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="69" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2289" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2319" />
         <source>%1 – %2</source>
         <comment>time range</comment>
         <translation>%1 – %2</translation>
@@ -4098,8 +4134,8 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="208" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="212" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2525" />
         <source>Off</source>
         <translation>オフ</translation>
     </message>
@@ -4168,594 +4204,594 @@ Size: %2</source>
         <translation>カスタム</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="600" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="612" />
         <source>Recording</source>
         <translation>録画</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="682" />
         <source>Hide settings</source>
         <translation>設定を隠す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="682" />
         <source>Show settings</source>
         <translation>設定を表示</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="679" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="691" />
         <source>Export…</source>
         <translation>書き出し…</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="683" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="695" />
         <source>Choose a format and export (Ctrl+S)</source>
         <translation>形式を選んで書き出す (Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="709" />
         <source>Close Without Saving (Esc)</source>
         <translation>保存せずに閉じる (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1161" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1179" />
         <source>Not exported · export %1</source>
         <translation>書き出し対象外 · 書き出しの長さ %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1162" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1180" />
         <source>Export %1 / %2</source>
         <translation>書き出し %1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1165" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1183" />
         <source>The playhead is in a part that is not exported. The export is %1 long.</source>
         <translation>再生位置は書き出されない部分にあります。書き出しの長さは %1 です。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1167" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
         <source>Exported time %1 of %2</source>
         <translation>書き出し時間 %1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1229" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1247" />
         <source>Compare with Original (%1)</source>
         <translation>オリジナルと比較 (%1)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1258" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1276" />
         <source>Preview speed</source>
         <translation>プレビュー速度</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1259" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1277" />
         <source>Playback speed of this preview only; the export is not changed</source>
         <translation>このプレビューの再生速度のみです。書き出しは変更されません</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1319" />
         <source>Put the selected clip back (Delete)</source>
         <translation>選択したクリップを元に戻します（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1302" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1320" />
         <source>Leave the selected clip out of the export (Delete)</source>
         <translation>選択したクリップを書き出しから外します（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1314" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1332" />
         <source>Add effect</source>
         <translation>エフェクトを追加</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1315" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1333" />
         <source>Zoom, mask, text or image at the playhead</source>
         <translation>再生位置にズーム、マスク、テキスト、画像を追加</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1328" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1346" />
         <source>Trim</source>
         <translation>トリム</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1521" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1539" />
         <source>Zoom</source>
         <translation>ズーム</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1523" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1541" />
         <source>Text &amp; image</source>
         <translation>テキストと画像</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1581" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1599" />
         <source>Video</source>
         <translation>動画</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1674" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1692" />
         <source>Cut</source>
         <translation>カット</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1808" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1826" />
         <source>No effects yet. Use Add effect to zoom, mask, or add text at the playhead.</source>
         <translation>エフェクトはまだありません。「エフェクトを追加」で再生位置にズーム、マスク、テキストを追加できます。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1845" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1863" />
         <source>Arrow keys move the split; Delete joins the two clips</source>
         <translation>矢印キーで分割位置を移動、Delete で2つのクリップを結合します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1928" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1958" />
         <source>Zoom %1</source>
         <translation>ズーム %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1965" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1995" />
         <source>Mask · %1</source>
         <translation>マスク · %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2034" />
         <source>Image</source>
         <translation>画像</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2036" />
         <source>Text overlay "%1" from %2 to %3</source>
         <translation>テキストオーバーレイ「%1」（%2〜%3）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2009" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2039" />
         <source>Image overlay from %1 to %2</source>
         <translation>画像オーバーレイ（%1〜%2）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2046" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2076" />
         <source>Pointer hidden</source>
         <translation>ポインター非表示</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2204" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2234" />
         <source>These settings apply to the whole recording. Select a clip or effect on the timeline to edit just that part.</source>
         <translation>これらの設定は録画全体に適用されます。一部だけを編集するには、タイムラインでクリップまたはエフェクトを選択してください。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2219" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
         <source>Frame on · padding %1</source>
         <translation>フレームオン · 余白 %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
         <source>No frame</source>
         <translation>フレームなし</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2221" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2251" />
         <source>A frame needs GIF or WebP on this system.</source>
         <translation>このシステムではフレームに GIF または WebP が必要です。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2231" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2261" />
         <source>Hidden</source>
         <translation>非表示</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2233" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2263" />
         <source>Shown · %1 · %n hidden range(s)</source>
         <translation>
             <numerusform>表示 · %1 · 非表示範囲 %n 件</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2235" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
         <source>Shown · %1</source>
         <translation>表示 · %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2236" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2266" />
         <source>No pointer data was recorded.</source>
         <translation>ポインターのデータは記録されていません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2237" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
         <source>Pointer effects need GIF or WebP on this system.</source>
         <translation>このシステムではポインター効果に GIF または WebP が必要です。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2238" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
         <source>Size, smoothing, click highlights, hide when idle, motion blur and a still ending</source>
         <translation>サイズ、スムージング、クリックの強調表示、停止時に隠す、モーションブラー、終了時に静止</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2248" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2278" />
         <source>Microphone %1 · System %2</source>
         <translation>マイク %1 · システム %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2279" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2280" />
         <source>muted</source>
         <translation>ミュート</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2282" />
         <source>No separate microphone and system tracks. The recorded audio is kept as it is.</source>
         <translation>マイクとシステムのトラックが分かれていません。録音されたオーディオはそのまま保持されます。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2284" />
         <source>GIF and WebP have no sound. Choose MP4 to adjust the audio.</source>
         <translation>GIF と WebP には音声がありません。オーディオを調整するには MP4 を選択してください。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2255" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2285" />
         <source>Mixing the two tracks is not supported for MP4 on this system yet.</source>
         <translation>このシステムでは MP4 で 2 つのトラックのミックスにまだ対応していません。</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2297" />
         <source>Shown · %n shortcut(s) recorded</source>
         <translation>
             <numerusform>表示 · ショートカット %n 件を記録</numerusform>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2298" />
         <source>Off · %n shortcut(s) recorded</source>
         <translation>
             <numerusform>オフ · ショートカット %n 件を記録</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2269" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
         <source>No shortcuts were recorded.</source>
         <translation>ショートカットは記録されていません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2270" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
         <source>Shortcut hints need GIF or WebP on this system.</source>
         <translation>このシステムではショートカット表示に GIF または WebP が必要です。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2271" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2301" />
         <source>Show the shortcuts pressed while recording</source>
         <translation>録画中に押したショートカットを表示します</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2316" />
         <source>Source range</source>
         <translation>元の範囲</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2329" />
         <source>Export speed</source>
         <translation>書き出し速度</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2330" />
         <source>How fast this clip plays in the exported file. Changed-speed clips are silent.</source>
         <translation>書き出したファイルでのこのクリップの再生速度です。速度を変更したクリップは無音になります。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2314" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2344" />
         <source>Cuts and speed changes need GIF or WebP on this system.</source>
         <translation>このシステムではカットと速度変更に GIF または WebP が必要です。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2353" />
         <source>Keep clip</source>
         <translation>クリップを残す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2353" />
         <source>Cut clip</source>
         <translation>クリップをカット</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2324" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
         <source>Leave this clip out of the export, or put it back (Delete)</source>
         <translation>このクリップを書き出しから外すか、元に戻します（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
         <source>Style</source>
         <translation>スタイル</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2355" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2385" />
         <source>Solid covers with black; pixelate and blur weaken detail, which may still be recoverable</source>
         <translation>塗りつぶしは黒で覆います。モザイクとぼかしは細部を弱めますが、復元できる場合があります</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2361" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2678" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3151" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3213" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2391" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2709" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3182" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3244" />
         <source>Time range</source>
         <translation>時間範囲</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2406" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2436" />
         <source>Drag the mask on the preview to move it, or its corner to resize it.</source>
         <translation>プレビュー上でマスクをドラッグして移動し、角をドラッグしてサイズを変更します。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2417" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2447" />
         <source>Delete mask</source>
         <translation>マスクを削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2418" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
         <source>Delete this mask (Delete)</source>
         <translation>このマスクを削除（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2449" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2479" />
         <source>Pointer size</source>
         <translation>ポインターのサイズ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2460" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2490" />
         <source>Smoothing</source>
         <translation>スムージング</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2477" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2507" />
         <source>Hide when idle</source>
         <translation>停止時に隠す</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2480" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2497" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2835" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2837" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2510" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2525" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2527" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2866" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2868" />
         <source>%1 s</source>
         <translation>%1 秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2486" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2516" />
         <source>Motion blur</source>
         <translation>モーションブラー</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2494" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2524" />
         <source>Still ending</source>
         <translation>終了時に静止</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2571" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2602" />
         <source>Font and size</source>
         <translation>フォントとサイズ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2597" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2628" />
         <source>Smaller text</source>
         <translation>文字を小さく</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2605" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2636" />
         <source>Larger text</source>
         <translation>文字を大きく</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2612" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2643" />
         <source>Colour</source>
         <translation>色</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2633" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2664" />
         <source>Text colour: %1</source>
         <translation>テキストの色：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2653" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2684" />
         <source>Background</source>
         <translation>背景</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2662" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2693" />
         <source>Alignment</source>
         <translation>配置</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2671" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2702" />
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2674" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2705" />
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
         <source>Delete text</source>
         <translation>テキストを削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
         <source>Delete image</source>
         <translation>画像を削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2727" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2758" />
         <source>Delete this overlay (Delete)</source>
         <translation>このオーバーレイを削除（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2748" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2779" />
         <source>Microphone volume</source>
         <translation>マイクの音量</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2773" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2804" />
         <source>System audio volume</source>
         <translation>システム音声の音量</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2810" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2841" />
         <source>Position</source>
         <translation>位置</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2818" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2849" />
         <source>Size</source>
         <translation>サイズ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2826" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
         <source>Appearance</source>
         <translation>外観</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2865" />
         <source>Display duration</source>
         <translation>表示時間</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2974" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
         <source>Background image</source>
         <translation>背景画像</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3021" />
         <source>Padding</source>
         <translation>余白</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2998" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3029" />
         <source>Corners</source>
         <translation>角丸</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3302" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3051" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3333" />
         <source>Aspect ratio</source>
         <translation>アスペクト比</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
         <source>Resolution</source>
         <translation>解像度</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3063" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3094" />
         <source>Frame rate</source>
         <translation>フレームレート</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3071" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
         <source>Quality</source>
         <translation>品質</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3077" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3108" />
         <source>Codec</source>
         <translation>コーデック</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3145" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3176" />
         <source>The pointer is left out of the export during this time.</source>
         <translation>この時間はポインターが書き出しから除外されます。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3216" />
         <source>Show the pointer again</source>
         <translation>ポインターを再表示</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3186" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3217" />
         <source>Delete this hidden range (Delete)</source>
         <translation>この非表示範囲を削除（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3240" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3271" />
         <source>Zoom amount</source>
         <translation>ズーム倍率</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3293" />
         <source>All zooms</source>
         <translation>すべてのズーム</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3265" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3296" />
         <source>Zoom effects</source>
         <translation>ズーム効果</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3272" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3303" />
         <source>Less motion</source>
         <translation>動きを減らす</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3284" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3315" />
         <source>Delete zoom</source>
         <translation>ズームを削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3316" />
         <source>Delete this zoom (Delete)</source>
         <translation>このズームを削除（Delete）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3326" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3357" />
         <source>Position and size (video pixels)</source>
         <translation>位置とサイズ（動画のピクセル）</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3423" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3454" />
         <source>Format</source>
         <translation>形式</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3430" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3461" />
         <source>Video with sound. Best for sharing and long recordings.</source>
         <translation>音声付きの動画。共有や長い録画に最適です。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3431" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3462" />
         <source>Silent animation that plays almost anywhere. Large files.</source>
         <translation>ほぼどこでも再生できる無音アニメーション。ファイルサイズが大きくなります。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3432" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3463" />
         <source>Silent animation, smaller than GIF. Supports every edit.</source>
         <translation>GIF より小さい無音アニメーション。すべての編集に対応します。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
         <source>Close without saving your changes?</source>
         <translation>変更を保存せずに閉じますか?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3816" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3847" />
         <source>The project stays in Recording Library as it was last saved.</source>
         <translation>プロジェクトは最後に保存した状態で録画ライブラリに残ります。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
         <source>Keep Editing</source>
         <translation>編集を続ける</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
         <source>Close</source>
         <translation>閉じる</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2580" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2611" />
         <source>Font</source>
         <translation>フォント</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="252" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>デフォルト</translation>
     </message>
@@ -4763,38 +4799,38 @@ Size: %2</source>
 <context>
     <name>RecordingPreviewBackend</name>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2148" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2155" />
         <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
         <translation>このシステムでは、まだ MP4 にマスクを適用できません。GIF または WebP で書き出すか、マスクを削除して MP4 で書き出してください。何も書き出されていません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2202" />
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3348" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2209" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3355" />
         <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
         <translation>書き出しに必要な空き容量が足りません（空き %1、必要 約 %2）。空き容量を増やしてもう一度お試しください。録画は保持されています。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2856" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2863" />
         <source>Writing file...</source>
         <translation>ファイルを書き込み中...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2859" />
         <source>Converting to WebP...</source>
         <translation>WebP に変換中...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2859" />
         <source>Converting to GIF...</source>
         <translation>GIF に変換中...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2360" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2367" />
         <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
         <translation>ファイルを保存できませんでした。録画は保持されています。もう一度保存するか、別の場所を選んでください。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2285" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2292" />
         <source>Saving...</source>
         <translation>保存中...</translation>
     </message>
@@ -4808,42 +4844,42 @@ Size: %2</source>
         <translation>動画を変換中...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2870" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
         <source>Failed to create video player for conversion</source>
         <translation>変換用の動画プレーヤーの作成に失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2871" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2878" />
         <source>Failed to load video for conversion</source>
         <translation>変換用の動画の読み込みに失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2872" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2879" />
         <source>Video not loaded properly for conversion</source>
         <translation>変換用の動画が正しく読み込まれませんでした</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2873" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2880" />
         <source>Failed to start encoder</source>
         <translation>エンコーダーの開始に失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2874" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2881" />
         <source>Conversion failed: no video frames were encoded</source>
         <translation>変換に失敗しました：動画フレームがエンコードされませんでした</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2875" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2882" />
         <source>Conversion failed while extracting video frames</source>
         <translation>動画フレームの抽出中に変換に失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2876" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2883" />
         <source>Conversion failed while saving the output file</source>
         <translation>出力ファイルの保存中に変換に失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2884" />
         <source>Conversion failed: output file is missing or empty</source>
         <translation>変換に失敗しました: 出力ファイルが存在しないか空です</translation>
     </message>
@@ -4864,27 +4900,27 @@ Size: %2</source>
         <translation>トリミングに失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3249" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3256" />
         <source>Exporting video...</source>
         <translation>動画を書き出し中...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3277" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3284" />
         <source>Video export is not supported on this platform</source>
         <translation>このプラットフォームでは動画の書き出しはサポートされていません</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3278" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3285" />
         <source>Export failed: %1</source>
         <translation>書き出しに失敗しました: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3281" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3288" />
         <source>Export failed; the original recording was kept.</source>
         <translation>書き出しに失敗しました。元の録画は保持されています。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2385" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2392" />
         <source>Cancelling...</source>
         <translation>キャンセルしています...</translation>
     </message>
@@ -4910,12 +4946,12 @@ Size: %2</source>
         <translation>画像を読み込めませんでした。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2160" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2167" />
         <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>このシステムではまだ MP4 にカットや速度変更を適用できません。GIF か WebP で書き出すか、それらを外して MP4 で書き出してください。何も書き出されていません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2156" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2163" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>すべての部分がカットされているため、書き出すものがありません。</translation>
     </message>
@@ -4935,27 +4971,27 @@ Size: %2</source>
         <translation>タイトル</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2069" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2076" />
         <source>Failed to load preview video: %1</source>
         <translation>プレビュー動画を読み込めませんでした：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2140" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2147" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>このシステムではまだ MP4 にテキストや画像のオーバーレイを描けません。GIF か WebP で書き出すか、それらを外して MP4 で書き出してください。何も書き出されていません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2273" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2280" />
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>保存用にプロジェクトの録画をコピーできませんでした。何も保存されていません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2308" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2315" />
         <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
         <translation>%1 に保存しましたが、プロジェクトを更新できませんでした。この編集をプロジェクトに残すには、もう一度保存してください。</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2333" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>%1 に保存しましたが、録画を編集可能なプロジェクトとして保持できませんでした。ここでまだ開いています。もう一度保存するか、閉じて破棄してください。</translation>
     </message>
@@ -5433,96 +5469,96 @@ GIF録画では音声はサポートされていません。</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3136" />
+        <location filename="../src/RegionSelector.cpp" line="3160" />
         <source>%1 region</source>
         <translation>%1領域</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3137" />
+        <location filename="../src/RegionSelector.cpp" line="3161" />
         <source>%1 regions</source>
         <translation>%1領域</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3926" />
+        <location filename="../src/RegionSelector.cpp" line="3950" />
         <source>Please wait for auto-blur to finish</source>
         <translation>自動ぼかしが完了するまでお待ちください</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <location filename="../src/RegionSelector.cpp" line="4111" />
         <source>Error</source>
         <translation>エラー</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <location filename="../src/RegionSelector.cpp" line="4111" />
         <source>Failed to merge regions. Please try again.</source>
         <translation>リージョンの結合に失敗しました。もう一度お試しください。</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4109" />
-        <location filename="../src/RegionSelector.cpp" line="4840" />
-        <location filename="../src/RegionSelector.cpp" line="4928" />
-        <location filename="../src/RegionSelector.cpp" line="5034" />
+        <location filename="../src/RegionSelector.cpp" line="4144" />
+        <location filename="../src/RegionSelector.cpp" line="4875" />
+        <location filename="../src/RegionSelector.cpp" line="4963" />
+        <location filename="../src/RegionSelector.cpp" line="5069" />
         <source>Failed to process selected region</source>
         <translation>選択した範囲の処理に失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4218" />
+        <location filename="../src/RegionSelector.cpp" line="4253" />
         <source>Failed to save screenshot: unable to process selection</source>
         <translation>スクリーンショットを保存できませんでした：選択範囲を処理できません</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4869" />
-        <location filename="../src/RegionSelector.cpp" line="4897" />
+        <location filename="../src/RegionSelector.cpp" line="4904" />
+        <location filename="../src/RegionSelector.cpp" line="4932" />
         <source>Copied %1 characters</source>
         <translation>%1文字をコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4873" />
+        <location filename="../src/RegionSelector.cpp" line="4908" />
         <source>No text found</source>
         <translation>テキストが見つかりません</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4896" />
+        <location filename="../src/RegionSelector.cpp" line="4931" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4992" />
+        <location filename="../src/RegionSelector.cpp" line="5027" />
         <source>No QR code found</source>
         <translation>QRコードが見つかりません</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5059" />
+        <location filename="../src/RegionSelector.cpp" line="5094" />
         <source>Face detection unavailable</source>
         <translation>顔検出を利用できません</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5067" />
+        <location filename="../src/RegionSelector.cpp" line="5102" />
         <source>Detection unavailable</source>
         <translation>検出を利用できません</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5277" />
+        <location filename="../src/RegionSelector.cpp" line="5312" />
         <source>Blurred %1 face(s), %2 credential(s)</source>
         <translation>%1件の顔と%2件の認証情報をぼかしました</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5281" />
+        <location filename="../src/RegionSelector.cpp" line="5316" />
         <source>Blurred %1 face(s)</source>
         <translation>%1個の顔をぼかしました</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5285" />
+        <location filename="../src/RegionSelector.cpp" line="5320" />
         <source>Blurred %1 credential(s)</source>
         <translation>%1件の認証情報をぼかしました</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5289" />
+        <location filename="../src/RegionSelector.cpp" line="5324" />
         <source>No faces or credentials detected</source>
         <translation>顔または認証情報が検出されませんでした</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5293" />
+        <location filename="../src/RegionSelector.cpp" line="5328" />
         <source>Detection failed</source>
         <translation>検出に失敗しました</translation>
     </message>
@@ -5558,7 +5594,7 @@ GIF録画では音声はサポートされていません。</translation>
 <context>
     <name>ScreenCanvasSession</name>
     <message>
-        <location filename="../src/ScreenCanvasSession.cpp" line="1438" />
+        <location filename="../src/ScreenCanvasSession.cpp" line="1447" />
         <source>Copy failed</source>
         <translation>コピーに失敗しました</translation>
     </message>

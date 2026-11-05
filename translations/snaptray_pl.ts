@@ -296,7 +296,7 @@
 <context>
     <name>CanvasToolbarViewModel</name>
     <message>
-        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="32" />
+        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="34" />
         <source>Laser Pointer</source>
         <translation>Wskaźnik laserowy</translation>
     </message>
@@ -460,7 +460,7 @@ Tokeny daty: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} lub {date}</translation>
 <context>
     <name>FloatingToolbar</name>
     <message>
-        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="224" />
+        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="241" />
         <source>More</source>
         <translation>Więcej</translation>
     </message>
@@ -572,7 +572,7 @@ Tokeny daty: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} lub {date}</translation>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
-        <location filename="../src/PinWindow.cpp" line="1155" />
+        <location filename="../src/PinWindow.cpp" line="1157" />
         <source>Open History Folder</source>
         <translation>Otwórz folder historii</translation>
     </message>
@@ -1464,35 +1464,71 @@ Rozmiar: %2</translation>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134" />
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="135" />
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Automatycznie wykrywaj i rozmywaj twarze oraz dane uwierzytelniające</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="474" />
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="483" />
+        <source>New object</source>
+        <translation>Nowy obiekt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="477" />
+        <source>Text</source>
+        <translation>Tekst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="478" />
+        <source>Arrow</source>
+        <translation>Strzałka</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="479" />
+        <source>Line</source>
+        <translation>Linia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="481" />
+        <source>Ellipse</source>
+        <translation>Elipsa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="481" />
+        <source>Rectangle</source>
+        <translation>Prostokąt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="485" />
+        <source>Selected: %1</source>
+        <translation>Zaznaczono: %1</translation>
     </message>
 </context>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1129" />
+        <location filename="../src/PinWindow.cpp" line="1131" />
         <source>Show Toolbar</source>
         <translation>Pokaż pasek narzędzi</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1135" />
+        <location filename="../src/PinWindow.cpp" line="1137" />
         <source>Show Border</source>
         <translation>Pokaż obramowanie</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1171" />
+        <location filename="../src/PinWindow.cpp" line="1173" />
         <source>Adjust Region Layout</source>
         <translation>Dostosuj układ regionu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1144" />
+        <location filename="../src/PinWindow.cpp" line="1146" />
         <source>Copy to Clipboard</source>
         <translation>Kopiuj do schowka</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1148" />
+        <location filename="../src/PinWindow.cpp" line="1150" />
         <source>Save to file</source>
         <translation>Zapisz do pliku</translation>
     </message>
@@ -1501,331 +1537,331 @@ Rozmiar: %2</translation>
         <translation>Otwórz folder pamięci podręcznej</translation>
     </message>
     <message>
-        <location filename="../src/qml/PinToolbarViewModel.cpp" line="30" />
+        <location filename="../src/qml/PinToolbarViewModel.cpp" line="27" />
         <source>Beautify</source>
         <translation>Upiększenie</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1161" />
+        <location filename="../src/PinWindow.cpp" line="1163" />
         <source>Click-through</source>
         <translation>Przepuszczanie kliknięć</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1168" />
-        <location filename="../src/PinWindow.cpp" line="1522" />
-        <location filename="../src/PinWindow.cpp" line="1530" />
-        <location filename="../src/PinWindow.cpp" line="1544" />
-        <location filename="../src/PinWindow.cpp" line="1561" />
-        <location filename="../src/PinWindow.cpp" line="1573" />
+        <location filename="../src/PinWindow.cpp" line="1170" />
+        <location filename="../src/PinWindow.cpp" line="1524" />
+        <location filename="../src/PinWindow.cpp" line="1532" />
+        <location filename="../src/PinWindow.cpp" line="1546" />
+        <location filename="../src/PinWindow.cpp" line="1563" />
+        <location filename="../src/PinWindow.cpp" line="1575" />
         <source>Merge Pins</source>
         <translation>Połącz przypinki</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1177" />
+        <location filename="../src/PinWindow.cpp" line="1179" />
         <source>Watermark</source>
         <translation>Znak wodny</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1180" />
+        <location filename="../src/PinWindow.cpp" line="1182" />
         <source>Enable</source>
         <translation>Włącz</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1191" />
+        <location filename="../src/PinWindow.cpp" line="1193" />
         <source>Position</source>
         <translation>Pozycja</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1194" />
+        <location filename="../src/PinWindow.cpp" line="1196" />
         <source>Top-Left</source>
         <translation>Lewy górny</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1199" />
+        <location filename="../src/PinWindow.cpp" line="1201" />
         <source>Top-Right</source>
         <translation>Prawy górny</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1204" />
+        <location filename="../src/PinWindow.cpp" line="1206" />
         <source>Bottom-Left</source>
         <translation>Lewy dolny</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1209" />
+        <location filename="../src/PinWindow.cpp" line="1211" />
         <source>Bottom-Right</source>
         <translation>Prawy dolny</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1228" />
-        <location filename="../src/PinWindow.cpp" line="1322" />
-        <location filename="../src/PinWindow.cpp" line="2163" />
+        <location filename="../src/PinWindow.cpp" line="1230" />
+        <location filename="../src/PinWindow.cpp" line="1324" />
+        <location filename="../src/PinWindow.cpp" line="2165" />
         <source>Zoom</source>
         <translation>Przybliżenie</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1231" />
+        <location filename="../src/PinWindow.cpp" line="1233" />
         <source>33.3%</source>
         <translation>33.3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1234" />
+        <location filename="../src/PinWindow.cpp" line="1236" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1237" />
+        <location filename="../src/PinWindow.cpp" line="1239" />
         <source>66.7%</source>
         <translation>66.7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1240" />
+        <location filename="../src/PinWindow.cpp" line="1242" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1243" />
+        <location filename="../src/PinWindow.cpp" line="1245" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1253" />
+        <location filename="../src/PinWindow.cpp" line="1255" />
         <source>Smoothing</source>
         <translation>Wygładzanie</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1262" />
+        <location filename="../src/PinWindow.cpp" line="1264" />
         <source>Image processing</source>
         <translation>Przetwarzanie obrazu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1264" />
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>Rotate left</source>
         <translation>Obróć w lewo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1267" />
+        <location filename="../src/PinWindow.cpp" line="1269" />
         <source>Rotate right</source>
         <translation>Obróć w prawo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1270" />
+        <location filename="../src/PinWindow.cpp" line="1272" />
         <source>Horizontal flip</source>
         <translation>Odbicie poziome</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1273" />
+        <location filename="../src/PinWindow.cpp" line="1275" />
         <source>Vertical flip</source>
         <translation>Odbicie pionowe</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1277" />
+        <location filename="../src/PinWindow.cpp" line="1279" />
         <source>Crop</source>
         <translation>Przytnij</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1286" />
-        <location filename="../src/PinWindow.cpp" line="1324" />
-        <location filename="../src/PinWindow.cpp" line="2165" />
+        <location filename="../src/PinWindow.cpp" line="1288" />
+        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="2167" />
         <source>Opacity</source>
         <translation>Krycie</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1289" />
+        <location filename="../src/PinWindow.cpp" line="1291" />
         <source>Increase by %1%</source>
         <translation>Zwiększ o %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1296" />
+        <location filename="../src/PinWindow.cpp" line="1298" />
         <source>Decrease by %1%</source>
         <translation>Zmniejsz o %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1306" />
+        <location filename="../src/PinWindow.cpp" line="1308" />
         <source>Copy All</source>
         <translation>Kopiuj wszystko</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1321" />
-        <location filename="../src/PinWindow.cpp" line="2162" />
+        <location filename="../src/PinWindow.cpp" line="1323" />
+        <location filename="../src/PinWindow.cpp" line="2164" />
         <source>Size</source>
         <translation>Rozmiar</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1323" />
-        <location filename="../src/PinWindow.cpp" line="2164" />
+        <location filename="../src/PinWindow.cpp" line="1325" />
+        <location filename="../src/PinWindow.cpp" line="2166" />
         <source>Rotation</source>
         <translation>Obrót</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
         <source>X-mirror</source>
         <translation>Lustro X</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>Y-mirror</source>
         <translation>Lustro Y</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="1972" />
-        <location filename="../src/PinWindow.cpp" line="1973" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>Yes</source>
         <translation>Tak</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="1972" />
-        <location filename="../src/PinWindow.cpp" line="1973" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>No</source>
         <translation>Nie</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1332" />
-        <location filename="../src/PinWindow.cpp" line="3040" />
+        <location filename="../src/PinWindow.cpp" line="1334" />
+        <location filename="../src/PinWindow.cpp" line="3042" />
         <source>Start Live Update</source>
         <translation>Rozpocznij aktualizację na żywo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1968" />
+        <location filename="../src/PinWindow.cpp" line="1970" />
         <source>Size: %1</source>
         <translation>Rozmiar: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3040" />
+        <location filename="../src/PinWindow.cpp" line="3042" />
         <source>Stop Live Update</source>
         <translation>Zatrzymaj aktualizację na żywo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1343" />
-        <location filename="../src/PinWindow.cpp" line="3044" />
+        <location filename="../src/PinWindow.cpp" line="1345" />
+        <location filename="../src/PinWindow.cpp" line="3046" />
         <source>Pause Live Update</source>
         <translation>Wstrzymaj aktualizację na żywo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3044" />
+        <location filename="../src/PinWindow.cpp" line="3046" />
         <source>Resume Live Update</source>
         <translation>Wznów aktualizację na żywo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1354" />
+        <location filename="../src/PinWindow.cpp" line="1356" />
         <source>Frame Rate</source>
         <translation>Klatki na sekundę</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1140" />
+        <location filename="../src/PinWindow.cpp" line="1142" />
         <source>Move to Screen</source>
         <translation>Przenieś na ekran</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1357" />
+        <location filename="../src/PinWindow.cpp" line="1359" />
         <source>%1 FPS</source>
         <translation>%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1371" />
+        <location filename="../src/PinWindow.cpp" line="1373" />
         <source>Close</source>
         <translation>Zamknij</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1375" />
+        <location filename="../src/PinWindow.cpp" line="1377" />
         <source>Close All Pins</source>
         <translation>Zamknij wszystkie przypinki</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1475" />
+        <location filename="../src/PinWindow.cpp" line="1477" />
         <source>Screen %1</source>
         <translation>Ekran %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1477" />
+        <location filename="../src/PinWindow.cpp" line="1479" />
         <source> (Primary)</source>
         <translation> (Główny)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1523" />
+        <location filename="../src/PinWindow.cpp" line="1525" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>Nie można połączyć więcej niż %1 przypinków naraz</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1531" />
+        <location filename="../src/PinWindow.cpp" line="1533" />
         <source>Need at least 2 pins to merge</source>
         <translation>Potrzeba co najmniej 2 przypinków do połączenia</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1545" />
+        <location filename="../src/PinWindow.cpp" line="1547" />
         <source>No primary screen available</source>
         <translation>Brak dostępnego ekranu głównego</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1574" />
+        <location filename="../src/PinWindow.cpp" line="1576" />
         <source>Failed to create merged pin</source>
         <translation>Nie udało się utworzyć połączonego przypinku</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1644" />
-        <location filename="../src/PinWindow.cpp" line="1676" />
+        <location filename="../src/PinWindow.cpp" line="1646" />
+        <location filename="../src/PinWindow.cpp" line="1678" />
         <source>Failed to save screenshot: %1</source>
         <translation>Nie udało się zapisać zrzutu ekranu: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1659" />
         <source>Save Screenshot</source>
         <translation>Zapisz zrzut ekranu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1659" />
-        <location filename="../src/PinWindow.cpp" line="6155" />
+        <location filename="../src/PinWindow.cpp" line="1661" />
+        <location filename="../src/PinWindow.cpp" line="6205" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>Obraz PNG (*.png);;Obraz JPEG (*.jpg *.jpeg);;Wszystkie pliki (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1689" />
-        <location filename="../src/PinWindow.cpp" line="1710" />
-        <location filename="../src/PinWindow.cpp" line="6059" />
-        <location filename="../src/PinWindow.cpp" line="6084" />
+        <location filename="../src/PinWindow.cpp" line="1691" />
+        <location filename="../src/PinWindow.cpp" line="1712" />
+        <location filename="../src/PinWindow.cpp" line="6109" />
+        <location filename="../src/PinWindow.cpp" line="6134" />
         <source>Copy failed</source>
         <translation>Kopiowanie nie powiodło się</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1710" />
+        <location filename="../src/PinWindow.cpp" line="1712" />
         <source>Copied to clipboard</source>
         <translation>Skopiowano do schowka</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1722" />
-        <location filename="../src/PinWindow.cpp" line="5428" />
+        <location filename="../src/PinWindow.cpp" line="1724" />
+        <location filename="../src/PinWindow.cpp" line="5478" />
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Poczekaj na zakończenie automatycznego rozmywania</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1864" />
-        <location filename="../src/PinWindow.cpp" line="1942" />
+        <location filename="../src/PinWindow.cpp" line="1866" />
+        <location filename="../src/PinWindow.cpp" line="1944" />
         <source>Copied %1 characters</source>
         <translation>Skopiowano %1 znaków</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1868" />
+        <location filename="../src/PinWindow.cpp" line="1870" />
         <source>No text found</source>
         <translation>Nie znaleziono tekstu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1873" />
-        <location filename="../src/PinWindow.cpp" line="1889" />
+        <location filename="../src/PinWindow.cpp" line="1875" />
+        <location filename="../src/PinWindow.cpp" line="1891" />
         <source>Text copied</source>
         <translation>Tekst skopiowany</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1953" />
+        <location filename="../src/PinWindow.cpp" line="1955" />
         <source>No QR code found</source>
         <translation>Nie znaleziono kodu QR</translation>
     </message>
@@ -1834,85 +1870,85 @@ Rozmiar: %2</translation>
         <translation>Rozmiar: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1969" />
+        <location filename="../src/PinWindow.cpp" line="1971" />
         <source>Zoom: %1%</source>
         <translation>Przybliżenie: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1970" />
+        <location filename="../src/PinWindow.cpp" line="1972" />
         <source>Rotation: %1°</source>
         <translation>Obrót: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1971" />
+        <location filename="../src/PinWindow.cpp" line="1973" />
         <source>Opacity: %1%</source>
         <translation>Krycie: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1972" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
         <source>X-mirror: %1</source>
         <translation>Lustro X: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1973" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
         <source>Y-mirror: %1</source>
         <translation>Lustro Y: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4828" />
+        <location filename="../src/PinWindow.cpp" line="4873" />
         <source>Stop live capture before running auto-blur</source>
         <translation>Zatrzymaj przechwytywanie na żywo przed uruchomieniem automatycznego rozmywania</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4851" />
+        <location filename="../src/PinWindow.cpp" line="4896" />
         <source>Face detection unavailable</source>
         <translation>Wykrywanie twarzy niedostępne</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4861" />
+        <location filename="../src/PinWindow.cpp" line="4906" />
         <source>Detection unavailable</source>
         <translation>Wykrywanie niedostępne</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4891" />
+        <location filename="../src/PinWindow.cpp" line="4936" />
         <source>Unable to snapshot the current image</source>
         <translation>Nie można utworzyć migawki bieżącego obrazu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6064" />
-        <location filename="../src/PinWindow.cpp" line="6128" />
-        <location filename="../src/PinWindow.cpp" line="6164" />
+        <location filename="../src/PinWindow.cpp" line="6114" />
+        <location filename="../src/PinWindow.cpp" line="6178" />
+        <location filename="../src/PinWindow.cpp" line="6214" />
         <source>Beautify rendering failed</source>
         <translation>Renderowanie upiększenia nie powiodło się</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5953" />
+        <location filename="../src/PinWindow.cpp" line="6003" />
         <source>Unable to apply region layout</source>
         <translation>Nie można zastosować układu regionów</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6084" />
+        <location filename="../src/PinWindow.cpp" line="6134" />
         <source>Beautified image copied</source>
         <translation>Upiększony obraz skopiowany</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1592" />
-        <location filename="../src/PinWindow.cpp" line="1630" />
-        <location filename="../src/PinWindow.cpp" line="1664" />
-        <location filename="../src/PinWindow.cpp" line="6097" />
-        <location filename="../src/PinWindow.cpp" line="6123" />
-        <location filename="../src/PinWindow.cpp" line="6159" />
+        <location filename="../src/PinWindow.cpp" line="1594" />
+        <location filename="../src/PinWindow.cpp" line="1632" />
+        <location filename="../src/PinWindow.cpp" line="1666" />
+        <location filename="../src/PinWindow.cpp" line="6147" />
+        <location filename="../src/PinWindow.cpp" line="6173" />
+        <location filename="../src/PinWindow.cpp" line="6209" />
         <source>No image available to save</source>
         <translation>Brak dostępnego obrazu do zapisu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6143" />
-        <location filename="../src/PinWindow.cpp" line="6178" />
+        <location filename="../src/PinWindow.cpp" line="6193" />
+        <location filename="../src/PinWindow.cpp" line="6228" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>Nie udało się zapisać upiększonego zrzutu ekranu: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6153" />
+        <location filename="../src/PinWindow.cpp" line="6203" />
         <source>Save Beautified Screenshot</source>
         <translation>Zapisz upiększony zrzut ekranu</translation>
     </message>
@@ -2798,31 +2834,31 @@ Rozmiar: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>Zakryj wrażliwy obszar w eksportowanym pliku</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3410" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3441" />
         <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
         <translation>maski: %1, wtopione w eksport; tymczasowy plik bez masek zostanie usunięty po zapisaniu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1028" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1046" />
         <source>Selected mask</source>
         <translation>Wybrana maska</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="70" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1967" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2008" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2010" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2048" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1997" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2038" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2040" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2078" />
         <source>the end</source>
         <translation>końca</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1966" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1996" />
         <source>Mask from %1 to %2</source>
         <translation>Maska od %1 do %2</translation>
     </message>
@@ -2835,17 +2871,17 @@ Rozmiar: %2</translation>
         <translation>Usuń tę maskę</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2396" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2426" />
         <source>Mask end</source>
         <translation>Koniec maski</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2414" />
         <source>Mask start</source>
         <translation>Początek maski</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2365" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2395" />
         <source>Mask for the whole recording, or only for a time range</source>
         <translation>Maska na całe nagranie lub tylko na zakres czasu</translation>
     </message>
@@ -2881,12 +2917,12 @@ Rozmiar: %2</translation>
         <translation>maski: %1, wtopione w eksport; oryginał zachowuje wszystko</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3411" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3442" />
         <source>masks need GIF or WebP on this system</source>
         <translation>maski wymagają tu formatu GIF lub WebP</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
         <source>Masks need GIF or WebP on this system</source>
         <translation>Maski wymagają tu formatu GIF lub WebP</translation>
     </message>
@@ -2895,17 +2931,17 @@ Rozmiar: %2</translation>
         <translation>Zakryj wrażliwy obszar w eksporcie. Oryginalne nagranie się nie zmienia.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1403" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
         <source>Add Mask</source>
         <translation>Dodaj maskę</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1396" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1414" />
         <source>No room for a new zoom here</source>
         <translation>Brak miejsca na nowe powiększenie w tym miejscu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1929" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1959" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>Powiększenie %1× od %2 do %3</translation>
     </message>
@@ -2926,7 +2962,7 @@ Rozmiar: %2</translation>
         <translation>Usuń</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3266" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3297" />
         <source>Turn all zooms on or off without deleting them</source>
         <translation>Włącz lub wyłącz wszystkie powiększenia bez ich usuwania</translation>
     </message>
@@ -2939,7 +2975,7 @@ Rozmiar: %2</translation>
         <translation>Powiększenie wł.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3273" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3304" />
         <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
         <translation>Łagodniejsze powiększenia we wszystkich odcinkach: mniejsze i wolniejsze, bez bezpośrednich przesunięć</translation>
     </message>
@@ -2948,100 +2984,100 @@ Rozmiar: %2</translation>
         <translation>Mniej ruchu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3231" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
         <source>Zoom end</source>
         <translation>Koniec powiększenia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3251" />
         <source>Zoom start</source>
         <translation>Początek powiększenia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
         <source>Zoom: %1</source>
         <translation>Powiększenie: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
         <source>Add a zoom at the playhead</source>
         <translation>Dodaj powiększenie w miejscu odtwarzania</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1387" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
         <source>Add Zoom</source>
         <translation>Dodaj powiększenie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1380" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1398" />
         <source>No clicks to zoom in on</source>
         <translation>Brak kliknięć do przybliżenia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1379" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1397" />
         <source>Zooms added: %1</source>
         <translation>Dodane powiększenia: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1373" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1391" />
         <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
         <translation>Automatyczne powiększenie wymaga nagranych kliknięć; dodaj powiększenia ręcznie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1372" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1390" />
         <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
         <translation>Automatycznie przybliża kliknięcia. Dodane lub zmienione przez Ciebie powiększenia zostają.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1370" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
         <source>Auto Zoom</source>
         <translation>Automatyczne powiększenie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2500" />
         <source>Highlight Clicks</source>
         <translation>Wyróżniaj kliknięcia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2500" />
         <source>Hide Click Highlights</source>
         <translation>Ukryj wyróżnianie kliknięć</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2499" />
         <source>Clicks</source>
         <translation>Kliknięcia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2459" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2489" />
         <source>Smooths the pointer's path; clicks stay where they happened</source>
         <translation>Wygładza ścieżkę wskaźnika; kliknięcia zostają tam, gdzie nastąpiły</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
         <source>Pointer Size: %1</source>
         <translation>Rozmiar wskaźnika: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
         <source>Show the Mouse Pointer</source>
         <translation>Pokaż wskaźnik myszy</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
         <source>Hide the Mouse Pointer</source>
         <translation>Ukryj wskaźnik myszy</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1524" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2230" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2439" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1542" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2260" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
         <source>Pointer</source>
         <translation>Wskaźnik</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3407" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3438" />
         <source>pointer effects need GIF or WebP on this system</source>
         <translation>efekty wskaźnika wymagają tu formatu GIF lub WebP</translation>
     </message>
@@ -3062,33 +3098,33 @@ Rozmiar: %2</translation>
         <translation>Wygładzanie: Wył.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3898" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3929" />
         <source>Save again with the current settings</source>
         <translation>Zapisz ponownie z bieżącymi ustawieniami</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3896" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3927" />
         <source>Try Again</source>
         <translation>Spróbuj ponownie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3714" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3745" />
         <source>Keep Exporting</source>
         <translation>Kontynuuj eksport</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3704" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3735" />
         <source>An export is in progress. Keep exporting or cancel it?</source>
         <translation>Trwa eksport. Kontynuować czy anulować?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3691" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="3722" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3753" />
         <source>Cancel Export</source>
         <translation>Anuluj eksport</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1195" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1213" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>Zastosuj kadrowanie (Enter) · strzałki przesuwają o 2 px (Shift: 10 px)</translation>
     </message>
@@ -3097,96 +3133,96 @@ Rozmiar: %2</translation>
         <translation>Porównaj z oryginałem (\)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1224" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1242" />
         <source>Compare with Original</source>
         <translation>Porównaj z oryginałem</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1236" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1239" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1257" />
         <source>Reset Crop and Trim</source>
         <translation>Resetuj kadrowanie i przycięcie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="671" />
         <source>Redo Edit</source>
         <translation>Ponów edycję</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="658" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
         <source>Redo Edit (Ctrl+Shift+Z)</source>
         <translation>Ponów edycję (Ctrl+Shift+Z)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="648" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="660" />
         <source>Undo Edit</source>
         <translation>Cofnij edycję</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="647" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
         <source>Undo Edit (Ctrl+Z)</source>
         <translation>Cofnij edycję (Ctrl+Z)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3358" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3389" />
         <source>Crop %1 in pixels</source>
         <translation>Przycięcie %1 w pikselach</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3339" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3370" />
         <source>H</source>
         <translation>W</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3338" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3369" />
         <source>W</source>
         <translation>S</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3337" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3368" />
         <source>Y</source>
         <translation>Y</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3336" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3367" />
         <source>X</source>
         <translation>X</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3317" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3348" />
         <source>Crop aspect: %1</source>
         <translation>Proporcje kadru: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1351" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1369" />
         <source>Trim end</source>
         <translation>Koniec przycięcia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1337" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1355" />
         <source>Trim start</source>
         <translation>Początek przycięcia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3405" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3436" />
         <source>no audio</source>
         <translation>bez dźwięku</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3403" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3434" />
         <source>%1 kept</source>
         <translation>Zachowano %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3402" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3433" />
         <source>Original %1 → Output %2</source>
         <translation>Oryginał %1 → Wynik %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="203" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="248" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3064" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3542" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3095" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3573" />
         <source>Original</source>
         <translation>Oryginalny</translation>
     </message>
@@ -3196,37 +3232,37 @@ Rozmiar: %2</translation>
         <translation>Dowolny</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
         <source>Discard</source>
         <translation>Odrzuć</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
         <source>Keep Recording</source>
         <translation>Zachowaj nagranie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3817" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3848" />
         <source>The video will be deleted and cannot be recovered.</source>
         <translation>Wideo zostanie usunięte i nie będzie można go odzyskać.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
         <source>Discard this recording?</source>
         <translation>Odrzucić to nagranie?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3517" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3548" />
         <source>Clear Crop</source>
         <translation>Wyczyść kadrowanie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3567" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3598" />
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Kliknij okno, aby przyciąć do niego, lub przeciągnij, aby narysować</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3593" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3624" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Odtwarzanie dźwięku nie jest dostępne w tym podglądzie.</translation>
     </message>
@@ -3243,12 +3279,12 @@ Rozmiar: %2</translation>
         <translation>Eksportuj jako WebP</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1152" />
         <source>Pause Preview (Space)</source>
         <translation>Wstrzymaj podgląd (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1152" />
         <source>Play Preview (Space)</source>
         <translation>Odtwórz podgląd (Space)</translation>
     </message>
@@ -3257,42 +3293,42 @@ Rozmiar: %2</translation>
         <translation>Prędkość odtwarzania: %1x</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1203" />
         <source>Unmute Preview (M)</source>
         <translation>Włącz dźwięk podglądu (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1203" />
         <source>Mute Preview (M)</source>
         <translation>Wycisz podgląd (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1198" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1216" />
         <source>Apply Crop (Enter)</source>
         <translation>Zastosuj kadrowanie (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1214" />
         <source>Edit Crop</source>
         <translation>Edytuj kadrowanie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1214" />
         <source>Crop Recording</source>
         <translation>Kadruj nagranie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1235" />
         <source>Clear Trim Selection</source>
         <translation>Wyczyść zaznaczenie przycinania</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1235" />
         <source>Trim Recording</source>
         <translation>Przytnij nagranie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="709" />
         <source>Discard Recording (Esc)</source>
         <translation>Odrzuć nagranie (Esc)</translation>
     </message>
@@ -3301,12 +3337,12 @@ Rozmiar: %2</translation>
         <translation>Zapisz nagranie (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3686" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3717" />
         <source>Cancel</source>
         <translation>Anuluj</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3912" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3943" />
         <source>Dismiss Error</source>
         <translation>Zamknij błąd</translation>
     </message>
@@ -3327,7 +3363,7 @@ Rozmiar: %2</translation>
         <translation>Rozmycie ruchu: Wysokie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2047" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2077" />
         <source>Pointer hidden from %1 to %2</source>
         <translation>Wskaźnik ukryty od %1 do %2</translation>
     </message>
@@ -3348,12 +3384,12 @@ Rozmiar: %2</translation>
         <translation>Ukryj przy bezczynności: Wył.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2476" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2506" />
         <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
         <translation>Wskaźnik zanika, gdy przestaje się ruszać; wraca, zanim się poruszy lub kliknie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2485" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2515" />
         <source>A short trail behind a fast-moving pointer</source>
         <translation>Krótki ślad za szybko poruszającym się wskaźnikiem</translation>
     </message>
@@ -3366,22 +3402,22 @@ Rozmiar: %2</translation>
         <translation>Nieruchome zakończenie: Wył.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2493" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2523" />
         <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
         <translation>Wskaźnik pozostaje nieruchomy na końcu, aby nie było widać ruchu do zatrzymania nagrywania</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2503" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2533" />
         <source>Hide Pointer Here</source>
         <translation>Ukryj tu wskaźnik</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2504" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2534" />
         <source>Hide the pointer for a while from the playhead</source>
         <translation>Ukryj wskaźnik na chwilę od głowicy odtwarzania</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2538" />
         <source>No room for a hidden range here</source>
         <translation>Brak miejsca na ukryty zakres w tym miejscu</translation>
     </message>
@@ -3394,12 +3430,12 @@ Rozmiar: %2</translation>
         <translation>Bez wskaźnika</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3158" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3189" />
         <source>Hidden pointer start</source>
         <translation>Początek ukrycia wskaźnika</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3170" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3201" />
         <source>Hidden pointer end</source>
         <translation>Koniec ukrycia wskaźnika</translation>
     </message>
@@ -3452,17 +3488,17 @@ Rozmiar: %2</translation>
         <translation>Rozmiar, liczba klatek, jakość i kodek MP4 z szacowanym rozmiarem pliku</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3067" />
         <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
         <translation>Zmiana rozmiaru i liczby klatek MP4 nie jest jeszcze obsługiwana w tym systemie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3042" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3073" />
         <source>Make the video smaller; it is never made larger than recorded</source>
         <translation>Zmniejsz wideo; nigdy nie jest powiększane ponad nagrany rozmiar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3053" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3084" />
         <source>Video width in pixels</source>
         <translation>Szerokość wideo w pikselach</translation>
     </message>
@@ -3475,52 +3511,52 @@ Rozmiar: %2</translation>
         <translation>Kl./s: Oryginalna</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3061" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3092" />
         <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
         <translation>Niższa liczba klatek daje mniejszy plik; nigdy nie jest wyższa niż nagrana</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3070" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
         <source>Default uses the quality from the Recording settings</source>
         <translation>Domyślna używa jakości z ustawień nagrywania</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3087" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3118" />
         <source>Plays everywhere</source>
         <translation>Odtwarzany wszędzie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3098" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3129" />
         <source>Smaller files at the same quality; some older players cannot open them</source>
         <translation>Mniejsze pliki przy tej samej jakości; niektóre starsze odtwarzacze ich nie otworzą</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3133" />
         <source>HEVC export is not available on this system</source>
         <translation>Eksport HEVC nie jest dostępny w tym systemie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3132" />
         <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
         <translation>Eksport HEVC wymaga rozszerzeń HEVC Video Extensions ze sklepu Microsoft Store</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3113" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3144" />
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2, %3 kl./s · %4 (szacunkowo)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2222" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
         <source>A background, padding, rounded corners, a shadow and a border around the video</source>
         <translation>Tło, margines, zaokrąglone rogi, cień i obramowanie wokół wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
         <source>Add a shadow under the video</source>
         <translation>Dodaj cień pod wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
         <source>Add a thin border around the video</source>
         <translation>Dodaj cienkie obramowanie wokół wideo</translation>
     </message>
@@ -3529,32 +3565,32 @@ Rozmiar: %2</translation>
         <translation>Ramka wymaga w tym systemie formatu GIF lub WebP</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2883" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2914" />
         <source>Background: %1</source>
         <translation>Tło: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
         <source>Background: Black</source>
         <translation>Tło: Czarne</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2946" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2977" />
         <source>Background image: %1</source>
         <translation>Obraz tła: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
         <source>Background: White</source>
         <translation>Tło: Białe</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2936" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2967" />
         <source>Blurred Video</source>
         <translation>Rozmyte wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3012" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3043" />
         <source>Border</source>
         <translation>Obramowanie</translation>
     </message>
@@ -3563,7 +3599,7 @@ Rozmiar: %2</translation>
         <translation>Rogi: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2888" />
         <source>Draw the frame around the exported video</source>
         <translation>Rysuj ramkę wokół eksportowanego wideo</translation>
     </message>
@@ -3572,22 +3608,22 @@ Rozmiar: %2</translation>
         <translation>Ramka</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2887" />
         <source>Frame: Off</source>
         <translation>Ramka: Wył.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2887" />
         <source>Frame: On</source>
         <translation>Ramka: Wł.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2997" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3028" />
         <source>How round the video's corners are</source>
         <translation>Stopień zaokrąglenia rogów wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2944" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
         <source>Image…</source>
         <translation>Obraz…</translation>
     </message>
@@ -3621,12 +3657,12 @@ Rozmiar: %2</translation>
         <translation>Proporcje: Auto</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
         <source>Remove the border</source>
         <translation>Usuń obramowanie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
         <source>Remove the shadow</source>
         <translation>Usuń cień</translation>
     </message>
@@ -3637,37 +3673,37 @@ Rozmiar: %2</translation>
         <translation>Mały</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2989" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
         <source>Space around the video</source>
         <translation>Odstęp wokół wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3019" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3050" />
         <source>The shape of the exported video; the background fills the extra space</source>
         <translation>Kształt eksportowanego wideo; tło wypełnia dodatkowe miejsce</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2937" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2968" />
         <source>The video itself, blurred, behind it (masks applied)</source>
         <translation>Samo wideo, rozmyte, w tle (z maskami)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2947" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2978" />
         <source>Use an image file as the background</source>
         <translation>Użyj pliku obrazu jako tła</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1689" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1707" />
         <source>Cut from %1 to %2</source>
         <translation>Wycięte od %1 do %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1317" />
         <source>Cut Part</source>
         <translation>Wytnij część</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1286" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
         <source>Cuts and speed changes need GIF or WebP on this system</source>
         <translation>Cięcia i zmiany prędkości wymagają w tym systemie GIF lub WebP</translation>
     </message>
@@ -3680,17 +3716,17 @@ Rozmiar: %2</translation>
         <translation>Jak szybko część przy głowicy odtwarza się w eksporcie; zmienione części są bez dźwięku</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1317" />
         <source>Keep Part</source>
         <translation>Zachowaj część</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1305" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1323" />
         <source>Leave the part at the playhead out of the export (Delete)</source>
         <translation>Pomiń część przy głowicy w eksporcie (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1691" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1709" />
         <source>Part from %1 to %2 at %3</source>
         <translation>Część od %1 do %2, prędkość %3</translation>
     </message>
@@ -3699,27 +3735,27 @@ Rozmiar: %2</translation>
         <translation>Prędkość części: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1322" />
         <source>Put the part at the playhead back (Delete)</source>
         <translation>Przywróć część przy głowicy (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1283" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
         <source>Split</source>
         <translation>Podziel</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1844" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1862" />
         <source>Split at %1</source>
         <translation>Podział w %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1285" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1303" />
         <source>Split the recording at the playhead (S)</source>
         <translation>Podziel nagranie w miejscu głowicy (S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1290" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1308" />
         <source>Too close to another split or an end</source>
         <translation>Zbyt blisko innego podziału lub końca</translation>
     </message>
@@ -3740,49 +3776,49 @@ Rozmiar: %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2858" />
         <source>Dark</source>
         <translation>Ciemny</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2825" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
         <source>Dark or light keys</source>
         <translation>Ciemne lub jasne klawisze</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
         <source>Draw the shortcuts into the exported video</source>
         <translation>Rysuj skróty w eksportowanym wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2817" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2848" />
         <source>How large the shortcuts are</source>
         <translation>Jak duże są skróty</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2864" />
         <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
         <translation>Jak długo skrót pozostaje po naciśnięciu; klawisze naciśnięte blisko siebie pokazują się razem</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2295" />
         <source>Keys</source>
         <translation>Klawisze</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
         <source>Keys: Off</source>
         <translation>Klawisze: Wył.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
         <source>Keys: On</source>
         <translation>Klawisze: Wł.</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2858" />
         <source>Light</source>
         <translation>Jasny</translation>
     </message>
@@ -3812,32 +3848,32 @@ Rozmiar: %2</translation>
         <translation>Na górze</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2809" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2840" />
         <source>Where the shortcuts appear</source>
         <translation>Gdzie pojawiają się skróty</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
         <source>Shadow</source>
         <translation>Cień</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2652" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2683" />
         <source>A box behind the text, so it reads on any picture</source>
         <translation>Ramka za tekstem, aby był czytelny na każdym obrazie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1441" />
         <source>A title or caption at the playhead</source>
         <translation>Tytuł lub podpis w miejscu głowicy</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1460" />
         <source>Add Image</source>
         <translation>Dodaj obraz</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1439" />
         <source>Add Text</source>
         <translation>Dodaj tekst</translation>
     </message>
@@ -3854,7 +3890,7 @@ Rozmiar: %2</translation>
         <translation>Do prawej</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1444" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1462" />
         <source>An image such as a logo, for the whole recording</source>
         <translation>Obraz, np. logo, na całe nagranie</translation>
     </message>
@@ -3871,12 +3907,12 @@ Rozmiar: %2</translation>
         <translation>Przeciągnij nakładkę, aby ją przesunąć, lub jej róg, aby zmienić rozmiar. Gotowe kończy edycję.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2661" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2692" />
         <source>How lines line up</source>
         <translation>Jak wyrównać wiersze</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2701" />
         <source>How see-through the image is</source>
         <translation>Jak przezroczysty jest obraz</translation>
     </message>
@@ -3886,7 +3922,7 @@ Rozmiar: %2</translation>
         <translation>Nakładka obrazu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2606" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2637" />
         <source>Larger</source>
         <translation>Większy</translation>
     </message>
@@ -3903,45 +3939,45 @@ Rozmiar: %2</translation>
         <translation>Krycie: %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2743" />
         <source>Overlay end</source>
         <translation>Koniec nakładki</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2700" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2731" />
         <source>Overlay start</source>
         <translation>Początek nakładki</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2553" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
         <source>Overlay text</source>
         <translation>Tekst nakładki</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1445" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1463" />
         <source>Overlays need GIF or WebP on this system</source>
         <translation>Nakładki wymagają w tym systemie GIF lub WebP</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="936" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="954" />
         <source>Selected overlay</source>
         <translation>Zaznaczona nakładka</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2682" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2713" />
         <source>Show it for the whole recording, or only for a time range</source>
         <translation>Pokaż przez całe nagranie lub tylko w zakresie czasu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2598" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2629" />
         <source>Smaller</source>
         <translation>Mniejszy</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2536" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2552" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2034" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2566" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2582" />
         <source>Text</source>
         <translation>Tekst</translation>
     </message>
@@ -3959,27 +3995,27 @@ Rozmiar: %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2277" />
         <source>Audio</source>
         <translation>Dźwięk</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2788" />
         <source>Leave the microphone out of the export</source>
         <translation>Pomiń mikrofon w eksporcie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2782" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2813" />
         <source>Leave the system audio out of the export</source>
         <translation>Pomiń dźwięk systemowy w eksporcie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2256" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
         <source>Microphone and system audio volume, mute, and noise reduction</source>
         <translation>Głośność mikrofonu i dźwięku systemowego, wyciszenie i redukcja szumów</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2747" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2778" />
         <source>Microphone volume in the export</source>
         <translation>Głośność mikrofonu w eksporcie</translation>
     </message>
@@ -3992,17 +4028,17 @@ Rozmiar: %2</translation>
         <translation>Miksowanie dwóch ścieżek dla MP4 nie jest jeszcze obsługiwane w tym systemie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2756" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2787" />
         <source>Mute Microphone</source>
         <translation>Wycisz mikrofon</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2781" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2812" />
         <source>Mute System Audio</source>
         <translation>Wycisz dźwięk systemowy</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2764" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2795" />
         <source>Reduce Noise</source>
         <translation>Redukuj szumy</translation>
     </message>
@@ -4011,12 +4047,12 @@ Rozmiar: %2</translation>
         <translation>Dźwięk systemowy: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2772" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
         <source>System audio volume in the export</source>
         <translation>Głośność dźwięku systemowego w eksporcie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2765" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2796" />
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>Ścisz syczenie, buczenie i szum pomieszczenia między słowami w mikrofonie</translation>
     </message>
@@ -4027,7 +4063,7 @@ Rozmiar: %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="51" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1522" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1540" />
         <source>Mask</source>
         <translation>Maska</translation>
     </message>
@@ -4053,7 +4089,7 @@ Rozmiar: %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
         <source>Canvas</source>
         <translation>Płótno</translation>
     </message>
@@ -4080,14 +4116,14 @@ Rozmiar: %2</translation>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="68" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="80" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2364" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2681" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2394" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
         <source>Whole recording</source>
         <translation>Całe nagranie</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="69" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2289" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2319" />
         <source>%1 – %2</source>
         <comment>time range</comment>
         <translation>%1 – %2</translation>
@@ -4100,8 +4136,8 @@ Rozmiar: %2</translation>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="208" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="212" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2525" />
         <source>Off</source>
         <translation>Wył.</translation>
     </message>
@@ -4170,182 +4206,182 @@ Rozmiar: %2</translation>
         <translation>Własna</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="600" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="612" />
         <source>Recording</source>
         <translation>Nagranie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="682" />
         <source>Hide settings</source>
         <translation>Ukryj ustawienia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="682" />
         <source>Show settings</source>
         <translation>Pokaż ustawienia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="679" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="691" />
         <source>Export…</source>
         <translation>Eksportuj…</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="683" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="695" />
         <source>Choose a format and export (Ctrl+S)</source>
         <translation>Wybierz format i eksportuj (Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="709" />
         <source>Close Without Saving (Esc)</source>
         <translation>Zamknij bez zapisywania (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1161" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1179" />
         <source>Not exported · export %1</source>
         <translation>Nieeksportowane · eksport %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1162" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1180" />
         <source>Export %1 / %2</source>
         <translation>Eksport %1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1165" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1183" />
         <source>The playhead is in a part that is not exported. The export is %1 long.</source>
         <translation>Głowica jest w części, która nie jest eksportowana. Eksport trwa %1.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1167" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
         <source>Exported time %1 of %2</source>
         <translation>Czas w eksporcie %1 z %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1229" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1247" />
         <source>Compare with Original (%1)</source>
         <translation>Porównaj z oryginałem (%1)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1258" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1276" />
         <source>Preview speed</source>
         <translation>Prędkość podglądu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1259" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1277" />
         <source>Playback speed of this preview only; the export is not changed</source>
         <translation>Prędkość odtwarzania tylko tego podglądu; eksport się nie zmienia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1319" />
         <source>Put the selected clip back (Delete)</source>
         <translation>Przywróć wybrany klip (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1302" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1320" />
         <source>Leave the selected clip out of the export (Delete)</source>
         <translation>Pomiń wybrany klip w eksporcie (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1314" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1332" />
         <source>Add effect</source>
         <translation>Dodaj efekt</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1315" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1333" />
         <source>Zoom, mask, text or image at the playhead</source>
         <translation>Powiększenie, maska, tekst lub obraz w miejscu głowicy</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1328" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1346" />
         <source>Trim</source>
         <translation>Przycinanie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1521" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1539" />
         <source>Zoom</source>
         <translation>Powiększenie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1523" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1541" />
         <source>Text &amp; image</source>
         <translation>Tekst i obraz</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1581" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1599" />
         <source>Video</source>
         <translation>Wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1674" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1692" />
         <source>Cut</source>
         <translation>Wycięte</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1808" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1826" />
         <source>No effects yet. Use Add effect to zoom, mask, or add text at the playhead.</source>
         <translation>Brak efektów. Użyj opcji Dodaj efekt, aby dodać powiększenie, maskę lub tekst w miejscu głowicy.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1845" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1863" />
         <source>Arrow keys move the split; Delete joins the two clips</source>
         <translation>Strzałki przesuwają podział; Delete łączy oba klipy</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1928" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1958" />
         <source>Zoom %1</source>
         <translation>Powiększenie %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1965" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1995" />
         <source>Mask · %1</source>
         <translation>Maska · %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2034" />
         <source>Image</source>
         <translation>Obraz</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2036" />
         <source>Text overlay "%1" from %2 to %3</source>
         <translation>Nakładka tekstowa „%1” od %2 do %3</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2009" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2039" />
         <source>Image overlay from %1 to %2</source>
         <translation>Nakładka obrazu od %1 do %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2046" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2076" />
         <source>Pointer hidden</source>
         <translation>Wskaźnik ukryty</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2204" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2234" />
         <source>These settings apply to the whole recording. Select a clip or effect on the timeline to edit just that part.</source>
         <translation>Te ustawienia dotyczą całego nagrania. Wybierz klip lub efekt na osi czasu, aby edytować tylko tę część.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2219" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
         <source>Frame on · padding %1</source>
         <translation>Ramka wł. · margines %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
         <source>No frame</source>
         <translation>Bez ramki</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2221" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2251" />
         <source>A frame needs GIF or WebP on this system.</source>
         <translation>Ramka wymaga w tym systemie formatu GIF lub WebP.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2231" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2261" />
         <source>Hidden</source>
         <translation>Ukryty</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2233" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2263" />
         <source>Shown · %1 · %n hidden range(s)</source>
         <translation>
             <numerusform>Widoczny · %1 · %n ukryty zakres</numerusform>
@@ -4354,53 +4390,53 @@ Rozmiar: %2</translation>
         </translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2235" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
         <source>Shown · %1</source>
         <translation>Widoczny · %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2236" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2266" />
         <source>No pointer data was recorded.</source>
         <translation>Nie zarejestrowano danych wskaźnika.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2237" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
         <source>Pointer effects need GIF or WebP on this system.</source>
         <translation>Efekty wskaźnika wymagają w tym systemie formatu GIF lub WebP.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2238" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
         <source>Size, smoothing, click highlights, hide when idle, motion blur and a still ending</source>
         <translation>Rozmiar, wygładzanie, wyróżnianie kliknięć, ukrywanie przy bezczynności, rozmycie ruchu i nieruchome zakończenie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2248" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2278" />
         <source>Microphone %1 · System %2</source>
         <translation>Mikrofon %1 · System %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2279" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2280" />
         <source>muted</source>
         <translation>wyciszony</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2282" />
         <source>No separate microphone and system tracks. The recorded audio is kept as it is.</source>
         <translation>Brak osobnych ścieżek mikrofonu i systemu. Nagrany dźwięk pozostaje bez zmian.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2284" />
         <source>GIF and WebP have no sound. Choose MP4 to adjust the audio.</source>
         <translation>GIF i WebP nie mają dźwięku. Wybierz MP4, aby dostosować dźwięk.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2255" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2285" />
         <source>Mixing the two tracks is not supported for MP4 on this system yet.</source>
         <translation>Miksowanie dwóch ścieżek dla MP4 nie jest jeszcze obsługiwane w tym systemie.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2297" />
         <source>Shown · %n shortcut(s) recorded</source>
         <translation>
             <numerusform>Widoczne · zapisano %n skrót</numerusform>
@@ -4409,7 +4445,7 @@ Rozmiar: %2</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2298" />
         <source>Off · %n shortcut(s) recorded</source>
         <translation>
             <numerusform>Wył. · zapisano %n skrót</numerusform>
@@ -4418,352 +4454,352 @@ Rozmiar: %2</translation>
         </translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2269" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
         <source>No shortcuts were recorded.</source>
         <translation>Nie zapisano żadnych skrótów.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2270" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
         <source>Shortcut hints need GIF or WebP on this system.</source>
         <translation>Podpowiedzi skrótów wymagają w tym systemie formatu GIF lub WebP.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2271" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2301" />
         <source>Show the shortcuts pressed while recording</source>
         <translation>Pokaż skróty naciśnięte podczas nagrywania</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2316" />
         <source>Source range</source>
         <translation>Zakres źródłowy</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2329" />
         <source>Export speed</source>
         <translation>Prędkość w eksporcie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2330" />
         <source>How fast this clip plays in the exported file. Changed-speed clips are silent.</source>
         <translation>Jak szybko ten klip odtwarza się w eksportowanym pliku. Klipy ze zmienioną prędkością są bez dźwięku.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2314" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2344" />
         <source>Cuts and speed changes need GIF or WebP on this system.</source>
         <translation>Cięcia i zmiany prędkości wymagają w tym systemie formatu GIF lub WebP.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2353" />
         <source>Keep clip</source>
         <translation>Zachowaj klip</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2353" />
         <source>Cut clip</source>
         <translation>Wytnij klip</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2324" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
         <source>Leave this clip out of the export, or put it back (Delete)</source>
         <translation>Pomiń ten klip w eksporcie lub go przywróć (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
         <source>Style</source>
         <translation>Styl</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2355" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2385" />
         <source>Solid covers with black; pixelate and blur weaken detail, which may still be recoverable</source>
         <translation>Pełna zakrywa czernią; pikselizacja i rozmycie osłabiają szczegóły, które nadal mogą być możliwe do odtworzenia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2361" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2678" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3151" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3213" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2391" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2709" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3182" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3244" />
         <source>Time range</source>
         <translation>Zakres czasu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2406" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2436" />
         <source>Drag the mask on the preview to move it, or its corner to resize it.</source>
         <translation>Przeciągnij maskę na podglądzie, aby ją przesunąć, lub jej róg, aby zmienić rozmiar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2417" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2447" />
         <source>Delete mask</source>
         <translation>Usuń maskę</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2418" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
         <source>Delete this mask (Delete)</source>
         <translation>Usuń tę maskę (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2449" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2479" />
         <source>Pointer size</source>
         <translation>Rozmiar wskaźnika</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2460" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2490" />
         <source>Smoothing</source>
         <translation>Wygładzanie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2477" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2507" />
         <source>Hide when idle</source>
         <translation>Ukryj przy bezczynności</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2480" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2497" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2835" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2837" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2510" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2525" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2527" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2866" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2868" />
         <source>%1 s</source>
         <translation>%1 s</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2486" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2516" />
         <source>Motion blur</source>
         <translation>Rozmycie ruchu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2494" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2524" />
         <source>Still ending</source>
         <translation>Nieruchome zakończenie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2571" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2602" />
         <source>Font and size</source>
         <translation>Czcionka i rozmiar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2597" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2628" />
         <source>Smaller text</source>
         <translation>Mniejszy tekst</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2605" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2636" />
         <source>Larger text</source>
         <translation>Większy tekst</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2612" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2643" />
         <source>Colour</source>
         <translation>Kolor</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2633" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2664" />
         <source>Text colour: %1</source>
         <translation>Kolor tekstu: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2653" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2684" />
         <source>Background</source>
         <translation>Tło</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2662" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2693" />
         <source>Alignment</source>
         <translation>Wyrównanie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2671" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2702" />
         <source>Opacity</source>
         <translation>Krycie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2674" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2705" />
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
         <source>Delete text</source>
         <translation>Usuń tekst</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
         <source>Delete image</source>
         <translation>Usuń obraz</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2727" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2758" />
         <source>Delete this overlay (Delete)</source>
         <translation>Usuń tę nakładkę (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2748" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2779" />
         <source>Microphone volume</source>
         <translation>Głośność mikrofonu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2773" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2804" />
         <source>System audio volume</source>
         <translation>Głośność dźwięku systemowego</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2810" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2841" />
         <source>Position</source>
         <translation>Pozycja</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2818" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2849" />
         <source>Size</source>
         <translation>Rozmiar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2826" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
         <source>Appearance</source>
         <translation>Wygląd</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2865" />
         <source>Display duration</source>
         <translation>Czas wyświetlania</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2974" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
         <source>Background image</source>
         <translation>Obraz tła</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3021" />
         <source>Padding</source>
         <translation>Margines</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2998" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3029" />
         <source>Corners</source>
         <translation>Rogi</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3302" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3051" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3333" />
         <source>Aspect ratio</source>
         <translation>Proporcje</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
         <source>Resolution</source>
         <translation>Rozdzielczość</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3063" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3094" />
         <source>Frame rate</source>
         <translation>Liczba klatek</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3071" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
         <source>Quality</source>
         <translation>Jakość</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3077" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3108" />
         <source>Codec</source>
         <translation>Kodek</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3145" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3176" />
         <source>The pointer is left out of the export during this time.</source>
         <translation>W tym czasie wskaźnik jest pomijany w eksporcie.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3216" />
         <source>Show the pointer again</source>
         <translation>Pokaż znowu wskaźnik</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3186" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3217" />
         <source>Delete this hidden range (Delete)</source>
         <translation>Usuń ten ukryty zakres (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3240" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3271" />
         <source>Zoom amount</source>
         <translation>Stopień powiększenia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3293" />
         <source>All zooms</source>
         <translation>Wszystkie powiększenia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3265" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3296" />
         <source>Zoom effects</source>
         <translation>Efekty powiększenia</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3272" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3303" />
         <source>Less motion</source>
         <translation>Mniej ruchu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3284" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3315" />
         <source>Delete zoom</source>
         <translation>Usuń powiększenie</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3316" />
         <source>Delete this zoom (Delete)</source>
         <translation>Usuń to powiększenie (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3326" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3357" />
         <source>Position and size (video pixels)</source>
         <translation>Pozycja i rozmiar (piksele wideo)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3423" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3454" />
         <source>Format</source>
         <translation>Format</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3430" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3461" />
         <source>Video with sound. Best for sharing and long recordings.</source>
         <translation>Wideo z dźwiękiem. Najlepsze do udostępniania i długich nagrań.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3431" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3462" />
         <source>Silent animation that plays almost anywhere. Large files.</source>
         <translation>Animacja bez dźwięku, odtwarzana niemal wszędzie. Duże pliki.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3432" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3463" />
         <source>Silent animation, smaller than GIF. Supports every edit.</source>
         <translation>Animacja bez dźwięku, mniejsza niż GIF. Obsługuje wszystkie zmiany.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
         <source>Close without saving your changes?</source>
         <translation>Zamknąć bez zapisywania zmian?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3816" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3847" />
         <source>The project stays in Recording Library as it was last saved.</source>
         <translation>Projekt pozostaje w bibliotece nagrań w stanie z ostatniego zapisu.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
         <source>Keep Editing</source>
         <translation>Kontynuuj edycję</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
         <source>Close</source>
         <translation>Zamknij</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2580" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2611" />
         <source>Font</source>
         <translation>Czcionka</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="252" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>Domyślny</translation>
     </message>
@@ -4771,38 +4807,38 @@ Rozmiar: %2</translation>
 <context>
     <name>RecordingPreviewBackend</name>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2148" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2155" />
         <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
         <translation>Maski nie mogą jeszcze być stosowane do MP4 w tym systemie. Eksportuj jako GIF lub WebP albo usuń maski, aby wyeksportować MP4. Nic nie zostało wyeksportowane.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2202" />
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3348" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2209" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3355" />
         <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
         <translation>Za mało miejsca na dysku do eksportu (wolne: %1, potrzeba ok. %2). Zwolnij miejsce i spróbuj ponownie; nagranie zostało zachowane.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2856" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2863" />
         <source>Writing file...</source>
         <translation>Zapisywanie pliku...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2859" />
         <source>Converting to WebP...</source>
         <translation>Konwertowanie do WebP...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2859" />
         <source>Converting to GIF...</source>
         <translation>Konwertowanie do GIF...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2360" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2367" />
         <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
         <translation>Nie udało się zapisać pliku. Nagranie zostało zachowane; spróbuj zapisać ponownie lub wybierz inną lokalizację.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2285" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2292" />
         <source>Saving...</source>
         <translation>Zapisywanie...</translation>
     </message>
@@ -4816,42 +4852,42 @@ Rozmiar: %2</translation>
         <translation>Konwertowanie wideo...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2870" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
         <source>Failed to create video player for conversion</source>
         <translation>Nie udało się utworzyć odtwarzacza wideo do konwersji</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2871" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2878" />
         <source>Failed to load video for conversion</source>
         <translation>Nie udało się załadować wideo do konwersji</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2872" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2879" />
         <source>Video not loaded properly for conversion</source>
         <translation>Wideo nie zostało poprawnie załadowane do konwersji</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2873" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2880" />
         <source>Failed to start encoder</source>
         <translation>Nie udało się uruchomić enkodera</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2874" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2881" />
         <source>Conversion failed: no video frames were encoded</source>
         <translation>Konwersja nie powiodła się: nie zakodowano żadnych klatek wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2875" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2882" />
         <source>Conversion failed while extracting video frames</source>
         <translation>Konwersja nie powiodła się podczas wyodrębniania klatek wideo</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2876" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2883" />
         <source>Conversion failed while saving the output file</source>
         <translation>Konwersja nie powiodła się podczas zapisywania pliku wyjściowego</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2884" />
         <source>Conversion failed: output file is missing or empty</source>
         <translation>Konwersja nie powiodła się: plik wyjściowy nie istnieje lub jest pusty</translation>
     </message>
@@ -4872,27 +4908,27 @@ Rozmiar: %2</translation>
         <translation>Przycinanie nie powiodło się</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3249" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3256" />
         <source>Exporting video...</source>
         <translation>Eksportowanie wideo...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3277" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3284" />
         <source>Video export is not supported on this platform</source>
         <translation>Eksport wideo nie jest obsługiwany na tej platformie</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3278" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3285" />
         <source>Export failed: %1</source>
         <translation>Eksport nie powiódł się: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3281" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3288" />
         <source>Export failed; the original recording was kept.</source>
         <translation>Eksport nie powiódł się; oryginalne nagranie zostało zachowane.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2385" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2392" />
         <source>Cancelling...</source>
         <translation>Anulowanie...</translation>
     </message>
@@ -4918,12 +4954,12 @@ Rozmiar: %2</translation>
         <translation>Nie można odczytać obrazu.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2160" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2167" />
         <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Cięć i zmian prędkości nie można jeszcze zastosować do MP4 w tym systemie. Eksportuj jako GIF lub WebP albo usuń je, aby wyeksportować MP4. Nic nie zostało wyeksportowane.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2156" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2163" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>Wszystkie części są wycięte: nie ma czego eksportować.</translation>
     </message>
@@ -4943,27 +4979,27 @@ Rozmiar: %2</translation>
         <translation>Tytuł</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2069" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2076" />
         <source>Failed to load preview video: %1</source>
         <translation>Nie udało się załadować wideo podglądu: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2140" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2147" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Nakładek tekstowych i obrazów nie można jeszcze rysować w MP4 w tym systemie. Eksportuj jako GIF lub WebP albo usuń je, aby wyeksportować MP4. Nic nie zostało wyeksportowane.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2273" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2280" />
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Nie można skopiować nagrania projektu do zapisu. Nic nie zostało zapisane.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2308" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2315" />
         <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
         <translation>Zapisano w %1, ale nie udało się zaktualizować projektu. Zapisz ponownie, aby zachować te zmiany w projekcie.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2333" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Zapisano w %1, ale nie udało się zachować nagrania jako edytowalnego projektu. Nadal jest tu otwarte: zapisz ponownie lub zamknij, aby je odrzucić.</translation>
     </message>
@@ -5441,96 +5477,96 @@ Dźwięk nie jest obsługiwany w nagraniach GIF.</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3136" />
+        <location filename="../src/RegionSelector.cpp" line="3160" />
         <source>%1 region</source>
         <translation>%1 obszar</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3137" />
+        <location filename="../src/RegionSelector.cpp" line="3161" />
         <source>%1 regions</source>
         <translation>%1 obszary</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3926" />
+        <location filename="../src/RegionSelector.cpp" line="3950" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Poczekaj na zakończenie automatycznego rozmywania</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <location filename="../src/RegionSelector.cpp" line="4111" />
         <source>Error</source>
         <translation>Błąd</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <location filename="../src/RegionSelector.cpp" line="4111" />
         <source>Failed to merge regions. Please try again.</source>
         <translation>Nie udało się połączyć regionów. Spróbuj ponownie.</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4109" />
-        <location filename="../src/RegionSelector.cpp" line="4840" />
-        <location filename="../src/RegionSelector.cpp" line="4928" />
-        <location filename="../src/RegionSelector.cpp" line="5034" />
+        <location filename="../src/RegionSelector.cpp" line="4144" />
+        <location filename="../src/RegionSelector.cpp" line="4875" />
+        <location filename="../src/RegionSelector.cpp" line="4963" />
+        <location filename="../src/RegionSelector.cpp" line="5069" />
         <source>Failed to process selected region</source>
         <translation>Nie udało się przetworzyć wybranego regionu</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4218" />
+        <location filename="../src/RegionSelector.cpp" line="4253" />
         <source>Failed to save screenshot: unable to process selection</source>
         <translation>Nie udało się zapisać zrzutu ekranu: nie można przetworzyć zaznaczenia</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4869" />
-        <location filename="../src/RegionSelector.cpp" line="4897" />
+        <location filename="../src/RegionSelector.cpp" line="4904" />
+        <location filename="../src/RegionSelector.cpp" line="4932" />
         <source>Copied %1 characters</source>
         <translation>Skopiowano %1 znaków</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4873" />
+        <location filename="../src/RegionSelector.cpp" line="4908" />
         <source>No text found</source>
         <translation>Nie znaleziono tekstu</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4896" />
+        <location filename="../src/RegionSelector.cpp" line="4931" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4992" />
+        <location filename="../src/RegionSelector.cpp" line="5027" />
         <source>No QR code found</source>
         <translation>Nie znaleziono kodu QR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5059" />
+        <location filename="../src/RegionSelector.cpp" line="5094" />
         <source>Face detection unavailable</source>
         <translation>Wykrywanie twarzy niedostępne</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5067" />
+        <location filename="../src/RegionSelector.cpp" line="5102" />
         <source>Detection unavailable</source>
         <translation>Wykrywanie niedostępne</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5277" />
+        <location filename="../src/RegionSelector.cpp" line="5312" />
         <source>Blurred %1 face(s), %2 credential(s)</source>
         <translation>Rozmyto %1 twarz(y), %2 poświadczeń</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5281" />
+        <location filename="../src/RegionSelector.cpp" line="5316" />
         <source>Blurred %1 face(s)</source>
         <translation>Rozmyto %1 twarzy</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5285" />
+        <location filename="../src/RegionSelector.cpp" line="5320" />
         <source>Blurred %1 credential(s)</source>
         <translation>Rozmyto %1 poświadczeń</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5289" />
+        <location filename="../src/RegionSelector.cpp" line="5324" />
         <source>No faces or credentials detected</source>
         <translation>Nie wykryto twarzy ani poświadczeń</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5293" />
+        <location filename="../src/RegionSelector.cpp" line="5328" />
         <source>Detection failed</source>
         <translation>Wykrywanie nie powiodło się</translation>
     </message>
@@ -5566,7 +5602,7 @@ Dźwięk nie jest obsługiwany w nagraniach GIF.</translation>
 <context>
     <name>ScreenCanvasSession</name>
     <message>
-        <location filename="../src/ScreenCanvasSession.cpp" line="1438" />
+        <location filename="../src/ScreenCanvasSession.cpp" line="1447" />
         <source>Copy failed</source>
         <translation>Kopiowanie nie powiodło się</translation>
     </message>
