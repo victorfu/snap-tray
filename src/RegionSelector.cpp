@@ -4496,6 +4496,13 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             return;
         }
 
+        // Escape during a drag puts the annotation back (#237).
+        if (m_inputHandler && m_inputHandler->cancelAnnotationManipulation()) {
+            update();
+            event->accept();
+            return;
+        }
+
         // Try to handle escape in tool first (e.g. finish polyline)
         if (m_toolManager && m_toolManager->handleEscape()) {
             event->accept();
@@ -4782,6 +4789,12 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
             // If editing text, let keyPressEvent handle Esc
             if (m_textEditor->isEditing()) {
                 return false;
+            }
+
+            // Escape during a drag puts the annotation back (#237).
+            if (m_inputHandler && m_inputHandler->cancelAnnotationManipulation()) {
+                update();
+                return true;
             }
 
             // Try to handle escape in tool first (e.g. finish polyline)

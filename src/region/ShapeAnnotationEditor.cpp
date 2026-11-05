@@ -59,6 +59,7 @@ void ShapeAnnotationEditor::updateTransformation(const QPoint& pos)
     }
 
     QPointF delta = QPointF(pos) - m_transformStartCenter;
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
 
     switch (m_activeGizmoHandle) {
     case GizmoHandle::Rotation: {
@@ -95,6 +96,7 @@ void ShapeAnnotationEditor::updateTransformation(const QPoint& pos)
 
 void ShapeAnnotationEditor::finishTransformation()
 {
+    if (m_isTransforming && m_annotationLayer) m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isTransforming = false;
     m_activeGizmoHandle = GizmoHandle::None;
 }
@@ -113,11 +115,22 @@ void ShapeAnnotationEditor::updateDragging(const QPoint& pos)
     }
 
     const QPoint delta = pos - m_dragStart;
+    m_annotationLayer->ensureGesture();
     shapeItem->moveBy(QPointF(delta));
     m_dragStart = pos;
 }
 
 void ShapeAnnotationEditor::finishDragging()
 {
+    if (m_isDragging && m_annotationLayer) m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isDragging = false;
+}
+
+void ShapeAnnotationEditor::cancelInteraction()
+{
+    if (!m_isTransforming && !m_isDragging) return;
+    if (m_annotationLayer) m_annotationLayer->cancelGesture();
+    m_isTransforming = false;
+    m_isDragging = false;
+    m_activeGizmoHandle = GizmoHandle::None;
 }

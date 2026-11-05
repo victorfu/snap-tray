@@ -125,6 +125,9 @@ private:
     void updateAllSurfaces();
     void updateSurfacesForAnnotationRect(const QRect& annotationRect);
     bool hasActiveAnnotationInteraction() const;
+    // Escape during a drag of an existing annotation (#237): puts it back
+    // without an undo step. Returns true if one was in progress.
+    bool cancelAnnotationGesture();
     QRect selectedAnnotationInteractionRect() const;
     void requestLocalizedToolRepaint();
     void resetAnnotationInteractionTracking();

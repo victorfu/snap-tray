@@ -41,6 +41,7 @@ public:
     std::size_t estimatedRetainedBytes() const override { return sizeof(ShapeAnnotation); }
 
     void setRect(const QRect &rect);
+    void setRectF(const QRectF& rect) { m_rect = rect; }
     QRect rect() const { return m_rect.toAlignedRect(); }
     QRectF rectF() const { return m_rect; }
     ShapeType shapeType() const { return m_type; }

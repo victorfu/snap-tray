@@ -3,6 +3,7 @@
 #include <QGuiApplication>
 
 #include "ScreenCanvas.h"
+#include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
@@ -29,6 +30,9 @@ private slots:
     void testCustomColorSynchronizesSession_data();
     void testCustomColorSynchronizesSession();
     void selectedArrowStyleIsUndoable();
+    void polylineMoveIsUndoable();
+    void arrowEndpointDragIsUndoable();
+    void escapeMidDragRestores();
     void toolInUseStaysOutOfOverflowWithStripCollapsed();
 #ifdef Q_OS_MACOS
     void testMacSurfaceAvoidsToolWindowHideBehavior();
@@ -242,6 +246,74 @@ void TestScreenCanvasStyleSync::toolInUseStaysOutOfOverflowWithStripCollapsed()
     session.m_bgMode = CanvasBackgroundMode::Whiteboard;
     session.updateQmlToolbarState();
     QCOMPARE(vm->activeTool(), int(ToolId::CanvasWhiteboard));
+}
+
+// #237: moving a polyline is one undo step.
+void TestScreenCanvasStyleSync::polylineMoveIsUndoable()
+{
+    ScreenCanvasSession session;
+    auto* surface = new ScreenCanvas;
+    session.m_surfaces = {surface};
+    session.m_activeSurface = surface;
+    session.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{{20, 80}, {70, 30}, {120, 80}}, Qt::red, 3));
+    session.m_annotationLayer->setSelectedIndex(0);
+    auto line = [&] { return static_cast<PolylineAnnotation*>(session.m_annotationLayer->itemAt(0)); };
+    QVERIFY(session.handlePolylineAnnotationPress(QPoint(45, 55)));
+    session.handlePolylineAnnotationMove(QPoint(55, 55));
+    session.handlePolylineAnnotationMove(QPoint(65, 60));
+    session.handlePolylineAnnotationRelease(QPoint(65, 60));
+    QCOMPARE(line()->points().first(), QPoint(40, 85));
+    session.m_annotationLayer->undo();
+    QCOMPARE(session.m_annotationLayer->itemCount(), size_t(1));   // the move, not the add
+    QCOMPARE(line()->points().first(), QPoint(20, 80));
+}
+
+void TestScreenCanvasStyleSync::arrowEndpointDragIsUndoable()
+{
+    ScreenCanvasSession session;
+    auto* surface = new ScreenCanvas;
+    session.m_surfaces = {surface};
+    session.m_activeSurface = surface;
+    session.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::red, 3));
+    session.m_annotationLayer->setSelectedIndex(0);
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(session.m_annotationLayer->itemAt(0)); };
+    QVERIFY(session.handleArrowAnnotationPress(QPoint(120, 20)));
+    session.handleArrowAnnotationMove(QPoint(140, 50));
+    session.handleArrowAnnotationRelease(QPoint(140, 50));
+    QCOMPARE(arrow()->end(), QPoint(140, 50));
+    session.m_annotationLayer->undo();
+    QCOMPARE(session.m_annotationLayer->itemCount(), size_t(1));
+    QCOMPARE(arrow()->end(), QPoint(120, 20));
+}
+
+// Escape during a drag puts the annotation back; the canvas stays open.
+void TestScreenCanvasStyleSync::escapeMidDragRestores()
+{
+    ScreenCanvasSession session;
+    auto* surface = new ScreenCanvas;
+    session.m_surfaces = {surface};
+    session.m_activeSurface = surface;
+    session.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::red, 3));
+    session.m_annotationLayer->setSelectedIndex(0);
+    QSignalSpy closed(&session, &ScreenCanvasSession::closed);
+    const auto token = session.m_annotationLayer->historyStateToken();
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(session.m_annotationLayer->itemAt(0)); };
+    QVERIFY(session.handleArrowAnnotationPress(QPoint(40, 20)));
+    session.handleArrowAnnotationMove(QPoint(50, 50));
+    QCOMPARE(arrow()->start(), QPoint(30, 50));
+    QVERIFY(!session.m_consumeNextToolRelease);
+    QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+    session.handleSurfaceKeyPress(surface, &escape);
+    QVERIFY(session.m_consumeNextToolRelease);   // the held button's release places nothing
+    QCOMPARE(arrow()->start(), QPoint(20, 20));
+    QCOMPARE(session.m_annotationLayer->historyStateToken(), token);
+    QCOMPARE(closed.count(), 0);
+    session.handleArrowAnnotationMove(QPoint(70, 70));
+    session.handleArrowAnnotationRelease(QPoint(70, 70));
+    QCOMPARE(arrow()->start(), QPoint(20, 20));
 }
 
 QTEST_MAIN(TestScreenCanvasStyleSync)

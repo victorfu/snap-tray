@@ -105,6 +105,9 @@ public:
      * @return true if handled, false otherwise.
      */
     bool handleEscape();
+    // Cancels a drag or transform of an existing text or shape through the
+    // shared editors (#237). Returns true if one was in progress.
+    bool cancelAnnotationInteraction();
 
     // Context management
     ToolContext* context() { return m_context.get(); }

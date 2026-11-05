@@ -355,6 +355,7 @@ private:
     bool m_isArrowDragging = false;
     GizmoHandle m_arrowDragHandle = GizmoHandle::None;
     bool m_isPolylineDragging = false;
+    bool m_undoStateShowsGesture = false;   // #237: toolbar Undo/Redo reflect a drag
     int m_activePolylineVertexIndex = -1;
     // Note: m_dragStartPos is used for window dragging (global coords)
     QPoint m_annotationDragStartPos; // For annotation dragging (original coords)
@@ -374,6 +375,9 @@ private:
     // Cursor update helper
     void updateAnnotationCursor(const QPoint& pos);
     bool hasActiveAnnotationInteraction() const;
+    // Escape during a drag of an existing annotation (#237): puts it back
+    // without an undo step. Returns true if one was in progress.
+    bool cancelAnnotationGesture();
     QRect mappedAnnotationRect(const QRect& originalRect) const;
     QRect selectedAnnotationInteractionVisualRect() const;
     bool requestLocalizedToolRepaint();

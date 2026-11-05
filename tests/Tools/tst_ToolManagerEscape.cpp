@@ -5,6 +5,8 @@
 #include "tools/IToolHandler.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
+#include "region/ShapeAnnotationEditor.h"
 
 class FakeEscapeHandler : public IToolHandler
 {
@@ -44,6 +46,7 @@ private slots:
     void testHandleEscape_ClearsSelectionWhenHandlerIgnoresEscape();
     void testHandleEscape_PreservesSelectionWhenHandlerConsumesEscape();
     void testHandleEscape_ReturnsFalseWhenNothingHandled();
+    void shapeEscapeRestoresTransform();
 
 private:
     static void addSelectableArrow(AnnotationLayer& layer)
@@ -116,6 +119,29 @@ void TestToolManagerEscape::testHandleEscape_ReturnsFalseWhenNothingHandled()
     QCOMPARE(handler->escapeCallCount(), 1);
     QCOMPARE(layer.selectedIndex(), -1);
     QCOMPARE(repaintSpy.count(), 0);
+}
+
+// #237: Escape during a shape rotation puts the shape back instead of
+// keeping the half-done rotation.
+void TestToolManagerEscape::shapeEscapeRestoresTransform()
+{
+    ToolManager manager;
+    AnnotationLayer layer;
+    ShapeAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    manager.setAnnotationLayer(&layer);
+    manager.setShapeAnnotationEditor(&editor);
+    manager.registerDefaultHandlers();
+    manager.setCurrentTool(ToolId::Shape);
+    layer.addItem(std::make_unique<ShapeAnnotation>(QRect(10, 10, 40, 30), ShapeType::Rectangle, Qt::red, 3, false));
+    layer.setSelectedIndex(0);
+    editor.startTransformation(QPoint(60, 25), GizmoHandle::Rotation);
+    editor.updateTransformation(QPoint(30, 60));
+    auto* shape = static_cast<ShapeAnnotation*>(layer.itemAt(0));
+    QVERIFY(shape->rotation() != 0.0);
+    QVERIFY(manager.handleEscape());
+    QCOMPARE(shape->rotation(), 0.0);
+    QVERIFY(!editor.isTransforming());
 }
 
 QTEST_MAIN(TestToolManagerEscape)

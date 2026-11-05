@@ -56,6 +56,8 @@ public:
     QRectF box() const { return m_box; }
     void setBox(const QRectF& box);
     void setWrapWidth(qreal width);
+    // Restores a recorded layout exactly (#237): no box recalculation.
+    void restoreLayout(const QString& text, const QRectF& box, qreal wrapWidth);
     qreal wrapWidth() const { return m_wrapWidth; }
 
     // Position (top-left of box in world coordinates)

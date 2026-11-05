@@ -149,6 +149,25 @@ public:
     bool modifyItem(AnnotationId id, const QString& coalesceKey,
                     const std::function<bool(AnnotationItem&)>& mutate);
     void endModifyCoalescing();
+
+    // Parts of an annotation a Modify command restores (#224 style, #237 geometry).
+    enum ModifyPart : unsigned { ModifyStyle = 1u, ModifyGeometry = 2u };
+
+    // A gesture is one interactive change of an existing annotation (a drag,
+    // rotate, scale, endpoint/vertex drag, or text re-edit) recorded as one
+    // Modify command (#237). The item is snapshotted at begin; commit records
+    // the requested parts if they changed; cancel restores the snapshot.
+    // Undo/redo are refused while a gesture is active. A begin while another
+    // gesture is active commits that one first (a release that never came),
+    // and so does adding an annotation. A text re-edit's gesture (its item is
+    // hidden while the inline editor is open) is owned by the editor: it is
+    // never committed or replaced from elsewhere.
+    bool beginGesture(AnnotationId id);
+    bool ensureGesture();   // begins on the selected item unless one is active
+    bool commitGesture(unsigned parts);
+    void cancelGesture();
+    bool isGestureActive() const { return m_gestureId != 0; }
+    AnnotationId gestureId() const { return m_gestureId; }
     bool removeSelectedItem();
 
     // Cache management for rendering optimization
@@ -193,7 +212,7 @@ private:
     enum class HistoryCommandKind {
         Add,
         Remove,
-        Modify   // items[0] holds the other STYLE of the annotation with that id
+        Modify   // items[0] holds the other state of the recorded parts of that id
     };
 
     struct HistoryCommand {
@@ -202,6 +221,7 @@ private:
         HistoryStateToken beforeState = 0;
         HistoryStateToken afterState = 0;
         std::size_t retainedBytes = 0;
+        unsigned parts = 0;   // ModifyPart mask, Modify only
     };
 
     void addItemNow(std::unique_ptr<AnnotationItem> item);
@@ -211,7 +231,9 @@ private:
     HistoryStateToken allocateHistoryState();
     void pushAppliedCommand(HistoryCommand command);
     bool undoCommand(HistoryCommand& command);
-    bool swapModifiedStyle(HistoryCommand& command);
+    bool swapModifiedParts(HistoryCommand& command);
+    void dropGesture();
+    bool gestureIsReEdit() const;
     bool redoCommand(HistoryCommand& command);
     std::size_t calculateCommandRetainedBytes(const HistoryCommand& command) const;
     void refreshCommandRetainedBytes(HistoryCommand& command);
@@ -245,6 +267,8 @@ private:
     AnnotationId m_selectedId = 0;
     AnnotationId m_openModifyId = 0;
     QString m_openModifyKey;
+    AnnotationId m_gestureId = 0;
+    std::unique_ptr<AnnotationItem> m_gestureSnapshot;
 
     struct CacheKey {
         int physicalWidth = 0;

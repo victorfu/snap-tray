@@ -1386,6 +1386,11 @@ target_link_libraries(Annotations_AnnotationStyle PRIVATE snaptray_core Qt6::Wid
 add_test(NAME Annotations_AnnotationStyle COMMAND Annotations_AnnotationStyle)
 set_tests_properties(Annotations_AnnotationStyle PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_AnnotationGeometry Annotations/tst_AnnotationGeometry.cpp)
+target_link_libraries(Annotations_AnnotationGeometry PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationGeometry COMMAND Annotations_AnnotationGeometry)
+set_tests_properties(Annotations_AnnotationGeometry PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_AnnotationStyleEditor Annotations/tst_AnnotationStyleEditor.cpp)
 target_link_libraries(Annotations_AnnotationStyleEditor PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_AnnotationStyleEditor COMMAND Annotations_AnnotationStyleEditor)

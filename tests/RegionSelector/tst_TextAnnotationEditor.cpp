@@ -58,6 +58,12 @@ private slots:
     // Edit session guard tests
     void testFinishEditing_DuplicateCommitIgnored();
     void testCancelEditing_DisarmsSession();
+    void dragIsOneUndoStep();
+    void escapeCancelRestores();
+    void reEditIsOneUndoStep();
+    void emptyReEditRecordsNothingAndStaysVisible();
+    void reEditSurvivesItemRemovedUnderneath();
+    void dragReleaseDoesNotEndReEdit();
     void testInlineTextEditor_ClampedNewTextBaseline();
     void testInlineTextEditor_PreserveExistingTextBaseline();
     void testInlineTextEditor_CommittedBaselineMatchesRequestedBaseline();
@@ -585,6 +591,140 @@ void tst_TextAnnotationEditor::testTextLayoutRoundtrip()
         collapsed.setWrapWidth(item->wrapWidth());
         QVERIFY(renderText(collapsed, dpr) != image);
     }
+}
+
+void tst_TextAnnotationEditor::dragIsOneUndoStep()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Drag"), QFont(), Qt::red));
+    layer.setSelectedIndex(0);
+    TextAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    editor.startDragging(QPoint(20, 20));
+    editor.updateDragging(QPoint(25, 20));
+    editor.updateDragging(QPoint(35, 20));
+    editor.finishDragging();
+    auto* text = static_cast<TextBoxAnnotation*>(layer.itemAt(0));
+    QCOMPARE(text->position(), QPointF(25, 10));
+    layer.undo();
+    QCOMPARE(text->position(), QPointF(10, 10));
+    QCOMPARE(layer.itemCount(), size_t(1));
+}
+
+void tst_TextAnnotationEditor::escapeCancelRestores()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Turn"), QFont(), Qt::red));
+    layer.setSelectedIndex(0);
+    TextAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    const auto token = layer.historyStateToken();
+    auto* text = static_cast<TextBoxAnnotation*>(layer.itemAt(0));
+    const QPoint center = text->center().toPoint();
+    editor.startTransformation(center + QPoint(40, 0), GizmoHandle::Rotation);
+    editor.updateTransformation(center + QPoint(0, 40));
+    QVERIFY(text->rotation() != 0.0);
+    editor.cancelInteraction();
+    QCOMPARE(text->rotation(), 0.0);
+    QVERIFY(!editor.isTransforming());
+    QCOMPARE(layer.historyStateToken(), token);
+}
+
+namespace {
+struct ReEditFixture {
+    QWidget parent;
+    AnnotationLayer layer;
+    InlineTextEditor inlineEditor{&parent};
+    TextAnnotationEditor editor;
+    ReEditFixture()
+    {
+        editor.setAnnotationLayer(&layer);
+        editor.setTextEditor(&inlineEditor);
+        editor.setParentWidget(&parent);
+    }
+    TextBoxAnnotation* add(const QString& text, QPointF at)
+    {
+        layer.addItem(std::make_unique<TextBoxAnnotation>(at, text, QFont(), Qt::red));
+        return static_cast<TextBoxAnnotation*>(layer.itemAt(int(layer.itemCount()) - 1));
+    }
+};
+} // namespace
+
+// #237: a re-edit is one undo step: content, colour and position come back together.
+void tst_TextAnnotationEditor::reEditIsOneUndoStep()
+{
+    ReEditFixture f;
+    TextBoxAnnotation* text = f.add(QStringLiteral("Old"), QPointF(30, 40));
+    const QRectF oldBox = text->box();
+    const QPointF oldPosition = text->position();
+    f.editor.startReEditing(0, Qt::red);
+    QVERIFY(!f.layer.canUndo());   // no undo underneath an open edit
+    f.editor.finishEditing(QStringLiteral("New, much longer"), QPoint(200, 160), Qt::blue);
+    QCOMPARE(text->text(), QStringLiteral("New, much longer"));
+    QCOMPARE(text->color(), QColor(Qt::blue));
+    QVERIFY(f.layer.canUndo());
+    f.layer.undo();
+    text = static_cast<TextBoxAnnotation*>(f.layer.itemAt(0));
+    QVERIFY(text);
+    QCOMPARE(text->text(), QStringLiteral("Old"));
+    QCOMPARE(text->color(), QColor(Qt::red));
+    QCOMPARE(text->box(), oldBox);
+    QCOMPARE(text->position(), oldPosition);
+    QVERIFY(text->isVisible());
+    f.layer.redo();
+    QCOMPARE(text->text(), QStringLiteral("New, much longer"));
+}
+
+void tst_TextAnnotationEditor::emptyReEditRecordsNothingAndStaysVisible()
+{
+    ReEditFixture f;
+    TextBoxAnnotation* text = f.add(QStringLiteral("Keep"), QPointF(30, 40));
+    const auto token = f.layer.historyStateToken();
+    f.editor.startReEditing(0, Qt::red);
+    f.editor.cancelEditing();
+    QCOMPARE(f.layer.historyStateToken(), token);
+    QVERIFY(text->isVisible());
+    QVERIFY(!f.layer.isGestureActive());
+
+    f.editor.startReEditing(0, Qt::red);
+    f.editor.finishEditing(QString(), QPoint(30, 40), Qt::red);
+    QCOMPARE(f.layer.historyStateToken(), token);
+    QVERIFY(text->isVisible());
+    QCOMPARE(text->text(), QStringLiteral("Keep"));
+    QVERIFY(!f.layer.isGestureActive());
+}
+
+void tst_TextAnnotationEditor::reEditSurvivesItemRemovedUnderneath()
+{
+    ReEditFixture f;
+    f.add(QStringLiteral("First"), QPointF(10, 10));
+    TextBoxAnnotation* second = f.add(QStringLiteral("Second"), QPointF(10, 80));
+    f.editor.startReEditing(1, Qt::red);
+    f.layer.setSelectedIndex(0);
+    QVERIFY(f.layer.removeSelectedItem());
+    QCOMPARE(f.editor.editingIndex(), 0);
+    f.editor.finishEditing(QStringLiteral("Edited"), QPoint(10, 80), Qt::red);
+    QCOMPARE(f.layer.itemCount(), size_t(1));
+    QCOMPARE(second->text(), QStringLiteral("Edited"));
+    QVERIFY(second->isVisible());
+}
+
+// Review #237-2: a slow double-click starts a drag, then the re-edit; the
+// drag's release must not end the re-edit's undo step.
+void tst_TextAnnotationEditor::dragReleaseDoesNotEndReEdit()
+{
+    ReEditFixture f;
+    TextBoxAnnotation* text = f.add(QStringLiteral("Old"), QPointF(30, 40));
+    f.layer.setSelectedIndex(0);
+    f.editor.startDragging(QPoint(35, 45));
+    f.editor.startReEditing(0, Qt::red);
+    f.editor.finishDragging();
+    QVERIFY(f.layer.isGestureActive());
+    QVERIFY(!f.layer.canUndo());
+    f.editor.finishEditing(QStringLiteral("New"), QPoint(40, 60), Qt::red);
+    QCOMPARE(text->text(), QStringLiteral("New"));
+    f.layer.undo();
+    QCOMPARE(static_cast<TextBoxAnnotation*>(f.layer.itemAt(0))->text(), QStringLiteral("Old"));
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)

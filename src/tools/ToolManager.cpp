@@ -1,4 +1,6 @@
 #include "tools/ToolManager.h"
+#include "region/ShapeAnnotationEditor.h"
+#include "region/TextAnnotationEditor.h"
 #include "tools/ToolRegistry.h"
 #include "tools/ToolWidthSlot.h"
 #include "tools/handlers/AllHandlers.h"
@@ -255,6 +257,22 @@ void ToolManager::cancelDrawing() {
     if (auto* h = currentHandler()) {
         h->cancelDrawing();
     }
+}
+
+bool ToolManager::cancelAnnotationInteraction()
+{
+    bool cancelled = false;
+    if (auto* text = m_context->textAnnotationEditor;
+        text && (text->isDragging() || text->isTransforming())) {
+        text->cancelInteraction();
+        cancelled = true;
+    }
+    if (auto* shape = m_context->shapeAnnotationEditor;
+        shape && (shape->isDragging() || shape->isTransforming())) {
+        shape->cancelInteraction();
+        cancelled = true;
+    }
+    return cancelled;
 }
 
 bool ToolManager::handleEscape() {

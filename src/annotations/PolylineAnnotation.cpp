@@ -151,6 +151,11 @@ void PolylineAnnotation::setPoint(int index, const QPoint& point)
     }
 }
 
+void PolylineAnnotation::setPoints(const QVector<QPoint>& points)
+{
+    m_points = points;
+}
+
 void PolylineAnnotation::removeLastPoint()
 {
     if (!m_points.isEmpty()) {

@@ -89,6 +89,23 @@ class TestAnnotationLayer : public QObject
     Q_OBJECT
 
 private slots:
+    void gestureCommitIsOneStep();
+    void unchangedGestureRecordsNothing();
+    void cancelGestureRestoresWithoutHistory();
+    void styleThenMoveUndoIndependently();
+    void moveThenStyleUndoIndependently();
+    void undoRefusedDuringGesture();            // [RF 5]
+    void gestureRefusedDuringErase();
+    void destructiveOpsDropGesture();
+    void staleGestureIsCommittedByNextBegin();  // [RF 1]
+    void translatedSnapshotUndoesToTranslatedPosition();  // [RF 3]
+    void gestureAdvancesStateToken();
+    void geometryUndoKeepsSelection();
+    void ensureGestureOnAnotherItemCommitsStale();
+    void newAnnotationCommitsStaleGesture();
+    void hiddenReEditGestureIsNotTakenOver();
+    void gestureSnapshotKeepsFractionalShapeRect();
+    void cancelGestureKeepsStyleEditMadeDuringDrag();
     void modifyIsUndoable();
     void modifyKeepsSelectionAcrossUndo();
     void modifyCoalesces();
@@ -1545,6 +1562,290 @@ void TestAnnotationLayer::modifyUndoKeepsVisibility()
     layer.redo();
     QVERIFY(!layer.itemAt(0)->isVisible());
     QCOMPARE(layer.itemAt(0), text); // the same object stays in the scene
+}
+
+namespace {
+ShapeAnnotation* addShape(AnnotationLayer& layer, QRect rect = QRect(10, 10, 40, 30))
+{
+    layer.addItem(std::make_unique<ShapeAnnotation>(rect, ShapeType::Rectangle, Qt::red, 3, false));
+    return static_cast<ShapeAnnotation*>(layer.itemAt(int(layer.itemCount()) - 1));
+}
+} // namespace
+
+void TestAnnotationLayer::gestureSnapshotKeepsFractionalShapeRect()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const QRectF fractional(10.25, 10.5, 40.5, 30.25);
+    shape->setRectF(fractional);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(!layer.commitGesture(AnnotationLayer::ModifyGeometry));   // unchanged: no step
+    QCOMPARE(layer.historyStateToken(), before);
+
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(5, 0));
+    layer.cancelGesture();
+    QCOMPARE(shape->rectF(), fractional);
+
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(5, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF(), fractional);
+}
+
+void TestAnnotationLayer::cancelGestureKeepsStyleEditMadeDuringDrag()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.beginGesture(id));
+    shape->moveBy(QPointF(20, 0));
+    QVERIFY(layer.modifyItem(id, QString(), [](AnnotationItem& item) {   // e.g. wheel width
+        static_cast<ShapeAnnotation&>(item).setWidth(9);
+        return true;
+    }));
+    layer.cancelGesture();
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));   // the drag is reverted
+    QCOMPARE(shape->width(), 9);                            // the style step is kept
+    layer.undo();                                           // undoes the style step
+    QCOMPARE(shape->width(), 3);
+    layer.redo();
+    QCOMPARE(shape->width(), 9);
+}
+
+void TestAnnotationLayer::gestureCommitIsOneStep()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.beginGesture(id));
+    for (int i = 0; i < 5; ++i) shape->moveBy(QPointF(2, 0));   // many moves, one gesture
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(20, 10));
+    layer.undo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(layer.itemCount(), size_t(1));   // undid the move, not the add
+    layer.redo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF().topLeft(), QPointF(20, 10));
+}
+
+void TestAnnotationLayer::unchangedGestureRecordsNothing()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(!layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    QCOMPARE(layer.historyStateToken(), before);
+    QVERIFY(!layer.isGestureActive());
+}
+
+void TestAnnotationLayer::cancelGestureRestoresWithoutHistory()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(30, 30));
+    shape->setRotation(45);
+    layer.cancelGesture();
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(shape->rotation(), 0.0);
+    QCOMPARE(layer.historyStateToken(), before);
+}
+
+void TestAnnotationLayer::styleThenMoveUndoIndependently()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.modifyItem(id, QString(), [](AnnotationItem& item) {
+        static_cast<ShapeAnnotation&>(item).setColor(Qt::blue);
+        return true;
+    }));
+    QVERIFY(layer.beginGesture(id));
+    static_cast<ShapeAnnotation*>(layer.itemAt(0))->moveBy(QPointF(25, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();   // the move only
+    auto* shape = static_cast<ShapeAnnotation*>(layer.itemAt(0));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(shape->color(), QColor(Qt::blue));
+    layer.undo();   // then the style
+    QCOMPARE(shape->color(), QColor(Qt::red));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+}
+
+void TestAnnotationLayer::moveThenStyleUndoIndependently()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.beginGesture(id));
+    static_cast<ShapeAnnotation*>(layer.itemAt(0))->moveBy(QPointF(25, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    QVERIFY(layer.modifyItem(id, QString(), [](AnnotationItem& item) {
+        static_cast<ShapeAnnotation&>(item).setColor(Qt::blue);
+        return true;
+    }));
+    layer.undo();   // the style only
+    auto* shape = static_cast<ShapeAnnotation*>(layer.itemAt(0));
+    QCOMPARE(shape->color(), QColor(Qt::red));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(35, 10));
+    layer.undo();   // then the move
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(shape->color(), QColor(Qt::red));
+}
+
+void TestAnnotationLayer::undoRefusedDuringGesture()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    QSignalSpy changed(&layer, &AnnotationLayer::changed);
+    QVERIFY(layer.canUndo());
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(changed.count() >= 1);   // toolbars refresh
+    QVERIFY(!layer.canUndo());
+    layer.undo();
+    QCOMPARE(layer.itemCount(), size_t(1));
+    layer.cancelGesture();
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::gestureRefusedDuringErase()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    layer.beginEraseTransaction();
+    QVERIFY(!layer.beginGesture(layer.idAt(0)));
+    QVERIFY(layer.endEraseTransaction());
+}
+
+void TestAnnotationLayer::destructiveOpsDropGesture()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    layer.clear();
+    QVERIFY(!layer.isGestureActive());
+
+    addShape(layer);
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(layer.removeSelectedItem());
+    QVERIFY(!layer.isGestureActive());
+    QVERIFY(!layer.commitGesture(AnnotationLayer::ModifyGeometry));
+
+    addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    layer.beginEraseTransaction();
+    QVERIFY(!layer.isGestureActive());
+    QVERIFY(layer.endEraseTransaction());
+}
+
+void TestAnnotationLayer::staleGestureIsCommittedByNextBegin()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* a = addShape(layer);
+    addShape(layer, QRect(100, 100, 10, 10));
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    a->moveBy(QPointF(5, 0));
+    // The release never arrived; the next gesture starts.
+    QVERIFY(layer.beginGesture(layer.idAt(1)));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry) == false);   // b unchanged
+    layer.undo();   // the stale move was recorded
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF().topLeft(), QPointF(10, 10));
+}
+
+void TestAnnotationLayer::translatedSnapshotUndoesToTranslatedPosition()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(20, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.translateAll(QPointF(-10, -10));   // a Pin crop
+    layer.undo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF().topLeft(), QPointF(0, 0));
+}
+
+void TestAnnotationLayer::gestureAdvancesStateToken()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(1, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    QVERIFY(layer.historyStateToken() != before);
+    QCOMPARE(layer.historyStateRelation(before), AnnotationLayer::HistoryStateRelation::UndoReachable);
+}
+
+void TestAnnotationLayer::geometryUndoKeepsSelection()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.ensureGesture());
+    shape->moveBy(QPointF(3, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();
+    QCOMPARE(layer.selectedIndex(), 0);
+}
+
+// Review #237-3: a gesture that never got its release is recorded when the
+// next drag starts on another item, and that drag gets its own snapshot.
+void TestAnnotationLayer::ensureGestureOnAnotherItemCommitsStale()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* a = addShape(layer);
+    ShapeAnnotation* b = addShape(layer, QRect(100, 100, 10, 10));
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.ensureGesture());
+    a->moveBy(QPointF(5, 0));            // release never arrives
+    layer.setSelectedIndex(1);
+    QVERIFY(layer.ensureGesture());
+    QCOMPARE(layer.gestureId(), layer.idAt(1));
+    b->moveBy(QPointF(0, 7));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();
+    QCOMPARE(b->rectF().topLeft(), QPointF(100, 100));
+    QCOMPARE(a->rectF().topLeft(), QPointF(15, 10));
+    layer.undo();
+    QCOMPARE(a->rectF().topLeft(), QPointF(10, 10));
+}
+
+// Drawing something new records a stale gesture, so Undo comes back.
+void TestAnnotationLayer::newAnnotationCommitsStaleGesture()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* a = addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    a->moveBy(QPointF(5, 0));
+    addShape(layer, QRect(100, 100, 10, 10));
+    QVERIFY(!layer.isGestureActive());
+    QVERIFY(layer.canUndo());
+    layer.undo();                        // the new shape
+    layer.undo();                        // the stale move
+    QCOMPARE(a->rectF().topLeft(), QPointF(10, 10));
+}
+
+// A text re-edit hides its item: nothing else may take over or end its gesture.
+void TestAnnotationLayer::hiddenReEditGestureIsNotTakenOver()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Edit"), QFont(), Qt::red));
+    addShape(layer, QRect(100, 100, 10, 10));
+    layer.itemAt(0)->setVisible(false);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(!layer.beginGesture(layer.idAt(1)));
+    layer.setSelectedIndex(1);
+    QVERIFY(!layer.ensureGesture());
+    addShape(layer, QRect(200, 200, 10, 10));
+    QCOMPARE(layer.gestureId(), layer.idAt(0));
+    layer.itemAt(0)->setVisible(true);
+    layer.cancelGesture();
 }
 
 QTEST_MAIN(TestAnnotationLayer)
