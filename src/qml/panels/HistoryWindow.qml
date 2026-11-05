@@ -1464,7 +1464,7 @@ Item {
                         wrapMode: Text.WordWrap
                         text: confirmStrip.confirmKind === root.kindRecording
                             ? qsTr("Delete this editable project? Its full recording and edits are removed. The file you saved from it stays.")
-                            : qsTr("Delete this screenshot from History? Files you saved from it stay.")
+                            : qsTr("Delete this screenshot from the Library? Files you saved from it stay.")
                         color: SemanticTokens.textPrimary
                         font.pixelSize: SemanticTokens.fontSizeBody
                         font.family: SemanticTokens.fontFamily

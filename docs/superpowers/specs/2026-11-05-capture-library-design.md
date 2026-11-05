@@ -58,7 +58,7 @@ When the selected project is open in the recording preview, Open in Editor and D
 
 Delete key, the command bar or the context menu shows a strip above the results. It holds the message, a primary **Delete** button and **Cancel**. Esc or a change of selection cancels it.
 
-- Screenshot: "Delete this screenshot from History? Files you saved from it stay."
+- Screenshot: "Delete this screenshot from the Library? Files you saved from it stay."
 - Recording: "Delete this editable project? Its full recording and edits are removed. The file you saved from it stays."
 
 ## Recordings: privacy, retention, setting
