@@ -128,15 +128,15 @@ Record actual environment, results, and evidence for each implementation; a blan
 | --- | --- | --- | --- |
 | Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | CI build and tests only | CI build and tests only |
 | Wide/narrow, light/dark, selection/export | QML screenshot fixtures (below) | Pending manual pass | Pending manual pass |
-| Pending input, drag/undo, close/cancel | Automated preview suites; operation videos (below) | CI tests only | CI tests only |
+| Pending input, drag/undo, close/cancel | Automated preview suites; operation videos; exporting, close-while-exporting and cancelled screenshots (below) | CI tests only | CI tests only |
 | New recording end-to-end (trim → split/speed → canvas → text/mask/zoom → export) | Scripted real-input session, `editor-220-flow` | Pending manual pass | Pending manual pass |
-| Reopened project (reopen → change → undo/redo → save → reopen) | `tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits`, `tst_RecordingEditor::redoAndReopenKeepSelectionHonest` | CI tests only | CI tests only |
+| Reopened project (reopen → change → undo/redo → save → reopen) | Scripted real-input session, `editor-220-reopen`; `tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits`, `tst_RecordingEditor::redoAndReopenKeepSelectionHonest` | CI tests only | CI tests only |
 | Long translations | de, fi, ru, el at 1200 × 800 and 640 × 480 (below) | Pending | Pending |
-| Multiple DPI scales | 2× only (Retina) | Pending (100/150/200 %) | Pending |
+| Multiple DPI scales | 1×, 1.5× and 2× renderings (`QT_SCALE_FACTOR` on a Retina display, below); no physical 1× display | Pending (100/150/200 %) | Pending |
 | Screen reader names | Inspector sweep `inspectorControlsAreNamed`; no VoiceOver session yet | Pending (Narrator) | Pending (Orca) |
 | Floating tools at screen edges/multiple displays | Outside this editor change | Pending follow-up | Pending follow-up |
 
-Keep #220 and #221 open until their remaining acceptance and follow-up tracking are complete.
+#220 was closed on the macOS evidence above. The pending Windows, Ubuntu 22.04 X11 beta, physical-DPI and screen reader passes are tracked in [#238](https://github.com/victorfu/snap-tray/issues/238); update this matrix with their results. #221 stays open for the rest of the product.
 
 ### Actual editor evidence
 
@@ -166,6 +166,34 @@ Recorded on macOS 27.0.1 / Qt 6.12.0 from a scripted session that sends real mou
 
   ![New recording](/assets/images/developer/editor/videos/editor-220-flow.gif)
 
+- Kept project (#220): export with "Keep editable projects" on, reopen from Recording Library, delete a mask, undo, redo, export again, reopen again.
+
+  ![Reopened project](/assets/images/developer/editor/videos/editor-220-reopen.gif)
+
+### Export and project states
+
+The export status sits on a solid panel, so it reads the same over any frame. Closing the window during an export asks to keep or cancel it; cancelling keeps every edit. A reopened project says "Project" in the top bar (a new recording that will be kept says "Editable project").
+
+![Exporting](/assets/images/developer/editor/15-exporting-light.png)
+
+![Closing during an export](/assets/images/developer/editor/16-close-while-exporting-dark.png)
+
+![Export cancelled, edits kept](/assets/images/developer/editor/17-export-cancelled-light.png)
+
+![Reopened project](/assets/images/developer/editor/18-reopened-project-dark.png)
+
+### Display scales
+
+Rendered at 1× and 1.5× with `QT_SCALE_FACTOR=0.5` and `0.75` on a 2× display, at the same logical sizes as above. Text, icons and hit targets keep their layout; the narrow inspector scrolls.
+
+![1×, wide](/assets/images/developer/editor/19-scale-100-wide-light.png)
+
+![1×, narrow](/assets/images/developer/editor/20-scale-100-narrow-light.png)
+
+![1.5×, wide](/assets/images/developer/editor/21-scale-150-wide-light.png)
+
+![1.5×, narrow](/assets/images/developer/editor/22-scale-150-narrow-light.png)
+
 ### Long translations
 
 German, Finnish, Russian and Greek are the longest editor translations. Wide (German) and narrow (all four) windows keep every control reachable; the file name, status chip and an inline label elide by design and keep their full text in the tooltip and accessible name.
@@ -184,8 +212,13 @@ cd build
 SNAPTRAY_EDITOR_DESIGN_DIR=/tmp/editor ./bin/Qml_RecordingEditor designEvidence designEvidenceError
 # The same in another language.
 SNAPTRAY_EDITOR_DESIGN_DIR=/tmp/editor SNAPTRAY_EDITOR_TRANSLATION=$PWD/snaptray_de.qm ./bin/Qml_RecordingEditor designEvidence
+# Export and project states (15-18).
+SNAPTRAY_EDITOR_DESIGN_DIR=/tmp/editor ./bin/Qml_RecordingEditor designEvidenceStates
+# Other display scales (19-22 come from 01, 02 and 10 of these runs).
+QT_SCALE_FACTOR=0.5 SNAPTRAY_EDITOR_DESIGN_DIR=/tmp/editor-1x ./bin/Qml_RecordingEditor designEvidence:light
+QT_SCALE_FACTOR=0.75 SNAPTRAY_EDITOR_DESIGN_DIR=/tmp/editor-1.5x ./bin/Qml_RecordingEditor designEvidence:light
 # Operation video frames, then a video per scenario.
-SNAPTRAY_EDITOR_VIDEO_DIR=/tmp/videos ./bin/Qml_RecordingEditor operationVideo
+SNAPTRAY_EDITOR_VIDEO_DIR=/tmp/videos ./bin/Qml_RecordingEditor operationVideo operationVideoReopen
 ffmpeg -framerate 10 -i /tmp/videos/218-selection/frame-%05d.png -c:v libx264 -pix_fmt yuv420p editor-218-selection.mp4
 ```
 
