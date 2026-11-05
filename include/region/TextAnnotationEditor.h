@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QRectF>
 #include <QColor>
+#include <cstdint>
 #include <functional>
 #include "TextFormattingState.h"
 #include "TransformationGizmo.h"
@@ -50,7 +51,8 @@ public:
     bool finishEditing(const QString& text, const QPoint& position, const QColor& color);
     void cancelEditing();
     bool isEditing() const;
-    int editingIndex() const { return m_editingIndex; }
+    // Index of the text being re-edited, or -1. Follows the annotation by id.
+    int editingIndex() const;
 
     // Transformation operations
     void startTransformation(const QPoint& pos, GizmoHandle handle);
@@ -113,7 +115,8 @@ private:
 
     // Editing state
     TextFormattingState m_formatting;
-    int m_editingIndex = -1;
+    // The re-edited annotation's id (#237); 0 when creating a new text.
+    std::uint64_t m_editingId = 0;
     // Guard to ensure each edit session commits/cancels at most once.
     bool m_editSessionActive = false;
 

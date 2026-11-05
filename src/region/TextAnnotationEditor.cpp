@@ -67,7 +67,7 @@ void TextAnnotationEditor::startEditing(const QPoint& pos, const QRect& selectio
     if (!m_textEditor) return;
 
     m_editSessionActive = true;
-    m_editingIndex = -1;  // Creating new annotation
+    m_editingId = 0;  // Creating new annotation
     m_textEditor->setColor(color);
     m_textEditor->setFont(m_formatting.toQFont());
     const QPoint displayPos = toRoundedPoint(m_annotationToDisplayMapper(QPointF(pos)));
@@ -88,7 +88,9 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
     }
 
     m_editSessionActive = true;
-    m_editingIndex = annotationIndex;
+    m_editingId = m_annotationLayer->idAt(annotationIndex);
+    // The whole edit (content, font, colour, position) is one undo step (#237).
+    m_annotationLayer->beginGesture(m_editingId);
 
     // Extract formatting from existing annotation
     m_formatting = TextFormattingState::fromQFont(textItem->font());
@@ -131,9 +133,10 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
     bool createdNew = false;
     const qreal wrapWidth = m_textEditor ? m_textEditor->committedTextWidth() : 0.0;
 
-    if (m_editingIndex >= 0) {
+    if (m_editingId != 0) {
         // Re-editing: restore visibility first
-        auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));
+        const int index = editingIndex();
+        auto* textItem = index >= 0 ? dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(index)) : nullptr;
         if (textItem) {
             textItem->setVisible(true);  // Restore visibility
             if (!text.isEmpty()) {
@@ -154,8 +157,9 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
                 textItem->setPosition(topLeft);
             }
         }
-        m_annotationLayer->setSelectedIndex(m_editingIndex);
-        m_editingIndex = -1;
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyStyle | AnnotationLayer::ModifyGeometry);
+        if (index >= 0) m_annotationLayer->setSelectedIndex(index);
+        m_editingId = 0;
         m_annotationLayer->invalidateCache();
     }
     else if (!text.isEmpty()) {
@@ -181,17 +185,24 @@ void TextAnnotationEditor::cancelEditing()
 {
     m_editSessionActive = false;
 
-    if (m_editingIndex >= 0 && m_annotationLayer) {
+    if (m_editingId != 0 && m_annotationLayer) {
+        m_annotationLayer->cancelGesture();
         // Restore visibility of the original annotation
-        auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));
+        const int index = editingIndex();
+        auto* textItem = index >= 0 ? dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(index)) : nullptr;
         if (textItem) {
             textItem->setVisible(true);
         }
-        m_editingIndex = -1;
+        m_editingId = 0;
         m_annotationLayer->invalidateCache();
     }
     emit editingCancelled();
     emit updateRequested();
+}
+
+int TextAnnotationEditor::editingIndex() const
+{
+    return (m_annotationLayer && m_editingId != 0) ? m_annotationLayer->indexOfId(m_editingId) : -1;
 }
 
 bool TextAnnotationEditor::isEditing() const
