@@ -843,6 +843,27 @@ void ScreenCanvasSession::updateSurfacesForAnnotationRect(const QRect& annotatio
     }
 }
 
+bool ScreenCanvasSession::cancelAnnotationGesture()
+{
+    bool cancelled = m_toolManager && m_toolManager->cancelAnnotationInteraction();
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating
+        || m_isArrowDragging || m_isPolylineDragging) {
+        m_isEmojiDragging = m_isEmojiScaling = m_isEmojiRotating = false;
+        m_activeEmojiHandle = GizmoHandle::None;
+        m_emojiStartDistance = 0.0;
+        m_isArrowDragging = false;
+        m_arrowDragHandle = GizmoHandle::None;
+        m_isPolylineDragging = false;
+        m_activePolylineVertexIndex = -1;
+        cancelled = true;
+    }
+    if (!cancelled || !m_annotationLayer) return cancelled;
+    // Escape during an inline re-edit is handled before this (it cancels the edit).
+    m_annotationLayer->cancelGesture();
+    setToolCursor();
+    return true;
+}
+
 bool ScreenCanvasSession::hasActiveAnnotationInteraction() const
 {
     const ScreenCanvas* interactionSurface =
@@ -2010,6 +2031,11 @@ void ScreenCanvasSession::handleSurfaceKeyPress(ScreenCanvas* surface, QKeyEvent
     }
 
     if (event->key() == Qt::Key_Escape) {
+        // Escape during a drag puts the annotation back (#237).
+        if (cancelAnnotationGesture()) {
+            updateAllSurfaces();
+            return;
+        }
         if (m_toolManager->handleEscape()) {
             updateAllSurfaces();
             return;
@@ -2623,6 +2649,9 @@ bool ScreenCanvasSession::handleEmojiStickerAnnotationMove(const QPoint& pos)
         return false;
     }
 
+    if (m_isEmojiDragging || m_isEmojiRotating || m_isEmojiScaling) {
+        m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
+    }
     if (m_isEmojiDragging) {
         const QPoint delta = pos - m_emojiDragStart;
         emojiItem->moveBy(delta);
@@ -2651,6 +2680,7 @@ bool ScreenCanvasSession::handleEmojiStickerAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isEmojiDragging = false;
     m_isEmojiScaling = false;
     m_isEmojiRotating = false;
@@ -2709,6 +2739,7 @@ bool ScreenCanvasSession::handleArrowAnnotationMove(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
     if (m_arrowDragHandle == GizmoHandle::Body) {
         const QPoint delta = pos - m_dragStartPos;
         arrowItem->moveBy(delta);
@@ -2735,6 +2766,7 @@ bool ScreenCanvasSession::handleArrowAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isArrowDragging = false;
     m_arrowDragHandle = GizmoHandle::None;
     setToolCursor();
@@ -2794,6 +2826,7 @@ bool ScreenCanvasSession::handlePolylineAnnotationMove(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
     if (m_activePolylineVertexIndex >= 0) {
         polylineItem->setPoint(m_activePolylineVertexIndex, pos);
     } else {
@@ -2813,6 +2846,7 @@ bool ScreenCanvasSession::handlePolylineAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isPolylineDragging = false;
     m_activePolylineVertexIndex = -1;
     setToolCursor();
