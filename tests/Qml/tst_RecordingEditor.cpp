@@ -1580,11 +1580,20 @@ void tst_RecordingEditor::splitMarkerKeepsKeyboard()
         QCoreApplication::sendEvent(view, &repeat);
         QTRY_COMPARE(backend.timelineSplits().value(0).toLongLong(), expected);
     }
-    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
+    // Focus leaves before the key is released: the repeats are already in
+    // that one step, so undo and redo give the start and the final place.
+    view->rootObject()->forceActiveFocus();
+    QTRY_VERIFY(view->rootObject()->hasActiveFocus());
     QTest::keyRelease(view, Qt::Key_Right);
     backend.undo();
     QCOMPARE(backend.timelineSplits().value(0).toLongLong(), qint64(1000));
-    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr && marker->hasActiveFocus());
+    backend.redo();
+    QCOMPARE(backend.timelineSplits().value(0).toLongLong(), qint64(1300));
+    backend.undo();
+    QCOMPARE(backend.timelineSplits().value(0).toLongLong(), qint64(1000));
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr);
+    marker->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(marker->hasActiveFocus());
     QTest::keyClick(view, Qt::Key_Delete);
     QTRY_VERIFY(backend.timelineSplits().isEmpty());
     QTRY_VERIFY(view->rootObject()->hasActiveFocus());

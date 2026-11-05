@@ -310,8 +310,8 @@ Item {
         return true
     }
     // A held arrow key on a split: its first move was recorded as an undo
-    // step, and the release folds the rest into it. Kept here because each
-    // move rebuilds the marker.
+    // step and its repeats are folded into it. Kept here because each move
+    // rebuilds the marker.
     property bool splitNudgeHeld: false
 
     readonly property var speedOptions: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
@@ -1864,18 +1864,22 @@ Item {
                     Accessible.onPressAction: forceActiveFocus()
                     Component.onDestruction: if (activeFocus) Qt.callLater(splitMarkers.refocus, index)
                     // One undo step per press, a held key included: its first move
-                    // records the step, the release folds the repeats into it.
+                    // records the step and each repeat is folded into it at once,
+                    // so nothing waits for a release that focus may take elsewhere.
                     // moveSplit() rebuilds this marker at once: everything it
                     // needs afterwards is read before.
                     function nudge(event, direction) {
                         event.accepted = true
                         const editor = backend
                         const preview = root
+                        // A new press never folds into an older step.
+                        if (!event.isAutoRepeat) preview.splitNudgeHeld = false
                         const step = (event.modifiers & Qt.ShiftModifier) ? 1000 : 100
-                        const first = !event.isAutoRepeat || !preview.splitNudgeHeld
                         const legal = editor.legalSplitPosition(index, modelData + direction * step)
                         if (legal < 0 || legal === modelData || !editor.moveSplit(index, legal)) return
-                        if (first) {
+                        if (preview.splitNudgeHeld) {
+                            editor.amendTimelineEdit()
+                        } else {
                             editor.commitTimelineEdit()
                             preview.splitNudgeHeld = true
                         }
@@ -1883,11 +1887,8 @@ Item {
                     Keys.onLeftPressed: function(event) { nudge(event, -1) }
                     Keys.onRightPressed: function(event) { nudge(event, 1) }
                     Keys.onReleased: function(event) {
-                        if ((event.key === Qt.Key_Left || event.key === Qt.Key_Right) && !event.isAutoRepeat
-                                && root.splitNudgeHeld) {
+                        if ((event.key === Qt.Key_Left || event.key === Qt.Key_Right) && !event.isAutoRepeat)
                             root.splitNudgeHeld = false
-                            backend.amendTimelineEdit()
-                        }
                     }
                     Keys.onDeletePressed: function(event) { event.accepted = true; backend.removeSplit(index) }
                     Keys.onPressed: function(event) {

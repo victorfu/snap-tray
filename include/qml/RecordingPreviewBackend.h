@@ -525,7 +525,7 @@ public:
     Q_INVOKABLE qint64 legalSplitPosition(int index, qint64 sourceMs) const;
     Q_INVOKABLE void commitTimelineEdit();
     // Folds the timeline into the step the same gesture recorded first, so a
-    // held arrow key on a split is one undo step.
+    // held arrow key on a split is one undo step, kept up to date per repeat.
     Q_INVOKABLE void amendTimelineEdit();
     Q_INVOKABLE void setPartDeleted(int part, bool deleted);
     Q_INVOKABLE void setPartSpeed(int part, qreal speed);
