@@ -229,6 +229,7 @@ void TextAnnotationEditor::updateTransformation(const QPoint& pos)
 
     QPointF center = m_transformStartCenter;
     QPointF delta = QPointF(pos) - center;
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
 
     switch (m_activeGizmoHandle) {
     case GizmoHandle::Rotation: {
@@ -279,6 +280,7 @@ void TextAnnotationEditor::finishTransformation()
         return;
     }
 
+    if (m_annotationLayer) m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isTransforming = false;
     m_activeGizmoHandle = GizmoHandle::None;
     if (m_annotationLayer) {
@@ -300,6 +302,7 @@ void TextAnnotationEditor::updateDragging(const QPoint& pos)
     if (!textItem) return;
 
     QPoint delta = pos - m_dragStart;
+    m_annotationLayer->ensureGesture();
     textItem->moveBy(delta);
     m_dragStart = pos;
     emit updateRequested();
@@ -311,10 +314,21 @@ void TextAnnotationEditor::finishDragging()
         return;
     }
 
+    if (m_annotationLayer) m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isDragging = false;
     if (m_annotationLayer) {
         m_annotationLayer->invalidateCache();
     }
+}
+
+void TextAnnotationEditor::cancelInteraction()
+{
+    if (!m_isTransforming && !m_isDragging) return;
+    if (m_annotationLayer) m_annotationLayer->cancelGesture();
+    m_isTransforming = false;
+    m_isDragging = false;
+    m_activeGizmoHandle = GizmoHandle::None;
+    emit updateRequested();
 }
 
 void TextAnnotationEditor::setBold(bool enabled)

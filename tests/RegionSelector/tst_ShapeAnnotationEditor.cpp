@@ -9,6 +9,8 @@ class tst_ShapeAnnotationEditor : public QObject
     Q_OBJECT
 
 private slots:
+    void dragIsOneUndoStep();
+    void escapeCancelRestores();
     void testDraggingMovesSelectedShape();
     void testRotationTransformation();
     void testScaleTransformation();
@@ -77,6 +79,41 @@ void tst_ShapeAnnotationEditor::testScaleTransformation()
 
     QVERIFY(qAbs(shapeItem->scaleX() - 2.0) < 0.1);
     QVERIFY(qAbs(shapeItem->scaleY() - 2.0) < 0.1);
+}
+
+void tst_ShapeAnnotationEditor::dragIsOneUndoStep()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<ShapeAnnotation>(QRect(10, 10, 40, 30), ShapeType::Rectangle, Qt::red, 3, false));
+    layer.setSelectedIndex(0);
+    ShapeAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    editor.startDragging(QPoint(20, 20));
+    editor.updateDragging(QPoint(25, 20));
+    editor.updateDragging(QPoint(40, 20));
+    editor.finishDragging();
+    auto* shape = static_cast<ShapeAnnotation*>(layer.itemAt(0));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(30, 10));
+    layer.undo();
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(layer.itemCount(), size_t(1));
+}
+
+void tst_ShapeAnnotationEditor::escapeCancelRestores()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<ShapeAnnotation>(QRect(10, 10, 40, 30), ShapeType::Rectangle, Qt::red, 3, false));
+    layer.setSelectedIndex(0);
+    ShapeAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    const auto token = layer.historyStateToken();
+    editor.startTransformation(QPoint(60, 25), GizmoHandle::Rotation);
+    editor.updateTransformation(QPoint(30, 60));
+    editor.cancelInteraction();
+    auto* shape = static_cast<ShapeAnnotation*>(layer.itemAt(0));
+    QCOMPARE(shape->rotation(), 0.0);
+    QVERIFY(!editor.isTransforming());
+    QCOMPARE(layer.historyStateToken(), token);
 }
 
 QTEST_MAIN(tst_ShapeAnnotationEditor)

@@ -58,6 +58,8 @@ private slots:
     // Edit session guard tests
     void testFinishEditing_DuplicateCommitIgnored();
     void testCancelEditing_DisarmsSession();
+    void dragIsOneUndoStep();
+    void escapeCancelRestores();
     void testInlineTextEditor_ClampedNewTextBaseline();
     void testInlineTextEditor_PreserveExistingTextBaseline();
     void testInlineTextEditor_CommittedBaselineMatchesRequestedBaseline();
@@ -585,6 +587,43 @@ void tst_TextAnnotationEditor::testTextLayoutRoundtrip()
         collapsed.setWrapWidth(item->wrapWidth());
         QVERIFY(renderText(collapsed, dpr) != image);
     }
+}
+
+void tst_TextAnnotationEditor::dragIsOneUndoStep()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Drag"), QFont(), Qt::red));
+    layer.setSelectedIndex(0);
+    TextAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    editor.startDragging(QPoint(20, 20));
+    editor.updateDragging(QPoint(25, 20));
+    editor.updateDragging(QPoint(35, 20));
+    editor.finishDragging();
+    auto* text = static_cast<TextBoxAnnotation*>(layer.itemAt(0));
+    QCOMPARE(text->position(), QPointF(25, 10));
+    layer.undo();
+    QCOMPARE(text->position(), QPointF(10, 10));
+    QCOMPARE(layer.itemCount(), size_t(1));
+}
+
+void tst_TextAnnotationEditor::escapeCancelRestores()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Turn"), QFont(), Qt::red));
+    layer.setSelectedIndex(0);
+    TextAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    const auto token = layer.historyStateToken();
+    auto* text = static_cast<TextBoxAnnotation*>(layer.itemAt(0));
+    const QPoint center = text->center().toPoint();
+    editor.startTransformation(center + QPoint(40, 0), GizmoHandle::Rotation);
+    editor.updateTransformation(center + QPoint(0, 40));
+    QVERIFY(text->rotation() != 0.0);
+    editor.cancelInteraction();
+    QCOMPARE(text->rotation(), 0.0);
+    QVERIFY(!editor.isTransforming());
+    QCOMPARE(layer.historyStateToken(), token);
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)

@@ -65,6 +65,10 @@ public:
     void finishDragging();
     bool isDragging() const { return m_isDragging; }
 
+    // Escape during a drag or transform (#237): restores the text and ends
+    // the interaction without an undo step. Does nothing when idle.
+    void cancelInteraction();
+
     // Formatting operations
     void setBold(bool enabled);
     void setItalic(bool enabled);

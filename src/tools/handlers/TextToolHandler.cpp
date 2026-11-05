@@ -40,14 +40,10 @@ bool TextToolHandler::handleEscape(ToolContext* ctx)
         return true;
     }
 
-    if (ctx->textAnnotationEditor && ctx->textAnnotationEditor->isTransforming()) {
-        ctx->textAnnotationEditor->finishTransformation();
-        ctx->repaint();
-        return true;
-    }
-
-    if (ctx->textAnnotationEditor && ctx->textAnnotationEditor->isDragging()) {
-        ctx->textAnnotationEditor->finishDragging();
+    // Escape puts a dragged or transformed text back (#237).
+    if (ctx->textAnnotationEditor
+        && (ctx->textAnnotationEditor->isTransforming() || ctx->textAnnotationEditor->isDragging())) {
+        ctx->textAnnotationEditor->cancelInteraction();
         ctx->repaint();
         return true;
     }
