@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QWidget>
 
 #import <Cocoa/Cocoa.h>
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
@@ -13,6 +14,7 @@
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
+#include "qml/ToolbarTooltipController.h"
 
 namespace {
 
@@ -42,6 +44,7 @@ private slots:
     void testSubToolbarWindowExcludedFromCapture();
     void testEmojiPickerWindowExcludedFromCapture();
     void testPinHoverWindowsExcludedFromCapture();
+    void testPinTooltipDiscoverableBeforeHover_data();
     void testPinTooltipDiscoverableBeforeHover();
     void testPinHoverWindowsStayOnDeactivate();
 };
@@ -106,16 +109,34 @@ void tst_FloatingOverlayCaptureExclusion::testPinHoverWindowsExcludedFromCapture
     }
 }
 
+void tst_FloatingOverlayCaptureExclusion::testPinTooltipDiscoverableBeforeHover_data()
+{
+    QTest::addColumn<bool>("widgetOwner");
+    QTest::newRow("hover-bar-icons") << false;
+    QTest::newRow("live-indicator") << true;
+}
+
 void tst_FloatingOverlayCaptureExclusion::testPinTooltipDiscoverableBeforeHover()
 {
+    QFETCH(bool, widgetOwner);
     if (QGuiApplication::platformName() != "cocoa") QSKIP("Requires native Cocoa windows.");
     if (@available(macOS 14.4, *)) {
         PinHoverBarViewModel viewModel;
         PinHoverBar bar(&viewModel, nullptr);
-        const QList<WId> ids = bar.captureExclusionWindowIds();
-        QCOMPARE(ids.size(), 3);
-        QVERIFY(bar.tooltipWindow());
-        NSWindow* tooltip = nsWindowForQWindow(bar.tooltipWindow());
+        QWidget pin;
+        SnapTray::ToolbarTooltipController liveTooltip;
+        QWindow* tooltipWindow = nullptr;
+        if (widgetOwner) {
+            pin.winId();
+            liveTooltip.setAssociatedWidget(&pin);
+            tooltipWindow = liveTooltip.prepareCaptureExclusion(pin.windowHandle());
+        } else {
+            const QList<WId> ids = bar.captureExclusionWindowIds();
+            QCOMPARE(ids.size(), 3);
+            tooltipWindow = bar.tooltipWindow();
+        }
+        QVERIFY(tooltipWindow);
+        NSWindow* tooltip = nsWindowForQWindow(tooltipWindow);
         QVERIFY(tooltip != nil);
         QVERIFY([tooltip windowNumber] > 0);
         QVERIFY(![tooltip hasShadow]);

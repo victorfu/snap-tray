@@ -39,7 +39,7 @@ NSWindow* nsWindowForWidget(const QWidget* widget)
     return view ? [view window] : nil;
 }
 
-NSWindow* nsWindowForQuickView(const QQuickView* view)
+NSWindow* nsWindowForWindow(const QWindow* view)
 {
     if (!view || QGuiApplication::platformName() != QStringLiteral("cocoa")) {
         return nil;
@@ -91,7 +91,7 @@ void ToolbarTooltipController::ensureView()
     setWindowExcludedFromCapture(m_view, true);
 }
 
-QWindow* ToolbarTooltipController::prepareCaptureExclusion(QQuickView* owner)
+QWindow* ToolbarTooltipController::prepareCaptureExclusion(QWindow* owner)
 {
     if (!owner) return nullptr;
     ensureView();
@@ -114,7 +114,7 @@ QWindow* ToolbarTooltipController::prepareCaptureExclusion(QQuickView* owner)
 
 void ToolbarTooltipController::showFor(const QString& text,
                                        const QRect& anchorGlobalRect,
-                                       QQuickView* owner,
+                                       QWindow* owner,
                                        TooltipPlacement preferred)
 {
     if (text.isEmpty() || anchorGlobalRect.isEmpty() || !owner) {
@@ -132,7 +132,7 @@ void ToolbarTooltipController::showFor(const QString& text,
     m_rootItem->polish();
 
     const quint64 requestId = ++m_requestId;
-    const QPointer<QQuickView> ownerGuard(owner);
+    const QPointer<QWindow> ownerGuard(owner);
     QTimer::singleShot(0, this,
         [this, requestId, anchorGlobalRect, ownerGuard, preferred]() {
             if (requestId != m_requestId || !m_view || !m_rootItem || !ownerGuard) {
@@ -205,7 +205,7 @@ void ToolbarTooltipController::hide()
     ++m_requestId;
     if (m_captureExclusionPrepared && m_rootItem) {
         m_rootItem->setVisible(false);
-        applyWindowFlags(qobject_cast<QQuickView*>(m_view->transientParent()));
+        applyWindowFlags(m_view->transientParent());
     } else if (m_view) {
         m_view->hide();
     }
@@ -221,12 +221,12 @@ QWindow* ToolbarTooltipController::window() const
     return m_view;
 }
 
-void ToolbarTooltipController::applyWindowFlags(QQuickView* owner)
+void ToolbarTooltipController::applyWindowFlags(QWindow* owner)
 {
 #ifdef Q_OS_MACOS
-    if (NSWindow* window = nsWindowForQuickView(m_view)) {
+    if (NSWindow* window = nsWindowForWindow(m_view)) {
         NSInteger targetLevel = NSPopUpMenuWindowLevel;
-        if (NSWindow* ownerWindow = nsWindowForQuickView(owner)) {
+        if (NSWindow* ownerWindow = nsWindowForWindow(owner)) {
             targetLevel = qMax<NSInteger>(targetLevel, [ownerWindow level] + 1);
         }
         if (NSWindow* associatedWindow = nsWindowForWidget(m_associatedWidget.data())) {

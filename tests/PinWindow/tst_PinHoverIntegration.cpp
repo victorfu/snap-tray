@@ -1,10 +1,12 @@
 #include <QtTest>
 #include <QEnterEvent>
+#include <QHelpEvent>
 #include <QGuiApplication>
 #include <QMenu>
 #include <QScreen>
 #include <QQuickItem>
 #include <QQuickView>
+#include <QToolTip>
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "PinWindow.h"
@@ -12,6 +14,11 @@
 #include "PlatformFeatures.h"
 #include "qml/PinHoverBarViewModel.h"
 #include "settings/PinWindowSettingsManager.h"
+
+#ifdef Q_OS_WIN
+#include "platform/CaptureExclusionPolicy.h"
+#include <Windows.h>
+#endif
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
@@ -29,6 +36,8 @@ private slots:
     void rotateKeepsBarInside();
     void clickedBarComesBack();
     void liveTooltipOnlyOnDot();
+    void liveIndicatorTooltipIsExcluded_data();
+    void liveIndicatorTooltipIsExcluded();
     void liveCaptureExcludesHoverWindows();
     void sliderDragKeepsPanelInPlace();
     void transientHideKeepsPanel();
@@ -182,15 +191,86 @@ void TestPinHoverIntegration::liveTooltipOnlyOnDot()
     QVERIFY(window.toolTip().isEmpty());
 }
 
+void TestPinHoverIntegration::liveIndicatorTooltipIsExcluded_data()
+{
+    QTest::addColumn<bool>("prepareCapture");
+    QTest::addColumn<bool>("showHoverControls");
+    QTest::newRow("lazy") << false << true;
+    QTest::newRow("prepared") << true << true;
+    QTest::newRow("prepared-without-hover-bar") << true << false;
+}
+
+void TestPinHoverIntegration::liveIndicatorTooltipIsExcluded()
+{
+    QFETCH(bool, prepareCapture);
+    QFETCH(bool, showHoverControls);
+    auto& settings = PinWindowSettingsManager::instance();
+    const bool savedSetting = settings.loadShowHoverControls();
+    const auto restore = qScopeGuard([&] { settings.saveShowHoverControls(savedSetting); });
+    settings.saveShowHoverControls(showHoverControls);
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    window.m_isLiveMode = true; // Exercise hints without starting a capture or requesting TCC.
+    const QList<WId> excluded = prepareCapture ? window.liveCaptureExcludedWindowIds() : QList<WId>();
+    const QPoint dot(PinWindow::kLiveIndicatorMargin + 3, PinWindow::kLiveIndicatorMargin + 3);
+    QHelpEvent help(QEvent::ToolTip, dot, window.mapToGlobal(dot));
+    QCoreApplication::sendEvent(&window, &help);
+    QVERIFY2(!QToolTip::isVisible(), "Live hints must not create an unexcluded QWidget tooltip");
+
+    QQuickView* tooltip = nullptr;
+    for (QWindow* candidate : QGuiApplication::topLevelWindows()) {
+        auto* view = qobject_cast<QQuickView*>(candidate);
+        if (view && view->rootObject()
+            && view->rootObject()->property("tooltipText").toString() == window.liveToolTipAt(dot)) {
+            tooltip = view;
+            break;
+        }
+    }
+    QVERIFY(tooltip);
+    QTRY_VERIFY(tooltip->isVisible() && tooltip->rootObject()->isVisible());
+    const WId tooltipId = tooltip->winId();
+    if (prepareCapture) QVERIFY(excluded.contains(tooltipId));
+    QVERIFY(tooltip->flags().testFlag(Qt::WindowTransparentForInput));
+    QVERIFY(tooltip->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
+#ifdef Q_OS_WIN
+    DWORD affinity = 0;
+    QVERIFY(GetWindowDisplayAffinity(reinterpret_cast<HWND>(tooltipId), &affinity));
+    QCOMPARE(affinity, DWORD(SnapTray::windowsCaptureAffinity(true, QOperatingSystemVersion::current())));
+#endif
+
+    const auto hidden = [&] { return !tooltip->isVisible() || !tooltip->rootObject()->isVisible(); };
+    QTest::mouseMove(&window, QPoint(240, 160));
+    QTRY_VERIFY(hidden());
+    QCoreApplication::sendEvent(&window, &help);
+    QTRY_VERIFY(tooltip->isVisible() && tooltip->rootObject()->isVisible());
+    QCOMPARE(tooltip->winId(), tooltipId);
+    if (prepareCapture) QCOMPARE(window.liveCaptureExcludedWindowIds(), excluded);
+    QEvent leave(QEvent::Leave);
+    QCoreApplication::sendEvent(&window, &leave);
+    QTRY_VERIFY(hidden());
+
+    // A queued show cannot resurrect the hint after Live stops or the pin hides.
+    QCoreApplication::sendEvent(&window, &help);
+    window.stopLiveCapture();
+    QCoreApplication::processEvents();
+    QVERIFY(hidden());
+    window.m_isLiveMode = true;
+    QCoreApplication::sendEvent(&window, &help);
+    window.hide();
+    QCoreApplication::processEvents();
+    QVERIFY(hidden());
+}
+
 // PR #241 review: a live pin overlapping its source must not capture its own
-// hover bar, value panel or tooltip, even before the first hover.
+// hover bar, value panel or either tooltip, even before the first hover.
 void TestPinHoverIntegration::liveCaptureExcludesHoverWindows()
 {
     PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
     window.show();
     QVERIFY(QTest::qWaitForWindowExposed(&window));
     const QList<WId> ids = window.liveCaptureExcludedWindowIds();
-    QCOMPARE(ids.size(), 4);
+    QCOMPARE(ids.size(), 5);
     QVERIFY(ids.contains(window.winId()));
     QVERIFY(window.m_hoverBar);
     QVERIFY(window.m_hoverBar->barWindow());

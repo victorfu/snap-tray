@@ -2,6 +2,7 @@
 #include <QScopeGuard>
 #include "pinwindow/PinHoverBar.h"
 #include "qml/PinHoverBarViewModel.h"
+#include "qml/ToolbarTooltipController.h"
 #include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationStyleEditor.h"
@@ -93,7 +94,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QScreen>
 #include <QtMath>
 #include <QDateTime>
-#include <QToolTip>
+#include <QHelpEvent>
 #include <QTextEdit>
 #include <QLabel>
 #include <QTimer>
@@ -2638,18 +2639,46 @@ QString PinWindow::liveToolTipAt(const QPoint& pos) const
 
 bool PinWindow::event(QEvent* event)
 {
-    if (event->type() == QEvent::ToolTip) {
+    switch (event->type()) {
+    case QEvent::ToolTip: {
         auto* help = static_cast<QHelpEvent*>(event);
-        const QString text = liveToolTipAt(help->pos());
+        const QString text = isVisible() ? liveToolTipAt(help->pos()) : QString();
         if (text.isEmpty()) {
-            QToolTip::hideText();
+            if (m_liveTooltip) m_liveTooltip->hide();
             event->ignore();
         } else {
-            QToolTip::showText(help->globalPos(), text, this);
+            ensureLiveTooltip();
+            m_liveTooltip->showFor(text, QRect(help->globalPos(), QSize(1, 1)), windowHandle(),
+                                   SnapTray::TooltipPlacement::Below);
         }
         return true;
     }
+    case QEvent::MouseMove:
+        if (m_liveTooltip && liveToolTipAt(static_cast<QMouseEvent*>(event)->position().toPoint()).isEmpty())
+            m_liveTooltip->hide();
+        break;
+    case QEvent::Leave:
+    case QEvent::Hide:
+    case QEvent::Move:
+    case QEvent::Resize:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonDblClick:
+    case QEvent::Wheel:
+    case QEvent::KeyPress:
+    case QEvent::WindowDeactivate:
+        if (m_liveTooltip) m_liveTooltip->hide();
+        break;
+    default:
+        break;
+    }
     return QWidget::event(event);
+}
+
+void PinWindow::ensureLiveTooltip()
+{
+    if (m_liveTooltip) return;
+    m_liveTooltip = new SnapTray::ToolbarTooltipController(this);
+    m_liveTooltip->setAssociatedWidget(this);
 }
 
 void PinWindow::leaveEvent(QEvent* event)
@@ -5820,11 +5849,14 @@ void PinWindow::startLiveCapture()
 
 QList<WId> PinWindow::liveCaptureExcludedWindowIds()
 {
-    // Prepare the hover bar, panel and tooltip up front: ScreenCaptureKit fixes
-    // its excluded windows when the stream starts (PR #241 review).
+    // Prepare all pin controls and both tooltip windows up front: ScreenCaptureKit
+    // fixes its excluded windows when the stream starts (PR #241 review).
     ensureHoverBar();
     QList<WId> ids{winId()};
     ids.append(m_hoverBar->captureExclusionWindowIds());
+    ensureLiveTooltip();
+    if (QWindow* tooltip = m_liveTooltip->prepareCaptureExclusion(windowHandle()))
+        ids.append(tooltip->winId());
     return ids;
 }
 
@@ -5848,6 +5880,7 @@ void PinWindow::connectLiveCaptureEngineSignals()
 
 void PinWindow::stopLiveCapture()
 {
+    if (m_liveTooltip) m_liveTooltip->hide();
     if (m_captureTimer) {
         m_captureTimer->stop();
         if (!m_isDestructing) {

@@ -35,7 +35,7 @@ public:
 
     void showFor(const QString& text,
                  const QRect& anchorGlobalRect,
-                 QQuickView* owner,
+                 QWindow* owner,
                  TooltipPlacement preferred);
     void hide();
 
@@ -44,11 +44,11 @@ public:
     QWindow* window() const;
     // Register the tooltip before a capture filter is built. Until destruction,
     // hide() hides only its content so the native window and exclusion stay valid.
-    QWindow* prepareCaptureExclusion(QQuickView* owner);
+    QWindow* prepareCaptureExclusion(QWindow* owner);
 
 private:
     void ensureView();
-    void applyWindowFlags(QQuickView* owner);
+    void applyWindowFlags(QWindow* owner);
 
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;

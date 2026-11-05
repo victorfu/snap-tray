@@ -49,6 +49,7 @@ class QmlWindowedToolbar;
 class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
+class ToolbarTooltipController;
 }
 class PinToolbarViewModel;
 class PinToolOptionsViewModel;
@@ -461,7 +462,9 @@ private:
     // The hover bar (#225), created on first hover or focus.
     PinHoverBarViewModel* m_hoverBarViewModel = nullptr;
     PinHoverBar* m_hoverBar = nullptr;
+    SnapTray::ToolbarTooltipController* m_liveTooltip = nullptr;
     void ensureHoverBar();
+    void ensureLiveTooltip();
     void syncHoverBar();
     bool hoverBarSuppressed() const;
     void applyUserZoom(qreal zoom);
