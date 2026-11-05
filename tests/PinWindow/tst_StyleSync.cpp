@@ -13,6 +13,7 @@
 
 #include "PinWindow.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
 #include "PinWindowManager.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "PlatformFeatures.h"
@@ -152,6 +153,9 @@ class TestPinWindowStyleSync : public QObject
 {
     Q_OBJECT
 
+private:
+    static std::unique_ptr<PinWindow> arrowPin(QPixmap pixmap);
+
 private slots:
     void testLongScreenshotAnnotationToolbar();
     void initTestCase();
@@ -159,6 +163,10 @@ private slots:
     void testAnnotationToolUsesWindowDevicePixelRatio();
     void testStrokeAndMosaicWidthsRestoreIndependently();
     void selectedArrowStyleIsUndoable();
+    void arrowEndpointDragIsUndoable();
+    void emojiMoveIsUndoable();
+    void escapeMidDragRestores();
+    void toolbarUndoDisabledWhileDragging();
     void testMosaicPresetsUpdateCursorWithoutChangingStrokeWidth();
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
     void testOverlayRestoreReturnsArrowToolCursor();
@@ -1090,6 +1098,91 @@ void TestPinWindowStyleSync::selectedArrowStyleIsUndoable()
     window.handleToolbarToolSelected(static_cast<int>(ToolId::Marker));
     QVERIFY(!vm->editingSelection());
     QCOMPARE(vm->currentWidth(), window.m_toolManager->width());
+}
+
+// A PinWindow with the Arrow tool, so annotation handles take the mouse.
+std::unique_ptr<PinWindow> TestPinWindowStyleSync::arrowPin(QPixmap pixmap)
+{
+    auto window = std::make_unique<PinWindow>(pixmap, QPoint(0, 0));
+    if (!window->m_toolManager) window->initializeAnnotationComponents();
+    window->handleToolbarToolSelected(static_cast<int>(ToolId::Arrow));
+    return window;
+}
+
+// #237: dragging an arrow's end handle is one undo step.
+void TestPinWindowStyleSync::arrowEndpointDragIsUndoable()
+{
+    auto window = arrowPin(createTestPixmap(240, 160));
+    window->m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::red, 3));
+    window->m_annotationLayer->setSelectedIndex(0);
+    const auto view = [&](QPoint original) { return window->mapFromOriginalCoords(original); };
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(window->m_annotationLayer->itemAt(0)); };
+    QVERIFY(window->handleArrowAnnotationPress(view(QPoint(120, 20))));
+    window->handleArrowAnnotationMove(view(QPoint(130, 40)));
+    window->handleArrowAnnotationMove(view(QPoint(140, 50)));
+    window->handleArrowAnnotationRelease(view(QPoint(140, 50)));
+    QCOMPARE(arrow()->end(), QPoint(140, 50));
+    window->handleToolbarUndo();
+    QCOMPARE(window->m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(arrow()->end(), QPoint(120, 20));
+    window->handleToolbarRedo();
+    QCOMPARE(arrow()->end(), QPoint(140, 50));
+}
+
+void TestPinWindowStyleSync::emojiMoveIsUndoable()
+{
+    auto window = arrowPin(createTestPixmap(240, 160));
+    window->m_annotationLayer->addItem(
+        std::make_unique<EmojiStickerAnnotation>(QPoint(100, 80), QStringLiteral("🙂"), 1.0));
+    window->m_annotationLayer->setSelectedIndex(0);
+    auto emoji = [&] { return static_cast<EmojiStickerAnnotation*>(window->m_annotationLayer->itemAt(0)); };
+    const QPoint start = emoji()->center().toPoint();
+    const auto view = [&](QPoint original) { return window->mapFromOriginalCoords(original); };
+    QVERIFY(window->handleEmojiStickerAnnotationPress(view(start)));
+    window->handleEmojiStickerAnnotationMove(view(start + QPoint(10, 0)));
+    window->handleEmojiStickerAnnotationMove(view(start + QPoint(20, 5)));
+    window->handleEmojiStickerAnnotationRelease(view(start + QPoint(20, 5)));
+    QCOMPARE(emoji()->position(), QPoint(120, 85));
+    window->handleToolbarUndo();
+    QCOMPARE(window->m_annotationLayer->itemCount(), size_t(1));
+    QCOMPARE(emoji()->position(), QPoint(100, 80));
+}
+
+void TestPinWindowStyleSync::escapeMidDragRestores()
+{
+    auto window = arrowPin(createTestPixmap(240, 160));
+    window->m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::red, 3));
+    window->m_annotationLayer->setSelectedIndex(0);
+    const auto token = window->m_annotationLayer->historyStateToken();
+    const auto view = [&](QPoint original) { return window->mapFromOriginalCoords(original); };
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(window->m_annotationLayer->itemAt(0)); };
+    QVERIFY(window->handleArrowAnnotationPress(view(QPoint(40, 20))));
+    window->handleArrowAnnotationMove(view(QPoint(50, 50)));
+    QCOMPARE(arrow()->start(), QPoint(30, 50));
+    QTest::keyClick(window.get(), Qt::Key_Escape);
+    QCOMPARE(arrow()->start(), QPoint(20, 20));
+    QCOMPARE(window->m_annotationLayer->historyStateToken(), token);
+    window->handleArrowAnnotationMove(view(QPoint(70, 70)));   // the rest of the drag does nothing
+    window->handleArrowAnnotationRelease(view(QPoint(70, 70)));
+    QCOMPARE(arrow()->start(), QPoint(20, 20));
+}
+
+void TestPinWindowStyleSync::toolbarUndoDisabledWhileDragging()
+{
+    auto window = arrowPin(createTestPixmap(240, 160));
+    window->m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::red, 3));
+    window->m_annotationLayer->setSelectedIndex(0);
+    window->updateUndoRedoState();
+    QVERIFY(window->m_toolbar->viewModel()->canUndo());
+    const auto view = [&](QPoint original) { return window->mapFromOriginalCoords(original); };
+    QVERIFY(window->handleArrowAnnotationPress(view(QPoint(40, 20))));
+    window->handleArrowAnnotationMove(view(QPoint(50, 50)));
+    QVERIFY(!window->m_toolbar->viewModel()->canUndo());
+    window->handleArrowAnnotationRelease(view(QPoint(50, 50)));
+    QVERIFY(window->m_toolbar->viewModel()->canUndo());
 }
 
 QTEST_MAIN(TestPinWindowStyleSync)

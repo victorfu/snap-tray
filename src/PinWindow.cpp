@@ -811,6 +811,30 @@ bool PinWindow::hasActiveAnnotationInteraction() const
            m_isArrowDragging || m_isPolylineDragging;
 }
 
+bool PinWindow::cancelAnnotationGesture()
+{
+    bool cancelled = m_toolManager && m_toolManager->cancelAnnotationInteraction();
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating
+        || m_isArrowDragging || m_isPolylineDragging) {
+        m_isEmojiDragging = m_isEmojiScaling = m_isEmojiRotating = false;
+        m_emojiDragHandle = GizmoHandle::None;
+        m_emojiStartDistance = 0.0;
+        m_isArrowDragging = false;
+        m_arrowDragHandle = GizmoHandle::None;
+        m_isPolylineDragging = false;
+        m_activePolylineVertexIndex = -1;
+        cancelled = true;
+    }
+    // A text re-edit's gesture belongs to the inline editor, not to a drag.
+    const bool reEditing = m_textAnnotationEditor && m_textAnnotationEditor->isEditing();
+    if (!cancelled || reEditing || !m_annotationLayer) return cancelled;
+    m_annotationLayer->cancelGesture();
+    CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+    updateUndoRedoState();
+    update();
+    return true;
+}
+
 QRect PinWindow::mappedAnnotationRect(const QRect& originalRect) const
 {
     if (!originalRect.isValid() || originalRect.isEmpty()) {
@@ -3116,6 +3140,12 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
     // Escape handling
     if (event->key() == Qt::Key_Escape) {
+        // Escape during a drag puts the annotation back (#237).
+        if (cancelAnnotationGesture()) {
+            event->accept();
+            return;
+        }
+
         // Try to handle escape in tool first (e.g. finish polyline)
         if (m_toolManager && m_toolManager->handleEscape()) {
             event->accept();
@@ -3320,6 +3350,13 @@ void PinWindow::initializeAnnotationComponents()
                 refreshMosaicSources();
             }
             resetAnnotationInteractionTracking();
+            // Undo/Redo turn off while a drag is in progress and back on at
+            // its end (#237). Only on that change: refreshing on every edit
+            // would prune crop history in the middle of a crop.
+            if (m_annotationLayer->isGestureActive() != m_undoStateShowsGesture) {
+                m_undoStateShowsGesture = m_annotationLayer->isGestureActive();
+                updateUndoRedoState();
+            }
             update();
         });
 
@@ -3842,7 +3879,9 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
 void PinWindow::handleToolbarUndo()
 {
-    if (m_annotationLayer && m_annotationLayer->isHistoryLocked()) {
+    // Not during a drag either: canUndo() is false then, which would let a
+    // crop undo jump past the gesture (#237).
+    if (m_annotationLayer && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive())) {
         return;
     }
 
@@ -3875,7 +3914,7 @@ void PinWindow::handleToolbarUndo()
 
 void PinWindow::handleToolbarRedo()
 {
-    if (m_annotationLayer && m_annotationLayer->isHistoryLocked()) {
+    if (m_annotationLayer && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive())) {
         return;
     }
 
@@ -4216,7 +4255,8 @@ void PinWindow::updateUndoRedoState()
     }
 
     if (m_toolbar && m_annotationLayer) {
-        const bool historyLocked = m_annotationLayer->isHistoryLocked();
+        // A drag in progress blocks history too (#237); crop undo included.
+        const bool historyLocked = m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive();
         const bool canUndo = !historyLocked &&
             (m_annotationLayer->canUndo() || canUndoCrop());
         const bool canRedo = !historyLocked &&
@@ -5311,6 +5351,7 @@ bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
     if (m_isEmojiDragging) {
         QPoint delta = mappedPos - m_emojiStartPos;
         emojiItem->moveBy(delta);
@@ -5339,6 +5380,7 @@ bool PinWindow::handleEmojiStickerAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isEmojiDragging = false;
     m_isEmojiScaling = false;
     m_isEmojiRotating = false;
@@ -5726,6 +5768,7 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
     if (m_isArrowDragging && m_annotationLayer->selectedIndex() >= 0) {
         auto* arrowItem = getSelectedArrowAnnotation();
         if (arrowItem) {
+            m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
             if (m_arrowDragHandle == GizmoHandle::Body) {
                 QPoint delta = mappedPos - m_annotationDragStartPos;
                 arrowItem->moveBy(delta);
@@ -5752,6 +5795,7 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
 bool PinWindow::handleArrowAnnotationRelease(const QPoint& pos)
 {
     if (m_isArrowDragging) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isArrowDragging = false;
         m_arrowDragHandle = GizmoHandle::None;
         CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
@@ -5837,6 +5881,7 @@ bool PinWindow::handlePolylineAnnotationMove(const QPoint& pos)
     if (m_isPolylineDragging && m_annotationLayer->selectedIndex() >= 0) {
         auto* polylineItem = getSelectedPolylineAnnotation();
         if (polylineItem) {
+             m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
              if (m_activePolylineVertexIndex >= 0) {
                  // Move specific vertex
                  polylineItem->setPoint(m_activePolylineVertexIndex, mappedPos);
@@ -5856,6 +5901,7 @@ bool PinWindow::handlePolylineAnnotationMove(const QPoint& pos)
 bool PinWindow::handlePolylineAnnotationRelease(const QPoint& pos)
 {
     if (m_isPolylineDragging) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
         CursorManager::instance().setInputStateForWidget(this, InputState::Idle);

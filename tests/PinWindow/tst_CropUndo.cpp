@@ -77,6 +77,9 @@ private slots:
     void testUndoCrop_ZoomedState_RestoresAnnotationPosition();
     void testUndoCrop_RestoresPixmapAndTransformState();
     void testUndoCrop_RestoresAnnotationPosition();
+    void cropThenMoveUndoesInOrder();
+    void moveThenCropUndoesInOrder();
+    void undoDuringGestureLeavesCrop();
     void testApplyCrop_MarkerStroke_RemainsAlignedAfterTranslation();
     void testUndoCrop_MarkerStroke_RestoresOriginalPosition();
     void testApplyCrop_RefreshesMosaicSourceInsideRemoveCommand();
@@ -1722,6 +1725,74 @@ void TestPinWindowCropUndo::testHistoryFloorInvalidatesUnreachableCropBoundary()
     QVERIFY(window.m_cropUndoStack.isEmpty());
     QCOMPARE(window.m_annotationLayer->itemCount(),
              AnnotationLayer::kMaxHistoryCommands);
+}
+
+namespace {
+// One recorded move of the item at index 0 (#237), as a drag would record it.
+void movePolyline(AnnotationLayer& layer, QPoint delta)
+{
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    static_cast<PolylineAnnotation*>(layer.itemAt(0))->moveBy(delta);
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+}
+QPoint firstPoint(AnnotationLayer& layer)
+{
+    return static_cast<PolylineAnnotation*>(layer.itemAt(0))->points().first();
+}
+} // namespace
+
+// #237: a move after a crop is undone first, then the crop.
+void TestPinWindowCropUndo::cropThenMoveUndoesInOrder()
+{
+    QPixmap source(220, 140);
+    source.fill(Qt::white);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(50, 40), QPoint(110, 60)}, QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    window.applyCrop(QRect(20, 10, 150, 100));
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(30, 30));
+    movePolyline(*window.m_annotationLayer, QPoint(20, 0));
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(50, 30));
+    window.handleToolbarUndo();   // the move
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(30, 30));
+    QVERIFY(window.canUndoCrop());
+    window.handleToolbarUndo();   // then the crop
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(50, 40));
+}
+
+void TestPinWindowCropUndo::moveThenCropUndoesInOrder()
+{
+    QPixmap source(220, 140);
+    source.fill(Qt::white);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(50, 40), QPoint(110, 60)}, QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    movePolyline(*window.m_annotationLayer, QPoint(20, 0));
+    window.applyCrop(QRect(20, 10, 150, 100));
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(50, 30));
+    window.handleToolbarUndo();   // the crop
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(70, 40));
+    window.handleToolbarUndo();   // then the move, at uncropped coordinates
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(50, 40));
+}
+
+// Undo during a drag must not reach past it and undo the crop.
+void TestPinWindowCropUndo::undoDuringGestureLeavesCrop()
+{
+    QPixmap source(220, 140);
+    source.fill(Qt::white);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(50, 40), QPoint(110, 60)}, QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    window.applyCrop(QRect(20, 10, 150, 100));
+    QVERIFY(window.m_annotationLayer->beginGesture(window.m_annotationLayer->idAt(0)));
+    window.handleToolbarUndo();
+    QVERIFY(window.canUndoCrop());   // still cropped
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(30, 30));
+    window.m_annotationLayer->cancelGesture();
 }
 
 QTEST_MAIN(TestPinWindowCropUndo)
