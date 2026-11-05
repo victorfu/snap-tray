@@ -32,6 +32,7 @@ private slots:
     void collapsesByPriority();
     void activeToolStaysVisible();
     void groupGapCountsInWidth();
+    void finishGroupIsTinted();
 };
 
 void TestToolbarOverflow::standaloneEngineCanImportModule()
@@ -208,6 +209,31 @@ void TestToolbarOverflow::groupGapCountsInWidth()
     const int withGap = toolbarContentWidth(buttons, true, false, m);
     m.groupGap = 0;
     QCOMPARE(withGap - toolbarContentWidth(buttons, true, false, m), 2 * ToolbarLayoutMetrics{}.groupGap);
+}
+
+
+void TestToolbarOverflow::finishGroupIsTinted()
+{
+    QmlWindowedToolbar toolbar;
+    toolbar.ensureView();
+    toolbar.applyOverflowLayout(QRect(10, 10, 1900, 1000));
+    QCoreApplication::processEvents();
+    QCOMPARE(toolbar.m_rootItem->property("groupGap").toInt(), ToolbarLayoutMetrics{}.groupGap);
+    auto find = [&](int id) -> QQuickItem* {
+        // Loader items live in the visual tree, which need not match QObject ownership.
+        const QString name = QStringLiteral("toolbarFinishTint_%1").arg(id);
+        QList<QQuickItem*> pending{toolbar.m_rootItem};
+        while (!pending.isEmpty()) {
+            auto* item = pending.takeLast();
+            if (item->objectName() == name) return item;
+            pending.append(item->childItems());
+        }
+        return nullptr;
+    };
+    QVERIFY(find(int(ToolId::Save)));
+    QVERIFY(find(int(ToolId::Save))->isVisible());
+    QVERIFY(find(int(ToolId::Arrow)));
+    QVERIFY(!find(int(ToolId::Arrow))->isVisible());
 }
 
 void TestToolbarOverflow::layout_data()

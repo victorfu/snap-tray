@@ -53,6 +53,8 @@ Item {
     readonly property int buttonHeight: 24
     readonly property int buttonSpacing: 2
     readonly property int separatorWidth: 8
+    readonly property int groupGap: 4
+    readonly property int finishTintRadius: 6
     readonly property int margin: 8
     readonly property int separatorLineHeight: 16
     readonly property int dragHandleWidth: 16
@@ -152,6 +154,8 @@ Item {
                     readonly property int buttonId: buttonData.id
                     readonly property bool isSeparatorBefore: buttonData.separatorBefore
                     readonly property bool isOCR: buttonData.isOCR
+                    readonly property bool isGroupStart: buttonData.groupStart === true
+                    readonly property bool isFinish: buttonData.group === 2
 
                     // Skip OCR button if not available
                     active: root.hasViewModel && !(isOCR && !root.viewModel.ocrAvailable)
@@ -166,7 +170,9 @@ Item {
                         // Separator before (if configured)
                         Item {
                             id: separatorItem
-                            width: delegateLoader.isSeparatorBefore ? root.separatorWidth : 0
+                            width: delegateLoader.isSeparatorBefore
+                                ? root.separatorWidth + (delegateLoader.isGroupStart ? root.groupGap : 0)
+                                : 0
                             height: root.barHeight
                             visible: delegateLoader.isSeparatorBefore
 
@@ -177,6 +183,17 @@ Item {
                                 height: root.separatorLineHeight
                                 color: ComponentTokens.toolbarSeparator
                             }
+                        }
+
+                        Rectangle {
+                            objectName: "toolbarFinishTint_" + delegateLoader.buttonId
+                            visible: delegateLoader.isFinish
+                            x: separatorItem.width - 1
+                            width: root.buttonWidth + 2 + root.buttonSpacing
+                            height: root.buttonHeight + 4
+                            anchors.verticalCenter: parent.verticalCenter
+                            radius: root.finishTintRadius
+                            color: ComponentTokens.toolbarFinishGroupBackground
                         }
 
                         ToolbarButton {
