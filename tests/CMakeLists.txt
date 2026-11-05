@@ -179,6 +179,12 @@ target_sources(Qml_ToolbarOverflow PRIVATE ${CMAKE_SOURCE_DIR}/resources/resourc
 add_test(NAME Qml_ToolbarOverflow COMMAND Qml_ToolbarOverflow)
 set_tests_properties(Qml_ToolbarOverflow PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(Qml_PinHoverBarQml Qml/tst_PinHoverBarQml.cpp)
+target_link_libraries(Qml_PinHoverBarQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_PinHoverBarQml PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_PinHoverBarQml COMMAND Qml_PinHoverBarQml)
+set_tests_properties(Qml_PinHoverBarQml PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Qml_DialogModality Qml/tst_QmlDialogModality.cpp)
 target_link_libraries(Qml_DialogModality PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_DialogModality PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)

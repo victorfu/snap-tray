@@ -1068,6 +1068,8 @@ set_source_files_properties(src/qml/components/ThumbnailCard.qml PROPERTIES QT_R
 # Floating toolbar
 set_source_files_properties(src/qml/toolbar/FloatingToolbar.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/FloatingToolbar.qml)
 set_source_files_properties(src/qml/toolbar/ToolbarOverflowMenu.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolbarOverflowMenu.qml)
+set_source_files_properties(src/qml/pin/PinHoverBar.qml PROPERTIES QT_RESOURCE_ALIAS pin/PinHoverBar.qml)
+set_source_files_properties(src/qml/pin/PinValuePanel.qml PROPERTIES QT_RESOURCE_ALIAS pin/PinValuePanel.qml)
 set_source_files_properties(src/qml/toolbar/ToolbarButtonState.js PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolbarButtonState.js)
 set_source_files_properties(src/qml/toolbar/ToolOptionsStrip.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolOptionsStrip.qml)
 set_source_files_properties(src/qml/toolbar/ColorPaletteSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ColorPaletteSection.qml)
@@ -1225,6 +1227,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/RecordingLibraryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolbarOverflowMenu.qml
+        src/qml/pin/PinHoverBar.qml
+        src/qml/pin/PinValuePanel.qml
         src/qml/toolbar/ToolOptionsStrip.qml
         src/qml/toolbar/ColorPaletteSection.qml
         src/qml/toolbar/WidthSection.qml
