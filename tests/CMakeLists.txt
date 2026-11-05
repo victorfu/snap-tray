@@ -717,6 +717,11 @@ target_link_libraries(PinWindow_HistoryModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_HistoryModel COMMAND PinWindow_HistoryModel)
 set_tests_properties(PinWindow_HistoryModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_LibraryModel Qml/tst_LibraryModel.cpp)
+target_link_libraries(Qml_LibraryModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_LibraryModel COMMAND Qml_LibraryModel)
+set_tests_properties(Qml_LibraryModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(PinWindow_HistoryRecorder PinWindow/tst_HistoryRecorder.cpp)
 target_link_libraries(PinWindow_HistoryRecorder PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_HistoryRecorder COMMAND PinWindow_HistoryRecorder)

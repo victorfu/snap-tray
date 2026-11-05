@@ -893,6 +893,7 @@ add_library(snaptray_ui STATIC
     src/PinWindowManager.cpp
     src/qml/HistoryModel.cpp
     src/qml/HistoryBackend.cpp
+    src/qml/LibraryModel.cpp
     src/qml/QmlHistoryWindow.cpp
     src/pinwindow/PinWindowPlacement.cpp
     src/pinwindow/ResizeHandler.cpp
@@ -978,6 +979,7 @@ add_library(snaptray_ui STATIC
     include/PinWindow.h
     include/PinWindowManager.h
     include/qml/HistoryModel.h
+    include/qml/LibraryModel.h
     include/qml/HistoryBackend.h
     include/qml/QmlHistoryWindow.h
     include/pinwindow/PinWindowPlacement.h

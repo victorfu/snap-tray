@@ -24,6 +24,8 @@ public:
     QString totalSizeText() const;
     bool keepProjects() const;
     int count() const { return m_items.size(); }
+    const QList<RecordingProject>& items() const { return m_items; }
+    QString openProjectDir() const { return m_openProjectDir; }
     // The project open in the preview: it can be neither opened again nor
     // deleted until the preview closes.
     void setOpenProjectDir(const QString& dir);
