@@ -2,6 +2,7 @@
 
 #include "qml/PinHoverBarViewModel.h"
 #include "qml/QmlOverlayManager.h"
+#include "platform/WindowLevel.h"
 
 #include <QCoreApplication>
 #include <QCursor>
@@ -84,6 +85,8 @@ bool PinHoverBar::ensureBar()
         m_barView = nullptr;
         return false;
     }
+    // The bar sits on the pin; a live pin over its source must not capture it.
+    setWindowExcludedFromCapture(m_barView, true);
     // The bar's width follows its content (compact layout, labels); a value
     // change can make the full bar too wide for the pin.
     connect(m_barRoot, &QQuickItem::widthChanged, this, &PinHoverBar::positionBar);
@@ -108,6 +111,7 @@ bool PinHoverBar::ensurePanel()
         m_panelView = nullptr;
         return false;
     }
+    setWindowExcludedFromCapture(m_panelView, true);
     connect(m_panelRoot, &QQuickItem::heightChanged, this, &PinHoverBar::positionPanel);
     return true;
 }
@@ -250,6 +254,14 @@ bool PinHoverBar::isBarVisible() const { return m_barView && m_barView->isVisibl
 bool PinHoverBar::isPanelVisible() const { return m_panelView && m_panelView->isVisible(); }
 QWindow* PinHoverBar::barWindow() const { return m_barView; }
 QWindow* PinHoverBar::panelWindow() const { return m_panelView; }
+
+QList<WId> PinHoverBar::captureExclusionWindowIds()
+{
+    QList<WId> ids;
+    if (ensureBar()) ids.append(m_barView->winId());
+    if (ensurePanel()) ids.append(m_panelView->winId());
+    return ids;
+}
 
 QRect PinHoverBar::barGeometry() const
 {

@@ -2,7 +2,9 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "pinwindow/PinHoverBar.h"
 #include "qml/CanvasToolbarViewModel.h"
+#include "qml/PinHoverBarViewModel.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlFloatingSubToolbar.h"
@@ -35,6 +37,7 @@ private slots:
     void testToolbarWindowExcludedFromCapture();
     void testSubToolbarWindowExcludedFromCapture();
     void testEmojiPickerWindowExcludedFromCapture();
+    void testPinHoverWindowsExcludedFromCapture();
 };
 
 void tst_FloatingOverlayCaptureExclusion::initTestCase()
@@ -80,6 +83,21 @@ void tst_FloatingOverlayCaptureExclusion::testEmojiPickerWindowExcludedFromCaptu
     NSWindow* window = nsWindowForQWindow(popup.window());
     QVERIFY(window != nil);
     QCOMPARE((NSInteger)[window sharingType], (NSInteger)NSWindowSharingNone);
+}
+
+// PR #241 review: the pin hover bar and value panel are never captured.
+void tst_FloatingOverlayCaptureExclusion::testPinHoverWindowsExcludedFromCapture()
+{
+    PinHoverBarViewModel viewModel;
+    PinHoverBar bar(&viewModel, nullptr);
+
+    const QList<WId> ids = bar.captureExclusionWindowIds();
+    QCOMPARE(ids.size(), 2);
+    for (QWindow* w : {bar.barWindow(), bar.panelWindow()}) {
+        NSWindow* window = nsWindowForQWindow(w);
+        QVERIFY(window != nil);
+        QCOMPARE((NSInteger)[window sharingType], (NSInteger)NSWindowSharingNone);
+    }
 }
 
 QTEST_MAIN(tst_FloatingOverlayCaptureExclusion)

@@ -4,13 +4,13 @@
 #include <QPointer>
 #include <QRect>
 #include <QTimer>
+#include <QWindow>
 
 #include <functional>
 
 class PinHoverBarViewModel;
 class QQuickItem;
 class QQuickView;
-class QWindow;
 
 // The windows, timing and placement of the pin hover bar (#225).
 //
@@ -49,6 +49,9 @@ public:
     QWindow* barWindow() const;
     QWindow* panelWindow() const;
     QRect barGeometry() const;
+    // Creates the bar and panel windows if needed and returns their native
+    // ids, so a live capture can exclude them before they are first shown.
+    QList<WId> captureExclusionWindowIds();
     bool containsGlobal(const QPoint& pos) const;
     // Moves keyboard focus to a bar button (QML objectName).
     void focusButton(const QString& name);

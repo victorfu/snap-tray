@@ -27,6 +27,7 @@ private slots:
     void rotateKeepsBarInside();
     void clickedBarComesBack();
     void liveTooltipOnlyOnDot();
+    void liveCaptureExcludesHoverWindows();
 
 private:
     static QPixmap pixmap()
@@ -175,6 +176,22 @@ void TestPinHoverIntegration::liveTooltipOnlyOnDot()
     window.m_isLiveMode = false;
     QVERIFY(window.liveToolTipAt(QPoint(PinWindow::kLiveIndicatorMargin + 3, PinWindow::kLiveIndicatorMargin + 3)).isEmpty());
     QVERIFY(window.toolTip().isEmpty());
+}
+
+// PR #241 review: a live pin overlapping its source must not capture its own
+// hover bar or value panel, even before either has been shown.
+void TestPinHoverIntegration::liveCaptureExcludesHoverWindows()
+{
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    const QList<WId> ids = window.liveCaptureExcludedWindowIds();
+    QVERIFY(ids.contains(window.winId()));
+    QVERIFY(window.m_hoverBar);
+    QVERIFY(window.m_hoverBar->barWindow());
+    QVERIFY(window.m_hoverBar->panelWindow());
+    QVERIFY(ids.contains(window.m_hoverBar->barWindow()->winId()));
+    QVERIFY(ids.contains(window.m_hoverBar->panelWindow()->winId()));
 }
 
 QTEST_MAIN(TestPinHoverIntegration)

@@ -131,6 +131,7 @@ public:
     void setSourceRegion(const QRect& region, QScreen* screen);
     void startLiveCapture();
     void stopLiveCapture();
+    QList<WId> liveCaptureExcludedWindowIds();
     void pauseLiveCapture();
     void resumeLiveCapture();
     bool isLiveMode() const { return m_isLiveMode; }

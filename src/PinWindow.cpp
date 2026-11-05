@@ -5793,9 +5793,9 @@ void PinWindow::startLiveCapture()
     m_captureEngine->setRegion(m_sourceRegion, sourceScreen);
     m_captureEngine->setFrameRate(m_captureFrameRate);
 
-    // Exclude self from capture to avoid infinite recursion
+    // Exclude self and the hover windows from capture to avoid infinite recursion
 #ifdef Q_OS_MACOS
-    m_captureEngine->setExcludedWindows({ winId() });
+    m_captureEngine->setExcludedWindows(liveCaptureExcludedWindowIds());
 #endif
     setWindowExcludedFromCapture(this, true);
 
@@ -5815,6 +5815,16 @@ void PinWindow::startLiveCapture()
     connect(m_liveIndicatorTimer, &QTimer::timeout, this, QOverload<>::of(&QWidget::update));
     m_liveIndicatorTimer->start(50);  // ~20fps for indicator animation
     update();
+}
+
+QList<WId> PinWindow::liveCaptureExcludedWindowIds()
+{
+    // The hover bar and panel are created up front: ScreenCaptureKit fixes its
+    // excluded windows when the stream starts (PR #241 review).
+    ensureHoverBar();
+    QList<WId> ids{winId()};
+    ids.append(m_hoverBar->captureExclusionWindowIds());
+    return ids;
 }
 
 void PinWindow::connectLiveCaptureEngineSignals()
