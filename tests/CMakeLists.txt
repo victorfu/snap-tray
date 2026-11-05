@@ -1380,6 +1380,11 @@ target_link_libraries(Annotations_AnnotationStyle PRIVATE snaptray_core Qt6::Wid
 add_test(NAME Annotations_AnnotationStyle COMMAND Annotations_AnnotationStyle)
 set_tests_properties(Annotations_AnnotationStyle PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_AnnotationStyleEditor Annotations/tst_AnnotationStyleEditor.cpp)
+target_link_libraries(Annotations_AnnotationStyleEditor PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationStyleEditor COMMAND Annotations_AnnotationStyleEditor)
+set_tests_properties(Annotations_AnnotationStyleEditor PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_AnnotationLayer Annotations/tst_AnnotationLayer.cpp)
 target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_AnnotationLayer COMMAND Annotations_AnnotationLayer)

@@ -835,6 +835,7 @@ add_library(snaptray_ui STATIC
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp
+    src/annotation/AnnotationStyleEditor.cpp
     src/annotation/AnnotationRenderHelper.cpp
     src/cursor/CursorManager.cpp
 
@@ -951,6 +952,7 @@ add_library(snaptray_ui STATIC
 
     # Headers with Q_OBJECT for MOC processing
     include/annotations/AnnotationLayer.h
+    include/annotation/AnnotationStyleEditor.h
     include/cursor/CursorManager.h
     include/InlineTextEditor.h
     include/TransformationGizmo.h

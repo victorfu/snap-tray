@@ -96,6 +96,7 @@ private slots:
     void modifyRefusedDuringErase();
     void modifyRejectedMutationLeavesNoHistory();
     void selectionChangedSignal();
+    void selectionFollowsItemAfterErase();
     void testAddItem_PreservesAnnotationsBeyondFifty();
     void testDraw_CullsPencilStrokesOutsidePainterClip();
     void testDrawCached_AppendsWithoutRebuildingExistingItems();
@@ -1483,6 +1484,29 @@ void TestAnnotationLayer::selectionChangedSignal()
     layer.clearSelection();
     QCOMPARE(spy.count(), 2);
     QCOMPARE(layer.selectedId(), AnnotationLayer::AnnotationId(0));
+}
+
+
+void TestAnnotationLayer::selectionFollowsItemAfterErase()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow(0));
+    layer.addItem(redArrow(40));
+    const auto id = layer.idAt(1);
+    layer.setSelectedIndex(1);
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(25, 0), 6);
+    QCOMPARE(removed.size(), size_t(1));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
+    QCOMPARE(layer.selectedIndex(), 0);
+    QCOMPARE(layer.selectedId(), id);
+    QCOMPARE(layer.selectedItem(), layer.itemAt(0));
+    // Erasing the selected item itself leaves no selection.
+    layer.beginEraseTransaction();
+    removed = layer.removeItemsIntersecting(QPoint(25, 40), 6);
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
+    QCOMPARE(layer.selectedIndex(), -1);
+    QCOMPARE(layer.selectedItem(), nullptr);
 }
 
 QTEST_MAIN(TestAnnotationLayer)

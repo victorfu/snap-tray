@@ -131,7 +131,8 @@ public:
     int hitTestArrow(const QPoint &pos) const;
     int hitTestPolyline(const QPoint &pos) const;
     void setSelectedIndex(int index);
-    int selectedIndex() const { return m_selectedIndex; }
+    // Selection follows the annotation (by id) when other items are added or removed.
+    int selectedIndex() const;
     AnnotationItem* selectedItem();
     void clearSelection();
     AnnotationId selectedId() const;             // 0 if none
@@ -240,7 +241,7 @@ private:
     std::size_t m_redoOwnedBytes = 0;
     bool m_eraseTransactionActive = false;
     std::vector<std::unique_ptr<AnnotationItem>> m_deferredItems;
-    int m_selectedIndex = -1;
+    AnnotationId m_selectedId = 0;
     AnnotationId m_openModifyId = 0;
     QString m_openModifyKey;
 

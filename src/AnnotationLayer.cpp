@@ -816,7 +816,8 @@ std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecti
     if (!removedItems.empty()) {
         renumberStepBadges();
         invalidateCache();
-        clearSelection();
+        // Selection follows the annotation id, so erasing other items keeps it.
+        if (m_selectedId != 0 && indexOfId(m_selectedId) < 0) clearSelection();
         emit changed();
     }
 
@@ -996,20 +997,20 @@ int AnnotationLayer::hitTestPolyline(const QPoint &pos) const
 
 void AnnotationLayer::setSelectedIndex(int index)
 {
-    int next = -1;
+    AnnotationId next = 0;
     if (index >= 0 && index < static_cast<int>(m_items.size())) {
         AnnotationItem* candidate = m_items[index].get();
-        next = (candidate && candidate->isVisible()) ? index : -1;
+        next = (candidate && candidate->isVisible()) ? m_items[index].id : 0;
     }
-    if (next == m_selectedIndex) return;
-    m_selectedIndex = next;
+    if (next == m_selectedId) return;
+    m_selectedId = next;
     emit selectionChanged();
 }
 
 void AnnotationLayer::clearSelection()
 {
-    if (m_selectedIndex == -1) return;
-    m_selectedIndex = -1;
+    if (m_selectedId == 0) return;
+    m_selectedId = 0;
     emit selectionChanged();
 }
 
@@ -1026,7 +1027,12 @@ int AnnotationLayer::indexOfId(AnnotationId id) const
 
 AnnotationLayer::AnnotationId AnnotationLayer::selectedId() const
 {
-    return idAt(m_selectedIndex);
+    return selectedIndex() >= 0 ? m_selectedId : 0;
+}
+
+int AnnotationLayer::selectedIndex() const
+{
+    return m_selectedId == 0 ? -1 : indexOfId(m_selectedId);
 }
 
 void AnnotationLayer::endModifyCoalescing()
@@ -1074,8 +1080,9 @@ bool AnnotationLayer::modifyItem(AnnotationId id, const QString& coalesceKey,
 
 AnnotationItem* AnnotationLayer::selectedItem()
 {
-    if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
-        AnnotationItem* item = m_items[m_selectedIndex].get();
+    const int selected = selectedIndex();
+    if (selected >= 0) {
+        AnnotationItem* item = m_items[selected].get();
         if (item && item->isVisible()) {
             return item;
         }
@@ -1093,18 +1100,19 @@ AnnotationItem* AnnotationLayer::itemAt(int index)
 
 bool AnnotationLayer::removeSelectedItem()
 {
+    const int selected = selectedIndex();
     if (m_eraseTransactionActive ||
-        m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_items.size())) {
+        selected < 0) {
         return false;
     }
 
     HistoryCommand command;
     command.kind = HistoryCommandKind::Remove;
-    command.items.push_back({static_cast<size_t>(m_selectedIndex),
+    command.items.push_back({static_cast<size_t>(selected),
                              nullptr,
-                             m_items[m_selectedIndex].id});
-    command.items.front().item = std::move(m_items[m_selectedIndex].item);
-    m_items.erase(m_items.begin() + m_selectedIndex);
+                             m_items[selected].id});
+    command.items.front().item = std::move(m_items[selected].item);
+    m_items.erase(m_items.begin() + selected);
 
     pushAppliedCommand(std::move(command));
     clearSelection();
