@@ -52,6 +52,9 @@ public:
     void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }
     LineEndStyle lineEndStyle() const { return m_lineEndStyle; }
     LineStyle lineStyle() const { return m_lineStyle; }
+    void setColor(const QColor& color) { m_color = color; }
+    void setWidth(int width) { m_width = qMax(1, width); }
+    void setLineStyle(LineStyle style) { m_lineStyle = style; }
     QColor color() const { return m_color; }
     int width() const { return m_width; }
 

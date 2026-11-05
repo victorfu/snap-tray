@@ -20,6 +20,7 @@ class TestPolylineAnnotation : public QObject
     Q_OBJECT
 
 private slots:
+    void styleSettersChangeRendering();
     // Construction tests
     void testConstruction_Empty();
     void testConstruction_WithPoints();
@@ -543,6 +544,27 @@ void TestPolylineAnnotation::testHeadAtShortBentEndpoint()
     const QPoint wing = filled ? QPoint(-9, 6) : QPoint(-9, 10);
     QVERIFY(qAlpha(renderPolyline(line).pixel(wing + QPoint(240, 240))) > 128);
     QVERIFY(line.containsPoint(wing));
+}
+
+
+void TestPolylineAnnotation::styleSettersChangeRendering()
+{
+    PolylineAnnotation line(QVector<QPoint>{{10, 20}, {50, 20}, {90, 20}}, Qt::red, 3);
+    const QRect before = line.boundingRect();
+    line.setColor(Qt::blue);
+    line.setWidth(12);
+    line.setLineStyle(LineStyle::Dotted);
+    QCOMPARE(line.color(), QColor(Qt::blue));
+    QCOMPARE(line.width(), 12);
+    QCOMPARE(line.lineStyle(), LineStyle::Dotted);
+    QVERIFY(line.boundingRect().height() > before.height());
+    line.setLineStyle(LineStyle::Solid);
+    QImage image(100, 40, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter p(&image);
+    line.draw(p);
+    p.end();
+    QCOMPARE(QColor(image.pixel(30, 20)).blue(), 255);
 }
 
 QTEST_MAIN(TestPolylineAnnotation)

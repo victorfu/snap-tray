@@ -19,6 +19,7 @@ class TestShapeAnnotation : public QObject
     Q_OBJECT
 
 private slots:
+    void styleSettersChangeRendering();
     // Construction tests
     void testConstruction_Rectangle();
     void testConstruction_Ellipse();
@@ -589,6 +590,24 @@ void TestShapeAnnotation::testTransform_ContainsPointForOneDimensionalShapes()
     QVERIFY(horizontal.containsPoint(QPoint(140, 100)));
     QVERIFY(!vertical.containsPoint(QPoint(140, 140)));
     QVERIFY(!horizontal.containsPoint(QPoint(140, 140)));
+}
+
+
+void TestShapeAnnotation::styleSettersChangeRendering()
+{
+    ShapeAnnotation shape(QRect(10, 10, 60, 40), ShapeType::Rectangle, Qt::red, 2);
+    shape.setColor(Qt::blue);
+    shape.setWidth(6);
+    shape.setFilled(true);
+    QCOMPARE(shape.color(), QColor(Qt::blue));
+    QCOMPARE(shape.width(), 6);
+    QVERIFY(shape.filled());
+    QImage image(100, 80, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter p(&image);
+    shape.draw(p);
+    p.end();
+    QCOMPARE(QColor(image.pixel(40, 30)).blue(), 255); // inside: filled
 }
 
 QTEST_MAIN(TestShapeAnnotation)
