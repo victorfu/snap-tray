@@ -26,8 +26,8 @@ constexpr int kEdgeTop = 4;
 constexpr int kEdgeBottom = 8;
 constexpr qreal kMinViewSide = 8.0;
 
-constexpr int kPreviewWidth = 800;
-constexpr int kPreviewHeight = 600;
+constexpr int kPreviewWidth = 1200;
+constexpr int kPreviewHeight = 800;
 constexpr int kPreviewMinWidth = 640;
 constexpr int kPreviewMinHeight = 480;
 constexpr int kDragSteps = 5;
@@ -75,6 +75,10 @@ QVariant invokeQml(QObject* object, const char* name, const QVariantList& args =
 class StubPreviewBackend : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(int selectedZoom MEMBER selectedZoom NOTIFY selectedZoomChanged)
+    Q_PROPERTY(int selectedMask MEMBER selectedMask NOTIFY selectedMaskChanged)
+    Q_PROPERTY(int selectedOverlay MEMBER selectedOverlay NOTIFY selectedOverlayChanged)
+    Q_PROPERTY(int selectedPointerHide MEMBER selectedPointerHide NOTIFY selectedPointerHideChanged)
     Q_PROPERTY(QString videoPath READ videoPath CONSTANT)
     Q_PROPERTY(qint64 trimStart READ trimStart WRITE setTrimStart NOTIFY trimRangeChanged)
     Q_PROPERTY(qint64 trimEnd READ trimEnd WRITE setTrimEnd NOTIFY trimRangeChanged)
@@ -99,6 +103,10 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(bool hasWindowTimeline READ hasWindowTimeline NOTIFY windowTimelineChanged)
 
 public:
+    int selectedZoom = -1;
+    int selectedMask = -1;
+    int selectedOverlay = -1;
+    int selectedPointerHide = -1;
     bool hasWindowTimeline() const { return !m_stubWindowRect.isEmpty(); }
     // The one "window" of the stub timeline, in video pixels; empty = no timeline.
     void setStubWindow(const QRect& videoRect, const QString& app)
@@ -300,6 +308,10 @@ public:
     QRect cropAtSave;
 
 signals:
+    void selectedZoomChanged();
+    void selectedMaskChanged();
+    void selectedOverlayChanged();
+    void selectedPointerHideChanged();
     void cropAspectChanged();
     void trimRangeChanged();
     void discardPendingChanged();
@@ -970,6 +982,10 @@ QPoint tst_RecordingCropOverlay::overlayPoint(qreal x, qreal y) const
 
 void tst_RecordingCropOverlay::click(QQuickItem* item)
 {
+    // Panel visibility and layout must settle before using real pointer coordinates.
+    QSignalSpy rendered(m_view.get(), &QQuickWindow::afterAnimating);
+    m_view->requestUpdate();
+    QVERIFY(rendered.wait(2000));
     QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier,
                       scenePoint(item, QPointF(item->width() / 2, item->height() / 2)));
 }
@@ -1110,25 +1126,26 @@ void tst_RecordingCropOverlay::previewMoveResizeReplace()
     QVERIFY(editing());
     QCOMPARE(overlay->property("draftRect").toRectF(), QRectF(100, 100, 200, 100));
 
-    // Move: drag from inside the selection.
-    drag(overlayPoint(200, 150), overlayPoint(230, 170));
-    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 200, 100));
+    // Move away from the video centre snap line in the new editor layout.
+    drag(overlayPoint(200, 150), overlayPoint(230, 160));
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 110, 200, 100));
 
-    // Resize away from the centre snap line (the format row reduces the video area).
-    drag(overlayPoint(330, 220), overlayPoint(350, 260));
-    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 220, 140));
+    // Resize away from the centre snap line.
+    drag(overlayPoint(330, 210), overlayPoint(350, 260));
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 110, 220, 150));
 
     // Resize: drag the left-edge handle.
     drag(overlayPoint(130, 190), overlayPoint(110, 190));
-    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(110, 120, 240, 140));
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(110, 110, 240, 150));
 
     // Replace: drag outside the selection.
     const QPoint start = overlayPoint(area.width() * 0.6, area.height() * 0.6);
     const QPoint end = overlayPoint(area.width() * 0.6 + 100, area.height() * 0.6 + 80);
     drag(start, end);
-    QTRY_VERIFY_WITH_TIMEOUT(overlay->property("draftRect").toRectF() != QRectF(110, 120, 240, 140), 2000);
+    QTRY_VERIFY_WITH_TIMEOUT(overlay->property("draftRect").toRectF() != QRectF(110, 110, 240, 150), 2000);
     const QRectF replaced = overlay->property("draftRect").toRectF();
-    QCOMPARE(replaced, QRectF(QPointF(start), QPointF(end)));
+    auto* overlayItem = qobject_cast<QQuickItem*>(overlay);
+    QCOMPARE(replaced, QRectF(overlayItem->mapFromScene(start), overlayItem->mapFromScene(end)));
 
     // A plain click outside the selection keeps it (no sliver replacement).
     QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, overlayPoint(50, 50));
@@ -1217,6 +1234,8 @@ void tst_RecordingCropOverlay::previewSaveButtonExportsDraft()
     QVERIFY(!draft.isEmpty());
     QVERIFY(!m_backend->hasCrop());
 
+    click(previewItem("previewExportOptions"));
+    QTest::qWait(50); // popup geometry is polished before the real pointer click
     click(previewItem("previewSaveButton"));
     QCOMPARE(m_backend->saveCount, 1);
     QCOMPARE(m_backend->cropAtSave, expectedVideoCrop(draft));
@@ -1235,10 +1254,16 @@ void tst_RecordingCropOverlay::previewIconButtonsAreAccessible()
         QQuickItem* item = previewItem(name);
         return item ? QAccessible::queryAccessibleInterface(item) : nullptr;
     };
-    QAccessibleInterface* save = accessible("previewSaveButton");
-    QVERIFY(save);
-    QCOMPARE(save->role(), QAccessible::Button);
-    QCOMPARE(save->text(QAccessible::Name), QStringLiteral("Save Recording"));
+    // Saving is Export: the top-bar entry and the export panel's final action.
+    const QString exportName = QStringLiteral("Export") + QChar(0x2026);
+    for (const char* name : {"previewExportOptions", "previewSaveButton"}) {
+        QAccessibleInterface* save = accessible(name);
+        QVERIFY2(save, name);
+        QCOMPARE(save->role(), QAccessible::Button);
+        QCOMPARE(save->text(QAccessible::Name), exportName);
+        QVERIFY(save->actionInterface());
+        QVERIFY(save->actionInterface()->actionNames().contains(QAccessibleActionInterface::pressAction()));
+    }
     QAccessibleInterface* discard = accessible("previewDiscardButton");
     QVERIFY(discard);
     QCOMPARE(discard->text(QAccessible::Name), QStringLiteral("Discard Recording"));
@@ -1262,6 +1287,9 @@ void tst_RecordingCropOverlay::previewCtrlSExportsDraft()
     QVERIFY(!draft.isEmpty());
 
     sendKey(Qt::Key_S, Qt::ControlModifier);
+    QCOMPARE(m_backend->saveCount, 0);
+    QTest::qWait(50);
+    click(previewItem("previewSaveButton"));
     QCOMPARE(m_backend->saveCount, 1);
     QCOMPARE(m_backend->cropAtSave, expectedVideoCrop(draft));
     QVERIFY(!editing());
@@ -1272,9 +1300,15 @@ void tst_RecordingCropOverlay::previewEnterSavesWhenNotEditing()
     OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     m_backend->setCropRect(QRect(200, 100, 400, 200));
     sendKey(Qt::Key_Return);
+    QCOMPARE(m_backend->saveCount, 0);
+    QTest::qWait(50);
+    click(previewItem("previewSaveButton"));
     QCOMPARE(m_backend->saveCount, 1);
     QCOMPARE(m_backend->cropAtSave, QRect(200, 100, 400, 200));
     sendKey(Qt::Key_Enter);
+    QCOMPARE(m_backend->saveCount, 1);
+    QTest::qWait(50);
+    click(previewItem("previewSaveButton"));
     QCOMPARE(m_backend->saveCount, 2);
 }
 
@@ -1297,6 +1331,8 @@ void tst_RecordingCropOverlay::previewProcessingBlocksSave()
             QVERIFY(previewItem("previewCancelExportButton")->isVisible());
         }
     }
+    click(previewItem("previewExportOptions"));
+    QTest::qWait(50); // popup geometry is polished before the real pointer click
     click(previewItem("previewSaveButton"));
     sendKey(Qt::Key_S, Qt::ControlModifier);
     sendKey(Qt::Key_Return);
@@ -1313,6 +1349,8 @@ void tst_RecordingCropOverlay::previewProcessingBlocksSave()
     QVERIFY(!previewItem("previewCropButton")->isEnabled());
 
     m_backend->setProcessing(false);
+    click(previewItem("previewExportOptions"));
+    QTest::qWait(50); // popup geometry is polished before the real pointer click
     click(previewItem("previewSaveButton"));
     QCOMPARE(m_backend->saveCount, 1);
     QCOMPARE(m_backend->cropAtSave, expectedVideoCrop(draft));
@@ -1341,7 +1379,9 @@ void tst_RecordingCropOverlay::previewCancellationFollowsActiveJob()
             QVERIFY(!cancel->isVisible());
         }
         m_backend->setProcessing(false);
-        click(previewItem("previewSaveButton"));
+        click(previewItem("previewExportOptions"));
+    QTest::qWait(50); // popup geometry is polished before the real pointer click
+    click(previewItem("previewSaveButton"));
         QCOMPARE(m_backend->saveCount, format + 1);
     }
 }
@@ -1368,7 +1408,9 @@ void tst_RecordingCropOverlay::previewGeometryChangeKeepsDraft()
 
     // Resizing the window re-fits the video; the draft moves with it and the
     // user keeps editing. Nothing is committed by the resize itself.
-    m_view->resize(kPreviewWidth + 100, kPreviewHeight + 60);
+    // Shrink the actual native window: CI desktops may already clamp the
+    // initial size, so asking for an even larger size would change nothing.
+    m_view->resize(m_view->width() - 100, m_view->height() - 60);
     QTRY_VERIFY(previewContentRect() != oldContent);
     QVERIFY(editing());
     QCOMPARE(m_backend->cropRect(), committed);
@@ -1428,7 +1470,7 @@ void tst_RecordingCropOverlay::previewToolbarFitsAtMinimumWidth()
     QVERIFY(m_backend->hasCrop());
     m_view->resize(kPreviewMinWidth, kPreviewMinHeight);
     QTRY_COMPARE(qRound(m_view->rootObject()->width()), kPreviewMinWidth);
-    QQuickItem* save = previewItem("previewSaveButton");
+    QQuickItem* save = previewItem("previewExportOptions");
     QQuickItem* clear = previewItem("previewClearCropButton");
     QVERIFY(save->isVisible() && clear->isVisible());
     const auto rightEdge = [](QQuickItem* item) {
@@ -1542,8 +1584,12 @@ void tst_RecordingCropOverlay::previewTinyDraftAppliesWithoutJump()
     QTRY_VERIFY_WITH_TIMEOUT(!overlay->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = overlay->property("draftRect").toRectF();
     QVERIFY(!draft.isEmpty());
-    QVERIFY2(draft.width() >= minView - 0.01 && draft.height() >= minView - 0.01,
-             qPrintable(QStringLiteral("draft %1x%2 < %3").arg(draft.width()).arg(draft.height()).arg(minView)));
+    // Each side against its own axis: a fitted picture rounds to whole pixels,
+    // so the horizontal and vertical view scales can differ slightly.
+    const qreal minViewHeight = overlay->property("minViewHeight").toReal();
+    QVERIFY2(draft.width() >= minView - 0.01 && draft.height() >= minViewHeight - 0.01,
+             qPrintable(QStringLiteral("draft %1x%2 < %3x%4").arg(draft.width()).arg(draft.height())
+                            .arg(minView).arg(minViewHeight)));
 
     sendKey(Qt::Key_Return);
     QVERIFY(!editing());

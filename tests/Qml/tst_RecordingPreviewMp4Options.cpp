@@ -56,7 +56,7 @@ void tst_RecordingPreviewMp4Options::panelSetsAndRemembersTheOptions()
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);
     QQuickView* view = openPreview(backend);
     QVERIFY(view);
-    QQuickItem* open = item(view, "previewMp4Options");
+    QQuickItem* open = item(view, "previewExportOptions");
     QQuickItem* panel = item(view, "previewMp4Panel");
     QQuickItem* formatRow = item(view, "previewFormatRow");
     QVERIFY(open && panel && formatRow);
@@ -64,7 +64,7 @@ void tst_RecordingPreviewMp4Options::panelSetsAndRemembersTheOptions()
     QVERIFY(!panel->isVisible());
     QVERIFY(QMetaObject::invokeMethod(open, "clicked"));
     QTRY_VERIFY(panel->isVisible());
-    QVERIFY(!formatRow->isEnabled());
+    QVERIFY(formatRow->isEnabled()); // Export no longer replaces project navigation.
 
     QQuickItem* resolution = item(view, "previewMp4Resolution");
     QQuickItem* frameRate = item(view, "previewMp4FrameRate");
@@ -75,10 +75,10 @@ void tst_RecordingPreviewMp4Options::panelSetsAndRemembersTheOptions()
     QCOMPARE(frameRate->isEnabled(), backend.mp4OutputOptionsAvailable());
     QCOMPARE(hevc->isEnabled(), backend.mp4HevcAvailable());
 
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMp4Quality"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMp4Quality"), "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.mp4Quality(), int(SnapTray::Mp4ExportOptions::Quality::Low));
     if (backend.mp4OutputOptionsAvailable()) {
-        for (int i = 0; i < 3; ++i) QVERIFY(QMetaObject::invokeMethod(resolution, "clicked"));
+        QVERIFY(QMetaObject::invokeMethod(resolution, "activated", Q_ARG(int, 3)));
         QCOMPARE(backend.mp4Resolution(), int(SnapTray::Mp4ExportOptions::Resolution::CustomWidth));
         QQuickItem* width = item(view, "previewMp4Width");
         QVERIFY(width);
@@ -93,7 +93,7 @@ void tst_RecordingPreviewMp4Options::panelSetsAndRemembersTheOptions()
     QCOMPARE(int(saved.quality), backend.mp4Quality());
     QCOMPARE(int(saved.codec), backend.mp4Codec());
 
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMp4OptionsDone"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewExportBack"), "clicked"));
     QTRY_VERIFY(!panel->isVisible());
     QVERIFY(formatRow->isEnabled());
     backend.requestDiscard();
@@ -107,11 +107,13 @@ void tst_RecordingPreviewMp4Options::panelOnlyForMp4()
     backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     QQuickView* view = openPreview(backend);
     QVERIFY(view);
-    QQuickItem* open = item(view, "previewMp4Options");
+    QQuickItem* open = item(view, "previewExportOptions");
     QVERIFY(open);
-    QVERIFY(!open->isVisible());
+    QVERIFY(open->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(open, "clicked"));
+    QVERIFY(!item(view, "previewMp4Panel")->isVisible());
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);
-    QTRY_VERIFY(open->isVisible());
+    QTRY_VERIFY(item(view, "previewMp4Panel")->isVisible());
     backend.requestDiscard();
 }
 

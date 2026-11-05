@@ -35,3 +35,7 @@
       title:
         en: Recording Sync Matrix
         zh-tw: 錄影同步驗證矩陣
+    - route_key: developer_ui_design
+      title:
+        en: UI Design Guidelines
+        zh-tw: UI 設計規範（英文）

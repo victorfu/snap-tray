@@ -754,6 +754,11 @@ QVariantList RecordingPreviewBackend::pointerHiddenRanges() const
 void RecordingPreviewBackend::setSelectedPointerHide(int index)
 {
     index = index >= 0 && index < int(m_cursorEffects.hiddenRanges.size()) ? index : -1;
+    if (index >= 0) {
+        setSelectedZoom(-1);
+        setSelectedMask(-1);
+        setSelectedOverlay(-1);
+    }
     if (m_selectedPointerHide == index) return;
     m_selectedPointerHide = index;
     emit selectedPointerHideChanged();
@@ -841,6 +846,11 @@ QVariantList RecordingPreviewBackend::masks() const
 void RecordingPreviewBackend::setSelectedMask(int index)
 {
     index = index >= 0 && index < int(m_redaction.masks.size()) ? index : -1;
+    if (index >= 0) {
+        setSelectedZoom(-1);
+        setSelectedOverlay(-1);
+        setSelectedPointerHide(-1);
+    }
     if (m_selectedMask == index) return;
     m_selectedMask = index;
     emit selectedMaskChanged();
@@ -1040,6 +1050,11 @@ QVariantList RecordingPreviewBackend::zoomSegments() const
 void RecordingPreviewBackend::setSelectedZoom(int index)
 {
     index = index >= 0 && index < int(m_zoom.segments().size()) ? index : -1;
+    if (index >= 0) {
+        setSelectedMask(-1);
+        setSelectedOverlay(-1);
+        setSelectedPointerHide(-1);
+    }
     if (m_selectedZoom == index) return;
     m_selectedZoom = index;
     emit selectedZoomChanged();
@@ -1687,6 +1702,11 @@ QVariantList RecordingPreviewBackend::overlays() const
 void RecordingPreviewBackend::setSelectedOverlay(int index)
 {
     index = index >= 0 && index < int(m_overlays.segments.size()) ? index : -1;
+    if (index >= 0) {
+        setSelectedZoom(-1);
+        setSelectedMask(-1);
+        setSelectedPointerHide(-1);
+    }
     if (m_selectedOverlay == index) return;
     m_selectedOverlay = index;
     emit selectedOverlayChanged();

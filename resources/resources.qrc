@@ -80,6 +80,19 @@
         <file>icons/volume-2.svg</file>
         <file>icons/volume-x.svg</file>
         <file>icons/scissors.svg</file>
+        <file>icons/zoom-in.svg</file>
+        <file>icons/film.svg</file>
+        <file>icons/mouse-pointer.svg</file>
+        <file>icons/keyboard.svg</file>
+        <file>icons/image.svg</file>
+        <file>icons/panel-right.svg</file>
+        <file>icons/chevron-left.svg</file>
+        <file>icons/chevron-right.svg</file>
+        <file>icons/chevron-down.svg</file>
+        <file>icons/upload.svg</file>
+        <file>icons/square-dashed.svg</file>
+        <file>icons/frame.svg</file>
+        <file>icons/plus.svg</file>
     </qresource>
     <qresource prefix="/cascades">
         <file>cascades/haarcascade_frontalface_default.xml</file>

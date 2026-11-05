@@ -56,10 +56,18 @@ void VideoPlaybackItem::createPlayer()
             this, [this]() { emit playbackRateChanged(); });
 }
 
+void VideoPlaybackItem::setBackgroundColor(const QColor& color)
+{
+    if (m_backgroundColor == color) return;
+    m_backgroundColor = color;
+    emit backgroundColorChanged();
+    update();
+}
+
 void VideoPlaybackItem::paint(QPainter *painter)
 {
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
-    painter->fillRect(contentsBoundingRect(), Qt::black);
+    painter->fillRect(contentsBoundingRect(), m_backgroundColor);
 
     if (m_scaledFrame.isNull()) {
         painter->setPen(Qt::gray);

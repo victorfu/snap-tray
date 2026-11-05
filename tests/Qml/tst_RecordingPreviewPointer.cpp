@@ -78,7 +78,8 @@ void tst_RecordingPreviewPointer::controlsFollowThePointerData()
     QQuickItem* smoothing = item(view, "previewPointerSmoothing");
     QQuickItem* clicks = item(view, "previewClickRipple");
     QVERIFY(toggle && size && smoothing && clicks);
-    QVERIFY(toggle->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerOptions"), "clicked"));
+    QTRY_VERIFY(toggle->isVisible());
     QVERIFY(item(view, "previewCursorOverlay"));
     QCOMPARE(clicks->isEnabled(), false); // nothing to highlight without recorded clicks
 
@@ -94,9 +95,9 @@ void tst_RecordingPreviewPointer::controlsFollowThePointerData()
     QVERIFY(size->isEnabled());
 
     const qreal before = backend.cursorScale();
-    QVERIFY(QMetaObject::invokeMethod(size, "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(size, "activated", Q_ARG(int, 1)));
     QVERIFY(backend.cursorScale() != before);
-    QVERIFY(QMetaObject::invokeMethod(smoothing, "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(smoothing, "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.cursorSmoothing(), 1);
     // Undo walks back through the look, one change at a time.
     backend.undo();
@@ -140,11 +141,11 @@ void tst_RecordingPreviewPointer::advancedPointerOptions()
     QTRY_VERIFY(panel->isVisible());
     QVERIFY(!formatRow->isEnabled());
 
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerIdle"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerIdle"), "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.cursorIdleHide(), 1000);
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerBlur"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerBlur"), "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.cursorMotionBlur(), 1);
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerStillEnd"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerStillEnd"), "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.cursorStillEnd(), 500);
 
     // A hidden range at the playhead opens its own editor.
@@ -201,7 +202,8 @@ void tst_RecordingPreviewPointer::keysPanelEditsTheHints()
         QVERIFY(view);
         QQuickItem* keys = item(view, "previewKeyOptions");
         QVERIFY(keys);
-        QVERIFY(!keys->isVisible());
+        QVERIFY(keys->isVisible());
+        QVERIFY(!keys->isEnabled());
         withoutKeys.requestDiscard();
     }
     {
@@ -221,13 +223,13 @@ void tst_RecordingPreviewPointer::keysPanelEditsTheHints()
     QVERIFY(keys->isEnabled());
     QVERIFY(QMetaObject::invokeMethod(keys, "clicked"));
     QTRY_VERIFY(panel->isVisible());
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysPosition"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysPosition"), "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.keyOverlayPosition(), 1);
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysSize"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysSize"), "activated", Q_ARG(int, 2)));
     QCOMPARE(backend.keyOverlaySize(), 2);
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysStyle"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysStyle"), "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.keyOverlayStyle(), 1);
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysDuration"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysDuration"), "activated", Q_ARG(int, 2)));
     QCOMPARE(backend.keyOverlayDisplayMs(), 2500);
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysToggle"), "clicked"));
     QVERIFY(!backend.keyOverlayEnabled());
@@ -236,7 +238,7 @@ void tst_RecordingPreviewPointer::keysPanelEditsTheHints()
     QCOMPARE(saved, backend.keyOverlay());
     backend.undo();
     QVERIFY(backend.keyOverlayEnabled());
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewKeysDone"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "editorReturnToProject"), "clicked"));
     QTRY_VERIFY(!panel->isVisible());
     backend.requestDiscard();
 }
@@ -297,7 +299,7 @@ void tst_RecordingPreviewPointer::overlayPanelEditsText()
     const double size = backend.overlayTrack().segments[0].size;
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayLarger"), "clicked"));
     QVERIFY(backend.overlayTrack().segments[0].size > size);
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayBackground"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayBackground"), "activated", Q_ARG(int, 2)));
     QCOMPARE(int(backend.overlayTrack().segments[0].background), 2);
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewOverlayWhole"), "clicked"));
     QCOMPARE(backend.overlayTrack().segments[0].endMs, -1);
@@ -338,7 +340,7 @@ void tst_RecordingPreviewPointer::audioPanelMixesTheTracks()
     }
     QVERIFY(QMetaObject::invokeMethod(audio, "clicked"));
     QTRY_VERIFY(panel->isVisible());
-    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMicrophoneGain"), "clicked"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewMicrophoneGain"), "activated", Q_ARG(int, 3)));
     QCOMPARE(backend.microphoneGainDb(), 6.0);
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewSystemAudioMute"), "clicked"));
     QVERIFY(backend.systemAudioMuted());
@@ -347,9 +349,9 @@ void tst_RecordingPreviewPointer::audioPanelMixesTheTracks()
     QVERIFY(backend.audioMixActive());
     backend.undo();
     QVERIFY(!backend.microphoneNoiseReduction());
-    // GIF and WebP are silent: no audio controls there.
+    // GIF and WebP are silent: category remains discoverable but disabled.
     backend.setSelectedFormat(RecordingPreviewBackend::GIF);
-    QTRY_VERIFY(!audio->isVisible());
+    QTRY_VERIFY(!audio->isEnabled());
     QVERIFY(!backend.audioMixAvailable());
     backend.requestDiscard();
 }
