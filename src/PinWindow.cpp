@@ -710,6 +710,9 @@ void PinWindow::setOpacity(qreal opacity)
 {
     m_opacity = qBound(0.1, opacity, 1.0);
     setWindowOpacity(m_opacity);
+    if (m_currentOpacityAction) {
+        m_currentOpacityAction->setText(QString("%1%").arg(qRound(m_opacity * 100)));
+    }
     syncHoverBar();
 }
 
@@ -1213,56 +1216,137 @@ void PinWindow::createContextMenu()
 {
     m_contextMenu = new QMenu(this);
 
+    // Grouped by task (#225): View | Output | Modes | Pins | Close.
     // Show Toolbar action
     m_showToolbarAction = m_contextMenu->addAction(tr("Show Toolbar"));
+    m_showToolbarAction->setObjectName(QStringLiteral("pinMenuShowToolbar"));
     m_showToolbarAction->setShortcut(QKeySequence(Qt::Key_Space));
     m_showToolbarAction->setCheckable(true);
     connect(m_showToolbarAction, &QAction::triggered, this, &PinWindow::toggleToolbar);
 
     // Show border option (placed right after Show Toolbar)
     m_showBorderAction = m_contextMenu->addAction(tr("Show Border"));
+    m_showBorderAction->setObjectName(QStringLiteral("pinMenuShowBorder"));
     m_showBorderAction->setCheckable(true);
     m_showBorderAction->setChecked(m_showBorder);
     connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
 
-    m_moveToScreenMenu = m_contextMenu->addMenu(tr("Move to Screen"));
+    // Zoom submenu
+    QMenu* zoomMenu = m_contextMenu->addMenu(tr("Zoom"));
+    zoomMenu->menuAction()->setObjectName(QStringLiteral("pinMenuZoom"));
+
+    QAction* zoomInAction = zoomMenu->addAction(tr("Zoom In"));
+    zoomInAction->setObjectName(QStringLiteral("pinMenuZoomIn"));
+    zoomInAction->setShortcut(QKeySequence::ZoomIn);
+    connect(zoomInAction, &QAction::triggered, this, [this]() { zoomByStep(1); });
+    QAction* zoomOutAction = zoomMenu->addAction(tr("Zoom Out"));
+    zoomOutAction->setObjectName(QStringLiteral("pinMenuZoomOut"));
+    zoomOutAction->setShortcut(QKeySequence::ZoomOut);
+    connect(zoomOutAction, &QAction::triggered, this, [this]() { zoomByStep(-1); });
+    QAction* zoomResetAction = zoomMenu->addAction(tr("Reset to 100%"));
+    zoomResetAction->setObjectName(QStringLiteral("pinMenuZoomReset"));
+    zoomResetAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
+    connect(zoomResetAction, &QAction::triggered, this, &PinWindow::resetZoom);
+    zoomMenu->addSeparator();
+
+    // Preset zoom levels
+    QAction* zoom33Action = zoomMenu->addAction(tr("33.3%"));
+    connect(zoom33Action, &QAction::triggered, this, [this]() { applyUserZoom(1.0 / 3.0); });
+
+    QAction* zoom50Action = zoomMenu->addAction(tr("50%"));
+    connect(zoom50Action, &QAction::triggered, this, [this]() { applyUserZoom(0.5); });
+
+    QAction* zoom67Action = zoomMenu->addAction(tr("66.7%"));
+    connect(zoom67Action, &QAction::triggered, this, [this]() { applyUserZoom(2.0 / 3.0); });
+
+    QAction* zoom100Action = zoomMenu->addAction(tr("100%"));
+    connect(zoom100Action, &QAction::triggered, this, [this]() { applyUserZoom(1.0); });
+
+    QAction* zoom200Action = zoomMenu->addAction(tr("200%"));
+    connect(zoom200Action, &QAction::triggered, this, [this]() { applyUserZoom(2.0); });
+
+    zoomMenu->addSeparator();
+
+    // Current zoom level display (disabled, for display only)
+    m_currentZoomAction = zoomMenu->addAction(QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    m_currentZoomAction->setEnabled(false);
+
+    // Smoothing option
+    QAction* smoothingAction = zoomMenu->addAction(tr("Smoothing"));
+    smoothingAction->setCheckable(true);
+    smoothingAction->setChecked(m_smoothing);
+    connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
+        m_smoothing = checked;
+        updateSize();
+        });
+
+    // Opacity sits next to Zoom (#225), not under Image processing.
+    QMenu* opacityMenu = m_contextMenu->addMenu(tr("Opacity"));
+    opacityMenu->menuAction()->setObjectName(QStringLiteral("pinMenuOpacity"));
+    const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
+    QAction* increaseOpacityAction = opacityMenu->addAction(
+        tr("Increase by %1%").arg(opacityStepPercent));
+    increaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketRight));
+    connect(increaseOpacityAction, &QAction::triggered, this, [this]() {
+        adjustOpacityByStep(1);
+        });
+
+    QAction* decreaseOpacityAction = opacityMenu->addAction(
+        tr("Decrease by %1%").arg(opacityStepPercent));
+    decreaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketLeft));
+    connect(decreaseOpacityAction, &QAction::triggered, this, [this]() {
+        adjustOpacityByStep(-1);
+        });
+
+    QAction* opacityResetAction = opacityMenu->addAction(tr("Reset to 100%"));
+    opacityResetAction->setObjectName(QStringLiteral("pinMenuOpacityReset"));
+    opacityResetAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_BracketRight));
+    connect(opacityResetAction, &QAction::triggered, this, &PinWindow::resetOpacity);
+    opacityMenu->addSeparator();
+    m_currentOpacityAction = opacityMenu->addAction(QString("%1%").arg(qRound(m_opacity * 100)));
+    m_currentOpacityAction->setEnabled(false);
+
+    // Image processing submenu
+    QMenu* imageProcessingMenu = m_contextMenu->addMenu(tr("Image processing"));
+    imageProcessingMenu->menuAction()->setObjectName(QStringLiteral("pinMenuImageProcessing"));
+
+    QAction* rotateLeftAction = imageProcessingMenu->addAction(tr("Rotate left"));
+    connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
+
+    QAction* rotateRightAction = imageProcessingMenu->addAction(tr("Rotate right"));
+    connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
+
+    QAction* horizontalFlipAction = imageProcessingMenu->addAction(tr("Horizontal flip"));
+    connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
+
+    QAction* verticalFlipAction = imageProcessingMenu->addAction(tr("Vertical flip"));
+    connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
+
+    imageProcessingMenu->addSeparator();
+    QAction* cropAction = imageProcessingMenu->addAction(tr("Crop"));
+    connect(cropAction, &QAction::triggered, this, [this]() {
+        if (!m_toolbar) {
+            initializeAnnotationComponents();
+        }
+        showToolbar();
+        handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    });
 
     m_contextMenu->addSeparator();
 
     QAction* copyAction = m_contextMenu->addAction(tr("Copy to Clipboard"));
+    copyAction->setObjectName(QStringLiteral("pinMenuCopy"));
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
 
     QAction* saveAction = m_contextMenu->addAction(tr("Save to file"));
+    saveAction->setObjectName(QStringLiteral("pinMenuSave"));
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
-    // Reuse the HistoryWindow translation context for the shared label so PinWindow
-    // stays aligned with the existing QML translation catalogs.
-    QAction* openCacheFolderAction = m_contextMenu->addAction(
-        QCoreApplication::translate("HistoryWindow", "Open History Folder"));
-    connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
-
-    // Do not advertise click-through on platforms whose native implementation
-    // cannot actually remove this window from pointer hit-testing.
-    if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
-        m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
-        m_clickThroughAction->setCheckable(true);
-        m_clickThroughAction->setChecked(m_clickThrough);
-        connect(m_clickThroughAction, &QAction::toggled,
-                this, &PinWindow::setClickThrough);
-    }
-
-    m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
-    connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
-
-    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
-    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
-
-    m_contextMenu->addSeparator();
-
     // Watermark submenu
     QMenu* watermarkMenu = m_contextMenu->addMenu(tr("Watermark"));
+    watermarkMenu->menuAction()->setObjectName(QStringLiteral("pinMenuWatermark"));
 
     // Enable watermark action
     QAction* enableWatermarkAction = watermarkMenu->addAction(tr("Enable"));
@@ -1312,83 +1396,9 @@ void PinWindow::createContextMenu()
         update();
         });
 
-    // Zoom submenu
-    QMenu* zoomMenu = m_contextMenu->addMenu(tr("Zoom"));
-
-    // Preset zoom levels
-    QAction* zoom33Action = zoomMenu->addAction(tr("33.3%"));
-    connect(zoom33Action, &QAction::triggered, this, [this]() { applyUserZoom(1.0 / 3.0); });
-
-    QAction* zoom50Action = zoomMenu->addAction(tr("50%"));
-    connect(zoom50Action, &QAction::triggered, this, [this]() { applyUserZoom(0.5); });
-
-    QAction* zoom67Action = zoomMenu->addAction(tr("66.7%"));
-    connect(zoom67Action, &QAction::triggered, this, [this]() { applyUserZoom(2.0 / 3.0); });
-
-    QAction* zoom100Action = zoomMenu->addAction(tr("100%"));
-    connect(zoom100Action, &QAction::triggered, this, [this]() { applyUserZoom(1.0); });
-
-    QAction* zoom200Action = zoomMenu->addAction(tr("200%"));
-    connect(zoom200Action, &QAction::triggered, this, [this]() { applyUserZoom(2.0); });
-
-    zoomMenu->addSeparator();
-
-    // Current zoom level display (disabled, for display only)
-    m_currentZoomAction = zoomMenu->addAction(QString("%1%").arg(qRound(m_zoomLevel * 100)));
-    m_currentZoomAction->setEnabled(false);
-
-    // Smoothing option
-    QAction* smoothingAction = zoomMenu->addAction(tr("Smoothing"));
-    smoothingAction->setCheckable(true);
-    smoothingAction->setChecked(m_smoothing);
-    connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
-        m_smoothing = checked;
-        updateSize();
-        });
-
-    // Image processing submenu
-    QMenu* imageProcessingMenu = m_contextMenu->addMenu(tr("Image processing"));
-
-    QAction* rotateLeftAction = imageProcessingMenu->addAction(tr("Rotate left"));
-    connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
-
-    QAction* rotateRightAction = imageProcessingMenu->addAction(tr("Rotate right"));
-    connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
-
-    QAction* horizontalFlipAction = imageProcessingMenu->addAction(tr("Horizontal flip"));
-    connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
-
-    QAction* verticalFlipAction = imageProcessingMenu->addAction(tr("Vertical flip"));
-    connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
-
-    imageProcessingMenu->addSeparator();
-    QAction* cropAction = imageProcessingMenu->addAction(tr("Crop"));
-    connect(cropAction, &QAction::triggered, this, [this]() {
-        if (!m_toolbar) {
-            initializeAnnotationComponents();
-        }
-        showToolbar();
-        handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
-    });
-
-    QMenu* opacityMenu = imageProcessingMenu->addMenu(tr("Opacity"));
-    const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
-    QAction* increaseOpacityAction = opacityMenu->addAction(
-        tr("Increase by %1%").arg(opacityStepPercent));
-    increaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketRight));
-    connect(increaseOpacityAction, &QAction::triggered, this, [this]() {
-        adjustOpacityByStep(1);
-        });
-
-    QAction* decreaseOpacityAction = opacityMenu->addAction(
-        tr("Decrease by %1%").arg(opacityStepPercent));
-    decreaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketLeft));
-    connect(decreaseOpacityAction, &QAction::triggered, this, [this]() {
-        adjustOpacityByStep(-1);
-        });
-
     // Info submenu - displays image properties
     m_infoMenu = m_contextMenu->addMenu(currentDisplaySizeText());
+    m_infoMenu->menuAction()->setObjectName(QStringLiteral("pinMenuInfo"));
 
     // Copy all info action
     QAction* copyAllInfoAction = m_infoMenu->addAction(tr("Copy All"));
@@ -1413,11 +1423,30 @@ void PinWindow::createContextMenu()
     m_flipHorizontalInfoAction = addInfoItem(tr("X-mirror"), m_flipHorizontal ? tr("Yes") : tr("No"));
     m_flipVerticalInfoAction = addInfoItem(tr("Y-mirror"), m_flipVertical ? tr("Yes") : tr("No"));
 
-    // Live capture section - actions are updated dynamically in contextMenuEvent
+    // Reuse the HistoryWindow translation context for the shared label so PinWindow
+    // stays aligned with the existing QML translation catalogs.
+    QAction* openCacheFolderAction = m_contextMenu->addAction(
+        QCoreApplication::translate("HistoryWindow", "Open History Folder"));
+    openCacheFolderAction->setObjectName(QStringLiteral("pinMenuHistoryFolder"));
+    connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
+
     m_contextMenu->addSeparator();
+
+    // Do not advertise click-through on platforms whose native implementation
+    // cannot actually remove this window from pointer hit-testing.
+    if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
+        m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
+        m_clickThroughAction->setObjectName(QStringLiteral("pinMenuClickThrough"));
+        m_clickThroughAction->setCheckable(true);
+        m_clickThroughAction->setChecked(m_clickThrough);
+        connect(m_clickThroughAction, &QAction::toggled,
+                this, &PinWindow::setClickThrough);
+    }
 
     // Start/Stop Live action
     m_startLiveAction = m_contextMenu->addAction(tr("Start Live Update"));
+    m_startLiveAction->setObjectName(QStringLiteral("pinMenuLive"));
+    m_startLiveAction->setShortcut(QKeySequence(Qt::Key_L));
     connect(m_startLiveAction, &QAction::triggered, this, [this]() {
         if (m_isLiveMode) {
             stopLiveCapture();
@@ -1429,6 +1458,8 @@ void PinWindow::createContextMenu()
 
     // Pause/Resume Live action
     m_pauseLiveAction = m_contextMenu->addAction(tr("Pause Live Update"));
+    m_pauseLiveAction->setObjectName(QStringLiteral("pinMenuLivePause"));
+    m_pauseLiveAction->setShortcut(QKeySequence(Qt::Key_P));
     connect(m_pauseLiveAction, &QAction::triggered, this, [this]() {
         if (m_livePaused) {
             resumeLiveCapture();
@@ -1440,6 +1471,7 @@ void PinWindow::createContextMenu()
 
     // Frame rate submenu
     m_fpsMenu = m_contextMenu->addMenu(tr("Frame Rate"));
+    m_fpsMenu->menuAction()->setObjectName(QStringLiteral("pinMenuFrameRate"));
     QActionGroup* fpsGroup = new QActionGroup(this);
     for (int fps : {5, 10, 15, 30}) {
         QAction* fpsAction = m_fpsMenu->addAction(tr("%1 FPS").arg(fps));
@@ -1454,18 +1486,32 @@ void PinWindow::createContextMenu()
         setLiveFrameRate(action->data().toInt());
         });
 
+    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
+    m_adjustRegionLayoutAction->setObjectName(QStringLiteral("pinMenuRegionLayout"));
+    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
+
     m_contextMenu->addSeparator();
 
-    QAction* closeAction = m_contextMenu->addAction(tr("Close"));
-    closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
-    connect(closeAction, &QAction::triggered, this, &PinWindow::close);
+    m_moveToScreenMenu = m_contextMenu->addMenu(tr("Move to Screen"));
+    m_moveToScreenMenu->menuAction()->setObjectName(QStringLiteral("pinMenuMoveToScreen"));
+    m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
+    m_mergePinsAction->setObjectName(QStringLiteral("pinMenuMerge"));
+    connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
 
     QAction* closeAllPinsAction = m_contextMenu->addAction(tr("Close All Pins"));
+    closeAllPinsAction->setObjectName(QStringLiteral("pinMenuCloseAll"));
     connect(closeAllPinsAction, &QAction::triggered, this, [this]() {
         if (m_pinWindowManager) {
             m_pinWindowManager->closeAllWindows();
         }
         });
+
+    m_contextMenu->addSeparator();
+
+    QAction* closeAction = m_contextMenu->addAction(tr("Close"));
+    closeAction->setObjectName(QStringLiteral("pinMenuClose"));
+    closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
+    connect(closeAction, &QAction::triggered, this, &PinWindow::close);
 }
 
 void PinWindow::refreshMoveToScreenMenu()

@@ -179,6 +179,7 @@ private:
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
     friend class TestPinHoverIntegration;
+    friend class TestPinContextMenuLayout;
     friend class TestPinWindowTextToolFormatting;
     friend class TestEraserHostRouting;
     struct CropUndoEntry;
@@ -445,6 +446,7 @@ private:
 
     // Zoom menu members
     QAction* m_currentZoomAction;
+    QAction* m_currentOpacityAction = nullptr;
     bool m_smoothing;
 
     // Components

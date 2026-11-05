@@ -676,6 +676,11 @@ target_sources(PinWindow_PinHoverIntegration PRIVATE ${CMAKE_SOURCE_DIR}/resourc
 add_test(NAME PinWindow_PinHoverIntegration COMMAND PinWindow_PinHoverIntegration)
 set_tests_properties(PinWindow_PinHoverIntegration PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_ContextMenuLayout PinWindow/tst_ContextMenuLayout.cpp)
+target_link_libraries(PinWindow_ContextMenuLayout PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME PinWindow_ContextMenuLayout COMMAND PinWindow_ContextMenuLayout)
+set_tests_properties(PinWindow_ContextMenuLayout PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(PinWindow_WatermarkRenderer PinWindow/tst_WatermarkRenderer.cpp)
 target_link_libraries(PinWindow_WatermarkRenderer PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_WatermarkRenderer COMMAND PinWindow_WatermarkRenderer)
