@@ -3641,120 +3641,137 @@ Item {
             onWheel: function(wheel) { wheel.accepted = true }
         }
 
-        Column {
+        // The status is read on a solid panel, like the close confirmation:
+        // straight on the dimmed overlay its contrast depended on the frame
+        // behind it (#220).
+        Rectangle {
+            objectName: "previewProcessingCard"
             anchors.centerIn: parent
-            spacing: SemanticTokens.spacing16
+            width: Math.min(parent.width - SemanticTokens.spacing40,
+                            Math.max(320, processingColumn.implicitWidth + SemanticTokens.spacing40))
+            height: processingColumn.implicitHeight + SemanticTokens.spacing40
+            radius: SemanticTokens.radiusMedium
+            color: root.bgPanel
+            border.width: 1
+            border.color: root.borderColor
 
-            Rectangle {
-                width: 280
-                height: 6
-                radius: 3
-                color: root.bgPanel
-                anchors.horizontalCenter: parent.horizontalCenter
-
-                Rectangle {
-                    visible: !backend.processIndeterminate
-                    width: parent.width * (backend.processProgress / 100.0)
-                    height: parent.height
-                    radius: 3
-                    color: root.accent
-
-                    Behavior on width {
-                        NumberAnimation { duration: SemanticTokens.durationInteractionHover }
-                    }
-                }
-
-                // No trustworthy total (writing or saving the file): a moving
-                // segment instead of an invented percentage.
-                Rectangle {
-                    id: indeterminateSegment
-                    objectName: "previewIndeterminateProgress"
-                    visible: backend.processIndeterminate
-                    width: parent.width / 4
-                    height: parent.height
-                    radius: 3
-                    color: root.accent
-                    SequentialAnimation on x {
-                        running: indeterminateSegment.visible
-                        loops: Animation.Infinite
-                        NumberAnimation {
-                            from: 0
-                            to: 280 - 280 / 4
-                            duration: SemanticTokens.durationNormal * 4
-                            easing.type: Easing.InOutQuad
-                        }
-                        NumberAnimation {
-                            from: 280 - 280 / 4
-                            to: 0
-                            duration: SemanticTokens.durationNormal * 4
-                            easing.type: Easing.InOutQuad
-                        }
-                    }
-                }
-            }
-
-            Text {
-                text: backend.processStatus
-                font.pixelSize: SemanticTokens.fontSizeBody
-                font.family: SemanticTokens.fontFamily
-                color: root.textPrimary
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-
-            Text {
-                visible: !backend.processIndeterminate
-                text: backend.processProgress + "%"
-                font.pixelSize: SemanticTokens.fontSizeCaption
-                font.family: SemanticTokens.fontFamily
-                color: root.textSecondary
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-
-            // MP4, GIF and WebP exports stop between frames; the recording and
-            // edits stay, so the user can change settings and save again.
-            DialogButton {
-                objectName: "previewCancelExportButton"
-                text: qsTr("Cancel")
-                style: "secondary"
-                visible: backend.canCancelExport && !backend.exportCloseQuestionPending
-                anchors.horizontalCenter: parent.horizontalCenter
-                Accessible.role: Accessible.Button
-                Accessible.name: qsTr("Cancel Export")
-                onClicked: backend.cancelExport()
-            }
-
-            // The window was closed during an export: keep it or cancel it.
             Column {
-                objectName: "previewExportCloseQuestion"
-                visible: backend.exportCloseQuestionPending
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: SemanticTokens.spacing8
+                id: processingColumn
+                anchors.centerIn: parent
+                spacing: SemanticTokens.spacing16
+
+                Rectangle {
+                    width: 280
+                    height: 6
+                    radius: 3
+                    color: root.borderColor
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    Rectangle {
+                        visible: !backend.processIndeterminate
+                        width: parent.width * (backend.processProgress / 100.0)
+                        height: parent.height
+                        radius: 3
+                        color: root.accent
+
+                        Behavior on width {
+                            NumberAnimation { duration: SemanticTokens.durationInteractionHover }
+                        }
+                    }
+
+                    // No trustworthy total (writing or saving the file): a moving
+                    // segment instead of an invented percentage.
+                    Rectangle {
+                        id: indeterminateSegment
+                        objectName: "previewIndeterminateProgress"
+                        visible: backend.processIndeterminate
+                        width: parent.width / 4
+                        height: parent.height
+                        radius: 3
+                        color: root.accent
+                        SequentialAnimation on x {
+                            running: indeterminateSegment.visible
+                            loops: Animation.Infinite
+                            NumberAnimation {
+                                from: 0
+                                to: 280 - 280 / 4
+                                duration: SemanticTokens.durationNormal * 4
+                                easing.type: Easing.InOutQuad
+                            }
+                            NumberAnimation {
+                                from: 280 - 280 / 4
+                                to: 0
+                                duration: SemanticTokens.durationNormal * 4
+                                easing.type: Easing.InOutQuad
+                            }
+                        }
+                    }
+                }
 
                 Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("An export is in progress. Keep exporting or cancel it?")
+                    objectName: "previewProcessingStatus"
+                    text: backend.processStatus
                     font.pixelSize: SemanticTokens.fontSizeBody
                     font.family: SemanticTokens.fontFamily
                     color: root.textPrimary
+                    anchors.horizontalCenter: parent.horizontalCenter
                 }
-                Row {
+
+                Text {
+                    visible: !backend.processIndeterminate
+                    text: backend.processProgress + "%"
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
+                    color: root.textSecondary
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // MP4, GIF and WebP exports stop between frames; the recording and
+                // edits stay, so the user can change settings and save again.
+                DialogButton {
+                    objectName: "previewCancelExportButton"
+                    text: qsTr("Cancel")
+                    style: "secondary"
+                    visible: backend.canCancelExport && !backend.exportCloseQuestionPending
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Cancel Export")
+                    onClicked: backend.cancelExport()
+                }
+
+                // The window was closed during an export: keep it or cancel it.
+                Column {
+                    objectName: "previewExportCloseQuestion"
+                    visible: backend.exportCloseQuestionPending
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: SemanticTokens.spacing8
-                    DialogButton {
-                        objectName: "previewKeepExportingButton"
-                        text: qsTr("Keep Exporting")
-                        style: "primary"
-                        Accessible.role: Accessible.Button
-                        Accessible.name: text
-                        onClicked: backend.keepExporting()
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: qsTr("An export is in progress. Keep exporting or cancel it?")
+                        font.pixelSize: SemanticTokens.fontSizeBody
+                        font.family: SemanticTokens.fontFamily
+                        color: root.textPrimary
                     }
-                    DialogButton {
-                        objectName: "previewCancelExportFromCloseButton"
-                        text: qsTr("Cancel Export")
-                        style: "secondary"
-                        Accessible.role: Accessible.Button
-                        Accessible.name: text
-                        onClicked: backend.cancelExportFromClose()
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: SemanticTokens.spacing8
+                        DialogButton {
+                            objectName: "previewKeepExportingButton"
+                            text: qsTr("Keep Exporting")
+                            style: "primary"
+                            Accessible.role: Accessible.Button
+                            Accessible.name: text
+                            onClicked: backend.keepExporting()
+                        }
+                        DialogButton {
+                            objectName: "previewCancelExportFromCloseButton"
+                            text: qsTr("Cancel Export")
+                            style: "secondary"
+                            Accessible.role: Accessible.Button
+                            Accessible.name: text
+                            onClicked: backend.cancelExportFromClose()
+                        }
                     }
                 }
             }

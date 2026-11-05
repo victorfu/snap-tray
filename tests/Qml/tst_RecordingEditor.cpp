@@ -21,6 +21,7 @@
 #include "recording/AudioTracks.h"
 #include "recording/PreviewEditHistory.h"
 #include "recording/RecordingProject.h"
+#include "settings/RecordingSettingsManager.h"
 
 class tst_RecordingEditor : public QObject
 {
@@ -58,12 +59,16 @@ private slots:
     void canvasClickSelectsObjects();
     void backgroundImageShowsThumbnail();
     void splitMarkerKeepsKeyboard();
+    void exportProgressSitsOnPanel();
     void designEvidence_data();
     void designEvidence();
     void designEvidenceError_data();
     void designEvidenceError();
     void operationVideo_data();
     void operationVideo();
+    void operationVideoReopen();
+    void designEvidenceStates_data();
+    void designEvidenceStates();
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
     static QQuickItem* item(QQuickView* view, const char* name);
@@ -78,13 +83,13 @@ private:
     }
 };
 namespace {
-bool writeRecording(const QString& path, int fps = 10)
+bool writeRecording(const QString& path, int fps = 10, int frames = 20, QSize size = QSize(160, 90))
 {
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
-    if (!encoder || !encoder->start(path, QSize(160, 90), fps)) return false;
-    QImage frame(QSize(160, 90), QImage::Format_ARGB32);
-    for (int i = 0; i < 20; ++i) {
-        frame.fill(QColor::fromHsv(i * 18, 200, 200));
+    if (!encoder || !encoder->start(path, size, fps)) return false;
+    QImage frame(size, QImage::Format_ARGB32);
+    for (int i = 0; i < frames; ++i) {
+        frame.fill(QColor::fromHsv((i * 18) % 360, 200, 200));
         const qint64 before = encoder->framesWritten();
         QElapsedTimer wait;
         wait.start();
@@ -108,6 +113,8 @@ class FrameRecorder
 {
 public:
     FrameRecorder(QQuickView* view, const QString& dir) : m_view(view), m_dir(dir) { QDir().mkpath(dir); }
+    // A scenario that closes the editor and opens it again continues in the new window.
+    void setView(QQuickView* view) { m_view = view; }
     void caption(const QString& text) { m_caption = text; }
     void frame(int hold = 1)
     {
@@ -2067,6 +2074,278 @@ void tst_RecordingEditor::operationVideo()
         QFile::remove(saveRequested.first().at(0).toString());
     }
     backend.discard();
+}
+
+// #220: the export status is read on an opaque panel, not straight over
+// whatever frame the video shows behind the dimmed overlay.
+void tst_RecordingEditor::exportProgressSitsOnPanel()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video, 30, 240, QSize(1280, 720)));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    backend.save();
+    QTRY_VERIFY(backend.isProcessing());
+    QQuickItem* card = item(view, "previewProcessingCard");
+    QVERIFY(card);
+    QVERIFY(card->isVisible());
+    QCOMPARE(card->property("color").value<QColor>().alpha(), 255);
+    QQuickItem* status = item(view, "previewProcessingStatus");
+    QVERIFY(status);
+    QVERIFY(card->isAncestorOf(status));
+    QVERIFY(card->isAncestorOf(item(view, "previewCancelExportButton")));
+    // Inside the window, with the close question's longer text too.
+    view->close();
+    QTRY_VERIFY(backend.exportCloseQuestionPending());
+    const QRectF bounds = card->mapRectToScene(QRectF(0, 0, card->width(), card->height()));
+    QVERIFY(QRectF(0, 0, view->width(), view->height()).contains(bounds));
+    backend.cancelExportFromClose();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+}
+
+// #220: a kept project, from the first export to a second reopen, with real
+// input. Runs only when SNAPTRAY_EDITOR_VIDEO_DIR is set; writes
+// <dir>/220-reopen/frame-*.png.
+void tst_RecordingEditor::operationVideoReopen()
+{
+    const QString out = qEnvironmentVariable("SNAPTRAY_EDITOR_VIDEO_DIR");
+    if (out.isEmpty()) QSKIP("Set SNAPTRAY_EDITOR_VIDEO_DIR to record the operation videos");
+    const auto originalStyle = ToolbarStyleConfig::loadStyle();
+    auto restoreTheme = qScopeGuard([originalStyle] {
+        ToolbarStyleConfig::saveStyle(originalStyle);
+        DesignSystem::instance().refreshTheme();
+    });
+    ToolbarStyleConfig::saveStyle(ToolbarStyleType::Dark);
+    DesignSystem::instance().refreshTheme();
+    QTemporaryDir dir;
+    auto& settings = RecordingSettingsManager::instance();
+    const bool keptBefore = settings.keepProjects();
+    auto restoreProjects = qScopeGuard([&settings, keptBefore] {
+        settings.setKeepProjects(keptBefore);
+        SnapTray::RecordingProjects::setRootForTests(QString());
+    });
+    SnapTray::RecordingProjects::setRootForTests(dir.filePath(QStringLiteral("projects")));
+    settings.setKeepProjects(true);
+    const QString video = dir.filePath(QStringLiteral("demo-recording.mp4"));
+    QVERIFY(writeRecording(video, 5)); // 4 s
+    FrameRecorder rec(nullptr, out + QStringLiteral("/220-reopen"));
+
+    // As the library opens a project: the editor first, then the project.
+    const auto open = [&](RecordingPreviewBackend& backend, const SnapTray::RecordingProject* project) -> QQuickView* {
+        QQuickView* view = openPreview(backend);
+        if (!view) return nullptr;
+        if (project) backend.setProject(*project);
+        view->resize(1200, 800);
+        if (!QTest::qWaitFor([&] { return backend.duration() > 0 && !backend.projectLoading(); }, 10000)) return nullptr;
+        QMetaObject::invokeMethod(view->rootObject(), "openSection", Q_ARG(QVariant, ""));
+        rec.setView(view);
+        return view;
+    };
+    const auto find = [](QQuickView* view, const QString& name) -> QQuickItem* {
+        QQuickItem* found = nullptr;
+        QTest::qWaitFor([&] { return (found = delegate(view, name)) != nullptr && found->isVisible(); }, 3000);
+        return found;
+    };
+    // Export as GIF; the save dialog is replaced by a rename into the folder.
+    const auto exportAs = [&](RecordingPreviewBackend& backend, QQuickView* view, const QString& name) {
+        QSignalSpy saveRequested(&backend, &RecordingPreviewBackend::saveRequested);
+        QSignalSpy closed(&backend, &RecordingPreviewBackend::closed);
+        rec.click(rec.centerOf(item(view, "previewExportOptions")), 10);
+        QObject* panel = view->rootObject()->findChild<QObject*>("previewExportPanel");
+        QTRY_VERIFY(panel->property("opened").toBool());
+        QQuickItem* saveButton = delegate(view, QStringLiteral("previewSaveButton"));
+        QVERIFY(saveButton);
+        rec.click(rec.centerOf(saveButton), 2);
+        for (int i = 0; i < 300 && saveRequested.isEmpty(); ++i) {
+            rec.frame();
+            QTest::qWait(50);
+        }
+        QVERIFY(!saveRequested.isEmpty());
+        const QString saved = dir.filePath(name);
+        QVERIFY(QFile::rename(saveRequested.first().at(0).toString(), saved));
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, saved);
+        QTRY_COMPARE(closed.count(), 1);
+    };
+
+    // 1. A new recording: a title and a mask, exported.
+    {
+        RecordingPreviewBackend backend(video);
+        backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+        QQuickView* view = open(backend, nullptr);
+        QVERIFY(view);
+        QVERIFY(seek(view, 600));
+        rec.caption(QStringLiteral("#220 · A kept recording: edit, export, reopen, change, undo/redo, export, reopen"));
+        rec.frame(14);
+        rec.caption(QStringLiteral("Add a title and a mask"));
+        rec.click(rec.centerOf(item(view, "previewAddEffect")), 6);
+        QQuickItem* addText = item(view, "previewAddText");
+        QTRY_VERIFY(addText->isVisible());
+        rec.click(rec.centerOf(addText), 6);
+        QQuickItem* textField = item(view, "previewOverlayText");
+        QTRY_VERIFY(textField->isVisible());
+        rec.click(rec.centerOf(textField), 4);
+        QMetaObject::invokeMethod(textField, "selectAll");
+        rec.type(QStringLiteral("Version 1"));
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
+        QVERIFY(seek(view, 1500));
+        rec.click(rec.centerOf(item(view, "previewAddEffect")), 6);
+        QQuickItem* addMask = item(view, "previewAddMask");
+        QTRY_VERIFY(addMask->isVisible());
+        rec.click(rec.centerOf(addMask), 10);
+        rec.key(Qt::Key_Escape, Qt::NoModifier, 6);
+        rec.caption(QStringLiteral("Export: the recording is kept in Recording Library with its edits"));
+        exportAs(backend, view, QStringLiteral("first.gif"));
+    }
+    QList<SnapTray::RecordingProject> projects = SnapTray::RecordingProjects::list();
+    QCOMPARE(projects.size(), 1);
+
+    // 2. Reopened: the edits are there; a change, undone and redone, exported.
+    {
+        RecordingPreviewBackend backend(projects.first().videoPath(), true);
+        QQuickView* view = open(backend, &projects.first());
+        QVERIFY(view);
+        QCOMPARE(backend.overlays().size(), 1);
+        QCOMPARE(backend.masks().size(), 1);
+        QVERIFY(seek(view, 1600));
+        rec.caption(QStringLiteral("Reopened from Recording Library: \"Editable project\", the title and the mask are back"));
+        rec.frame(20);
+        rec.caption(QStringLiteral("Change: select the mask and delete it"));
+        QQuickItem* maskBlock = find(view, QStringLiteral("previewMaskSegment0"));
+        QVERIFY(maskBlock);
+        rec.click(rec.centerOf(maskBlock), 8);
+        QCOMPARE(backend.selectedMask(), 0);
+        rec.key(Qt::Key_Delete, Qt::NoModifier, 12);
+        QCOMPARE(backend.masks().size(), 0);
+        rec.caption(QStringLiteral("Undo brings the mask back"));
+        rec.click(rec.centerOf(item(view, "previewUndoButton")), 14);
+        QCOMPARE(backend.masks().size(), 1);
+        rec.caption(QStringLiteral("Redo deletes it again"));
+        rec.click(rec.centerOf(item(view, "previewRedoButton")), 14);
+        QCOMPARE(backend.masks().size(), 0);
+        rec.caption(QStringLiteral("Export again: the project now keeps the title only"));
+        exportAs(backend, view, QStringLiteral("second.gif"));
+    }
+    projects = SnapTray::RecordingProjects::list();
+    QCOMPARE(projects.size(), 1);
+
+    // 3. Reopened again: the second export's edits.
+    {
+        RecordingPreviewBackend backend(projects.first().videoPath(), true);
+        QQuickView* view = open(backend, &projects.first());
+        QVERIFY(view);
+        QCOMPARE(backend.overlays().size(), 1);
+        QCOMPARE(backend.masks().size(), 0);
+        QVERIFY(seek(view, 1600));
+        rec.caption(QStringLiteral("Reopened again: the title is kept and the deleted mask stays deleted"));
+        rec.frame(12);
+        QQuickItem* textBlock = find(view, QStringLiteral("previewOverlaySegment0"));
+        QVERIFY(textBlock);
+        rec.click(rec.centerOf(textBlock), 20);
+        QCOMPARE(backend.selectedOverlay(), 0);
+        backend.discard();
+    }
+}
+
+void tst_RecordingEditor::designEvidenceStates_data()
+{
+    designEvidence_data();
+}
+
+// #220: the states around an export and a kept project, for the same review
+// set as designEvidence. Runs only when SNAPTRAY_EDITOR_DESIGN_DIR is set.
+void tst_RecordingEditor::designEvidenceStates()
+{
+    const QString out = qEnvironmentVariable("SNAPTRAY_EDITOR_DESIGN_DIR");
+    if (out.isEmpty()) QSKIP("Set SNAPTRAY_EDITOR_DESIGN_DIR to capture design screenshots");
+    QFETCH(bool, dark);
+    const QString theme = dark ? QStringLiteral("dark") : QStringLiteral("light");
+    const auto originalStyle = ToolbarStyleConfig::loadStyle();
+    auto restoreTheme = qScopeGuard([originalStyle] {
+        ToolbarStyleConfig::saveStyle(originalStyle);
+        DesignSystem::instance().refreshTheme();
+    });
+    ToolbarStyleConfig::saveStyle(dark ? ToolbarStyleType::Dark : ToolbarStyleType::Light);
+    DesignSystem::instance().refreshTheme();
+    QDir().mkpath(out);
+    QTemporaryDir dir;
+    const auto shot = [&](QQuickView* view, const QString& name) {
+        for (int i = 0; i < 3; ++i) {
+            QSignalSpy frame(view, &QQuickWindow::afterAnimating);
+            view->requestUpdate();
+            frame.wait(500);
+        }
+        return view->grabWindow().save(out + "/" + name + "-" + theme + ".png");
+    };
+
+    // Exporting, the close question during it, and the result of cancelling.
+    // A longer, larger recording so the export is still running when grabbed.
+    {
+        const QString video = dir.filePath(QStringLiteral("demo-recording.mp4"));
+        QVERIFY(writeRecording(video, 30, 240, QSize(1280, 720)));
+        RecordingPreviewBackend backend(video);
+        backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+        QQuickView* view = openPreview(backend);
+        QVERIFY(view);
+        view->resize(1200, 800);
+        QTRY_VERIFY(backend.duration() > 0);
+        QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openSection", Q_ARG(QVariant, "")));
+        backend.setAppearanceEnabled(true);
+        backend.setAppearancePadding(2);
+        QVERIFY(backend.addTextOverlay(500) >= 0);
+        backend.setOverlayText(0, QStringLiteral("Release notes"));
+        backend.setSelectedOverlay(-1);
+        backend.save();
+        QTRY_VERIFY(backend.isProcessing());
+        QTRY_VERIFY_WITH_TIMEOUT(backend.processProgress() > 5 || !backend.isProcessing(), 20000);
+        QVERIFY2(backend.isProcessing(), "the export finished before it could be grabbed");
+        QVERIFY(shot(view, QStringLiteral("15-exporting")));
+        view->close(); // the window's close button
+        QTRY_VERIFY(backend.exportCloseQuestionPending());
+        QVERIFY(shot(view, QStringLiteral("16-close-while-exporting")));
+        backend.keepExporting();
+        QTRY_VERIFY(!backend.exportCloseQuestionPending());
+        backend.cancelExport();
+        QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+        QVERIFY(shot(view, QStringLiteral("17-export-cancelled")));
+        // Cancelling keeps the edits.
+        QCOMPARE(backend.overlays().size(), 1);
+        QVERIFY(backend.appearanceEnabled());
+        backend.discard();
+    }
+
+    // A reopened project: the header says so and the saved edits are back.
+    {
+        const QString video = dir.filePath(QStringLiteral("recording.mp4"));
+        QVERIFY(writeRecording(video));
+        SnapTray::PreviewEditState state;
+        SnapTray::RedactionMask mask;
+        mask.rect = QRect(20, 20, 60, 30);
+        mask.startMs = 0;
+        mask.endMs = 1500;
+        state.redaction.masks = {mask};
+        SnapTray::RecordingProject project;
+        project.dir = dir.path();
+        project.videoName = QStringLiteral("recording.mp4");
+        project.recipe = SnapTray::RecordingRecipe::toJson(state, {});
+        RecordingPreviewBackend backend(project.videoPath(), true);
+        backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+        QQuickView* view = openPreview(backend);
+        QVERIFY(view);
+        backend.setProject(project);
+        view->resize(1200, 800);
+        QTRY_VERIFY_WITH_TIMEOUT(!backend.projectLoading(), 10000);
+        QCOMPARE(backend.masks().size(), 1);
+        QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openSection", Q_ARG(QVariant, "")));
+        QVERIFY(seek(view, 500));
+        QVERIFY(shot(view, QStringLiteral("18-reopened-project")));
+        backend.discard();
+    }
 }
 
 void tst_RecordingEditor::dialogButtonPreservesMouseFocus()
