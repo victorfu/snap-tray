@@ -21,6 +21,7 @@ class TestArrowAnnotation : public QObject
     Q_OBJECT
 
 private slots:
+    void styleSettersChangeRendering();
     // Construction tests
     void testConstruction_BasicArrow();
     void testConstruction_WithColor();
@@ -480,6 +481,28 @@ void TestArrowAnnotation::testDraw_CurvedArrow()
         }
     }
     QVERIFY(hasColorInCurveArea);
+}
+
+
+void TestArrowAnnotation::styleSettersChangeRendering()
+{
+    ArrowAnnotation arrow(QPoint(10, 20), QPoint(90, 20), Qt::red, 3);
+    const QRect before = arrow.boundingRect();
+    arrow.setColor(Qt::blue);
+    arrow.setWidth(12);
+    arrow.setLineStyle(LineStyle::Dashed);
+    QCOMPARE(arrow.color(), QColor(Qt::blue));
+    QCOMPARE(arrow.width(), 12);
+    QCOMPARE(arrow.lineStyle(), LineStyle::Dashed);
+    QVERIFY(arrow.boundingRect().height() > before.height());
+    arrow.setLineStyle(LineStyle::Solid);
+    QImage image(100, 40, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter p(&image);
+    arrow.draw(p);
+    p.end();
+    QCOMPARE(QColor(image.pixel(30, 20)).blue(), 255);
+    QCOMPARE(QColor(image.pixel(30, 20)).red(), 0);
 }
 
 QTEST_MAIN(TestArrowAnnotation)

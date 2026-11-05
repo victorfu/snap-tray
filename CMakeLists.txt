@@ -304,6 +304,7 @@ add_library(snaptray_core STATIC
     src/annotations/ArrowAnnotation.cpp
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
+    src/annotations/AnnotationStyle.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/EmojiStickerAnnotation.cpp
     src/annotations/TextBoxAnnotation.cpp
@@ -834,6 +835,7 @@ add_library(snaptray_ui STATIC
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp
+    src/annotation/AnnotationStyleEditor.cpp
     src/annotation/AnnotationRenderHelper.cpp
     src/cursor/CursorManager.cpp
 
@@ -950,6 +952,7 @@ add_library(snaptray_ui STATIC
 
     # Headers with Q_OBJECT for MOC processing
     include/annotations/AnnotationLayer.h
+    include/annotation/AnnotationStyleEditor.h
     include/cursor/CursorManager.h
     include/InlineTextEditor.h
     include/TransformationGizmo.h
@@ -1140,6 +1143,7 @@ set(SNAPTRAY_QML_NATIVE_SOURCES
     src/qml/QmlCountdownOverlay.mm
     src/qml/RecordingPreviewBackend.mm
     src/qml/QmlWindowedToolbar.mm
+    src/qml/ToolbarOverflowPopup.mm
     src/qml/QmlFloatingToolbar.mm
     src/qml/QmlFloatingSubToolbar.mm
     src/qml/ToolbarTooltipController.mm
@@ -1279,6 +1283,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/PinToolbarViewModel.cpp
         include/qml/PinToolbarViewModel.h
         include/qml/QmlWindowedToolbar.h
+        include/qml/ToolbarOverflowPopup.h
         src/qml/PinToolOptionsViewModel.cpp
         include/qml/PinToolOptionsViewModel.h
         src/qml/RegionToolbarViewModel.cpp

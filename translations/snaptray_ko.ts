@@ -296,7 +296,7 @@
 <context>
     <name>CanvasToolbarViewModel</name>
     <message>
-        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="32" />
+        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="34" />
         <source>Laser Pointer</source>
         <translation>레이저 포인터</translation>
     </message>
@@ -460,7 +460,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>FloatingToolbar</name>
     <message>
-        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="224" />
+        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="241" />
         <source>More</source>
         <translation>더 보기</translation>
     </message>
@@ -572,7 +572,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
-        <location filename="../src/PinWindow.cpp" line="1155" />
+        <location filename="../src/PinWindow.cpp" line="1157" />
         <source>Open History Folder</source>
         <translation>기록 폴더 열기</translation>
     </message>
@@ -1462,35 +1462,71 @@ Size: %2</source>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134" />
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="135" />
         <source>Automatically detect and blur faces and credentials</source>
         <translation>얼굴과 자격 증명을 자동으로 감지하여 블러 처리</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="474" />
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="483" />
+        <source>New object</source>
+        <translation>새 개체</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="477" />
+        <source>Text</source>
+        <translation>텍스트</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="478" />
+        <source>Arrow</source>
+        <translation>화살표</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="479" />
+        <source>Line</source>
+        <translation>선</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="481" />
+        <source>Ellipse</source>
+        <translation>타원</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="481" />
+        <source>Rectangle</source>
+        <translation>사각형</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="485" />
+        <source>Selected: %1</source>
+        <translation>선택됨: %1</translation>
     </message>
 </context>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1129" />
+        <location filename="../src/PinWindow.cpp" line="1131" />
         <source>Show Toolbar</source>
         <translation>도구 모음 표시</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1135" />
+        <location filename="../src/PinWindow.cpp" line="1137" />
         <source>Show Border</source>
         <translation>테두리 표시</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1171" />
+        <location filename="../src/PinWindow.cpp" line="1173" />
         <source>Adjust Region Layout</source>
         <translation>영역 레이아웃 조정</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1144" />
+        <location filename="../src/PinWindow.cpp" line="1146" />
         <source>Copy to Clipboard</source>
         <translation>클립보드에 복사</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1148" />
+        <location filename="../src/PinWindow.cpp" line="1150" />
         <source>Save to file</source>
         <translation>파일로 저장</translation>
     </message>
@@ -1499,331 +1535,331 @@ Size: %2</source>
         <translation>캐시 폴더 열기</translation>
     </message>
     <message>
-        <location filename="../src/qml/PinToolbarViewModel.cpp" line="30" />
+        <location filename="../src/qml/PinToolbarViewModel.cpp" line="27" />
         <source>Beautify</source>
         <translation>꾸미기</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1161" />
+        <location filename="../src/PinWindow.cpp" line="1163" />
         <source>Click-through</source>
         <translation>클릭 통과</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1168" />
-        <location filename="../src/PinWindow.cpp" line="1522" />
-        <location filename="../src/PinWindow.cpp" line="1530" />
-        <location filename="../src/PinWindow.cpp" line="1544" />
-        <location filename="../src/PinWindow.cpp" line="1561" />
-        <location filename="../src/PinWindow.cpp" line="1573" />
+        <location filename="../src/PinWindow.cpp" line="1170" />
+        <location filename="../src/PinWindow.cpp" line="1524" />
+        <location filename="../src/PinWindow.cpp" line="1532" />
+        <location filename="../src/PinWindow.cpp" line="1546" />
+        <location filename="../src/PinWindow.cpp" line="1563" />
+        <location filename="../src/PinWindow.cpp" line="1575" />
         <source>Merge Pins</source>
         <translation>핀 병합</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1177" />
+        <location filename="../src/PinWindow.cpp" line="1179" />
         <source>Watermark</source>
         <translation>워터마크</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1180" />
+        <location filename="../src/PinWindow.cpp" line="1182" />
         <source>Enable</source>
         <translation>사용</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1191" />
+        <location filename="../src/PinWindow.cpp" line="1193" />
         <source>Position</source>
         <translation>위치</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1194" />
+        <location filename="../src/PinWindow.cpp" line="1196" />
         <source>Top-Left</source>
         <translation>왼쪽 위</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1199" />
+        <location filename="../src/PinWindow.cpp" line="1201" />
         <source>Top-Right</source>
         <translation>오른쪽 위</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1204" />
+        <location filename="../src/PinWindow.cpp" line="1206" />
         <source>Bottom-Left</source>
         <translation>왼쪽 아래</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1209" />
+        <location filename="../src/PinWindow.cpp" line="1211" />
         <source>Bottom-Right</source>
         <translation>오른쪽 아래</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1228" />
-        <location filename="../src/PinWindow.cpp" line="1322" />
-        <location filename="../src/PinWindow.cpp" line="2163" />
+        <location filename="../src/PinWindow.cpp" line="1230" />
+        <location filename="../src/PinWindow.cpp" line="1324" />
+        <location filename="../src/PinWindow.cpp" line="2165" />
         <source>Zoom</source>
         <translation>확대/축소</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1231" />
+        <location filename="../src/PinWindow.cpp" line="1233" />
         <source>33.3%</source>
         <translation>33.3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1234" />
+        <location filename="../src/PinWindow.cpp" line="1236" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1237" />
+        <location filename="../src/PinWindow.cpp" line="1239" />
         <source>66.7%</source>
         <translation>66.7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1240" />
+        <location filename="../src/PinWindow.cpp" line="1242" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1243" />
+        <location filename="../src/PinWindow.cpp" line="1245" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1253" />
+        <location filename="../src/PinWindow.cpp" line="1255" />
         <source>Smoothing</source>
         <translation>부드럽게</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1262" />
+        <location filename="../src/PinWindow.cpp" line="1264" />
         <source>Image processing</source>
         <translation>이미지 처리</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1264" />
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>Rotate left</source>
         <translation>왼쪽으로 회전</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1267" />
+        <location filename="../src/PinWindow.cpp" line="1269" />
         <source>Rotate right</source>
         <translation>오른쪽으로 회전</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1270" />
+        <location filename="../src/PinWindow.cpp" line="1272" />
         <source>Horizontal flip</source>
         <translation>수평 뒤집기</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1273" />
+        <location filename="../src/PinWindow.cpp" line="1275" />
         <source>Vertical flip</source>
         <translation>수직 뒤집기</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1277" />
+        <location filename="../src/PinWindow.cpp" line="1279" />
         <source>Crop</source>
         <translation>자르기</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1286" />
-        <location filename="../src/PinWindow.cpp" line="1324" />
-        <location filename="../src/PinWindow.cpp" line="2165" />
+        <location filename="../src/PinWindow.cpp" line="1288" />
+        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="2167" />
         <source>Opacity</source>
         <translation>불투명도</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1289" />
+        <location filename="../src/PinWindow.cpp" line="1291" />
         <source>Increase by %1%</source>
         <translation>%1% 증가</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1296" />
+        <location filename="../src/PinWindow.cpp" line="1298" />
         <source>Decrease by %1%</source>
         <translation>%1% 감소</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1306" />
+        <location filename="../src/PinWindow.cpp" line="1308" />
         <source>Copy All</source>
         <translation>모두 복사</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1321" />
-        <location filename="../src/PinWindow.cpp" line="2162" />
+        <location filename="../src/PinWindow.cpp" line="1323" />
+        <location filename="../src/PinWindow.cpp" line="2164" />
         <source>Size</source>
         <translation>크기</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1323" />
-        <location filename="../src/PinWindow.cpp" line="2164" />
+        <location filename="../src/PinWindow.cpp" line="1325" />
+        <location filename="../src/PinWindow.cpp" line="2166" />
         <source>Rotation</source>
         <translation>회전</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
         <source>X-mirror</source>
         <translation>X축 미러</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>Y-mirror</source>
         <translation>Y축 미러</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="1972" />
-        <location filename="../src/PinWindow.cpp" line="1973" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>Yes</source>
         <translation>예</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="1972" />
-        <location filename="../src/PinWindow.cpp" line="1973" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>No</source>
         <translation>아니요</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1332" />
-        <location filename="../src/PinWindow.cpp" line="3040" />
+        <location filename="../src/PinWindow.cpp" line="1334" />
+        <location filename="../src/PinWindow.cpp" line="3042" />
         <source>Start Live Update</source>
         <translation>실시간 업데이트 시작</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1968" />
+        <location filename="../src/PinWindow.cpp" line="1970" />
         <source>Size: %1</source>
         <translation>크기: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3040" />
+        <location filename="../src/PinWindow.cpp" line="3042" />
         <source>Stop Live Update</source>
         <translation>실시간 업데이트 중지</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1343" />
-        <location filename="../src/PinWindow.cpp" line="3044" />
+        <location filename="../src/PinWindow.cpp" line="1345" />
+        <location filename="../src/PinWindow.cpp" line="3046" />
         <source>Pause Live Update</source>
         <translation>실시간 업데이트 일시 중지</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3044" />
+        <location filename="../src/PinWindow.cpp" line="3046" />
         <source>Resume Live Update</source>
         <translation>실시간 업데이트 재개</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1354" />
+        <location filename="../src/PinWindow.cpp" line="1356" />
         <source>Frame Rate</source>
         <translation>프레임 속도</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1140" />
+        <location filename="../src/PinWindow.cpp" line="1142" />
         <source>Move to Screen</source>
         <translation>화면으로 이동</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1357" />
+        <location filename="../src/PinWindow.cpp" line="1359" />
         <source>%1 FPS</source>
         <translation>%1 프레임/초</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1371" />
+        <location filename="../src/PinWindow.cpp" line="1373" />
         <source>Close</source>
         <translation>닫기</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1375" />
+        <location filename="../src/PinWindow.cpp" line="1377" />
         <source>Close All Pins</source>
         <translation>모든 핀 닫기</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1475" />
+        <location filename="../src/PinWindow.cpp" line="1477" />
         <source>Screen %1</source>
         <translation>화면 %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1477" />
+        <location filename="../src/PinWindow.cpp" line="1479" />
         <source> (Primary)</source>
         <translation> (기본)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1523" />
+        <location filename="../src/PinWindow.cpp" line="1525" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>한 번에 %1개 이상의 핀을 병합할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1531" />
+        <location filename="../src/PinWindow.cpp" line="1533" />
         <source>Need at least 2 pins to merge</source>
         <translation>병합하려면 최소 2개의 핀이 필요합니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1545" />
+        <location filename="../src/PinWindow.cpp" line="1547" />
         <source>No primary screen available</source>
         <translation>기본 화면을 사용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1574" />
+        <location filename="../src/PinWindow.cpp" line="1576" />
         <source>Failed to create merged pin</source>
         <translation>병합된 핀 생성에 실패했습니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1644" />
-        <location filename="../src/PinWindow.cpp" line="1676" />
+        <location filename="../src/PinWindow.cpp" line="1646" />
+        <location filename="../src/PinWindow.cpp" line="1678" />
         <source>Failed to save screenshot: %1</source>
         <translation>스크린샷 저장에 실패했습니다: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1659" />
         <source>Save Screenshot</source>
         <translation>스크린샷 저장</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1659" />
-        <location filename="../src/PinWindow.cpp" line="6155" />
+        <location filename="../src/PinWindow.cpp" line="1661" />
+        <location filename="../src/PinWindow.cpp" line="6205" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG 이미지 (*.png);;JPEG 이미지 (*.jpg *.jpeg);;모든 파일 (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1689" />
-        <location filename="../src/PinWindow.cpp" line="1710" />
-        <location filename="../src/PinWindow.cpp" line="6059" />
-        <location filename="../src/PinWindow.cpp" line="6084" />
+        <location filename="../src/PinWindow.cpp" line="1691" />
+        <location filename="../src/PinWindow.cpp" line="1712" />
+        <location filename="../src/PinWindow.cpp" line="6109" />
+        <location filename="../src/PinWindow.cpp" line="6134" />
         <source>Copy failed</source>
         <translation>복사 실패</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1710" />
+        <location filename="../src/PinWindow.cpp" line="1712" />
         <source>Copied to clipboard</source>
         <translation>클립보드에 복사됨</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1722" />
-        <location filename="../src/PinWindow.cpp" line="5428" />
+        <location filename="../src/PinWindow.cpp" line="1724" />
+        <location filename="../src/PinWindow.cpp" line="5478" />
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
         <source>Please wait for auto-blur to finish</source>
         <translation>자동 블러가 완료될 때까지 기다려 주세요</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1864" />
-        <location filename="../src/PinWindow.cpp" line="1942" />
+        <location filename="../src/PinWindow.cpp" line="1866" />
+        <location filename="../src/PinWindow.cpp" line="1944" />
         <source>Copied %1 characters</source>
         <translation>%1자 복사됨</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1868" />
+        <location filename="../src/PinWindow.cpp" line="1870" />
         <source>No text found</source>
         <translation>텍스트를 찾을 수 없음</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1873" />
-        <location filename="../src/PinWindow.cpp" line="1889" />
+        <location filename="../src/PinWindow.cpp" line="1875" />
+        <location filename="../src/PinWindow.cpp" line="1891" />
         <source>Text copied</source>
         <translation>텍스트 복사됨</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1953" />
+        <location filename="../src/PinWindow.cpp" line="1955" />
         <source>No QR code found</source>
         <translation>QR 코드를 찾을 수 없음</translation>
     </message>
@@ -1832,85 +1868,85 @@ Size: %2</source>
         <translation>크기: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1969" />
+        <location filename="../src/PinWindow.cpp" line="1971" />
         <source>Zoom: %1%</source>
         <translation>확대/축소: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1970" />
+        <location filename="../src/PinWindow.cpp" line="1972" />
         <source>Rotation: %1°</source>
         <translation>회전: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1971" />
+        <location filename="../src/PinWindow.cpp" line="1973" />
         <source>Opacity: %1%</source>
         <translation>불투명도: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1972" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
         <source>X-mirror: %1</source>
         <translation>X축 미러: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1973" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
         <source>Y-mirror: %1</source>
         <translation>Y축 미러: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4828" />
+        <location filename="../src/PinWindow.cpp" line="4873" />
         <source>Stop live capture before running auto-blur</source>
         <translation>자동 블러를 실행하기 전에 실시간 캡처를 중지하세요</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4851" />
+        <location filename="../src/PinWindow.cpp" line="4896" />
         <source>Face detection unavailable</source>
         <translation>얼굴 감지를 사용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4861" />
+        <location filename="../src/PinWindow.cpp" line="4906" />
         <source>Detection unavailable</source>
         <translation>감지를 사용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4891" />
+        <location filename="../src/PinWindow.cpp" line="4936" />
         <source>Unable to snapshot the current image</source>
         <translation>현재 이미지의 스냅숏을 만들 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6064" />
-        <location filename="../src/PinWindow.cpp" line="6128" />
-        <location filename="../src/PinWindow.cpp" line="6164" />
+        <location filename="../src/PinWindow.cpp" line="6114" />
+        <location filename="../src/PinWindow.cpp" line="6178" />
+        <location filename="../src/PinWindow.cpp" line="6214" />
         <source>Beautify rendering failed</source>
         <translation>꾸미기 렌더링 실패</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5953" />
+        <location filename="../src/PinWindow.cpp" line="6003" />
         <source>Unable to apply region layout</source>
         <translation>영역 레이아웃을 적용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6084" />
+        <location filename="../src/PinWindow.cpp" line="6134" />
         <source>Beautified image copied</source>
         <translation>꾸민 이미지 복사됨</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1592" />
-        <location filename="../src/PinWindow.cpp" line="1630" />
-        <location filename="../src/PinWindow.cpp" line="1664" />
-        <location filename="../src/PinWindow.cpp" line="6097" />
-        <location filename="../src/PinWindow.cpp" line="6123" />
-        <location filename="../src/PinWindow.cpp" line="6159" />
+        <location filename="../src/PinWindow.cpp" line="1594" />
+        <location filename="../src/PinWindow.cpp" line="1632" />
+        <location filename="../src/PinWindow.cpp" line="1666" />
+        <location filename="../src/PinWindow.cpp" line="6147" />
+        <location filename="../src/PinWindow.cpp" line="6173" />
+        <location filename="../src/PinWindow.cpp" line="6209" />
         <source>No image available to save</source>
         <translation>저장할 이미지가 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6143" />
-        <location filename="../src/PinWindow.cpp" line="6178" />
+        <location filename="../src/PinWindow.cpp" line="6193" />
+        <location filename="../src/PinWindow.cpp" line="6228" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>꾸민 스크린샷 저장에 실패했습니다: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6153" />
+        <location filename="../src/PinWindow.cpp" line="6203" />
         <source>Save Beautified Screenshot</source>
         <translation>꾸민 스크린샷 저장</translation>
     </message>
@@ -2796,31 +2832,31 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>내보낸 파일에서 민감한 영역 가리기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3410" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3441" />
         <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
         <translation>마스크: %1, 내보내기에 적용됨. 마스크 없는 임시 파일은 저장 후 삭제됩니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1028" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1046" />
         <source>Selected mask</source>
         <translation>선택한 마스크</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="70" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1967" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2008" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2010" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2048" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1997" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2038" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2040" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2078" />
         <source>the end</source>
         <translation>끝</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1966" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1996" />
         <source>Mask from %1 to %2</source>
         <translation>마스크 (%1~%2)</translation>
     </message>
@@ -2833,17 +2869,17 @@ Size: %2</source>
         <translation>이 마스크 삭제</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2396" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2426" />
         <source>Mask end</source>
         <translation>마스크 끝</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2414" />
         <source>Mask start</source>
         <translation>마스크 시작</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2365" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2395" />
         <source>Mask for the whole recording, or only for a time range</source>
         <translation>전체 녹화 또는 특정 구간에만 마스크</translation>
     </message>
@@ -2879,12 +2915,12 @@ Size: %2</source>
         <translation>마스크: %1, 내보내기에 적용됨. 원본은 그대로 유지</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3411" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3442" />
         <source>masks need GIF or WebP on this system</source>
         <translation>이 시스템에서는 마스크에 GIF 또는 WebP가 필요합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
         <source>Masks need GIF or WebP on this system</source>
         <translation>이 시스템에서는 마스크에 GIF 또는 WebP가 필요합니다</translation>
     </message>
@@ -2893,17 +2929,17 @@ Size: %2</source>
         <translation>내보내기에서 민감한 영역을 가립니다. 원본 녹화는 바뀌지 않습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1403" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
         <source>Add Mask</source>
         <translation>마스크 추가</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1396" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1414" />
         <source>No room for a new zoom here</source>
         <translation>여기에는 새 확대를 넣을 공간이 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1929" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1959" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>확대 %1× (%2~%3)</translation>
     </message>
@@ -2924,7 +2960,7 @@ Size: %2</source>
         <translation>삭제</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3266" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3297" />
         <source>Turn all zooms on or off without deleting them</source>
         <translation>모든 확대를 삭제하지 않고 켜거나 끄기</translation>
     </message>
@@ -2937,7 +2973,7 @@ Size: %2</source>
         <translation>확대 켬</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3273" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3304" />
         <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
         <translation>모든 구간의 확대를 부드럽게: 더 작고 느리게, 직접 이동 없음</translation>
     </message>
@@ -2946,100 +2982,100 @@ Size: %2</source>
         <translation>움직임 줄이기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3231" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
         <source>Zoom end</source>
         <translation>확대 끝</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3251" />
         <source>Zoom start</source>
         <translation>확대 시작</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
         <source>Zoom: %1</source>
         <translation>확대: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
         <source>Add a zoom at the playhead</source>
         <translation>재생 위치에 확대 추가</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1387" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
         <source>Add Zoom</source>
         <translation>확대 추가</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1380" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1398" />
         <source>No clicks to zoom in on</source>
         <translation>확대할 클릭이 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1379" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1397" />
         <source>Zooms added: %1</source>
         <translation>추가된 확대: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1373" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1391" />
         <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
         <translation>자동 확대에는 기록된 클릭이 필요합니다. 대신 직접 확대를 추가하세요</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1372" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1390" />
         <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
         <translation>클릭 위치를 자동으로 확대합니다. 직접 추가하거나 변경한 확대는 유지됩니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1370" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
         <source>Auto Zoom</source>
         <translation>자동 확대</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2500" />
         <source>Highlight Clicks</source>
         <translation>클릭 강조</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2500" />
         <source>Hide Click Highlights</source>
         <translation>클릭 강조 숨기기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2499" />
         <source>Clicks</source>
         <translation>클릭</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2459" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2489" />
         <source>Smooths the pointer's path; clicks stay where they happened</source>
         <translation>포인터 경로를 부드럽게 합니다. 클릭 위치는 그대로입니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
         <source>Pointer Size: %1</source>
         <translation>포인터 크기: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
         <source>Show the Mouse Pointer</source>
         <translation>마우스 포인터 표시</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
         <source>Hide the Mouse Pointer</source>
         <translation>마우스 포인터 숨기기</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1524" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2230" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2439" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1542" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2260" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
         <source>Pointer</source>
         <translation>포인터</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3407" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3438" />
         <source>pointer effects need GIF or WebP on this system</source>
         <translation>이 시스템에서는 포인터 효과에 GIF 또는 WebP가 필요합니다</translation>
     </message>
@@ -3060,33 +3096,33 @@ Size: %2</source>
         <translation>부드럽게: 끔</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3898" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3929" />
         <source>Save again with the current settings</source>
         <translation>현재 설정으로 다시 저장</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3896" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3927" />
         <source>Try Again</source>
         <translation>다시 시도</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3714" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3745" />
         <source>Keep Exporting</source>
         <translation>내보내기 계속</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3704" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3735" />
         <source>An export is in progress. Keep exporting or cancel it?</source>
         <translation>내보내기가 진행 중입니다. 계속할까요, 취소할까요?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3691" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="3722" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3753" />
         <source>Cancel Export</source>
         <translation>내보내기 취소</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1195" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1213" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>자르기 적용 (Enter) · 화살표 키로 2px 이동 (Shift: 10px)</translation>
     </message>
@@ -3095,96 +3131,96 @@ Size: %2</source>
         <translation>원본과 비교 (\)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1224" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1242" />
         <source>Compare with Original</source>
         <translation>원본과 비교</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1236" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1239" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1257" />
         <source>Reset Crop and Trim</source>
         <translation>자르기 및 트림 초기화</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="671" />
         <source>Redo Edit</source>
         <translation>편집 다시 실행</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="658" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
         <source>Redo Edit (Ctrl+Shift+Z)</source>
         <translation>편집 다시 실행 (Ctrl+Shift+Z)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="648" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="660" />
         <source>Undo Edit</source>
         <translation>편집 실행 취소</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="647" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
         <source>Undo Edit (Ctrl+Z)</source>
         <translation>편집 실행 취소 (Ctrl+Z)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3358" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3389" />
         <source>Crop %1 in pixels</source>
         <translation>자르기 %1(픽셀)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3339" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3370" />
         <source>H</source>
         <translation>높이</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3338" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3369" />
         <source>W</source>
         <translation>너비</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3337" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3368" />
         <source>Y</source>
         <translation>Y</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3336" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3367" />
         <source>X</source>
         <translation>X</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3317" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3348" />
         <source>Crop aspect: %1</source>
         <translation>자르기 비율: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1351" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1369" />
         <source>Trim end</source>
         <translation>트림 끝</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1337" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1355" />
         <source>Trim start</source>
         <translation>트림 시작</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3405" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3436" />
         <source>no audio</source>
         <translation>오디오 없음</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3403" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3434" />
         <source>%1 kept</source>
         <translation>%1 유지</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3402" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3433" />
         <source>Original %1 → Output %2</source>
         <translation>원본 %1 → 출력 %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="203" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="248" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3064" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3542" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3095" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3573" />
         <source>Original</source>
         <translation>원본</translation>
     </message>
@@ -3194,37 +3230,37 @@ Size: %2</source>
         <translation>자유</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
         <source>Discard</source>
         <translation>삭제</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
         <source>Keep Recording</source>
         <translation>녹화 유지</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3817" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3848" />
         <source>The video will be deleted and cannot be recovered.</source>
         <translation>동영상이 삭제되며 복구할 수 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
         <source>Discard this recording?</source>
         <translation>이 녹화를 삭제할까요?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3517" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3548" />
         <source>Clear Crop</source>
         <translation>자르기 영역 지우기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3567" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3598" />
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>창을 클릭하면 그 창에 맞춰 자르고, 드래그하면 직접 그릴 수 있습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3593" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3624" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>이 미리보기에서는 오디오를 재생할 수 없습니다.</translation>
     </message>
@@ -3241,12 +3277,12 @@ Size: %2</source>
         <translation>WebP로 내보내기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1152" />
         <source>Pause Preview (Space)</source>
         <translation>미리 보기 일시 중지 (스페이스)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1152" />
         <source>Play Preview (Space)</source>
         <translation>미리 보기 재생 (스페이스)</translation>
     </message>
@@ -3255,42 +3291,42 @@ Size: %2</source>
         <translation>재생 속도: %1x</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1203" />
         <source>Unmute Preview (M)</source>
         <translation>미리 보기 음소거 해제 (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1203" />
         <source>Mute Preview (M)</source>
         <translation>미리 보기 음소거 (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1198" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1216" />
         <source>Apply Crop (Enter)</source>
         <translation>자르기 적용 (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1214" />
         <source>Edit Crop</source>
         <translation>자르기 영역 편집</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1214" />
         <source>Crop Recording</source>
         <translation>녹화 영역 자르기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1235" />
         <source>Clear Trim Selection</source>
         <translation>자르기 선택 지우기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1235" />
         <source>Trim Recording</source>
         <translation>녹화 자르기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="709" />
         <source>Discard Recording (Esc)</source>
         <translation>녹화 삭제 (Esc)</translation>
     </message>
@@ -3299,12 +3335,12 @@ Size: %2</source>
         <translation>녹화 저장 (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3686" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3717" />
         <source>Cancel</source>
         <translation>취소</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3912" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3943" />
         <source>Dismiss Error</source>
         <translation>오류 닫기</translation>
     </message>
@@ -3325,7 +3361,7 @@ Size: %2</source>
         <translation>모션 블러: 높음</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2047" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2077" />
         <source>Pointer hidden from %1 to %2</source>
         <translation>%1부터 %2까지 포인터 숨김</translation>
     </message>
@@ -3346,12 +3382,12 @@ Size: %2</source>
         <translation>유휴 시 숨기기: 끔</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2476" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2506" />
         <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
         <translation>포인터가 멈추면 서서히 숨기고, 움직이거나 클릭하기 전에 다시 표시합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2485" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2515" />
         <source>A short trail behind a fast-moving pointer</source>
         <translation>빠르게 움직이는 포인터 뒤에 짧은 잔상을 남깁니다</translation>
     </message>
@@ -3364,22 +3400,22 @@ Size: %2</source>
         <translation>끝부분 고정: 끔</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2493" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2523" />
         <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
         <translation>끝부분에서 포인터를 고정해 녹화를 멈추러 가는 움직임이 보이지 않게 합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2503" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2533" />
         <source>Hide Pointer Here</source>
         <translation>여기서 포인터 숨기기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2504" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2534" />
         <source>Hide the pointer for a while from the playhead</source>
         <translation>재생 위치부터 잠시 포인터를 숨깁니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2538" />
         <source>No room for a hidden range here</source>
         <translation>여기에는 숨김 구간을 추가할 공간이 없습니다</translation>
     </message>
@@ -3392,12 +3428,12 @@ Size: %2</source>
         <translation>포인터 없음</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3158" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3189" />
         <source>Hidden pointer start</source>
         <translation>포인터 숨김 시작</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3170" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3201" />
         <source>Hidden pointer end</source>
         <translation>포인터 숨김 끝</translation>
     </message>
@@ -3450,17 +3486,17 @@ Size: %2</source>
         <translation>MP4의 크기, 프레임 속도, 품질, 코덱 및 예상 파일 크기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3067" />
         <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
         <translation>이 시스템에서는 아직 MP4 크기와 프레임 속도를 바꿀 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3042" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3073" />
         <source>Make the video smaller; it is never made larger than recorded</source>
         <translation>동영상을 작게 만듭니다. 녹화된 크기보다 커지지는 않습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3053" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3084" />
         <source>Video width in pixels</source>
         <translation>동영상 너비(픽셀)</translation>
     </message>
@@ -3473,52 +3509,52 @@ Size: %2</source>
         <translation>FPS: 원본</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3061" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3092" />
         <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
         <translation>프레임 속도를 낮추면 파일이 작아집니다. 녹화된 속도보다 높아지지는 않습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3070" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
         <source>Default uses the quality from the Recording settings</source>
         <translation>기본값은 녹화 설정의 품질을 사용합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3087" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3118" />
         <source>Plays everywhere</source>
         <translation>어디서나 재생됩니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3098" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3129" />
         <source>Smaller files at the same quality; some older players cannot open them</source>
         <translation>같은 품질에서 파일이 작아집니다. 일부 오래된 플레이어에서는 열 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3133" />
         <source>HEVC export is not available on this system</source>
         <translation>이 시스템에서는 HEVC 내보내기를 사용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3132" />
         <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
         <translation>HEVC로 내보내려면 Microsoft Store의 HEVC Video Extensions가 필요합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3113" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3144" />
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2, %3fps · %4(예상)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2222" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
         <source>A background, padding, rounded corners, a shadow and a border around the video</source>
         <translation>동영상 주위에 배경, 여백, 둥근 모서리, 그림자, 테두리를 넣습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
         <source>Add a shadow under the video</source>
         <translation>동영상 아래에 그림자를 넣습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
         <source>Add a thin border around the video</source>
         <translation>동영상 주위에 얇은 테두리를 넣습니다</translation>
     </message>
@@ -3527,32 +3563,32 @@ Size: %2</source>
         <translation>이 시스템에서는 프레임에 GIF 또는 WebP가 필요합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2883" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2914" />
         <source>Background: %1</source>
         <translation>배경: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
         <source>Background: Black</source>
         <translation>배경: 검정</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2946" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2977" />
         <source>Background image: %1</source>
         <translation>배경 이미지: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
         <source>Background: White</source>
         <translation>배경: 흰색</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2936" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2967" />
         <source>Blurred Video</source>
         <translation>흐린 동영상</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3012" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3043" />
         <source>Border</source>
         <translation>테두리</translation>
     </message>
@@ -3561,7 +3597,7 @@ Size: %2</source>
         <translation>모서리: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2888" />
         <source>Draw the frame around the exported video</source>
         <translation>내보내는 동영상 주위에 프레임을 그립니다</translation>
     </message>
@@ -3570,22 +3606,22 @@ Size: %2</source>
         <translation>프레임</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2887" />
         <source>Frame: Off</source>
         <translation>프레임: 끔</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2887" />
         <source>Frame: On</source>
         <translation>프레임: 켬</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2997" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3028" />
         <source>How round the video's corners are</source>
         <translation>동영상 모서리의 둥근 정도</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2944" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
         <source>Image…</source>
         <translation>이미지…</translation>
     </message>
@@ -3619,12 +3655,12 @@ Size: %2</source>
         <translation>비율: 자동</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
         <source>Remove the border</source>
         <translation>테두리 제거</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
         <source>Remove the shadow</source>
         <translation>그림자 제거</translation>
     </message>
@@ -3635,37 +3671,37 @@ Size: %2</source>
         <translation>작게</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2989" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
         <source>Space around the video</source>
         <translation>동영상 주위의 여백</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3019" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3050" />
         <source>The shape of the exported video; the background fills the extra space</source>
         <translation>내보내는 동영상의 모양. 남는 공간은 배경으로 채웁니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2937" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2968" />
         <source>The video itself, blurred, behind it (masks applied)</source>
         <translation>동영상 자체를 흐리게 해서 뒤에 깝니다(마스크 적용)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2947" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2978" />
         <source>Use an image file as the background</source>
         <translation>이미지 파일을 배경으로 사용</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1689" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1707" />
         <source>Cut from %1 to %2</source>
         <translation>%1부터 %2까지 잘라냄</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1317" />
         <source>Cut Part</source>
         <translation>구간 잘라내기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1286" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
         <source>Cuts and speed changes need GIF or WebP on this system</source>
         <translation>이 시스템에서는 잘라내기와 속도 변경에 GIF 또는 WebP가 필요합니다</translation>
     </message>
@@ -3678,17 +3714,17 @@ Size: %2</source>
         <translation>재생 위치의 구간이 내보내기에서 재생되는 속도. 바꾼 구간은 소리가 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1317" />
         <source>Keep Part</source>
         <translation>구간 유지</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1305" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1323" />
         <source>Leave the part at the playhead out of the export (Delete)</source>
         <translation>재생 위치의 구간을 내보내기에서 뺍니다(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1691" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1709" />
         <source>Part from %1 to %2 at %3</source>
         <translation>%1부터 %2까지 구간(%3)</translation>
     </message>
@@ -3697,27 +3733,27 @@ Size: %2</source>
         <translation>구간 속도: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1322" />
         <source>Put the part at the playhead back (Delete)</source>
         <translation>재생 위치의 구간을 되살립니다(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1283" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
         <source>Split</source>
         <translation>분할</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1844" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1862" />
         <source>Split at %1</source>
         <translation>%1에서 분할</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1285" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1303" />
         <source>Split the recording at the playhead (S)</source>
         <translation>재생 위치에서 녹화를 분할합니다(S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1290" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1308" />
         <source>Too close to another split or an end</source>
         <translation>다른 분할점이나 끝에 너무 가깝습니다</translation>
     </message>
@@ -3738,49 +3774,49 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2858" />
         <source>Dark</source>
         <translation>어둡게</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2825" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
         <source>Dark or light keys</source>
         <translation>어두운 키 또는 밝은 키</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
         <source>Draw the shortcuts into the exported video</source>
         <translation>내보내는 동영상에 단축키를 그립니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2817" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2848" />
         <source>How large the shortcuts are</source>
         <translation>단축키 크기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2864" />
         <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
         <translation>누른 뒤 단축키가 남아 있는 시간. 연달아 누른 키는 함께 표시됩니다</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2295" />
         <source>Keys</source>
         <translation>키</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
         <source>Keys: Off</source>
         <translation>키: 끔</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
         <source>Keys: On</source>
         <translation>키: 켬</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2858" />
         <source>Light</source>
         <translation>밝게</translation>
     </message>
@@ -3810,32 +3846,32 @@ Size: %2</source>
         <translation>위</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2809" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2840" />
         <source>Where the shortcuts appear</source>
         <translation>단축키가 나타나는 위치</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
         <source>Shadow</source>
         <translation>그림자</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2652" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2683" />
         <source>A box behind the text, so it reads on any picture</source>
         <translation>어떤 화면 위에서도 읽히도록 글자 뒤에 상자를 넣습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1441" />
         <source>A title or caption at the playhead</source>
         <translation>재생 위치에 제목이나 설명을 넣습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1460" />
         <source>Add Image</source>
         <translation>이미지 추가</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1439" />
         <source>Add Text</source>
         <translation>텍스트 추가</translation>
     </message>
@@ -3852,7 +3888,7 @@ Size: %2</source>
         <translation>오른쪽 정렬</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1444" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1462" />
         <source>An image such as a logo, for the whole recording</source>
         <translation>로고 같은 이미지를 녹화 전체에 넣습니다</translation>
     </message>
@@ -3869,12 +3905,12 @@ Size: %2</source>
         <translation>드래그해서 옮기고, 모서리를 드래그해 크기를 바꿉니다. 완료를 누르면 편집이 끝납니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2661" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2692" />
         <source>How lines line up</source>
         <translation>줄 정렬 방식</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2701" />
         <source>How see-through the image is</source>
         <translation>이미지의 투명도</translation>
     </message>
@@ -3884,7 +3920,7 @@ Size: %2</source>
         <translation>이미지 오버레이</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2606" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2637" />
         <source>Larger</source>
         <translation>크게</translation>
     </message>
@@ -3901,45 +3937,45 @@ Size: %2</source>
         <translation>불투명도: %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2743" />
         <source>Overlay end</source>
         <translation>오버레이 끝</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2700" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2731" />
         <source>Overlay start</source>
         <translation>오버레이 시작</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2553" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
         <source>Overlay text</source>
         <translation>오버레이 텍스트</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1445" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1463" />
         <source>Overlays need GIF or WebP on this system</source>
         <translation>이 시스템에서는 오버레이에 GIF 또는 WebP가 필요합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="936" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="954" />
         <source>Selected overlay</source>
         <translation>선택한 오버레이</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2682" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2713" />
         <source>Show it for the whole recording, or only for a time range</source>
         <translation>녹화 전체에 표시하거나 특정 구간에만 표시합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2598" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2629" />
         <source>Smaller</source>
         <translation>작게</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2536" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2552" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2034" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2566" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2582" />
         <source>Text</source>
         <translation>텍스트</translation>
     </message>
@@ -3957,27 +3993,27 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2277" />
         <source>Audio</source>
         <translation>오디오</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2788" />
         <source>Leave the microphone out of the export</source>
         <translation>내보내기에서 마이크를 뺍니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2782" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2813" />
         <source>Leave the system audio out of the export</source>
         <translation>내보내기에서 시스템 오디오를 뺍니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2256" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
         <source>Microphone and system audio volume, mute, and noise reduction</source>
         <translation>마이크와 시스템 오디오의 음량, 음소거, 소음 줄이기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2747" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2778" />
         <source>Microphone volume in the export</source>
         <translation>내보내기의 마이크 음량</translation>
     </message>
@@ -3990,17 +4026,17 @@ Size: %2</source>
         <translation>이 시스템에서는 아직 MP4에서 두 트랙을 섞을 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2756" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2787" />
         <source>Mute Microphone</source>
         <translation>마이크 음소거</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2781" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2812" />
         <source>Mute System Audio</source>
         <translation>시스템 오디오 음소거</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2764" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2795" />
         <source>Reduce Noise</source>
         <translation>소음 줄이기</translation>
     </message>
@@ -4009,12 +4045,12 @@ Size: %2</source>
         <translation>시스템 오디오: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2772" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
         <source>System audio volume in the export</source>
         <translation>내보내기의 시스템 오디오 음량</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2765" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2796" />
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>마이크에서 말 사이의 치찰음, 험, 방 소음을 줄입니다</translation>
     </message>
@@ -4025,7 +4061,7 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="51" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1522" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1540" />
         <source>Mask</source>
         <translation>마스크</translation>
     </message>
@@ -4051,7 +4087,7 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
         <source>Canvas</source>
         <translation>캔버스</translation>
     </message>
@@ -4078,14 +4114,14 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="68" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="80" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2364" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2681" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2394" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
         <source>Whole recording</source>
         <translation>전체 녹화</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="69" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2289" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2319" />
         <source>%1 – %2</source>
         <comment>time range</comment>
         <translation>%1 – %2</translation>
@@ -4098,8 +4134,8 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="208" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="212" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2525" />
         <source>Off</source>
         <translation>끔</translation>
     </message>
@@ -4168,594 +4204,594 @@ Size: %2</source>
         <translation>사용자 지정</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="600" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="612" />
         <source>Recording</source>
         <translation>녹화</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="682" />
         <source>Hide settings</source>
         <translation>설정 숨기기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="682" />
         <source>Show settings</source>
         <translation>설정 표시</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="679" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="691" />
         <source>Export…</source>
         <translation>내보내기…</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="683" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="695" />
         <source>Choose a format and export (Ctrl+S)</source>
         <translation>형식을 선택해 내보내기 (Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="709" />
         <source>Close Without Saving (Esc)</source>
         <translation>저장하지 않고 닫기 (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1161" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1179" />
         <source>Not exported · export %1</source>
         <translation>내보내지 않음 · 내보내기 %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1162" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1180" />
         <source>Export %1 / %2</source>
         <translation>내보내기 %1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1165" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1183" />
         <source>The playhead is in a part that is not exported. The export is %1 long.</source>
         <translation>재생 위치가 내보내지 않는 부분에 있습니다. 내보내기 길이는 %1입니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1167" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
         <source>Exported time %1 of %2</source>
         <translation>내보낸 시간 %1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1229" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1247" />
         <source>Compare with Original (%1)</source>
         <translation>원본과 비교 (%1)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1258" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1276" />
         <source>Preview speed</source>
         <translation>미리 보기 속도</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1259" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1277" />
         <source>Playback speed of this preview only; the export is not changed</source>
         <translation>이 미리 보기의 재생 속도만 바뀌며 내보내기는 바뀌지 않습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1319" />
         <source>Put the selected clip back (Delete)</source>
         <translation>선택한 클립을 되살립니다(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1302" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1320" />
         <source>Leave the selected clip out of the export (Delete)</source>
         <translation>선택한 클립을 내보내기에서 뺍니다(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1314" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1332" />
         <source>Add effect</source>
         <translation>효과 추가</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1315" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1333" />
         <source>Zoom, mask, text or image at the playhead</source>
         <translation>재생 위치에 확대, 마스크, 텍스트 또는 이미지 추가</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1328" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1346" />
         <source>Trim</source>
         <translation>트림</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1521" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1539" />
         <source>Zoom</source>
         <translation>확대</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1523" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1541" />
         <source>Text &amp; image</source>
         <translation>텍스트 및 이미지</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1581" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1599" />
         <source>Video</source>
         <translation>동영상</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1674" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1692" />
         <source>Cut</source>
         <translation>잘라냄</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1808" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1826" />
         <source>No effects yet. Use Add effect to zoom, mask, or add text at the playhead.</source>
         <translation>아직 효과가 없습니다. 효과 추가를 사용해 재생 위치에 확대, 마스크 또는 텍스트를 추가하세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1845" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1863" />
         <source>Arrow keys move the split; Delete joins the two clips</source>
         <translation>화살표 키로 분할 지점을 옮기고 Delete 키로 두 클립을 합칩니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1928" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1958" />
         <source>Zoom %1</source>
         <translation>확대 %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1965" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1995" />
         <source>Mask · %1</source>
         <translation>마스크 · %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2034" />
         <source>Image</source>
         <translation>이미지</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2036" />
         <source>Text overlay "%1" from %2 to %3</source>
         <translation>텍스트 오버레이 "%1" (%2~%3)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2009" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2039" />
         <source>Image overlay from %1 to %2</source>
         <translation>이미지 오버레이 (%1~%2)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2046" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2076" />
         <source>Pointer hidden</source>
         <translation>포인터 숨김</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2204" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2234" />
         <source>These settings apply to the whole recording. Select a clip or effect on the timeline to edit just that part.</source>
         <translation>이 설정은 전체 녹화에 적용됩니다. 일부만 편집하려면 타임라인에서 클립이나 효과를 선택하세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2219" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
         <source>Frame on · padding %1</source>
         <translation>프레임 켬 · 여백 %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
         <source>No frame</source>
         <translation>프레임 없음</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2221" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2251" />
         <source>A frame needs GIF or WebP on this system.</source>
         <translation>이 시스템에서는 프레임에 GIF 또는 WebP가 필요합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2231" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2261" />
         <source>Hidden</source>
         <translation>숨김</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2233" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2263" />
         <source>Shown · %1 · %n hidden range(s)</source>
         <translation>
             <numerusform>표시 · %1 · 숨긴 구간 %n개</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2235" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
         <source>Shown · %1</source>
         <translation>표시 · %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2236" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2266" />
         <source>No pointer data was recorded.</source>
         <translation>기록된 포인터 데이터가 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2237" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
         <source>Pointer effects need GIF or WebP on this system.</source>
         <translation>이 시스템에서는 포인터 효과에 GIF 또는 WebP가 필요합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2238" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
         <source>Size, smoothing, click highlights, hide when idle, motion blur and a still ending</source>
         <translation>크기, 부드럽게, 클릭 강조, 유휴 시 숨기기, 모션 블러, 끝부분 고정</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2248" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2278" />
         <source>Microphone %1 · System %2</source>
         <translation>마이크 %1 · 시스템 %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2279" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2280" />
         <source>muted</source>
         <translation>음소거</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2282" />
         <source>No separate microphone and system tracks. The recorded audio is kept as it is.</source>
         <translation>마이크와 시스템 트랙이 분리되어 있지 않습니다. 녹음된 오디오는 그대로 유지됩니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2284" />
         <source>GIF and WebP have no sound. Choose MP4 to adjust the audio.</source>
         <translation>GIF와 WebP에는 소리가 없습니다. 오디오를 조정하려면 MP4를 선택하세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2255" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2285" />
         <source>Mixing the two tracks is not supported for MP4 on this system yet.</source>
         <translation>이 시스템에서는 아직 MP4에서 두 트랙을 섞을 수 없습니다.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2297" />
         <source>Shown · %n shortcut(s) recorded</source>
         <translation>
             <numerusform>표시 · 단축키 %n개 기록됨</numerusform>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2298" />
         <source>Off · %n shortcut(s) recorded</source>
         <translation>
             <numerusform>끔 · 단축키 %n개 기록됨</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2269" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
         <source>No shortcuts were recorded.</source>
         <translation>기록된 단축키가 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2270" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
         <source>Shortcut hints need GIF or WebP on this system.</source>
         <translation>이 시스템에서는 단축키 표시에 GIF 또는 WebP가 필요합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2271" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2301" />
         <source>Show the shortcuts pressed while recording</source>
         <translation>녹화 중에 누른 단축키를 표시합니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2316" />
         <source>Source range</source>
         <translation>원본 구간</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2329" />
         <source>Export speed</source>
         <translation>내보내기 속도</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2330" />
         <source>How fast this clip plays in the exported file. Changed-speed clips are silent.</source>
         <translation>내보낸 파일에서 이 클립이 재생되는 속도입니다. 속도를 바꾼 클립은 소리가 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2314" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2344" />
         <source>Cuts and speed changes need GIF or WebP on this system.</source>
         <translation>이 시스템에서는 잘라내기와 속도 변경에 GIF 또는 WebP가 필요합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2353" />
         <source>Keep clip</source>
         <translation>클립 유지</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2353" />
         <source>Cut clip</source>
         <translation>클립 잘라내기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2324" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
         <source>Leave this clip out of the export, or put it back (Delete)</source>
         <translation>이 클립을 내보내기에서 빼거나 되살립니다(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
         <source>Style</source>
         <translation>스타일</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2355" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2385" />
         <source>Solid covers with black; pixelate and blur weaken detail, which may still be recoverable</source>
         <translation>단색은 검은색으로 덮고, 픽셀화와 흐리게는 세부를 약하게 하지만 복원될 수도 있습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2361" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2678" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3151" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3213" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2391" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2709" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3182" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3244" />
         <source>Time range</source>
         <translation>시간 범위</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2406" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2436" />
         <source>Drag the mask on the preview to move it, or its corner to resize it.</source>
         <translation>미리 보기에서 마스크를 끌어 이동하거나 모서리를 끌어 크기를 조절하세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2417" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2447" />
         <source>Delete mask</source>
         <translation>마스크 삭제</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2418" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
         <source>Delete this mask (Delete)</source>
         <translation>이 마스크 삭제(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2449" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2479" />
         <source>Pointer size</source>
         <translation>포인터 크기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2460" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2490" />
         <source>Smoothing</source>
         <translation>부드럽게</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2477" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2507" />
         <source>Hide when idle</source>
         <translation>유휴 시 숨기기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2480" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2497" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2835" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2837" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2510" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2525" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2527" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2866" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2868" />
         <source>%1 s</source>
         <translation>%1초</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2486" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2516" />
         <source>Motion blur</source>
         <translation>모션 블러</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2494" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2524" />
         <source>Still ending</source>
         <translation>끝부분 고정</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2571" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2602" />
         <source>Font and size</source>
         <translation>글꼴 및 크기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2597" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2628" />
         <source>Smaller text</source>
         <translation>텍스트 작게</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2605" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2636" />
         <source>Larger text</source>
         <translation>텍스트 크게</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2612" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2643" />
         <source>Colour</source>
         <translation>색</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2633" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2664" />
         <source>Text colour: %1</source>
         <translation>텍스트 색: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2653" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2684" />
         <source>Background</source>
         <translation>배경</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2662" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2693" />
         <source>Alignment</source>
         <translation>정렬</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2671" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2702" />
         <source>Opacity</source>
         <translation>불투명도</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2674" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2705" />
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
         <source>Delete text</source>
         <translation>텍스트 삭제</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
         <source>Delete image</source>
         <translation>이미지 삭제</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2727" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2758" />
         <source>Delete this overlay (Delete)</source>
         <translation>이 오버레이 삭제(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2748" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2779" />
         <source>Microphone volume</source>
         <translation>마이크 음량</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2773" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2804" />
         <source>System audio volume</source>
         <translation>시스템 오디오 음량</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2810" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2841" />
         <source>Position</source>
         <translation>위치</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2818" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2849" />
         <source>Size</source>
         <translation>크기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2826" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
         <source>Appearance</source>
         <translation>모양</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2865" />
         <source>Display duration</source>
         <translation>표시 시간</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2974" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
         <source>Background image</source>
         <translation>배경 이미지</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3021" />
         <source>Padding</source>
         <translation>여백</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2998" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3029" />
         <source>Corners</source>
         <translation>모서리</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3302" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3051" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3333" />
         <source>Aspect ratio</source>
         <translation>화면 비율</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
         <source>Resolution</source>
         <translation>해상도</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3063" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3094" />
         <source>Frame rate</source>
         <translation>프레임 속도</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3071" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
         <source>Quality</source>
         <translation>품질</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3077" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3108" />
         <source>Codec</source>
         <translation>코덱</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3145" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3176" />
         <source>The pointer is left out of the export during this time.</source>
         <translation>이 시간 동안 포인터가 내보내기에서 제외됩니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3216" />
         <source>Show the pointer again</source>
         <translation>포인터 다시 표시</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3186" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3217" />
         <source>Delete this hidden range (Delete)</source>
         <translation>이 숨김 구간 삭제(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3240" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3271" />
         <source>Zoom amount</source>
         <translation>확대 배율</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3293" />
         <source>All zooms</source>
         <translation>모든 확대</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3265" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3296" />
         <source>Zoom effects</source>
         <translation>확대 효과</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3272" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3303" />
         <source>Less motion</source>
         <translation>움직임 줄이기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3284" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3315" />
         <source>Delete zoom</source>
         <translation>확대 삭제</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3316" />
         <source>Delete this zoom (Delete)</source>
         <translation>이 확대 삭제(Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3326" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3357" />
         <source>Position and size (video pixels)</source>
         <translation>위치 및 크기(동영상 픽셀)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3423" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3454" />
         <source>Format</source>
         <translation>형식</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3430" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3461" />
         <source>Video with sound. Best for sharing and long recordings.</source>
         <translation>소리가 있는 동영상입니다. 공유와 긴 녹화에 가장 적합합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3431" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3462" />
         <source>Silent animation that plays almost anywhere. Large files.</source>
         <translation>거의 어디서나 재생되는 무음 애니메이션입니다. 파일이 큽니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3432" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3463" />
         <source>Silent animation, smaller than GIF. Supports every edit.</source>
         <translation>GIF보다 작은 무음 애니메이션입니다. 모든 편집을 지원합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
         <source>Close without saving your changes?</source>
         <translation>변경 사항을 저장하지 않고 닫을까요?</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3816" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3847" />
         <source>The project stays in Recording Library as it was last saved.</source>
         <translation>프로젝트는 마지막으로 저장한 상태로 녹화 보관함에 남습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
         <source>Keep Editing</source>
         <translation>계속 편집</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
         <source>Close</source>
         <translation>닫기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2580" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2611" />
         <source>Font</source>
         <translation>글꼴</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="252" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>기본값</translation>
     </message>
@@ -4763,38 +4799,38 @@ Size: %2</source>
 <context>
     <name>RecordingPreviewBackend</name>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2148" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2155" />
         <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
         <translation>이 시스템에서는 아직 MP4에 마스크를 적용할 수 없습니다. GIF 또는 WebP로 내보내거나 마스크를 제거하고 MP4로 내보내세요. 아무것도 내보내지 않았습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2202" />
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3348" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2209" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3355" />
         <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
         <translation>내보낼 디스크 공간이 부족합니다(%1 남음, 약 %2 필요). 공간을 확보한 뒤 다시 시도하세요. 녹화는 유지되었습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2856" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2863" />
         <source>Writing file...</source>
         <translation>파일 쓰는 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2859" />
         <source>Converting to WebP...</source>
         <translation>WebP로 변환 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2859" />
         <source>Converting to GIF...</source>
         <translation>GIF로 변환 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2360" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2367" />
         <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
         <translation>파일을 저장할 수 없습니다. 녹화는 유지되었습니다. 다시 저장하거나 다른 위치를 선택하세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2285" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2292" />
         <source>Saving...</source>
         <translation>저장 중...</translation>
     </message>
@@ -4808,42 +4844,42 @@ Size: %2</source>
         <translation>비디오 변환 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2870" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
         <source>Failed to create video player for conversion</source>
         <translation>변환용 비디오 플레이어를 만들지 못했습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2871" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2878" />
         <source>Failed to load video for conversion</source>
         <translation>변환용 비디오를 불러오지 못했습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2872" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2879" />
         <source>Video not loaded properly for conversion</source>
         <translation>변환용 비디오가 제대로 불러와지지 않았습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2873" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2880" />
         <source>Failed to start encoder</source>
         <translation>인코더를 시작하지 못했습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2874" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2881" />
         <source>Conversion failed: no video frames were encoded</source>
         <translation>변환 실패: 인코딩된 동영상 프레임이 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2875" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2882" />
         <source>Conversion failed while extracting video frames</source>
         <translation>동영상 프레임을 추출하는 중 변환에 실패했습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2876" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2883" />
         <source>Conversion failed while saving the output file</source>
         <translation>출력 파일을 저장하는 중 변환에 실패했습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2884" />
         <source>Conversion failed: output file is missing or empty</source>
         <translation>변환 실패: 출력 파일이 없거나 비어 있습니다</translation>
     </message>
@@ -4864,27 +4900,27 @@ Size: %2</source>
         <translation>잘라내기 실패</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3249" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3256" />
         <source>Exporting video...</source>
         <translation>비디오 내보내는 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3277" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3284" />
         <source>Video export is not supported on this platform</source>
         <translation>이 플랫폼에서는 비디오 내보내기가 지원되지 않습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3278" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3285" />
         <source>Export failed: %1</source>
         <translation>내보내기 실패: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3281" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3288" />
         <source>Export failed; the original recording was kept.</source>
         <translation>내보내기에 실패했습니다. 원본 녹화는 유지되었습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2385" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2392" />
         <source>Cancelling...</source>
         <translation>취소하는 중...</translation>
     </message>
@@ -4910,12 +4946,12 @@ Size: %2</source>
         <translation>이미지를 읽을 수 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2160" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2167" />
         <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>이 시스템에서는 아직 MP4에 잘라내기와 속도 변경을 적용할 수 없습니다. GIF나 WebP로 내보내거나, 이를 제거한 뒤 MP4로 내보내세요. 아무것도 내보내지 않았습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2156" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2163" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>모든 구간이 잘려 내보낼 것이 없습니다.</translation>
     </message>
@@ -4935,27 +4971,27 @@ Size: %2</source>
         <translation>제목</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2069" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2076" />
         <source>Failed to load preview video: %1</source>
         <translation>미리 보기 동영상을 불러오지 못했습니다: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2140" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2147" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>이 시스템에서는 아직 MP4에 텍스트·이미지 오버레이를 그릴 수 없습니다. GIF나 WebP로 내보내거나, 오버레이를 제거한 뒤 MP4로 내보내세요. 아무것도 내보내지 않았습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2273" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2280" />
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>저장하기 위해 프로젝트 녹화를 복사하지 못했습니다. 아무것도 저장되지 않았습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2308" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2315" />
         <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
         <translation>%1에 저장했지만 프로젝트를 업데이트하지 못했습니다. 이 편집 내용을 프로젝트에 남기려면 다시 저장하세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2333" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>%1에 저장했지만 녹화를 편집 가능한 프로젝트로 보관하지 못했습니다. 아직 여기에 열려 있습니다. 다시 저장하거나 닫아서 버리세요.</translation>
     </message>
@@ -5433,96 +5469,96 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3136" />
+        <location filename="../src/RegionSelector.cpp" line="3160" />
         <source>%1 region</source>
         <translation>영역 %1개</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3137" />
+        <location filename="../src/RegionSelector.cpp" line="3161" />
         <source>%1 regions</source>
         <translation>영역 %1개</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3926" />
+        <location filename="../src/RegionSelector.cpp" line="3950" />
         <source>Please wait for auto-blur to finish</source>
         <translation>자동 블러가 완료될 때까지 기다려 주세요</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <location filename="../src/RegionSelector.cpp" line="4111" />
         <source>Error</source>
         <translation>오류</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <location filename="../src/RegionSelector.cpp" line="4111" />
         <source>Failed to merge regions. Please try again.</source>
         <translation>영역 병합에 실패했습니다. 다시 시도해 주세요.</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4109" />
-        <location filename="../src/RegionSelector.cpp" line="4840" />
-        <location filename="../src/RegionSelector.cpp" line="4928" />
-        <location filename="../src/RegionSelector.cpp" line="5034" />
+        <location filename="../src/RegionSelector.cpp" line="4144" />
+        <location filename="../src/RegionSelector.cpp" line="4875" />
+        <location filename="../src/RegionSelector.cpp" line="4963" />
+        <location filename="../src/RegionSelector.cpp" line="5069" />
         <source>Failed to process selected region</source>
         <translation>선택한 영역 처리에 실패했습니다</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4218" />
+        <location filename="../src/RegionSelector.cpp" line="4253" />
         <source>Failed to save screenshot: unable to process selection</source>
         <translation>스크린샷 저장 실패: 선택 영역을 처리할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4869" />
-        <location filename="../src/RegionSelector.cpp" line="4897" />
+        <location filename="../src/RegionSelector.cpp" line="4904" />
+        <location filename="../src/RegionSelector.cpp" line="4932" />
         <source>Copied %1 characters</source>
         <translation>%1자 복사됨</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4873" />
+        <location filename="../src/RegionSelector.cpp" line="4908" />
         <source>No text found</source>
         <translation>텍스트를 찾을 수 없음</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4896" />
+        <location filename="../src/RegionSelector.cpp" line="4931" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4992" />
+        <location filename="../src/RegionSelector.cpp" line="5027" />
         <source>No QR code found</source>
         <translation>QR 코드를 찾을 수 없음</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5059" />
+        <location filename="../src/RegionSelector.cpp" line="5094" />
         <source>Face detection unavailable</source>
         <translation>얼굴 감지를 사용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5067" />
+        <location filename="../src/RegionSelector.cpp" line="5102" />
         <source>Detection unavailable</source>
         <translation>감지를 사용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5277" />
+        <location filename="../src/RegionSelector.cpp" line="5312" />
         <source>Blurred %1 face(s), %2 credential(s)</source>
         <translation>얼굴 %1개와 자격 증명 %2개를 블러 처리했습니다</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5281" />
+        <location filename="../src/RegionSelector.cpp" line="5316" />
         <source>Blurred %1 face(s)</source>
         <translation>%1개의 얼굴을 흐리게 처리했습니다</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5285" />
+        <location filename="../src/RegionSelector.cpp" line="5320" />
         <source>Blurred %1 credential(s)</source>
         <translation>자격 증명 %1개를 블러 처리했습니다</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5289" />
+        <location filename="../src/RegionSelector.cpp" line="5324" />
         <source>No faces or credentials detected</source>
         <translation>얼굴 또는 자격 증명이 감지되지 않았습니다</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5293" />
+        <location filename="../src/RegionSelector.cpp" line="5328" />
         <source>Detection failed</source>
         <translation>감지 실패</translation>
     </message>
@@ -5558,7 +5594,7 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
 <context>
     <name>ScreenCanvasSession</name>
     <message>
-        <location filename="../src/ScreenCanvasSession.cpp" line="1438" />
+        <location filename="../src/ScreenCanvasSession.cpp" line="1447" />
         <source>Copy failed</source>
         <translation>복사 실패</translation>
     </message>

@@ -1,3 +1,4 @@
+#include "annotations/AnnotationStyle.h"
 #include <QtTest/QtTest>
 
 #include <QQuickItem>
@@ -96,6 +97,7 @@ class tst_WidthSectionQml : public QObject
     Q_OBJECT
 
 private slots:
+    void testStripLabelNamesTarget();
     void testPreviewDotCenterStaysFixedAcrossWidthChanges();
     void testNonMosaicPreviewRemainsCompact();
     void testMosaicPresetsFollowToolAndHaveExpectedGeometry();
@@ -558,6 +560,34 @@ void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
 
     QTest::mouseMove(&view, presetRect.center().toPoint());
     QTRY_COMPARE(exitSpy.count(), 1);
+}
+
+
+void tst_WidthSectionQml::testStripLabelNamesTarget()
+{
+    PinToolOptionsViewModel viewModel;
+    viewModel.showForTool(static_cast<int>(ToolId::Arrow));
+    QQuickView view;
+    view.rootContext()->setContextProperty(QStringLiteral("pinToolOptionsViewModel"), &viewModel);
+    view.setResizeMode(QQuickView::SizeViewToRootObject);
+    view.setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/toolbar/ToolOptionsStrip.qml")));
+    QCOMPARE(view.status(), QQuickView::Ready);
+    auto* rootItem = view.rootObject();
+    auto* label = findVisualItem(rootItem, QStringLiteral("toolOptionsTargetLabel"));
+    QVERIFY(label);
+    QVERIFY(label->isVisible());
+    auto labelText = [label]() {
+        return label->childItems().first()->property("text").toString();
+    };
+    QCOMPARE(labelText(), QStringLiteral("New object"));
+    const qreal widthBefore = rootItem->width();
+    AnnotationStyleValues arrow;
+    arrow.kind = StyleTargetKind::Arrow;
+    arrow.color = Qt::blue;
+    arrow.width = 4;
+    viewModel.showForSelection(arrow);
+    QTRY_COMPARE(labelText(), QStringLiteral("Selected: Arrow"));
+    QTRY_VERIFY(rootItem->width() > widthBefore); // the strip grows to fit the label
 }
 
 QTEST_MAIN(tst_WidthSectionQml)

@@ -162,6 +162,12 @@ target_sources(Qml_BeautifyPanelQml PRIVATE ${CMAKE_SOURCE_DIR}/resources/resour
 add_test(NAME Qml_BeautifyPanelQml COMMAND Qml_BeautifyPanelQml)
 set_tests_properties(Qml_BeautifyPanelQml PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(Qml_ToolbarEvidence Qml/tst_ToolbarEvidence.cpp)
+target_link_libraries(Qml_ToolbarEvidence PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_ToolbarEvidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_ToolbarEvidence COMMAND Qml_ToolbarEvidence)
+set_tests_properties(Qml_ToolbarEvidence PROPERTIES TIMEOUT 120 LABELS "unit")
+
 add_executable(Qml_ToolbarOverflow Qml/tst_ToolbarOverflow.cpp)
 target_link_libraries(Qml_ToolbarOverflow PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_ToolbarOverflow PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -1374,6 +1380,16 @@ add_executable(Annotations_PolylineAnnotation Annotations/tst_PolylineAnnotation
 target_link_libraries(Annotations_PolylineAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_PolylineAnnotation COMMAND Annotations_PolylineAnnotation)
 set_tests_properties(Annotations_PolylineAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_AnnotationStyle Annotations/tst_AnnotationStyle.cpp)
+target_link_libraries(Annotations_AnnotationStyle PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationStyle COMMAND Annotations_AnnotationStyle)
+set_tests_properties(Annotations_AnnotationStyle PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_AnnotationStyleEditor Annotations/tst_AnnotationStyleEditor.cpp)
+target_link_libraries(Annotations_AnnotationStyleEditor PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationStyleEditor COMMAND Annotations_AnnotationStyleEditor)
+set_tests_properties(Annotations_AnnotationStyleEditor PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Annotations_AnnotationLayer Annotations/tst_AnnotationLayer.cpp)
 target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)

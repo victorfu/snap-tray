@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-10-23
+last_modified_at: 2026-11-05
 layout: docs
 title: Annotation Tools
 seo_title: "SnapTray Annotation Tools: Draw, Text, Mosaic and Steps"
@@ -36,6 +36,16 @@ doc_order: 2
 Hold `Shift` before pressing the left mouse button, then drag with Pencil or Marker to draw a straight stroke from the starting point to the cursor. The line can follow any angle and keeps the tool’s normal style, including the marker’s transparency. Each stroke is one Undo/Redo step.
 
 The Shift state at the start determines the mode for the entire stroke. Pressing or releasing Shift during a drag does not switch modes. Start without Shift for normal freehand drawing. This works in Region Capture, Pin Windows, and Screen Canvas.
+
+## Changing an annotation you already drew
+
+Select a text, arrow, line, or shape annotation. The style bar then says **Selected: Arrow** (or the type you picked), and color, width, and style changes apply to that annotation. Press `Ctrl/Cmd + Z` to undo a change. Dragging the width slider or clicking through colors counts as one change. A selected shape keeps its type; pick the Shape tool to draw a different one.
+
+With nothing selected, the style bar says **New object** and changes apply to the next annotation you draw. Changing a selected annotation never changes those settings.
+
+## When the toolbar does not fit
+
+On a narrow screen, less-used buttons move into **More** (⋯), starting with QR Code and OCR. Copy, Save, Pin, Undo, Redo, and the tool you are using always stay on the toolbar. Use the arrow keys and `Enter` to pick from **More**, and `Esc` to close it.
 
 ## Editing workflow
 

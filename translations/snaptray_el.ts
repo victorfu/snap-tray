@@ -296,7 +296,7 @@
 <context>
     <name>CanvasToolbarViewModel</name>
     <message>
-        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="32" />
+        <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="34" />
         <source>Laser Pointer</source>
         <translation>Δείκτης λέιζερ</translation>
     </message>
@@ -460,7 +460,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>FloatingToolbar</name>
     <message>
-        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="224" />
+        <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="241" />
         <source>More</source>
         <translation>Περισσότερα</translation>
     </message>
@@ -572,7 +572,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     </message>
     <message>
         <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
-        <location filename="../src/PinWindow.cpp" line="1155" />
+        <location filename="../src/PinWindow.cpp" line="1157" />
         <source>Open History Folder</source>
         <translation>Άνοιγμα φακέλου ιστορικού</translation>
     </message>
@@ -1463,35 +1463,71 @@ Size: %2</source>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134" />
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="135" />
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Αυτόματος εντοπισμός και θόλωση προσώπων και διαπιστευτηρίων</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="474" />
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="483" />
+        <source>New object</source>
+        <translation>Νέο αντικείμενο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="477" />
+        <source>Text</source>
+        <translation>Κείμενο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="478" />
+        <source>Arrow</source>
+        <translation>Βέλος</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="479" />
+        <source>Line</source>
+        <translation>Γραμμή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="481" />
+        <source>Ellipse</source>
+        <translation>Έλλειψη</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="481" />
+        <source>Rectangle</source>
+        <translation>Ορθογώνιο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="485" />
+        <source>Selected: %1</source>
+        <translation>Επιλεγμένο: %1</translation>
     </message>
 </context>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1129" />
+        <location filename="../src/PinWindow.cpp" line="1131" />
         <source>Show Toolbar</source>
         <translation>Εμφάνιση γραμμής εργαλείων</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1135" />
+        <location filename="../src/PinWindow.cpp" line="1137" />
         <source>Show Border</source>
         <translation>Εμφάνιση περιγράμματος</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1171" />
+        <location filename="../src/PinWindow.cpp" line="1173" />
         <source>Adjust Region Layout</source>
         <translation>Προσαρμογή διάταξης περιοχής</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1144" />
+        <location filename="../src/PinWindow.cpp" line="1146" />
         <source>Copy to Clipboard</source>
         <translation>Αντιγραφή στο πρόχειρο</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1148" />
+        <location filename="../src/PinWindow.cpp" line="1150" />
         <source>Save to file</source>
         <translation>Αποθήκευση σε αρχείο</translation>
     </message>
@@ -1500,331 +1536,331 @@ Size: %2</source>
         <translation>Άνοιγμα φακέλου προσωρινής μνήμης</translation>
     </message>
     <message>
-        <location filename="../src/qml/PinToolbarViewModel.cpp" line="30" />
+        <location filename="../src/qml/PinToolbarViewModel.cpp" line="27" />
         <source>Beautify</source>
         <translation>Ομορφοποίηση</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1161" />
+        <location filename="../src/PinWindow.cpp" line="1163" />
         <source>Click-through</source>
         <translation>Διαπερατότητα κλικ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1168" />
-        <location filename="../src/PinWindow.cpp" line="1522" />
-        <location filename="../src/PinWindow.cpp" line="1530" />
-        <location filename="../src/PinWindow.cpp" line="1544" />
-        <location filename="../src/PinWindow.cpp" line="1561" />
-        <location filename="../src/PinWindow.cpp" line="1573" />
+        <location filename="../src/PinWindow.cpp" line="1170" />
+        <location filename="../src/PinWindow.cpp" line="1524" />
+        <location filename="../src/PinWindow.cpp" line="1532" />
+        <location filename="../src/PinWindow.cpp" line="1546" />
+        <location filename="../src/PinWindow.cpp" line="1563" />
+        <location filename="../src/PinWindow.cpp" line="1575" />
         <source>Merge Pins</source>
         <translation>Συγχώνευση καρφιτσωμένων</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1177" />
+        <location filename="../src/PinWindow.cpp" line="1179" />
         <source>Watermark</source>
         <translation>Υδατογράφημα</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1180" />
+        <location filename="../src/PinWindow.cpp" line="1182" />
         <source>Enable</source>
         <translation>Ενεργοποίηση</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1191" />
+        <location filename="../src/PinWindow.cpp" line="1193" />
         <source>Position</source>
         <translation>Θέση</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1194" />
+        <location filename="../src/PinWindow.cpp" line="1196" />
         <source>Top-Left</source>
         <translation>Πάνω αριστερά</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1199" />
+        <location filename="../src/PinWindow.cpp" line="1201" />
         <source>Top-Right</source>
         <translation>Πάνω δεξιά</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1204" />
+        <location filename="../src/PinWindow.cpp" line="1206" />
         <source>Bottom-Left</source>
         <translation>Κάτω αριστερά</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1209" />
+        <location filename="../src/PinWindow.cpp" line="1211" />
         <source>Bottom-Right</source>
         <translation>Κάτω δεξιά</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1228" />
-        <location filename="../src/PinWindow.cpp" line="1322" />
-        <location filename="../src/PinWindow.cpp" line="2163" />
+        <location filename="../src/PinWindow.cpp" line="1230" />
+        <location filename="../src/PinWindow.cpp" line="1324" />
+        <location filename="../src/PinWindow.cpp" line="2165" />
         <source>Zoom</source>
         <translation>Μεγέθυνση</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1231" />
+        <location filename="../src/PinWindow.cpp" line="1233" />
         <source>33.3%</source>
         <translation>33.3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1234" />
+        <location filename="../src/PinWindow.cpp" line="1236" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1237" />
+        <location filename="../src/PinWindow.cpp" line="1239" />
         <source>66.7%</source>
         <translation>66.7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1240" />
+        <location filename="../src/PinWindow.cpp" line="1242" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1243" />
+        <location filename="../src/PinWindow.cpp" line="1245" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1253" />
+        <location filename="../src/PinWindow.cpp" line="1255" />
         <source>Smoothing</source>
         <translation>Εξομάλυνση</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1262" />
+        <location filename="../src/PinWindow.cpp" line="1264" />
         <source>Image processing</source>
         <translation>Επεξεργασία εικόνας</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1264" />
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>Rotate left</source>
         <translation>Περιστροφή αριστερά</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1267" />
+        <location filename="../src/PinWindow.cpp" line="1269" />
         <source>Rotate right</source>
         <translation>Περιστροφή δεξιά</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1270" />
+        <location filename="../src/PinWindow.cpp" line="1272" />
         <source>Horizontal flip</source>
         <translation>Οριζόντια αναστροφή</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1273" />
+        <location filename="../src/PinWindow.cpp" line="1275" />
         <source>Vertical flip</source>
         <translation>Κατακόρυφη αναστροφή</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1277" />
+        <location filename="../src/PinWindow.cpp" line="1279" />
         <source>Crop</source>
         <translation>Περικοπή</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1286" />
-        <location filename="../src/PinWindow.cpp" line="1324" />
-        <location filename="../src/PinWindow.cpp" line="2165" />
+        <location filename="../src/PinWindow.cpp" line="1288" />
+        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="2167" />
         <source>Opacity</source>
         <translation>Αδιαφάνεια</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1289" />
+        <location filename="../src/PinWindow.cpp" line="1291" />
         <source>Increase by %1%</source>
         <translation>Αύξηση κατά %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1296" />
+        <location filename="../src/PinWindow.cpp" line="1298" />
         <source>Decrease by %1%</source>
         <translation>Μείωση κατά %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1306" />
+        <location filename="../src/PinWindow.cpp" line="1308" />
         <source>Copy All</source>
         <translation>Αντιγραφή όλων</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1321" />
-        <location filename="../src/PinWindow.cpp" line="2162" />
+        <location filename="../src/PinWindow.cpp" line="1323" />
+        <location filename="../src/PinWindow.cpp" line="2164" />
         <source>Size</source>
         <translation>Μέγεθος</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1323" />
-        <location filename="../src/PinWindow.cpp" line="2164" />
+        <location filename="../src/PinWindow.cpp" line="1325" />
+        <location filename="../src/PinWindow.cpp" line="2166" />
         <source>Rotation</source>
         <translation>Περιστροφή</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
         <source>X-mirror</source>
         <translation>Καθρέφτης X</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>Y-mirror</source>
         <translation>Καθρέφτης Y</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="1972" />
-        <location filename="../src/PinWindow.cpp" line="1973" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>Yes</source>
         <translation>Ναι</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1325" />
-        <location filename="../src/PinWindow.cpp" line="1326" />
-        <location filename="../src/PinWindow.cpp" line="1972" />
-        <location filename="../src/PinWindow.cpp" line="1973" />
-        <location filename="../src/PinWindow.cpp" line="2166" />
-        <location filename="../src/PinWindow.cpp" line="2167" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
+        <location filename="../src/PinWindow.cpp" line="1328" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
+        <location filename="../src/PinWindow.cpp" line="2168" />
+        <location filename="../src/PinWindow.cpp" line="2169" />
         <source>No</source>
         <translation>Όχι</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1332" />
-        <location filename="../src/PinWindow.cpp" line="3040" />
+        <location filename="../src/PinWindow.cpp" line="1334" />
+        <location filename="../src/PinWindow.cpp" line="3042" />
         <source>Start Live Update</source>
         <translation>Έναρξη ζωντανής ενημέρωσης</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1968" />
+        <location filename="../src/PinWindow.cpp" line="1970" />
         <source>Size: %1</source>
         <translation>Μέγεθος: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3040" />
+        <location filename="../src/PinWindow.cpp" line="3042" />
         <source>Stop Live Update</source>
         <translation>Διακοπή ζωντανής ενημέρωσης</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1343" />
-        <location filename="../src/PinWindow.cpp" line="3044" />
+        <location filename="../src/PinWindow.cpp" line="1345" />
+        <location filename="../src/PinWindow.cpp" line="3046" />
         <source>Pause Live Update</source>
         <translation>Παύση ζωντανής ενημέρωσης</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3044" />
+        <location filename="../src/PinWindow.cpp" line="3046" />
         <source>Resume Live Update</source>
         <translation>Συνέχιση ζωντανής ενημέρωσης</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1354" />
+        <location filename="../src/PinWindow.cpp" line="1356" />
         <source>Frame Rate</source>
         <translation>Ρυθμός καρέ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1140" />
+        <location filename="../src/PinWindow.cpp" line="1142" />
         <source>Move to Screen</source>
         <translation>Μετακίνηση στην οθόνη</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1357" />
+        <location filename="../src/PinWindow.cpp" line="1359" />
         <source>%1 FPS</source>
         <translation>%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1371" />
+        <location filename="../src/PinWindow.cpp" line="1373" />
         <source>Close</source>
         <translation>Κλείσιμο</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1375" />
+        <location filename="../src/PinWindow.cpp" line="1377" />
         <source>Close All Pins</source>
         <translation>Κλείσιμο όλων των καρφιτσωμένων</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1475" />
+        <location filename="../src/PinWindow.cpp" line="1477" />
         <source>Screen %1</source>
         <translation>Οθόνη %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1477" />
+        <location filename="../src/PinWindow.cpp" line="1479" />
         <source> (Primary)</source>
         <translation> (Κύρια)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1523" />
+        <location filename="../src/PinWindow.cpp" line="1525" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>Δεν είναι δυνατή η συγχώνευση περισσότερων από %1 καρφιτσωμένων ταυτόχρονα</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1531" />
+        <location filename="../src/PinWindow.cpp" line="1533" />
         <source>Need at least 2 pins to merge</source>
         <translation>Απαιτούνται τουλάχιστον 2 καρφιτσωμένα για συγχώνευση</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1545" />
+        <location filename="../src/PinWindow.cpp" line="1547" />
         <source>No primary screen available</source>
         <translation>Δεν υπάρχει διαθέσιμη κύρια οθόνη</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1574" />
+        <location filename="../src/PinWindow.cpp" line="1576" />
         <source>Failed to create merged pin</source>
         <translation>Αποτυχία δημιουργίας συγχωνευμένου καρφιτσώματος</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1644" />
-        <location filename="../src/PinWindow.cpp" line="1676" />
+        <location filename="../src/PinWindow.cpp" line="1646" />
+        <location filename="../src/PinWindow.cpp" line="1678" />
         <source>Failed to save screenshot: %1</source>
         <translation>Αποτυχία αποθήκευσης στιγμιοτύπου: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1659" />
         <source>Save Screenshot</source>
         <translation>Αποθήκευση στιγμιοτύπου</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1659" />
-        <location filename="../src/PinWindow.cpp" line="6155" />
+        <location filename="../src/PinWindow.cpp" line="1661" />
+        <location filename="../src/PinWindow.cpp" line="6205" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>Εικόνα PNG (*.png);;Εικόνα JPEG (*.jpg *.jpeg);;Όλα τα αρχεία (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1689" />
-        <location filename="../src/PinWindow.cpp" line="1710" />
-        <location filename="../src/PinWindow.cpp" line="6059" />
-        <location filename="../src/PinWindow.cpp" line="6084" />
+        <location filename="../src/PinWindow.cpp" line="1691" />
+        <location filename="../src/PinWindow.cpp" line="1712" />
+        <location filename="../src/PinWindow.cpp" line="6109" />
+        <location filename="../src/PinWindow.cpp" line="6134" />
         <source>Copy failed</source>
         <translation>Αποτυχία αντιγραφής</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1710" />
+        <location filename="../src/PinWindow.cpp" line="1712" />
         <source>Copied to clipboard</source>
         <translation>Αντιγράφηκε στο πρόχειρο</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1722" />
-        <location filename="../src/PinWindow.cpp" line="5428" />
+        <location filename="../src/PinWindow.cpp" line="1724" />
+        <location filename="../src/PinWindow.cpp" line="5478" />
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Περιμένετε να ολοκληρωθεί το αυτόματο θόλωμα</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1864" />
-        <location filename="../src/PinWindow.cpp" line="1942" />
+        <location filename="../src/PinWindow.cpp" line="1866" />
+        <location filename="../src/PinWindow.cpp" line="1944" />
         <source>Copied %1 characters</source>
         <translation>Αντιγράφηκαν %1 χαρακτήρες</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1868" />
+        <location filename="../src/PinWindow.cpp" line="1870" />
         <source>No text found</source>
         <translation>Δεν βρέθηκε κείμενο</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1873" />
-        <location filename="../src/PinWindow.cpp" line="1889" />
+        <location filename="../src/PinWindow.cpp" line="1875" />
+        <location filename="../src/PinWindow.cpp" line="1891" />
         <source>Text copied</source>
         <translation>Το κείμενο αντιγράφηκε</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1953" />
+        <location filename="../src/PinWindow.cpp" line="1955" />
         <source>No QR code found</source>
         <translation>Δεν βρέθηκε κωδικός QR</translation>
     </message>
@@ -1833,85 +1869,85 @@ Size: %2</source>
         <translation>Μέγεθος: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1969" />
+        <location filename="../src/PinWindow.cpp" line="1971" />
         <source>Zoom: %1%</source>
         <translation>Μεγέθυνση: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1970" />
+        <location filename="../src/PinWindow.cpp" line="1972" />
         <source>Rotation: %1°</source>
         <translation>Περιστροφή: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1971" />
+        <location filename="../src/PinWindow.cpp" line="1973" />
         <source>Opacity: %1%</source>
         <translation>Αδιαφάνεια: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1972" />
+        <location filename="../src/PinWindow.cpp" line="1974" />
         <source>X-mirror: %1</source>
         <translation>Καθρέφτης X: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1973" />
+        <location filename="../src/PinWindow.cpp" line="1975" />
         <source>Y-mirror: %1</source>
         <translation>Καθρέφτης Y: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4828" />
+        <location filename="../src/PinWindow.cpp" line="4873" />
         <source>Stop live capture before running auto-blur</source>
         <translation>Διακόψτε τη ζωντανή λήψη πριν από το αυτόματο θόλωμα</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4851" />
+        <location filename="../src/PinWindow.cpp" line="4896" />
         <source>Face detection unavailable</source>
         <translation>Η ανίχνευση προσώπου δεν είναι διαθέσιμη</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4861" />
+        <location filename="../src/PinWindow.cpp" line="4906" />
         <source>Detection unavailable</source>
         <translation>Η ανίχνευση δεν είναι διαθέσιμη</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4891" />
+        <location filename="../src/PinWindow.cpp" line="4936" />
         <source>Unable to snapshot the current image</source>
         <translation>Δεν είναι δυνατή η λήψη στιγμιότυπου της τρέχουσας εικόνας</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6064" />
-        <location filename="../src/PinWindow.cpp" line="6128" />
-        <location filename="../src/PinWindow.cpp" line="6164" />
+        <location filename="../src/PinWindow.cpp" line="6114" />
+        <location filename="../src/PinWindow.cpp" line="6178" />
+        <location filename="../src/PinWindow.cpp" line="6214" />
         <source>Beautify rendering failed</source>
         <translation>Αποτυχία απόδοσης ομορφοποίησης</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5953" />
+        <location filename="../src/PinWindow.cpp" line="6003" />
         <source>Unable to apply region layout</source>
         <translation>Δεν ήταν δυνατή η εφαρμογή της διάταξης περιοχών</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6084" />
+        <location filename="../src/PinWindow.cpp" line="6134" />
         <source>Beautified image copied</source>
         <translation>Η ομορφοποιημένη εικόνα αντιγράφηκε</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1592" />
-        <location filename="../src/PinWindow.cpp" line="1630" />
-        <location filename="../src/PinWindow.cpp" line="1664" />
-        <location filename="../src/PinWindow.cpp" line="6097" />
-        <location filename="../src/PinWindow.cpp" line="6123" />
-        <location filename="../src/PinWindow.cpp" line="6159" />
+        <location filename="../src/PinWindow.cpp" line="1594" />
+        <location filename="../src/PinWindow.cpp" line="1632" />
+        <location filename="../src/PinWindow.cpp" line="1666" />
+        <location filename="../src/PinWindow.cpp" line="6147" />
+        <location filename="../src/PinWindow.cpp" line="6173" />
+        <location filename="../src/PinWindow.cpp" line="6209" />
         <source>No image available to save</source>
         <translation>Δεν υπάρχει διαθέσιμη εικόνα για αποθήκευση</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6143" />
-        <location filename="../src/PinWindow.cpp" line="6178" />
+        <location filename="../src/PinWindow.cpp" line="6193" />
+        <location filename="../src/PinWindow.cpp" line="6228" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>Αποτυχία αποθήκευσης ομορφοποιημένου στιγμιοτύπου: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6153" />
+        <location filename="../src/PinWindow.cpp" line="6203" />
         <source>Save Beautified Screenshot</source>
         <translation>Αποθήκευση ομορφοποιημένου στιγμιοτύπου</translation>
     </message>
@@ -2797,31 +2833,31 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>Κάλυψη ευαίσθητης περιοχής στο εξαγόμενο αρχείο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3410" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3441" />
         <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
         <translation>μάσκες: %1, ενσωματωμένες στην εξαγωγή· το προσωρινό αρχείο χωρίς μάσκες διαγράφεται μετά την αποθήκευση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1028" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1046" />
         <source>Selected mask</source>
         <translation>Επιλεγμένη μάσκα</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="70" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1967" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2008" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2010" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2048" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1997" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2038" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2040" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2078" />
         <source>the end</source>
         <translation>το τέλος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1966" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1996" />
         <source>Mask from %1 to %2</source>
         <translation>Μάσκα από %1 έως %2</translation>
     </message>
@@ -2834,17 +2870,17 @@ Size: %2</source>
         <translation>Διαγραφή αυτής της μάσκας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2396" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2426" />
         <source>Mask end</source>
         <translation>Τέλος μάσκας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2414" />
         <source>Mask start</source>
         <translation>Έναρξη μάσκας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2365" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2395" />
         <source>Mask for the whole recording, or only for a time range</source>
         <translation>Μάσκα για ολόκληρη την εγγραφή ή μόνο για ένα χρονικό διάστημα</translation>
     </message>
@@ -2880,12 +2916,12 @@ Size: %2</source>
         <translation>μάσκες: %1, ενσωματωμένες στην εξαγωγή· το πρωτότυπο κρατά τα πάντα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3411" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3442" />
         <source>masks need GIF or WebP on this system</source>
         <translation>οι μάσκες απαιτούν GIF ή WebP σε αυτό το σύστημα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
         <source>Masks need GIF or WebP on this system</source>
         <translation>Οι μάσκες απαιτούν GIF ή WebP σε αυτό το σύστημα</translation>
     </message>
@@ -2894,17 +2930,17 @@ Size: %2</source>
         <translation>Κάλυψη ευαίσθητης περιοχής στην εξαγωγή. Η αρχική εγγραφή δεν αλλάζει.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1403" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
         <source>Add Mask</source>
         <translation>Προσθήκη μάσκας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1396" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1414" />
         <source>No room for a new zoom here</source>
         <translation>Δεν υπάρχει χώρος για νέο ζουμ εδώ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1929" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1959" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>Ζουμ %1× από %2 έως %3</translation>
     </message>
@@ -2925,7 +2961,7 @@ Size: %2</source>
         <translation>Διαγραφή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3266" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3297" />
         <source>Turn all zooms on or off without deleting them</source>
         <translation>Ενεργοποίηση ή απενεργοποίηση όλων των ζουμ χωρίς διαγραφή</translation>
     </message>
@@ -2938,7 +2974,7 @@ Size: %2</source>
         <translation>Ζουμ ενεργό</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3273" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3304" />
         <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
         <translation>Πιο ήπια ζουμ σε όλα τα τμήματα: μικρότερα και πιο αργά, χωρίς άμεση μετατόπιση</translation>
     </message>
@@ -2947,100 +2983,100 @@ Size: %2</source>
         <translation>Λιγότερη κίνηση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3231" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
         <source>Zoom end</source>
         <translation>Τέλος ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3251" />
         <source>Zoom start</source>
         <translation>Έναρξη ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
         <source>Zoom: %1</source>
         <translation>Ζουμ: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1406" />
         <source>Add a zoom at the playhead</source>
         <translation>Προσθήκη ζουμ στη θέση αναπαραγωγής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1387" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1405" />
         <source>Add Zoom</source>
         <translation>Προσθήκη ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1380" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1398" />
         <source>No clicks to zoom in on</source>
         <translation>Δεν υπάρχουν κλικ για ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1379" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1397" />
         <source>Zooms added: %1</source>
         <translation>Ζουμ που προστέθηκαν: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1373" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1391" />
         <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
         <translation>Το αυτόματο ζουμ χρειάζεται καταγεγραμμένα κλικ· προσθέστε ζουμ χειροκίνητα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1372" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1390" />
         <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
         <translation>Αυτόματο ζουμ στα κλικ. Τα ζουμ που προσθέσατε ή αλλάξατε διατηρούνται.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1370" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1388" />
         <source>Auto Zoom</source>
         <translation>Αυτόματο ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2500" />
         <source>Highlight Clicks</source>
         <translation>Επισήμανση κλικ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2500" />
         <source>Hide Click Highlights</source>
         <translation>Απόκρυψη επισήμανσης κλικ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2499" />
         <source>Clicks</source>
         <translation>Κλικ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2459" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2489" />
         <source>Smooths the pointer's path; clicks stay where they happened</source>
         <translation>Εξομαλύνει τη διαδρομή του δείκτη· τα κλικ μένουν εκεί που έγιναν</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
         <source>Pointer Size: %1</source>
         <translation>Μέγεθος δείκτη: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
         <source>Show the Mouse Pointer</source>
         <translation>Εμφάνιση δείκτη ποντικιού</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2440" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2470" />
         <source>Hide the Mouse Pointer</source>
         <translation>Απόκρυψη δείκτη ποντικιού</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1524" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2230" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2439" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1542" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2260" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2469" />
         <source>Pointer</source>
         <translation>Δείκτης</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3407" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3438" />
         <source>pointer effects need GIF or WebP on this system</source>
         <translation>τα εφέ δείκτη απαιτούν GIF ή WebP σε αυτό το σύστημα</translation>
     </message>
@@ -3061,33 +3097,33 @@ Size: %2</source>
         <translation>Εξομάλυνση: Ανενεργή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3898" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3929" />
         <source>Save again with the current settings</source>
         <translation>Αποθήκευση ξανά με τις τρέχουσες ρυθμίσεις</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3896" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3927" />
         <source>Try Again</source>
         <translation>Δοκιμάστε ξανά</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3714" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3745" />
         <source>Keep Exporting</source>
         <translation>Συνέχεια εξαγωγής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3704" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3735" />
         <source>An export is in progress. Keep exporting or cancel it?</source>
         <translation>Μια εξαγωγή βρίσκεται σε εξέλιξη. Συνέχεια ή ακύρωση;</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3691" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="3722" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3753" />
         <source>Cancel Export</source>
         <translation>Ακύρωση εξαγωγής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1195" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1213" />
         <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
         <translation>Εφαρμογή περικοπής (Enter) · τα βέλη τη μετακινούν 2 px (Shift: 10 px)</translation>
     </message>
@@ -3096,96 +3132,96 @@ Size: %2</source>
         <translation>Σύγκριση με το αρχικό (\)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1224" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1242" />
         <source>Compare with Original</source>
         <translation>Σύγκριση με το αρχικό</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1236" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1239" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1257" />
         <source>Reset Crop and Trim</source>
         <translation>Επαναφορά περικοπής και αποκοπής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="671" />
         <source>Redo Edit</source>
         <translation>Επανάληψη επεξεργασίας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="658" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
         <source>Redo Edit (Ctrl+Shift+Z)</source>
         <translation>Επανάληψη επεξεργασίας (Ctrl+Shift+Z)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="648" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="660" />
         <source>Undo Edit</source>
         <translation>Αναίρεση επεξεργασίας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="647" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="659" />
         <source>Undo Edit (Ctrl+Z)</source>
         <translation>Αναίρεση επεξεργασίας (Ctrl+Z)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3358" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3389" />
         <source>Crop %1 in pixels</source>
         <translation>Περικοπή %1 σε pixel</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3339" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3370" />
         <source>H</source>
         <translation>Υ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3338" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3369" />
         <source>W</source>
         <translation>Π</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3337" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3368" />
         <source>Y</source>
         <translation>Y</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3336" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3367" />
         <source>X</source>
         <translation>X</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3317" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3348" />
         <source>Crop aspect: %1</source>
         <translation>Αναλογία περικοπής: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1351" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1369" />
         <source>Trim end</source>
         <translation>Τέλος περικοπής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1337" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1355" />
         <source>Trim start</source>
         <translation>Αρχή περικοπής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3405" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3436" />
         <source>no audio</source>
         <translation>χωρίς ήχο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3403" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3434" />
         <source>%1 kept</source>
         <translation>Διατηρούνται %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3402" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3433" />
         <source>Original %1 → Output %2</source>
         <translation>Αρχικό %1 → Έξοδος %2</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="203" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="248" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3064" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3542" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3095" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3573" />
         <source>Original</source>
         <translation>Αρχικό</translation>
     </message>
@@ -3195,37 +3231,37 @@ Size: %2</source>
         <translation>Ελεύθερο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
         <source>Discard</source>
         <translation>Απόρριψη</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
         <source>Keep Recording</source>
         <translation>Διατήρηση εγγραφής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3817" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3848" />
         <source>The video will be deleted and cannot be recovered.</source>
         <translation>Το βίντεο θα διαγραφεί και δεν θα μπορεί να ανακτηθεί.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
         <source>Discard this recording?</source>
         <translation>Απόρριψη αυτής της εγγραφής;</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3517" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3548" />
         <source>Clear Crop</source>
         <translation>Κατάργηση περικοπής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3567" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3598" />
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Κάντε κλικ σε ένα παράθυρο για περικοπή σε αυτό ή σύρετε για σχεδίαση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3593" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3624" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Η αναπαραγωγή ήχου δεν είναι διαθέσιμη σε αυτήν την προεπισκόπηση.</translation>
     </message>
@@ -3242,12 +3278,12 @@ Size: %2</source>
         <translation>Εξαγωγή ως WebP</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1152" />
         <source>Pause Preview (Space)</source>
         <translation>Παύση προεπισκόπησης (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1134" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1152" />
         <source>Play Preview (Space)</source>
         <translation>Αναπαραγωγή προεπισκόπησης (Space)</translation>
     </message>
@@ -3256,42 +3292,42 @@ Size: %2</source>
         <translation>Ταχύτητα αναπαραγωγής: %1x</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1203" />
         <source>Unmute Preview (M)</source>
         <translation>Κατάργηση σίγασης προεπισκόπησης (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1203" />
         <source>Mute Preview (M)</source>
         <translation>Σίγαση προεπισκόπησης (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1198" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1216" />
         <source>Apply Crop (Enter)</source>
         <translation>Εφαρμογή περικοπής (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1214" />
         <source>Edit Crop</source>
         <translation>Επεξεργασία περικοπής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1196" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1214" />
         <source>Crop Recording</source>
         <translation>Περικοπή περιοχής εγγραφής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1235" />
         <source>Clear Trim Selection</source>
         <translation>Εκκαθάριση επιλογής περικοπής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1235" />
         <source>Trim Recording</source>
         <translation>Περικοπή εγγραφής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="709" />
         <source>Discard Recording (Esc)</source>
         <translation>Απόρριψη εγγραφής (Esc)</translation>
     </message>
@@ -3300,12 +3336,12 @@ Size: %2</source>
         <translation>Αποθήκευση εγγραφής (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3686" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3717" />
         <source>Cancel</source>
         <translation>Ακύρωση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3912" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3943" />
         <source>Dismiss Error</source>
         <translation>Κλείσιμο σφάλματος</translation>
     </message>
@@ -3326,7 +3362,7 @@ Size: %2</source>
         <translation>Θόλωση κίνησης: Υψηλή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2047" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2077" />
         <source>Pointer hidden from %1 to %2</source>
         <translation>Δείκτης κρυμμένος από %1 έως %2</translation>
     </message>
@@ -3347,12 +3383,12 @@ Size: %2</source>
         <translation>Απόκρυψη σε αδράνεια: Ανενεργή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2476" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2506" />
         <source>Fade the pointer out when it stops moving; it comes back before it moves or clicks</source>
         <translation>Ο δείκτης σβήνει όταν σταματά να κινείται· επανέρχεται πριν κινηθεί ή κάνει κλικ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2485" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2515" />
         <source>A short trail behind a fast-moving pointer</source>
         <translation>Ένα σύντομο ίχνος πίσω από έναν δείκτη που κινείται γρήγορα</translation>
     </message>
@@ -3365,22 +3401,22 @@ Size: %2</source>
         <translation>Ακίνητο τέλος: Ανενεργό</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2493" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2523" />
         <source>Keep the pointer still at the end, so moving to stop the recording is not shown</source>
         <translation>Ο δείκτης μένει ακίνητος στο τέλος, ώστε να μη φαίνεται η κίνηση για τη διακοπή της εγγραφής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2503" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2533" />
         <source>Hide Pointer Here</source>
         <translation>Απόκρυψη δείκτη εδώ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2504" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2534" />
         <source>Hide the pointer for a while from the playhead</source>
         <translation>Απόκρυψη του δείκτη για λίγο από τη θέση αναπαραγωγής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2538" />
         <source>No room for a hidden range here</source>
         <translation>Δεν υπάρχει χώρος για κρυφό διάστημα εδώ</translation>
     </message>
@@ -3393,12 +3429,12 @@ Size: %2</source>
         <translation>Χωρίς δείκτη</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3158" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3189" />
         <source>Hidden pointer start</source>
         <translation>Αρχή απόκρυψης δείκτη</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3170" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3201" />
         <source>Hidden pointer end</source>
         <translation>Τέλος απόκρυψης δείκτη</translation>
     </message>
@@ -3451,17 +3487,17 @@ Size: %2</source>
         <translation>Μέγεθος, ρυθμός καρέ, ποιότητα και κωδικοποιητής του MP4, με εκτίμηση μεγέθους αρχείου</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3067" />
         <source>Changing the MP4 size and frame rate is not supported on this system yet</source>
         <translation>Η αλλαγή μεγέθους και ρυθμού καρέ του MP4 δεν υποστηρίζεται ακόμα σε αυτό το σύστημα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3042" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3073" />
         <source>Make the video smaller; it is never made larger than recorded</source>
         <translation>Μικραίνει το βίντεο· δεν γίνεται ποτέ μεγαλύτερο από την εγγραφή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3053" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3084" />
         <source>Video width in pixels</source>
         <translation>Πλάτος βίντεο σε pixel</translation>
     </message>
@@ -3474,52 +3510,52 @@ Size: %2</source>
         <translation>FPS: Αρχικό</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3061" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3092" />
         <source>A lower frame rate makes a smaller file; it is never higher than recorded</source>
         <translation>Χαμηλότερος ρυθμός καρέ δίνει μικρότερο αρχείο· δεν είναι ποτέ υψηλότερος από την εγγραφή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3070" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
         <source>Default uses the quality from the Recording settings</source>
         <translation>Η προεπιλογή χρησιμοποιεί την ποιότητα από τις ρυθμίσεις εγγραφής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3087" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3118" />
         <source>Plays everywhere</source>
         <translation>Αναπαράγεται παντού</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3098" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3129" />
         <source>Smaller files at the same quality; some older players cannot open them</source>
         <translation>Μικρότερα αρχεία με την ίδια ποιότητα· ορισμένα παλαιότερα προγράμματα δεν τα ανοίγουν</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3133" />
         <source>HEVC export is not available on this system</source>
         <translation>Η εξαγωγή HEVC δεν είναι διαθέσιμη σε αυτό το σύστημα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3132" />
         <source>HEVC export needs HEVC Video Extensions from the Microsoft Store</source>
         <translation>Η εξαγωγή HEVC απαιτεί τις HEVC Video Extensions από το Microsoft Store</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3113" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3144" />
         <source>%1 × %2, %3 fps · %4 (estimate)</source>
         <translation>%1 × %2, %3 fps · %4 (εκτίμηση)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2222" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
         <source>A background, padding, rounded corners, a shadow and a border around the video</source>
         <translation>Φόντο, περιθώριο, στρογγυλεμένες γωνίες, σκιά και περίγραμμα γύρω από το βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
         <source>Add a shadow under the video</source>
         <translation>Προσθήκη σκιάς κάτω από το βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
         <source>Add a thin border around the video</source>
         <translation>Προσθήκη λεπτού περιγράμματος γύρω από το βίντεο</translation>
     </message>
@@ -3528,32 +3564,32 @@ Size: %2</source>
         <translation>Το πλαίσιο χρειάζεται GIF ή WebP σε αυτό το σύστημα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2883" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2914" />
         <source>Background: %1</source>
         <translation>Φόντο: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
         <source>Background: Black</source>
         <translation>Φόντο: Μαύρο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2946" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2977" />
         <source>Background image: %1</source>
         <translation>Εικόνα φόντου: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2917" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
         <source>Background: White</source>
         <translation>Φόντο: Λευκό</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2936" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2967" />
         <source>Blurred Video</source>
         <translation>Θολωμένο βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3012" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3043" />
         <source>Border</source>
         <translation>Περίγραμμα</translation>
     </message>
@@ -3562,7 +3598,7 @@ Size: %2</source>
         <translation>Γωνίες: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2888" />
         <source>Draw the frame around the exported video</source>
         <translation>Σχεδίαση του πλαισίου γύρω από το εξαγόμενο βίντεο</translation>
     </message>
@@ -3571,22 +3607,22 @@ Size: %2</source>
         <translation>Πλαίσιο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2887" />
         <source>Frame: Off</source>
         <translation>Πλαίσιο: Ανενεργό</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2887" />
         <source>Frame: On</source>
         <translation>Πλαίσιο: Ενεργό</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2997" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3028" />
         <source>How round the video's corners are</source>
         <translation>Πόσο στρογγυλεμένες είναι οι γωνίες του βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2944" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
         <source>Image…</source>
         <translation>Εικόνα…</translation>
     </message>
@@ -3620,12 +3656,12 @@ Size: %2</source>
         <translation>Αναλογία: Αυτόματη</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3013" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
         <source>Remove the border</source>
         <translation>Αφαίρεση περιγράμματος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
         <source>Remove the shadow</source>
         <translation>Αφαίρεση σκιάς</translation>
     </message>
@@ -3636,37 +3672,37 @@ Size: %2</source>
         <translation>Μικρό</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2989" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
         <source>Space around the video</source>
         <translation>Χώρος γύρω από το βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3019" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3050" />
         <source>The shape of the exported video; the background fills the extra space</source>
         <translation>Το σχήμα του εξαγόμενου βίντεο· το φόντο γεμίζει τον επιπλέον χώρο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2937" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2968" />
         <source>The video itself, blurred, behind it (masks applied)</source>
         <translation>Το ίδιο το βίντεο, θολωμένο, από πίσω (με τις μάσκες)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2947" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2978" />
         <source>Use an image file as the background</source>
         <translation>Χρήση αρχείου εικόνας ως φόντο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1689" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1707" />
         <source>Cut from %1 to %2</source>
         <translation>Αποκομμένο από %1 έως %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1317" />
         <source>Cut Part</source>
         <translation>Αποκοπή τμήματος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1286" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
         <source>Cuts and speed changes need GIF or WebP on this system</source>
         <translation>Οι περικοπές και οι αλλαγές ταχύτητας χρειάζονται GIF ή WebP σε αυτό το σύστημα</translation>
     </message>
@@ -3679,17 +3715,17 @@ Size: %2</source>
         <translation>Πόσο γρήγορα παίζει στην εξαγωγή το τμήμα στη θέση αναπαραγωγής· τα αλλαγμένα τμήματα είναι χωρίς ήχο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1317" />
         <source>Keep Part</source>
         <translation>Διατήρηση τμήματος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1305" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1323" />
         <source>Leave the part at the playhead out of the export (Delete)</source>
         <translation>Παράλειψη του τμήματος στη θέση αναπαραγωγής από την εξαγωγή (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1691" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1709" />
         <source>Part from %1 to %2 at %3</source>
         <translation>Τμήμα από %1 έως %2 με %3</translation>
     </message>
@@ -3698,27 +3734,27 @@ Size: %2</source>
         <translation>Ταχύτητα τμήματος: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1304" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1322" />
         <source>Put the part at the playhead back (Delete)</source>
         <translation>Επαναφορά του τμήματος στη θέση αναπαραγωγής (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1283" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
         <source>Split</source>
         <translation>Διαίρεση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1844" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1862" />
         <source>Split at %1</source>
         <translation>Διαίρεση στο %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1285" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1303" />
         <source>Split the recording at the playhead (S)</source>
         <translation>Διαίρεση της εγγραφής στη θέση αναπαραγωγής (S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1290" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1308" />
         <source>Too close to another split or an end</source>
         <translation>Πολύ κοντά σε άλλη διαίρεση ή σε άκρο</translation>
     </message>
@@ -3739,49 +3775,49 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2858" />
         <source>Dark</source>
         <translation>Σκούρο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2825" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2856" />
         <source>Dark or light keys</source>
         <translation>Σκούρα ή ανοιχτά πλήκτρα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
         <source>Draw the shortcuts into the exported video</source>
         <translation>Σχεδίαση των συντομεύσεων στο εξαγόμενο βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2817" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2848" />
         <source>How large the shortcuts are</source>
         <translation>Πόσο μεγάλες είναι οι συντομεύσεις</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2864" />
         <source>How long a shortcut stays after it was pressed; keys pressed close together show together</source>
         <translation>Πόσο παραμένει μια συντόμευση αφού πατηθεί· πλήκτρα που πατήθηκαν κοντά εμφανίζονται μαζί</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2295" />
         <source>Keys</source>
         <translation>Πλήκτρα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
         <source>Keys: Off</source>
         <translation>Πλήκτρα: Ανενεργά</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2802" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2833" />
         <source>Keys: On</source>
         <translation>Πλήκτρα: Ενεργά</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="220" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2827" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2858" />
         <source>Light</source>
         <translation>Ανοιχτό</translation>
     </message>
@@ -3811,32 +3847,32 @@ Size: %2</source>
         <translation>Πάνω</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2809" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2840" />
         <source>Where the shortcuts appear</source>
         <translation>Πού εμφανίζονται οι συντομεύσεις</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3036" />
         <source>Shadow</source>
         <translation>Σκιά</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2652" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2683" />
         <source>A box behind the text, so it reads on any picture</source>
         <translation>Ένα πλαίσιο πίσω από το κείμενο, για να διαβάζεται πάνω σε κάθε εικόνα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1441" />
         <source>A title or caption at the playhead</source>
         <translation>Ένας τίτλος ή λεζάντα στη θέση αναπαραγωγής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1460" />
         <source>Add Image</source>
         <translation>Προσθήκη εικόνας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1421" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1439" />
         <source>Add Text</source>
         <translation>Προσθήκη κειμένου</translation>
     </message>
@@ -3853,7 +3889,7 @@ Size: %2</source>
         <translation>Στοίχιση δεξιά</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1444" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1462" />
         <source>An image such as a logo, for the whole recording</source>
         <translation>Μια εικόνα, όπως ένα λογότυπο, για όλη την εγγραφή</translation>
     </message>
@@ -3870,12 +3906,12 @@ Size: %2</source>
         <translation>Σύρετε την επικάλυψη για μετακίνηση ή τη γωνία της για αλλαγή μεγέθους. Το «Τέλος» ολοκληρώνει την επεξεργασία.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2661" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2692" />
         <source>How lines line up</source>
         <translation>Πώς στοιχίζονται οι γραμμές</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2701" />
         <source>How see-through the image is</source>
         <translation>Πόσο διάφανη είναι η εικόνα</translation>
     </message>
@@ -3885,7 +3921,7 @@ Size: %2</source>
         <translation>Επικάλυψη εικόνας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2606" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2637" />
         <source>Larger</source>
         <translation>Μεγαλύτερο</translation>
     </message>
@@ -3902,45 +3938,45 @@ Size: %2</source>
         <translation>Αδιαφάνεια: %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2743" />
         <source>Overlay end</source>
         <translation>Τέλος επικάλυψης</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2700" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2731" />
         <source>Overlay start</source>
         <translation>Αρχή επικάλυψης</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2553" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
         <source>Overlay text</source>
         <translation>Κείμενο επικάλυψης</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1424" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1445" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1442" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1463" />
         <source>Overlays need GIF or WebP on this system</source>
         <translation>Οι επικαλύψεις χρειάζονται GIF ή WebP σε αυτό το σύστημα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="936" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="954" />
         <source>Selected overlay</source>
         <translation>Επιλεγμένη επικάλυψη</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2682" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2713" />
         <source>Show it for the whole recording, or only for a time range</source>
         <translation>Εμφάνιση για όλη την εγγραφή ή μόνο για ένα χρονικό διάστημα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2598" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2629" />
         <source>Smaller</source>
         <translation>Μικρότερο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2536" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2552" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2034" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2566" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2582" />
         <source>Text</source>
         <translation>Κείμενο</translation>
     </message>
@@ -3958,27 +3994,27 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="54" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2277" />
         <source>Audio</source>
         <translation>Ήχος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2788" />
         <source>Leave the microphone out of the export</source>
         <translation>Παράλειψη του μικροφώνου από την εξαγωγή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2782" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2813" />
         <source>Leave the system audio out of the export</source>
         <translation>Παράλειψη του ήχου συστήματος από την εξαγωγή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2256" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
         <source>Microphone and system audio volume, mute, and noise reduction</source>
         <translation>Ένταση μικροφώνου και ήχου συστήματος, σίγαση και μείωση θορύβου</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2747" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2778" />
         <source>Microphone volume in the export</source>
         <translation>Ένταση μικροφώνου στην εξαγωγή</translation>
     </message>
@@ -3991,17 +4027,17 @@ Size: %2</source>
         <translation>Η μίξη των δύο κομματιών δεν υποστηρίζεται ακόμα για MP4 σε αυτό το σύστημα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2756" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2787" />
         <source>Mute Microphone</source>
         <translation>Σίγαση μικροφώνου</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2781" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2812" />
         <source>Mute System Audio</source>
         <translation>Σίγαση ήχου συστήματος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2764" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2795" />
         <source>Reduce Noise</source>
         <translation>Μείωση θορύβου</translation>
     </message>
@@ -4010,12 +4046,12 @@ Size: %2</source>
         <translation>Ήχος συστήματος: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2772" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2803" />
         <source>System audio volume in the export</source>
         <translation>Ένταση ήχου συστήματος στην εξαγωγή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2765" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2796" />
         <source>Turn down hiss, hum and room noise between words on the microphone</source>
         <translation>Μείωση συριγμού, βόμβου και θορύβου δωματίου ανάμεσα στις λέξεις στο μικρόφωνο</translation>
     </message>
@@ -4026,7 +4062,7 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="51" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1522" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1540" />
         <source>Mask</source>
         <translation>Μάσκα</translation>
     </message>
@@ -4052,7 +4088,7 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="53" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2217" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2247" />
         <source>Canvas</source>
         <translation>Καμβάς</translation>
     </message>
@@ -4079,14 +4115,14 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="68" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="80" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2364" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2681" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2394" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2712" />
         <source>Whole recording</source>
         <translation>Ολόκληρη η εγγραφή</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="69" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2289" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2319" />
         <source>%1 – %2</source>
         <comment>time range</comment>
         <translation>%1 – %2</translation>
@@ -4099,8 +4135,8 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="208" />
         <location filename="../src/qml/recording/RecordingPreview.qml" line="212" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2525" />
         <source>Off</source>
         <translation>Ανενεργό</translation>
     </message>
@@ -4169,182 +4205,182 @@ Size: %2</source>
         <translation>Προσαρμοσμένο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="600" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="612" />
         <source>Recording</source>
         <translation>Εγγραφή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="682" />
         <source>Hide settings</source>
         <translation>Απόκρυψη ρυθμίσεων</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="670" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="682" />
         <source>Show settings</source>
         <translation>Εμφάνιση ρυθμίσεων</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="679" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="691" />
         <source>Export…</source>
         <translation>Εξαγωγή…</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="683" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="695" />
         <source>Choose a format and export (Ctrl+S)</source>
         <translation>Επιλογή μορφής και εξαγωγή (Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="709" />
         <source>Close Without Saving (Esc)</source>
         <translation>Κλείσιμο χωρίς αποθήκευση (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1161" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1179" />
         <source>Not exported · export %1</source>
         <translation>Δεν εξάγεται · εξαγωγή %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1162" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1180" />
         <source>Export %1 / %2</source>
         <translation>Εξαγωγή %1 / %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1165" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1183" />
         <source>The playhead is in a part that is not exported. The export is %1 long.</source>
         <translation>Η θέση αναπαραγωγής βρίσκεται σε τμήμα που δεν εξάγεται. Η εξαγωγή διαρκεί %1.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1167" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1185" />
         <source>Exported time %1 of %2</source>
         <translation>Χρόνος εξαγωγής %1 από %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1229" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1247" />
         <source>Compare with Original (%1)</source>
         <translation>Σύγκριση με το αρχικό (%1)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1258" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1276" />
         <source>Preview speed</source>
         <translation>Ταχύτητα προεπισκόπησης</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1259" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1277" />
         <source>Playback speed of this preview only; the export is not changed</source>
         <translation>Ταχύτητα αναπαραγωγής μόνο αυτής της προεπισκόπησης· η εξαγωγή δεν αλλάζει</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1301" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1319" />
         <source>Put the selected clip back (Delete)</source>
         <translation>Επαναφορά του επιλεγμένου κλιπ (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1302" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1320" />
         <source>Leave the selected clip out of the export (Delete)</source>
         <translation>Παράλειψη του επιλεγμένου κλιπ από την εξαγωγή (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1314" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1332" />
         <source>Add effect</source>
         <translation>Προσθήκη εφέ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1315" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1333" />
         <source>Zoom, mask, text or image at the playhead</source>
         <translation>Ζουμ, μάσκα, κείμενο ή εικόνα στη θέση αναπαραγωγής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1328" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1346" />
         <source>Trim</source>
         <translation>Αποκοπή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1521" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1539" />
         <source>Zoom</source>
         <translation>Ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1523" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1541" />
         <source>Text &amp; image</source>
         <translation>Κείμενο και εικόνα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1581" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1599" />
         <source>Video</source>
         <translation>Βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1674" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1692" />
         <source>Cut</source>
         <translation>Αποκομμένο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1808" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1826" />
         <source>No effects yet. Use Add effect to zoom, mask, or add text at the playhead.</source>
         <translation>Δεν υπάρχουν εφέ ακόμα. Χρησιμοποιήστε την Προσθήκη εφέ για ζουμ, μάσκα ή κείμενο στη θέση αναπαραγωγής.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1845" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1863" />
         <source>Arrow keys move the split; Delete joins the two clips</source>
         <translation>Τα βέλη μετακινούν το σημείο διαίρεσης, το Delete ενώνει τα δύο κλιπ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1928" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1958" />
         <source>Zoom %1</source>
         <translation>Ζουμ %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="1965" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="1995" />
         <source>Mask · %1</source>
         <translation>Μάσκα · %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2004" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2034" />
         <source>Image</source>
         <translation>Εικόνα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2006" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2036" />
         <source>Text overlay "%1" from %2 to %3</source>
         <translation>Επικάλυψη κειμένου «%1» από %2 έως %3</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2009" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2039" />
         <source>Image overlay from %1 to %2</source>
         <translation>Επικάλυψη εικόνας από %1 έως %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2046" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2076" />
         <source>Pointer hidden</source>
         <translation>Δείκτης κρυμμένος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2204" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2234" />
         <source>These settings apply to the whole recording. Select a clip or effect on the timeline to edit just that part.</source>
         <translation>Αυτές οι ρυθμίσεις ισχύουν για ολόκληρη την εγγραφή. Επιλέξτε ένα κλιπ ή εφέ στη γραμμή χρόνου για να επεξεργαστείτε μόνο εκείνο το τμήμα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2219" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
         <source>Frame on · padding %1</source>
         <translation>Πλαίσιο ενεργό · περιθώριο %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2220" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
         <source>No frame</source>
         <translation>Χωρίς πλαίσιο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2221" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2251" />
         <source>A frame needs GIF or WebP on this system.</source>
         <translation>Το πλαίσιο χρειάζεται GIF ή WebP σε αυτό το σύστημα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2231" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2261" />
         <source>Hidden</source>
         <translation>Κρυφός</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2233" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2263" />
         <source>Shown · %1 · %n hidden range(s)</source>
         <translation>
             <numerusform>Εμφανίζεται · %1 · %n κρυφό διάστημα</numerusform>
@@ -4352,53 +4388,53 @@ Size: %2</source>
         </translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2235" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2265" />
         <source>Shown · %1</source>
         <translation>Εμφανίζεται · %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2236" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2266" />
         <source>No pointer data was recorded.</source>
         <translation>Δεν καταγράφηκαν δεδομένα δείκτη.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2237" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
         <source>Pointer effects need GIF or WebP on this system.</source>
         <translation>Τα εφέ δείκτη απαιτούν GIF ή WebP σε αυτό το σύστημα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2238" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
         <source>Size, smoothing, click highlights, hide when idle, motion blur and a still ending</source>
         <translation>Μέγεθος, εξομάλυνση, επισήμανση κλικ, απόκρυψη σε αδράνεια, θόλωση κίνησης και ακίνητο τέλος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2248" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2278" />
         <source>Microphone %1 · System %2</source>
         <translation>Μικρόφωνο %1 · Σύστημα %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2249" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2250" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2279" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2280" />
         <source>muted</source>
         <translation>σε σίγαση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2252" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2282" />
         <source>No separate microphone and system tracks. The recorded audio is kept as it is.</source>
         <translation>Δεν υπάρχουν ξεχωριστά κομμάτια μικροφώνου και συστήματος. Ο ήχος της εγγραφής διατηρείται ως έχει.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2254" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2284" />
         <source>GIF and WebP have no sound. Choose MP4 to adjust the audio.</source>
         <translation>Τα GIF και WebP δεν έχουν ήχο. Επιλέξτε MP4 για να ρυθμίσετε τον ήχο.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2255" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2285" />
         <source>Mixing the two tracks is not supported for MP4 on this system yet.</source>
         <translation>Η μίξη των δύο κομματιών δεν υποστηρίζεται ακόμα για MP4 σε αυτό το σύστημα.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2267" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2297" />
         <source>Shown · %n shortcut(s) recorded</source>
         <translation>
             <numerusform>Εμφανίζεται · καταγράφηκε %n συντόμευση</numerusform>
@@ -4406,7 +4442,7 @@ Size: %2</source>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2268" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2298" />
         <source>Off · %n shortcut(s) recorded</source>
         <translation>
             <numerusform>Ανενεργό · καταγράφηκε %n συντόμευση</numerusform>
@@ -4414,352 +4450,352 @@ Size: %2</source>
         </translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2269" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
         <source>No shortcuts were recorded.</source>
         <translation>Δεν καταγράφηκαν συντομεύσεις.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2270" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
         <source>Shortcut hints need GIF or WebP on this system.</source>
         <translation>Οι υποδείξεις συντομεύσεων χρειάζονται GIF ή WebP σε αυτό το σύστημα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2271" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2301" />
         <source>Show the shortcuts pressed while recording</source>
         <translation>Εμφάνιση των συντομεύσεων που πατήθηκαν κατά την εγγραφή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2286" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2316" />
         <source>Source range</source>
         <translation>Διάστημα πηγής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2299" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2329" />
         <source>Export speed</source>
         <translation>Ταχύτητα εξαγωγής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2300" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2330" />
         <source>How fast this clip plays in the exported file. Changed-speed clips are silent.</source>
         <translation>Πόσο γρήγορα παίζει αυτό το κλιπ στο εξαγόμενο αρχείο. Τα κλιπ με αλλαγμένη ταχύτητα είναι χωρίς ήχο.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2314" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2344" />
         <source>Cuts and speed changes need GIF or WebP on this system.</source>
         <translation>Οι περικοπές και οι αλλαγές ταχύτητας χρειάζονται GIF ή WebP σε αυτό το σύστημα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2353" />
         <source>Keep clip</source>
         <translation>Διατήρηση κλιπ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2323" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2353" />
         <source>Cut clip</source>
         <translation>Αποκοπή κλιπ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2324" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
         <source>Leave this clip out of the export, or put it back (Delete)</source>
         <translation>Παράλειψη αυτού του κλιπ από την εξαγωγή ή επαναφορά του (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2354" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2384" />
         <source>Style</source>
         <translation>Στυλ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2355" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2385" />
         <source>Solid covers with black; pixelate and blur weaken detail, which may still be recoverable</source>
         <translation>Η συμπαγής καλύπτει με μαύρο· η εικονοστοιχειοποίηση και η θόλωση αποδυναμώνουν τις λεπτομέρειες, που ίσως να ανακτώνται ακόμη</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2361" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2678" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3151" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3213" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2391" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2709" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3182" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3244" />
         <source>Time range</source>
         <translation>Χρονικό διάστημα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2406" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2436" />
         <source>Drag the mask on the preview to move it, or its corner to resize it.</source>
         <translation>Σύρετε τη μάσκα στην προεπισκόπηση για μετακίνηση ή τη γωνία της για αλλαγή μεγέθους.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2417" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2447" />
         <source>Delete mask</source>
         <translation>Διαγραφή μάσκας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2418" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2448" />
         <source>Delete this mask (Delete)</source>
         <translation>Διαγραφή αυτής της μάσκας (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2449" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2479" />
         <source>Pointer size</source>
         <translation>Μέγεθος δείκτη</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2460" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2490" />
         <source>Smoothing</source>
         <translation>Εξομάλυνση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2477" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2507" />
         <source>Hide when idle</source>
         <translation>Απόκρυψη σε αδράνεια</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2478" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2480" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2495" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2497" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2835" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2837" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2508" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2510" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2525" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2527" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2866" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2868" />
         <source>%1 s</source>
         <translation>%1 δ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2486" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2516" />
         <source>Motion blur</source>
         <translation>Θόλωση κίνησης</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2494" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2524" />
         <source>Still ending</source>
         <translation>Ακίνητο τέλος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2571" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2602" />
         <source>Font and size</source>
         <translation>Γραμματοσειρά και μέγεθος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2597" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2628" />
         <source>Smaller text</source>
         <translation>Μικρότερο κείμενο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2605" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2636" />
         <source>Larger text</source>
         <translation>Μεγαλύτερο κείμενο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2612" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2643" />
         <source>Colour</source>
         <translation>Χρώμα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2633" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2664" />
         <source>Text colour: %1</source>
         <translation>Χρώμα κειμένου: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2653" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2684" />
         <source>Background</source>
         <translation>Φόντο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2662" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2693" />
         <source>Alignment</source>
         <translation>Στοίχιση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2671" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2702" />
         <source>Opacity</source>
         <translation>Αδιαφάνεια</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2674" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2705" />
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
         <source>Delete text</source>
         <translation>Διαγραφή κειμένου</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2726" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2757" />
         <source>Delete image</source>
         <translation>Διαγραφή εικόνας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2727" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2758" />
         <source>Delete this overlay (Delete)</source>
         <translation>Διαγραφή αυτής της επικάλυψης (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2748" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2779" />
         <source>Microphone volume</source>
         <translation>Ένταση μικροφώνου</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2773" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2804" />
         <source>System audio volume</source>
         <translation>Ένταση ήχου συστήματος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2810" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2841" />
         <source>Position</source>
         <translation>Θέση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2818" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2849" />
         <source>Size</source>
         <translation>Μέγεθος</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2826" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2857" />
         <source>Appearance</source>
         <translation>Εμφάνιση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2834" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2865" />
         <source>Display duration</source>
         <translation>Διάρκεια εμφάνισης</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2974" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3005" />
         <source>Background image</source>
         <translation>Εικόνα φόντου</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3021" />
         <source>Padding</source>
         <translation>Περιθώριο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2998" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3029" />
         <source>Corners</source>
         <translation>Γωνίες</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3020" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3302" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3051" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3333" />
         <source>Aspect ratio</source>
         <translation>Αναλογία διαστάσεων</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3044" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
         <source>Resolution</source>
         <translation>Ανάλυση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3063" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3094" />
         <source>Frame rate</source>
         <translation>Ρυθμός καρέ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3071" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3102" />
         <source>Quality</source>
         <translation>Ποιότητα</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3077" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3108" />
         <source>Codec</source>
         <translation>Κωδικοποιητής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3145" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3176" />
         <source>The pointer is left out of the export during this time.</source>
         <translation>Ο δείκτης παραλείπεται από την εξαγωγή σε αυτό το διάστημα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3185" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3216" />
         <source>Show the pointer again</source>
         <translation>Εμφάνιση του δείκτη ξανά</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3186" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3217" />
         <source>Delete this hidden range (Delete)</source>
         <translation>Διαγραφή αυτού του κρυφού διαστήματος (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3240" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3271" />
         <source>Zoom amount</source>
         <translation>Βαθμός ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3262" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3293" />
         <source>All zooms</source>
         <translation>Όλα τα ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3265" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3296" />
         <source>Zoom effects</source>
         <translation>Εφέ ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3272" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3303" />
         <source>Less motion</source>
         <translation>Λιγότερη κίνηση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3284" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3315" />
         <source>Delete zoom</source>
         <translation>Διαγραφή ζουμ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3285" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3316" />
         <source>Delete this zoom (Delete)</source>
         <translation>Διαγραφή αυτού του ζουμ (Delete)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3326" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3357" />
         <source>Position and size (video pixels)</source>
         <translation>Θέση και μέγεθος (pixel βίντεο)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3423" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3454" />
         <source>Format</source>
         <translation>Μορφή</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3430" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3461" />
         <source>Video with sound. Best for sharing and long recordings.</source>
         <translation>Βίντεο με ήχο. Ιδανικό για κοινοποίηση και μεγάλες εγγραφές.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3431" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3462" />
         <source>Silent animation that plays almost anywhere. Large files.</source>
         <translation>Κινούμενη εικόνα χωρίς ήχο που παίζει σχεδόν παντού. Μεγάλα αρχεία.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3432" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3463" />
         <source>Silent animation, smaller than GIF. Supports every edit.</source>
         <translation>Κινούμενη εικόνα χωρίς ήχο, μικρότερη από GIF. Υποστηρίζει κάθε επεξεργασία.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3804" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3835" />
         <source>Close without saving your changes?</source>
         <translation>Κλείσιμο χωρίς αποθήκευση των αλλαγών;</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3816" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3847" />
         <source>The project stays in Recording Library as it was last saved.</source>
         <translation>Το έργο παραμένει στη Βιβλιοθήκη εγγραφών όπως αποθηκεύτηκε τελευταία φορά.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3829" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3860" />
         <source>Keep Editing</source>
         <translation>Συνέχεια επεξεργασίας</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="3842" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3873" />
         <source>Close</source>
         <translation>Κλείσιμο</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2580" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2611" />
         <source>Font</source>
         <translation>Γραμματοσειρά</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="252" />
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="2583" />
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>Προεπιλογή</translation>
     </message>
@@ -4767,38 +4803,38 @@ Size: %2</source>
 <context>
     <name>RecordingPreviewBackend</name>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2148" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2155" />
         <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
         <translation>Οι μάσκες δεν μπορούν ακόμη να εφαρμοστούν σε MP4 σε αυτό το σύστημα. Εξαγάγετε ως GIF ή WebP ή αφαιρέστε τις μάσκες για εξαγωγή MP4. Δεν εξήχθη τίποτα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2202" />
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3348" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2209" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3355" />
         <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
         <translation>Δεν υπάρχει αρκετός χώρος για εξαγωγή (%1 ελεύθερα, χρειάζονται περίπου %2). Ελευθερώστε χώρο και δοκιμάστε ξανά· η εγγραφή σας διατηρείται.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2856" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2863" />
         <source>Writing file...</source>
         <translation>Εγγραφή αρχείου...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2859" />
         <source>Converting to WebP...</source>
         <translation>Μετατροπή σε WebP...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2852" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2859" />
         <source>Converting to GIF...</source>
         <translation>Μετατροπή σε GIF...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2360" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2367" />
         <source>The file could not be saved. Your recording is kept; try Save again or choose another location.</source>
         <translation>Δεν ήταν δυνατή η αποθήκευση του αρχείου. Η εγγραφή σας διατηρείται· δοκιμάστε ξανά την αποθήκευση ή επιλέξτε άλλη θέση.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2285" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2292" />
         <source>Saving...</source>
         <translation>Αποθήκευση...</translation>
     </message>
@@ -4812,42 +4848,42 @@ Size: %2</source>
         <translation>Μετατροπή βίντεο...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2870" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
         <source>Failed to create video player for conversion</source>
         <translation>Αποτυχία δημιουργίας προγράμματος αναπαραγωγής βίντεο για μετατροπή</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2871" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2878" />
         <source>Failed to load video for conversion</source>
         <translation>Αποτυχία φόρτωσης βίντεο για μετατροπή</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2872" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2879" />
         <source>Video not loaded properly for conversion</source>
         <translation>Το βίντεο δεν φορτώθηκε σωστά για μετατροπή</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2873" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2880" />
         <source>Failed to start encoder</source>
         <translation>Αποτυχία εκκίνησης του κωδικοποιητή</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2874" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2881" />
         <source>Conversion failed: no video frames were encoded</source>
         <translation>Η μετατροπή απέτυχε: δεν κωδικοποιήθηκαν καρέ βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2875" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2882" />
         <source>Conversion failed while extracting video frames</source>
         <translation>Η μετατροπή απέτυχε κατά την εξαγωγή των καρέ βίντεο</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2876" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2883" />
         <source>Conversion failed while saving the output file</source>
         <translation>Η μετατροπή απέτυχε κατά την αποθήκευση του αρχείου εξόδου</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2877" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2884" />
         <source>Conversion failed: output file is missing or empty</source>
         <translation>Η μετατροπή απέτυχε: το αρχείο εξόδου λείπει ή είναι κενό</translation>
     </message>
@@ -4868,27 +4904,27 @@ Size: %2</source>
         <translation>Η περικοπή απέτυχε</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3249" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3256" />
         <source>Exporting video...</source>
         <translation>Εξαγωγή βίντεο...</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3277" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3284" />
         <source>Video export is not supported on this platform</source>
         <translation>Η εξαγωγή βίντεο δεν υποστηρίζεται σε αυτήν την πλατφόρμα</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3278" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3285" />
         <source>Export failed: %1</source>
         <translation>Η εξαγωγή απέτυχε: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3281" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="3288" />
         <source>Export failed; the original recording was kept.</source>
         <translation>Η εξαγωγή απέτυχε· η αρχική εγγραφή διατηρήθηκε.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2385" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2392" />
         <source>Cancelling...</source>
         <translation>Ακύρωση σε εξέλιξη...</translation>
     </message>
@@ -4914,12 +4950,12 @@ Size: %2</source>
         <translation>Δεν ήταν δυνατή η ανάγνωση της εικόνας.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2160" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2167" />
         <source>Cuts and speed changes cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Οι περικοπές και οι αλλαγές ταχύτητας δεν εφαρμόζονται ακόμα σε MP4 σε αυτό το σύστημα. Εξαγάγετε ως GIF ή WebP ή αφαιρέστε τες για εξαγωγή MP4. Δεν εξήχθη τίποτα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2156" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2163" />
         <source>Every part is cut out: there is nothing to export.</source>
         <translation>Όλα τα τμήματα έχουν αποκοπεί: δεν υπάρχει τίποτα για εξαγωγή.</translation>
     </message>
@@ -4939,27 +4975,27 @@ Size: %2</source>
         <translation>Τίτλος</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2069" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2076" />
         <source>Failed to load preview video: %1</source>
         <translation>Αποτυχία φόρτωσης βίντεο προεπισκόπησης: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2140" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2147" />
         <source>Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF or WebP, or remove them to export MP4. Nothing was exported.</source>
         <translation>Οι επικαλύψεις κειμένου και εικόνας δεν σχεδιάζονται ακόμα σε MP4 σε αυτό το σύστημα. Εξαγάγετε ως GIF ή WebP ή αφαιρέστε τες για εξαγωγή MP4. Δεν εξήχθη τίποτα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2273" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2280" />
         <source>The project's recording could not be copied for saving. Nothing was saved.</source>
         <translation>Δεν ήταν δυνατή η αντιγραφή της εγγραφής του έργου για αποθήκευση. Δεν αποθηκεύτηκε τίποτα.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2308" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2315" />
         <source>Saved to %1, but the project could not be updated. Save again to keep these edits in the project.</source>
         <translation>Αποθηκεύτηκε στο %1, αλλά το έργο δεν ενημερώθηκε. Αποθηκεύστε ξανά για να κρατήσετε αυτές τις αλλαγές στο έργο.</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2333" />
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Αποθηκεύτηκε στο %1, αλλά η εγγραφή δεν διατηρήθηκε ως επεξεργάσιμο έργο. Είναι ακόμη ανοιχτή εδώ: αποθηκεύστε ξανά ή κλείστε την για να απορριφθεί.</translation>
     </message>
@@ -5437,96 +5473,96 @@ Audio is not supported for GIF recordings.</source>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3136" />
+        <location filename="../src/RegionSelector.cpp" line="3160" />
         <source>%1 region</source>
         <translation>%1 περιοχή</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3137" />
+        <location filename="../src/RegionSelector.cpp" line="3161" />
         <source>%1 regions</source>
         <translation>%1 περιοχές</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="3926" />
+        <location filename="../src/RegionSelector.cpp" line="3950" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Περιμένετε να ολοκληρωθεί το αυτόματο θόλωμα</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <location filename="../src/RegionSelector.cpp" line="4111" />
         <source>Error</source>
         <translation>Σφάλμα</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4076" />
+        <location filename="../src/RegionSelector.cpp" line="4111" />
         <source>Failed to merge regions. Please try again.</source>
         <translation>Αποτυχία συγχώνευσης περιοχών. Παρακαλώ δοκιμάστε ξανά.</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4109" />
-        <location filename="../src/RegionSelector.cpp" line="4840" />
-        <location filename="../src/RegionSelector.cpp" line="4928" />
-        <location filename="../src/RegionSelector.cpp" line="5034" />
+        <location filename="../src/RegionSelector.cpp" line="4144" />
+        <location filename="../src/RegionSelector.cpp" line="4875" />
+        <location filename="../src/RegionSelector.cpp" line="4963" />
+        <location filename="../src/RegionSelector.cpp" line="5069" />
         <source>Failed to process selected region</source>
         <translation>Αποτυχία επεξεργασίας επιλεγμένης περιοχής</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4218" />
+        <location filename="../src/RegionSelector.cpp" line="4253" />
         <source>Failed to save screenshot: unable to process selection</source>
         <translation>Αποτυχία αποθήκευσης στιγμιότυπου οθόνης: δεν είναι δυνατή η επεξεργασία της επιλογής</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4869" />
-        <location filename="../src/RegionSelector.cpp" line="4897" />
+        <location filename="../src/RegionSelector.cpp" line="4904" />
+        <location filename="../src/RegionSelector.cpp" line="4932" />
         <source>Copied %1 characters</source>
         <translation>Αντιγράφηκαν %1 χαρακτήρες</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4873" />
+        <location filename="../src/RegionSelector.cpp" line="4908" />
         <source>No text found</source>
         <translation>Δεν βρέθηκε κείμενο</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4896" />
+        <location filename="../src/RegionSelector.cpp" line="4931" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="4992" />
+        <location filename="../src/RegionSelector.cpp" line="5027" />
         <source>No QR code found</source>
         <translation>Δεν βρέθηκε κωδικός QR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5059" />
+        <location filename="../src/RegionSelector.cpp" line="5094" />
         <source>Face detection unavailable</source>
         <translation>Η ανίχνευση προσώπου δεν είναι διαθέσιμη</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5067" />
+        <location filename="../src/RegionSelector.cpp" line="5102" />
         <source>Detection unavailable</source>
         <translation>Η ανίχνευση δεν είναι διαθέσιμη</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5277" />
+        <location filename="../src/RegionSelector.cpp" line="5312" />
         <source>Blurred %1 face(s), %2 credential(s)</source>
         <translation>Εφαρμόστηκε θόλωση σε %1 πρόσωπο(α), %2 διαπιστευτήριο(α)</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5281" />
+        <location filename="../src/RegionSelector.cpp" line="5316" />
         <source>Blurred %1 face(s)</source>
         <translation>Θολώθηκαν %1 πρόσωπα</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5285" />
+        <location filename="../src/RegionSelector.cpp" line="5320" />
         <source>Blurred %1 credential(s)</source>
         <translation>Εφαρμόστηκε θόλωση σε %1 διαπιστευτήριο(α)</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5289" />
+        <location filename="../src/RegionSelector.cpp" line="5324" />
         <source>No faces or credentials detected</source>
         <translation>Δεν ανιχνεύθηκαν πρόσωπα ή διαπιστευτήρια</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="5293" />
+        <location filename="../src/RegionSelector.cpp" line="5328" />
         <source>Detection failed</source>
         <translation>Αποτυχία ανίχνευσης</translation>
     </message>
@@ -5562,7 +5598,7 @@ Audio is not supported for GIF recordings.</source>
 <context>
     <name>ScreenCanvasSession</name>
     <message>
-        <location filename="../src/ScreenCanvasSession.cpp" line="1438" />
+        <location filename="../src/ScreenCanvasSession.cpp" line="1447" />
         <source>Copy failed</source>
         <translation>Αποτυχία αντιγραφής</translation>
     </message>

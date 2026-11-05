@@ -47,6 +47,9 @@ public:
     QColor color() const { return m_color; }
     int width() const { return m_width; }
     bool filled() const { return m_filled; }
+    void setColor(const QColor& color) { m_color = color; }
+    void setWidth(int width) { m_width = qMax(1, width); }
+    void setFilled(bool filled) { m_filled = filled; }
     qreal rotation() const { return m_rotation; }
     qreal scaleX() const { return m_scaleX; }
     qreal scaleY() const { return m_scaleY; }

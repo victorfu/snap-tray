@@ -20,6 +20,8 @@ class QWindow;
 
 namespace SnapTray {
 
+class ToolbarOverflowPopup;
+
 /**
  * @brief Generic QML-based floating toolbar overlay.
  *
@@ -125,7 +127,22 @@ public:
      */
     void setParentWidget(QWidget* parent);
 
+    /**
+     * @brief Collapse low-priority buttons into More so the toolbar fits
+     *        `usableBoundsGlobal` (global coordinates). Hides an open More menu
+     *        when the bounds or the collapsed set change.
+     */
+    void applyOverflowLayout(const QRect& usableBoundsGlobal);
+
+    /**
+     * @brief Global frame geometry of the open More menu, or an empty rect
+     *        when it is closed. Hosts that mask input around floating UI
+     *        (Linux X11 canvas) must leave this area clickable.
+     */
+    QRect overflowGeometry() const;
+
 signals:
+    void overflowVisibilityChanged();
     void dragStarted();
     void dragFinished();
     void dragMoved(double deltaX, double deltaY);
@@ -137,8 +154,10 @@ private slots:
     void onButtonHovered(int buttonId, double anchorX, double anchorY,
                          double anchorW, double anchorH);
     void onButtonUnhovered();
+    void onOverflowRequested(double anchorX, double anchorY, double anchorW, double anchorH);
 
 private:
+    friend class TestToolbarOverflow;
     struct SelectionTiming;
     void connectSelectionTiming();
     std::shared_ptr<SelectionTiming> m_selectionTiming;
@@ -179,6 +198,8 @@ private:
     quint64 m_parentCursorRestoreToken = 0;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
+    std::unique_ptr<ToolbarOverflowPopup> m_overflow;
+    QRect m_overflowBounds;   // global
 };
 
 } // namespace SnapTray

@@ -1,4 +1,5 @@
 #include "qml/PinToolOptionsViewModel.h"
+#include "annotations/ShapeAnnotation.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolWidthSlot.h"
 #include "ui/DesignSystem.h"
@@ -324,6 +325,7 @@ void PinToolOptionsViewModel::handleColorClicked(int index)
 {
     if (index >= 0 && index < m_colorPalette.size()) {
         QColor color = m_colorPalette[index].value<QColor>();
+        if (routeToSelection(StyleProperty::Color, color)) return;
         setCurrentColor(color);
         emit colorSelected(color);
     }
@@ -336,6 +338,7 @@ void PinToolOptionsViewModel::handleCustomColorClicked()
 
 void PinToolOptionsViewModel::handleWidthChanged(int width)
 {
+    if (routeToSelection(StyleProperty::Width, qBound(minWidth(), width, maxWidth()))) return;
     setCurrentWidth(width);
     emit widthValueChanged(m_currentWidth);
 }
@@ -368,18 +371,21 @@ void PinToolOptionsViewModel::setActiveTool(ToolId toolId)
 
 void PinToolOptionsViewModel::handleBoldToggled()
 {
+    if (routeToSelection(StyleProperty::Bold, !m_bold)) return;
     setBold(!m_bold);
     emit boldToggled(m_bold);
 }
 
 void PinToolOptionsViewModel::handleItalicToggled()
 {
+    if (routeToSelection(StyleProperty::Italic, !m_italic)) return;
     setItalic(!m_italic);
     emit italicToggled(m_italic);
 }
 
 void PinToolOptionsViewModel::handleUnderlineToggled()
 {
+    if (routeToSelection(StyleProperty::Underline, !m_underline)) return;
     setUnderline(!m_underline);
     emit underlineToggled(m_underline);
 }
@@ -412,18 +418,21 @@ void PinToolOptionsViewModel::handleShapeTypeSelected(int type)
 
 void PinToolOptionsViewModel::handleShapeFillModeSelected(int mode)
 {
+    if (routeToSelection(StyleProperty::Fill, mode == static_cast<int>(ShapeFillMode::Filled))) return;
     setShapeFillMode(mode);
     emit shapeFillModeSelected(mode);
 }
 
 void PinToolOptionsViewModel::handleArrowStyleSelected(int style)
 {
+    if (routeToSelection(StyleProperty::ArrowStyle, style)) return;
     setArrowStyle(style);
     emit arrowStyleSelected(style);
 }
 
 void PinToolOptionsViewModel::handleLineStyleSelected(int style)
 {
+    if (routeToSelection(StyleProperty::LineStyle, style)) return;
     setLineStyle(style);
     emit lineStyleSelected(style);
 }
@@ -442,4 +451,129 @@ void PinToolOptionsViewModel::handleAutoBlurClicked()
 void PinToolOptionsViewModel::handleEmojiPickerRequested()
 {
     emit emojiPickerRequested();
+}
+
+// ── Selected-object styling (#224) ──
+
+namespace {
+struct SelectionSections {
+    bool color, width, text, arrowStyle, lineStyle, shape;
+};
+// Indexed by StyleTargetKind.
+constexpr SelectionSections kSelectionSections[] = {
+    {false, false, false, false, false, false},  // None
+    {true, false, true, false, false, false},    // Text
+    {true, true, false, true, true, false},      // Arrow
+    {true, true, false, true, true, false},      // Polyline
+    {true, true, false, false, false, true},     // Shape
+};
+} // namespace
+
+QString PinToolOptionsViewModel::targetLabel() const
+{
+    if (!m_editingSelection) return tr("New object");
+    QString name;
+    switch (m_targetKind) {
+    case StyleTargetKind::Text: name = tr("Text"); break;
+    case StyleTargetKind::Arrow: name = tr("Arrow"); break;
+    case StyleTargetKind::Polyline: name = tr("Line"); break;
+    case StyleTargetKind::Shape:
+        name = m_targetShapeType == static_cast<int>(ShapeType::Ellipse) ? tr("Ellipse") : tr("Rectangle");
+        break;
+    case StyleTargetKind::None: return tr("New object");
+    }
+    return tr("Selected: %1").arg(name);
+}
+
+void PinToolOptionsViewModel::showForSelection(const AnnotationStyleValues& values)
+{
+    if (values.kind == StyleTargetKind::None) {
+        clearSelectionTarget();
+        return;
+    }
+    if (!m_editingSelection) {
+        m_savedDefaults = {m_currentColor, m_currentWidth, m_bold, m_italic, m_underline,
+                           m_fontSize, m_fontFamily, m_arrowStyle, m_lineStyle, m_shapeType,
+                           m_shapeFillMode,
+                           {m_showColor, m_showWidth, m_showText, m_showArrowStyle,
+                            m_showLineStyle, m_showShape, m_showSize, m_showAutoBlur},
+                           m_activeToolId};
+    }
+    const bool changed = !m_editingSelection || m_targetKind != values.kind
+        || m_targetShapeType != values.shapeType;
+    const bool enteringSelection = !m_editingSelection;
+    m_editingSelection = true;
+    if (enteringSelection) emit activeToolChanged();   // mosaicActive changed
+    m_targetKind = values.kind;
+    m_targetShapeType = values.shapeType;
+
+    if (values.color.isValid()) setCurrentColor(values.color);
+    if (values.width > 0) setCurrentWidth(values.width);
+    setArrowStyle(values.arrowStyle);
+    setLineStyle(values.lineStyle);
+    setShapeType(values.shapeType);
+    setShapeFillMode(values.filled ? static_cast<int>(ShapeFillMode::Filled)
+                                   : static_cast<int>(ShapeFillMode::Outline));
+    if (values.kind == StyleTargetKind::Text) {
+        setFontFamily(values.font.family());
+        if (values.font.pointSize() > 0) setFontSize(values.font.pointSize());
+        setBold(values.font.bold());
+        setItalic(values.font.italic());
+        setUnderline(values.font.underline());
+    }
+    setShowingEmojiPicker(false);
+    const SelectionSections& sec = kSelectionSections[static_cast<int>(values.kind)];
+    applySectionVisibility(sec.color, sec.width, sec.text, sec.arrowStyle, sec.lineStyle,
+                           sec.shape, false, false);
+    if (changed) emit targetChanged();
+}
+
+void PinToolOptionsViewModel::clearSelectionTarget()
+{
+    if (!m_editingSelection) return;
+    m_editingSelection = false;
+    m_targetKind = StyleTargetKind::None;
+    emit activeToolChanged();   // mosaicActive changed
+    const SavedDefaults& d = m_savedDefaults;
+    setCurrentColor(d.color);
+    setCurrentWidth(d.width);
+    setBold(d.bold);
+    setItalic(d.italic);
+    setUnderline(d.underline);
+    if (d.fontSize > 0) setFontSize(d.fontSize);
+    setFontFamily(d.fontFamily);
+    setArrowStyle(d.arrowStyle);
+    setLineStyle(d.lineStyle);
+    setShapeType(d.shapeType);
+    setShapeFillMode(d.shapeFillMode);
+    applySectionVisibility(d.sections[0], d.sections[1], d.sections[2], d.sections[3],
+                           d.sections[4], d.sections[5], d.sections[6], d.sections[7]);
+    emit targetChanged();
+}
+
+void PinToolOptionsViewModel::applyDisplayedValue(StyleProperty property, const QVariant& value)
+{
+    switch (property) {
+    case StyleProperty::Color: setCurrentColor(value.value<QColor>()); break;
+    case StyleProperty::Width: setCurrentWidth(value.toInt()); break;
+    case StyleProperty::Fill:
+        setShapeFillMode(value.toBool() ? static_cast<int>(ShapeFillMode::Filled)
+                                        : static_cast<int>(ShapeFillMode::Outline));
+        break;
+    case StyleProperty::ArrowStyle: setArrowStyle(value.toInt()); break;
+    case StyleProperty::LineStyle: setLineStyle(value.toInt()); break;
+    case StyleProperty::FontFamily: setFontFamily(value.toString()); break;
+    case StyleProperty::FontSize: setFontSize(value.toInt()); break;
+    case StyleProperty::Bold: setBold(value.toBool()); break;
+    case StyleProperty::Italic: setItalic(value.toBool()); break;
+    case StyleProperty::Underline: setUnderline(value.toBool()); break;
+    }
+}
+
+bool PinToolOptionsViewModel::routeToSelection(StyleProperty property, const QVariant& value)
+{
+    if (!m_editingSelection) return false;
+    applyDisplayedValue(property, value);
+    emit selectionStyleEdited(static_cast<int>(property), value);
+    return true;
 }

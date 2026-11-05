@@ -1,6 +1,8 @@
 #include "PinWindow.h"
 #include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationStyleEditor.h"
+#include "annotations/AnnotationStyle.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
 #include "QRCodeManager.h"
@@ -3439,6 +3441,32 @@ void PinWindow::initializeAnnotationComponents()
         optionsVM->setFontFamily(formatting.fontFamily);
     };
 
+    // Selected-annotation styling (#224): strip edits go to the selection.
+    m_styleEditor = new AnnotationStyleEditor(m_annotationLayer, optionsVM, this);
+    m_styleEditor->setInlineEditingPredicate(
+        [this] { return m_textEditor && m_textEditor->isEditing(); });
+    connect(m_styleEditor, &AnnotationStyleEditor::styleApplied, this, [this] {
+        // A style edit pushes a Modify command, which clears redo.
+        updateUndoRedoState();
+        update();
+    });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetShown, this, [this] {
+        if (m_subToolbar && m_annotationMode) {
+            m_subToolbar->show();
+            updateSubToolbarPosition();
+        }
+    });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetCleared, this, [this] {
+        if (m_subToolbar && m_annotationMode) {
+            m_subToolbar->showForTool(static_cast<int>(m_currentToolId));
+            updateSubToolbarPosition();
+        }
+    });
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::editingFinished,
+        m_styleEditor, &AnnotationStyleEditor::refreshTarget);
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::editingCancelled,
+        m_styleEditor, &AnnotationStyleEditor::refreshTarget);
+
     // Connect ViewModel action signals → PinWindow handlers
     connect(optionsVM, &PinToolOptionsViewModel::colorSelected,
         this, &PinWindow::onColorSelected);
@@ -3746,6 +3774,12 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
     // Check if same tool clicked - toggle sub-toolbar visibility (matches RegionSelector behavior)
     bool sameToolClicked = (m_currentToolId == tool && m_annotationMode);
+
+    // Picking a tool ends any selected-annotation styling (#224). First, so the
+    // strip's restored defaults are overwritten by this tool's width below.
+    if (m_annotationLayer && isAnnotationTool(tool)) {
+        m_annotationLayer->clearSelection();
+    }
 
     m_currentToolId = tool;
 
@@ -4767,6 +4801,10 @@ void PinWindow::onShapeFillModeChanged(ShapeFillMode mode)
 
 void PinWindow::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::ArrowStyle, static_cast<int>(style))) {
+        return;
+    }
     if (m_subToolbar && m_subToolbar->viewModel()) {
         m_subToolbar->viewModel()->setArrowStyle(static_cast<int>(style));
     }
@@ -4779,6 +4817,10 @@ void PinWindow::onArrowStyleChanged(LineEndStyle style)
 
 void PinWindow::onLineStyleChanged(LineStyle style)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::LineStyle, static_cast<int>(style))) {
+        return;
+    }
     if (m_subToolbar && m_subToolbar->viewModel()) {
         m_subToolbar->viewModel()->setLineStyle(static_cast<int>(style));
     }
@@ -4805,6 +4847,10 @@ void PinWindow::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void PinWindow::onFontSizeSelected(int size)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::FontSize, size)) {
+        return;
+    }
     if (m_annotationContext) {
         m_annotationContext->applyTextFontSize(size);
     }
@@ -4812,6 +4858,10 @@ void PinWindow::onFontSizeSelected(int size)
 
 void PinWindow::onFontFamilySelected(const QString& family)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::FontFamily, family)) {
+        return;
+    }
     if (m_annotationContext) {
         m_annotationContext->applyTextFontFamily(family);
     }
@@ -5107,15 +5157,20 @@ void PinWindow::onAutoBlurRequested()
 
 void PinWindow::onMoreColorsRequested()
 {
-    if (m_subToolbar)
+    const bool editingSelection = m_subToolbar && m_subToolbar->viewModel()->editingSelection();
+    if (m_subToolbar && !editingSelection)
         m_subToolbar->viewModel()->setCurrentColor(m_annotationColor);
 
     AnnotationContext::showColorPickerDialog(
         this,
         m_colorPickerDialog,
-        m_annotationColor,
+        editingSelection ? m_subToolbar->viewModel()->currentColor() : m_annotationColor,
         frameGeometry().center(),
         [this](const QColor& color) {
+            if (m_subToolbar
+                && m_subToolbar->viewModel()->routeToSelection(StyleProperty::Color, color)) {
+                return;
+            }
             onColorSelected(color);
             if (m_subToolbar) {
                 m_subToolbar->viewModel()->setCurrentColor(color);

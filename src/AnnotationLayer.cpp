@@ -1,4 +1,5 @@
 #include "annotations/AnnotationLayer.h"
+#include "annotations/AnnotationStyle.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/PencilStroke.h"
 #include "annotations/MarkerStroke.h"
@@ -112,6 +113,7 @@ void AnnotationLayer::addItemNow(std::unique_ptr<AnnotationItem> item)
 
 void AnnotationLayer::replaceItems(std::vector<std::unique_ptr<AnnotationItem>> items)
 {
+    endModifyCoalescing();
     m_eraseTransactionActive = false;
     m_deferredItems.clear();
     clearSelection();
@@ -154,7 +156,11 @@ void AnnotationLayer::replaceItems(std::vector<std::unique_ptr<AnnotationItem>> 
 
 void AnnotationLayer::undo()
 {
+    endModifyCoalescing();
     if (m_eraseTransactionActive || m_undoStack.empty()) return;
+    const bool keepSelection = m_undoStack.back().kind == HistoryCommandKind::Modify
+        && !m_undoStack.back().items.empty()
+        && selectedId() == m_undoStack.back().items.front().id;
 
     const std::size_t beforeBytes = m_undoStack.back().retainedBytes;
     if (!undoCommand(m_undoStack.back())) {
@@ -172,13 +178,18 @@ void AnnotationLayer::undo()
 
     renumberStepBadges();
     invalidateCache();
-    clearSelection();
+    // A Modify swaps the selected annotation in place; keep it selected.
+    if (!keepSelection) clearSelection();
     emit changed();
 }
 
 void AnnotationLayer::redo()
 {
+    endModifyCoalescing();
     if (m_eraseTransactionActive || m_redoStack.empty()) return;
+    const bool keepSelection = m_redoStack.back().kind == HistoryCommandKind::Modify
+        && !m_redoStack.back().items.empty()
+        && selectedId() == m_redoStack.back().items.front().id;
 
     const std::size_t beforeBytes = m_redoStack.back().retainedBytes;
     if (!redoCommand(m_redoStack.back())) {
@@ -196,12 +207,14 @@ void AnnotationLayer::redo()
 
     renumberStepBadges();
     invalidateCache();
-    clearSelection();
+    // A Modify swaps the selected annotation in place; keep it selected.
+    if (!keepSelection) clearSelection();
     emit changed();
 }
 
 void AnnotationLayer::clear()
 {
+    endModifyCoalescing();
     // A clear is authoritative. Any items temporarily owned by an active
     // eraser stroke must not be restored into the newly cleared layer.
     m_eraseTransactionActive = false;
@@ -524,6 +537,7 @@ void AnnotationLayer::trimHistory(HistoryStateToken protectedState)
 
 void AnnotationLayer::pushAppliedCommand(HistoryCommand command)
 {
+    endModifyCoalescing();
     clearRedoHistory();
     command.beforeState = m_currentHistoryState;
     command.afterState = allocateHistoryState();
@@ -561,8 +575,25 @@ void AnnotationLayer::removeCommandItems(HistoryCommand& command)
     }
 }
 
+bool AnnotationLayer::swapModifiedStyle(HistoryCommand& command)
+{
+    // Undo and redo are the same exchange of STYLE between the scene item and
+    // the stored state. The scene object itself stays: moves, text edits, and
+    // visibility made after the style change are not history and must survive.
+    if (command.items.size() != 1 || !command.items.front().item) return false;
+    auto sceneIt = findSceneItem(command.items.front().id);
+    if (sceneIt == m_items.end() || !sceneIt->item) return false;
+    std::unique_ptr<AnnotationItem> current = sceneIt->item->clone();
+    if (!AnnotationStyle::copyStyle(*command.items.front().item, *sceneIt->item)) return false;
+    command.items.front().item = std::move(current);
+    return true;
+}
+
 bool AnnotationLayer::undoCommand(HistoryCommand& command)
 {
+    if (command.kind == HistoryCommandKind::Modify) {
+        return swapModifiedStyle(command);
+    }
     if (command.kind == HistoryCommandKind::Add) {
         if (command.items.size() != 1 || command.items.front().item) {
             return false;
@@ -596,6 +627,9 @@ bool AnnotationLayer::undoCommand(HistoryCommand& command)
 
 bool AnnotationLayer::redoCommand(HistoryCommand& command)
 {
+    if (command.kind == HistoryCommandKind::Modify) {
+        return swapModifiedStyle(command);
+    }
     if (command.kind == HistoryCommandKind::Add) {
         if (command.items.size() != 1 || !command.items.front().item) {
             return false;
@@ -787,7 +821,8 @@ std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecti
     if (!removedItems.empty()) {
         renumberStepBadges();
         invalidateCache();
-        clearSelection();
+        // Selection follows the annotation id, so erasing other items keeps it.
+        if (m_selectedId != 0 && indexOfId(m_selectedId) < 0) clearSelection();
         emit changed();
     }
 
@@ -796,6 +831,7 @@ std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecti
 
 void AnnotationLayer::beginEraseTransaction()
 {
+    endModifyCoalescing();
     m_eraseTransactionActive = true;
 }
 
@@ -966,19 +1002,92 @@ int AnnotationLayer::hitTestPolyline(const QPoint &pos) const
 
 void AnnotationLayer::setSelectedIndex(int index)
 {
-    if (index < 0 || index >= static_cast<int>(m_items.size())) {
-        m_selectedIndex = -1;
-        return;
+    AnnotationId next = 0;
+    if (index >= 0 && index < static_cast<int>(m_items.size())) {
+        AnnotationItem* candidate = m_items[index].get();
+        next = (candidate && candidate->isVisible()) ? m_items[index].id : 0;
     }
+    if (next == m_selectedId) return;
+    m_selectedId = next;
+    emit selectionChanged();
+}
 
-    AnnotationItem* candidate = m_items[index].get();
-    m_selectedIndex = (candidate && candidate->isVisible()) ? index : -1;
+void AnnotationLayer::clearSelection()
+{
+    if (m_selectedId == 0) return;
+    m_selectedId = 0;
+    emit selectionChanged();
+}
+
+AnnotationLayer::AnnotationId AnnotationLayer::idAt(int index) const
+{
+    return (index >= 0 && index < static_cast<int>(m_items.size())) ? m_items[index].id : 0;
+}
+
+int AnnotationLayer::indexOfId(AnnotationId id) const
+{
+    const auto it = findSceneItem(id);
+    return it == m_items.cend() ? -1 : static_cast<int>(std::distance(m_items.cbegin(), it));
+}
+
+AnnotationLayer::AnnotationId AnnotationLayer::selectedId() const
+{
+    return selectedIndex() >= 0 ? m_selectedId : 0;
+}
+
+int AnnotationLayer::selectedIndex() const
+{
+    return m_selectedId == 0 ? -1 : indexOfId(m_selectedId);
+}
+
+void AnnotationLayer::endModifyCoalescing()
+{
+    m_openModifyId = 0;
+    m_openModifyKey.clear();
+}
+
+bool AnnotationLayer::modifyItem(AnnotationId id, const QString& coalesceKey,
+                                 const std::function<bool(AnnotationItem&)>& mutate)
+{
+    if (m_eraseTransactionActive || !mutate || id == 0) return false;
+    auto sceneIt = findSceneItem(id);
+    if (sceneIt == m_items.end() || !sceneIt->item) return false;
+
+    const bool extend = !coalesceKey.isEmpty() && m_openModifyId == id
+        && m_openModifyKey == coalesceKey && !m_undoStack.empty()
+        && m_undoStack.back().kind == HistoryCommandKind::Modify
+        && m_undoStack.back().items.size() == 1
+        && m_undoStack.back().items.front().id == id;
+
+    std::unique_ptr<AnnotationItem> before = extend ? nullptr : sceneIt->item->clone();
+    if (!mutate(*sceneIt->item)) return false;
+
+    if (extend) {
+        HistoryCommand& open = m_undoStack.back();
+        const std::size_t beforeBytes = open.retainedBytes;
+        refreshCommandRetainedBytes(open);
+        adjustHistoryBytes(beforeBytes, open.retainedBytes);
+    } else {
+        HistoryCommand command;
+        command.kind = HistoryCommandKind::Modify;
+        command.items.push_back({static_cast<size_t>(std::distance(m_items.begin(), sceneIt)),
+                                 std::move(before), id});
+        pushAppliedCommand(std::move(command));   // ends any open coalescing
+        if (!coalesceKey.isEmpty()) {
+            m_openModifyId = id;
+            m_openModifyKey = coalesceKey;
+        }
+    }
+    invalidateCache();
+    emit changed();
+    return true;
 }
 
 AnnotationItem* AnnotationLayer::selectedItem()
 {
-    if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
-        AnnotationItem* item = m_items[m_selectedIndex].get();
+    const int selected = selectedIndex();
+    if (selected >= 0) {
+        AnnotationItem* item = m_items[selected].get();
         if (item && item->isVisible()) {
             return item;
         }
@@ -996,21 +1105,22 @@ AnnotationItem* AnnotationLayer::itemAt(int index)
 
 bool AnnotationLayer::removeSelectedItem()
 {
+    const int selected = selectedIndex();
     if (m_eraseTransactionActive ||
-        m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_items.size())) {
+        selected < 0) {
         return false;
     }
 
     HistoryCommand command;
     command.kind = HistoryCommandKind::Remove;
-    command.items.push_back({static_cast<size_t>(m_selectedIndex),
+    command.items.push_back({static_cast<size_t>(selected),
                              nullptr,
-                             m_items[m_selectedIndex].id});
-    command.items.front().item = std::move(m_items[m_selectedIndex].item);
-    m_items.erase(m_items.begin() + m_selectedIndex);
+                             m_items[selected].id});
+    command.items.front().item = std::move(m_items[selected].item);
+    m_items.erase(m_items.begin() + selected);
 
     pushAppliedCommand(std::move(command));
-    m_selectedIndex = -1;
+    clearSelection();
     renumberStepBadges();
     invalidateCache();
     emit changed();

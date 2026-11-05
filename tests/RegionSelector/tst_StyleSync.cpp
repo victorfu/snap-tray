@@ -26,6 +26,8 @@
 #include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
 #include "region/RegionInputHandler.h"
+#include "region/RegionToolbarHandler.h"
+#include "qml/RegionToolbarViewModel.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 #include "region/SelectionDimensionLabel.h"
 #include "region/SelectionDirtyRegionPlanner.h"
@@ -118,6 +120,7 @@ private slots:
     void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testStrokeAndMosaicWidthsRestoreIndependently();
+    void selectedArrowStyleIsUndoable();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
     void testSelectionCompletionShowsToolbarBeforeChromePaint();
@@ -433,6 +436,47 @@ void TestRegionSelectorStyleSync::testUsesAuthorityModeByDefault()
 {
     RegionSelector selector;
     QCOMPARE(CursorAuthority::instance().modeForWidget(&selector), CursorSurfaceMode::Authority);
+}
+
+void TestRegionSelectorStyleSync::selectedArrowStyleIsUndoable()
+{
+    ScopedWidthSettings restoreWidths;
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor savedColor = settings.loadColor();
+    const auto savedArrow = settings.loadArrowStyle();
+    const auto restore = qScopeGuard([&] {
+        settings.saveColor(savedColor);
+        settings.saveArrowStyle(savedArrow);
+    });
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto* vm = selector.m_toolOptionsViewModel;
+    QVERIFY(vm->editingSelection());
+    QCOMPARE(vm->targetLabel(), QStringLiteral("Selected: Arrow"));
+    const int paletteIndex = 2;
+    const QColor chosen = vm->colorPalette().at(paletteIndex).value<QColor>();
+    vm->handleColorClicked(paletteIndex);
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    QCOMPARE(arrow()->color(), chosen);
+    QCOMPARE(settings.loadColor(), savedColor); // defaults untouched
+    QVERIFY(selector.m_toolbarViewModel->canUndo());
+    // A dropdown result (arrow style menu) also edits the selection.
+    selector.onArrowStyleChanged(LineEndStyle::None);
+    QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::None);
+    QCOMPARE(settings.loadArrowStyle(), savedArrow);
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::EndArrow);
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(arrow()->color(), QColor(Qt::red));
+    emit selector.m_toolbarHandler->redoRequested();
+    QCOMPARE(arrow()->color(), chosen);
+    // Picking another tool ends the selection; the strip returns to that tool.
+    emit selector.m_toolbarHandler->toolChanged(ToolId::Pencil, true);
+    QVERIFY(!vm->editingSelection());
+    QCOMPARE(selector.m_annotationLayer->selectedIndex(), -1);
 }
 
 void TestRegionSelectorStyleSync::testStrokeAndMosaicWidthsRestoreIndependently()

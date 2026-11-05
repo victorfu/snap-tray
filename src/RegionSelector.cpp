@@ -1,5 +1,7 @@
 #include "RegionSelector.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationStyleEditor.h"
+#include "annotations/AnnotationStyle.h"
 #include "history/AnnotationSerializer.h"
 #include "history/HistoryRecorder.h"
 #include "platform/WindowLevel.h"
@@ -512,6 +514,22 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_annotationContext->setupTextAnnotationEditor();
     m_annotationContext->connectTextEditorSignals();
 
+    // Selected-annotation styling (#224): strip edits go to the selection.
+    m_styleEditor = new AnnotationStyleEditor(m_annotationLayer, m_toolOptionsViewModel, this);
+    m_styleEditor->setInlineEditingPredicate(
+        [this] { return m_textEditor && m_textEditor->isEditing(); });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetShown, this, [this] {
+        syncRegionSubToolbar(false);
+    });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetCleared, this, [this] {
+        syncRegionSubToolbar(true);
+    });
+    // Inline text editing owns styling while it runs; re-evaluate when it ends.
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::editingFinished,
+        m_styleEditor, &AnnotationStyleEditor::refreshTarget);
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::editingCancelled,
+        m_styleEditor, &AnnotationStyleEditor::refreshTarget);
+
     // Connect sub-toolbar ViewModel signals (replaces connectToolOptionsSignals)
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorSelected,
         this, &RegionSelector::onColorSelected);
@@ -991,6 +1009,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect toolbar handler signals (tool state changes)
     connect(m_toolbarHandler, &RegionToolbarHandler::toolChanged,
         this, [this](ToolId tool, bool showSubToolbar) {
+            // Picking a tool ends selected-annotation styling (#224).
+            if (tool != m_inputState.currentTool || showSubToolbar) {
+                m_annotationLayer->clearSelection();
+            }
             m_inputState.currentTool = tool;
             m_inputState.showSubToolbar = showSubToolbar;
             m_toolbarViewModel->setActiveTool(showSubToolbar ? static_cast<int>(tool) : -1);
@@ -1194,14 +1216,20 @@ void RegionSelector::onColorSelected(const QColor& color)
 
 void RegionSelector::onMoreColorsRequested()
 {
-    m_toolOptionsViewModel->setCurrentColor(m_inputState.annotationColor);
+    const bool editingSelection = m_toolOptionsViewModel->editingSelection();
+    if (!editingSelection) {
+        m_toolOptionsViewModel->setCurrentColor(m_inputState.annotationColor);
+    }
 
     AnnotationContext::showColorPickerDialog(
         this,
         m_colorPickerDialog,
-        m_inputState.annotationColor,
+        editingSelection ? m_toolOptionsViewModel->currentColor() : m_inputState.annotationColor,
         geometry().center(),
         [this](const QColor& color) {
+            if (m_toolOptionsViewModel->routeToSelection(StyleProperty::Color, color)) {
+                return;
+            }
             syncColorToAllWidgets(color);
         },
         m_colorPickerDialogFactory);
@@ -3976,6 +4004,17 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
         return;
     }
 
+    if (m_styleEditor && m_styleEditor->hasTarget()) {
+        // The strip shows the selected annotation; keep it, don't reset to the tool.
+        if (!m_qmlSubToolbar->isVisible()) {
+            m_qmlSubToolbar->show();
+        }
+        if (m_qmlToolbar && m_qmlToolbar->isVisible()) {
+            m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
+        }
+        return;
+    }
+
     const bool shouldRefreshContent = refreshContent ||
                                       !m_qmlSubToolbar->isVisible() ||
                                       !m_toolOptionsViewModel->hasContent();
@@ -5344,6 +5383,10 @@ QRect RegionSelector::floatingToolbarRectInLocalCoords() const
 
 void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_toolOptionsViewModel
+        && m_toolOptionsViewModel->routeToSelection(StyleProperty::ArrowStyle, static_cast<int>(style))) {
+        return;
+    }
     if (m_toolOptionsViewModel) {
         m_toolOptionsViewModel->setArrowStyle(static_cast<int>(style));
     }
@@ -5355,6 +5398,10 @@ void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 
 void RegionSelector::onLineStyleChanged(LineStyle style)
 {
+    if (m_toolOptionsViewModel
+        && m_toolOptionsViewModel->routeToSelection(StyleProperty::LineStyle, static_cast<int>(style))) {
+        return;
+    }
     if (m_toolOptionsViewModel) {
         m_toolOptionsViewModel->setLineStyle(static_cast<int>(style));
     }
@@ -5380,6 +5427,10 @@ void RegionSelector::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void RegionSelector::onFontSizeSelected(int size)
 {
+    if (m_toolOptionsViewModel
+        && m_toolOptionsViewModel->routeToSelection(StyleProperty::FontSize, size)) {
+        return;
+    }
     if (m_toolOptionsViewModel) {
         m_toolOptionsViewModel->setFontSize(size);
     }
@@ -5390,6 +5441,10 @@ void RegionSelector::onFontSizeSelected(int size)
 
 void RegionSelector::onFontFamilySelected(const QString& family)
 {
+    if (m_toolOptionsViewModel
+        && m_toolOptionsViewModel->routeToSelection(StyleProperty::FontFamily, family)) {
+        return;
+    }
     if (m_toolOptionsViewModel) {
         m_toolOptionsViewModel->setFontFamily(family);
     }

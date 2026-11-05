@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QPixmap>
 #include <functional>
+#include <QString>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -130,9 +131,24 @@ public:
     int hitTestArrow(const QPoint &pos) const;
     int hitTestPolyline(const QPoint &pos) const;
     void setSelectedIndex(int index);
-    int selectedIndex() const { return m_selectedIndex; }
+    // Selection follows the annotation (by id) when other items are added or removed.
+    int selectedIndex() const;
     AnnotationItem* selectedItem();
-    void clearSelection() { m_selectedIndex = -1; }
+    void clearSelection();
+    AnnotationId selectedId() const;             // 0 if none
+    AnnotationId idAt(int index) const;          // 0 if out of range
+    int indexOfId(AnnotationId id) const;        // -1 if absent
+
+    // Applies `mutate` to the annotation with `id` as one undoable Modify
+    // command (#224). Consecutive calls with the same id and non-empty
+    // coalesceKey extend the open command instead of pushing a new one; any
+    // other history operation, or endModifyCoalescing(), closes it. Returns
+    // false and records nothing if the id is unknown, the history is locked
+    // by an erase transaction, or mutate returns false (mutate must leave the
+    // item unchanged in that case).
+    bool modifyItem(AnnotationId id, const QString& coalesceKey,
+                    const std::function<bool(AnnotationItem&)>& mutate);
+    void endModifyCoalescing();
     bool removeSelectedItem();
 
     // Cache management for rendering optimization
@@ -161,6 +177,7 @@ public:
 
 signals:
     void changed();
+    void selectionChanged();
 
 private:
     struct SceneItem {
@@ -175,7 +192,8 @@ private:
 
     enum class HistoryCommandKind {
         Add,
-        Remove
+        Remove,
+        Modify   // items[0] holds the other STYLE of the annotation with that id
     };
 
     struct HistoryCommand {
@@ -193,6 +211,7 @@ private:
     HistoryStateToken allocateHistoryState();
     void pushAppliedCommand(HistoryCommand command);
     bool undoCommand(HistoryCommand& command);
+    bool swapModifiedStyle(HistoryCommand& command);
     bool redoCommand(HistoryCommand& command);
     std::size_t calculateCommandRetainedBytes(const HistoryCommand& command) const;
     void refreshCommandRetainedBytes(HistoryCommand& command);
@@ -223,7 +242,9 @@ private:
     std::size_t m_redoOwnedBytes = 0;
     bool m_eraseTransactionActive = false;
     std::vector<std::unique_ptr<AnnotationItem>> m_deferredItems;
-    int m_selectedIndex = -1;
+    AnnotationId m_selectedId = 0;
+    AnnotationId m_openModifyId = 0;
+    QString m_openModifyKey;
 
     struct CacheKey {
         int physicalWidth = 0;

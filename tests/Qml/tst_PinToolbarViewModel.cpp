@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include "tools/ToolbarTraits.h"
 
 #include "qml/PinToolbarViewModel.h"
 
@@ -51,6 +52,7 @@ private slots:
     void testBeautifyButtonEmitsBeautifySignal();
     void testExportActionsRemainAvailable_data();
     void testExportActionsRemainAvailable();
+    void buttonsCarryGroups();
 };
 
 void tst_PinToolbarViewModel::testBeautifyStartsProcessingSectionBeforeCropAndMeasure()
@@ -158,6 +160,25 @@ void tst_PinToolbarViewModel::testExportActionsRemainAvailable()
     viewModel.handleButtonClicked(toolId);
     QCOMPARE(actionSpy.count(), 1);
     QCOMPARE(drawingSpy.count(), 0);
+}
+
+
+void tst_PinToolbarViewModel::buttonsCarryGroups()
+{
+    PinToolbarViewModel vm;
+    QHash<int, QVariantMap> byId;
+    for (const QVariant& v : vm.buttons()) byId.insert(v.toMap().value("id").toInt(), v.toMap());
+    QCOMPARE(byId.value(int(ToolId::Beautify)).value("group").toInt(), int(ToolbarGroup::Assist));
+    QVERIFY(byId.value(int(ToolId::Beautify)).value("groupStart").toBool());
+    // Crop stays in Beautify's block with no separator, as today.
+    QVERIFY(!byId.value(int(ToolId::Crop)).value("separatorBefore").toBool());
+    // Undo keeps its intra-group separator.
+    QVERIFY(byId.value(int(ToolId::Undo)).value("separatorBefore").toBool());
+    QVERIFY(!byId.value(int(ToolId::Undo)).value("groupStart").toBool());
+    const QVariantMap done = byId.value(PinToolbarViewModel::ButtonDone);
+    QCOMPARE(done.value("group").toInt(), int(ToolbarGroup::Finish));
+    QCOMPARE(done.value("collapsePriority").toInt(), kNeverCollapse);
+    QCOMPARE(byId.value(int(ToolId::Save)).value("group").toInt(), int(ToolbarGroup::Finish));
 }
 
 QTEST_MAIN(tst_PinToolbarViewModel)

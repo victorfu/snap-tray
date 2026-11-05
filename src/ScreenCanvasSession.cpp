@@ -5,6 +5,9 @@
 #include "PlatformFeatures.h"
 #include "ScreenCanvas.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationStyleEditor.h"
+#include "annotations/AnnotationStyle.h"
+#include "qml/ToolbarOverflowLayout.h"
 #include "annotation/AnnotationRenderHelper.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/EmojiStickerAnnotation.h"
@@ -299,6 +302,12 @@ void ScreenCanvasSession::initializeSharedState()
     m_toolOptionsViewModel->setLineStyle(static_cast<int>(savedLineStyle));
     m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(m_stepBadgeSize));
 
+    // Selected-annotation styling (#224): strip edits go to the selection.
+    m_styleEditor = new AnnotationStyleEditor(m_annotationLayer, m_toolOptionsViewModel, this);
+    m_styleEditor->setInlineEditingPredicate([this] { return editingSurface() != nullptr; });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetShown, this, [this] { updateQmlToolbarState(); });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetCleared, this, [this] { updateQmlToolbarState(); });
+
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorSelected,
             this, &ScreenCanvasSession::onColorSelected);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::customColorPickerRequested,
@@ -392,9 +401,12 @@ void ScreenCanvasSession::initializeSharedState()
                 }
                 updateSurfaceInputMasks();
             });
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::overflowVisibilityChanged,
+            this, &ScreenCanvasSession::updateSurfaceInputMasks);
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
             this, [this]() {
                 m_toolbarDragging = false;
+                refitToolbarToCurrentScreen();
                 refreshFloatingUiParentWidget();
                 saveToolbarPlacement();
                 relayoutFloatingUi(false);
@@ -1156,6 +1168,12 @@ void ScreenCanvasSession::updateSurfaceInputMasks()
         if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
             subtractGlobalRectFromMask(mask, surface, m_emojiPickerPopup->geometry());
         }
+        if (m_qmlToolbar) {
+            // The toolbar's More menu is its own window (#224).
+            if (const QRect overflow = m_qmlToolbar->overflowGeometry(); !overflow.isEmpty()) {
+                subtractGlobalRectFromMask(mask, surface, overflow);
+            }
+        }
         if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
             subtractGlobalRectFromMask(mask, surface, popup->frameGeometry());
         }
@@ -1327,6 +1345,9 @@ void ScreenCanvasSession::finalizePolylineForToolbarInteraction()
 
 void ScreenCanvasSession::handlePersistentToolClick(ToolId toolId)
 {
+    // Picking a tool ends selected-annotation styling (#224).
+    m_annotationLayer->clearSelection();
+
     if (m_laserPointerActive) {
         m_laserPointerActive = false;
         if (m_currentToolId != toolId) {
@@ -1352,6 +1373,8 @@ void ScreenCanvasSession::handleLaserPointerClick()
     if (m_laserPointerActive) {
         m_showSubToolbar = !m_showSubToolbar;
     } else {
+        // Picking a tool ends selected-annotation styling (#224).
+        m_annotationLayer->clearSelection();
         m_laserPointerActive = true;
         m_showSubToolbar = true;
         if (m_toolManager->isDrawing()) {
@@ -2042,7 +2065,10 @@ void ScreenCanvasSession::onColorSelected(const QColor& color)
 
 void ScreenCanvasSession::onMoreColorsRequested()
 {
-    m_toolOptionsViewModel->setCurrentColor(m_toolManager->color());
+    const bool editingSelection = m_toolOptionsViewModel->editingSelection();
+    if (!editingSelection) {
+        m_toolOptionsViewModel->setCurrentColor(m_toolManager->color());
+    }
 
     QWidget* hostWidget = toolbarHostSurface();
     if (!hostWidget) {
@@ -2052,9 +2078,12 @@ void ScreenCanvasSession::onMoreColorsRequested()
     AnnotationContext::showColorPickerDialog(
         hostWidget,
         m_colorPickerDialog,
-        m_toolManager->color(),
+        editingSelection ? m_toolOptionsViewModel->currentColor() : m_toolManager->color(),
         colorPickerAnchorPoint(),
         [this](const QColor& color) {
+            if (m_toolOptionsViewModel->routeToSelection(StyleProperty::Color, color)) {
+                return;
+            }
             onColorSelected(color);
         });
 }
@@ -2089,6 +2118,9 @@ void ScreenCanvasSession::onLineWidthChanged(int width)
 
 void ScreenCanvasSession::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::ArrowStyle, static_cast<int>(style))) {
+        return;
+    }
     m_toolOptionsViewModel->setArrowStyle(static_cast<int>(style));
     m_toolManager->setArrowStyle(style);
     AnnotationSettingsManager::instance().saveArrowStyle(style);
@@ -2097,6 +2129,9 @@ void ScreenCanvasSession::onArrowStyleChanged(LineEndStyle style)
 
 void ScreenCanvasSession::onLineStyleChanged(LineStyle style)
 {
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::LineStyle, static_cast<int>(style))) {
+        return;
+    }
     m_toolOptionsViewModel->setLineStyle(static_cast<int>(style));
     m_toolManager->setLineStyle(style);
     AnnotationSettingsManager::instance().saveLineStyle(style);
@@ -2125,6 +2160,9 @@ void ScreenCanvasSession::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void ScreenCanvasSession::onFontSizeSelected(int size)
 {
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::FontSize, size)) {
+        return;
+    }
     m_toolOptionsViewModel->setFontSize(size);
     for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
         if (surface && surface->textAnnotationEditor()) {
@@ -2136,6 +2174,9 @@ void ScreenCanvasSession::onFontSizeSelected(int size)
 
 void ScreenCanvasSession::onFontFamilySelected(const QString& family)
 {
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::FontFamily, family)) {
+        return;
+    }
     m_toolOptionsViewModel->setFontFamily(family);
     for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
         if (surface && surface->textAnnotationEditor()) {
@@ -2152,6 +2193,10 @@ void ScreenCanvasSession::onTextEditingFinished(ScreenCanvas* surface,
     if (surface && surface->textAnnotationEditor()) {
         surface->textAnnotationEditor()->finishEditing(text, position, m_toolManager->color());
     }
+    // Inline editing owned styling while it ran; the selection may be stylable now.
+    if (m_styleEditor) {
+        m_styleEditor->refreshTarget();
+    }
 }
 
 void ScreenCanvasSession::syncTextFormattingToSubToolbar()
@@ -2164,8 +2209,16 @@ void ScreenCanvasSession::syncTextFormattingToSubToolbar()
         return;
     }
 
+    const bool inlineEditing =
+        surface->inlineTextEditor() && surface->inlineTextEditor()->isEditing();
+    if (!inlineEditing && m_styleEditor && m_styleEditor->hasTarget()) {
+        // The strip shows the selected annotation (#224); the editor defaults
+        // of whichever surface is active must not overwrite it.
+        return;
+    }
+
     const auto formatting = surface->textAnnotationEditor()->formatting();
-    if (surface->inlineTextEditor() && surface->inlineTextEditor()->isEditing()) {
+    if (inlineEditing) {
         m_toolOptionsViewModel->setCurrentColor(surface->inlineTextEditor()->color());
     }
     m_toolOptionsViewModel->setBold(formatting.bold);
@@ -2186,6 +2239,14 @@ void ScreenCanvasSession::updateQmlToolbarState()
         }
     }
 
+    // The background mode takes the highlight, but the tool in use must still
+    // stay out of More (#224), whether or not its options strip is shown.
+    int toolInUseId = -1;
+    if (m_laserPointerActive) {
+        toolInUseId = kLaserPointerButtonId;
+    } else if (isDrawingTool(m_currentToolId)) {
+        toolInUseId = static_cast<int>(m_currentToolId);
+    }
     if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
         activeToolId = static_cast<int>(ToolId::CanvasWhiteboard);
     }
@@ -2193,6 +2254,7 @@ void ScreenCanvasSession::updateQmlToolbarState()
         activeToolId = static_cast<int>(ToolId::CanvasBlackboard);
     }
     if (m_toolbarViewModel) {
+        m_toolbarViewModel->setOverflowKeepTool(toolInUseId);
         m_toolbarViewModel->setActiveTool(activeToolId);
     }
 
@@ -2210,7 +2272,10 @@ void ScreenCanvasSession::updateQmlToolbarState()
         return;
     }
 
-    if (m_showSubToolbar && !m_laserPointerActive) {
+    if (m_styleEditor && m_styleEditor->hasTarget()) {
+        // The strip shows the selected annotation; don't reset it to the tool.
+        m_qmlSubToolbar->show();
+    } else if (m_showSubToolbar && !m_laserPointerActive) {
         m_qmlSubToolbar->showForTool(static_cast<int>(m_currentToolId));
     } else if (m_showSubToolbar && m_laserPointerActive) {
         m_toolOptionsViewModel->showLaserPointerOptions();
@@ -2242,6 +2307,12 @@ bool ScreenCanvasSession::initializeToolbarPlacement()
         return false;
     }
 
+    if (QScreen* screen = m_activationScreen ? m_activationScreen.data()
+                                              : QGuiApplication::primaryScreen()) {
+        // Collapse into More before placement so the row fits this screen.
+        m_qmlToolbar->applyOverflowLayout(
+            SnapTray::toolbarUsableBounds(screen->availableGeometry()));
+    }
     const QSize toolbarSize = m_qmlToolbar->sizeHint();
     if (toolbarSize.isEmpty()) {
         return false;
@@ -2257,8 +2328,32 @@ bool ScreenCanvasSession::initializeToolbarPlacement()
     }
 
     m_qmlToolbar->setPosition(resolution.globalTopLeft);
+    // A saved placement can land on another screen than the activation one.
+    refitToolbarToCurrentScreen();
     m_toolbarPlacementInitialized = true;
     return true;
+}
+
+void ScreenCanvasSession::refitToolbarToCurrentScreen()
+{
+    if (!m_qmlToolbar) {
+        return;
+    }
+    const QRect toolbarGeometry = m_qmlToolbar->geometry();
+    QScreen* screen = QGuiApplication::screenAt(toolbarGeometry.center());
+    if (!screen) {
+        return;
+    }
+    // Re-collapse for the screen the toolbar sits on (after placement or a
+    // drag), so More keeps the right buttons and its menu is clamped to this
+    // screen, not the activation screen.
+    const QRect bounds = SnapTray::toolbarUsableBounds(screen->availableGeometry());
+    m_qmlToolbar->applyOverflowLayout(bounds);
+    const QRect refitted = m_qmlToolbar->geometry();
+    const QPoint bounded = SnapTray::boundToolbarPosition(refitted.topLeft(), refitted.size(), bounds);
+    if (bounded != refitted.topLeft()) {
+        m_qmlToolbar->setPosition(bounded);
+    }
 }
 
 void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
@@ -2289,6 +2384,9 @@ void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
             m_toolbarPlacementInitialized = true;
         }
     }
+    // Restored placement can land on another screen, and a state change can
+    // widen the collapsed row; either way keep the toolbar on its screen.
+    refitToolbarToCurrentScreen();
 
     refreshFloatingUiParentWidget();
     if (!m_qmlToolbar->isVisible()) {

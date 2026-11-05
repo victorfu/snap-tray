@@ -4,7 +4,10 @@
 #include <QVariantList>
 #include <QVariantMap>
 
+#include <optional>
+
 #include "tools/ToolId.h"
+#include "tools/ToolbarTraits.h"
 
 /**
  * Shared base for QML toolbar view models.
@@ -33,6 +36,8 @@ public:
         bool isAction = false;
         bool isExportAction = false;
         bool isCancel = false;
+        std::optional<ToolbarGroup> group;      // custom buttons must set it
+        std::optional<int> collapsePriority;    // custom buttons must set it
     };
 
     explicit ToolbarViewModelBase(QObject* parent = nullptr);
@@ -41,6 +46,12 @@ public:
 
     int activeTool() const;
     void setActiveTool(int toolId);
+
+    // A tool that must stay out of More besides activeTool, for toolbars whose
+    // highlight can sit on a mode button (canvas whiteboard/blackboard) while
+    // another tool is in use. -1 when unused.
+    int overflowKeepTool() const { return m_overflowKeepTool; }
+    void setOverflowKeepTool(int toolId);
 
     bool canUndo() const;
     void setCanUndo(bool value);
@@ -57,6 +68,7 @@ public:
 signals:
     void buttonsChanged();
     void activeToolChanged();
+    void overflowKeepToolChanged();
     void canUndoChanged();
     void canRedoChanged();
     void ocrAvailableChanged();
@@ -77,6 +89,7 @@ protected:
 private:
     QVariantList m_buttons;
     int m_activeTool = -1;
+    int m_overflowKeepTool = -1;
     bool m_canUndo = false;
     bool m_canRedo = false;
     bool m_ocrAvailable = true;

@@ -12,6 +12,7 @@
 #include <QtMath>
 
 #include "PinWindow.h"
+#include "annotations/ArrowAnnotation.h"
 #include "PinWindowManager.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "PlatformFeatures.h"
@@ -157,6 +158,7 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testAnnotationToolUsesWindowDevicePixelRatio();
     void testStrokeAndMosaicWidthsRestoreIndependently();
+    void selectedArrowStyleIsUndoable();
     void testMosaicPresetsUpdateCursorWithoutChangingStrokeWidth();
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
     void testOverlayRestoreReturnsArrowToolCursor();
@@ -1043,6 +1045,51 @@ void TestPinWindowStyleSync::testLinuxBypassPinReceivesSpaceShortcutAfterClickFo
 
     window.close();
 #endif
+}
+
+
+void TestPinWindowStyleSync::selectedArrowStyleIsUndoable()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor savedColor = settings.loadColor();
+    const int savedWidth = settings.loadWidthForTool(ToolId::Arrow);
+    const int savedMarker = settings.loadWidthForTool(ToolId::Marker);
+    const auto restore = qScopeGuard([&] {
+        settings.saveColor(savedColor);
+        settings.saveWidthForTool(ToolId::Marker, savedMarker);
+        settings.saveWidthForTool(ToolId::Arrow, savedWidth);
+    });
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Arrow));
+    window.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::red, 3));
+    window.m_annotationLayer->setSelectedIndex(0);
+    auto* vm = window.m_subToolbar->viewModel();
+    QVERIFY(vm->editingSelection());
+    QCOMPARE(vm->targetLabel(), QStringLiteral("Selected: Arrow"));
+    vm->handleWidthChanged(11);
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(window.m_annotationLayer->itemAt(0)); };
+    QCOMPARE(arrow()->width(), 11);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Arrow), savedWidth);
+    // The line style menu result also edits the selection.
+    window.onLineStyleChanged(LineStyle::Dotted);
+    QCOMPARE(arrow()->lineStyle(), LineStyle::Dotted);
+    window.handleToolbarUndo();
+    QCOMPARE(arrow()->lineStyle(), LineStyle::Solid);
+    window.handleToolbarUndo();
+    QCOMPARE(arrow()->width(), 3);
+    window.handleToolbarRedo();
+    QCOMPARE(arrow()->width(), 11);
+    QCOMPARE(settings.loadColor(), savedColor);
+    // Picking a tool ends the selection and returns the strip to that tool,
+    // showing that tool's own width (review #4).
+    settings.saveWidthForTool(ToolId::Marker, 20);
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Marker));
+    QVERIFY(!vm->editingSelection());
+    QCOMPARE(vm->currentWidth(), window.m_toolManager->width());
 }
 
 QTEST_MAIN(TestPinWindowStyleSync)

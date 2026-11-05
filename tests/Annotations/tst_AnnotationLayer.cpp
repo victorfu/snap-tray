@@ -4,6 +4,7 @@
 #include <QFont>
 
 #include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
 #include "annotations/MarkerStroke.h"
 #include "annotations/PencilStroke.h"
 #include "annotations/PolylineAnnotation.h"
@@ -88,6 +89,16 @@ class TestAnnotationLayer : public QObject
     Q_OBJECT
 
 private slots:
+    void modifyIsUndoable();
+    void modifyKeepsSelectionAcrossUndo();
+    void modifyCoalesces();
+    void modifyCoalescingEndsOnUndo();
+    void modifyRefusedDuringErase();
+    void modifyRejectedMutationLeavesNoHistory();
+    void selectionChangedSignal();
+    void selectionFollowsItemAfterErase();
+    void modifyUndoKeepsLaterGeometry();
+    void modifyUndoKeepsVisibility();
     void testAddItem_PreservesAnnotationsBeyondFifty();
     void testDraw_CullsPencilStrokesOutsidePainterClip();
     void testDrawCached_AppendsWithoutRebuildingExistingItems();
@@ -1354,6 +1365,186 @@ void TestAnnotationLayer::testOwnedVisitor_RefreshesHistoryBytes()
     });
     QVERIFY(layer.historyOwnedBytes() < grown);
     QVERIFY(layer.canRedo());
+}
+
+
+namespace {
+std::unique_ptr<ArrowAnnotation> redArrow(int y = 0)
+{
+    return std::make_unique<ArrowAnnotation>(QPoint(0, y), QPoint(50, y), Qt::red, 3);
+}
+ArrowAnnotation* arrowAt(AnnotationLayer& layer, int index)
+{
+    return static_cast<ArrowAnnotation*>(layer.itemAt(index));
+}
+} // namespace
+
+void TestAnnotationLayer::modifyIsUndoable()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    const auto id = layer.idAt(0);
+    QVERIFY(id != 0);
+    QVERIFY(layer.modifyItem(id, {}, [](AnnotationItem& item) {
+        static_cast<ArrowAnnotation&>(item).setColor(Qt::blue);
+        return true;
+    }));
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::blue));
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::red));
+    QCOMPARE(layer.itemCount(), size_t(1));
+    QCOMPARE(layer.idAt(0), id);
+    layer.redo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::blue));
+    layer.undo();
+    layer.undo(); // the Add
+    QCOMPARE(layer.itemCount(), size_t(0));
+}
+
+void TestAnnotationLayer::modifyKeepsSelectionAcrossUndo()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    layer.setSelectedIndex(0);
+    layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::blue); return true; });
+    layer.undo();
+    QCOMPARE(layer.selectedIndex(), 0);
+    layer.redo();
+    QCOMPARE(layer.selectedIndex(), 0);
+}
+
+void TestAnnotationLayer::modifyCoalesces()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    const auto id = layer.idAt(0);
+    for (int w : {4, 5, 6})
+        layer.modifyItem(id, QStringLiteral("width"), [w](AnnotationItem& i) {
+            static_cast<ArrowAnnotation&>(i).setWidth(w); return true; });
+    QCOMPARE(layer.historyCommandCount(), size_t(2)); // Add + one Modify
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->width(), 3);
+    layer.redo();
+    QCOMPARE(arrowAt(layer, 0)->width(), 6);
+    // A different key starts a new command.
+    layer.modifyItem(id, QStringLiteral("color"), [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::green); return true; });
+    QCOMPARE(layer.historyCommandCount(), size_t(3));
+    // So does an explicit end of coalescing with the same key.
+    layer.endModifyCoalescing();
+    layer.modifyItem(id, QStringLiteral("color"), [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::yellow); return true; });
+    QCOMPARE(layer.historyCommandCount(), size_t(4));
+}
+
+void TestAnnotationLayer::modifyCoalescingEndsOnUndo()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    const auto id = layer.idAt(0);
+    layer.modifyItem(id, QStringLiteral("width"), [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setWidth(8); return true; });
+    layer.undo();
+    layer.modifyItem(id, QStringLiteral("width"), [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setWidth(9); return true; });
+    QVERIFY(!layer.canRedo());
+    QCOMPARE(arrowAt(layer, 0)->width(), 9);
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->width(), 3);
+}
+
+void TestAnnotationLayer::modifyRefusedDuringErase()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    layer.beginEraseTransaction();
+    QVERIFY(!layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem&) { return true; }));
+    layer.endEraseTransaction();
+    QCOMPARE(layer.historyCommandCount(), size_t(1));
+}
+
+void TestAnnotationLayer::modifyRejectedMutationLeavesNoHistory()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    QVERIFY(!layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem&) { return false; }));
+    QCOMPARE(layer.historyCommandCount(), size_t(1));
+    QVERIFY(!layer.modifyItem(9999, {}, [](AnnotationItem&) { return true; }));
+    QCOMPARE(layer.indexOfId(9999), -1);
+}
+
+void TestAnnotationLayer::selectionChangedSignal()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    QSignalSpy spy(&layer, &AnnotationLayer::selectionChanged);
+    layer.setSelectedIndex(0);
+    QCOMPARE(layer.selectedId(), layer.idAt(0));
+    layer.setSelectedIndex(0); // no change, no signal
+    layer.clearSelection();
+    layer.clearSelection();
+    QCOMPARE(spy.count(), 2);
+    QCOMPARE(layer.selectedId(), AnnotationLayer::AnnotationId(0));
+}
+
+
+void TestAnnotationLayer::selectionFollowsItemAfterErase()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow(0));
+    layer.addItem(redArrow(40));
+    const auto id = layer.idAt(1);
+    layer.setSelectedIndex(1);
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(25, 0), 6);
+    QCOMPARE(removed.size(), size_t(1));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
+    QCOMPARE(layer.selectedIndex(), 0);
+    QCOMPARE(layer.selectedId(), id);
+    QCOMPARE(layer.selectedItem(), layer.itemAt(0));
+    // Erasing the selected item itself leaves no selection.
+    layer.beginEraseTransaction();
+    removed = layer.removeItemsIntersecting(QPoint(25, 40), 6);
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
+    QCOMPARE(layer.selectedIndex(), -1);
+    QCOMPARE(layer.selectedItem(), nullptr);
+}
+
+
+void TestAnnotationLayer::modifyUndoKeepsLaterGeometry()
+{
+    // Moves are not undoable yet; undoing a colour change must not revert them.
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::blue); return true; });
+    arrowAt(layer, 0)->translate(QPointF(30, 40));
+    const QRect moved = arrowAt(layer, 0)->boundingRect();
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::red));
+    QCOMPARE(arrowAt(layer, 0)->boundingRect(), moved);
+    layer.redo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::blue));
+    QCOMPARE(arrowAt(layer, 0)->boundingRect(), moved);
+}
+
+void TestAnnotationLayer::modifyUndoKeepsVisibility()
+{
+    // A text hidden for inline re-editing must stay hidden across a style undo/redo.
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Hi"),
+                                                      QFont(), Qt::black));
+    layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem& i) {
+        static_cast<TextBoxAnnotation&>(i).setColor(Qt::red); return true; });
+    auto* text = static_cast<TextBoxAnnotation*>(layer.itemAt(0));
+    text->setVisible(false);
+    layer.undo();
+    QVERIFY(!layer.itemAt(0)->isVisible());
+    QCOMPARE(static_cast<TextBoxAnnotation*>(layer.itemAt(0))->color(), QColor(Qt::black));
+    layer.redo();
+    QVERIFY(!layer.itemAt(0)->isVisible());
+    QCOMPARE(layer.itemAt(0), text); // the same object stays in the scene
 }
 
 QTEST_MAIN(TestAnnotationLayer)

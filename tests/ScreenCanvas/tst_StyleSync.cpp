@@ -7,8 +7,11 @@
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
 #include "ScreenCanvasSession.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/AnnotationLayer.h"
 #include "InlineTextEditor.h"
 #include "LaserPointerRenderer.h"
+#include "qml/CanvasToolbarViewModel.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 #include "settings/AnnotationSettingsManager.h"
@@ -25,6 +28,8 @@ private slots:
     void testPopupRestoreReturnsEraserCursor();
     void testCustomColorSynchronizesSession_data();
     void testCustomColorSynchronizesSession();
+    void selectedArrowStyleIsUndoable();
+    void toolInUseStaysOutOfOverflowWithStripCollapsed();
 #ifdef Q_OS_MACOS
     void testMacSurfaceAvoidsToolWindowHideBehavior();
 #endif
@@ -168,6 +173,75 @@ void TestScreenCanvasStyleSync::testCustomColorSynchronizesSession()
     QCOMPARE(reopened.m_toolManager->color(), custom);
     QCOMPARE(reopened.m_laserRenderer->color(), custom);
     QCOMPARE(reopened.m_toolOptionsViewModel->currentColor(), custom);
+}
+
+
+void TestScreenCanvasStyleSync::selectedArrowStyleIsUndoable()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor savedColor = settings.loadColor();
+    const auto savedArrow = settings.loadArrowStyle();
+    const auto restore = qScopeGuard([&] {
+        settings.saveColor(savedColor);
+        settings.saveArrowStyle(savedArrow);
+    });
+    ScreenCanvasSession session;
+    auto* surface = new ScreenCanvas;
+    session.m_surfaces = {surface};
+    session.m_activeSurface = surface;
+    session.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::red, 3));
+    session.m_annotationLayer->setSelectedIndex(0);
+    auto* vm = session.m_toolOptionsViewModel;
+    QVERIFY(vm->editingSelection());
+    vm->handleArrowStyleSelected(int(LineEndStyle::None));
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(session.m_annotationLayer->itemAt(0)); };
+    QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::None);
+    QCOMPARE(settings.loadArrowStyle(), savedArrow);
+    // The arrow style menu result and the custom colour dialog also edit the selection.
+    session.onLineStyleChanged(LineStyle::Dashed);
+    QCOMPARE(arrow()->lineStyle(), LineStyle::Dashed);
+    session.onMoreColorsRequested();
+    QVERIFY(session.m_colorPickerDialog);
+    const QColor custom(23, 147, 219);
+    session.m_colorPickerDialog->colorSelected(custom);
+    session.m_colorPickerDialog->hide();
+    QCOMPARE(arrow()->color(), custom);
+    QCOMPARE(settings.loadColor(), savedColor);
+    session.handleUndoAction(ToolId::Undo);
+    QCOMPARE(arrow()->color(), QColor(Qt::red));
+    session.handleUndoAction(ToolId::Undo);
+    session.handleUndoAction(ToolId::Undo);
+    QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::EndArrow);
+    session.handleRedoAction(ToolId::Redo);
+    QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::None);
+    // Picking another tool ends the selection; the strip returns to that tool.
+    session.handlePersistentToolClick(ToolId::Pencil);
+    QVERIFY(!vm->editingSelection());
+    QCOMPARE(session.m_annotationLayer->selectedIndex(), -1);
+}
+
+void TestScreenCanvasStyleSync::toolInUseStaysOutOfOverflowWithStripCollapsed()
+{
+    // #224 review: Whiteboard/Blackboard take the highlight, and collapsing the
+    // options strip clears it from the tool; the tool in use must still be kept
+    // out of More.
+    ScreenCanvasSession session;
+    auto* vm = session.m_toolbarViewModel;
+    session.m_currentToolId = ToolId::EmojiSticker;
+    session.m_laserPointerActive = false;
+    for (const auto mode : {CanvasBackgroundMode::Whiteboard, CanvasBackgroundMode::Blackboard,
+                            CanvasBackgroundMode::Screen}) {
+        session.m_bgMode = mode;
+        for (const bool stripShown : {true, false}) {
+            session.m_showSubToolbar = stripShown;
+            session.updateQmlToolbarState();
+            QCOMPARE(vm->overflowKeepTool(), int(ToolId::EmojiSticker));
+        }
+    }
+    session.m_bgMode = CanvasBackgroundMode::Whiteboard;
+    session.updateQmlToolbarState();
+    QCOMPARE(vm->activeTool(), int(ToolId::CanvasWhiteboard));
 }
 
 QTEST_MAIN(TestScreenCanvasStyleSync)

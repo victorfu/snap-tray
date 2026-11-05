@@ -4,6 +4,10 @@
 #include <QSet>
 #include <QVariantList>
 
+#include <algorithm>
+
+#include "tools/ToolbarTraits.h"
+
 namespace SnapTray {
 struct ToolbarLayoutMetrics {
     int buttonWidth = 28;
@@ -12,6 +16,7 @@ struct ToolbarLayoutMetrics {
     int margin = 8;
     int dragHandleWidth = 16;
     int contentSpacing = 6;
+    int groupGap = 4;   // extra space at a group boundary, on top of the separator
 };
 struct ToolbarOverflowLayout {
     QVariantList visibleButtons;
@@ -41,28 +46,66 @@ inline int toolbarContentWidth(const QVariantList& buttons, bool drag, bool more
     int width = 2 * m.margin;
     if (drag) width += m.dragHandleWidth + m.contentSpacing;
     for (const QVariant& button : buttons) {
+        const QVariantMap map = button.toMap();
         width += m.buttonWidth;
-        if (button.toMap().value("separatorBefore").toBool()) width += m.separatorWidth;
+        if (map.value("separatorBefore").toBool()) width += m.separatorWidth;
+        if (map.value("groupStart").toBool()) width += m.groupGap;
     }
     const int count = int(buttons.size()) + (more ? 1 : 0);
     if (more) width += m.buttonWidth;
     return width + qMax(0, count - 1) * m.buttonSpacing;
 }
 
+// Re-derives group boundaries after buttons were removed from a row.
+inline QVariantList restampGroupStarts(QVariantList list)
+{
+    int previous = -1;
+    for (auto& v : list) {
+        QVariantMap m = v.toMap();
+        const int g = m.value("group").toInt();
+        const bool start = previous != -1 && g != previous;
+        m["groupStart"] = start;
+        if (start) m["separatorBefore"] = true;
+        v = m;
+        previous = g;
+    }
+    return list;
+}
+
+// Collapses buttons into More by collapsePriority (lowest first, later in the
+// row first on ties). kNeverCollapse buttons, the active tool and
+// `keepToolId` (the tool in use when the highlight is elsewhere) stay visible.
 inline ToolbarOverflowLayout computeToolbarOverflow(const QVariantList& buttons, int maximumWidth,
-                                                     const QSet<int>& pinned,
-                                                     const ToolbarLayoutMetrics& metrics = {})
+                                                     int activeToolId,
+                                                     const ToolbarLayoutMetrics& metrics = {},
+                                                     int keepToolId = -1)
 {
     ToolbarOverflowLayout result;
     result.visibleButtons = buttons;
     result.width = toolbarContentWidth(buttons, true, false, metrics);
     if (result.width <= maximumWidth) return result;
+
+    QList<int> order;
+    for (int i = 0; i < buttons.size(); ++i) {
+        const QVariantMap b = buttons[i].toMap();
+        if (b.value("collapsePriority").toInt() == kNeverCollapse) continue;
+        const int id = b.value("id").toInt();
+        if (id == activeToolId || (keepToolId >= 0 && id == keepToolId)) continue;
+        order.append(i);
+    }
+    std::stable_sort(order.begin(), order.end(), [&buttons](int a, int b) {
+        const int pa = buttons[a].toMap().value("collapsePriority").toInt();
+        const int pb = buttons[b].toMap().value("collapsePriority").toInt();
+        return pa != pb ? pa < pb : a > b;
+    });
+
     QSet<int> removed;
-    for (int i = int(buttons.size()) - 1; i >= 0; --i) {
-        const int id = buttons[i].toMap().value("id").toInt();
-        if (pinned.contains(id)) continue;
-        removed.insert(id);
-        result.visibleButtons.removeAt(i);
+    for (int index : order) {
+        removed.insert(index);
+        QVariantList visible;
+        for (int i = 0; i < buttons.size(); ++i)
+            if (!removed.contains(i)) visible.append(buttons[i]);
+        result.visibleButtons = restampGroupStarts(visible);
         result.width = toolbarContentWidth(result.visibleButtons, true, true, metrics);
         if (result.width <= maximumWidth) break;
     }
@@ -71,11 +114,10 @@ inline ToolbarOverflowLayout computeToolbarOverflow(const QVariantList& buttons,
         result.overflowButtons = buttons;
         result.showDragHandle = false;
         result.width = qMax(1, qMin(maximumWidth, toolbarContentWidth({}, false, true, metrics)));
-    } else {
-        for (const QVariant& button : buttons)
-            if (removed.contains(button.toMap().value("id").toInt()))
-                result.overflowButtons.append(button);
+        return result;
     }
+    for (int i = 0; i < buttons.size(); ++i)
+        if (removed.contains(i)) result.overflowButtons.append(buttons[i]);
     return result;
 }
 }

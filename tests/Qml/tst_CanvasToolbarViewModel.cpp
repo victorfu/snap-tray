@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include "tools/ToolbarTraits.h"
 
 #include "qml/CanvasToolbarViewModel.h"
 
@@ -40,6 +41,7 @@ private slots:
     void testLaserPointerButtonRoutesThroughToolSelected();
     void testCopyButtonEmitsCopySignal();
     void testCanvasModeButtonsEmitActionSignals();
+    void buttonsCarryGroups();
 };
 
 void tst_CanvasToolbarViewModel::testLaserPointerInsertedBeforeCanvasModeToggle()
@@ -105,6 +107,20 @@ void tst_CanvasToolbarViewModel::testCanvasModeButtonsEmitActionSignals()
     QCOMPARE(toolSpy.count(), 0);
     QCOMPARE(whiteboardSpy.count(), 1);
     QCOMPARE(blackboardSpy.count(), 1);
+}
+
+
+void tst_CanvasToolbarViewModel::buttonsCarryGroups()
+{
+    CanvasToolbarViewModel vm;
+    QHash<int, QVariantMap> byId;
+    for (const QVariant& v : vm.buttons()) byId.insert(v.toMap().value("id").toInt(), v.toMap());
+    constexpr int kLaser = 10001;
+    QCOMPARE(byId.value(kLaser).value("group").toInt(), int(ToolbarGroup::Draw));
+    QCOMPARE(byId.value(int(ToolId::CanvasWhiteboard)).value("group").toInt(), int(ToolbarGroup::Assist));
+    QCOMPARE(byId.value(int(ToolId::Clear)).value("group").toInt(), int(ToolbarGroup::Assist));
+    QCOMPARE(byId.value(int(ToolId::Copy)).value("group").toInt(), int(ToolbarGroup::Finish));
+    QCOMPARE(byId.value(int(ToolId::Exit)).value("collapsePriority").toInt(), kNeverCollapse);
 }
 
 QTEST_MAIN(tst_CanvasToolbarViewModel)
