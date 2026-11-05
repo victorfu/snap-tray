@@ -3990,6 +3990,11 @@ Item {
         if (root.textEntryActive)
             return
 
+        // A drag in progress is cancelled by Escape before anything else:
+        // never by closing the editor, nor by dropping a crop draft.
+        if (event.key === Qt.Key_Escape && root.cancelTimelineDragOnEscape(event))
+            return
+
         if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Z) {
             if (event.modifiers & Qt.ShiftModifier)
                 root.redoEdit()
@@ -4041,11 +4046,8 @@ Item {
             event.accepted = true
             break
         case Qt.Key_Escape:
-            // A drag in progress is cancelled by its own handler, never by
-            // closing the editor.
-            if (root.timelineDragActive) {
-                root.cancelTimelineDrag()
-            } else if (root.inspectorKind !== "project") {
+            // (A drag in progress was cancelled above.)
+            if (root.inspectorKind !== "project") {
                 if (root.openSection("") && !root.wideEditor)
                     root.inspectorOpen = false
             }

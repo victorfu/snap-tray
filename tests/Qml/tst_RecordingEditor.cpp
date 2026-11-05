@@ -1132,6 +1132,25 @@ void tst_RecordingEditor::escapeCancelsTimelineDrags()
     QTest::mouseRelease(view, Qt::LeftButton, Qt::NoModifier, split + QPoint(60, 0));
     QCOMPARE(backend.timelineSplits(), splits);
     QVERIFY(!backend.discardConfirmationPending());
+
+    // While a crop is edited, Escape cancels the drag and keeps the draft.
+    view->rootObject()->forceActiveFocus();
+    QTRY_VERIFY(view->rootObject()->hasActiveFocus());
+    QTRY_VERIFY(item(view, "previewCropButton")->isEnabled());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewCropButton"), "clicked"));
+    QQuickItem* crop = item(view, "previewCropOverlay");
+    QTRY_VERIFY(crop && crop->property("editing").toBool());
+    view->rootObject()->forceActiveFocus();
+    QTRY_VERIFY((marker = delegate(view, "previewTimelineSplit0")) != nullptr);
+    const QPoint cropSplit = marker->mapToScene(QPointF(marker->width() / 2, marker->height() / 2)).toPoint();
+    QTest::mousePress(view, Qt::LeftButton, Qt::NoModifier, cropSplit);
+    QTest::mouseMove(view, cropSplit + QPoint(60, 0), 30);
+    QTRY_VERIFY(view->rootObject()->property("timelineDragActive").toBool());
+    QTest::keyClick(view, Qt::Key_Escape);
+    QTest::mouseRelease(view, Qt::LeftButton, Qt::NoModifier, cropSplit + QPoint(60, 0));
+    QCOMPARE(backend.timelineSplits(), splits);
+    QVERIFY(crop->property("editing").toBool());
+    QVERIFY(!backend.discardConfirmationPending());
     backend.requestDiscard();
 }
 
