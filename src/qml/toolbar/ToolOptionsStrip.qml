@@ -108,8 +108,10 @@ Item {
                 x: root.targetLabelInset
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.hasViewModel ? root.viewModel.targetLabel : ""
+                // Accent (not the icon-on-accent token) so it reads on light and dark glass.
                 color: root.hasViewModel && root.viewModel.editingSelection
-                       ? ComponentTokens.toolbarIconActive : ComponentTokens.toolbarIcon
+                       ? (SemanticTokens.isDarkMode ? DesignSystem.accentLight : DesignSystem.accentDefault)
+                       : ComponentTokens.toolbarIcon
                 font.pixelSize: root.targetLabelPixelSize
                 font.weight: root.hasViewModel && root.viewModel.editingSelection
                              ? Font.DemiBold : Font.Normal

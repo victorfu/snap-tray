@@ -106,7 +106,7 @@ Keep the user documentation aligned with actual platform capabilities and the de
 
 ## Rollout boundaries
 
-The first implementation introduces neutral editor surface tokens, a stable editor shell, a scrollable inspector, a separate export popup, explicit choices, mutually exclusive effect selection, named effect lanes, and release-to-commit range dragging. Shared dialog buttons gain keyboard activation and visible focus. Capture, pin, library, settings navigation, and Beautify are still governed by the specification above; this editor change does not claim to redesign those surfaces.
+The first implementation introduces neutral editor surface tokens, a stable editor shell, a scrollable inspector, a separate export popup, explicit choices, mutually exclusive effect selection, named effect lanes, and release-to-commit range dragging. Shared dialog buttons gain keyboard activation and visible focus. Pin, library, settings navigation, and Beautify are still governed by the specification above; this editor change does not claim to redesign those surfaces. The capture/annotation toolbars follow the contract in [Capture toolbar](#capture-toolbar) below (#224).
 
 The remaining product work is tracked by [#221](https://github.com/victorfu/snap-tray/issues/221): capture/annotation action grouping and overflow; pin mode visibility and reset controls; library browsing and project/output distinction; settings information architecture; and shared Beautify presets. Follow-up implementation is tracked in [#224](https://github.com/victorfu/snap-tray/issues/224) (capture/annotation), [#225](https://github.com/victorfu/snap-tray/issues/225) (pin windows), [#226](https://github.com/victorfu/snap-tray/issues/226) (library), and [#227](https://github.com/victorfu/snap-tray/issues/227) (settings/Beautify). Search, favorites, renaming, and batch actions remain candidates.
 
@@ -187,4 +187,58 @@ SNAPTRAY_EDITOR_DESIGN_DIR=/tmp/editor SNAPTRAY_EDITOR_TRANSLATION=$PWD/snaptray
 # Operation video frames, then a video per scenario.
 SNAPTRAY_EDITOR_VIDEO_DIR=/tmp/videos ./bin/Qml_RecordingEditor operationVideo
 ffmpeg -framerate 10 -i /tmp/videos/218-selection/frame-%05d.png -c:v libx264 -pix_fmt yuv420p editor-218-selection.mp4
+```
+
+## Capture toolbar
+
+Applies to the Region Capture toolbar, the Pin Window annotation toolbar, and the Screen Canvas toolbar (#224). Design: `docs/superpowers/specs/2026-11-05-capture-toolbar-design.md`.
+
+### Contract
+
+- Buttons sit in three groups, defined once in `include/tools/ToolbarTraits.h`: **draw** (shape, arrow, pencil, marker, text, mosaic, eraser, step badge, emoji), **assist** (undo, redo, OCR, QR Code, multi-region, and pin's Beautify/crop/measure), and **finish** (pin, save, copy). A group boundary adds a separator plus a 4 px gap; the finish group sits on a faint accent band.
+- When the toolbar does not fit the screen (capture: the selection's viewport; pin: the pin's screen; canvas: the activation screen), buttons collapse into **More** by priority: QR Code, OCR, multi-region, emoji, step badge, eraser, mosaic, then other drawing tools from the end of the row. Copy, save, pin, done, cancel, exit, undo, redo, and the active tool never collapse. Hit targets stay 28×24.
+- **More** names each item, works with Up/Down/Enter/Esc, closes on a click outside or a re-layout, and returns focus to the More button.
+- With a text, arrow, line, or shape annotation selected, the style strip edits **that annotation**, says `Selected: <type>`, and each change is one undo step (dragging the width slider or clicking through colours coalesces until 500 ms idle). With nothing selected it says `New object` and sets the defaults for the next annotation. Editing a selection never changes the saved defaults. A selected shape keeps its type; emoji, pencil, marker, mosaic, and step badges are not restyled.
+- Selection follows the annotation, not its position in the list: erasing other annotations keeps it.
+
+### Acceptance
+
+| Check | macOS | Windows | Ubuntu 22.04 X11 |
+| --- | --- | --- | --- |
+| Groups, finish band, normal width (light/dark) | Screenshots below | Pending manual pass | Pending manual pass |
+| Collapse into More on a narrow screen, menu by keyboard | Screenshots below + `tst_ToolbarOverflow` | Pending manual pass | Pending manual pass |
+| Selection placement at screen edges and on a narrow side monitor | `tst_ToolbarOverflow::selectionPlacementStaysOnScreen` | Pending manual pass | Pending manual pass |
+| Restyle a selected annotation, undo/redo, defaults untouched | Video below + `*_StyleSync::selectedArrowStyleIsUndoable` (region, pin, canvas) | Pending manual pass | Pending manual pass |
+| Long translation (German) | Screenshots below | Pending manual pass | Pending manual pass |
+| High DPI | 2× (Retina) screenshots below | 150 % pending | Pending manual pass |
+| Screen readers (strip label is the accessible name) | Pending VoiceOver pass | Pending Narrator pass | Pending Orca pass |
+
+Known limit: on very narrow screens (about 400 px) the style strip itself does not collapse, so its last control can run past the edge (see the narrow screenshots). The toolbar above it always fits.
+
+### Evidence
+
+Rendered on macOS 27.0.1 / Qt 6.12.0 at 2× from the real toolbar, More menu, and style strip QML over a sample screenshot; style edits go through `AnnotationStyleEditor` and `AnnotationLayer`.
+
+![Normal width, light](/assets/images/developer/toolbar/01-normal-light.png)
+
+![Arrow selected, light](/assets/images/developer/toolbar/02-selected-light.png)
+
+![Arrow selected, dark](/assets/images/developer/toolbar/02-selected-dark.png)
+
+![Narrow screen with More open, dark](/assets/images/developer/toolbar/03-narrow-more-dark.png)
+
+![Narrow screen, arrow selected, German](/assets/images/developer/toolbar/04-narrow-selected-light-de.png)
+
+Operation video: select an arrow, change its colour and width, undo, redo, deselect. MP4 next to the GIF.
+
+![Selected-object styling](/assets/images/developer/toolbar/videos/toolbar-selected-style.gif)
+
+### Regenerating the toolbar evidence
+
+```bash
+cd build
+SNAPTRAY_TOOLBAR_DESIGN_DIR=../docs/assets/images/developer/toolbar ./bin/Qml_ToolbarEvidence toolbarStates
+SNAPTRAY_TOOLBAR_DESIGN_DIR=../docs/assets/images/developer/toolbar SNAPTRAY_TOOLBAR_TRANSLATION=$PWD/snaptray_de.qm ./bin/Qml_ToolbarEvidence toolbarStates:light
+SNAPTRAY_TOOLBAR_VIDEO_DIR=/tmp/toolbar-video ./bin/Qml_ToolbarEvidence operationVideo
+ffmpeg -framerate 10 -i /tmp/toolbar-video/frame-%05d.png -pix_fmt yuv420p toolbar-selected-style.mp4
 ```

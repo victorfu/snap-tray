@@ -106,6 +106,9 @@ Item {
             model: root.paletteModel
 
             Rectangle {
+                required property var modelData
+                required property int index
+                objectName: "colorSwatch_" + index
                 width: root.swatchSize
                 height: root.swatchSize
                 radius: 3
