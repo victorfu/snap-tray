@@ -77,6 +77,9 @@ public:
     QPoint startPoint() const { return m_startPoint; }
     bool isDrawing() const { return m_state && m_state->isDrawing; }
     bool isManipulatingAnnotation() const;
+    // Escape or right-click during a drag of an existing annotation (#237):
+    // puts it back without an undo step. Returns true if one was in progress.
+    bool cancelAnnotationManipulation();
     QRect lastMagnifierRect() const { return m_lastMagnifierRect; }
 
 signals:

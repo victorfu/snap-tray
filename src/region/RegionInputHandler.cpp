@@ -711,8 +711,36 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
     m_pendingWindowClickStartPos = QPoint();
 }
 
+bool RegionInputHandler::cancelAnnotationManipulation()
+{
+    bool cancelled = m_toolManager && m_toolManager->cancelAnnotationInteraction();
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating
+        || m_isArrowDragging || m_isPolylineDragging) {
+        m_isEmojiDragging = m_isEmojiScaling = m_isEmojiRotating = false;
+        m_activeEmojiHandle = GizmoHandle::None;
+        m_emojiStartDistance = 0.0;
+        m_isArrowDragging = false;
+        m_activeArrowHandle = GizmoHandle::None;
+        m_isPolylineDragging = false;
+        m_activePolylineVertexIndex = -1;
+        cancelled = true;
+    }
+    // A text re-edit's gesture belongs to the inline editor, not to a drag.
+    const bool reEditing = m_textAnnotationEditor && m_textAnnotationEditor->isEditing();
+    if (!cancelled || reEditing) return cancelled;
+    m_annotationLayer->cancelGesture();
+    CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Idle);
+    emit updateRequested();
+    return true;
+}
+
 void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
 {
+    // A right-click during a drag only puts the annotation back (#237).
+    if (cancelAnnotationManipulation()) {
+        return;
+    }
+
     if (state().multiRegionMode && m_multiRegionManager) {
         clearSelectionDrag();
         int hitIndex = m_multiRegionManager->hitTest(pos);
@@ -798,6 +826,7 @@ bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
         auto* emojiItem = getSelectedEmojiStickerAnnotation();
         if (emojiItem) {
             QPoint delta = pos - m_emojiDragStart;
+            m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
             emojiItem->moveBy(delta);
             m_emojiDragStart = pos;
             emit updateRequested();
@@ -811,6 +840,7 @@ bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
             QPointF delta = QPointF(pos) - m_emojiStartCenter;
             qreal currentAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
             qreal angleDelta = normalizeAngleDelta(currentAngle - m_emojiStartAngle);
+            m_annotationLayer->ensureGesture();
             emojiItem->setRotation(m_emojiStartRotation + angleDelta);
             emit updateRequested();
             return true;
@@ -825,6 +855,7 @@ bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
             qreal scaleFactor = currentDistance / m_emojiStartDistance;
             qreal newScale = m_emojiStartScale * scaleFactor;
             // setScale already clamps to kMinScale/kMaxScale
+            m_annotationLayer->ensureGesture();
             emojiItem->setScale(newScale);
             emit updateRequested();
             return true;
@@ -1230,6 +1261,7 @@ bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
 bool RegionInputHandler::handleEmojiStickerRelease(const QPoint& pos)
 {
     if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isEmojiDragging = false;
         m_isEmojiScaling = false;
         m_isEmojiRotating = false;
@@ -1558,6 +1590,7 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
     if (!arrowItem) {
         return false;
     }
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
 
     QPoint delta = pos - m_arrowDragStart;
 
@@ -1604,6 +1637,7 @@ bool RegionInputHandler::handleArrowAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isArrowDragging = false;
     m_activeArrowHandle = GizmoHandle::None;
     // Reset input state to let hover logic take over
@@ -1681,6 +1715,7 @@ bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
         auto* polylineItem = getSelectedPolylineAnnotation();
         if (polylineItem) {
              QPoint delta = pos - m_polylineDragStart;
+             m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
              
              if (m_activePolylineVertexIndex >= 0) {
                  // Move specific vertex
@@ -1701,6 +1736,7 @@ bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
 
 bool RegionInputHandler::handlePolylineAnnotationRelease(const QPoint& pos) {
     if (m_isPolylineDragging) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
         // Reset input state to let hover logic take over

@@ -15,6 +15,9 @@
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
@@ -115,12 +118,21 @@ private:
     static void prepareSelectionTool(RegionSelector& selector);
     static void addSelectedCurvedArrow(RegionSelector& selector);
     static QRect showToolbarForTool(RegionSelector& selector, ToolId tool);
+    static void mouse(RegionSelector& selector, QEvent::Type type, QPoint pos,
+                      Qt::MouseButton button = Qt::LeftButton);
 
 private slots:
     void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testStrokeAndMosaicWidthsRestoreIndependently();
     void selectedArrowStyleIsUndoable();
+    void arrowEndpointDragIsUndoable();
+    void polylineVertexDragIsUndoable();
+    void emojiMoveIsUndoable();
+    void shapeMoveIsUndoable();
+    void escapeMidDragRestores();
+    void rightClickMidDragRestores();
+    void undoDisabledWhileDragging();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
     void testSelectionCompletionShowsToolbarBeforeChromePaint();
@@ -477,6 +489,153 @@ void TestRegionSelectorStyleSync::selectedArrowStyleIsUndoable()
     emit selector.m_toolbarHandler->toolChanged(ToolId::Pencil, true);
     QVERIFY(!vm->editingSelection());
     QCOMPARE(selector.m_annotationLayer->selectedIndex(), -1);
+}
+
+void TestRegionSelectorStyleSync::mouse(RegionSelector& selector, QEvent::Type type, QPoint pos,
+                                        Qt::MouseButton button)
+{
+    const Qt::MouseButtons held = type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::MouseButtons(button);
+    QMouseEvent event(type, QPointF(pos), QPointF(selector.mapToGlobal(pos)),
+                      type == QEvent::MouseMove ? Qt::NoButton : button, held, Qt::NoModifier);
+    if (type == QEvent::MouseButtonPress) selector.mousePressEvent(&event);
+    else if (type == QEvent::MouseMove) selector.mouseMoveEvent(&event);
+    else selector.mouseReleaseEvent(&event);
+}
+
+// #237: dragging an arrow's end handle is one undo step that also restores
+// the curve's control point.
+void TestRegionSelectorStyleSync::arrowEndpointDragIsUndoable()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    auto arrow = std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3);
+    arrow->setControlPoint(QPointF(105, 40));
+    selector.m_annotationLayer->addItem(std::move(arrow));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(150, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(160, 80));
+    mouse(selector, QEvent::MouseMove, QPoint(170, 90));
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(170, 90));
+    QCOMPARE(item()->end(), QPoint(170, 90));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(item()->end(), QPoint(150, 60));
+    QCOMPARE(item()->controlPoint(), QPointF(105, 40));
+    emit selector.m_toolbarHandler->redoRequested();
+    QCOMPARE(item()->end(), QPoint(170, 90));
+}
+
+void TestRegionSelectorStyleSync::polylineVertexDragIsUndoable()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{{60, 120}, {110, 70}, {160, 120}}, Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<PolylineAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(110, 70));
+    mouse(selector, QEvent::MouseMove, QPoint(115, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(120, 55));
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(120, 55));
+    QCOMPARE(item()->points().at(1), QPoint(120, 55));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(item()->points().at(1), QPoint(110, 70));
+}
+
+void TestRegionSelectorStyleSync::emojiMoveIsUndoable()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<EmojiStickerAnnotation>(QPoint(100, 100), QStringLiteral("🙂"), 1.0));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<EmojiStickerAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    const QPoint start = item()->center().toPoint();
+    mouse(selector, QEvent::MouseButtonPress, start);
+    mouse(selector, QEvent::MouseMove, start + QPoint(10, 0));
+    mouse(selector, QEvent::MouseMove, start + QPoint(20, 5));
+    mouse(selector, QEvent::MouseButtonRelease, start + QPoint(20, 5));
+    QCOMPARE(item()->position(), QPoint(120, 105));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(item()->position(), QPoint(100, 100));
+}
+
+void TestRegionSelectorStyleSync::shapeMoveIsUndoable()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(std::make_unique<ShapeAnnotation>(
+        QRect(70, 70, 60, 40), ShapeType::Rectangle, Qt::red, 3, true));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<ShapeAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(100, 90));
+    mouse(selector, QEvent::MouseMove, QPoint(110, 90));
+    mouse(selector, QEvent::MouseMove, QPoint(130, 95));
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(130, 95));
+    QCOMPARE(item()->rectF().topLeft(), QPointF(100, 75));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(item()->rectF().topLeft(), QPointF(70, 70));
+}
+
+// Escape during a drag puts the annotation back; the capture stays open.
+void TestRegionSelectorStyleSync::escapeMidDragRestores()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    const auto token = selector.m_annotationLayer->historyStateToken();
+    QSignalSpy cancelled(&selector, &RegionSelector::selectionCancelled);
+    auto item = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(80, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(90, 80));
+    mouse(selector, QEvent::MouseMove, QPoint(100, 90));
+    QCOMPARE(item()->start(), QPoint(80, 90));   // the body moved by (20, 30)
+    QTest::keyClick(&selector, Qt::Key_Escape);
+    QCOMPARE(item()->start(), QPoint(60, 60));
+    QCOMPARE(item()->end(), QPoint(150, 60));
+    QCOMPARE(selector.m_annotationLayer->historyStateToken(), token);
+    QCOMPARE(cancelled.count(), 0);
+    // The rest of the drag no longer moves it.
+    mouse(selector, QEvent::MouseMove, QPoint(140, 100));
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(140, 100));
+    QCOMPARE(item()->start(), QPoint(60, 60));
+}
+
+void TestRegionSelectorStyleSync::rightClickMidDragRestores()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(80, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(100, 90));
+    mouse(selector, QEvent::MouseButtonPress, QPoint(100, 90), Qt::RightButton);
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // not cleared
+    QCOMPARE(item()->start(), QPoint(60, 60));
+    QVERIFY(!selector.m_annotationLayer->isGestureActive());
+}
+
+void TestRegionSelectorStyleSync::undoDisabledWhileDragging()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    QTRY_VERIFY(selector.m_toolbarViewModel->canUndo());
+    mouse(selector, QEvent::MouseButtonPress, QPoint(80, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(100, 90));
+    QTRY_VERIFY(!selector.m_toolbarViewModel->canUndo());
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(100, 90));
+    QTRY_VERIFY(selector.m_toolbarViewModel->canUndo());
 }
 
 void TestRegionSelectorStyleSync::testStrokeAndMosaicWidthsRestoreIndependently()
