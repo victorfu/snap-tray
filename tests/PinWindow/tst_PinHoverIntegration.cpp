@@ -240,7 +240,12 @@ void TestPinHoverIntegration::liveIndicatorTooltipIsExcluded()
 #endif
 
     const auto hidden = [&] { return !tooltip->isVisible() || !tooltip->rootObject()->isVisible(); };
-    QTest::mouseMove(&window, QPoint(240, 160));
+    // Sent like the help and leave events: QTest::mouseMove without a button
+    // does not reach the widget on every platform.
+    const QPoint away(240, 160);
+    QMouseEvent move(QEvent::MouseMove, away, window.mapToGlobal(away), Qt::NoButton, Qt::NoButton,
+                     Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &move);
     QTRY_VERIFY(hidden());
     QCoreApplication::sendEvent(&window, &help);
     QTRY_VERIFY(tooltip->isVisible() && tooltip->rootObject()->isVisible());
