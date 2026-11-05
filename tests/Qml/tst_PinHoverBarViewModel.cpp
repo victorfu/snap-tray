@@ -10,8 +10,7 @@ private slots:
     void valuesRoundToPercent();
     void zoomRequestIsClamped();
     void opacityRequestIsClamped();
-    void compactBelowThreshold();
-    void fitsMinimum();
+    void compactToggles();
     void panelToggles();
     void statusToggle();
 };
@@ -53,24 +52,18 @@ void tst_PinHoverBarViewModel::opacityRequestIsClamped()
     QCOMPARE(opacity.at(1).at(0).toReal(), 1.0);
 }
 
-void tst_PinHoverBarViewModel::compactBelowThreshold()
+// Compact is decided by measuring the bar against the pin (PinHoverBar);
+// the view model only carries it to QML.
+void tst_PinHoverBarViewModel::compactToggles()
 {
     PinHoverBarViewModel vm;
     QSignalSpy compact(&vm, &PinHoverBarViewModel::compactChanged);
-    vm.setAvailableWidth(PinHoverBarViewModel::kCompactWidth - 1);
+    vm.setCompact(true);
+    vm.setCompact(true);
     QVERIFY(vm.compact());
-    vm.setAvailableWidth(PinHoverBarViewModel::kCompactWidth - 5);
-    QCOMPARE(compact.count(), 1);
-    vm.setAvailableWidth(PinHoverBarViewModel::kCompactWidth);
+    vm.setCompact(false);
     QVERIFY(!vm.compact());
     QCOMPARE(compact.count(), 2);
-}
-
-void tst_PinHoverBarViewModel::fitsMinimum()
-{
-    PinHoverBarViewModel vm;
-    QVERIFY(!vm.fits(PinHoverBarViewModel::kMinimumWidth - 1));
-    QVERIFY(vm.fits(PinHoverBarViewModel::kMinimumWidth));
 }
 
 void tst_PinHoverBarViewModel::panelToggles()

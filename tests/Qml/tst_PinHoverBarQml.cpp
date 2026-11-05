@@ -23,6 +23,7 @@ private slots:
     void zoomPanelPresetAndReset();
     void opacityPanelRangeAndReset();
     void panelControlsAreNamed();
+    void panelTextUsesTokens();
 
 private:
     static std::unique_ptr<QQuickView> load(const char* file, PinHoverBarViewModel* vm);
@@ -85,7 +86,7 @@ void tst_PinHoverBarQml::compactHidesStatusAndAnnotate()
     QVERIFY(view);
     QVERIFY(find(view.get(), "pinHoverStatus")->isVisible());
     QVERIFY(find(view.get(), "pinHoverAnnotate")->isVisible());
-    vm.setAvailableWidth(PinHoverBarViewModel::kCompactWidth - 1);
+    vm.setCompact(true);
     QTRY_VERIFY(!find(view.get(), "pinHoverStatus")->isVisible());
     QVERIFY(!find(view.get(), "pinHoverAnnotate")->isVisible());
     QVERIFY(find(view.get(), "pinHoverZoom")->isVisible());
@@ -159,6 +160,24 @@ void tst_PinHoverBarQml::panelControlsAreNamed()
         QVERIFY2(item, qPrintable(name));
         const QString accessible = QQmlProperty(item, QStringLiteral("Accessible.name"), qmlContext(item)).read().toString();
         QVERIFY2(!accessible.isEmpty(), qPrintable(name));
+    }
+}
+
+// Preset and reset labels are read on the glass panel: the tokens' text
+// colour, not the control style's default.
+void tst_PinHoverBarQml::panelTextUsesTokens()
+{
+    PinHoverBarViewModel vm;
+    vm.openPanel(PinHoverBarViewModel::ZoomPanel);
+    auto view = load("PinValuePanel.qml", &vm);
+    QVERIFY(view);
+    const QColor title = find(view.get(), "pinValueTitle")->property("color").value<QColor>();
+    for (const QString& name : {QStringLiteral("pinValuePreset_50"), QStringLiteral("pinValueReset")}) {
+        QQuickItem* button = find(view.get(), name);
+        QVERIFY2(button, qPrintable(name));
+        QObject* label = button->property("contentItem").value<QObject*>();
+        QVERIFY2(label, qPrintable(name));
+        QCOMPARE(label->property("color").value<QColor>(), title);
     }
 }
 

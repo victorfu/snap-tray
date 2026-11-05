@@ -180,6 +180,7 @@ private:
     friend class TestPinWindowTransform;
     friend class TestPinHoverIntegration;
     friend class TestPinContextMenuLayout;
+    friend class TestPinWindowEvidence;
     friend class TestPinWindowTextToolFormatting;
     friend class TestEraserHostRouting;
     struct CropUndoEntry;

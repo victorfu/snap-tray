@@ -28,9 +28,8 @@ void PinHoverBarViewModel::setStatus(Status status)
     emit statusChanged();
 }
 
-void PinHoverBarViewModel::setAvailableWidth(int width)
+void PinHoverBarViewModel::setCompact(bool compact)
 {
-    const bool compact = width < kCompactWidth;
     if (compact == m_compact) return;
     m_compact = compact;
     emit compactChanged();

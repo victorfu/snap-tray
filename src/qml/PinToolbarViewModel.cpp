@@ -37,7 +37,7 @@ void PinToolbarViewModel::buildButtonList()
     buttons.append(buildCustomButtonEntry(ButtonDone,
                                           QStringLiteral("done"),
                                           QStringLiteral("qrc:/icons/icons/done.svg"),
-                                          QStringLiteral("Done (Space/Esc)"),
+                                          QCoreApplication::translate("PinWindow", "Done (Space/Esc)"),
                                           doneOptions));
     setButtons(std::move(buttons));
 }

@@ -681,6 +681,12 @@ target_link_libraries(PinWindow_ContextMenuLayout PRIVATE snaptray_ui snaptray_q
 add_test(NAME PinWindow_ContextMenuLayout COMMAND PinWindow_ContextMenuLayout)
 set_tests_properties(PinWindow_ContextMenuLayout PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(PinWindow_Evidence PinWindow/tst_PinWindowEvidence.cpp)
+target_link_libraries(PinWindow_Evidence PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(PinWindow_Evidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME PinWindow_Evidence COMMAND PinWindow_Evidence)
+set_tests_properties(PinWindow_Evidence PROPERTIES TIMEOUT 120 LABELS "unit")
+
 add_executable(PinWindow_WatermarkRenderer PinWindow/tst_WatermarkRenderer.cpp)
 target_link_libraries(PinWindow_WatermarkRenderer PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_WatermarkRenderer COMMAND PinWindow_WatermarkRenderer)

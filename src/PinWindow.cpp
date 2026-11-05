@@ -2666,6 +2666,8 @@ void PinWindow::syncHoverBar()
     // The Live dot explains its shortcuts (#225).
     setToolTip(m_isLiveMode ? tr("Live Update (L to stop, P to pause)") : QString());
     if (!m_hoverBar) return;
+    // The native window can be recreated (see hideEvent); follow it.
+    m_hoverBar->setOwner(windowHandle());
     m_hoverBarViewModel->setValues(m_zoomLevel, minimumPinWindowZoom(transformedContentLogicalSize()), m_opacity);
     m_hoverBarViewModel->setStatus(!m_isLiveMode ? PinHoverBarViewModel::None
                                    : m_livePaused ? PinHoverBarViewModel::Paused
@@ -3482,7 +3484,13 @@ void PinWindow::hideEvent(QHideEvent* event)
 {
     // Hidden pins can be shown again; discard work from the previous drag.
     endWindowDrag();
-    if (m_hoverBar) m_hoverBar->hideNow();
+    // A native window recreation (the first QQuickWidget child, e.g. a badge)
+    // hides and re-shows the pin at once: only a hide that lasts closes the bar.
+    if (m_hoverBar) {
+        QTimer::singleShot(0, this, [this] {
+            if (!isVisible() && m_hoverBar) m_hoverBar->hideNow();
+        });
+    }
     QWidget::hideEvent(event);
 }
 

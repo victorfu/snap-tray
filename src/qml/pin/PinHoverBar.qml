@@ -12,6 +12,17 @@ GlassSurface {
     width: implicitWidth
     height: implicitHeight
 
+    // The width of the full (not compact) bar, for PinHoverBar to decide
+    // whether it fits the pin.
+    readonly property real fullWidth: 2 * SemanticTokens.spacing4
+        + zoomButton.implicitWidth + opacityButton.implicitWidth
+        + (root.viewModel.status !== 0 ? statusButton.implicitWidth + row.spacing : 0)
+        + annotateButton.width + moreButton.width + 3 * row.spacing
+    // The compact bar: the two values and More. (Bindings, so both are known
+    // before the Row re-lays out.)
+    readonly property real compactWidth: 2 * SemanticTokens.spacing4
+        + zoomButton.implicitWidth + opacityButton.implicitWidth + moreButton.width + 2 * row.spacing
+
     Accessible.role: Accessible.ToolBar
     Accessible.name: qsTr("Pin controls")
 

@@ -12,6 +12,7 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
+#include <QtMath>
 
 using SnapTray::QmlOverlayManager;
 
@@ -48,6 +49,15 @@ PinHoverBar::~PinHoverBar()
     }
 }
 
+void PinHoverBar::setOwner(QWindow* owner)
+{
+    if (m_owner == owner) return;
+    m_owner = owner;
+    for (QQuickView* view : {m_barView, m_panelView}) {
+        if (view) view->setTransientParent(owner);
+    }
+}
+
 void PinHoverBar::setCursorPositionProvider(std::function<QPoint()> provider)
 {
     m_cursorPos = std::move(provider);
@@ -74,8 +84,11 @@ bool PinHoverBar::ensureBar()
         m_barView = nullptr;
         return false;
     }
-    // The bar's width follows its content (compact layout, labels).
+    // The bar's width follows its content (compact layout, labels); a value
+    // change can make the full bar too wide for the pin.
     connect(m_barRoot, &QQuickItem::widthChanged, this, &PinHoverBar::positionBar);
+    connect(m_viewModel, &PinHoverBarViewModel::valuesChanged, this, &PinHoverBar::updateCompact);
+    connect(m_viewModel, &PinHoverBarViewModel::statusChanged, this, &PinHoverBar::updateCompact);
     return true;
 }
 
@@ -102,21 +115,44 @@ bool PinHoverBar::ensurePanel()
 void PinHoverBar::setPinGeometry(const QRect& contentGlobal)
 {
     m_pin = contentGlobal;
-    if (m_viewModel) m_viewModel->setAvailableWidth(m_pin.width());
-    if (m_viewModel && !m_viewModel->fits(m_pin.width())) {
-        hideNow();
-        return;
-    }
+    updateCompact();
     positionBar();
+}
+
+void PinHoverBar::updateCompact()
+{
+    if (!m_barRoot || !m_viewModel || m_pin.isEmpty()) return;
+    const qreal full = m_barRoot->property("fullWidth").toReal();
+    m_viewModel->setCompact(full > m_pin.width() - 2 * kBottomInset);
+}
+
+bool PinHoverBar::barFits() const
+{
+    // The bar keeps the same inset on the sides as at the bottom; labels
+    // differ by language, so this is measured, not a fixed width.
+    if (!m_barRoot || !m_viewModel) return false;
+    const char* mode = m_viewModel->compact() ? "compactWidth" : "fullWidth";
+    return qCeil(m_barRoot->property(mode).toReal()) <= m_pin.width() - 2 * kBottomInset;
 }
 
 void PinHoverBar::positionBar()
 {
     if (!m_barView || m_pin.isEmpty()) return;
-    const QSize size = m_barView->size();
+    if (isBarVisible() && !barFits()) {
+        hideNow();
+        return;
+    }
+    // Sized from the bound width of the current mode: the Row re-lays out
+    // a frame later, and the bar must be right on the first frame.
+    QSize size = m_barView->size();
+    if (m_barRoot && m_viewModel) {
+        const char* mode = m_viewModel->compact() ? "compactWidth" : "fullWidth";
+        size.setWidth(qCeil(m_barRoot->property(mode).toReal()));
+    }
     // Centred inside the pin's bottom edge, kBottomInset above it.
-    m_barView->setPosition(m_pin.center().x() - (size.width() - 1) / 2,
-                           m_pin.bottom() - kBottomInset - size.height() + 1);
+    m_barView->setGeometry(m_pin.center().x() - (size.width() - 1) / 2,
+                           m_pin.bottom() - kBottomInset - size.height() + 1,
+                           size.width(), size.height());
     positionPanel();
 }
 
@@ -172,10 +208,12 @@ void PinHoverBar::onHideTimeout()
 
 void PinHoverBar::showNow()
 {
-    if (m_suppressed || m_pin.isEmpty() || !m_viewModel || !m_viewModel->fits(m_pin.width())) return;
+    if (m_suppressed || m_pin.isEmpty() || !m_viewModel) return;
     if (!ensureBar()) return;
+    updateCompact();
     m_hideTimer.stop();
     if (m_barView->isVisible()) return;
+    if (!barFits()) return;
     positionBar();
     m_barView->show();
     QmlOverlayManager::applyShownOverlayWindowPolicy(m_barView);

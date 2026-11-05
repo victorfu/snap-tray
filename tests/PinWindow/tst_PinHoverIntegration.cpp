@@ -59,8 +59,14 @@ void TestPinHoverIntegration::barZoomRequestZoomsPin()
     PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
     hover(window);
     QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+    window.m_hoverBarViewModel->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QTRY_VERIFY(window.m_hoverBar->isPanelVisible());
     window.m_hoverBarViewModel->requestZoomPercent(150);
     QCOMPARE(window.zoomLevel(), 1.5);
+    // Zooming from the panel keeps the bar and the panel open.  [RF 2]
+    QTest::qWait(PinHoverBar::kHideDelayMs + 300);
+    QVERIFY(window.m_hoverBar->isBarVisible());
+    QVERIFY(window.m_hoverBar->isPanelVisible());
     QCOMPARE(window.m_hoverBarViewModel->zoomPercent(), 150);
     // The bar follows the larger pin.
     QTRY_VERIFY(window.frameGeometry().contains(window.m_hoverBar->barGeometry()));

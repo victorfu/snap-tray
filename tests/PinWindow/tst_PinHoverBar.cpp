@@ -23,6 +23,8 @@ private slots:
     void leavingAwayHides();
     void followsPin();
     void tinyPinNeverShows();
+    void barNeverWiderThanPin();
+    void compactWhenFullBarDoesNotFit();
     void suppressedHidesImmediately();
     void panelEscClosesIt();
     void destroyWhileOpenIsClean();
@@ -111,7 +113,7 @@ void tst_PinHoverBar::followsPin()
 
 void tst_PinHoverBar::tinyPinNeverShows()
 {
-    m_bar->setPinGeometry(QRect(pinRect().topLeft(), QSize(PinHoverBarViewModel::kMinimumWidth - 20, 80)));
+    m_bar->setPinGeometry(QRect(pinRect().topLeft(), QSize(100, 80)));
     m_bar->pointerEntered();
     QTest::qWait(PinHoverBar::kShowDelayMs + 300);
     QVERIFY(!m_bar->isBarVisible());
@@ -157,6 +159,44 @@ void tst_PinHoverBar::destroyWhileOpenIsClean()
     // The application-wide filter is gone: a key event after this is harmless.
     QTest::keyClick(m_owner.get(), Qt::Key_Escape);
     QVERIFY(true);
+}
+
+// The bar never sticks out of the pin, whatever the label lengths.
+void tst_PinHoverBar::barNeverWiderThanPin()
+{
+    for (int width : {200, 260, 320, 480}) {
+        m_bar->hideNow();
+        const QRect pin(pinRect().topLeft(), QSize(width, 200));
+        m_bar->setPinGeometry(pin);
+        m_bar->showNow();
+        if (m_bar->isBarVisible())
+            QVERIFY2(pin.adjusted(PinHoverBar::kBottomInset, 0, -PinHoverBar::kBottomInset, 0)
+                         .contains(m_bar->barGeometry()), qPrintable(QString::number(width)));
+    }
+    m_bar->setPinGeometry(QRect(pinRect().topLeft(), QSize(480, 200)));
+    m_bar->showNow();
+    QVERIFY(m_bar->isBarVisible());   // a normal pin still gets it
+}
+
+// A pin too narrow for the full bar gets the compact one, not none.
+void tst_PinHoverBar::compactWhenFullBarDoesNotFit()
+{
+    m_vm->setStatus(PinHoverBarViewModel::Live);
+    m_bar->showNow();
+    QVERIFY(m_bar->isBarVisible());
+    QVERIFY(!m_vm->compact());
+    const int fullWidth = m_bar->barGeometry().width();
+    m_bar->hideNow();
+    const QRect pin(pinRect().topLeft(), QSize(fullWidth + 2 * PinHoverBar::kBottomInset - 10, 200));
+    m_bar->setPinGeometry(pin);
+    m_bar->showNow();
+    QVERIFY(m_vm->compact());
+    QVERIFY(m_bar->isBarVisible());
+    QVERIFY(pin.adjusted(PinHoverBar::kBottomInset, 0, -PinHoverBar::kBottomInset, 0)
+                .contains(m_bar->barGeometry()));
+    // Wide again: the full bar comes back.
+    m_bar->setPinGeometry(pinRect());
+    QVERIFY(!m_vm->compact());
 }
 
 QTEST_MAIN(tst_PinHoverBar)

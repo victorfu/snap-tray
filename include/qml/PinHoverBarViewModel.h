@@ -24,10 +24,6 @@ public:
     static constexpr int kMaxZoomPercent = 500;
     static constexpr int kMinOpacityPercent = 10;
     static constexpr int kMaxOpacityPercent = 100;
-    // Below kCompactWidth only the value buttons and More stay; below
-    // kMinimumWidth the bar is not shown.
-    static constexpr int kCompactWidth = 220;
-    static constexpr int kMinimumWidth = 120;
 
     explicit PinHoverBarViewModel(QObject* parent = nullptr);
 
@@ -40,8 +36,9 @@ public:
 
     void setValues(qreal zoom, qreal minZoom, qreal opacity);
     void setStatus(Status status);
-    void setAvailableWidth(int width);
-    bool fits(int width) const { return width >= kMinimumWidth; }
+    // Compact keeps the value buttons and More. PinHoverBar decides it by
+    // measuring the bar against the pin (labels differ by language).
+    void setCompact(bool compact);
 
     Q_INVOKABLE void openPanel(int panel);
     Q_INVOKABLE void closePanel();

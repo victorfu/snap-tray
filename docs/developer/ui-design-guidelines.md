@@ -281,3 +281,56 @@ ffmpeg -framerate 10 -i /tmp/toolbar-video/frame-%05d.png -pix_fmt yuv420p toolb
 SNAPTRAY_TOOLBAR_VIDEO_DIR=/tmp/toolbar-video ./bin/Qml_ToolbarEvidence geometryUndoVideo
 ffmpeg -framerate 10 -i /tmp/toolbar-video/geometry-undo/frame-%05d.png -pix_fmt yuv420p annotation-geometry-undo.mp4
 ```
+
+## Pin window
+
+Applies to pin windows (#225). Design: `docs/superpowers/specs/2026-11-05-pin-window-controls-design.md`.
+
+### Contract
+
+- A pin is the image. Resting the pointer on it for 300 ms shows a hover bar inside its bottom edge (`PinHoverBar`, a non-activating QML tool window): **Zoom N%**, **Opacity N%**, a Live/Paused chip while Live Update runs, **Annotate** and **⋯**. It fades 500 ms after the pointer leaves the pin, the bar and its panel, and never shows during a drag or edge resize, with the annotation toolbar open, in region-layout editing, in click-through, or with "Show controls on hover" off.
+- The bar keeps an 8 px inset on every side. When the full bar does not fit, it shows the two values and **⋯**; when even that does not fit, it is not shown. Both widths are measured (labels differ by language).
+- A value opens a panel above its button: slider, presets and **Reset to 100%**; Esc or a click outside closes it and returns focus to the button.
+- Keys on a focused pin: `Ctrl/Cmd` + `=` / `-` / `0` (zoom in, out, reset), `[` / `]` (opacity), `Ctrl/Cmd` + `]` (reset opacity). `Tab` moves into the bar.
+- Badges name the value ("Zoom 150%", "Opacity 80%") for every change; the zoom badge moves to the top-right while Live Update holds the top-left.
+- Click-through shows "Click-through · Turn off ✕" on the shared glass at the pin's top-right; the tray adds "Turn Off Click-through for All Pins" while any pin uses it.
+- The context menu is grouped View | Output | Modes | Pins | Close, with shortcut hints.
+
+### Acceptance matrix
+
+| Check | macOS | Windows | Ubuntu 22.04 X11 beta |
+| --- | --- | --- | --- |
+| Build and repository tests | `scripts/run-tests.sh`, all suites | CI build and tests only | CI build and tests only |
+| Hover bar, panels, compact bar, light/dark/German | Evidence below (`PinWindow_Evidence`) | Pending manual pass (#238) | Pending manual pass (#238) |
+| Bar follows pin drag/zoom; hides in excluded states | `PinWindow_PinHoverBar`, `PinWindow_PinHoverIntegration` | CI tests only | CI tests only |
+| Click-through pill and tray exit | `PinWindow_Transform`, `App_MainApplicationTrayMenu`; screenshot below | Pending manual pass (#238) | Not supported (no click-through) |
+| Physical DPI scales | 2× only | Pending (#238) | Pending (#238) |
+| Screen reader names | Accessible names asserted in `Qml_PinHoverBarQml`; no VoiceOver session | Pending (Narrator) | Pending (Orca) |
+
+### Evidence
+
+macOS 27.0.1 / Qt 6.12.0, 2×. The pin and its floating windows are grabbed and composited at their real positions over a generated backdrop.
+
+![Hover bar](/assets/images/developer/pin/01-hover-bar-light.png)
+
+![Zoom panel](/assets/images/developer/pin/02-zoom-panel-light.png)
+
+![Hover bar, dark, Live](/assets/images/developer/pin/05-live-chip-dark.png)
+
+![Hover bar, German](/assets/images/developer/pin/01-hover-bar-light-de.png)
+
+![Click-through](/assets/images/developer/pin/06-click-through-dark.png)
+
+Operation video: hover, zoom panel, reset, opacity panel, leave.
+
+![Pin hover controls](/assets/images/developer/pin/videos/pin-hover-controls.gif)
+
+### Regenerating the pin evidence
+
+```bash
+cd build
+SNAPTRAY_PIN_DESIGN_DIR=../docs/assets/images/developer/pin ./bin/PinWindow_Evidence screenshots
+SNAPTRAY_PIN_DESIGN_DIR=../docs/assets/images/developer/pin SNAPTRAY_PIN_TRANSLATION=$PWD/snaptray_de.qm ./bin/PinWindow_Evidence screenshots:light
+SNAPTRAY_PIN_VIDEO_DIR=/tmp/pin-video ./bin/PinWindow_Evidence operationVideo
+ffmpeg -framerate 10 -i /tmp/pin-video/frame-%05d.png -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" pin-hover-controls.mp4
+```

@@ -32,6 +32,8 @@ public:
     PinHoverBar(PinHoverBarViewModel* viewModel, QWindow* owner, QObject* parent = nullptr);
     ~PinHoverBar() override;
 
+    // The pin's native window; it can be recreated during the pin's life.
+    void setOwner(QWindow* owner);
     // The pin's visible image, in global coordinates.
     void setPinGeometry(const QRect& contentGlobal);
     void pointerEntered();
@@ -60,6 +62,8 @@ signals:
 private:
     bool ensureBar();
     bool ensurePanel();
+    bool barFits() const;
+    void updateCompact();
     void positionBar();
     void positionPanel();
     void onShowTimeout();
