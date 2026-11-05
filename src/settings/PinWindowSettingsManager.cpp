@@ -68,6 +68,18 @@ void PinWindowSettingsManager::saveShadowEnabled(bool enabled)
     settings.setValue(kSettingsKeyShadowEnabled, enabled);
 }
 
+bool PinWindowSettingsManager::loadShowHoverControls() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyShowHoverControls, kDefaultShowHoverControls).toBool();
+}
+
+void PinWindowSettingsManager::saveShowHoverControls(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyShowHoverControls, enabled);
+}
+
 int PinWindowSettingsManager::loadMaxCacheFiles() const
 {
     auto settings = SnapTray::getSettings();

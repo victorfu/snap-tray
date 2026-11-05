@@ -88,6 +88,12 @@ Flickable {
             onMoved: function(value) { settingsBackend.pinOpacityStep = value }
         }
 
+        SettingsToggle {
+            label: qsTr("Show controls on hover")
+            checked: settingsBackend.pinShowHoverControls
+            onToggled: function(checked) { settingsBackend.pinShowHoverControls = checked }
+        }
+
         SettingsSlider {
             label: qsTr("Zoom step")
             value: settingsBackend.pinZoomStep

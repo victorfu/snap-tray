@@ -287,6 +287,7 @@ void SettingsBackend::loadAllSettings()
     m_pinDefaultOpacity = qRound(pinMgr.loadDefaultOpacity() * 100.0);
     m_pinOpacityStep = qRound(pinMgr.loadOpacityStep() * 100.0);
     m_pinZoomStep = qRound(pinMgr.loadZoomStep() * 100.0);
+    m_pinShowHoverControls = pinMgr.loadShowHoverControls();
     m_pinMaxCacheFiles = pinMgr.loadMaxCacheFiles();
 
     // Watermark
@@ -623,6 +624,15 @@ void SettingsBackend::setPinZoomStep(int v) {
         m_pinZoomStep = v;
         PinWindowSettingsManager::instance().saveZoomStep(v / 100.0);
         emit pinZoomStepChanged();
+    }
+}
+
+bool SettingsBackend::pinShowHoverControls() const { return m_pinShowHoverControls; }
+void SettingsBackend::setPinShowHoverControls(bool v) {
+    if (m_pinShowHoverControls != v) {
+        m_pinShowHoverControls = v;
+        PinWindowSettingsManager::instance().saveShowHoverControls(v);
+        emit pinShowHoverControlsChanged();
     }
 }
 
