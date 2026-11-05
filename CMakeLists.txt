@@ -304,6 +304,7 @@ add_library(snaptray_core STATIC
     src/annotations/ArrowAnnotation.cpp
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
+    src/annotations/AnnotationStyle.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/EmojiStickerAnnotation.cpp
     src/annotations/TextBoxAnnotation.cpp
