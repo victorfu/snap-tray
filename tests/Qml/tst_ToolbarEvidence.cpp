@@ -3,11 +3,13 @@
 // Every slot skips unless its environment variable is set:
 //   SNAPTRAY_TOOLBAR_DESIGN_DIR   screenshots (light/dark, normal/narrow/selected)
 //   SNAPTRAY_TOOLBAR_TRANSLATION  a .qm to render a long translation as well
-//   SNAPTRAY_TOOLBAR_VIDEO_DIR    frames for the select → restyle → undo video
+//   SNAPTRAY_TOOLBAR_VIDEO_DIR    frames for the select → restyle → undo video, and
+//                                 <dir>/geometry-undo for the move/rotate undo video (#237)
 // The real toolbar, More menu, and style strip QML render over a sample
 // screenshot; style edits run through AnnotationStyleEditor and AnnotationLayer.
 
 #include <QtTest>
+#include <QtMath>
 #include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -26,6 +28,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
+#include "region/ShapeAnnotationEditor.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/RegionToolbarViewModel.h"
 #include "qml/ToolbarOverflowLayout.h"
@@ -285,6 +288,7 @@ private slots:
     void toolbarStates_data();
     void toolbarStates();
     void operationVideo();
+    void geometryUndoVideo();
 };
 
 void tst_ToolbarEvidence::toolbarStates_data()
@@ -443,6 +447,136 @@ void tst_ToolbarEvidence::operationVideo()
     scene.m_layer.clearSelection();
     frame(16);
     QVERIFY(count > 60);
+}
+
+// #237: moving and rotating an annotation are undo steps of their own,
+// independent of style; Esc during a drag puts it back. The drags go through
+// the real ShapeAnnotationEditor, the same code all three surfaces use.
+void tst_ToolbarEvidence::geometryUndoVideo()
+{
+    const QString base = qEnvironmentVariable("SNAPTRAY_TOOLBAR_VIDEO_DIR");
+    if (base.isEmpty()) QSKIP("Set SNAPTRAY_TOOLBAR_VIDEO_DIR to record the operation video frames");
+    const QString out = base + QStringLiteral("/geometry-undo");
+    const auto originalStyle = ToolbarStyleConfig::loadStyle();
+    auto restoreTheme = qScopeGuard([originalStyle] {
+        ToolbarStyleConfig::saveStyle(originalStyle);
+        DesignSystem::instance().refreshTheme();
+    });
+    setTheme(false);
+    QDir().mkpath(out);
+    QTemporaryDir tmp;
+    Scene scene(tmp.path(), kNormalSize);
+    QVERIFY(scene.open());
+    ShapeAnnotationEditor editor;
+    editor.setAnnotationLayer(&scene.m_layer);
+    auto* shape = static_cast<ShapeAnnotation*>(scene.m_layer.itemAt(1));
+    const QRectF startRect = shape->rectF();
+
+    int count = 0;
+    QPoint cursor(700, 450);
+    bool pressed = false;
+    QString caption;
+    const auto frame = [&](int hold = 1) {
+        scene.renderBackground();
+        QImage image = scene.grab();
+        const qreal dpr = image.devicePixelRatio();
+        image = image.scaledToWidth(qRound(image.width() / dpr), Qt::SmoothTransformation);
+        image.setDevicePixelRatio(1.0);
+        QImage framed(image.width(), image.height() + kCaption, QImage::Format_RGB32);
+        framed.fill(QColor("#101114"));
+        QPainter painter(&framed);
+        painter.drawImage(0, 0, image);
+        painter.setRenderHint(QPainter::Antialiasing);
+        Scene::drawCursor(painter, cursor, pressed);
+        QFont font = painter.font();
+        font.setPixelSize(18);
+        font.setBold(true);
+        painter.setFont(font);
+        painter.setPen(QColor("#f2f2f2"));
+        painter.drawText(QRect(16, image.height(), image.width() - 32, kCaption), Qt::AlignVCenter, caption);
+        painter.end();
+        for (int i = 0; i < hold; ++i)
+            framed.save(QStringLiteral("%1/frame-%2.png").arg(out).arg(count++, 5, 10, QLatin1Char('0')));
+    };
+    const auto moveTo = [&](const QPoint& to, int steps = 8) {
+        const QPoint from = cursor;
+        for (int i = 1; i <= steps; ++i) {
+            cursor = from + (to - from) * i / steps;
+            frame();
+        }
+    };
+    // A drag of the selected shape's body through the editor.
+    const auto drag = [&](const QPoint& to, bool escape) {
+        pressed = true;
+        editor.startDragging(cursor);
+        frame(2);
+        const QPoint from = cursor;
+        for (int i = 1; i <= 12; ++i) {
+            cursor = from + (to - from) * i / 12;
+            editor.updateDragging(cursor);
+            frame();
+        }
+        if (escape) {
+            caption = QStringLiteral("Esc during the drag: the rectangle goes back");
+            editor.cancelInteraction();
+            frame(14);
+        } else {
+            editor.finishDragging();
+        }
+        pressed = false;
+        frame(8);
+    };
+
+    caption = QStringLiteral("#237 · Select the rectangle");
+    frame(10);
+    moveTo(startRect.center().toPoint());
+    scene.m_layer.setSelectedIndex(1);
+    frame(10);
+    caption = QStringLiteral("Drag it: one undo step");
+    drag(startRect.center().toPoint() + QPoint(-150, 120), false);
+    caption = QStringLiteral("Rotate it: another step");
+    const QPoint center = shape->center().toPoint();
+    pressed = true;
+    editor.startTransformation(center + QPoint(90, 0), GizmoHandle::Rotation);
+    for (int i = 1; i <= 12; ++i) {
+        const qreal a = qDegreesToRadians(2.5 * i);
+        cursor = center + QPoint(qRound(90 * qCos(a)), qRound(90 * qSin(a)));
+        editor.updateTransformation(cursor);
+        frame();
+    }
+    editor.finishTransformation();
+    pressed = false;
+    frame(8);
+    caption = QStringLiteral("Pick a colour: a style step");
+    const QPoint swatch = [&] {
+        QQuickItem* item = scene.find(QStringLiteral("colorSwatch_3"));
+        return item ? item->mapToScene(item->boundingRect().center()).toPoint() : QPoint(-1, -1);
+    }();
+    QVERIFY(swatch.x() >= 0);
+    moveTo(swatch);
+    QTest::mouseClick(&scene.m_view, Qt::LeftButton, Qt::NoModifier, swatch);
+    QTRY_VERIFY(shape->color() == scene.m_options.colorPalette().at(3).value<QColor>());
+    QTest::qWait(AnnotationStyleEditor::kCoalesceIdleMs + 50);
+    frame(10);
+    caption = QStringLiteral("Undo: the colour comes back, the rotation stays");
+    scene.m_layer.undo();
+    frame(14);
+    caption = QStringLiteral("Undo: the rotation comes back, the position stays");
+    scene.m_layer.undo();
+    QCOMPARE(shape->rotation(), 0.0);
+    frame(14);
+    caption = QStringLiteral("Undo: back to where it was drawn");
+    scene.m_layer.undo();
+    QCOMPARE(shape->rectF(), startRect);
+    frame(14);
+    caption = QStringLiteral("Redo: moved again");
+    scene.m_layer.redo();
+    frame(14);
+    caption = QStringLiteral("Start another drag…");
+    moveTo(shape->center().toPoint());
+    drag(shape->center().toPoint() + QPoint(200, -40), true);
+    QCOMPARE(shape->rectF(), startRect.translated(-150, 120));
+    QVERIFY(count > 80);
 }
 
 QTEST_MAIN(tst_ToolbarEvidence)

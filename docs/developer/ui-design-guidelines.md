@@ -266,6 +266,10 @@ Operation video: select an arrow, change its colour and width, undo, redo, desel
 
 ![Selected-object styling](/assets/images/developer/toolbar/videos/toolbar-selected-style.gif)
 
+Geometry undo (#237): drag a rectangle, rotate it, change its colour, undo three times (colour, rotation, position come back in turn), redo, then press Esc during another drag. The drags go through the same `ShapeAnnotationEditor` all three surfaces use. Move, resize, rotate, arrow endpoint/curve and polyline vertex drags, and a text re-edit are each one undo step; style and geometry steps undo independently.
+
+![Geometry undo](/assets/images/developer/toolbar/videos/annotation-geometry-undo.gif)
+
 ### Regenerating the toolbar evidence
 
 ```bash
@@ -274,4 +278,6 @@ SNAPTRAY_TOOLBAR_DESIGN_DIR=../docs/assets/images/developer/toolbar ./bin/Qml_To
 SNAPTRAY_TOOLBAR_DESIGN_DIR=../docs/assets/images/developer/toolbar SNAPTRAY_TOOLBAR_TRANSLATION=$PWD/snaptray_de.qm ./bin/Qml_ToolbarEvidence toolbarStates:light
 SNAPTRAY_TOOLBAR_VIDEO_DIR=/tmp/toolbar-video ./bin/Qml_ToolbarEvidence operationVideo
 ffmpeg -framerate 10 -i /tmp/toolbar-video/frame-%05d.png -pix_fmt yuv420p toolbar-selected-style.mp4
+SNAPTRAY_TOOLBAR_VIDEO_DIR=/tmp/toolbar-video ./bin/Qml_ToolbarEvidence geometryUndoVideo
+ffmpeg -framerate 10 -i /tmp/toolbar-video/geometry-undo/frame-%05d.png -pix_fmt yuv420p annotation-geometry-undo.mp4
 ```

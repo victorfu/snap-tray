@@ -43,6 +43,8 @@ Select a text, arrow, line, or shape annotation. The style bar then says **Selec
 
 With nothing selected, the style bar says **New object** and changes apply to the next annotation you draw. Changing a selected annotation never changes those settings.
 
+Moving, rotating, or resizing an annotation, dragging an arrow's ends or curve, dragging a line's points, and editing a text again are each one undo step. Press `Esc` during a drag to put the annotation back where it was.
+
 ## When the toolbar does not fit
 
 On a narrow screen, less-used buttons move into **More** (⋯), starting with QR Code and OCR. Copy, Save, Pin, Undo, Redo, and the tool you are using always stay on the toolbar. Use the arrow keys and `Enter` to pick from **More**, and `Esc` to close it.
