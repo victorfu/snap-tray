@@ -1,5 +1,6 @@
 #pragma once
 
+#include "annotations/AnnotationStyle.h"
 #include <QObject>
 #include <QColor>
 #include <QVariantList>
@@ -76,6 +77,11 @@ class PinToolOptionsViewModel : public QObject
 
     // Whether any section has content to show
     Q_PROPERTY(bool hasContent READ hasContent NOTIFY sectionVisibilityChanged)
+
+    // Selected-object styling (#224)
+    Q_PROPERTY(QString targetLabel READ targetLabel NOTIFY targetChanged)
+    Q_PROPERTY(bool editingSelection READ editingSelection NOTIFY targetChanged)
+    Q_PROPERTY(bool shapeTypeEditable READ shapeTypeEditable NOTIFY targetChanged)
 
 public:
     explicit PinToolOptionsViewModel(QObject* parent = nullptr);
@@ -156,6 +162,21 @@ public:
      * Special cases: EmojiSticker shows emoji picker, Eraser shows nothing.
      */
     void showForTool(int toolId);
+
+    // ── Selected-object styling (#224) ──
+    // "Selected: Arrow" while a selection is targeted, otherwise "New object".
+    QString targetLabel() const;
+    bool editingSelection() const { return m_editingSelection; }
+    bool shapeTypeEditable() const { return !m_editingSelection; }
+    // Shows the sections and current values of a selected annotation. While
+    // targeted, strip edits emit selectionStyleEdited instead of the default
+    // signals, and the tool defaults are kept aside untouched.
+    void showForSelection(const AnnotationStyleValues& values);
+    // Returns to the tool defaults captured when targeting began.
+    void clearSelectionTarget();
+    // For host-side dropdown/dialog results: emits selectionStyleEdited and
+    // returns true when a selection is targeted; otherwise does nothing.
+    bool routeToSelection(StyleProperty property, const QVariant& value);
     void clearSections();
     void showLaserPointerOptions();
 
@@ -177,6 +198,8 @@ signals:
     void autoBlurEnabledChanged();
     void autoBlurProcessingChanged();
     void showingEmojiPickerChanged();
+    void targetChanged();
+    void selectionStyleEdited(int property, const QVariant& value);
 
     // Action signals (QML → C++)
     void colorSelected(const QColor& color);
@@ -244,6 +267,23 @@ private:
     bool m_showSize = false;
     bool m_showAutoBlur = false;
     bool m_showingEmojiPicker = false;
+
+    // Selected-object styling
+    struct SavedDefaults {
+        QColor color;
+        int width = 0;
+        bool bold = false, italic = false, underline = false;
+        int fontSize = 0;
+        QString fontFamily;
+        int arrowStyle = 0, lineStyle = 0, shapeType = 0, shapeFillMode = 0;
+        bool sections[8] = {};
+        ToolId activeTool = ToolId::Count;
+    };
+    void applyDisplayedValue(StyleProperty property, const QVariant& value);
+    bool m_editingSelection = false;
+    StyleTargetKind m_targetKind = StyleTargetKind::None;
+    int m_targetShapeType = 0;
+    SavedDefaults m_savedDefaults;
 
     // Color
     QVariantList m_colorPalette;

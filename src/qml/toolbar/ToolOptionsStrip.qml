@@ -14,6 +14,9 @@ Item {
         : null
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int panelRightMargin: 6
+    readonly property int targetLabelInset: 8
+    readonly property int targetLabelPixelSize: 11
+    Accessible.name: root.hasViewModel ? root.viewModel.targetLabel : ""
     property bool autoBlurHintActive: false
     signal autoBlurButtonHovered(real anchorX, real anchorY,
                                  real anchorW, real anchorH)
@@ -90,6 +93,30 @@ Item {
         spacing: 8
         height: 28
         z: 1
+
+        // Says what the strip edits: the selected annotation or the next new one (#224).
+        Item {
+            id: targetLabelItem
+            objectName: "toolOptionsTargetLabel"
+            visible: root.hasViewModel && root.viewModel.hasContent
+            width: targetLabelText.implicitWidth + root.targetLabelInset
+            height: 28
+            anchors.verticalCenter: parent.verticalCenter
+
+            Text {
+                id: targetLabelText
+                x: root.targetLabelInset
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.hasViewModel ? root.viewModel.targetLabel : ""
+                color: root.hasViewModel && root.viewModel.editingSelection
+                       ? ComponentTokens.toolbarIconActive : ComponentTokens.toolbarIcon
+                font.pixelSize: root.targetLabelPixelSize
+                font.weight: root.hasViewModel && root.viewModel.editingSelection
+                             ? Font.DemiBold : Font.Normal
+                Accessible.role: Accessible.StaticText
+                Accessible.name: text
+            }
+        }
 
         Row {
             visible: root.hasViewModel

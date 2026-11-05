@@ -1,6 +1,10 @@
 #include <QtTest/QtTest>
 
 #include "qml/PinToolOptionsViewModel.h"
+#include "annotations/AnnotationStyle.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
+#include "tools/ToolId.h"
 #include "ui/DesignSystem.h"
 
 #include <QSignalSpy>
@@ -21,6 +25,9 @@ class tst_PinToolOptionsViewModel : public QObject
     Q_OBJECT
 
 private slots:
+    void selectionTargetRoutesEdits();
+    void clearingTargetRestoresDefaults();
+    void textSelectionShowsTextSection();
     void testDropdownRequested_PreservesCoordinates_data();
     void testDropdownRequested_PreservesCoordinates();
     void testArrowStyleOptions_AreValueOnly();
@@ -268,6 +275,112 @@ void tst_PinToolOptionsViewModel::testDefaultRed_MatchesDesignSystem()
     QVERIFY(!viewModel.colorPalette().isEmpty());
     QCOMPARE(viewModel.colorPalette().first().value<QColor>(), red);
     QCOMPARE(viewModel.currentColor(), red);
+}
+
+
+void tst_PinToolOptionsViewModel::selectionTargetRoutesEdits()
+{
+    PinToolOptionsViewModel vm;
+    vm.showForTool(int(ToolId::Pencil));
+    QCOMPARE(vm.targetLabel(), QStringLiteral("New object"));
+    QVERIFY(!vm.editingSelection());
+    AnnotationStyleValues arrow;
+    arrow.kind = StyleTargetKind::Arrow;
+    arrow.color = Qt::blue;
+    arrow.width = 7;
+    arrow.arrowStyle = int(LineEndStyle::BothArrow);
+    arrow.lineStyle = int(LineStyle::Dashed);
+    QSignalSpy edited(&vm, &PinToolOptionsViewModel::selectionStyleEdited);
+    QSignalSpy defaultColor(&vm, &PinToolOptionsViewModel::colorSelected);
+    QSignalSpy defaultWidth(&vm, &PinToolOptionsViewModel::widthValueChanged);
+    QSignalSpy target(&vm, &PinToolOptionsViewModel::targetChanged);
+    vm.showForSelection(arrow);
+    QVERIFY(target.count() >= 1);
+    QVERIFY(vm.editingSelection());
+    QCOMPARE(vm.targetLabel(), QStringLiteral("Selected: Arrow"));
+    QVERIFY(vm.showColorSection());
+    QVERIFY(vm.showWidthSection());
+    QVERIFY(vm.showArrowStyleSection());
+    QVERIFY(vm.showLineStyleSection());
+    QVERIFY(!vm.showTextSection());
+    QVERIFY(!vm.showShapeSection());
+    QCOMPARE(vm.currentColor(), QColor(Qt::blue));
+    QCOMPARE(vm.currentWidth(), 7);
+    QCOMPARE(vm.arrowStyle(), int(LineEndStyle::BothArrow));
+    QCOMPARE(vm.lineStyle(), int(LineStyle::Dashed));
+    QCOMPARE(edited.count(), 0); // showing values is not an edit
+    vm.handleWidthChanged(9);
+    QCOMPARE(edited.count(), 1);
+    QCOMPARE(edited.last().at(0).toInt(), int(StyleProperty::Width));
+    QCOMPARE(edited.last().at(1).toInt(), 9);
+    QCOMPARE(defaultWidth.count(), 0);
+    vm.handleColorClicked(0);
+    QCOMPARE(defaultColor.count(), 0);
+    QCOMPARE(edited.last().at(0).toInt(), int(StyleProperty::Color));
+    vm.handleArrowStyleSelected(int(LineEndStyle::None));
+    QCOMPARE(edited.last().at(0).toInt(), int(StyleProperty::ArrowStyle));
+    QVERIFY(vm.routeToSelection(StyleProperty::LineStyle, int(LineStyle::Solid)));
+    QCOMPARE(edited.last().at(0).toInt(), int(StyleProperty::LineStyle));
+    QCOMPARE(vm.lineStyle(), int(LineStyle::Solid));
+}
+
+void tst_PinToolOptionsViewModel::clearingTargetRestoresDefaults()
+{
+    PinToolOptionsViewModel vm;
+    vm.showForTool(int(ToolId::Pencil));
+    vm.setCurrentColor(Qt::red);
+    vm.setCurrentWidth(3);
+    AnnotationStyleValues shape;
+    shape.kind = StyleTargetKind::Shape;
+    shape.shapeType = int(ShapeType::Ellipse);
+    shape.color = Qt::green;
+    shape.width = 11;
+    shape.filled = true;
+    vm.showForSelection(shape);
+    QCOMPARE(vm.targetLabel(), QStringLiteral("Selected: Ellipse"));
+    QVERIFY(vm.showShapeSection());
+    QVERIFY(!vm.shapeTypeEditable());
+    QCOMPARE(vm.shapeFillMode(), int(ShapeFillMode::Filled));
+    QSignalSpy edited(&vm, &PinToolOptionsViewModel::selectionStyleEdited);
+    vm.handleShapeFillModeSelected(int(ShapeFillMode::Outline));
+    QCOMPARE(edited.last().at(0).toInt(), int(StyleProperty::Fill));
+    QCOMPARE(edited.last().at(1).toBool(), false);
+    vm.clearSelectionTarget();
+    QVERIFY(!vm.editingSelection());
+    QVERIFY(vm.shapeTypeEditable());
+    QCOMPARE(vm.targetLabel(), QStringLiteral("New object"));
+    QCOMPARE(vm.currentColor(), QColor(Qt::red));
+    QCOMPARE(vm.currentWidth(), 3);
+    QSignalSpy defaultColor(&vm, &PinToolOptionsViewModel::colorSelected);
+    vm.handleColorClicked(0);
+    QCOMPARE(defaultColor.count(), 1);
+    QVERIFY(!vm.routeToSelection(StyleProperty::Color, QColor(Qt::blue)));
+}
+
+void tst_PinToolOptionsViewModel::textSelectionShowsTextSection()
+{
+    PinToolOptionsViewModel vm;
+    AnnotationStyleValues text;
+    text.kind = StyleTargetKind::Text;
+    text.color = Qt::black;
+    text.font = QFont(QStringLiteral("Courier"), 20);
+    text.font.setItalic(true);
+    vm.showForSelection(text);
+    QCOMPARE(vm.targetLabel(), QStringLiteral("Selected: Text"));
+    QVERIFY(vm.showTextSection());
+    QVERIFY(vm.showColorSection());
+    QVERIFY(!vm.showWidthSection());
+    QCOMPARE(vm.fontSize(), 20);
+    QCOMPARE(vm.fontFamily(), QStringLiteral("Courier"));
+    QVERIFY(vm.isItalic());
+    QSignalSpy edited(&vm, &PinToolOptionsViewModel::selectionStyleEdited);
+    QSignalSpy defaultBold(&vm, &PinToolOptionsViewModel::boldToggled);
+    vm.handleBoldToggled();
+    QCOMPARE(defaultBold.count(), 0);
+    QCOMPARE(edited.last().at(0).toInt(), int(StyleProperty::Bold));
+    QCOMPARE(edited.last().at(1).toBool(), true);
+    QVERIFY(vm.routeToSelection(StyleProperty::FontSize, 32));
+    QCOMPARE(vm.fontSize(), 32);
 }
 
 QTEST_MAIN(tst_PinToolOptionsViewModel)

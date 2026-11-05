@@ -30,6 +30,9 @@ Item {
     // Shape type buttons
     Row {
         id: shapeRow
+        // A selected shape keeps its type; only new shapes choose one (#224).
+        visible: !root.hasViewModel || root.viewModel.shapeTypeEditable
+        width: visible ? implicitWidth : 0
         spacing: 2
         anchors.left: parent.left
         anchors.leftMargin: root.sectionPadding
