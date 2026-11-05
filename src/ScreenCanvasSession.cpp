@@ -2240,8 +2240,13 @@ void ScreenCanvasSession::updateQmlToolbarState()
     }
 
     // The background mode takes the highlight, but the tool in use must still
-    // stay out of More (#224).
-    const int toolInUseId = activeToolId;
+    // stay out of More (#224), whether or not its options strip is shown.
+    int toolInUseId = -1;
+    if (m_laserPointerActive) {
+        toolInUseId = kLaserPointerButtonId;
+    } else if (isDrawingTool(m_currentToolId)) {
+        toolInUseId = static_cast<int>(m_currentToolId);
+    }
     if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
         activeToolId = static_cast<int>(ToolId::CanvasWhiteboard);
     }

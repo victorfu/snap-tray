@@ -11,6 +11,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "InlineTextEditor.h"
 #include "LaserPointerRenderer.h"
+#include "qml/CanvasToolbarViewModel.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 #include "settings/AnnotationSettingsManager.h"
@@ -28,6 +29,7 @@ private slots:
     void testCustomColorSynchronizesSession_data();
     void testCustomColorSynchronizesSession();
     void selectedArrowStyleIsUndoable();
+    void toolInUseStaysOutOfOverflowWithStripCollapsed();
 #ifdef Q_OS_MACOS
     void testMacSurfaceAvoidsToolWindowHideBehavior();
 #endif
@@ -217,6 +219,29 @@ void TestScreenCanvasStyleSync::selectedArrowStyleIsUndoable()
     session.handlePersistentToolClick(ToolId::Pencil);
     QVERIFY(!vm->editingSelection());
     QCOMPARE(session.m_annotationLayer->selectedIndex(), -1);
+}
+
+void TestScreenCanvasStyleSync::toolInUseStaysOutOfOverflowWithStripCollapsed()
+{
+    // #224 review: Whiteboard/Blackboard take the highlight, and collapsing the
+    // options strip clears it from the tool; the tool in use must still be kept
+    // out of More.
+    ScreenCanvasSession session;
+    auto* vm = session.m_toolbarViewModel;
+    session.m_currentToolId = ToolId::EmojiSticker;
+    session.m_laserPointerActive = false;
+    for (const auto mode : {CanvasBackgroundMode::Whiteboard, CanvasBackgroundMode::Blackboard,
+                            CanvasBackgroundMode::Screen}) {
+        session.m_bgMode = mode;
+        for (const bool stripShown : {true, false}) {
+            session.m_showSubToolbar = stripShown;
+            session.updateQmlToolbarState();
+            QCOMPARE(vm->overflowKeepTool(), int(ToolId::EmojiSticker));
+        }
+    }
+    session.m_bgMode = CanvasBackgroundMode::Whiteboard;
+    session.updateQmlToolbarState();
+    QCOMPARE(vm->activeTool(), int(ToolId::CanvasWhiteboard));
 }
 
 QTEST_MAIN(TestScreenCanvasStyleSync)
