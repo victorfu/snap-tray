@@ -21,6 +21,10 @@ using SnapTray::QmlHistoryWindow;
 
 namespace {
 
+// Wide enough for the sidebar layout (narrow is below 820 px), small enough
+// for the 1028x749 work area of the Windows CI runner.
+constexpr QSize kWideTestSize(960, 700);
+
 QString writeScreenshot(const QDateTime& createdAt)
 {
     QImage image(QSize(64, 40), QImage::Format_ARGB32_Premultiplied);
@@ -67,6 +71,7 @@ private slots:
     void deleteProjectAsksFirst();
     void escapeCancelsConfirmation();
     void privacyAndRetentionNote();
+    void reopeningRefreshesRetentionNote();
     void busyProjectCannotOpenOrDelete();
     void narrowLayoutUsesSectionRow();
     void narrowLayoutReachesSmartFolders();
@@ -112,8 +117,8 @@ void tst_LibraryWindow::init()
     m_window = std::make_unique<QmlHistoryWindow>(nullptr, [](const QString&) { return false; });
     m_window->show();
     QVERIFY(QTest::qWaitForWindowExposed(m_window->view()));
-    m_window->view()->resize(1240, 820);
-    QTRY_COMPARE(m_window->view()->width(), 1240);
+    m_window->view()->resize(kWideTestSize);
+    QTRY_COMPARE(m_window->view()->width(), kWideTestSize.width());
 }
 
 void tst_LibraryWindow::cleanup()
@@ -280,6 +285,21 @@ void tst_LibraryWindow::privacyAndRetentionNote()
     const QString note = item("libraryProjectNoteText")->property("text").toString();
     QVERIFY2(note.contains(QStringLiteral("including anything you blurred or cropped out")), qPrintable(note));
     QVERIFY2(note.contains(QStringLiteral("30 days")), qPrintable(note));
+}
+
+// Review: the window outlives a close, so its note must follow Settings
+// changes made while it was closed.
+void tst_LibraryWindow::reopeningRefreshesRetentionNote()
+{
+    library()->setSource(LibraryModel::Recordings);
+    QVERIFY(item("libraryProjectNoteText")->property("text").toString().contains(QStringLiteral("30 days")));
+    m_window->view()->close();
+    QTRY_VERIFY(!m_window->isVisible());
+    RecordingSettingsManager::instance().setProjectCleanupDays(14);
+    m_window->show();
+    QVERIFY(QTest::qWaitForWindowExposed(m_window->view()));
+    const QString note = item("libraryProjectNoteText")->property("text").toString();
+    QVERIFY2(note.contains(QStringLiteral("14 days")), qPrintable(note));
 }
 
 void tst_LibraryWindow::busyProjectCannotOpenOrDelete()

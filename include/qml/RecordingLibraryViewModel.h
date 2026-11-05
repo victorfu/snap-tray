@@ -13,8 +13,10 @@ class RecordingLibraryViewModel : public QObject
     Q_OBJECT
     Q_PROPERTY(QVariantList projects READ projects NOTIFY projectsChanged)
     Q_PROPERTY(QString totalSizeText READ totalSizeText NOTIFY projectsChanged)
-    Q_PROPERTY(bool keepProjects READ keepProjects CONSTANT)
-    Q_PROPERTY(int cleanupDays READ cleanupDays CONSTANT)
+    // Read live from settings; refresh() re-announces them, so a Library
+    // reopened after a Settings change shows the current values.
+    Q_PROPERTY(bool keepProjects READ keepProjects NOTIFY projectsChanged)
+    Q_PROPERTY(int cleanupDays READ cleanupDays NOTIFY projectsChanged)
 
 public:
     explicit RecordingLibraryViewModel(QObject* parent = nullptr);
