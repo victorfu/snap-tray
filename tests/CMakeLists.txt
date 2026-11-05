@@ -664,6 +664,12 @@ target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui snaptray_qmlplugin
 add_test(NAME PinWindow_Transform COMMAND PinWindow_Transform)
 set_tests_properties(PinWindow_Transform PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_PinHoverBar PinWindow/tst_PinHoverBar.cpp)
+target_link_libraries(PinWindow_PinHoverBar PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(PinWindow_PinHoverBar PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME PinWindow_PinHoverBar COMMAND PinWindow_PinHoverBar)
+set_tests_properties(PinWindow_PinHoverBar PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(PinWindow_WatermarkRenderer PinWindow/tst_WatermarkRenderer.cpp)
 target_link_libraries(PinWindow_WatermarkRenderer PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_WatermarkRenderer COMMAND PinWindow_WatermarkRenderer)

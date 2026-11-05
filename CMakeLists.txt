@@ -897,6 +897,7 @@ add_library(snaptray_ui STATIC
     src/pinwindow/PinWindowPlacement.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
+    src/pinwindow/PinHoverBar.cpp
     src/pinwindow/ClickThroughExitButton.cpp
     src/pinwindow/RegionLayoutManager.cpp
     src/pinwindow/RegionLayoutRenderer.cpp
@@ -982,6 +983,7 @@ add_library(snaptray_ui STATIC
     include/pinwindow/PinWindowPlacement.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
+    include/pinwindow/PinHoverBar.h
     include/pinwindow/ClickThroughExitButton.h
     include/pinwindow/RegionLayoutManager.h
     include/pinwindow/PinMergeHelper.h

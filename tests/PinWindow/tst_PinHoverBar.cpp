@@ -1,0 +1,163 @@
+#include <QtTest>
+#include <QElapsedTimer>
+#include <QGuiApplication>
+#include <QQuickView>
+#include <QScreen>
+#include <QWindow>
+#include <QtQml/qqmlextensionplugin.h>
+
+#include "pinwindow/PinHoverBar.h"
+#include "qml/PinHoverBarViewModel.h"
+
+Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
+
+// #225: the pin hover bar's windows, timing and placement.
+class tst_PinHoverBar : public QObject
+{
+    Q_OBJECT
+private slots:
+    void init();
+    void cleanup();
+    void showsAfterDelayOnly();
+    void leavingOntoBarKeepsIt();
+    void leavingAwayHides();
+    void followsPin();
+    void tinyPinNeverShows();
+    void suppressedHidesImmediately();
+    void panelEscClosesIt();
+    void destroyWhileOpenIsClean();
+
+private:
+    QRect pinRect() const;
+    std::unique_ptr<QWindow> m_owner;
+    std::unique_ptr<PinHoverBarViewModel> m_vm;
+    std::unique_ptr<PinHoverBar> m_bar;
+    QPoint m_cursor;
+};
+
+QRect tst_PinHoverBar::pinRect() const
+{
+    const QRect screen = QGuiApplication::primaryScreen()->availableGeometry();
+    return QRect(screen.topLeft() + QPoint(200, 200), QSize(480, 320));
+}
+
+void tst_PinHoverBar::init()
+{
+    m_owner = std::make_unique<QWindow>();
+    m_owner->setGeometry(pinRect());
+    m_owner->show();
+    m_vm = std::make_unique<PinHoverBarViewModel>();
+    m_bar = std::make_unique<PinHoverBar>(m_vm.get(), m_owner.get());
+    m_cursor = pinRect().center();
+    m_bar->setCursorPositionProvider([this] { return m_cursor; });
+    m_bar->setPinGeometry(pinRect());
+}
+
+void tst_PinHoverBar::cleanup()
+{
+    m_bar.reset();
+    m_vm.reset();
+    m_owner.reset();
+}
+
+void tst_PinHoverBar::showsAfterDelayOnly()
+{
+    QSignalSpy shown(m_bar.get(), &PinHoverBar::barShown);
+    QElapsedTimer clock;
+    clock.start();
+    m_bar->pointerEntered();
+    QVERIFY(!m_bar->isBarVisible());
+    QVERIFY(shown.wait(1500));
+    // Never before the delay (a pointer only crossing the pin shows nothing).
+    QVERIFY2(clock.elapsed() >= PinHoverBar::kShowDelayMs - 20, qPrintable(QString::number(clock.elapsed())));
+    QVERIFY(m_bar->isBarVisible());
+    // Inside the pin, at the bottom, centred.
+    const QRect bar = m_bar->barGeometry();
+    QVERIFY(pinRect().contains(bar));
+    QCOMPARE(bar.center().x(), pinRect().center().x());
+    QCOMPARE(pinRect().bottom() - bar.bottom(), PinHoverBar::kBottomInset);
+}
+
+// The pin gets a leave event when the pointer moves onto the bar's window.
+void tst_PinHoverBar::leavingOntoBarKeepsIt()
+{
+    m_bar->showNow();
+    QVERIFY(m_bar->isBarVisible());
+    m_cursor = m_bar->barGeometry().center();
+    m_bar->pointerLeft();
+    QTest::qWait(PinHoverBar::kHideDelayMs + 300);
+    QVERIFY(m_bar->isBarVisible());
+}
+
+void tst_PinHoverBar::leavingAwayHides()
+{
+    m_bar->showNow();
+    m_vm->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QTRY_VERIFY(m_bar->isPanelVisible());
+    m_cursor = pinRect().bottomRight() + QPoint(300, 300);
+    m_bar->pointerLeft();
+    QTRY_VERIFY_WITH_TIMEOUT(!m_bar->isBarVisible(), 1500);
+    QVERIFY(!m_bar->isPanelVisible());
+    QCOMPARE(m_vm->panel(), int(PinHoverBarViewModel::NoPanel));
+}
+
+void tst_PinHoverBar::followsPin()
+{
+    m_bar->showNow();
+    const QRect before = m_bar->barGeometry();
+    m_bar->setPinGeometry(pinRect().translated(50, 30));
+    QCOMPARE(m_bar->barGeometry().topLeft(), before.topLeft() + QPoint(50, 30));
+}
+
+void tst_PinHoverBar::tinyPinNeverShows()
+{
+    m_bar->setPinGeometry(QRect(pinRect().topLeft(), QSize(PinHoverBarViewModel::kMinimumWidth - 20, 80)));
+    m_bar->pointerEntered();
+    QTest::qWait(PinHoverBar::kShowDelayMs + 300);
+    QVERIFY(!m_bar->isBarVisible());
+    m_bar->showNow();
+    QVERIFY(!m_bar->isBarVisible());
+}
+
+void tst_PinHoverBar::suppressedHidesImmediately()
+{
+    m_bar->showNow();
+    m_vm->openPanel(PinHoverBarViewModel::OpacityPanel);
+    QTRY_VERIFY(m_bar->isPanelVisible());
+    m_bar->setSuppressed(true);
+    QVERIFY(!m_bar->isBarVisible());
+    QVERIFY(!m_bar->isPanelVisible());
+    m_bar->pointerEntered();
+    QTest::qWait(PinHoverBar::kShowDelayMs + 300);
+    QVERIFY(!m_bar->isBarVisible());
+    m_bar->setSuppressed(false);
+    m_bar->pointerEntered();
+    QTRY_VERIFY_WITH_TIMEOUT(m_bar->isBarVisible(), 1500);
+}
+
+void tst_PinHoverBar::panelEscClosesIt()
+{
+    m_bar->showNow();
+    m_vm->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QTRY_VERIFY(m_bar->isPanelVisible());
+    // Above the bar, inside the owner's screen.
+    QVERIFY(m_bar->panelWindow()->geometry().bottom() < m_bar->barGeometry().top());
+    QTest::keyClick(m_bar->panelWindow(), Qt::Key_Escape);
+    QTRY_VERIFY(!m_bar->isPanelVisible());
+    QCOMPARE(m_vm->panel(), int(PinHoverBarViewModel::NoPanel));
+    QVERIFY(m_bar->isBarVisible());
+}
+
+void tst_PinHoverBar::destroyWhileOpenIsClean()
+{
+    m_bar->showNow();
+    m_vm->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QTRY_VERIFY(m_bar->isPanelVisible());
+    m_bar.reset();
+    // The application-wide filter is gone: a key event after this is harmless.
+    QTest::keyClick(m_owner.get(), Qt::Key_Escape);
+    QVERIFY(true);
+}
+
+QTEST_MAIN(tst_PinHoverBar)
+#include "tst_PinHoverBar.moc"
