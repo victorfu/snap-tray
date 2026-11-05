@@ -57,13 +57,15 @@ Because each command touches only its parts, interleaved style and geometry step
 ### Gesture API on `AnnotationLayer`
 
 ```cpp
-bool beginGesture(AnnotationId id);       // snapshot; false if locked, unknown id, or one is active
+bool beginGesture(AnnotationId id);       // snapshot; false if locked or unknown id; commits a stale active gesture first
+bool ensureGesture();                     // begins on the selected item unless one is active
 bool commitGesture(ModifyParts parts);    // records one Modify if the parts changed; ends the gesture
 void cancelGesture();                     // restores the snapshot's parts (Style|Geometry); ends the gesture
 bool isGestureActive() const;
 ```
 
-- `beginGesture` ends #224 style coalescing, and fails while the history is locked by an erase transaction.
+- `beginGesture` ends #224 style coalescing, and fails while the history is locked by an erase transaction. If a gesture is still active (a release that never arrived), it is committed first so undo cannot stay blocked.
+- Hosts begin lazily: `ensureGesture()` runs right before the first mutation in a move handler, so a click without movement records nothing.
 - `commitGesture` compares with `AnnotationGeometry::equal` (and `AnnotationStyle` for the style part). If nothing changed it records nothing. Otherwise it pushes through `pushAppliedCommand`, so the history state token advances and Pin's crop ordering (`matchesCropAnnotationBoundary`) keeps working.
 - While a gesture is active, `undo()` and `redo()` return false, and `canUndo()`/`canRedo()` return false. Beginning and ending a gesture emit `changed()` so toolbars refresh.
 - `clear()`, `replaceItems()`, starting an erase transaction, or removing the gesture's item drops the snapshot without recording.
@@ -74,12 +76,12 @@ bool isGestureActive() const;
 
 ### Shared handlers (all three surfaces)
 
-- `TextAnnotationEditor` and `ShapeAnnotationEditor`: `startDragging`/`startTransformation` call `beginGesture(id)`; `finishDragging`/`finishTransformation` call `commitGesture(Geometry)`.
+- `TextAnnotationEditor` and `ShapeAnnotationEditor`: `updateDragging`/`updateTransformation` call `ensureGesture()` before the first mutation; `finishDragging`/`finishTransformation` call `commitGesture(Geometry)`.
 - `TextToolHandler::handleEscape` and `ShapeToolHandler::handleEscape`: during a drag or transform, call `cancelGesture()` instead of finishing.
 
 ### Per-surface copies (Emoji, Arrow, Polyline)
 
-Region (`RegionInputHandler`), Pin (`PinWindow`), and Canvas (`ScreenCanvasSession`) each call `beginGesture` at press and `commitGesture(Geometry)` at release in their existing handlers. Each surface gets one `cancelAnnotationGesture()` helper. Escape calls it first: if a gesture was active it is cancelled, the drag flags are cleared, and that Escape does nothing else; otherwise Escape behaves as before.
+Region (`RegionInputHandler`), Pin (`PinWindow`), and Canvas (`ScreenCanvasSession`) each call `ensureGesture()` in their move handlers before the first mutation and `commitGesture(Geometry)` at release. Each surface gets one `cancelAnnotationGesture()` helper. Escape calls it first: if a gesture was active it is cancelled, the drag flags are cleared, and that Escape does nothing else; otherwise Escape behaves as before.
 
 Region's right-click during an annotation drag cancels the gesture before any other right-click behaviour.
 
