@@ -28,6 +28,7 @@ private slots:
     void selectionTargetRoutesEdits();
     void clearingTargetRestoresDefaults();
     void textSelectionShowsTextSection();
+    void selectionUnderMosaicUsesPlainWidth();
     void testDropdownRequested_PreservesCoordinates_data();
     void testDropdownRequested_PreservesCoordinates();
     void testArrowStyleOptions_AreValueOnly();
@@ -381,6 +382,24 @@ void tst_PinToolOptionsViewModel::textSelectionShowsTextSection()
     QCOMPARE(edited.last().at(1).toBool(), true);
     QVERIFY(vm.routeToSelection(StyleProperty::FontSize, 32));
     QCOMPARE(vm.fontSize(), 32);
+}
+
+void tst_PinToolOptionsViewModel::selectionUnderMosaicUsesPlainWidth()
+{
+    PinToolOptionsViewModel vm;
+    vm.showForTool(int(ToolId::Mosaic));
+    QVERIFY(vm.isMosaicActive());
+    QSignalSpy toolSpy(&vm, &PinToolOptionsViewModel::activeToolChanged);
+    AnnotationStyleValues shape;
+    shape.kind = StyleTargetKind::Shape;
+    shape.color = Qt::green;
+    shape.width = 4;
+    vm.showForSelection(shape);
+    QVERIFY(!vm.isMosaicActive());        // slider, not brush presets
+    QVERIFY(toolSpy.count() >= 1);        // QML re-reads mosaicActive
+    QVERIFY(vm.handleWidthWheelDelta(120)); // wheel works on the selection
+    vm.clearSelectionTarget();
+    QVERIFY(vm.isMosaicActive());
 }
 
 QTEST_MAIN(tst_PinToolOptionsViewModel)

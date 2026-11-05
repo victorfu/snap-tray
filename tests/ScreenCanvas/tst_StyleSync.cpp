@@ -213,6 +213,10 @@ void TestScreenCanvasStyleSync::selectedArrowStyleIsUndoable()
     QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::EndArrow);
     session.handleRedoAction(ToolId::Redo);
     QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::None);
+    // Picking another tool ends the selection; the strip returns to that tool.
+    session.handlePersistentToolClick(ToolId::Pencil);
+    QVERIFY(!vm->editingSelection());
+    QCOMPARE(session.m_annotationLayer->selectedIndex(), -1);
 }
 
 QTEST_MAIN(TestScreenCanvasStyleSync)

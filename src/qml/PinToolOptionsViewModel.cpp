@@ -501,7 +501,9 @@ void PinToolOptionsViewModel::showForSelection(const AnnotationStyleValues& valu
     }
     const bool changed = !m_editingSelection || m_targetKind != values.kind
         || m_targetShapeType != values.shapeType;
+    const bool enteringSelection = !m_editingSelection;
     m_editingSelection = true;
+    if (enteringSelection) emit activeToolChanged();   // mosaicActive changed
     m_targetKind = values.kind;
     m_targetShapeType = values.shapeType;
 
@@ -531,6 +533,7 @@ void PinToolOptionsViewModel::clearSelectionTarget()
     if (!m_editingSelection) return;
     m_editingSelection = false;
     m_targetKind = StyleTargetKind::None;
+    emit activeToolChanged();   // mosaicActive changed
     const SavedDefaults& d = m_savedDefaults;
     setCurrentColor(d.color);
     setCurrentWidth(d.width);

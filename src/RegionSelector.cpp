@@ -1009,6 +1009,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect toolbar handler signals (tool state changes)
     connect(m_toolbarHandler, &RegionToolbarHandler::toolChanged,
         this, [this](ToolId tool, bool showSubToolbar) {
+            // Picking a tool ends selected-annotation styling (#224).
+            if (tool != m_inputState.currentTool || showSubToolbar) {
+                m_annotationLayer->clearSelection();
+            }
             m_inputState.currentTool = tool;
             m_inputState.showSubToolbar = showSubToolbar;
             m_toolbarViewModel->setActiveTool(showSubToolbar ? static_cast<int>(tool) : -1);

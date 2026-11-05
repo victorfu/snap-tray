@@ -473,8 +473,10 @@ void TestRegionSelectorStyleSync::selectedArrowStyleIsUndoable()
     QCOMPARE(arrow()->color(), QColor(Qt::red));
     emit selector.m_toolbarHandler->redoRequested();
     QCOMPARE(arrow()->color(), chosen);
-    selector.m_annotationLayer->clearSelection();
+    // Picking another tool ends the selection; the strip returns to that tool.
+    emit selector.m_toolbarHandler->toolChanged(ToolId::Pencil, true);
     QVERIFY(!vm->editingSelection());
+    QCOMPARE(selector.m_annotationLayer->selectedIndex(), -1);
 }
 
 void TestRegionSelectorStyleSync::testStrokeAndMosaicWidthsRestoreIndependently()

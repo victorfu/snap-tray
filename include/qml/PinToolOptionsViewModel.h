@@ -108,7 +108,8 @@ public:
     int minWidth() const { return 1; }
     int maxWidth() const { return 30; }
     int activeToolId() const { return static_cast<int>(m_activeToolId); }
-    bool isMosaicActive() const { return m_activeToolId == ToolId::Mosaic; }
+    // A targeted selection uses the plain width slider, not the brush presets.
+    bool isMosaicActive() const { return m_activeToolId == ToolId::Mosaic && !m_editingSelection; }
     QVariantList mosaicWidthPresetOptions() const;
 
     // Text formatting

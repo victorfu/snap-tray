@@ -1053,8 +1053,10 @@ void TestPinWindowStyleSync::selectedArrowStyleIsUndoable()
     auto& settings = AnnotationSettingsManager::instance();
     const QColor savedColor = settings.loadColor();
     const int savedWidth = settings.loadWidthForTool(ToolId::Arrow);
+    const int savedMarker = settings.loadWidthForTool(ToolId::Marker);
     const auto restore = qScopeGuard([&] {
         settings.saveColor(savedColor);
+        settings.saveWidthForTool(ToolId::Marker, savedMarker);
         settings.saveWidthForTool(ToolId::Arrow, savedWidth);
     });
     PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
@@ -1082,9 +1084,12 @@ void TestPinWindowStyleSync::selectedArrowStyleIsUndoable()
     window.handleToolbarRedo();
     QCOMPARE(arrow()->width(), 11);
     QCOMPARE(settings.loadColor(), savedColor);
-    // Picking a tool ends the selection and returns the strip to that tool.
-    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+    // Picking a tool ends the selection and returns the strip to that tool,
+    // showing that tool's own width (review #4).
+    settings.saveWidthForTool(ToolId::Marker, 20);
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Marker));
     QVERIFY(!vm->editingSelection());
+    QCOMPARE(vm->currentWidth(), window.m_toolManager->width());
 }
 
 QTEST_MAIN(TestPinWindowStyleSync)

@@ -3771,6 +3771,12 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     // Check if same tool clicked - toggle sub-toolbar visibility (matches RegionSelector behavior)
     bool sameToolClicked = (m_currentToolId == tool && m_annotationMode);
 
+    // Picking a tool ends any selected-annotation styling (#224). First, so the
+    // strip's restored defaults are overwritten by this tool's width below.
+    if (m_annotationLayer && isAnnotationTool(tool)) {
+        m_annotationLayer->clearSelection();
+    }
+
     m_currentToolId = tool;
 
     if (m_toolManager) {
@@ -3816,11 +3822,6 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
         if (tool != ToolId::EmojiSticker && emojiPickerVisible) {
             m_emojiPickerPopup->hide();
-        }
-
-        // Picking a tool ends any selected-annotation styling (#224).
-        if (m_annotationLayer) {
-            m_annotationLayer->clearSelection();
         }
 
         // Show sub-toolbar for the selected tool

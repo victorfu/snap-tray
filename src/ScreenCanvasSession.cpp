@@ -1336,6 +1336,9 @@ void ScreenCanvasSession::finalizePolylineForToolbarInteraction()
 
 void ScreenCanvasSession::handlePersistentToolClick(ToolId toolId)
 {
+    // Picking a tool ends selected-annotation styling (#224).
+    m_annotationLayer->clearSelection();
+
     if (m_laserPointerActive) {
         m_laserPointerActive = false;
         if (m_currentToolId != toolId) {
