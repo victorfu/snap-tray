@@ -389,6 +389,7 @@ void QmlFloatingToolbar::ensureView()
     connect(m_overflow.get(), &ToolbarOverflowPopup::closed, this, [this] {
         if (auto* more = m_rootItem ? m_rootItem->findChild<QQuickItem*>(QStringLiteral("toolbarMoreButton")) : nullptr)
             more->forceActiveFocus(Qt::PopupFocusReason);
+        emit overflowVisibilityChanged();
     });
 
     if (m_rootItem)
@@ -512,6 +513,13 @@ void QmlFloatingToolbar::onOverflowRequested(double x, double y, double width, d
     const QRect anchor(m_view->position() + QPoint(qRound(x), qRound(y)),
                        QSize(qRound(width), qRound(height)));
     m_overflow->toggle(buttons, anchor, m_overflowBounds);
+    emit overflowVisibilityChanged();
+}
+
+QRect QmlFloatingToolbar::overflowGeometry() const
+{
+    if (!m_overflow || !m_overflow->isVisible() || !m_overflow->window()) return {};
+    return m_overflow->window()->frameGeometry();
 }
 
 void QmlFloatingToolbar::applyPlatformWindowFlags()

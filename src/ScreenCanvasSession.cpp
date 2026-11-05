@@ -401,6 +401,8 @@ void ScreenCanvasSession::initializeSharedState()
                 }
                 updateSurfaceInputMasks();
             });
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::overflowVisibilityChanged,
+            this, &ScreenCanvasSession::updateSurfaceInputMasks);
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
             this, [this]() {
                 m_toolbarDragging = false;
@@ -1165,6 +1167,12 @@ void ScreenCanvasSession::updateSurfaceInputMasks()
         }
         if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
             subtractGlobalRectFromMask(mask, surface, m_emojiPickerPopup->geometry());
+        }
+        if (m_qmlToolbar) {
+            // The toolbar's More menu is its own window (#224).
+            if (const QRect overflow = m_qmlToolbar->overflowGeometry(); !overflow.isEmpty()) {
+                subtractGlobalRectFromMask(mask, surface, overflow);
+            }
         }
         if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
             subtractGlobalRectFromMask(mask, surface, popup->frameGeometry());

@@ -134,7 +134,15 @@ public:
      */
     void applyOverflowLayout(const QRect& usableBoundsGlobal);
 
+    /**
+     * @brief Global frame geometry of the open More menu, or an empty rect
+     *        when it is closed. Hosts that mask input around floating UI
+     *        (Linux X11 canvas) must leave this area clickable.
+     */
+    QRect overflowGeometry() const;
+
 signals:
+    void overflowVisibilityChanged();
     void dragStarted();
     void dragFinished();
     void dragMoved(double deltaX, double deltaY);
