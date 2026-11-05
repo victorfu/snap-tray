@@ -63,6 +63,7 @@ private slots:
     void reEditIsOneUndoStep();
     void emptyReEditRecordsNothingAndStaysVisible();
     void reEditSurvivesItemRemovedUnderneath();
+    void dragReleaseDoesNotEndReEdit();
     void testInlineTextEditor_ClampedNewTextBaseline();
     void testInlineTextEditor_PreserveExistingTextBaseline();
     void testInlineTextEditor_CommittedBaselineMatchesRequestedBaseline();
@@ -706,6 +707,24 @@ void tst_TextAnnotationEditor::reEditSurvivesItemRemovedUnderneath()
     QCOMPARE(f.layer.itemCount(), size_t(1));
     QCOMPARE(second->text(), QStringLiteral("Edited"));
     QVERIFY(second->isVisible());
+}
+
+// Review #237-2: a slow double-click starts a drag, then the re-edit; the
+// drag's release must not end the re-edit's undo step.
+void tst_TextAnnotationEditor::dragReleaseDoesNotEndReEdit()
+{
+    ReEditFixture f;
+    TextBoxAnnotation* text = f.add(QStringLiteral("Old"), QPointF(30, 40));
+    f.layer.setSelectedIndex(0);
+    f.editor.startDragging(QPoint(35, 45));
+    f.editor.startReEditing(0, Qt::red);
+    f.editor.finishDragging();
+    QVERIFY(f.layer.isGestureActive());
+    QVERIFY(!f.layer.canUndo());
+    f.editor.finishEditing(QStringLiteral("New"), QPoint(40, 60), Qt::red);
+    QCOMPARE(text->text(), QStringLiteral("New"));
+    f.layer.undo();
+    QCOMPARE(static_cast<TextBoxAnnotation*>(f.layer.itemAt(0))->text(), QStringLiteral("Old"));
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)

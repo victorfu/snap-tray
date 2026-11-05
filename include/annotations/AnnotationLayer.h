@@ -158,7 +158,10 @@ public:
     // Modify command (#237). The item is snapshotted at begin; commit records
     // the requested parts if they changed; cancel restores the snapshot.
     // Undo/redo are refused while a gesture is active. A begin while another
-    // gesture is active commits that one first (a release that never came).
+    // gesture is active commits that one first (a release that never came),
+    // and so does adding an annotation. A text re-edit's gesture (its item is
+    // hidden while the inline editor is open) is owned by the editor: it is
+    // never committed or replaced from elsewhere.
     bool beginGesture(AnnotationId id);
     bool ensureGesture();   // begins on the selected item unless one is active
     bool commitGesture(unsigned parts);
@@ -230,6 +233,7 @@ private:
     bool undoCommand(HistoryCommand& command);
     bool swapModifiedParts(HistoryCommand& command);
     void dropGesture();
+    bool gestureIsReEdit() const;
     bool redoCommand(HistoryCommand& command);
     std::size_t calculateCommandRetainedBytes(const HistoryCommand& command) const;
     void refreshCommandRetainedBytes(HistoryCommand& command);

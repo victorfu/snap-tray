@@ -13,6 +13,8 @@
 
 #include "PinWindow.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
+#include "region/TextAnnotationEditor.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "PinWindowManager.h"
 #include "pinwindow/PinWindowPlacement.h"
@@ -167,6 +169,7 @@ private slots:
     void emojiMoveIsUndoable();
     void escapeMidDragRestores();
     void toolbarUndoDisabledWhileDragging();
+    void textDragEscapeRestores();
     void testMosaicPresetsUpdateCursorWithoutChangingStrokeWidth();
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
     void testOverlayRestoreReturnsArrowToolCursor();
@@ -1183,6 +1186,23 @@ void TestPinWindowStyleSync::toolbarUndoDisabledWhileDragging()
     QVERIFY(!window->m_toolbar->viewModel()->canUndo());
     window->handleArrowAnnotationRelease(view(QPoint(50, 50)));
     QVERIFY(window->m_toolbar->viewModel()->canUndo());
+}
+
+// Review #237-1: Escape during a text drag in a pin puts the text back.
+void TestPinWindowStyleSync::textDragEscapeRestores()
+{
+    auto window = arrowPin(createTestPixmap(240, 160));
+    window->m_annotationLayer->addItem(
+        std::make_unique<TextBoxAnnotation>(QPointF(30, 30), QStringLiteral("Pin"), QFont(), Qt::red));
+    window->m_annotationLayer->setSelectedIndex(0);
+    auto text = [&] { return static_cast<TextBoxAnnotation*>(window->m_annotationLayer->itemAt(0)); };
+    window->m_textAnnotationEditor->startDragging(QPoint(35, 35));
+    window->m_textAnnotationEditor->updateDragging(QPoint(65, 55));
+    QCOMPARE(text()->position(), QPointF(60, 50));
+    QTest::keyClick(window.get(), Qt::Key_Escape);
+    QCOMPARE(text()->position(), QPointF(30, 30));
+    QVERIFY(!window->m_textAnnotationEditor->isDragging());
+    QVERIFY(!window->m_annotationLayer->isGestureActive());
 }
 
 QTEST_MAIN(TestPinWindowStyleSync)

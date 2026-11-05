@@ -101,6 +101,9 @@ private slots:
     void translatedSnapshotUndoesToTranslatedPosition();  // [RF 3]
     void gestureAdvancesStateToken();
     void geometryUndoKeepsSelection();
+    void ensureGestureOnAnotherItemCommitsStale();
+    void newAnnotationCommitsStaleGesture();
+    void hiddenReEditGestureIsNotTakenOver();
     void modifyIsUndoable();
     void modifyKeepsSelectionAcrossUndo();
     void modifyCoalesces();
@@ -1744,6 +1747,60 @@ void TestAnnotationLayer::geometryUndoKeepsSelection()
     QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
     layer.undo();
     QCOMPARE(layer.selectedIndex(), 0);
+}
+
+// Review #237-3: a gesture that never got its release is recorded when the
+// next drag starts on another item, and that drag gets its own snapshot.
+void TestAnnotationLayer::ensureGestureOnAnotherItemCommitsStale()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* a = addShape(layer);
+    ShapeAnnotation* b = addShape(layer, QRect(100, 100, 10, 10));
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.ensureGesture());
+    a->moveBy(QPointF(5, 0));            // release never arrives
+    layer.setSelectedIndex(1);
+    QVERIFY(layer.ensureGesture());
+    QCOMPARE(layer.gestureId(), layer.idAt(1));
+    b->moveBy(QPointF(0, 7));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();
+    QCOMPARE(b->rectF().topLeft(), QPointF(100, 100));
+    QCOMPARE(a->rectF().topLeft(), QPointF(15, 10));
+    layer.undo();
+    QCOMPARE(a->rectF().topLeft(), QPointF(10, 10));
+}
+
+// Drawing something new records a stale gesture, so Undo comes back.
+void TestAnnotationLayer::newAnnotationCommitsStaleGesture()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* a = addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    a->moveBy(QPointF(5, 0));
+    addShape(layer, QRect(100, 100, 10, 10));
+    QVERIFY(!layer.isGestureActive());
+    QVERIFY(layer.canUndo());
+    layer.undo();                        // the new shape
+    layer.undo();                        // the stale move
+    QCOMPARE(a->rectF().topLeft(), QPointF(10, 10));
+}
+
+// A text re-edit hides its item: nothing else may take over or end its gesture.
+void TestAnnotationLayer::hiddenReEditGestureIsNotTakenOver()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Edit"), QFont(), Qt::red));
+    addShape(layer, QRect(100, 100, 10, 10));
+    layer.itemAt(0)->setVisible(false);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(!layer.beginGesture(layer.idAt(1)));
+    layer.setSelectedIndex(1);
+    QVERIFY(!layer.ensureGesture());
+    addShape(layer, QRect(200, 200, 10, 10));
+    QCOMPARE(layer.gestureId(), layer.idAt(0));
+    layer.itemAt(0)->setVisible(true);
+    layer.cancelGesture();
 }
 
 QTEST_MAIN(TestAnnotationLayer)

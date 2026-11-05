@@ -814,6 +814,18 @@ bool PinWindow::hasActiveAnnotationInteraction() const
 bool PinWindow::cancelAnnotationGesture()
 {
     bool cancelled = m_toolManager && m_toolManager->cancelAnnotationInteraction();
+    // Pin drives its own text and shape editors, not only through the
+    // ToolManager context (review #237-1).
+    if (m_textAnnotationEditor
+        && (m_textAnnotationEditor->isDragging() || m_textAnnotationEditor->isTransforming())) {
+        m_textAnnotationEditor->cancelInteraction();
+        cancelled = true;
+    }
+    if (m_shapeAnnotationEditor
+        && (m_shapeAnnotationEditor->isDragging() || m_shapeAnnotationEditor->isTransforming())) {
+        m_shapeAnnotationEditor->cancelInteraction();
+        cancelled = true;
+    }
     if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating
         || m_isArrowDragging || m_isPolylineDragging) {
         m_isEmojiDragging = m_isEmojiScaling = m_isEmojiRotating = false;

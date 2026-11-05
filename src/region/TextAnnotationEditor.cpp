@@ -89,6 +89,14 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
 
     m_editSessionActive = true;
     m_editingId = m_annotationLayer->idAt(annotationIndex);
+    // A slow double-click may have started a drag first; it ends here so its
+    // release cannot end the edit's undo step (review #237-2).
+    if (m_isDragging || m_isTransforming) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
+        m_isDragging = false;
+        m_isTransforming = false;
+        m_activeGizmoHandle = GizmoHandle::None;
+    }
     // The whole edit (content, font, colour, position) is one undo step (#237).
     m_annotationLayer->beginGesture(m_editingId);
 

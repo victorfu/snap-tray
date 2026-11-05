@@ -72,6 +72,8 @@ AnnotationLayer::~AnnotationLayer() = default;
 
 void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
 {
+    // Drawing something new ends a gesture whose release never came (#237).
+    if (isGestureActive() && !gestureIsReEdit()) commitGesture(ModifyStyle | ModifyGeometry);
     if (!item) {
         return;
     }
@@ -1097,7 +1099,10 @@ bool AnnotationLayer::modifyItem(AnnotationId id, const QString& coalesceKey,
 bool AnnotationLayer::beginGesture(AnnotationId id)
 {
     if (m_eraseTransactionActive || id == 0) return false;
-    if (isGestureActive()) commitGesture(ModifyStyle | ModifyGeometry);   // a release that never came
+    if (isGestureActive()) {
+        if (gestureIsReEdit()) return false;   // the inline editor owns it
+        commitGesture(ModifyStyle | ModifyGeometry);   // a release that never came
+    }
     auto sceneIt = findSceneItem(id);
     if (sceneIt == m_items.end() || !sceneIt->item) return false;
     endModifyCoalescing();
@@ -1109,7 +1114,16 @@ bool AnnotationLayer::beginGesture(AnnotationId id)
 
 bool AnnotationLayer::ensureGesture()
 {
-    return isGestureActive() || beginGesture(selectedId());
+    // A gesture on another item is stale: beginGesture records it first.
+    if (isGestureActive() && m_gestureId == selectedId()) return true;
+    return beginGesture(selectedId());
+}
+
+bool AnnotationLayer::gestureIsReEdit() const
+{
+    if (!isGestureActive()) return false;
+    auto sceneIt = findSceneItem(m_gestureId);
+    return sceneIt != m_items.end() && sceneIt->item && !sceneIt->item->isVisible();
 }
 
 void AnnotationLayer::dropGesture()
