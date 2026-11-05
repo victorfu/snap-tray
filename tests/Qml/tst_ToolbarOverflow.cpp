@@ -11,7 +11,10 @@
 #include <QtQml/qqmlextensionplugin.h>
 #include "qml/QmlWindowedToolbar.h"
 #include "qml/ToolbarOverflowLayout.h"
+#include "qml/ToolbarOverflowPopup.h"
 #include "qml/PinToolbarViewModel.h"
+#include "qml/QmlFloatingToolbar.h"
+#include "qml/RegionToolbarViewModel.h"
 #include "tools/ToolId.h"
 #include "tools/ToolbarTraits.h"
 
@@ -33,6 +36,11 @@ private slots:
     void activeToolStaysVisible();
     void groupGapCountsInWidth();
     void finishGroupIsTinted();
+    void captureToolbarOverflows();
+    void selectionPlacementStaysOnScreen_data();
+    void selectionPlacementStaysOnScreen();
+    void overflowClosesOnRelayout();
+    void overflowReturnsFocusToMore();
 };
 
 void TestToolbarOverflow::standaloneEngineCanImportModule()
@@ -236,6 +244,80 @@ void TestToolbarOverflow::finishGroupIsTinted()
     QVERIFY(!find(int(ToolId::Arrow))->isVisible());
 }
 
+
+void TestToolbarOverflow::captureToolbarOverflows()
+{
+    RegionToolbarViewModel vm;
+    QmlFloatingToolbar toolbar(&vm);
+    toolbar.applyOverflowLayout(QRect(0, 0, 300, 400));
+    QCoreApplication::processEvents();
+    QVERIFY(toolbar.m_view->width() <= 300);
+    const QVariantList overflow = toolbar.m_rootItem->property("overflowButtons").toList();
+    QVERIFY(ids(overflow).contains(int(ToolId::QRCode)));
+    for (int id : {int(ToolId::Copy), int(ToolId::Save), int(ToolId::Pin)})
+        QVERIFY(ids(toolbar.m_rootItem->property("displayButtons").toList()).contains(id));
+}
+
+void TestToolbarOverflow::selectionPlacementStaysOnScreen_data()
+{
+    QTest::addColumn<QRect>("selection");
+    QTest::newRow("left-edge") << QRect(0, 200, 120, 80);
+    QTest::newRow("right-edge") << QRect(1800, 200, 120, 80);
+    QTest::newRow("bottom-edge") << QRect(600, 1000, 200, 80);
+    QTest::newRow("tiny") << QRect(900, 500, 20, 20);
+}
+
+void TestToolbarOverflow::selectionPlacementStaysOnScreen()
+{
+    QFETCH(QRect, selection);
+    const QRect viewport(0, 0, 1920, 1080);
+    RegionToolbarViewModel vm;
+    QmlFloatingToolbar toolbar(&vm);
+    toolbar.applyOverflowLayout(viewport.adjusted(10, 10, -10, -10));
+    const QSize size = toolbar.m_view->size();
+    const QPoint topLeft = QmlFloatingToolbar::resolveTopLeftForSelection(
+        selection, size, viewport, QmlFloatingToolbar::HorizontalAlignment::Center);
+    QVERIFY(viewport.contains(QRect(topLeft, size)));
+    // A narrow viewport (e.g. a portrait side monitor) still fits after collapsing.
+    const QRect narrow(0, 0, 360, 800);
+    toolbar.applyOverflowLayout(narrow.adjusted(10, 10, -10, -10));
+    const QSize narrowSize = toolbar.m_view->size();
+    QVERIFY(narrow.contains(QRect(QmlFloatingToolbar::resolveTopLeftForSelection(
+        QRect(300, 300, 50, 50), narrowSize, narrow, QmlFloatingToolbar::HorizontalAlignment::Center),
+        narrowSize)));
+}
+
+void TestToolbarOverflow::overflowClosesOnRelayout()
+{
+    RegionToolbarViewModel vm;
+    QmlFloatingToolbar toolbar(&vm);
+    toolbar.applyOverflowLayout(QRect(0, 0, 300, 400));
+    toolbar.show();
+    toolbar.onOverflowRequested(0, 0, 28, 24);
+    QVERIFY(toolbar.m_overflow && toolbar.m_overflow->isVisible());
+    toolbar.applyOverflowLayout(QRect(0, 0, 260, 400));
+    QVERIFY(!toolbar.m_overflow->isVisible());
+    toolbar.hide();
+}
+
+void TestToolbarOverflow::overflowReturnsFocusToMore()
+{
+    RegionToolbarViewModel vm;
+    QmlFloatingToolbar toolbar(&vm);
+    toolbar.applyOverflowLayout(QRect(0, 0, 300, 400));
+    toolbar.show();
+    toolbar.onOverflowRequested(0, 0, 28, 24);
+    QVERIFY(toolbar.m_overflow->isVisible());
+    QKeyEvent esc(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+    QVERIFY(toolbar.m_overflow->handleKey(&esc));
+    QVERIFY(!toolbar.m_overflow->isVisible());
+    auto* more = toolbar.m_rootItem->findChild<QQuickItem*>("toolbarMoreButton");
+    QVERIFY(more);
+    // The toolbar window never takes keyboard focus; More holds focus within it.
+    QTRY_VERIFY(more->hasFocus());
+    toolbar.hide();
+}
+
 void TestToolbarOverflow::layout_data()
 {
     QTest::addColumn<int>("width");
@@ -339,39 +421,39 @@ void TestToolbarOverflow::menuActionsAndLifetime()
     QTRY_VERIFY(toolbar.m_view->isExposed());
     QTest::mouseClick(toolbar.m_view, Qt::LeftButton, Qt::NoModifier,
                       more->mapToScene(more->boundingRect().center()).toPoint());
-    QTRY_VERIFY(toolbar.m_overflowRootItem);
-    QCOMPARE(toolbar.m_overflowView->status(), QQuickView::Ready);
-    QVERIFY(toolbar.m_overflowView->isVisible());
-    QVERIFY(toolbar.m_overflowView->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
+    QTRY_VERIFY(toolbar.m_overflow->m_rootItem);
+    QCOMPARE(toolbar.m_overflow->m_view->status(), QQuickView::Ready);
+    QVERIFY(toolbar.m_overflow->m_view->isVisible());
+    QVERIFY(toolbar.m_overflow->m_view->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
     QVERIFY(toolbar.m_view->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
     QEvent leave(QEvent::Leave);
     QApplication::sendEvent(toolbar.m_view, &leave);
-    QVERIFY(toolbar.m_overflowView->isVisible());
-    const auto buttons = toolbar.m_overflowRootItem->property("buttons").toList();
+    QVERIFY(toolbar.m_overflow->m_view->isVisible());
+    const auto buttons = toolbar.m_overflow->m_rootItem->property("buttons").toList();
     int undoIndex = -1;
     for (int i = 0; i < buttons.size(); ++i)
         if (buttons[i].toMap().value("id").toInt() == int(ToolId::Undo)) undoIndex = i;
     QVERIFY(undoIndex >= 0);
-    toolbar.m_overflowRootItem->setProperty("selectedIndex", undoIndex);
-    QMetaObject::invokeMethod(toolbar.m_overflowRootItem, "activateSelected");
+    toolbar.m_overflow->m_rootItem->setProperty("selectedIndex", undoIndex);
+    QMetaObject::invokeMethod(toolbar.m_overflow->m_rootItem, "activateSelected");
     QCOMPARE(undo.count(), 0);
     toolbar.viewModel()->setCanUndo(true);
-    QMetaObject::invokeMethod(toolbar.m_overflowRootItem, "activateSelected");
+    QMetaObject::invokeMethod(toolbar.m_overflow->m_rootItem, "activateSelected");
     QCOMPARE(undo.count(), 1);
-    QVERIFY(!toolbar.m_overflowView->isVisible());
+    QVERIFY(!toolbar.m_overflow->m_view->isVisible());
     QCOMPARE(closed.count(), 0);
     toolbar.onOverflowRequested(8, 4, 28, 24);
     QTest::keyClick(&host, Qt::Key_Down);
-    QVERIFY(toolbar.m_overflowRootItem->property("selectedIndex").toInt() >= 0);
+    QVERIFY(toolbar.m_overflow->m_rootItem->property("selectedIndex").toInt() >= 0);
     QTest::keyClick(&host, Qt::Key_Escape);
-    QVERIFY(!toolbar.m_overflowView->isVisible());
+    QVERIFY(!toolbar.m_overflow->m_view->isVisible());
     QCOMPARE(closed.count(), 0);
     toolbar.onOverflowRequested(8, 4, 28, 24);
-    toolbar.m_overflowRootItem->setProperty("maximumHeight", 80);
-    toolbar.m_overflowRootItem->setProperty("selectedIndex", buttons.size() - 2);
-    QMetaObject::invokeMethod(toolbar.m_overflowRootItem, "moveSelection", Q_ARG(QVariant, 1));
+    toolbar.m_overflow->m_rootItem->setProperty("maximumHeight", 80);
+    toolbar.m_overflow->m_rootItem->setProperty("selectedIndex", buttons.size() - 2);
+    QMetaObject::invokeMethod(toolbar.m_overflow->m_rootItem, "moveSelection", Q_ARG(QVariant, 1));
     QCoreApplication::processEvents();
-    auto* list = toolbar.m_overflowRootItem->findChild<QQuickItem*>("toolbarOverflowList");
+    auto* list = toolbar.m_overflow->m_rootItem->findChild<QQuickItem*>("toolbarOverflowList");
     QVERIFY(list);
     QVERIFY(list->property("contentY").toReal() > 0);
     QSignalSpy done(toolbar.viewModel(), &PinToolbarViewModel::doneClicked);
@@ -380,7 +462,7 @@ void TestToolbarOverflow::menuActionsAndLifetime()
     QCOMPARE(closed.count(), 0);
     toolbar.onOverflowRequested(8, 4, 28, 24);
     toolbar.hide();
-    QVERIFY(!toolbar.m_overflowView->isVisible());
+    QVERIFY(!toolbar.m_overflow->m_view->isVisible());
 
     const QString artifactDir = qEnvironmentVariable("SNAPTRAY_TEST_ARTIFACT_DIR");
     if (!artifactDir.isEmpty()) {
@@ -392,7 +474,7 @@ void TestToolbarOverflow::menuActionsAndLifetime()
         const QPointF anchor = more->mapToItem(toolbar.m_rootItem, QPointF());
         toolbar.onOverflowRequested(anchor.x(), anchor.y(), more->width(), more->height());
         QTest::qWait(100);
-        QVERIFY(toolbar.m_overflowView->grabWindow().save(QDir(artifactDir).filePath("toolbar-overflow.png")));
+        QVERIFY(toolbar.m_overflow->m_view->grabWindow().save(QDir(artifactDir).filePath("toolbar-overflow.png")));
     }
     toolbar.close();
     QVERIFY(!toolbar.overflowWindow());

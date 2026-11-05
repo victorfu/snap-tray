@@ -5,6 +5,7 @@
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolbarViewModel.h"
 #include "qml/ToolbarOverflowLayout.h"
+#include "qml/ToolbarOverflowPopup.h"
 #include "tools/ToolId.h"
 
 #include <QCoreApplication>
@@ -106,8 +107,7 @@ QmlWindowedToolbar::QmlWindowedToolbar(QObject* parent)
 
 QmlWindowedToolbar::~QmlWindowedToolbar()
 {
-    hideOverflow();
-    destroyQuickView(m_overflowView, m_overflowRootItem);
+    m_overflow.reset();
     destroyQuickView(m_tooltipView, m_tooltipRootItem);
 
     if (m_view) {
@@ -145,6 +145,19 @@ void QmlWindowedToolbar::ensureView()
     m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
         m_view, QStringLiteral("QmlWindowedToolbar"));
     m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlWindowedToolbar"));
+
+    m_overflow = std::make_unique<ToolbarOverflowPopup>(m_viewModel, m_view);
+    m_overflow->setCursorOwnerId(m_cursorOwnerId);
+    m_overflow->setKeepOpenTest([this](const QPoint& globalPos) {
+        auto* more = m_rootItem ? m_rootItem->findChild<QQuickItem*>(QStringLiteral("toolbarMoreButton")) : nullptr;
+        if (!more || !m_view) return false;
+        const QRectF moreRect = more->mapRectToItem(m_rootItem, more->boundingRect());
+        return moreRect.contains(QPointF(globalPos - m_view->position()));
+    });
+    connect(m_overflow.get(), &ToolbarOverflowPopup::closed, this, [this] {
+        if (auto* more = m_rootItem ? m_rootItem->findChild<QQuickItem*>(QStringLiteral("toolbarMoreButton")) : nullptr)
+            more->forceActiveFocus(Qt::PopupFocusReason);
+    });
 
     if (m_rootItem)
         setupConnections();
@@ -318,8 +331,7 @@ void QmlWindowedToolbar::hide()
 
 void QmlWindowedToolbar::close()
 {
-    hideOverflow();
-    destroyQuickView(m_overflowView, m_overflowRootItem);
+    m_overflow.reset();
     for (const auto& connection : m_screenConnections) disconnect(connection);
     m_screenConnections.clear();
     m_layoutScreen.clear();
@@ -532,75 +544,25 @@ void QmlWindowedToolbar::refreshScreenGeometry()
 
 QWindow* QmlWindowedToolbar::overflowWindow() const
 {
-    return m_overflowView;
+    return m_overflow ? m_overflow->window() : nullptr;
 }
 
 void QmlWindowedToolbar::hideOverflow()
 {
-    if (!m_overflowView) return;
-    m_overflowView->hide();
-    CursorSurfaceSupport::clearWindowSurface(m_overflowCursorSurfaceId, m_cursorOwnerId);
-}
-
-void QmlWindowedToolbar::positionOverflow()
-{
-    if (!m_overflowView) return;
-    QScreen* screen = QGuiApplication::screenAt(m_overflowAnchor.center());
-    if (!screen) screen = QGuiApplication::primaryScreen();
-    if (!screen) return;
-    const QRect bounds = toolbarUsableBounds(screen->availableGeometry());
-    const QSize size = m_overflowView->size();
-    constexpr int gap = 4;
-    int y = m_overflowAnchor.bottom() + 1 + gap;
-    if (y + size.height() > bounds.y() + bounds.height())
-        y = m_overflowAnchor.top() - gap - size.height();
-    m_overflowView->setPosition(boundToolbarPosition(
-        QPoint(m_overflowAnchor.right() + 1 - size.width(), y), size, bounds));
+    if (m_overflow) m_overflow->hide();
 }
 
 void QmlWindowedToolbar::onOverflowRequested(double x, double y, double width, double height)
 {
-    if (!m_view || !m_rootItem || m_rootItem->property("overflowButtons").toList().isEmpty()) return;
-    if (m_overflowView && m_overflowView->isVisible()) {
-        hideOverflow();
-        return;
-    }
+    if (!m_view || !m_rootItem || !m_overflow
+        || m_rootItem->property("overflowButtons").toList().isEmpty()) return;
     hideTooltip();
-    if (!m_overflowView) {
-        m_overflowView = QmlOverlayManager::instance().createPopupWindow();
-        m_overflowView->setTransientParent(m_view);
-        m_overflowView->setInitialProperties({{"viewModel", QVariant::fromValue(static_cast<QObject*>(m_viewModel))}});
-        m_overflowView->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/toolbar/ToolbarOverflowMenu.qml")));
-        m_overflowRootItem = m_overflowView->rootObject();
-        if (!m_overflowRootItem) {
-            qWarning() << "Toolbar overflow menu failed to load:" << m_overflowView->errors();
-            destroyQuickView(m_overflowView, m_overflowRootItem);
-            return;
-        }
-        m_overflowCursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
-            m_overflowView, QStringLiteral("ToolbarOverflow"));
-        connect(m_overflowRootItem, SIGNAL(actionTriggered(int)), this, SLOT(onOverflowActionTriggered(int)));
-        connect(m_overflowView, &QWindow::heightChanged, this, &QmlWindowedToolbar::positionOverflow);
-    }
-    m_overflowAnchor = QRect(m_view->position() + QPoint(qRound(x), qRound(y)), QSize(qRound(width), qRound(height)));
     QScreen* screen = m_layoutScreen ? m_layoutScreen.data() : QGuiApplication::primaryScreen();
     if (!screen) return;
-    const QRect bounds = toolbarUsableBounds(screen->availableGeometry());
-    m_overflowRootItem->setProperty("maximumWidth", bounds.width());
-    m_overflowRootItem->setProperty("maximumHeight", bounds.height());
-    m_overflowRootItem->setProperty("selectedIndex", -1);
-    m_overflowRootItem->setProperty("buttons", m_rootItem->property("overflowButtons"));
-    positionOverflow();
-    m_overflowView->show();
-    QmlOverlayManager::applyShownOverlayWindowPolicy(m_overflowView);
-    QmlOverlayManager::enableNativeShadow(m_overflowView);
-    m_overflowView->raise();
-}
-
-void QmlWindowedToolbar::onOverflowActionTriggered(int buttonId)
-{
-    hideOverflow();
-    m_viewModel->handleButtonClicked(buttonId);
+    const QRect anchor(m_view->position() + QPoint(qRound(x), qRound(y)),
+                       QSize(qRound(width), qRound(height)));
+    m_overflow->toggle(m_rootItem->property("overflowButtons").toList(), anchor,
+                       toolbarUsableBounds(screen->availableGeometry()));
 }
 
 void QmlWindowedToolbar::syncCursorSurface(const CursorStyleSpec* explicitStyle)
@@ -631,37 +593,7 @@ void QmlWindowedToolbar::syncCursorSurface(const CursorStyleSpec* explicitStyle)
 
 bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
 {
-    if (m_overflowView && m_overflowView->isVisible()) {
-        if (event->type() == QEvent::KeyPress || event->type() == QEvent::ShortcutOverride) {
-            auto* key = static_cast<QKeyEvent*>(event);
-            const int code = key->key();
-            if (code == Qt::Key_Escape || code == Qt::Key_Up || code == Qt::Key_Down
-                || code == Qt::Key_Return || code == Qt::Key_Enter) {
-                event->accept();
-                if (event->type() == QEvent::ShortcutOverride) return true;
-                if (code == Qt::Key_Escape) hideOverflow();
-                else if (code == Qt::Key_Up || code == Qt::Key_Down)
-                    QMetaObject::invokeMethod(m_overflowRootItem, "moveSelection",
-                        Q_ARG(QVariant, code == Qt::Key_Down ? 1 : -1));
-                else QMetaObject::invokeMethod(m_overflowRootItem, "activateSelected");
-                return true;
-            }
-        }
-        if (event->type() == QEvent::MouseButtonPress) {
-            const QPoint pos = static_cast<QMouseEvent*>(event)->globalPosition().toPoint();
-            if (m_overflowView->geometry().contains(pos)) return false;
-            if (auto* more = m_rootItem->findChild<QQuickItem*>(QStringLiteral("toolbarMoreButton"))) {
-                const QRectF moreRect = more->mapRectToItem(m_rootItem, more->boundingRect());
-                if (moreRect.contains(QPointF(pos - m_view->position()))) return false;
-            }
-            hideOverflow();
-        }
-        if (obj == m_overflowView) {
-            CursorSurfaceSupport::syncWindowSurface(m_overflowView, m_overflowCursorSurfaceId,
-                m_cursorOwnerId, CursorRequestSource::Popup);
-            return false;
-        }
-    }
+    if (m_overflow && obj == m_overflow->window()) return false;
     if (obj == m_view) {
         switch (event->type()) {
         case QEvent::Enter:

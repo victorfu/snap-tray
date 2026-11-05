@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <memory>
 #include <QRect>
 #include <QPoint>
 #include <QPointer>
@@ -17,6 +18,8 @@ class PinToolbarViewModel;
 class QScreen;
 
 namespace SnapTray {
+
+class ToolbarOverflowPopup;
 class QmlFloatingSubToolbar;
 
 /**
@@ -70,7 +73,6 @@ private slots:
     void onDragFinished();
     void onDragMoved(double deltaX, double deltaY);
     void onOverflowRequested(double anchorX, double anchorY, double anchorW, double anchorH);
-    void onOverflowActionTriggered(int buttonId);
 
 private:
     friend class TestToolbarOverflow;
@@ -89,7 +91,6 @@ private:
     void updateOverflowLayout(QScreen* screen);
     void applyOverflowLayout(const QRect& usableBounds);
     void refreshScreenGeometry();
-    void positionOverflow();
 
     bool eventFilter(QObject* obj, QEvent* event) override;
 
@@ -97,13 +98,10 @@ private:
     QQuickItem* m_rootItem = nullptr;
     QQuickView* m_tooltipView = nullptr;
     QQuickItem* m_tooltipRootItem = nullptr;
-    QQuickView* m_overflowView = nullptr;
-    QQuickItem* m_overflowRootItem = nullptr;
-    QString m_overflowCursorSurfaceId;
+    std::unique_ptr<ToolbarOverflowPopup> m_overflow;
     QPointer<QScreen> m_layoutScreen;
     QList<QMetaObject::Connection> m_screenConnections;
     QRect m_lastPinWindowRect;
-    QRect m_overflowAnchor;
     bool m_userPositioned = false;
     bool m_updatingLayout = false;
 

@@ -5,6 +5,7 @@
 #include "PlatformFeatures.h"
 #include "ScreenCanvas.h"
 #include "annotation/AnnotationContext.h"
+#include "qml/ToolbarOverflowLayout.h"
 #include "annotation/AnnotationRenderHelper.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/EmojiStickerAnnotation.h"
@@ -2242,6 +2243,12 @@ bool ScreenCanvasSession::initializeToolbarPlacement()
         return false;
     }
 
+    if (QScreen* screen = m_activationScreen ? m_activationScreen.data()
+                                              : QGuiApplication::primaryScreen()) {
+        // Collapse into More before placement so the row fits this screen.
+        m_qmlToolbar->applyOverflowLayout(
+            SnapTray::toolbarUsableBounds(screen->availableGeometry()));
+    }
     const QSize toolbarSize = m_qmlToolbar->sizeHint();
     if (toolbarSize.isEmpty()) {
         return false;

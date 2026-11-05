@@ -1140,6 +1140,7 @@ set(SNAPTRAY_QML_NATIVE_SOURCES
     src/qml/QmlCountdownOverlay.mm
     src/qml/RecordingPreviewBackend.mm
     src/qml/QmlWindowedToolbar.mm
+    src/qml/ToolbarOverflowPopup.mm
     src/qml/QmlFloatingToolbar.mm
     src/qml/QmlFloatingSubToolbar.mm
     src/qml/ToolbarTooltipController.mm
@@ -1279,6 +1280,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/PinToolbarViewModel.cpp
         include/qml/PinToolbarViewModel.h
         include/qml/QmlWindowedToolbar.h
+        include/qml/ToolbarOverflowPopup.h
         src/qml/PinToolOptionsViewModel.cpp
         include/qml/PinToolOptionsViewModel.h
         src/qml/RegionToolbarViewModel.cpp
