@@ -40,8 +40,8 @@ building a new toolbar system:
 
 ### Groups
 
-Every toolbar button carries a `group`, defined once in `ToolRegistry` (lookup
-table, no `switch`):
+Every toolbar button carries a `group` and a `collapsePriority`, defined once in
+a lookup table in `include/tools/ToolbarTraits.h` (no `switch`):
 
 | Group | Buttons (Region Selector) |
 | --- | --- |
@@ -53,8 +53,10 @@ Pin Window and Screen Canvas use the same groups for the tools they show; their
 mode-specific buttons (for example Pin's Done, Canvas whiteboard/close) are
 assigned a group in the same table.
 
-- `ToolbarViewModelBase` adds `group` to each button entry. `separatorBefore`
-  is derived from a group change and is no longer set by hand per view model.
+- `ToolbarViewModelBase` adds `group`, `groupStart`, and `collapsePriority` to
+  each button entry. A group change always starts a separator plus a wider gap
+  (`groupStart`); separators inside a group (for example Pin's
+  Beautify/Crop/Measure block) stay as they are today.
 - `FloatingToolbar.qml` draws a separator plus a wider gap between groups. The
   `finish` group gets a subtle accent-tinted background from shared tokens; its
   buttons keep the existing action colors.
@@ -69,7 +71,9 @@ the tail:
   active tool.
 - Collapse order (first to go): QR Code, OCR, Multi-Region, Emoji, Step Badge,
   Eraser, Mosaic, then the remaining drawing tools from the end of the group.
-- The priority lives in the same `ToolRegistry` table as the group.
+- The priority lives in the same `ToolbarTraits` table as the group. Custom
+  buttons (Pin's Done, Canvas laser pointer) pass their group and priority
+  explicitly.
 - If even the pinned set does not fit, the existing "everything in More" fallback
   remains.
 
@@ -116,7 +120,7 @@ monitor and at each screen edge.
 | --- | --- |
 | Text | Colour, font family, font size, bold / italic / underline |
 | Arrow, Polyline | Colour, width, arrow (line-end) style, line style |
-| Shape | Colour, width, fill mode, line style |
+| Shape | Colour, width, fill mode |
 | Emoji sticker | No style sections; existing scale/rotate handles stay |
 
 Changing a shape's type (rectangle → ellipse) is out of scope.
@@ -127,11 +131,12 @@ Changing a shape's type (rectangle → ellipse) is out of scope.
   annotation id plus `before` and `after` clones (`AnnotationItem::clone()`).
   Undo/redo swaps the scene item in place, keeping its id and z-order, and
   invalidates its render cache.
-- New API: `AnnotationLayer::beginModify(index)` → token, `commitModify(token)`,
-  `cancelModify(token)`. A modify session is coalesced: repeated changes to the
-  same annotation and property (dragging the width slider, clicking through the
-  palette) become one command, committed on release or after 500 ms idle, on
-  selection change, or before any other history operation.
+- New API: `AnnotationLayer::modifyItem(id, coalesceKey, mutate)` and
+  `endModifyCoalescing()`. Repeated changes to the same annotation with the same
+  key (dragging the width slider, clicking through the palette) update the open
+  command instead of pushing a new one. Coalescing ends after 500 ms idle, on
+  selection change, and on any other history operation (add, erase, undo, redo,
+  clear).
 - Commands count toward the existing limits (`kMaxHistoryCommands`,
   `kMaxHistoryOwnedBytes`) and clear the redo stack like other commands.
 - A modify is refused while an erase transaction holds the history lock.
@@ -147,8 +152,8 @@ Changing a shape's type (rectangle → ellipse) is out of scope.
 - `AnnotationLayer` emits `selectionChanged()` from `setSelectedIndex` /
   `clearSelection`, so the strip follows selection without patching each of the
   ~15 call sites.
-- `ShapeAnnotation` and `ArrowAnnotation` / `PolylineAnnotation` gain the colour,
-  width, and line-style setters they lack.
+- `ShapeAnnotation` gains colour, width, and fill setters; `ArrowAnnotation` and
+  `PolylineAnnotation` gain colour, width, and line-style setters.
 - `PinToolOptionsViewModel` gains `targetLabel` and a "selected type" mode that
   picks sections from the selected annotation instead of the active tool.
 - `RegionSelector`, `PinWindow`, and `ScreenCanvasSession` style handlers route
