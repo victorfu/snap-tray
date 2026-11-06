@@ -578,7 +578,6 @@ Item {
 
     RecordingEditorShell {
         id: editorShell
-        accessibilityBlocked: exportPanel.visible
         anchors.fill: parent
         // Behind the modal export panel the editor cannot be used; disabling it
         // keeps screen readers from operating it there too (#248). `opened`

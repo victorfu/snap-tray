@@ -157,7 +157,7 @@ The gaps that audit left were fixed in [#248](https://github.com/victorfu/snap-t
 - A toolbar button drawn as disabled (Undo with nothing to undo) is reported as unavailable; a hover layer keeps its tooltip (`tst_ToolbarOverflow::disabledButtonsReadAsUnavailableButKeepTooltips`).
 - Library results read as one-of-many choices with a selected state, sections and smart folders as tabs, and Grid/List as a choice (`tst_LibraryWindow::itemsAndSectionsReadTheirSelection`).
 - The macOS tray icon has an accessibility label: "SnapTray - Screenshot Utility", followed by the tray's recording status (state, elapsed time, mode, audio and warnings) from the start of a recording until it is finished (`Platform_MacTrayAccessibility`).
-- While the modal export panel is open, the editor behind it is disabled, so screen readers cannot operate it there either; it is usable again when the panel closes (`tst_RecordingEditor::exportPanelKeepsTheEditorOutOfReach`). A follow-up also removes the editor subtree from accessibility traversal for the entire visible lifetime of the panel, restoring it on close. `tst_RecordingEditor::exportIsolatesAccessibility` verifies exclusion, accessible panel actions, and focus restoration across two open/close cycles; this follow-up is checked through Qt accessibility interfaces, not a new native AX audit.
+- While the modal export panel is open, the editor behind it is disabled, so screen readers cannot operate it there either; it is usable again when the panel closes (`tst_RecordingEditor::exportPanelKeepsTheEditorOutOfReach`).
 - Sliders read their value with its unit, for example "Default opacity, 100%" (`tst_SettingsCombo::slidersReadTheirUnit`, `Qml_PinHoverBarQml`).
 
 ### Actual editor evidence
