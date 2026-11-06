@@ -62,7 +62,10 @@ Current version, auto-check interval, last-checked status, and manual check now.
 
 App name, version, copyright, author, and website link.
 
-Settings save as soon as you change them. Apart from hotkeys, there is no reset to defaults.
+## Find and reset settings
+
+- **Search settings** at the top of the sidebar (`Ctrl+F`, or `Cmd+F` on macOS) finds settings by name, by section (for example "watermark"), by page, and finds hotkeys by action name. `Up`/`Down` and `Enter` open a result: SnapTray switches to its page, scrolls to the setting and highlights it briefly. `Esc` clears the search.
+- Settings save as soon as you change them. When a setting differs from its default, a **reset** button appears to the left of its name; it restores that one setting. Hotkeys keep their own **Reset** and **Restore All Defaults**. Settings that depend on your system or a choice only you can make, such as language, theme, start on login, the input device, the watermark image or the OCR languages, have no reset button.
 
 ## Recommended baseline profile
 

@@ -27,12 +27,15 @@ Issue: [#227](https://github.com/victorfu/snap-tray/issues/227). Tracking: #221.
 | --- | --- |
 | Settings navigation | By task: General, Capture, Pin Windows, Recording, Saving, Text Recognition, Hotkeys, then Updates and About after a divider. Advanced, Files and Watermark go away as pages. |
 | Beautify presets | Named **styles** (Compact, Standard, Spacious, Flat), each setting padding, corners and shadow together, plus named background swatches. The pixel controls move under a collapsible **Customize**. |
-| Scope | Spec, settings regrouping and Beautify in one change. Search and per-setting reset need new backend support, so they are out of scope (follow-up). |
+| Scope | Spec, settings regrouping and Beautify, plus (added during review) settings search, per-setting reset and saved Beautify styles, in one change. |
+| Settings search | A field at the top of the sidebar; results open the page, scroll to the setting and highlight it. Labels reuse the pages' own translations. |
+| Per-setting reset | A reset button in the row's gutter while a value differs from its manager default. |
+| Saved styles | Named looks (the whole `BeautifySettings`), kept by `BeautifySettingsManager`, at most 8. |
 
 Out of scope:
-- settings search, per-setting reset, saving custom Beautify styles;
 - style presets in the recording Frame (it keeps its own Small/Medium/Large amounts);
-- any change to setting keys, stored values or managers.
+- renaming saved styles in place (saving under the same name updates one);
+- any change to existing setting keys or stored values. New: `beautify/customStyles` and three named recording defaults.
 
 ## 1. Settings pages
 
@@ -64,10 +67,27 @@ Each page except About (which already centres the app name) starts with `Setting
 - The same list, keyboard (Up/Down, Space, Return) and active accent as before.
 - A thin divider separates the task pages from Updates and About. It is drawn above the first item of the second group, so indices and keyboard order are unchanged.
 
-### Defaults and reset (inventory)
+### Defaults and reset
 
-- Defaults live in each manager. No page has a "reset to default" control except **Hotkeys** (per-shortcut Reset and **Restore All Defaults**, which now sits in the page header), and this change adds none.
+- Defaults live in each manager. Before this change only **Hotkeys** could reset (per shortcut, and **Restore All Defaults**, which now sits in the page header).
 - Changes save at once, as before. Nothing here asks for confirmation.
+
+### Per-setting reset
+
+- `SettingsBackend` keeps a table: property name → default, taken from the manager's public constants (`kDefault…`, `default…()`) in the property's UI units (percent, list index). Three recording defaults that were literals became constants (`kDefaultPreselectArea`, `kDefaultKeepProjects`, `kDefaultProjectCleanupDays`).
+- `changedSettings` lists the keys whose value differs from the default; it is recomputed from each property's notify signal. `resetSetting(key)` writes the default through the property's setter, so the manager stores it as usual.
+- A row names its setting with `resetKey`. While it is changed, a 20 px reset button sits in the 24 px gutter left of the label, so the row's content never moves. Tooltip "Reset to default"; accessible name "Reset <label> to default".
+- 36 settings have a reset: everything on Capture, Pin Windows and Saving except the watermark image, most of Recording, and Updates. Language, theme, start on login, the input device, record keys, after saving, the watermark image and the OCR settings have none: they depend on the system or are a choice only the user can make.
+
+### Search
+
+- A "Search settings" field at the top of the sidebar; `Ctrl+F`/`Cmd+F` focuses it. While it has text, the results replace the page list; `Esc` clears it.
+- The index in `SettingsSidebar.qml` lists each setting as `QT_TRANSLATE_NOOP(<page context>, <label>)` with its section and target, and resolves it with `qsTranslate`, so search reuses the pages' translations and matches the English text too. Pages match by name, settings by label, section or page, and hotkeys by action name (from `SettingsBackend`). Unsupported pages are never indexed.
+- `Up`/`Down` moves through results, `Enter` or a click opens one: `SettingsWindow.revealSetting(page, target)` opens the page, waits for it to load, scrolls the row (found by objectName or `resetKey`) into view and highlights it for 1.6 s.
+
+### Label column
+
+`SettingsRow` widens its 140 px label column to fit the longest single word of its label, up to 45 % of the row, so long compounds (German "Weichzeichnungsintensität") do not break mid-word. Beyond that it still wraps.
 
 ## 2. Beautify panel
 
@@ -111,6 +131,13 @@ Each page except About (which already centres the app name) starts with `Setting
 - Controls in the recording Frame's order, without colons: Background (type), Colors, Padding, Corners, Shadow (the shared `SettingsToggle`), Shadow blur (disabled while the shadow is off), Aspect ratio.
 - Expanding grows the panel; the panel keeps itself on the screen.
 
+### Saved styles
+
+- **Save style…** next to the Style heading (hidden while the look already is a saved style) opens an inline name field, prefilled "My style N". `Return` saves, `Esc` cancels the name without closing the panel.
+- A saved style is the whole look: background, padding, corners, shadow and ratio. Saving under an existing name (any case) updates it. At most 8; at the limit the button is greyed out and its tooltip says to delete one.
+- Saved cards sit below the built-in styles, drawn on their own background, with a × on hover or focus (`Delete` also works). A saved card is chosen when background, padding, corners, shadow and ratio all match.
+- Stored by `BeautifySettingsManager` as JSON under `beautify/customStyles`; values are clamped on load and unnamed or broken entries are dropped.
+
 ### Shared language with the recording Frame
 
 Both use the names Background, Padding, Corners, Shadow and Aspect ratio, the same gradient names, and a chosen ring in the accent colour. The Frame keeps its Small/Medium/Large amounts, because its sizes follow the video size rather than pixels.
@@ -129,5 +156,7 @@ Both use the names Background, Padding, Corners, Shadow and Aspect ratio, the sa
 | Every former setting still reachable | `Qml_SettingsWindowFeatureGating` (each page loads and contains its controls) |
 | Styles apply and match, background chosen state | `Qml_BeautifyPanelBackend` |
 | Customize, shadow toggle, sliders survive reopen | `Qml_BeautifyPanelQml` |
+| Per-setting reset, search, reveal, label column | `Qml_SettingsWindowFeatureGating` |
+| Saved styles: save, update, limit, delete, bad data, Esc while naming | `Qml_BeautifyPanelBackend`, `Qml_BeautifyPanelQml` |
 | Light/dark, minimum window, German | `Qml_SettingsEvidence` screenshots (macOS) |
 | Windows, Ubuntu X11, physical DPI, screen readers | Pending manual pass (#238) |

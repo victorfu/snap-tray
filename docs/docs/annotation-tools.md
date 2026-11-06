@@ -70,6 +70,7 @@ On a narrow screen, less-used buttons move into **More** (⋯), starting with QR
 - **Style** sets padding, corners and shadow together: **Compact**, **Standard** (the default), **Spacious** or **Flat** (no shadow, square corners). The chosen style is outlined; after your own changes it reads **Custom**.
 - **Background** offers eight named gradients. A style keeps the background, and a background keeps the style.
 - **Customize** opens the details: background type (solid, linear or radial gradient), colors, padding, corners, shadow, shadow blur and aspect ratio.
+- **Save style…** keeps the whole current look (background, padding, corners, shadow and aspect ratio) under a name you choose. Saved styles appear below the built-in ones; click one to use it, or delete it with its **×** (or `Delete` when it has keyboard focus). Saving under an existing name updates that style. You can keep up to 8.
 - **Copy** and **Save** remember the look for next time.
 
 The recording editor's **Canvas** uses the same gradients and the same names (Background, Padding, Corners, Shadow, Aspect ratio).

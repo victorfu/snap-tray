@@ -402,15 +402,17 @@ Applies to the Settings window and the Beautify panel (#227). Design: `docs/supe
   - "Max history entries" becomes **Saving > Library > Screenshots kept in Library**.
   - Setting keys, managers and stored values are unchanged.
 - **Page header:** every page except About starts with `SettingsPageHeader`, a title and one sentence. The header can hold a page-wide action, such as Hotkeys' **Restore All Defaults**.
+- **Search:** a "Search settings" field tops the sidebar (`Ctrl+F`/`Cmd+F`). It finds pages by name, settings by label, section or page (translated and English), and hotkeys by action name. Opening a result goes to the page, scrolls to the row and highlights it briefly. `Esc` clears the search.
 - **Defaults and reset:**
   - Settings save at once.
-  - Only Hotkeys can reset (per shortcut, and all at once).
-  - Search and per-setting reset are out of scope.
+  - A row with a `resetKey` shows a reset button in its left gutter while its value differs from the manager default; `SettingsBackend.resetSetting` writes the default through the property. Hotkeys keep their per-shortcut Reset and Restore All Defaults.
+- **Label column:** 140 px, widened to fit the longest single word of a label (up to 45 % of the row) so long compounds do not break mid-word.
 - **Beautify, results first:**
   - The panel shows the preview, then **Style**, **Background** and a collapsed **Customize**.
   - The four styles are Compact, Standard (the defaults), Spacious and Flat. A style sets padding, corners and shadow, and leaves the background and ratio alone. The card matching the current values is chosen; otherwise the caption reads **Custom**.
   - The background swatches are the eight named gradients, the same as the recording Canvas.
   - Customize lists Background type, Colors, Padding, Corners, Shadow (the shared `SettingsToggle`), Shadow blur and Aspect ratio, with no colons. It stays open or closed while the panel is reused. When opening it grows the panel, the panel stays on the screen.
+  - **Save style…** saves the whole look under a name (inline field; `Esc` cancels the name, not the panel). Up to 8 saved styles sit below the built-in ones, each with a × (or `Delete`). Saving under an existing name updates it.
 - **Keyboard and names:**
   - Style cards, swatches, color chips and Customize are Tab stops. Space and Return activate them.
   - Each has a button role and a name ("Style: Standard", "Background: Ocean"). Cards and swatches also report checked.
@@ -424,6 +426,8 @@ Applies to the Settings window and the Beautify panel (#227). Design: `docs/supe
 | Page order, groups, gating, removed pages | `Qml_SettingsWindowFeatureGating` | CI tests only | CI tests only |
 | Former settings reachable on their new page | `Qml_SettingsWindowFeatureGating` | CI tests only | CI tests only |
 | Style and background presets, chosen and Custom states | `Qml_BeautifyPanelBackend`, `Qml_BeautifyPanelQml` | CI tests only | CI tests only |
+| Per-setting reset, search and reveal, label column | `Qml_SettingsWindowFeatureGating` | CI tests only | CI tests only |
+| Saved styles | `Qml_BeautifyPanelBackend`, `Qml_BeautifyPanelQml` | CI tests only | CI tests only |
 | Moved strings keep their translations | `Settings_QmlTranslations` | CI tests only | CI tests only |
 | Ordinary and minimum window, light/dark/German | Evidence below (`Qml_SettingsEvidence`) | Pending manual pass (#238) | Pending manual pass (#238) |
 | Physical DPI scales | 2× only | Pending (#238) | Pending (#238) |
@@ -442,6 +446,10 @@ macOS 27.0.1 / Qt 6.12.0, 2×.
 ![Beautify, styles and backgrounds](/assets/images/developer/settings/04-beautify-styles-light.png)
 
 ![Beautify, Spacious on Lavender with Customize open, dark](/assets/images/developer/settings/05-beautify-customize-dark.png)
+
+![Settings search for "watermark", Saving opened at the result, a changed setting with its reset button](/assets/images/developer/settings/06-settings-search-light.png)
+
+![Beautify with saved styles, dark](/assets/images/developer/settings/07-beautify-saved-dark.png)
 
 ![Settings, Capture page, German](/assets/images/developer/settings/01-settings-capture-light-de.png)
 
