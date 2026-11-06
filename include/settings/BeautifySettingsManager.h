@@ -52,9 +52,10 @@ public:
 
     // Saved styles (#227), shared with the recording frame (#269), oldest
     // first. Entries without a name are dropped; at most kMaxCustomStyles.
-    // The first read after #269 converts the pixel styles kept under
+    // Until beautify/frameStyles exists (written by the first
+    // saveFrameStyles()), reads convert the pixel styles under
     // beautify/customStyles at FrameStyle::kReferenceShortSide; that key is
-    // left as it was. A damaged list or entry is skipped with a warning, and
+    // never changed. A damaged list or entry is skipped with a warning, and
     // the next save first copies the damaged text to kKeyFrameStylesDamaged.
     QVector<SnapTray::NamedFrameStyle> loadFrameStyles() const;
     void saveFrameStyles(const QVector<SnapTray::NamedFrameStyle>& styles);
@@ -85,7 +86,8 @@ private:
     static constexpr const char* kKeyBorderEnabled      = "beautify/borderEnabled";
     static constexpr const char* kKeyBorderWidth        = "beautify/borderWidth";
     static constexpr const char* kKeyBorderColor        = "beautify/borderColor";
-    // Pixel styles from before #269, read once to fill kKeyFrameStyles.
+    // Pixel styles from before #269, converted on read until kKeyFrameStyles
+    // is first written.
     static constexpr const char* kKeyCustomStyles       = "beautify/customStyles";
     static constexpr const char* kKeyFrameStyles        = "beautify/frameStyles";
     static constexpr const char* kKeyFrameStylesDamaged = "beautify/frameStyles.corrupt";

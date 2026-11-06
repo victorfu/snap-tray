@@ -44,7 +44,9 @@ struct FrameStyle {
     BeautifyAspectRatio aspectRatio = BeautifyAspectRatio::Auto;
 
     // Reserved for a window or device frame (title bar, browser, laptop);
-    // empty means none. Kept as is when a style is read and written.
+    // empty means none. FrameStyle's JSON and FrameStyleLibrary keep it, but
+    // the screenshot and recording panels do not carry it yet, so saving over
+    // a style from a panel clears it.
     QString deviceFrame;
 
     // The picture size pixel styles from before #269 are converted at: their
