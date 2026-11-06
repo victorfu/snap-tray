@@ -61,6 +61,8 @@ private slots:
     void backgroundImageShowsThumbnail();
     void splitMarkerKeepsKeyboard();
     void exportProgressSitsOnPanel();
+    void exportPanelIsNamed();
+    void effectMenuFitsTheWindow();
     void designEvidence_data();
     void designEvidence();
     void designEvidenceError_data();
@@ -1459,6 +1461,74 @@ void tst_RecordingEditor::choicesReadTheirStateToScreenReaders()
         QVERIFY(!h264Accessible->state().checked);
     }
     backend.requestDiscard();
+}
+
+// #253: at the default editor size on Ubuntu the Add effect menu ran past
+// the window's bottom edge, cutting "Add Image" in half.
+void tst_RecordingEditor::effectMenuFitsTheWindow()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    const auto cleanup = qScopeGuard([&] { backend.requestDiscard(); });
+    QTRY_VERIFY(backend.duration() > 0);
+
+    for (const QSize requested : {QSize(1028, 806), QSize(1200, 640), QSize(1200, 900)}) {
+        view->resize(requested);
+        // A small screen (CI runners) clamps the window: check against the
+        // size it got, which is what the user would see.
+        QTRY_COMPARE(view->rootObject()->size().toSize(), view->size());
+        const QSize size = view->size();
+        QVERIFY(QMetaObject::invokeMethod(item(view, "previewAddEffect"), "clicked"));
+        QQuickItem* addImage = nullptr;
+        QTRY_VERIFY((addImage = delegate(view, QStringLiteral("previewAddImage"))) && addImage->isVisible());
+        // Add Image -> menu column -> the menu's popup item.
+        QQuickItem* menuItem = addImage->parentItem()->parentItem();
+        QTRY_COMPARE(menuItem->opacity(), 1.0);
+        const auto sceneRect = [](QQuickItem* target) {
+            return target->mapRectToScene(QRectF(0, 0, target->width(), target->height()));
+        };
+        const QRectF window(QPointF(0, 0), QSizeF(size));
+        const QRectF imageRect = sceneRect(addImage);
+        QVERIFY2(window.contains(imageRect),
+                 qPrintable(QStringLiteral("%1x%2: Add Image at %3,%4 %5x%6")
+                                .arg(size.width()).arg(size.height())
+                                .arg(imageRect.x()).arg(imageRect.y())
+                                .arg(imageRect.width()).arg(imageRect.height())));
+        // The menu never covers the button that opened it.
+        QVERIFY2(!sceneRect(menuItem).intersects(sceneRect(item(view, "previewAddEffect"))),
+                 qPrintable(QStringLiteral("%1x%2").arg(size.width()).arg(size.height())));
+        QTest::keyClick(view, Qt::Key_Escape);
+        QTRY_VERIFY(!addImage->isVisible() || !menuItem->isVisible());
+    }
+}
+
+// #253: Orca read the export panel as an unnamed "dialog".
+void tst_RecordingEditor::exportPanelIsNamed()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    const auto cleanup = qScopeGuard([&] { backend.requestDiscard(); });
+    QTRY_VERIFY(backend.duration() > 0);
+
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openExport"));
+    QObject* popup = view->rootObject()->findChild<QObject*>("previewExportPanel");
+    QTRY_VERIFY(popup && popup->property("opened").toBool());
+    QQuickItem* popupItem = qvariant_cast<QQuickItem*>(popup->property("contentItem"))->parentItem();
+    QVERIFY(popupItem);
+    QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(popupItem);
+    QVERIFY(accessible);
+    QCOMPARE(accessible->role(), QAccessible::Dialog);
+    QCOMPARE(accessible->text(QAccessible::Name), QStringLiteral("Export recording"));
 }
 
 // #219: after cutting the middle and speeding up the end, the editor shows

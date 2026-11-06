@@ -107,10 +107,18 @@ private slots:
     }
 
     // #238: a frameless pin has no title, so VoiceOver read an unnamed dialog.
+    // #253: every pin had the same name; the size tells them apart.
     void testPinWindowHasAccessibleName() {
         PinWindow window(createTestPixmap(200, 150), QPoint(), nullptr, false, false);
-        QCOMPARE(window.windowTitle(), QStringLiteral("Pinned image"));
-        QCOMPARE(window.accessibleName(), QStringLiteral("Pinned image"));
+        QVERIFY2(window.windowTitle().startsWith(QStringLiteral("Pinned image, ")),
+                 qPrintable(window.windowTitle()));
+        QVERIFY2(window.windowTitle().contains(QStringLiteral("200 \u00D7 150")),
+                 qPrintable(window.windowTitle()));
+        QCOMPARE(window.accessibleName(), window.windowTitle());
+
+        PinWindow other(createTestPixmap(320, 240), QPoint(), nullptr, false, false);
+        QVERIFY(other.windowTitle().contains(QStringLiteral("320 \u00D7 240")));
+        QVERIFY(other.accessibleName() != window.accessibleName());
     }
 
     void testClickThroughExitAfterShowAllPins() {
