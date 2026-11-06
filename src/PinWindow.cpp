@@ -560,11 +560,6 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground);
-    // A frameless window has no title, so screen readers announced an
-    // unnamed dialog (#238). macOS takes the window's name from its title;
-    // the title is never drawn on this frameless window.
-    setWindowTitle(tr("Pinned image"));
-    setAccessibleName(windowTitle());
 #ifdef Q_OS_MACOS
     // Ensure the window stays visible even when app is not focused
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);
@@ -576,6 +571,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     // Initial size matches screenshot (use logical size for HiDPI)
     m_displayPixmap = m_originalPixmap;
     m_contentLogicalSize = logicalSizeFromPixmap(m_displayPixmap);
+    updateAccessibleName();
     resetSourceSampleRect();
     QSize logicalSize = transformedContentLogicalSize();
     setFixedSize(logicalSize);
@@ -2147,10 +2143,29 @@ void PinWindow::setContentLogicalSize(const QSize& logicalSize)
 {
     if (logicalSize.isValid() && !logicalSize.isEmpty()) {
         m_contentLogicalSize = logicalSize;
-        return;
+    } else {
+        m_contentLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
     }
+    updateAccessibleName();
+}
 
-    m_contentLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
+void PinWindow::updateAccessibleName()
+{
+    // A frameless window has no title, so screen readers announced an
+    // unnamed dialog (#238). macOS takes the window's name from its title;
+    // the title is never drawn on this frameless window. The size tells
+    // pins apart, as the window list named every pin the same (#253).
+    const QString sizeText = currentDisplaySizeText();
+    const QString name = sizeText.isEmpty()
+        ? tr("Pinned image")
+        : tr("Pinned image, %1").arg(sizeText);
+    // Live pins set their size on every frame; only a change is announced.
+    if (windowTitle() != name) {
+        setWindowTitle(name);
+    }
+    if (accessibleName() != name) {
+        setAccessibleName(name);
+    }
 }
 
 QRectF PinWindow::preciseSourceSampleRectForRegion(const QRect& globalRegion,

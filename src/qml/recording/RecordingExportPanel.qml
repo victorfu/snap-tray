@@ -26,6 +26,10 @@ Popup {
     focus: true
     closePolicy: Popup.NoAutoClose
     padding: 20
+    // Screen readers see the popup's item as a dialog; without a name it was
+    // read as an unnamed "dialog" (#253). A Popup is not an Item and takes no
+    // Accessible attached property, so the name goes on that item.
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => titleText.text)
     background: Rectangle {
         color: ComponentTokens.editorSurface
         radius: SemanticTokens.radiusMedium
@@ -45,6 +49,7 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             Text {
+                id: titleText
                 Layout.fillWidth: true
                 text: qsTr("Export recording")
                 color: SemanticTokens.textPrimary

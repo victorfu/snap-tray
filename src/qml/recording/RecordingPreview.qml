@@ -1373,9 +1373,22 @@ Item {
             }
             Popup {
                 id: effectMenu
+                // Below the button when it fits, else above it: at the default
+                // editor height the last entries fell past the window (#253).
+                readonly property real belowY: 32
+                readonly property real gap: 4
+                property bool opensAbove: false
                 focus: true
-                y: 32
+                y: opensAbove ? -implicitHeight - gap : belowY
+                // A popup that fits neither way stays inside the window.
+                margins: SemanticTokens.spacing8
                 padding: 8
+                onAboutToShow: {
+                    const top = parent.mapToItem(null, 0, 0).y
+                    const roomBelow = parent.Window.height - margins - (top + belowY)
+                    const roomAbove = top - gap - margins
+                    opensAbove = implicitHeight > roomBelow && roomAbove > roomBelow
+                }
                 closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
                 background: Rectangle { color: root.bgPanel; border.color: root.borderColor; radius: 8 }
                 contentItem: Column {
@@ -3751,8 +3764,14 @@ Item {
                     visible: backend.exportCloseQuestionPending
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: SemanticTokens.spacing8
+                    // Announced like the discard confirmation, so a screen
+                    // reader says why the window did not close (#253).
+                    Accessible.role: Accessible.AlertMessage
+                    Accessible.name: exportCloseQuestionText.text
+                    Accessible.ignored: !visible
 
                     Text {
+                        id: exportCloseQuestionText
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: qsTr("An export is in progress. Keep exporting or cancel it?")
                         font.pixelSize: SemanticTokens.fontSizeBody

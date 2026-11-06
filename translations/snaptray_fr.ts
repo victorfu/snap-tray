@@ -1873,9 +1873,14 @@ Taille : %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="566" />
+        <location filename="../src/PinWindow.cpp" line="2160" />
         <source>Pinned image</source>
         <translation>Image épinglée</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="2161" />
+        <source>Pinned image, %1</source>
+        <translation>Image épinglée, %1</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="1222" />
