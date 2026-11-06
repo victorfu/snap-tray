@@ -57,7 +57,10 @@ SettingsRow {
         textRole: "text"
 
         Accessible.role: Accessible.ComboBox
-        Accessible.name: root.accessibleName
+        // The label and the current choice (#238): the shown text is a custom
+        // contentItem, so screen readers would not otherwise hear the value.
+        Accessible.name: combo.displayText !== ""
+            ? root.accessibleName + ", " + combo.displayText : root.accessibleName
 
         onActivated: function(index) {
             root.activated(index)

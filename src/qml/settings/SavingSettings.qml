@@ -62,6 +62,8 @@ Flickable {
 
                 TextInput {
                     id: templateInput
+                    Accessible.role: Accessible.EditableText
+                    Accessible.name: qsTr("Template")
                     anchors.fill: parent
                     anchors.leftMargin: 8
                     anchors.rightMargin: 8

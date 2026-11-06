@@ -157,7 +157,8 @@ Item {
             objectName: "editorChoiceControl"
             model: root.hasCustomValue ? root.choices.concat([root.currentValueText]) : root.choices
             currentIndex: root.hasCustomValue ? root.choices.length : root.currentIndex
-            Accessible.name: root.label
+            // Label and current choice (#238); the shown text is a custom contentItem.
+            Accessible.name: displayText !== "" ? root.label + ", " + displayText : root.label
             Accessible.description: root.tooltipText
             onActivated: function(index) {
                 if (index < root.choices.length) root.activated(index)

@@ -55,6 +55,7 @@ private slots:
     void timeFieldsKeepTypedKeys();
     void redoAndReopenKeepSelectionHonest();
     void inspectorControlsAreNamed();
+    void choicesReadTheirStateToScreenReaders();
     void outputTimeFollowsCutsAndSpeed();
     void canvasClickSelectsObjects();
     void backgroundImageShowsThumbnail();
@@ -1408,6 +1409,55 @@ void tst_RecordingEditor::inspectorControlsAreNamed()
         sweep(QStringLiteral("zoom"));
     }
     QVERIFY2(unnamed.isEmpty(), qPrintable(unnamed.join(QLatin1String("\n"))));
+    backend.requestDiscard();
+}
+
+// #238: VoiceOver could not tell which codec was chosen (two plain buttons with
+// the choice shown only as a tint), and dropdowns read only their label.
+void tst_RecordingEditor::choicesReadTheirStateToScreenReaders()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+
+    QQuickItem* speed = item(view, "previewPlaybackSpeed");
+    QVERIFY(speed);
+    QQuickItem* speedControl = speed->findChild<QQuickItem*>("editorChoiceControl");
+    QVERIFY(speedControl);
+    QAccessibleInterface* speedAccessible = QAccessible::queryAccessibleInterface(speedControl);
+    QVERIFY(speedAccessible);
+    const QString speedName = speedAccessible->text(QAccessible::Name);
+    QVERIFY2(speedName.startsWith(QStringLiteral("Preview speed, "))
+                 && speedName.length() > QStringLiteral("Preview speed, ").length(),
+             qPrintable(speedName));
+
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openExport"));
+    QObject* popup = view->rootObject()->findChild<QObject*>("previewExportPanel");
+    QTRY_VERIFY(popup && popup->property("opened").toBool());
+    QQuickItem* h264 = nullptr;
+    QQuickItem* hevc = nullptr;
+    QTRY_VERIFY((h264 = view->rootObject()->findChild<QQuickItem*>("previewMp4H264")) != nullptr);
+    QVERIFY((hevc = view->rootObject()->findChild<QQuickItem*>("previewMp4Hevc")) != nullptr);
+    QAccessibleInterface* h264Accessible = QAccessible::queryAccessibleInterface(h264);
+    QAccessibleInterface* hevcAccessible = QAccessible::queryAccessibleInterface(hevc);
+    QVERIFY(h264Accessible && hevcAccessible);
+    QCOMPARE(h264Accessible->role(), QAccessible::RadioButton);
+    QCOMPARE(hevcAccessible->role(), QAccessible::RadioButton);
+    QVERIFY(h264Accessible->state().checkable);
+    backend.setMp4Codec(0);
+    QTRY_VERIFY(h264Accessible->state().checked);
+    QVERIFY(!hevcAccessible->state().checked);
+    if (backend.mp4HevcAvailable()) {
+        backend.setMp4Codec(1);
+        QTRY_VERIFY(hevcAccessible->state().checked);
+        QVERIFY(!h264Accessible->state().checked);
+    }
     backend.requestDiscard();
 }
 

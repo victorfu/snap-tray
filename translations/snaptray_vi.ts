@@ -1872,6 +1872,11 @@ Kích thước: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <location filename="../src/PinWindow.cpp" line="566" />
+        <source>Pinned image</source>
+        <translation>Ảnh đã ghim</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1222" />
         <source>Show Toolbar</source>
         <translation>Hiển thị thanh công cụ</translation>

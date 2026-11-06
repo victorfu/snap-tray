@@ -29,6 +29,8 @@ Item {
     property bool isDisabled: false
     property string tooltipText: ""
     property bool separatorBefore: false
+    // Drawing tools report isActive as their checked state; actions do not.
+    property bool accessibleCheckable: false
 
     // Icon color overrides (default to toolbar tokens)
     property color iconNormalColor: ComponentTokens.toolbarIcon
@@ -51,6 +53,14 @@ Item {
     signal clicked(int buttonId)
     signal hovered(int buttonId, real globalX, real globalY, real w, real h)
     signal unhovered()
+
+    // Screen readers (#238): the tooltip (tool name and shortcut) is the
+    // name, since the button shows only an icon.
+    Accessible.role: Accessible.Button
+    Accessible.name: root.tooltipText !== "" ? root.tooltipText : root.textLabel
+    Accessible.checkable: root.accessibleCheckable
+    Accessible.checked: root.accessibleCheckable && root.isActive
+    Accessible.onPressAction: if (!root.isDisabled) root.clicked(root.buttonId)
 
     // Active background
     Rectangle {

@@ -2967,6 +2967,7 @@ Item {
                     text: qsTr("Blurred Video")
                     tooltipText: qsTr("The video itself, blurred, behind it (masks applied)")
                     selected: backend.appearanceEnabled && backend.appearanceBackground === 2
+                    exclusive: true
                     onClicked: backend.appearanceBackground = 2
                 }
                 SegmentButton {
@@ -2977,6 +2978,7 @@ Item {
                         ? qsTr("Background image: %1").arg(backend.appearanceImagePath)
                         : qsTr("Use an image file as the background")
                     selected: backend.appearanceEnabled && backend.appearanceBackground === 3
+                    exclusive: true
                     onClicked: backend.chooseAppearanceImage()
                 }
                 // The chosen image, so it is recognisable without opening the file dialog.
@@ -3117,6 +3119,7 @@ Item {
                             text: "H.264"
                             tooltipText: qsTr("Plays everywhere")
                             selected: backend.mp4Codec === 0 || !backend.mp4HevcAvailable
+                            exclusive: true
                             onClicked: backend.mp4Codec = 0
                         }
                         SegmentButton {
@@ -3132,6 +3135,7 @@ Item {
                                     ? qsTr("HEVC export needs HEVC Video Extensions from the Microsoft Store")
                                     : qsTr("HEVC export is not available on this system")
                             selected: backend.mp4Codec === 1 && backend.mp4HevcAvailable
+                            exclusive: true
                             onClicked: backend.mp4Codec = 1
                         }
                     }
@@ -3284,6 +3288,7 @@ Item {
                                 text: modelData.toLocaleString(Qt.locale(), "f", modelData % 1 ? 1 : 0) + "×"
                                 tooltipText: qsTr("Zoom: %1").arg(text)
                                 selected: zoomPanel.segment !== null && Math.abs(zoomPanel.segment.scale - modelData) < 0.05
+                                exclusive: true
                                 onClicked: backend.setZoomScale(backend.selectedZoom, modelData)
                             }
                         }
@@ -3347,6 +3352,7 @@ Item {
                             text: modelData
                             tooltipText: qsTr("Crop aspect: %1").arg(modelData)
                             selected: backend.cropAspectIndex === index
+                            exclusive: true
                             onClicked: root.chooseAspect(index)
                         }
                     }
@@ -4543,6 +4549,9 @@ Item {
         property string accessibleName: ""
         property bool tooltipPreferredAbove: true
         property bool selected: false
+        // One of several mutually exclusive choices (#238): read as a radio
+        // button so screen readers announce which one is selected.
+        property bool exclusive: false
         property bool primary: false
         property bool destructive: false
         // Text-only: secondary actions that should not compete with buttons.
@@ -4576,10 +4585,11 @@ Item {
         radius: SemanticTokens.radiusSmall
         opacity: enabled ? 1.0 : root.disabledControlOpacity
 
-        Accessible.role: Accessible.Button
+        Accessible.role: exclusive ? Accessible.RadioButton : Accessible.Button
         Accessible.name: accessibleName !== "" ? accessibleName
             : (text !== "" ? text : tooltipText)
         Accessible.description: tooltipText
+        Accessible.checkable: exclusive
         Accessible.checked: selected
         Accessible.onPressAction: if (enabled) clicked()
 

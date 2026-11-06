@@ -133,10 +133,32 @@ Record actual environment, results, and evidence for each implementation; a blan
 | Reopened project (reopen → change → undo/redo → save → reopen) | Scripted real-input session, `editor-220-reopen`; `tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits`, `tst_RecordingEditor::redoAndReopenKeepSelectionHonest` | CI tests only | `operationVideoReopen` passes locally; no real reopen session |
 | Long translations | de, fi, ru, el at 1200 × 800 and 640 × 480 (below) | Pending | de, fi, ru, el at 1200 × 800 and 640 × 480 rendered on Ubuntu at 2×; every control reachable |
 | Multiple DPI scales | 1×, 1.5× and 2× renderings (`QT_SCALE_FACTOR` on a Retina display, below); no physical 1× display | Pending (100/150/200 %) | Physical 2× (Xft.dpi 192); 1× and 1.5× rendered with `QT_ENABLE_HIGHDPI_SCALING=0` and `QT_SCALE_FACTOR=0.75`. GNOME on X11 offers no 150 %; one display, so no mixed DPI |
-| Screen reader names | Inspector sweep `inspectorControlsAreNamed`; no VoiceOver session yet | Pending (Narrator) | AT-SPI tree of the live editor (what Orca reads): buttons, combo boxes, timeline parts and inspector rows named, shortcuts in descriptions; the export panel's dialog has no name (#253). No spoken Orca session |
+| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `inspectorControlsAreNamed`, `choicesReadTheirStateToScreenReaders` | Pending (Narrator) | AT-SPI tree of the live editor (what Orca reads): buttons, combo boxes, timeline parts and inspector rows named, shortcuts in descriptions; the export panel's dialog has no name (#253). No spoken Orca session |
 | Floating tools at screen edges/multiple displays | Outside this editor change | Pending follow-up | Pending follow-up (one display) |
 
-#220 was closed on the macOS evidence above. The pending Windows, Ubuntu 22.04 X11 beta, physical-DPI and screen reader passes are tracked in [#238](https://github.com/victorfu/snap-tray/issues/238); update this matrix with their results. #221 stays open for the rest of the product.
+#220 was closed on the macOS evidence above. The pending Windows, Ubuntu 22.04 X11 beta, physical-DPI and screen reader passes are tracked in [#238](https://github.com/victorfu/snap-tray/issues/238); update this matrix with their results.
+
+### macOS accessibility audit
+
+The macOS screen reader check for #238 read the accessibility (AX) tree of the running debug app — the names, roles and states VoiceOver announces — with a small AXUIElement dump tool, for Settings (every page), the Library, the recording editor (inspector, timeline, export panel, Canvas), the capture toolbar and More menu, and pin windows (hover bar, zoom panel, click-through pill). VoiceOver itself was not run, so speech order and verbosity are unverified.
+
+Fixed (each with a regression test that fails before the fix):
+
+- Capture toolbar buttons and More rows had no accessible information at all. Buttons are named by their tooltip; the active drawing tool reads as selected; More rows are named, pressable menu items (`tst_ToolbarOverflow::buttonsAndMoreRowsAreNamedForScreenReaders`).
+- The Settings sidebar was a list of menu items without a selected state, and VoiceOver's press did nothing. It is a tab list now (`sidebarPagesArePageTabsForScreenReaders`).
+- Drop-downs (Settings, Library sort and smart folders, editor Preview speed and Aspect ratio) read only their label; they now read the label and the current choice.
+- Repeated buttons could not be told apart: two "Open Settings" (now with the permission and its status), two "Browse..." (now with the folder and path), and Edit/Clear/Reset on every hotkey row (now with the action; Edit also reads the shortcut and its status). The filename template field is named (`settingsControlsHaveDistinctNames`).
+- Exclusive editor choices built from buttons (codec, Blurred Video/Image background, zoom scale, crop aspect) are radio buttons with a selected state (`choicesReadTheirStateToScreenReaders`).
+- Pin windows were unnamed dialogs; they are named "Pinned image".
+
+Remaining gaps, tracked in [#248](https://github.com/victorfu/snap-tray/issues/248):
+
+- The style strip below the capture toolbar (sizes, colors, width, arrow and line styles, shape fill, text formatting, Auto Blur) has no accessible names or states.
+- A toolbar button that is only drawn as disabled (for example Undo with nothing to undo) is not reported as unavailable.
+- Library results are list items, which Qt exposes on macOS as static text without a selected state; section buttons report selection as a 0/1 value.
+- The tray icon has only its tooltip (AX help), no label; Qt's tray icon offers no accessible name.
+- While the export panel is open, the editor controls behind it stay in the accessibility tree.
+- Sliders read bare numbers ("100", not "100%").
 
 ### Ubuntu 22.04 X11 pass (#238)
 
@@ -270,7 +292,7 @@ Applies to the Region Capture toolbar, the Pin Window annotation toolbar, and th
 | Restyle a selected annotation, undo/redo, defaults untouched | Video below + `*_StyleSync::selectedArrowStyleIsUndoable` (region, pin, canvas) | Pending manual pass | `*_StyleSync` and the operation videos pass locally; real geometry undo and Esc during a drag in region capture, see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
 | Long translation (German) | Screenshots below | Pending manual pass | Fixtures in German on Ubuntu; same known style-strip overflow on the narrow screen |
 | High DPI | 2× (Retina) screenshots below | 150 % pending | Physical 2×; 1× and 1.5× renderings |
-| Screen readers (strip label is the accessible name) | Pending VoiceOver pass | Pending Narrator pass | Fails: AT-SPI shows the strip label but no toolbar buttons; `ToolbarButton.qml` sets no accessible role or name, on every platform (#251) |
+| Screen readers (toolbar, More menu, strip label) | Toolbar and More: AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; the style strip controls are unnamed ([gaps](#macos-accessibility-audit)) | Pending Narrator pass | Fails on `747e15df` (before #247): AT-SPI showed the strip label but no toolbar buttons; `ToolbarButton.qml` set no accessible role or name, on every platform (#251). #247 names the buttons; not re-checked on Ubuntu |
 
 Known limit: on very narrow screens (about 400 px) the style strip itself does not collapse, so its last control can run past the edge (see the narrow screenshots). The toolbar above it always fits.
 
@@ -331,7 +353,7 @@ Applies to pin windows (#225). Design: `docs/superpowers/specs/2026-11-05-pin-wi
 | Bar follows pin drag/zoom; hides in excluded states | `PinWindow_PinHoverBar`, `PinWindow_PinHoverIntegration` | CI tests only | CI tests only (Xvfb has no window manager, see #250) |
 | Click-through pill and tray exit | `PinWindow_Transform`, `App_MainApplicationTrayMenu`; screenshot below | Pending manual pass (#238) | Not supported (no click-through) |
 | Physical DPI scales | 2× only | Pending (#238) | Physical 2×; 1× and 1.5× renderings |
-| Screen reader names | Accessible names asserted in `Qml_PinHoverBarQml`; no VoiceOver session | Pending (Narrator) | AT-SPI exposes "Pin controls" with named buttons; the pin window itself carries only the app name |
+| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `Qml_PinHoverBarQml`, `PinWindow_Transform` | Pending (Narrator) | AT-SPI exposes "Pin controls" with named buttons; on `747e15df` (before #247) the pin window itself carried only the app name (#253) |
 
 ### Evidence
 
@@ -388,7 +410,7 @@ Applies to the Library window (#226): the former History window, now holding scr
 | Actions per kind, delete confirmation, busy project, privacy note | `Qml_LibraryWindow` | CI tests only | CI tests only |
 | Wide and narrow, light/dark/German | Evidence below (`Qml_LibraryEvidence`) | Pending manual pass (#238) | Fixtures on Ubuntu at 2×, light and dark; German not run |
 | Physical DPI scales | 2× only | Pending (#238) | Physical 2× only |
-| Screen reader names | Roles and names set in QML (list items, buttons, checked sections, alert strip); no VoiceOver session | Pending (Narrator) | Not inspected |
+| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; list items lack a selected state ([gaps](#macos-accessibility-audit)) | Pending (Narrator) | Not inspected |
 
 ### Evidence
 
@@ -457,7 +479,7 @@ Applies to the Settings window and the Beautify panel (#227). Design: `docs/supe
 | Moved strings keep their translations | `Settings_QmlTranslations` | CI tests only | CI tests only |
 | Ordinary and minimum window, light/dark/German | Evidence below (`Qml_SettingsEvidence`) | Pending manual pass (#238) | Fixtures on Ubuntu at 2×, light and dark; German not run |
 | Physical DPI scales | 2× only | Pending (#238) | Physical 2× only |
-| Screen reader names | Roles and names set in QML; no VoiceOver session | Pending (Narrator) | Not inspected |
+| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `Qml_SettingsWindowFeatureGating`, `Qml_SettingsCombo` | Pending (Narrator) | Not inspected |
 
 ### Evidence
 

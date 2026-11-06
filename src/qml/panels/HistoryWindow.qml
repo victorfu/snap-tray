@@ -1310,7 +1310,8 @@ Item {
                             model: [{ text: qsTr("All Screenshots"), filterValue: 0 }].concat(root.smartFolders)
                             textRole: "text"
                             currentIndex: root.modelObject ? root.modelObject.activeFilter : 0
-                            Accessible.name: qsTr("Smart Folders")
+                            // Label and current choice (#238); the shown text is a custom contentItem.
+                            Accessible.name: qsTr("Smart Folders") + ", " + displayText
 
                             onActivated: function(index) {
                                 var value = model[index].filterValue
@@ -1353,7 +1354,7 @@ Item {
                             model: root.sortOptions
                             currentIndex: root.modelObject ? root.modelObject.sortOrder : 0
                             textRole: "text"
-                            Accessible.name: qsTr("Sort")
+                            Accessible.name: qsTr("Sort") + ", " + displayText
 
                             onActivated: function(index) {
                                 if (root.modelObject)
