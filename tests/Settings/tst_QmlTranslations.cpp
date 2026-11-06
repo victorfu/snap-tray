@@ -98,8 +98,12 @@ void tst_QmlTranslations::testPhase4PanelContexts()
              QString::fromUtf8("選擇顏色"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "Open History Folder"),
              QString::fromUtf8("開啟歷程資料夾"));
-    QCOMPARE(QCoreApplication::translate("HistoryWindow", "No history items yet"),
-             QString::fromUtf8("尚無歷程項目"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "All Captures"),
+             QString::fromUtf8("所有擷取"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Delete this editable project? Its full recording and edits are removed. The file you saved from it stays."),
+             QString::fromUtf8("要刪除這個可編輯專案嗎？完整錄影和編輯內容都會移除，你從中儲存的檔案會保留。"));
+    QCOMPARE(QCoreApplication::translate("SnapTray::LibraryModel", "Editable project"),
+             QString::fromUtf8("可編輯專案"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "Smart Folders"),
              QString::fromUtf8("智慧資料夾"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "Last 7 Days"),
@@ -116,16 +120,16 @@ void tst_QmlTranslations::testPhase4PanelContexts()
              QString::fromUtf8("最大檔案優先"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "No results"),
              QString::fromUtf8("沒有結果"));
-    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Try a different smart folder."),
-             QString::fromUtf8("試試其他智慧資料夾。"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Try a different section or smart folder."),
+             QString::fromUtf8("試試其他分類或智慧資料夾。"));
 }
 
 void tst_QmlTranslations::testMainApplicationTrayContext()
 {
     QCOMPARE(QCoreApplication::translate("MainApplication", "Paste"),
              QString::fromUtf8("貼上"));
-    QCOMPARE(QCoreApplication::translate("MainApplication", "History"),
-             QString::fromUtf8("歷程"));
+    QCOMPARE(QCoreApplication::translate("MainApplication", "Library"),
+             QString::fromUtf8("素材庫"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "Record Screen"),
              QString::fromUtf8("錄製全螢幕"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "Region Capture hotkey"),

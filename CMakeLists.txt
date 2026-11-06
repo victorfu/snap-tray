@@ -893,6 +893,7 @@ add_library(snaptray_ui STATIC
     src/PinWindowManager.cpp
     src/qml/HistoryModel.cpp
     src/qml/HistoryBackend.cpp
+    src/qml/LibraryModel.cpp
     src/qml/QmlHistoryWindow.cpp
     src/pinwindow/PinWindowPlacement.cpp
     src/pinwindow/ResizeHandler.cpp
@@ -978,6 +979,7 @@ add_library(snaptray_ui STATIC
     include/PinWindow.h
     include/PinWindowManager.h
     include/qml/HistoryModel.h
+    include/qml/LibraryModel.h
     include/qml/HistoryBackend.h
     include/qml/QmlHistoryWindow.h
     include/pinwindow/PinWindowPlacement.h
@@ -1120,7 +1122,6 @@ set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOU
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
 set_source_files_properties(src/qml/dialogs/RecordingRecoveryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingRecoveryDialog.qml)
-set_source_files_properties(src/qml/dialogs/RecordingLibraryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingLibraryDialog.qml)
 
 # Recording preview
 set_source_files_properties(src/qml/recording/EditorChoice.qml PROPERTIES QT_RESOURCE_ALIAS recording/EditorChoice.qml)
@@ -1226,7 +1227,6 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/QRCodeResultDialog.qml
         src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/dialogs/RecordingRecoveryDialog.qml
-        src/qml/dialogs/RecordingLibraryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolbarOverflowMenu.qml
         src/qml/pin/PinHoverBar.qml

@@ -3,6 +3,8 @@
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/HistoryBackend.h"
 #include "qml/HistoryModel.h"
+#include "qml/LibraryModel.h"
+#include "qml/RecordingLibraryViewModel.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/QmlToast.h"
 
@@ -10,6 +12,7 @@
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QQmlContext>
+#include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
 #include <QUrl>
@@ -35,7 +38,11 @@ void QmlHistoryWindow::show()
 {
     ensureView();
     if (m_hasShownOnce) {
+        // A delete left pending when the window closed is not asked again.
+        if (QObject* root = m_view->rootObject())
+            QMetaObject::invokeMethod(root, "cancelDelete");
         m_backend->refresh();
+        m_recordings->refresh();
     } else {
         m_hasShownOnce = true;
     }
@@ -79,6 +86,21 @@ bool QmlHistoryWindow::isMinimized() const
     return m_view && (m_view->windowState() & Qt::WindowMinimized);
 }
 
+void QmlHistoryWindow::showSection(int source)
+{
+    ensureView();
+    if (QObject* root = m_view->rootObject())
+        QMetaObject::invokeMethod(root, "showSection", Q_ARG(QVariant, source));
+}
+
+void QmlHistoryWindow::setOpenProjectDir(const QString& dir)
+{
+    m_openProjectDir = dir;
+    if (!m_recordings) return;
+    m_recordings->setOpenProjectDir(dir);
+    m_recordings->refresh();   // a preview save may have kept a new project
+}
+
 void QmlHistoryWindow::ensureView()
 {
     if (m_view) {
@@ -93,9 +115,16 @@ void QmlHistoryWindow::ensureView()
         m_startReplay,
         m_view,
         this);
-    m_view->setTitle(tr("History"));
+    // Screenshots and editable recording projects, one window (#226).
+    m_recordings = new RecordingLibraryViewModel(this);
+    m_recordings->setOpenProjectDir(m_openProjectDir);
+    m_library = new LibraryModel(m_model, m_recordings, this);
+    connect(m_recordings, &RecordingLibraryViewModel::openRequested, this,
+            &QmlHistoryWindow::openProjectRequested);
+    m_view->setTitle(tr("Library"));
 
-    const QSize preferredMinimumSize(960, 560);
+    // Below 820 px the sidebar folds into a row of section buttons.
+    const QSize preferredMinimumSize(640, 480);
     const QSize preferredInitialSize(1240, 820);
     QSize minimumSize = preferredMinimumSize;
     QSize initialSize = preferredInitialSize;
@@ -112,6 +141,8 @@ void QmlHistoryWindow::ensureView()
     m_view->resize(initialSize);
     m_view->rootContext()->setContextProperty(QStringLiteral("historyModel"), m_model);
     m_view->rootContext()->setContextProperty(QStringLiteral("historyBackend"), m_backend);
+    m_view->rootContext()->setContextProperty(QStringLiteral("libraryModel"), m_library);
+    m_view->rootContext()->setContextProperty(QStringLiteral("recordingLibrary"), m_recordings);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/HistoryWindow.qml")));
     m_view->installEventFilter(this);
     m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
@@ -141,6 +172,10 @@ bool QmlHistoryWindow::eventFilter(QObject* watched, QEvent* event)
     if (event->type() == QEvent::KeyPress) {
         auto* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
+            // Esc first cancels a pending delete; the Library handles it.
+            QObject* root = m_view->rootObject();
+            if (root && root->property("confirming").toBool())
+                return QObject::eventFilter(watched, event);
             m_view->close();
             return true;
         }

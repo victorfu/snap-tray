@@ -581,119 +581,246 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
 <context>
     <name>HistoryWindow</name>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1012" />
         <source>History</source>
         <translation>Lịch sử</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
-        <location filename="../src/PinWindow.cpp" line="1429" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1278" />
+        <location filename="../src/PinWindow.cpp" line="1430" />
         <source>Open History Folder</source>
         <translation>Mở thư mục lịch sử</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="651" />
         <source>No history items yet</source>
         <translation>Chưa có mục lịch sử nào</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="661" />
         <source>Screenshots you capture in SnapTray will appear here.</source>
         <translation>Ảnh chụp màn hình bạn chụp trong SnapTray sẽ xuất hiện ở đây.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="685" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="877" />
         <source>No results</source>
         <translation>Không có kết quả</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="695" />
         <source>Try a different smart folder.</source>
         <translation>Hãy thử một thư mục thông minh khác.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="890" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1091" />
         <source>Smart Folders</source>
         <translation>Thư mục thông minh</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="23" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="50" />
         <source>All Screenshots</source>
         <translation>Tất cả ảnh chụp màn hình</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="27" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="43" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="58" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="99" />
         <source>Last 7 Days</source>
         <translation>7 ngày qua</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="28" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="45" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="59" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="101" />
         <source>Large Files</source>
         <translation>Tệp lớn</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="29" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="47" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="60" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="103" />
         <source>Replayable</source>
         <translation>Có thể phát lại</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="846" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="874" />
+        <source>No editable projects</source>
+        <translation>Không có dự án có thể chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="876" />
+        <source>Nothing here yet</source>
+        <translation>Chưa có gì ở đây</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="879" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Bật Giữ dự án có thể chỉnh sửa trong Cài đặt &gt; Ghi hình để chỉnh sửa lại bản ghi sau khi lưu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="881" />
+        <source>Screenshots you capture in SnapTray, and recordings you keep as editable projects, will appear here.</source>
+        <translation>Ảnh chụp màn hình bạn chụp trong SnapTray và bản ghi bạn giữ làm dự án có thể chỉnh sửa sẽ xuất hiện ở đây.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="882" />
+        <source>Try a different section or smart folder.</source>
+        <translation>Hãy thử mục khác hoặc thư mục thông minh.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
         <source>SnapTray</source>
         <translation>SnapTray</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="963" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1184" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="71" />
         <source>Edit</source>
         <translation>Chỉnh sửa</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="970" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1185" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="72" />
         <source>Pin</source>
         <translation>Ghim</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="977" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1186" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="73" />
         <source>Copy</source>
         <translation>Sao chép</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="984" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1187" />
         <source>Save As</source>
         <translation>Lưu thành</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="991" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1189" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1483" />
         <source>Delete</source>
         <translation>Xóa</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="33" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="64" />
         <source>Newest First</source>
         <translation>Mới nhất trước</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="34" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="52" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="96" />
+        <source>All Captures</source>
+        <translation>Tất cả nội dung</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="53" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="105" />
+        <source>Screenshots</source>
+        <translation>Ảnh chụp màn hình</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="54" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="94" />
+        <source>Recordings</source>
+        <translation>Bản ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="65" />
         <source>Oldest First</source>
         <translation>Cũ nhất trước</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="35" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="66" />
         <source>Largest First</source>
         <translation>Lớn nhất trước</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="458" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="74" />
+        <source>Save As...</source>
+        <translation>Lưu thành...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="75" />
+        <source>Delete...</source>
+        <translation>Xóa...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="78" />
+        <source>Open in Editor</source>
+        <translation>Mở trong trình chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="79" />
+        <source>Show Saved File</source>
+        <translation>Hiện tệp đã lưu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="80" />
+        <source>Show Project Folder</source>
+        <translation>Hiện thư mục dự án</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="81" />
+        <source>Delete Project...</source>
+        <translation>Xóa dự án...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="597" />
         <source>Preview unavailable</source>
         <translation>Không có bản xem trước</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1051" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1248" />
+        <source>Library</source>
+        <translation>Thư viện</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1224" />
+        <source>Editable project selected</source>
+        <translation>Đã chọn dự án có thể chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1225" />
+        <source>Screenshot selected</source>
+        <translation>Đã chọn ảnh chụp màn hình</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1226" />
+        <source>Nothing selected</source>
+        <translation>Chưa chọn mục nào</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1289" />
+        <source>Sort</source>
+        <translation>Sắp xếp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1381" />
+        <source>Grid view</source>
+        <translation>Dạng lưới</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1395" />
+        <source>List view</source>
+        <translation>Dạng danh sách</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1428" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Dự án giữ toàn bộ bản ghi, kể cả phần bạn đã làm mờ hoặc cắt bỏ.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1430" />
+        <source>Projects not changed for %1 days are removed automatically.</source>
+        <translation>Dự án không thay đổi trong %1 ngày sẽ tự động bị xóa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1432" />
+        <source>Keeping new projects is off.</source>
+        <translation>Giữ dự án mới đang tắt.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1466" />
+        <source>Delete this editable project? Its full recording and edits are removed. The file you saved from it stays.</source>
+        <translation>Xóa dự án có thể chỉnh sửa này? Toàn bộ bản ghi và các chỉnh sửa sẽ bị xóa. Tệp bạn đã lưu từ dự án vẫn được giữ.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1467" />
+        <source>Delete this screenshot from the Library? Files you saved from it stay.</source>
+        <translation>Xóa ảnh chụp màn hình này khỏi thư viện? Các tệp bạn đã lưu từ ảnh vẫn được giữ.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
+        <source>Cancel</source>
+        <translation>Hủy</translation>
     </message>
     <message>
         <source>Screenshot</source>
@@ -811,14 +938,14 @@ Kích thước tệp: %3</translation>
 <context>
     <name>MainApplication</name>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1340" />
-        <location filename="../src/MainApplication.cpp" line="1398" />
+        <location filename="../src/MainApplication.cpp" line="1345" />
+        <location filename="../src/MainApplication.cpp" line="1383" />
         <source>Finish or close the current recording first.</source>
         <translation>Hãy hoàn tất hoặc đóng bản ghi hiện tại trước.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1339" />
-        <location filename="../src/MainApplication.cpp" line="1397" />
+        <location filename="../src/MainApplication.cpp" line="1344" />
+        <location filename="../src/MainApplication.cpp" line="1382" />
         <source>Recording Busy</source>
         <translation>Bản ghi đang bận</translation>
     </message>
@@ -838,7 +965,7 @@ Kích thước tệp: %3</translation>
         <translation>Tìm thấy bản ghi chưa lưu</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1311" />
+        <location filename="../src/MainApplication.cpp" line="1316" />
         <source>Recover Recordings (%1)...</source>
         <translation>Khôi phục bản ghi (%1)...</translation>
     </message>
@@ -848,17 +975,17 @@ Kích thước tệp: %3</translation>
         <translation>Khôi phục bản ghi...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1605" />
+        <location filename="../src/MainApplication.cpp" line="1590" />
         <source>low disk space</source>
         <translation>sắp hết dung lượng</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1623" />
+        <location filename="../src/MainApplication.cpp" line="1608" />
         <source>Warning: %1</source>
         <translation>Cảnh báo: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1602" />
+        <location filename="../src/MainApplication.cpp" line="1587" />
         <source>dropping frames</source>
         <translation>đang mất khung hình</translation>
     </message>
@@ -879,7 +1006,7 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="523" />
-        <location filename="../src/MainApplication.cpp" line="1433" />
+        <location filename="../src/MainApplication.cpp" line="1418" />
         <source>Show Recording Controls</source>
         <translation>Hiện điều khiển ghi hình</translation>
     </message>
@@ -902,14 +1029,14 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="302" />
-        <location filename="../src/MainApplication.cpp" line="1668" />
-        <location filename="../src/MainApplication.cpp" line="1737" />
+        <location filename="../src/MainApplication.cpp" line="1653" />
+        <location filename="../src/MainApplication.cpp" line="1722" />
         <source>Recording Error</source>
         <translation>Lỗi ghi hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1555" />
-        <location filename="../src/MainApplication.cpp" line="1558" />
+        <location filename="../src/MainApplication.cpp" line="1540" />
+        <location filename="../src/MainApplication.cpp" line="1543" />
         <source>Recording Warning</source>
         <translation>Cảnh báo ghi hình</translation>
     </message>
@@ -945,37 +1072,35 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="423" />
-        <location filename="../src/MainApplication.cpp" line="1285" />
+        <location filename="../src/MainApplication.cpp" line="1290" />
         <source>Region Capture</source>
         <translation>Chụp vùng</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="453" />
-        <location filename="../src/MainApplication.cpp" line="1294" />
+        <location filename="../src/MainApplication.cpp" line="1299" />
         <source>Screen Canvas</source>
         <translation>Bảng vẽ màn hình</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="456" />
-        <location filename="../src/MainApplication.cpp" line="1297" />
+        <location filename="../src/MainApplication.cpp" line="1302" />
         <source>Paste</source>
         <translation>Dán</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="459" />
-        <location filename="../src/MainApplication.cpp" line="1300" />
+        <location filename="../src/MainApplication.cpp" line="1305" />
         <source>Pin from Image...</source>
         <translation>Ghim từ hình ảnh...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="462" />
-        <location filename="../src/MainApplication.cpp" line="1303" />
         <source>History</source>
         <translation>Lịch sử</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="465" />
-        <location filename="../src/MainApplication.cpp" line="1269" />
+        <location filename="../src/MainApplication.cpp" line="1274" />
         <source>Hide All Pins</source>
         <translation>Ẩn tất cả ghim</translation>
     </message>
@@ -991,49 +1116,49 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="491" />
-        <location filename="../src/MainApplication.cpp" line="1439" />
+        <location filename="../src/MainApplication.cpp" line="1424" />
         <source>Record Screen</source>
         <translation>Ghi toàn màn hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1451" />
-        <location filename="../src/MainApplication.cpp" line="1462" />
+        <location filename="../src/MainApplication.cpp" line="1436" />
+        <location filename="../src/MainApplication.cpp" line="1447" />
         <source>Cancel Recording</source>
         <translation>Hủy ghi</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1457" />
+        <location filename="../src/MainApplication.cpp" line="1442" />
         <source>Stop Recording</source>
         <translation>Dừng ghi</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1579" />
+        <location filename="../src/MainApplication.cpp" line="1564" />
         <source>Preparing to record</source>
         <translation>Đang chuẩn bị ghi hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1580" />
+        <location filename="../src/MainApplication.cpp" line="1565" />
         <source>Recording starts soon</source>
         <translation>Sắp bắt đầu ghi hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1581" />
+        <location filename="../src/MainApplication.cpp" line="1566" />
         <source>Recording</source>
         <translation>Đang ghi hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1582" />
+        <location filename="../src/MainApplication.cpp" line="1567" />
         <source>Recording paused</source>
         <translation>Đã tạm dừng ghi hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1583" />
+        <location filename="../src/MainApplication.cpp" line="1568" />
         <source>Finishing recording</source>
         <translation>Đang hoàn tất ghi hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1669" />
-        <location filename="../src/MainApplication.cpp" line="1738" />
+        <location filename="../src/MainApplication.cpp" line="1654" />
+        <location filename="../src/MainApplication.cpp" line="1723" />
         <source>No screen available for recording.</source>
         <translation>Không có màn hình nào để ghi.</translation>
     </message>
@@ -1054,28 +1179,28 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="550" />
-        <location filename="../src/MainApplication.cpp" line="1516" />
-        <location filename="../src/MainApplication.cpp" line="1518" />
+        <location filename="../src/MainApplication.cpp" line="1501" />
+        <location filename="../src/MainApplication.cpp" line="1503" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - Công cụ chụp màn hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1490" />
+        <location filename="../src/MainApplication.cpp" line="1475" />
         <source>Not set</source>
         <translation>Chưa đặt</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1492" />
+        <location filename="../src/MainApplication.cpp" line="1477" />
         <source>Region Capture hotkey</source>
         <translation>Phím tắt chụp vùng</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1494" />
+        <location filename="../src/MainApplication.cpp" line="1479" />
         <source>Paste hotkey</source>
         <translation>Phím tắt dán</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1496" />
+        <location filename="../src/MainApplication.cpp" line="1481" />
         <source>Screen Canvas hotkey</source>
         <translation>Phím tắt bảng vẽ màn hình</translation>
     </message>
@@ -1083,6 +1208,12 @@ Kích thước tệp: %3</translation>
         <location filename="../src/MainApplication.cpp" line="559" />
         <source>OCR Success</source>
         <translation>OCR thành công</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="462" />
+        <location filename="../src/MainApplication.cpp" line="1308" />
+        <source>Library</source>
+        <translation>Thư viện</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="560" />
@@ -1105,29 +1236,29 @@ Kích thước tệp: %3</translation>
         <translation>Đang tải hình ảnh</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="903" />
-        <location filename="../src/MainApplication.cpp" line="923" />
+        <location filename="../src/MainApplication.cpp" line="906" />
+        <location filename="../src/MainApplication.cpp" line="926" />
         <source>Failed to Load Image</source>
         <translation>Không thể tải hình ảnh</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1064" />
+        <location filename="../src/MainApplication.cpp" line="1067" />
         <source>Hotkey Registration Failed</source>
         <translation>Đăng ký phím tắt thất bại</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1065" />
+        <location filename="../src/MainApplication.cpp" line="1068" />
         <source> failed to register.</source>
         <translation> đăng ký thất bại.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1251" />
-        <location filename="../src/MainApplication.cpp" line="1275" />
+        <location filename="../src/MainApplication.cpp" line="1256" />
+        <location filename="../src/MainApplication.cpp" line="1280" />
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1268" />
+        <location filename="../src/MainApplication.cpp" line="1273" />
         <source>Show All Pins</source>
         <translation>Hiện tất cả ghim</translation>
     </message>
@@ -1148,12 +1279,12 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="426" />
-        <location filename="../src/MainApplication.cpp" line="1288" />
+        <location filename="../src/MainApplication.cpp" line="1293" />
         <source>Full Screen Capture</source>
         <translation>Chụp toàn màn hình</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1610" />
+        <location filename="../src/MainApplication.cpp" line="1595" />
         <source>recording keys</source>
         <translation>đang ghi phím</translation>
     </message>
@@ -1163,12 +1294,12 @@ Kích thước tệp: %3</translation>
         <translation>Thư viện bản ghi...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1391" />
+        <location filename="../src/MainApplication.cpp" line="1376" />
         <source>Project Unavailable</source>
         <translation>Dự án không khả dụng</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1392" />
+        <location filename="../src/MainApplication.cpp" line="1377" />
         <source>This project's recording is missing or damaged.</source>
         <translation>Bản ghi của dự án này bị thiếu hoặc bị hỏng.</translation>
     </message>
@@ -1183,18 +1314,18 @@ Kích thước tệp: %3</translation>
         <translation>Đã lưu vào %1 và sao chép: dán vào cuộc trò chuyện hoặc thư mục.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1599" />
+        <location filename="../src/MainApplication.cpp" line="1584" />
         <source>edit mode</source>
         <translation>chế độ chỉnh sửa</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1599" />
+        <location filename="../src/MainApplication.cpp" line="1584" />
         <source>quick mode</source>
         <translation>chế độ nhanh</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="431" />
-        <location filename="../src/MainApplication.cpp" line="1291" />
+        <location filename="../src/MainApplication.cpp" line="1296" />
         <source>Delayed Capture</source>
         <translation>Chụp trễ</translation>
     </message>
@@ -1482,53 +1613,53 @@ Kích thước: %2</translation>
 <context>
     <name>PinHoverBar</name>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="16" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="27" />
         <source>Pin controls</source>
         <translation>Điều khiển ghim</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="79" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="94" />
         <source>Zoom %1%</source>
         <translation>Thu phóng %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="88" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="103" />
         <source>Opacity %1%</source>
         <translation>Độ mờ %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="100" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="115" />
         <source>⏸ Paused</source>
         <translation>⏸ Đã tạm dừng</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="100" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="115" />
         <source>● Live</source>
         <translation>● Trực tiếp</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="101" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="116" />
         <source>Resume Live Update (P)</source>
         <translation>Tiếp tục cập nhật trực tiếp (P)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="102" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="117" />
         <source>Pause Live Update (P)</source>
         <translation>Tạm dừng cập nhật trực tiếp (P)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="113" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="128" />
         <source>Annotate (Space)</source>
         <translation>Chú thích (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="116" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="131" />
         <source>Annotate</source>
         <translation>Chú thích</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="126" />
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="129" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="143" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="146" />
         <source>More</source>
         <translation>Thêm</translation>
     </message>
@@ -1581,54 +1712,54 @@ Kích thước: %2</translation>
     <name>PinValuePanel</name>
     <message>
         <location filename="../src/qml/pin/PinValuePanel.qml" line="24" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="41" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="67" />
         <source>Zoom</source>
         <translation>Thu phóng</translation>
     </message>
     <message>
         <location filename="../src/qml/pin/PinValuePanel.qml" line="24" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="41" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="67" />
         <source>Opacity</source>
         <translation>Độ mờ</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="50" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="82" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="76" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="108" />
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="65" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="91" />
         <source>Zoom level</source>
         <translation>Mức thu phóng</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="65" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="91" />
         <source>Opacity level</source>
         <translation>Mức độ mờ</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="85" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="109" />
         <source>Zoom to %1%</source>
         <translation>Thu phóng đến %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="85" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="109" />
         <source>Opacity %1%</source>
         <translation>Độ mờ %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="93" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="117" />
         <source>Reset to 100%</source>
         <translation>Đặt lại về 100%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="96" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="118" />
         <source>Reset zoom to 100%</source>
         <translation>Đặt lại thu phóng về 100%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="96" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="118" />
         <source>Reset opacity to 100%</source>
         <translation>Đặt lại độ mờ về 100%</translation>
     </message>
@@ -1636,27 +1767,27 @@ Kích thước: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1221" />
+        <location filename="../src/PinWindow.cpp" line="1222" />
         <source>Show Toolbar</source>
         <translation>Hiển thị thanh công cụ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1228" />
+        <location filename="../src/PinWindow.cpp" line="1229" />
         <source>Show Border</source>
         <translation>Hiển thị viền</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1489" />
+        <location filename="../src/PinWindow.cpp" line="1490" />
         <source>Adjust Region Layout</source>
         <translation>Điều chỉnh bố cục vùng</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1337" />
+        <location filename="../src/PinWindow.cpp" line="1338" />
         <source>Copy to Clipboard</source>
         <translation>Sao chép vào bộ nhớ tạm</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1342" />
+        <location filename="../src/PinWindow.cpp" line="1343" />
         <source>Save to file</source>
         <translation>Lưu vào tệp</translation>
     </message>
@@ -1675,352 +1806,352 @@ Kích thước: %2</translation>
         <translation>Xong (Space/Esc)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1438" />
+        <location filename="../src/PinWindow.cpp" line="1439" />
         <source>Click-through</source>
         <translation>Nhấp xuyên qua</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1497" />
-        <location filename="../src/PinWindow.cpp" line="1656" />
-        <location filename="../src/PinWindow.cpp" line="1664" />
-        <location filename="../src/PinWindow.cpp" line="1678" />
-        <location filename="../src/PinWindow.cpp" line="1695" />
-        <location filename="../src/PinWindow.cpp" line="1707" />
+        <location filename="../src/PinWindow.cpp" line="1498" />
+        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1665" />
+        <location filename="../src/PinWindow.cpp" line="1679" />
+        <location filename="../src/PinWindow.cpp" line="1696" />
+        <location filename="../src/PinWindow.cpp" line="1708" />
         <source>Merge Pins</source>
         <translation>Gộp ghim</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1348" />
+        <location filename="../src/PinWindow.cpp" line="1349" />
         <source>Watermark</source>
         <translation>Hình mờ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1352" />
+        <location filename="../src/PinWindow.cpp" line="1353" />
         <source>Enable</source>
         <translation>Bật</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1363" />
+        <location filename="../src/PinWindow.cpp" line="1364" />
         <source>Position</source>
         <translation>Vị trí</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1366" />
+        <location filename="../src/PinWindow.cpp" line="1367" />
         <source>Top-Left</source>
         <translation>Trên-Trái</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1371" />
+        <location filename="../src/PinWindow.cpp" line="1372" />
         <source>Top-Right</source>
         <translation>Trên-Phải</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1376" />
+        <location filename="../src/PinWindow.cpp" line="1377" />
         <source>Bottom-Left</source>
         <translation>Dưới-Trái</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1381" />
+        <location filename="../src/PinWindow.cpp" line="1382" />
         <source>Bottom-Right</source>
         <translation>Dưới-Phải</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1235" />
-        <location filename="../src/PinWindow.cpp" line="1420" />
-        <location filename="../src/PinWindow.cpp" line="2297" />
+        <location filename="../src/PinWindow.cpp" line="1236" />
+        <location filename="../src/PinWindow.cpp" line="1421" />
+        <location filename="../src/PinWindow.cpp" line="2298" />
         <source>Zoom</source>
         <translation>Thu phóng</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1253" />
+        <location filename="../src/PinWindow.cpp" line="1254" />
         <source>33.3%</source>
         <translation>33,3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1256" />
+        <location filename="../src/PinWindow.cpp" line="1257" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1259" />
+        <location filename="../src/PinWindow.cpp" line="1260" />
         <source>66.7%</source>
         <translation>66,7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1262" />
+        <location filename="../src/PinWindow.cpp" line="1263" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1265" />
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1275" />
+        <location filename="../src/PinWindow.cpp" line="1276" />
         <source>Smoothing</source>
         <translation>Làm mịn</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1310" />
+        <location filename="../src/PinWindow.cpp" line="1311" />
         <source>Image processing</source>
         <translation>Xử lý hình ảnh</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1313" />
+        <location filename="../src/PinWindow.cpp" line="1314" />
         <source>Rotate left</source>
         <translation>Xoay trái</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1316" />
+        <location filename="../src/PinWindow.cpp" line="1317" />
         <source>Rotate right</source>
         <translation>Xoay phải</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1319" />
+        <location filename="../src/PinWindow.cpp" line="1320" />
         <source>Horizontal flip</source>
         <translation>Lật ngang</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1322" />
+        <location filename="../src/PinWindow.cpp" line="1323" />
         <source>Vertical flip</source>
         <translation>Lật dọc</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
         <source>Crop</source>
         <translation>Cắt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1284" />
-        <location filename="../src/PinWindow.cpp" line="1422" />
-        <location filename="../src/PinWindow.cpp" line="2299" />
+        <location filename="../src/PinWindow.cpp" line="1285" />
+        <location filename="../src/PinWindow.cpp" line="1423" />
+        <location filename="../src/PinWindow.cpp" line="2300" />
         <source>Opacity</source>
         <translation>Độ mờ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1288" />
+        <location filename="../src/PinWindow.cpp" line="1289" />
         <source>Increase by %1%</source>
         <translation>Tăng %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1295" />
+        <location filename="../src/PinWindow.cpp" line="1296" />
         <source>Decrease by %1%</source>
         <translation>Giảm %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1404" />
+        <location filename="../src/PinWindow.cpp" line="1405" />
         <source>Copy All</source>
         <translation>Sao chép tất cả</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1419" />
-        <location filename="../src/PinWindow.cpp" line="2296" />
+        <location filename="../src/PinWindow.cpp" line="1420" />
+        <location filename="../src/PinWindow.cpp" line="2297" />
         <source>Size</source>
         <translation>Kích thước</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1421" />
-        <location filename="../src/PinWindow.cpp" line="2298" />
+        <location filename="../src/PinWindow.cpp" line="1422" />
+        <location filename="../src/PinWindow.cpp" line="2299" />
         <source>Rotation</source>
         <translation>Xoay</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="1424" />
+        <location filename="../src/PinWindow.cpp" line="2301" />
         <source>X-mirror</source>
         <translation>Phản chiếu X</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>Y-mirror</source>
         <translation>Phản chiếu Y</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
         <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
         <location filename="../src/PinWindow.cpp" line="2107" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>Yes</source>
         <translation>Có</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
         <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
         <location filename="../src/PinWindow.cpp" line="2107" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>No</source>
         <translation>Không</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1447" />
-        <location filename="../src/PinWindow.cpp" line="3245" />
+        <location filename="../src/PinWindow.cpp" line="1448" />
+        <location filename="../src/PinWindow.cpp" line="3309" />
         <source>Start Live Update</source>
         <translation>Bắt đầu cập nhật trực tiếp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2102" />
+        <location filename="../src/PinWindow.cpp" line="2103" />
         <source>Size: %1</source>
         <translation>Kích thước: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3245" />
+        <location filename="../src/PinWindow.cpp" line="3309" />
         <source>Stop Live Update</source>
         <translation>Dừng cập nhật trực tiếp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1460" />
-        <location filename="../src/PinWindow.cpp" line="3249" />
+        <location filename="../src/PinWindow.cpp" line="1461" />
+        <location filename="../src/PinWindow.cpp" line="3313" />
         <source>Pause Live Update</source>
         <translation>Tạm dừng cập nhật trực tiếp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3249" />
+        <location filename="../src/PinWindow.cpp" line="3313" />
         <source>Resume Live Update</source>
         <translation>Tiếp tục cập nhật trực tiếp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1473" />
+        <location filename="../src/PinWindow.cpp" line="1474" />
         <source>Frame Rate</source>
         <translation>Tốc độ khung hình</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1495" />
+        <location filename="../src/PinWindow.cpp" line="1496" />
         <source>Move to Screen</source>
         <translation>Chuyển sang màn hình</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1477" />
+        <location filename="../src/PinWindow.cpp" line="1478" />
         <source>%1 FPS</source>
         <translation>%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1511" />
+        <location filename="../src/PinWindow.cpp" line="1512" />
         <source>Close</source>
         <translation>Đóng</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1501" />
+        <location filename="../src/PinWindow.cpp" line="1502" />
         <source>Close All Pins</source>
         <translation>Đóng tất cả ghim</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="721" />
+        <location filename="../src/PinWindow.cpp" line="722" />
         <source>Zoom %1%</source>
         <translation>Thu phóng %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="726" />
+        <location filename="../src/PinWindow.cpp" line="727" />
         <source>Opacity %1%</source>
         <translation>Độ mờ %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1238" />
+        <location filename="../src/PinWindow.cpp" line="1239" />
         <source>Zoom In</source>
         <translation>Phóng to</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1242" />
+        <location filename="../src/PinWindow.cpp" line="1243" />
         <source>Zoom Out</source>
         <translation>Thu nhỏ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1246" />
-        <location filename="../src/PinWindow.cpp" line="1301" />
+        <location filename="../src/PinWindow.cpp" line="1247" />
+        <location filename="../src/PinWindow.cpp" line="1302" />
         <source>Reset to 100%</source>
         <translation>Đặt lại về 100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1609" />
+        <location filename="../src/PinWindow.cpp" line="1610" />
         <source>Screen %1</source>
         <translation>Màn hình %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1611" />
+        <location filename="../src/PinWindow.cpp" line="1612" />
         <source> (Primary)</source>
         <translation> (Chính)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1658" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>Không thể gộp quá %1 ghim cùng lúc</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1665" />
+        <location filename="../src/PinWindow.cpp" line="1666" />
         <source>Need at least 2 pins to merge</source>
         <translation>Cần ít nhất 2 ghim để gộp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1679" />
+        <location filename="../src/PinWindow.cpp" line="1680" />
         <source>No primary screen available</source>
         <translation>Không có màn hình chính khả dụng</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1708" />
+        <location filename="../src/PinWindow.cpp" line="1709" />
         <source>Failed to create merged pin</source>
         <translation>Không thể tạo ghim đã gộp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1778" />
-        <location filename="../src/PinWindow.cpp" line="1810" />
+        <location filename="../src/PinWindow.cpp" line="1779" />
+        <location filename="../src/PinWindow.cpp" line="1811" />
         <source>Failed to save screenshot: %1</source>
         <translation>Không thể lưu ảnh chụp màn hình: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1791" />
+        <location filename="../src/PinWindow.cpp" line="1792" />
         <source>Save Screenshot</source>
         <translation>Lưu ảnh chụp màn hình</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1793" />
-        <location filename="../src/PinWindow.cpp" line="6467" />
+        <location filename="../src/PinWindow.cpp" line="1794" />
+        <location filename="../src/PinWindow.cpp" line="6551" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>Ảnh PNG (*.png);;Ảnh JPEG (*.jpg *.jpeg);;Tất cả tệp (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1823" />
-        <location filename="../src/PinWindow.cpp" line="1844" />
-        <location filename="../src/PinWindow.cpp" line="6371" />
-        <location filename="../src/PinWindow.cpp" line="6396" />
+        <location filename="../src/PinWindow.cpp" line="1824" />
+        <location filename="../src/PinWindow.cpp" line="1845" />
+        <location filename="../src/PinWindow.cpp" line="6455" />
+        <location filename="../src/PinWindow.cpp" line="6480" />
         <source>Copy failed</source>
         <translation>Sao chép thất bại</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1844" />
+        <location filename="../src/PinWindow.cpp" line="1845" />
         <source>Copied to clipboard</source>
         <translation>Đã sao chép vào bộ nhớ tạm</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1856" />
-        <location filename="../src/PinWindow.cpp" line="5728" />
+        <location filename="../src/PinWindow.cpp" line="1857" />
+        <location filename="../src/PinWindow.cpp" line="5798" />
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Vui lòng đợi tự động làm mờ hoàn tất</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1998" />
-        <location filename="../src/PinWindow.cpp" line="2076" />
+        <location filename="../src/PinWindow.cpp" line="1999" />
+        <location filename="../src/PinWindow.cpp" line="2077" />
         <source>Copied %1 characters</source>
         <translation>Đã sao chép %1 ký tự</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2002" />
+        <location filename="../src/PinWindow.cpp" line="2003" />
         <source>No text found</source>
         <translation>Không tìm thấy văn bản</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2007" />
-        <location filename="../src/PinWindow.cpp" line="2023" />
+        <location filename="../src/PinWindow.cpp" line="2008" />
+        <location filename="../src/PinWindow.cpp" line="2024" />
         <source>Text copied</source>
         <translation>Đã sao chép văn bản</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2087" />
+        <location filename="../src/PinWindow.cpp" line="2088" />
         <source>No QR code found</source>
         <translation>Không tìm thấy mã QR</translation>
     </message>
@@ -2029,90 +2160,90 @@ Kích thước: %2</translation>
         <translation>Kích thước: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2103" />
+        <location filename="../src/PinWindow.cpp" line="2104" />
         <source>Zoom: %1%</source>
         <translation>Thu phóng: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2104" />
+        <location filename="../src/PinWindow.cpp" line="2105" />
         <source>Rotation: %1°</source>
         <translation>Xoay: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2105" />
+        <location filename="../src/PinWindow.cpp" line="2106" />
         <source>Opacity: %1%</source>
         <translation>Độ mờ: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="2107" />
         <source>X-mirror: %1</source>
         <translation>Phản chiếu X: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2107" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <source>Y-mirror: %1</source>
         <translation>Phản chiếu Y: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2667" />
+        <location filename="../src/PinWindow.cpp" line="2637" />
         <source>Live Update (L to stop, P to pause)</source>
         <translation>Cập nhật trực tiếp (L để dừng, P để tạm dừng)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5121" />
+        <location filename="../src/PinWindow.cpp" line="5191" />
         <source>Stop live capture before running auto-blur</source>
         <translation>Hãy dừng chụp trực tiếp trước khi chạy tự động làm mờ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5144" />
+        <location filename="../src/PinWindow.cpp" line="5214" />
         <source>Face detection unavailable</source>
         <translation>Không thể nhận diện khuôn mặt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5154" />
+        <location filename="../src/PinWindow.cpp" line="5224" />
         <source>Detection unavailable</source>
         <translation>Không thể phát hiện</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5184" />
+        <location filename="../src/PinWindow.cpp" line="5254" />
         <source>Unable to snapshot the current image</source>
         <translation>Không thể chụp nhanh hình ảnh hiện tại</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6376" />
-        <location filename="../src/PinWindow.cpp" line="6440" />
-        <location filename="../src/PinWindow.cpp" line="6476" />
+        <location filename="../src/PinWindow.cpp" line="6460" />
+        <location filename="../src/PinWindow.cpp" line="6524" />
+        <location filename="../src/PinWindow.cpp" line="6560" />
         <source>Beautify rendering failed</source>
         <translation>Xử lý làm đẹp thất bại</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6265" />
+        <location filename="../src/PinWindow.cpp" line="6349" />
         <source>Unable to apply region layout</source>
         <translation>Không thể áp dụng bố cục vùng</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6396" />
+        <location filename="../src/PinWindow.cpp" line="6480" />
         <source>Beautified image copied</source>
         <translation>Đã sao chép hình ảnh đã làm đẹp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1726" />
-        <location filename="../src/PinWindow.cpp" line="1764" />
-        <location filename="../src/PinWindow.cpp" line="1798" />
-        <location filename="../src/PinWindow.cpp" line="6409" />
-        <location filename="../src/PinWindow.cpp" line="6435" />
-        <location filename="../src/PinWindow.cpp" line="6471" />
+        <location filename="../src/PinWindow.cpp" line="1727" />
+        <location filename="../src/PinWindow.cpp" line="1765" />
+        <location filename="../src/PinWindow.cpp" line="1799" />
+        <location filename="../src/PinWindow.cpp" line="6493" />
+        <location filename="../src/PinWindow.cpp" line="6519" />
+        <location filename="../src/PinWindow.cpp" line="6555" />
         <source>No image available to save</source>
         <translation>Không có hình ảnh để lưu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6455" />
-        <location filename="../src/PinWindow.cpp" line="6490" />
+        <location filename="../src/PinWindow.cpp" line="6539" />
+        <location filename="../src/PinWindow.cpp" line="6574" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>Không thể lưu ảnh chụp đã làm đẹp: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6465" />
+        <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Lưu ảnh chụp đã làm đẹp</translation>
     </message>
@@ -2540,7 +2671,7 @@ Kích thước: %2</translation>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="38" />
         <location filename="../src/qml/QmlRecordingControlBar.mm" line="33" />
-        <location filename="../src/MainApplication.cpp" line="1417" />
+        <location filename="../src/MainApplication.cpp" line="1402" />
         <source>Resume Recording</source>
         <translation>Tiếp tục ghi</translation>
     </message>
@@ -2548,7 +2679,7 @@ Kích thước: %2</translation>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="37" />
         <location filename="../src/qml/QmlRecordingControlBar.mm" line="35" />
         <location filename="../src/MainApplication.cpp" line="496" />
-        <location filename="../src/MainApplication.cpp" line="1418" />
+        <location filename="../src/MainApplication.cpp" line="1403" />
         <source>Pause Recording</source>
         <translation>Tạm dừng ghi</translation>
     </message>
@@ -2659,82 +2790,66 @@ Kích thước: %2</translation>
 <context>
     <name>RecordingLibraryDialog</name>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="14" />
         <source>Recording Library</source>
         <translation>Thư viện bản ghi</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="16" />
         <source>Editable projects: %1 on this computer</source>
         <translation>Dự án có thể chỉnh sửa: %1 trên máy tính này</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="17" />
         <source>No editable projects</source>
         <translation>Không có dự án có thể chỉnh sửa</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="57" />
         <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>Giữ dự án mới đang tắt. Dự án giữ toàn bộ bản ghi, kể cả phần bạn đã làm mờ hoặc cắt bỏ.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="58" />
         <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>Dự án giữ toàn bộ bản ghi, kể cả phần bạn đã làm mờ hoặc cắt bỏ.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="69" />
         <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
         <translation>Bật Giữ dự án có thể chỉnh sửa trong Cài đặt &gt; Ghi hình để chỉnh sửa lại bản ghi sau khi lưu.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="128" />
         <source>Delete this project? The file you saved from it stays.</source>
         <translation>Xóa dự án này? Tệp bạn đã lưu từ dự án vẫn được giữ.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="144" />
         <source>Open</source>
         <translation>Mở</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="147" />
         <source>Open %1</source>
         <translation>Mở %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="154" />
         <source>Show in Folder</source>
         <translation>Hiển thị trong thư mục</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="157" />
         <source>Show %1 in Folder</source>
         <translation>Hiển thị %1 trong thư mục</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="164" />
         <source>Delete</source>
         <translation>Xóa</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="164" />
         <source>Delete...</source>
         <translation>Xóa...</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="167" />
         <source>Delete %1</source>
         <translation>Xóa %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="181" />
         <source>Cancel</source>
         <translation>Hủy</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="205" />
         <source>Close</source>
         <translation>Đóng</translation>
     </message>
@@ -6169,11 +6284,48 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     </message>
 </context>
 <context>
+    <name>SnapTray::LibraryModel</name>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="115" />
+        <source>Screenshot</source>
+        <translation>Ảnh chụp màn hình</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="115" />
+        <source>Editable project</source>
+        <translation>Dự án có thể chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="153" />
+        <source>Open in the recording preview</source>
+        <translation>Đang mở trong bản xem trước bản ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="154" />
+        <source>Not saved yet</source>
+        <translation>Chưa lưu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="155" />
+        <source>Saved as %1</source>
+        <translation>Đã lưu thành %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="156" />
+        <source>Saved file was moved or deleted</source>
+        <translation>Tệp đã lưu đã bị di chuyển hoặc xóa</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::QmlHistoryWindow</name>
     <message>
-        <location filename="../src/qml/QmlHistoryWindow.cpp" line="96" />
         <source>History</source>
         <translation>Lịch sử</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlHistoryWindow.cpp" line="121" />
+        <source>Library</source>
+        <translation>Thư viện</translation>
     </message>
 </context>
 <context>
@@ -6196,12 +6348,12 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
 <context>
     <name>SnapTray::RecordingLibraryViewModel</name>
     <message>
-        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="53" />
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="58" />
         <source>%1, %2, created %3</source>
         <translation>%1, %2, tạo lúc %3</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="58" />
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="63" />
         <source>Open in the preview</source>
         <translation>Đang mở trong bản xem trước</translation>
     </message>

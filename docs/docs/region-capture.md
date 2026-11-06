@@ -25,7 +25,7 @@ Choose what happens next in Settings > Advanced > `After full screen capture`:
 - `Save to file`, using your Files settings
 - `Open editor`, which opens the capture with the whole screen selected so you can annotate before copying or saving
 
-Captures are added to History.
+Captures are added to the [Library](#library).
 
 ## Delayed capture
 
@@ -74,6 +74,16 @@ After the selection is complete, the toolbar supports:
 | Constrain ratio | Hold `Shift` |
 | Toggle multi-region | `M` |
 | Cancel | `Esc` |
+
+## Library
+
+**Library** in the tray menu opens one window for what SnapTray keeps: the screenshots in its history and the recordings kept as editable projects.
+
+- The sidebar has **All Captures**, **Screenshots** and **Recordings**, each with a count. **Smart Folders** (Last 7 Days, Large Files, Replayable) filter the screenshots.
+- Select a capture, then use the bar at the top, the right-click menu or the keys. `Return` opens it: **Edit** for a screenshot, **Open in Editor** for a project. `Delete` asks to delete it.
+- Each card says what it is: **Screenshot** or **Editable project**. A project also says whether it has been saved, and under which name.
+- Deleting always asks first and says what stays. Deleting a screenshot removes SnapTray's copy; files you saved from it stay. Deleting a project removes its full recording and edits; the file you saved from it stays.
+- In a narrow window the sections become a row of buttons above the actions.
 
 ## Next step
 

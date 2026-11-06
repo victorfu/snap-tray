@@ -581,119 +581,246 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
 <context>
     <name>HistoryWindow</name>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1012" />
         <source>History</source>
         <translation>Historik</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
-        <location filename="../src/PinWindow.cpp" line="1429" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1278" />
+        <location filename="../src/PinWindow.cpp" line="1430" />
         <source>Open History Folder</source>
         <translation>Öppna historikmapp</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="651" />
         <source>No history items yet</source>
         <translation>Inga historikposter ännu</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="661" />
         <source>Screenshots you capture in SnapTray will appear here.</source>
         <translation>Skärmbilder som du tar i SnapTray visas här.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="685" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="877" />
         <source>No results</source>
         <translation>Inga resultat</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="695" />
         <source>Try a different smart folder.</source>
         <translation>Prova en annan smart mapp.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="890" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1091" />
         <source>Smart Folders</source>
         <translation>Smarta mappar</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="23" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="50" />
         <source>All Screenshots</source>
         <translation>Alla skärmbilder</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="27" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="43" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="58" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="99" />
         <source>Last 7 Days</source>
         <translation>Senaste 7 dagarna</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="28" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="45" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="59" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="101" />
         <source>Large Files</source>
         <translation>Stora filer</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="29" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="47" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="60" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="103" />
         <source>Replayable</source>
         <translation>Kan spelas upp igen</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="846" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="874" />
+        <source>No editable projects</source>
+        <translation>Inga redigerbara projekt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="876" />
+        <source>Nothing here yet</source>
+        <translation>Här finns inget ännu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="879" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>Slå på Behåll redigerbara projekt i Inställningar &gt; Inspelning för att redigera inspelningar igen efter att du sparat.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="881" />
+        <source>Screenshots you capture in SnapTray, and recordings you keep as editable projects, will appear here.</source>
+        <translation>Skärmbilder du tar i SnapTray och inspelningar du behåller som redigerbara projekt visas här.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="882" />
+        <source>Try a different section or smart folder.</source>
+        <translation>Prova en annan sektion eller smart mapp.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
         <source>SnapTray</source>
         <translation>SnapTray</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="963" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1184" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="71" />
         <source>Edit</source>
         <translation>Redigera</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="970" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1185" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="72" />
         <source>Pin</source>
         <translation>Fäst</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="977" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1186" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="73" />
         <source>Copy</source>
         <translation>Kopiera</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="984" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1187" />
         <source>Save As</source>
         <translation>Spara som</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="991" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1189" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1483" />
         <source>Delete</source>
         <translation>Ta bort</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="33" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="64" />
         <source>Newest First</source>
         <translation>Nyast först</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="34" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="52" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="96" />
+        <source>All Captures</source>
+        <translation>Alla tagningar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="53" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="105" />
+        <source>Screenshots</source>
+        <translation>Skärmbilder</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="54" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="94" />
+        <source>Recordings</source>
+        <translation>Inspelningar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="65" />
         <source>Oldest First</source>
         <translation>Äldst först</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="35" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="66" />
         <source>Largest First</source>
         <translation>Störst först</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="458" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="74" />
+        <source>Save As...</source>
+        <translation>Spara som...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="75" />
+        <source>Delete...</source>
+        <translation>Ta bort...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="78" />
+        <source>Open in Editor</source>
+        <translation>Öppna i redigeraren</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="79" />
+        <source>Show Saved File</source>
+        <translation>Visa sparad fil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="80" />
+        <source>Show Project Folder</source>
+        <translation>Visa projektmapp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="81" />
+        <source>Delete Project...</source>
+        <translation>Ta bort projekt...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="597" />
         <source>Preview unavailable</source>
         <translation>Förhandsvisning ej tillgänglig</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1051" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1248" />
+        <source>Library</source>
+        <translation>Bibliotek</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1224" />
+        <source>Editable project selected</source>
+        <translation>Redigerbart projekt markerat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1225" />
+        <source>Screenshot selected</source>
+        <translation>Skärmbild markerad</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1226" />
+        <source>Nothing selected</source>
+        <translation>Inget markerat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1289" />
+        <source>Sort</source>
+        <translation>Sortera</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1381" />
+        <source>Grid view</source>
+        <translation>Rutnätsvy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1395" />
+        <source>List view</source>
+        <translation>Listvy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1428" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>Projekt behåller hela inspelningen, även det du har gjort suddigt eller beskurit bort.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1430" />
+        <source>Projects not changed for %1 days are removed automatically.</source>
+        <translation>Projekt som inte ändrats på %1 dagar tas bort automatiskt.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1432" />
+        <source>Keeping new projects is off.</source>
+        <translation>Behåll nya projekt är avstängt.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1466" />
+        <source>Delete this editable project? Its full recording and edits are removed. The file you saved from it stays.</source>
+        <translation>Ta bort det här redigerbara projektet? Hela inspelningen och redigeringarna tas bort. Filen du sparade från det finns kvar.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1467" />
+        <source>Delete this screenshot from the Library? Files you saved from it stay.</source>
+        <translation>Ta bort den här skärmbilden från biblioteket? Filer du sparade från den finns kvar.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
     </message>
     <message>
         <source>Screenshot</source>
@@ -811,14 +938,14 @@ Filstorlek: %3</translation>
 <context>
     <name>MainApplication</name>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1340" />
-        <location filename="../src/MainApplication.cpp" line="1398" />
+        <location filename="../src/MainApplication.cpp" line="1345" />
+        <location filename="../src/MainApplication.cpp" line="1383" />
         <source>Finish or close the current recording first.</source>
         <translation>Avsluta eller stäng den pågående inspelningen först.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1339" />
-        <location filename="../src/MainApplication.cpp" line="1397" />
+        <location filename="../src/MainApplication.cpp" line="1344" />
+        <location filename="../src/MainApplication.cpp" line="1382" />
         <source>Recording Busy</source>
         <translation>Inspelningen är upptagen</translation>
     </message>
@@ -838,7 +965,7 @@ Filstorlek: %3</translation>
         <translation>Osparade inspelningar hittades</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1311" />
+        <location filename="../src/MainApplication.cpp" line="1316" />
         <source>Recover Recordings (%1)...</source>
         <translation>Återställ inspelningar (%1)...</translation>
     </message>
@@ -848,17 +975,17 @@ Filstorlek: %3</translation>
         <translation>Återställ inspelningar...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1605" />
+        <location filename="../src/MainApplication.cpp" line="1590" />
         <source>low disk space</source>
         <translation>lite diskutrymme</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1623" />
+        <location filename="../src/MainApplication.cpp" line="1608" />
         <source>Warning: %1</source>
         <translation>Varning: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1602" />
+        <location filename="../src/MainApplication.cpp" line="1587" />
         <source>dropping frames</source>
         <translation>tappar bildrutor</translation>
     </message>
@@ -879,7 +1006,7 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="523" />
-        <location filename="../src/MainApplication.cpp" line="1433" />
+        <location filename="../src/MainApplication.cpp" line="1418" />
         <source>Show Recording Controls</source>
         <translation>Visa inspelningskontroller</translation>
     </message>
@@ -902,14 +1029,14 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="302" />
-        <location filename="../src/MainApplication.cpp" line="1668" />
-        <location filename="../src/MainApplication.cpp" line="1737" />
+        <location filename="../src/MainApplication.cpp" line="1653" />
+        <location filename="../src/MainApplication.cpp" line="1722" />
         <source>Recording Error</source>
         <translation>Inspelningsfel</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1555" />
-        <location filename="../src/MainApplication.cpp" line="1558" />
+        <location filename="../src/MainApplication.cpp" line="1540" />
+        <location filename="../src/MainApplication.cpp" line="1543" />
         <source>Recording Warning</source>
         <translation>Inspelningsvarning</translation>
     </message>
@@ -945,37 +1072,35 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="423" />
-        <location filename="../src/MainApplication.cpp" line="1285" />
+        <location filename="../src/MainApplication.cpp" line="1290" />
         <source>Region Capture</source>
         <translation>Regionfångst</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="453" />
-        <location filename="../src/MainApplication.cpp" line="1294" />
+        <location filename="../src/MainApplication.cpp" line="1299" />
         <source>Screen Canvas</source>
         <translation>Skärmrityta</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="456" />
-        <location filename="../src/MainApplication.cpp" line="1297" />
+        <location filename="../src/MainApplication.cpp" line="1302" />
         <source>Paste</source>
         <translation>Klistra in</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="459" />
-        <location filename="../src/MainApplication.cpp" line="1300" />
+        <location filename="../src/MainApplication.cpp" line="1305" />
         <source>Pin from Image...</source>
         <translation>Fäst från bild...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="462" />
-        <location filename="../src/MainApplication.cpp" line="1303" />
         <source>History</source>
         <translation>Historik</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="465" />
-        <location filename="../src/MainApplication.cpp" line="1269" />
+        <location filename="../src/MainApplication.cpp" line="1274" />
         <source>Hide All Pins</source>
         <translation>Dölj alla fästen</translation>
     </message>
@@ -991,49 +1116,49 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="491" />
-        <location filename="../src/MainApplication.cpp" line="1439" />
+        <location filename="../src/MainApplication.cpp" line="1424" />
         <source>Record Screen</source>
         <translation>Spela in helskärm</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1451" />
-        <location filename="../src/MainApplication.cpp" line="1462" />
+        <location filename="../src/MainApplication.cpp" line="1436" />
+        <location filename="../src/MainApplication.cpp" line="1447" />
         <source>Cancel Recording</source>
         <translation>Avbryt inspelning</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1457" />
+        <location filename="../src/MainApplication.cpp" line="1442" />
         <source>Stop Recording</source>
         <translation>Stoppa inspelning</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1579" />
+        <location filename="../src/MainApplication.cpp" line="1564" />
         <source>Preparing to record</source>
         <translation>Förbereder inspelning</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1580" />
+        <location filename="../src/MainApplication.cpp" line="1565" />
         <source>Recording starts soon</source>
         <translation>Inspelningen börjar snart</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1581" />
+        <location filename="../src/MainApplication.cpp" line="1566" />
         <source>Recording</source>
         <translation>Spelar in</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1582" />
+        <location filename="../src/MainApplication.cpp" line="1567" />
         <source>Recording paused</source>
         <translation>Inspelningen är pausad</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1583" />
+        <location filename="../src/MainApplication.cpp" line="1568" />
         <source>Finishing recording</source>
         <translation>Slutför inspelningen</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1669" />
-        <location filename="../src/MainApplication.cpp" line="1738" />
+        <location filename="../src/MainApplication.cpp" line="1654" />
+        <location filename="../src/MainApplication.cpp" line="1723" />
         <source>No screen available for recording.</source>
         <translation>Ingen skärm tillgänglig för inspelning.</translation>
     </message>
@@ -1054,28 +1179,28 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="550" />
-        <location filename="../src/MainApplication.cpp" line="1516" />
-        <location filename="../src/MainApplication.cpp" line="1518" />
+        <location filename="../src/MainApplication.cpp" line="1501" />
+        <location filename="../src/MainApplication.cpp" line="1503" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - Skärmbildsverktyg</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1490" />
+        <location filename="../src/MainApplication.cpp" line="1475" />
         <source>Not set</source>
         <translation>Inte inställd</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1492" />
+        <location filename="../src/MainApplication.cpp" line="1477" />
         <source>Region Capture hotkey</source>
         <translation>Snabbtangent för regionfångst</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1494" />
+        <location filename="../src/MainApplication.cpp" line="1479" />
         <source>Paste hotkey</source>
         <translation>Snabbtangent för inklistring</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1496" />
+        <location filename="../src/MainApplication.cpp" line="1481" />
         <source>Screen Canvas hotkey</source>
         <translation>Snabbtangent för skärmrityta</translation>
     </message>
@@ -1083,6 +1208,12 @@ Filstorlek: %3</translation>
         <location filename="../src/MainApplication.cpp" line="559" />
         <source>OCR Success</source>
         <translation>OCR lyckades</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="462" />
+        <location filename="../src/MainApplication.cpp" line="1308" />
+        <source>Library</source>
+        <translation>Bibliotek</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="560" />
@@ -1105,29 +1236,29 @@ Filstorlek: %3</translation>
         <translation>Laddar bild</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="903" />
-        <location filename="../src/MainApplication.cpp" line="923" />
+        <location filename="../src/MainApplication.cpp" line="906" />
+        <location filename="../src/MainApplication.cpp" line="926" />
         <source>Failed to Load Image</source>
         <translation>Misslyckades att ladda bild</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1064" />
+        <location filename="../src/MainApplication.cpp" line="1067" />
         <source>Hotkey Registration Failed</source>
         <translation>Registrering av snabbtangent misslyckades</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1065" />
+        <location filename="../src/MainApplication.cpp" line="1068" />
         <source> failed to register.</source>
         <translation> kunde inte registreras.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1251" />
-        <location filename="../src/MainApplication.cpp" line="1275" />
+        <location filename="../src/MainApplication.cpp" line="1256" />
+        <location filename="../src/MainApplication.cpp" line="1280" />
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1268" />
+        <location filename="../src/MainApplication.cpp" line="1273" />
         <source>Show All Pins</source>
         <translation>Visa alla fästen</translation>
     </message>
@@ -1148,12 +1279,12 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="426" />
-        <location filename="../src/MainApplication.cpp" line="1288" />
+        <location filename="../src/MainApplication.cpp" line="1293" />
         <source>Full Screen Capture</source>
         <translation>Helskärmsfångst</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1610" />
+        <location filename="../src/MainApplication.cpp" line="1595" />
         <source>recording keys</source>
         <translation>spelar in tangenter</translation>
     </message>
@@ -1163,12 +1294,12 @@ Filstorlek: %3</translation>
         <translation>Inspelningsbibliotek...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1391" />
+        <location filename="../src/MainApplication.cpp" line="1376" />
         <source>Project Unavailable</source>
         <translation>Projektet är inte tillgängligt</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1392" />
+        <location filename="../src/MainApplication.cpp" line="1377" />
         <source>This project's recording is missing or damaged.</source>
         <translation>Projektets inspelning saknas eller är skadad.</translation>
     </message>
@@ -1183,18 +1314,18 @@ Filstorlek: %3</translation>
         <translation>Sparad i %1 och kopierad: klistra in den i en chatt eller mapp.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1599" />
+        <location filename="../src/MainApplication.cpp" line="1584" />
         <source>edit mode</source>
         <translation>redigeringsläge</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1599" />
+        <location filename="../src/MainApplication.cpp" line="1584" />
         <source>quick mode</source>
         <translation>snabbläge</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="431" />
-        <location filename="../src/MainApplication.cpp" line="1291" />
+        <location filename="../src/MainApplication.cpp" line="1296" />
         <source>Delayed Capture</source>
         <translation>Fördröjd fångst</translation>
     </message>
@@ -1483,53 +1614,53 @@ Storlek: %2</translation>
 <context>
     <name>PinHoverBar</name>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="16" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="27" />
         <source>Pin controls</source>
         <translation>Fästkontroller</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="79" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="94" />
         <source>Zoom %1%</source>
         <translation>Zoom %1 %</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="88" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="103" />
         <source>Opacity %1%</source>
         <translation>Opacitet %1 %</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="100" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="115" />
         <source>⏸ Paused</source>
         <translation>⏸ Pausad</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="100" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="115" />
         <source>● Live</source>
         <translation>● Live</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="101" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="116" />
         <source>Resume Live Update (P)</source>
         <translation>Återuppta liveuppdatering (P)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="102" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="117" />
         <source>Pause Live Update (P)</source>
         <translation>Pausa liveuppdatering (P)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="113" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="128" />
         <source>Annotate (Space)</source>
         <translation>Kommentera (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="116" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="131" />
         <source>Annotate</source>
         <translation>Kommentera</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="126" />
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="129" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="143" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="146" />
         <source>More</source>
         <translation>Mer</translation>
     </message>
@@ -1582,54 +1713,54 @@ Storlek: %2</translation>
     <name>PinValuePanel</name>
     <message>
         <location filename="../src/qml/pin/PinValuePanel.qml" line="24" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="41" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="67" />
         <source>Zoom</source>
         <translation>Förstoring</translation>
     </message>
     <message>
         <location filename="../src/qml/pin/PinValuePanel.qml" line="24" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="41" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="67" />
         <source>Opacity</source>
         <translation>Opacitet</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="50" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="82" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="76" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="108" />
         <source>%1%</source>
         <translation>%1 %</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="65" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="91" />
         <source>Zoom level</source>
         <translation>Förstoringsnivå</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="65" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="91" />
         <source>Opacity level</source>
         <translation>Opacitetsnivå</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="85" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="109" />
         <source>Zoom to %1%</source>
         <translation>Förstora till %1 %</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="85" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="109" />
         <source>Opacity %1%</source>
         <translation>Opacitet %1 %</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="93" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="117" />
         <source>Reset to 100%</source>
         <translation>Återställ till 100%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="96" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="118" />
         <source>Reset zoom to 100%</source>
         <translation>Återställ förstoring till 100%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="96" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="118" />
         <source>Reset opacity to 100%</source>
         <translation>Återställ opacitet till 100%</translation>
     </message>
@@ -1637,27 +1768,27 @@ Storlek: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1221" />
+        <location filename="../src/PinWindow.cpp" line="1222" />
         <source>Show Toolbar</source>
         <translation>Visa verktygsfält</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1228" />
+        <location filename="../src/PinWindow.cpp" line="1229" />
         <source>Show Border</source>
         <translation>Visa kant</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1489" />
+        <location filename="../src/PinWindow.cpp" line="1490" />
         <source>Adjust Region Layout</source>
         <translation>Justera regionlayout</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1337" />
+        <location filename="../src/PinWindow.cpp" line="1338" />
         <source>Copy to Clipboard</source>
         <translation>Kopiera till urklipp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1342" />
+        <location filename="../src/PinWindow.cpp" line="1343" />
         <source>Save to file</source>
         <translation>Spara till fil</translation>
     </message>
@@ -1676,352 +1807,352 @@ Storlek: %2</translation>
         <translation>Klar (Space/Esc)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1438" />
+        <location filename="../src/PinWindow.cpp" line="1439" />
         <source>Click-through</source>
         <translation>Klicka igenom</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1497" />
-        <location filename="../src/PinWindow.cpp" line="1656" />
-        <location filename="../src/PinWindow.cpp" line="1664" />
-        <location filename="../src/PinWindow.cpp" line="1678" />
-        <location filename="../src/PinWindow.cpp" line="1695" />
-        <location filename="../src/PinWindow.cpp" line="1707" />
+        <location filename="../src/PinWindow.cpp" line="1498" />
+        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1665" />
+        <location filename="../src/PinWindow.cpp" line="1679" />
+        <location filename="../src/PinWindow.cpp" line="1696" />
+        <location filename="../src/PinWindow.cpp" line="1708" />
         <source>Merge Pins</source>
         <translation>Slå ihop fästen</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1348" />
+        <location filename="../src/PinWindow.cpp" line="1349" />
         <source>Watermark</source>
         <translation>Vattenstämpel</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1352" />
+        <location filename="../src/PinWindow.cpp" line="1353" />
         <source>Enable</source>
         <translation>Aktivera</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1363" />
+        <location filename="../src/PinWindow.cpp" line="1364" />
         <source>Position</source>
         <translation>Placering</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1366" />
+        <location filename="../src/PinWindow.cpp" line="1367" />
         <source>Top-Left</source>
         <translation>Uppe till vänster</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1371" />
+        <location filename="../src/PinWindow.cpp" line="1372" />
         <source>Top-Right</source>
         <translation>Uppe till höger</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1376" />
+        <location filename="../src/PinWindow.cpp" line="1377" />
         <source>Bottom-Left</source>
         <translation>Nere till vänster</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1381" />
+        <location filename="../src/PinWindow.cpp" line="1382" />
         <source>Bottom-Right</source>
         <translation>Nere till höger</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1235" />
-        <location filename="../src/PinWindow.cpp" line="1420" />
-        <location filename="../src/PinWindow.cpp" line="2297" />
+        <location filename="../src/PinWindow.cpp" line="1236" />
+        <location filename="../src/PinWindow.cpp" line="1421" />
+        <location filename="../src/PinWindow.cpp" line="2298" />
         <source>Zoom</source>
         <translation>Förstoring</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1253" />
+        <location filename="../src/PinWindow.cpp" line="1254" />
         <source>33.3%</source>
         <translation>33,3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1256" />
+        <location filename="../src/PinWindow.cpp" line="1257" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1259" />
+        <location filename="../src/PinWindow.cpp" line="1260" />
         <source>66.7%</source>
         <translation>66,7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1262" />
+        <location filename="../src/PinWindow.cpp" line="1263" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1265" />
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1275" />
+        <location filename="../src/PinWindow.cpp" line="1276" />
         <source>Smoothing</source>
         <translation>Utjämning</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1310" />
+        <location filename="../src/PinWindow.cpp" line="1311" />
         <source>Image processing</source>
         <translation>Bildbehandling</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1313" />
+        <location filename="../src/PinWindow.cpp" line="1314" />
         <source>Rotate left</source>
         <translation>Rotera vänster</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1316" />
+        <location filename="../src/PinWindow.cpp" line="1317" />
         <source>Rotate right</source>
         <translation>Rotera höger</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1319" />
+        <location filename="../src/PinWindow.cpp" line="1320" />
         <source>Horizontal flip</source>
         <translation>Vänd horisontellt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1322" />
+        <location filename="../src/PinWindow.cpp" line="1323" />
         <source>Vertical flip</source>
         <translation>Vänd vertikalt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
         <source>Crop</source>
         <translation>Beskär</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1284" />
-        <location filename="../src/PinWindow.cpp" line="1422" />
-        <location filename="../src/PinWindow.cpp" line="2299" />
+        <location filename="../src/PinWindow.cpp" line="1285" />
+        <location filename="../src/PinWindow.cpp" line="1423" />
+        <location filename="../src/PinWindow.cpp" line="2300" />
         <source>Opacity</source>
         <translation>Opacitet</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1288" />
+        <location filename="../src/PinWindow.cpp" line="1289" />
         <source>Increase by %1%</source>
         <translation>Öka med %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1295" />
+        <location filename="../src/PinWindow.cpp" line="1296" />
         <source>Decrease by %1%</source>
         <translation>Minska med %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1404" />
+        <location filename="../src/PinWindow.cpp" line="1405" />
         <source>Copy All</source>
         <translation>Kopiera allt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1419" />
-        <location filename="../src/PinWindow.cpp" line="2296" />
+        <location filename="../src/PinWindow.cpp" line="1420" />
+        <location filename="../src/PinWindow.cpp" line="2297" />
         <source>Size</source>
         <translation>Storlek</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1421" />
-        <location filename="../src/PinWindow.cpp" line="2298" />
+        <location filename="../src/PinWindow.cpp" line="1422" />
+        <location filename="../src/PinWindow.cpp" line="2299" />
         <source>Rotation</source>
         <translation>Rotering</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="1424" />
+        <location filename="../src/PinWindow.cpp" line="2301" />
         <source>X-mirror</source>
         <translation>X-spegling</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>Y-mirror</source>
         <translation>Y-spegling</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
         <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
         <location filename="../src/PinWindow.cpp" line="2107" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>Yes</source>
         <translation>Ja</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
         <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
         <location filename="../src/PinWindow.cpp" line="2107" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>No</source>
         <translation>Nej</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1447" />
-        <location filename="../src/PinWindow.cpp" line="3245" />
+        <location filename="../src/PinWindow.cpp" line="1448" />
+        <location filename="../src/PinWindow.cpp" line="3309" />
         <source>Start Live Update</source>
         <translation>Starta liveuppdatering</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2102" />
+        <location filename="../src/PinWindow.cpp" line="2103" />
         <source>Size: %1</source>
         <translation>Storlek: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3245" />
+        <location filename="../src/PinWindow.cpp" line="3309" />
         <source>Stop Live Update</source>
         <translation>Stoppa liveuppdatering</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1460" />
-        <location filename="../src/PinWindow.cpp" line="3249" />
+        <location filename="../src/PinWindow.cpp" line="1461" />
+        <location filename="../src/PinWindow.cpp" line="3313" />
         <source>Pause Live Update</source>
         <translation>Pausa liveuppdatering</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3249" />
+        <location filename="../src/PinWindow.cpp" line="3313" />
         <source>Resume Live Update</source>
         <translation>Återuppta liveuppdatering</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1473" />
+        <location filename="../src/PinWindow.cpp" line="1474" />
         <source>Frame Rate</source>
         <translation>Bildfrekvens</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1495" />
+        <location filename="../src/PinWindow.cpp" line="1496" />
         <source>Move to Screen</source>
         <translation>Flytta till skärm</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1477" />
+        <location filename="../src/PinWindow.cpp" line="1478" />
         <source>%1 FPS</source>
         <translation>%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1511" />
+        <location filename="../src/PinWindow.cpp" line="1512" />
         <source>Close</source>
         <translation>Stäng</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1501" />
+        <location filename="../src/PinWindow.cpp" line="1502" />
         <source>Close All Pins</source>
         <translation>Stäng alla fästen</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="721" />
+        <location filename="../src/PinWindow.cpp" line="722" />
         <source>Zoom %1%</source>
         <translation>Förstoring %1 %</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="726" />
+        <location filename="../src/PinWindow.cpp" line="727" />
         <source>Opacity %1%</source>
         <translation>Opacitet %1 %</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1238" />
+        <location filename="../src/PinWindow.cpp" line="1239" />
         <source>Zoom In</source>
         <translation>Zooma in</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1242" />
+        <location filename="../src/PinWindow.cpp" line="1243" />
         <source>Zoom Out</source>
         <translation>Zooma ut</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1246" />
-        <location filename="../src/PinWindow.cpp" line="1301" />
+        <location filename="../src/PinWindow.cpp" line="1247" />
+        <location filename="../src/PinWindow.cpp" line="1302" />
         <source>Reset to 100%</source>
         <translation>Återställ till 100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1609" />
+        <location filename="../src/PinWindow.cpp" line="1610" />
         <source>Screen %1</source>
         <translation>Skärm %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1611" />
+        <location filename="../src/PinWindow.cpp" line="1612" />
         <source> (Primary)</source>
         <translation> (Primär)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1658" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>Kan inte slå ihop fler än %1 fästen samtidigt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1665" />
+        <location filename="../src/PinWindow.cpp" line="1666" />
         <source>Need at least 2 pins to merge</source>
         <translation>Minst 2 fästen behövs för att slå ihop</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1679" />
+        <location filename="../src/PinWindow.cpp" line="1680" />
         <source>No primary screen available</source>
         <translation>Ingen primär skärm tillgänglig</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1708" />
+        <location filename="../src/PinWindow.cpp" line="1709" />
         <source>Failed to create merged pin</source>
         <translation>Misslyckades att skapa sammanslagning</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1778" />
-        <location filename="../src/PinWindow.cpp" line="1810" />
+        <location filename="../src/PinWindow.cpp" line="1779" />
+        <location filename="../src/PinWindow.cpp" line="1811" />
         <source>Failed to save screenshot: %1</source>
         <translation>Misslyckades att spara skärmbild: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1791" />
+        <location filename="../src/PinWindow.cpp" line="1792" />
         <source>Save Screenshot</source>
         <translation>Spara skärmbild</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1793" />
-        <location filename="../src/PinWindow.cpp" line="6467" />
+        <location filename="../src/PinWindow.cpp" line="1794" />
+        <location filename="../src/PinWindow.cpp" line="6551" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG-bild (*.png);;JPEG-bild (*.jpg *.jpeg);;Alla filer (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1823" />
-        <location filename="../src/PinWindow.cpp" line="1844" />
-        <location filename="../src/PinWindow.cpp" line="6371" />
-        <location filename="../src/PinWindow.cpp" line="6396" />
+        <location filename="../src/PinWindow.cpp" line="1824" />
+        <location filename="../src/PinWindow.cpp" line="1845" />
+        <location filename="../src/PinWindow.cpp" line="6455" />
+        <location filename="../src/PinWindow.cpp" line="6480" />
         <source>Copy failed</source>
         <translation>Kopiering misslyckades</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1844" />
+        <location filename="../src/PinWindow.cpp" line="1845" />
         <source>Copied to clipboard</source>
         <translation>Kopierad till urklipp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1856" />
-        <location filename="../src/PinWindow.cpp" line="5728" />
+        <location filename="../src/PinWindow.cpp" line="1857" />
+        <location filename="../src/PinWindow.cpp" line="5798" />
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Vänta tills automatisk oskärpa är klar</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1998" />
-        <location filename="../src/PinWindow.cpp" line="2076" />
+        <location filename="../src/PinWindow.cpp" line="1999" />
+        <location filename="../src/PinWindow.cpp" line="2077" />
         <source>Copied %1 characters</source>
         <translation>%1 tecken kopierade</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2002" />
+        <location filename="../src/PinWindow.cpp" line="2003" />
         <source>No text found</source>
         <translation>Ingen text hittades</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2007" />
-        <location filename="../src/PinWindow.cpp" line="2023" />
+        <location filename="../src/PinWindow.cpp" line="2008" />
+        <location filename="../src/PinWindow.cpp" line="2024" />
         <source>Text copied</source>
         <translation>Text kopierad</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2087" />
+        <location filename="../src/PinWindow.cpp" line="2088" />
         <source>No QR code found</source>
         <translation>Ingen QR-kod hittades</translation>
     </message>
@@ -2030,90 +2161,90 @@ Storlek: %2</translation>
         <translation>Storlek: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2103" />
+        <location filename="../src/PinWindow.cpp" line="2104" />
         <source>Zoom: %1%</source>
         <translation>Förstoring: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2104" />
+        <location filename="../src/PinWindow.cpp" line="2105" />
         <source>Rotation: %1°</source>
         <translation>Rotering: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2105" />
+        <location filename="../src/PinWindow.cpp" line="2106" />
         <source>Opacity: %1%</source>
         <translation>Opacitet: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="2107" />
         <source>X-mirror: %1</source>
         <translation>X-spegling: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2107" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <source>Y-mirror: %1</source>
         <translation>Y-spegling: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2667" />
+        <location filename="../src/PinWindow.cpp" line="2637" />
         <source>Live Update (L to stop, P to pause)</source>
         <translation>Liveuppdatering (L för att stoppa, P för att pausa)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5121" />
+        <location filename="../src/PinWindow.cpp" line="5191" />
         <source>Stop live capture before running auto-blur</source>
         <translation>Stoppa liveinfångningen innan automatisk oskärpa körs</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5144" />
+        <location filename="../src/PinWindow.cpp" line="5214" />
         <source>Face detection unavailable</source>
         <translation>Ansiktsdetektering är inte tillgänglig</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5154" />
+        <location filename="../src/PinWindow.cpp" line="5224" />
         <source>Detection unavailable</source>
         <translation>Detektering är inte tillgänglig</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5184" />
+        <location filename="../src/PinWindow.cpp" line="5254" />
         <source>Unable to snapshot the current image</source>
         <translation>Det gick inte att ta en ögonblicksbild av den aktuella bilden</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6376" />
-        <location filename="../src/PinWindow.cpp" line="6440" />
-        <location filename="../src/PinWindow.cpp" line="6476" />
+        <location filename="../src/PinWindow.cpp" line="6460" />
+        <location filename="../src/PinWindow.cpp" line="6524" />
+        <location filename="../src/PinWindow.cpp" line="6560" />
         <source>Beautify rendering failed</source>
         <translation>Förskönande rendering misslyckades</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6265" />
+        <location filename="../src/PinWindow.cpp" line="6349" />
         <source>Unable to apply region layout</source>
         <translation>Det gick inte att tillämpa områdeslayouten</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6396" />
+        <location filename="../src/PinWindow.cpp" line="6480" />
         <source>Beautified image copied</source>
         <translation>Förskönad bild kopierad</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1726" />
-        <location filename="../src/PinWindow.cpp" line="1764" />
-        <location filename="../src/PinWindow.cpp" line="1798" />
-        <location filename="../src/PinWindow.cpp" line="6409" />
-        <location filename="../src/PinWindow.cpp" line="6435" />
-        <location filename="../src/PinWindow.cpp" line="6471" />
+        <location filename="../src/PinWindow.cpp" line="1727" />
+        <location filename="../src/PinWindow.cpp" line="1765" />
+        <location filename="../src/PinWindow.cpp" line="1799" />
+        <location filename="../src/PinWindow.cpp" line="6493" />
+        <location filename="../src/PinWindow.cpp" line="6519" />
+        <location filename="../src/PinWindow.cpp" line="6555" />
         <source>No image available to save</source>
         <translation>Ingen bild tillgänglig att spara</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6455" />
-        <location filename="../src/PinWindow.cpp" line="6490" />
+        <location filename="../src/PinWindow.cpp" line="6539" />
+        <location filename="../src/PinWindow.cpp" line="6574" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>Misslyckades att spara förskönad skärmbild: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6465" />
+        <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Spara förskönad skärmbild</translation>
     </message>
@@ -2541,7 +2672,7 @@ Storlek: %2</translation>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="38" />
         <location filename="../src/qml/QmlRecordingControlBar.mm" line="33" />
-        <location filename="../src/MainApplication.cpp" line="1417" />
+        <location filename="../src/MainApplication.cpp" line="1402" />
         <source>Resume Recording</source>
         <translation>Återuppta inspelning</translation>
     </message>
@@ -2549,7 +2680,7 @@ Storlek: %2</translation>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="37" />
         <location filename="../src/qml/QmlRecordingControlBar.mm" line="35" />
         <location filename="../src/MainApplication.cpp" line="496" />
-        <location filename="../src/MainApplication.cpp" line="1418" />
+        <location filename="../src/MainApplication.cpp" line="1403" />
         <source>Pause Recording</source>
         <translation>Pausa inspelning</translation>
     </message>
@@ -2660,82 +2791,66 @@ Storlek: %2</translation>
 <context>
     <name>RecordingLibraryDialog</name>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="14" />
         <source>Recording Library</source>
         <translation>Inspelningsbibliotek</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="16" />
         <source>Editable projects: %1 on this computer</source>
         <translation>Redigerbara projekt: %1 på den här datorn</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="17" />
         <source>No editable projects</source>
         <translation>Inga redigerbara projekt</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="57" />
         <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>Att behålla nya projekt är av. Projekt behåller hela inspelningen, även det du har gjort suddigt eller beskurit bort.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="58" />
         <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>Projekt behåller hela inspelningen, även det du har gjort suddigt eller beskurit bort.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="69" />
         <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
         <translation>Slå på Behåll redigerbara projekt i Inställningar &gt; Inspelning för att redigera inspelningar igen efter att du sparat.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="128" />
         <source>Delete this project? The file you saved from it stays.</source>
         <translation>Ta bort det här projektet? Filen du sparade från det finns kvar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="144" />
         <source>Open</source>
         <translation>Öppna</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="147" />
         <source>Open %1</source>
         <translation>Öppna %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="154" />
         <source>Show in Folder</source>
         <translation>Visa i mapp</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="157" />
         <source>Show %1 in Folder</source>
         <translation>Visa %1 i mapp</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="164" />
         <source>Delete</source>
         <translation>Ta bort</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="164" />
         <source>Delete...</source>
         <translation>Ta bort...</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="167" />
         <source>Delete %1</source>
         <translation>Ta bort %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="181" />
         <source>Cancel</source>
         <translation>Avbryt</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="205" />
         <source>Close</source>
         <translation>Stäng</translation>
     </message>
@@ -6173,11 +6288,48 @@ Den kan användas av ett annat program.</translation>
     </message>
 </context>
 <context>
+    <name>SnapTray::LibraryModel</name>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="115" />
+        <source>Screenshot</source>
+        <translation>Skärmbild</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="115" />
+        <source>Editable project</source>
+        <translation>Redigerbart projekt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="153" />
+        <source>Open in the recording preview</source>
+        <translation>Öppet i inspelningens förhandsvisning</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="154" />
+        <source>Not saved yet</source>
+        <translation>Inte sparat än</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="155" />
+        <source>Saved as %1</source>
+        <translation>Sparat som %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="156" />
+        <source>Saved file was moved or deleted</source>
+        <translation>Den sparade filen har flyttats eller tagits bort</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::QmlHistoryWindow</name>
     <message>
-        <location filename="../src/qml/QmlHistoryWindow.cpp" line="96" />
         <source>History</source>
         <translation>Historik</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlHistoryWindow.cpp" line="121" />
+        <source>Library</source>
+        <translation>Bibliotek</translation>
     </message>
 </context>
 <context>
@@ -6200,12 +6352,12 @@ Den kan användas av ett annat program.</translation>
 <context>
     <name>SnapTray::RecordingLibraryViewModel</name>
     <message>
-        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="53" />
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="58" />
         <source>%1, %2, created %3</source>
         <translation>%1, %2, skapat %3</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="58" />
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="63" />
         <source>Open in the preview</source>
         <translation>Öppet i förhandsvisningen</translation>
     </message>

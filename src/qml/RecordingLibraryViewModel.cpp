@@ -34,6 +34,11 @@ bool RecordingLibraryViewModel::keepProjects() const
     return RecordingSettingsManager::instance().keepProjects();
 }
 
+int RecordingLibraryViewModel::cleanupDays() const
+{
+    return RecordingSettingsManager::instance().projectCleanupDays();
+}
+
 void RecordingLibraryViewModel::setOpenProjectDir(const QString& dir)
 {
     if (m_openProjectDir == dir) return;
@@ -84,6 +89,14 @@ void RecordingLibraryViewModel::showInFolder(int index)
 {
     if (index < 0 || index >= m_items.size()) return;
     QDesktopServices::openUrl(QUrl::fromLocalFile(m_items.at(index).dir));
+}
+
+void RecordingLibraryViewModel::showSavedFile(int index)
+{
+    if (index < 0 || index >= m_items.size()) return;
+    const QFileInfo saved(m_items.at(index).savedPath);
+    if (m_items.at(index).savedPath.isEmpty() || !saved.exists()) return;
+    QDesktopServices::openUrl(QUrl::fromLocalFile(saved.absolutePath()));
 }
 
 void RecordingLibraryViewModel::close()

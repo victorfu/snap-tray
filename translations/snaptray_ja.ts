@@ -581,119 +581,246 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>HistoryWindow</name>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1012" />
         <source>History</source>
         <translation>履歴</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
-        <location filename="../src/PinWindow.cpp" line="1429" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1278" />
+        <location filename="../src/PinWindow.cpp" line="1430" />
         <source>Open History Folder</source>
         <translation>履歴フォルダーを開く</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="651" />
         <source>No history items yet</source>
         <translation>履歴項目はまだありません</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="661" />
         <source>Screenshots you capture in SnapTray will appear here.</source>
         <translation>SnapTrayで撮影したスクリーンショットがここに表示されます。</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="685" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="877" />
         <source>No results</source>
         <translation>結果がありません</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="695" />
         <source>Try a different smart folder.</source>
         <translation>別のスマートフォルダーを試してください。</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="890" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1091" />
         <source>Smart Folders</source>
         <translation>スマートフォルダー</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="23" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="50" />
         <source>All Screenshots</source>
         <translation>すべてのスクリーンショット</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="27" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="43" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="58" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="99" />
         <source>Last 7 Days</source>
         <translation>過去7日間</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="28" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="45" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="59" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="101" />
         <source>Large Files</source>
         <translation>大きいファイル</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="29" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="47" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="60" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="103" />
         <source>Replayable</source>
         <translation>再生可能</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="846" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="874" />
+        <source>No editable projects</source>
+        <translation>編集可能なプロジェクトはありません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="876" />
+        <source>Nothing here yet</source>
+        <translation>まだ何もありません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="879" />
+        <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
+        <translation>保存後に録画を再編集するには、設定 &gt; 録画 で「編集可能なプロジェクトを保持」をオンにしてください。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="881" />
+        <source>Screenshots you capture in SnapTray, and recordings you keep as editable projects, will appear here.</source>
+        <translation>SnapTray で撮ったスクリーンショットと、編集可能なプロジェクトとして保持した録画がここに表示されます。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="882" />
+        <source>Try a different section or smart folder.</source>
+        <translation>別のセクションかスマートフォルダーを試してください。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
         <source>SnapTray</source>
         <translation>SnapTray</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="963" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1184" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="71" />
         <source>Edit</source>
         <translation>編集</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="970" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1185" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="72" />
         <source>Pin</source>
         <translation>ピン留め</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="977" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1186" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="73" />
         <source>Copy</source>
         <translation>コピー</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="984" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1187" />
         <source>Save As</source>
         <translation>名前を付けて保存</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="991" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1189" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1483" />
         <source>Delete</source>
         <translation>削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="33" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="64" />
         <source>Newest First</source>
         <translation>新しい順</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="34" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="52" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="96" />
+        <source>All Captures</source>
+        <translation>すべてのキャプチャ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="53" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="105" />
+        <source>Screenshots</source>
+        <translation>スクリーンショット</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="54" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="94" />
+        <source>Recordings</source>
+        <translation>録画</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="65" />
         <source>Oldest First</source>
         <translation>古い順</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="35" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="66" />
         <source>Largest First</source>
         <translation>サイズが大きい順</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="458" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="74" />
+        <source>Save As...</source>
+        <translation>名前を付けて保存...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="75" />
+        <source>Delete...</source>
+        <translation>削除...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="78" />
+        <source>Open in Editor</source>
+        <translation>エディターで開く</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="79" />
+        <source>Show Saved File</source>
+        <translation>保存したファイルを表示</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="80" />
+        <source>Show Project Folder</source>
+        <translation>プロジェクトフォルダーを表示</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="81" />
+        <source>Delete Project...</source>
+        <translation>プロジェクトを削除...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="597" />
         <source>Preview unavailable</source>
         <translation>プレビューを表示できません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1051" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1248" />
+        <source>Library</source>
+        <translation>ライブラリ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1224" />
+        <source>Editable project selected</source>
+        <translation>編集可能なプロジェクトを選択中</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1225" />
+        <source>Screenshot selected</source>
+        <translation>スクリーンショットを選択中</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1226" />
+        <source>Nothing selected</source>
+        <translation>何も選択されていません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1289" />
+        <source>Sort</source>
+        <translation>並べ替え</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1381" />
+        <source>Grid view</source>
+        <translation>グリッド表示</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1395" />
+        <source>List view</source>
+        <translation>リスト表示</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1428" />
+        <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
+        <translation>プロジェクトには、ぼかしたり切り抜いたりした部分も含む録画全体が残ります。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1430" />
+        <source>Projects not changed for %1 days are removed automatically.</source>
+        <translation>%1 日間変更されていないプロジェクトは自動的に削除されます。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1432" />
+        <source>Keeping new projects is off.</source>
+        <translation>新しいプロジェクトの保持はオフです。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1466" />
+        <source>Delete this editable project? Its full recording and edits are removed. The file you saved from it stays.</source>
+        <translation>この編集可能なプロジェクトを削除しますか？録画全体と編集内容は削除されます。保存したファイルは残ります。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1467" />
+        <source>Delete this screenshot from the Library? Files you saved from it stay.</source>
+        <translation>このスクリーンショットをライブラリから削除しますか？保存したファイルは残ります。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
     </message>
     <message>
         <source>Screenshot</source>
@@ -811,14 +938,14 @@ File size: %3</source>
 <context>
     <name>MainApplication</name>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1340" />
-        <location filename="../src/MainApplication.cpp" line="1398" />
+        <location filename="../src/MainApplication.cpp" line="1345" />
+        <location filename="../src/MainApplication.cpp" line="1383" />
         <source>Finish or close the current recording first.</source>
         <translation>先に現在の録画を終了するか閉じてください。</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1339" />
-        <location filename="../src/MainApplication.cpp" line="1397" />
+        <location filename="../src/MainApplication.cpp" line="1344" />
+        <location filename="../src/MainApplication.cpp" line="1382" />
         <source>Recording Busy</source>
         <translation>録画中です</translation>
     </message>
@@ -838,7 +965,7 @@ File size: %3</source>
         <translation>未保存の録画が見つかりました</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1311" />
+        <location filename="../src/MainApplication.cpp" line="1316" />
         <source>Recover Recordings (%1)...</source>
         <translation>録画を復元 （%1）...</translation>
     </message>
@@ -848,17 +975,17 @@ File size: %3</source>
         <translation>録画を復元...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1605" />
+        <location filename="../src/MainApplication.cpp" line="1590" />
         <source>low disk space</source>
         <translation>空き容量わずか</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1623" />
+        <location filename="../src/MainApplication.cpp" line="1608" />
         <source>Warning: %1</source>
         <translation>警告：%1</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1602" />
+        <location filename="../src/MainApplication.cpp" line="1587" />
         <source>dropping frames</source>
         <translation>フレーム落ち中</translation>
     </message>
@@ -879,7 +1006,7 @@ File size: %3</source>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="523" />
-        <location filename="../src/MainApplication.cpp" line="1433" />
+        <location filename="../src/MainApplication.cpp" line="1418" />
         <source>Show Recording Controls</source>
         <translation>録画コントロールを表示</translation>
     </message>
@@ -902,14 +1029,14 @@ File size: %3</source>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="302" />
-        <location filename="../src/MainApplication.cpp" line="1668" />
-        <location filename="../src/MainApplication.cpp" line="1737" />
+        <location filename="../src/MainApplication.cpp" line="1653" />
+        <location filename="../src/MainApplication.cpp" line="1722" />
         <source>Recording Error</source>
         <translation>録画エラー</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1555" />
-        <location filename="../src/MainApplication.cpp" line="1558" />
+        <location filename="../src/MainApplication.cpp" line="1540" />
+        <location filename="../src/MainApplication.cpp" line="1543" />
         <source>Recording Warning</source>
         <translation>録画に関する警告</translation>
     </message>
@@ -945,37 +1072,35 @@ File size: %3</source>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="423" />
-        <location filename="../src/MainApplication.cpp" line="1285" />
+        <location filename="../src/MainApplication.cpp" line="1290" />
         <source>Region Capture</source>
         <translation>範囲キャプチャ</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="453" />
-        <location filename="../src/MainApplication.cpp" line="1294" />
+        <location filename="../src/MainApplication.cpp" line="1299" />
         <source>Screen Canvas</source>
         <translation>スクリーンキャンバス</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="456" />
-        <location filename="../src/MainApplication.cpp" line="1297" />
+        <location filename="../src/MainApplication.cpp" line="1302" />
         <source>Paste</source>
         <translation>貼り付け</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="459" />
-        <location filename="../src/MainApplication.cpp" line="1300" />
+        <location filename="../src/MainApplication.cpp" line="1305" />
         <source>Pin from Image...</source>
         <translation>画像からピン留め...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="462" />
-        <location filename="../src/MainApplication.cpp" line="1303" />
         <source>History</source>
         <translation>履歴</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="465" />
-        <location filename="../src/MainApplication.cpp" line="1269" />
+        <location filename="../src/MainApplication.cpp" line="1274" />
         <source>Hide All Pins</source>
         <translation>すべてのピンを非表示</translation>
     </message>
@@ -991,49 +1116,49 @@ File size: %3</source>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="491" />
-        <location filename="../src/MainApplication.cpp" line="1439" />
+        <location filename="../src/MainApplication.cpp" line="1424" />
         <source>Record Screen</source>
         <translation>全画面を録画</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1451" />
-        <location filename="../src/MainApplication.cpp" line="1462" />
+        <location filename="../src/MainApplication.cpp" line="1436" />
+        <location filename="../src/MainApplication.cpp" line="1447" />
         <source>Cancel Recording</source>
         <translation>録画をキャンセル</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1457" />
+        <location filename="../src/MainApplication.cpp" line="1442" />
         <source>Stop Recording</source>
         <translation>録画を停止</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1579" />
+        <location filename="../src/MainApplication.cpp" line="1564" />
         <source>Preparing to record</source>
         <translation>録画の準備中</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1580" />
+        <location filename="../src/MainApplication.cpp" line="1565" />
         <source>Recording starts soon</source>
         <translation>まもなく録画を開始</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1581" />
+        <location filename="../src/MainApplication.cpp" line="1566" />
         <source>Recording</source>
         <translation>録画中</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1582" />
+        <location filename="../src/MainApplication.cpp" line="1567" />
         <source>Recording paused</source>
         <translation>録画を一時停止中</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1583" />
+        <location filename="../src/MainApplication.cpp" line="1568" />
         <source>Finishing recording</source>
         <translation>録画を完了しています</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1669" />
-        <location filename="../src/MainApplication.cpp" line="1738" />
+        <location filename="../src/MainApplication.cpp" line="1654" />
+        <location filename="../src/MainApplication.cpp" line="1723" />
         <source>No screen available for recording.</source>
         <translation>録画に利用できる画面がありません。</translation>
     </message>
@@ -1054,28 +1179,28 @@ File size: %3</source>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="550" />
-        <location filename="../src/MainApplication.cpp" line="1516" />
-        <location filename="../src/MainApplication.cpp" line="1518" />
+        <location filename="../src/MainApplication.cpp" line="1501" />
+        <location filename="../src/MainApplication.cpp" line="1503" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - スクリーンショットユーティリティ</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1490" />
+        <location filename="../src/MainApplication.cpp" line="1475" />
         <source>Not set</source>
         <translation>未設定</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1492" />
+        <location filename="../src/MainApplication.cpp" line="1477" />
         <source>Region Capture hotkey</source>
         <translation>範囲キャプチャのホットキー</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1494" />
+        <location filename="../src/MainApplication.cpp" line="1479" />
         <source>Paste hotkey</source>
         <translation>貼り付けのホットキー</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1496" />
+        <location filename="../src/MainApplication.cpp" line="1481" />
         <source>Screen Canvas hotkey</source>
         <translation>スクリーンキャンバスのホットキー</translation>
     </message>
@@ -1083,6 +1208,12 @@ File size: %3</source>
         <location filename="../src/MainApplication.cpp" line="559" />
         <source>OCR Success</source>
         <translation>OCR 成功</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="462" />
+        <location filename="../src/MainApplication.cpp" line="1308" />
+        <source>Library</source>
+        <translation>ライブラリ</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="560" />
@@ -1105,29 +1236,29 @@ File size: %3</source>
         <translation>画像を読み込み中</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="903" />
-        <location filename="../src/MainApplication.cpp" line="923" />
+        <location filename="../src/MainApplication.cpp" line="906" />
+        <location filename="../src/MainApplication.cpp" line="926" />
         <source>Failed to Load Image</source>
         <translation>画像の読み込みに失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1064" />
+        <location filename="../src/MainApplication.cpp" line="1067" />
         <source>Hotkey Registration Failed</source>
         <translation>ホットキーの登録に失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1065" />
+        <location filename="../src/MainApplication.cpp" line="1068" />
         <source> failed to register.</source>
         <translation> の登録に失敗しました。</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1251" />
-        <location filename="../src/MainApplication.cpp" line="1275" />
+        <location filename="../src/MainApplication.cpp" line="1256" />
+        <location filename="../src/MainApplication.cpp" line="1280" />
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1268" />
+        <location filename="../src/MainApplication.cpp" line="1273" />
         <source>Show All Pins</source>
         <translation>すべてのピンを表示</translation>
     </message>
@@ -1148,12 +1279,12 @@ File size: %3</source>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="426" />
-        <location filename="../src/MainApplication.cpp" line="1288" />
+        <location filename="../src/MainApplication.cpp" line="1293" />
         <source>Full Screen Capture</source>
         <translation>全画面キャプチャ</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1610" />
+        <location filename="../src/MainApplication.cpp" line="1595" />
         <source>recording keys</source>
         <translation>キーを記録中</translation>
     </message>
@@ -1163,12 +1294,12 @@ File size: %3</source>
         <translation>録画ライブラリ...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1391" />
+        <location filename="../src/MainApplication.cpp" line="1376" />
         <source>Project Unavailable</source>
         <translation>プロジェクトを開けません</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1392" />
+        <location filename="../src/MainApplication.cpp" line="1377" />
         <source>This project's recording is missing or damaged.</source>
         <translation>このプロジェクトの録画が見つからないか、破損しています。</translation>
     </message>
@@ -1183,18 +1314,18 @@ File size: %3</source>
         <translation>%1 に保存してコピーしました。チャットやフォルダーに貼り付けられます。</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1599" />
+        <location filename="../src/MainApplication.cpp" line="1584" />
         <source>edit mode</source>
         <translation>編集モード</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="1599" />
+        <location filename="../src/MainApplication.cpp" line="1584" />
         <source>quick mode</source>
         <translation>クイックモード</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="431" />
-        <location filename="../src/MainApplication.cpp" line="1291" />
+        <location filename="../src/MainApplication.cpp" line="1296" />
         <source>Delayed Capture</source>
         <translation>遅延キャプチャ</translation>
     </message>
@@ -1482,53 +1613,53 @@ Size: %2</source>
 <context>
     <name>PinHoverBar</name>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="16" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="27" />
         <source>Pin controls</source>
         <translation>ピンのコントロール</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="79" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="94" />
         <source>Zoom %1%</source>
         <translation>ズーム %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="88" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="103" />
         <source>Opacity %1%</source>
         <translation>不透明度 %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="100" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="115" />
         <source>⏸ Paused</source>
         <translation>⏸ 一時停止中</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="100" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="115" />
         <source>● Live</source>
         <translation>● ライブ</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="101" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="116" />
         <source>Resume Live Update (P)</source>
         <translation>ライブ更新を再開 (P)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="102" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="117" />
         <source>Pause Live Update (P)</source>
         <translation>ライブ更新を一時停止 (P)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="113" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="128" />
         <source>Annotate (Space)</source>
         <translation>注釈 (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="116" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="131" />
         <source>Annotate</source>
         <translation>注釈</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="126" />
-        <location filename="../src/qml/pin/PinHoverBar.qml" line="129" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="143" />
+        <location filename="../src/qml/pin/PinHoverBar.qml" line="146" />
         <source>More</source>
         <translation>その他</translation>
     </message>
@@ -1581,54 +1712,54 @@ Size: %2</source>
     <name>PinValuePanel</name>
     <message>
         <location filename="../src/qml/pin/PinValuePanel.qml" line="24" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="41" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="67" />
         <source>Zoom</source>
         <translation>ズーム</translation>
     </message>
     <message>
         <location filename="../src/qml/pin/PinValuePanel.qml" line="24" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="41" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="67" />
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="50" />
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="82" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="76" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="108" />
         <source>%1%</source>
         <translation>%1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="65" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="91" />
         <source>Zoom level</source>
         <translation>ズームレベル</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="65" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="91" />
         <source>Opacity level</source>
         <translation>不透明度レベル</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="85" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="109" />
         <source>Zoom to %1%</source>
         <translation>%1% にズーム</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="85" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="109" />
         <source>Opacity %1%</source>
         <translation>不透明度 %1%</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="93" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="117" />
         <source>Reset to 100%</source>
         <translation>100% にリセット</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="96" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="118" />
         <source>Reset zoom to 100%</source>
         <translation>ズームを 100% にリセット</translation>
     </message>
     <message>
-        <location filename="../src/qml/pin/PinValuePanel.qml" line="96" />
+        <location filename="../src/qml/pin/PinValuePanel.qml" line="118" />
         <source>Reset opacity to 100%</source>
         <translation>不透明度を 100% にリセット</translation>
     </message>
@@ -1636,27 +1767,27 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1221" />
+        <location filename="../src/PinWindow.cpp" line="1222" />
         <source>Show Toolbar</source>
         <translation>ツールバーを表示</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1228" />
+        <location filename="../src/PinWindow.cpp" line="1229" />
         <source>Show Border</source>
         <translation>枠線を表示</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1489" />
+        <location filename="../src/PinWindow.cpp" line="1490" />
         <source>Adjust Region Layout</source>
         <translation>リージョンレイアウトを調整</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1337" />
+        <location filename="../src/PinWindow.cpp" line="1338" />
         <source>Copy to Clipboard</source>
         <translation>クリップボードにコピー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1342" />
+        <location filename="../src/PinWindow.cpp" line="1343" />
         <source>Save to file</source>
         <translation>ファイルに保存</translation>
     </message>
@@ -1675,352 +1806,352 @@ Size: %2</source>
         <translation>完了 (Space/Esc)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1438" />
+        <location filename="../src/PinWindow.cpp" line="1439" />
         <source>Click-through</source>
         <translation>クリックスルー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1497" />
-        <location filename="../src/PinWindow.cpp" line="1656" />
-        <location filename="../src/PinWindow.cpp" line="1664" />
-        <location filename="../src/PinWindow.cpp" line="1678" />
-        <location filename="../src/PinWindow.cpp" line="1695" />
-        <location filename="../src/PinWindow.cpp" line="1707" />
+        <location filename="../src/PinWindow.cpp" line="1498" />
+        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1665" />
+        <location filename="../src/PinWindow.cpp" line="1679" />
+        <location filename="../src/PinWindow.cpp" line="1696" />
+        <location filename="../src/PinWindow.cpp" line="1708" />
         <source>Merge Pins</source>
         <translation>ピンを結合</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1348" />
+        <location filename="../src/PinWindow.cpp" line="1349" />
         <source>Watermark</source>
         <translation>ウォーターマーク</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1352" />
+        <location filename="../src/PinWindow.cpp" line="1353" />
         <source>Enable</source>
         <translation>有効</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1363" />
+        <location filename="../src/PinWindow.cpp" line="1364" />
         <source>Position</source>
         <translation>位置</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1366" />
+        <location filename="../src/PinWindow.cpp" line="1367" />
         <source>Top-Left</source>
         <translation>左上</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1371" />
+        <location filename="../src/PinWindow.cpp" line="1372" />
         <source>Top-Right</source>
         <translation>右上</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1376" />
+        <location filename="../src/PinWindow.cpp" line="1377" />
         <source>Bottom-Left</source>
         <translation>左下</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1381" />
+        <location filename="../src/PinWindow.cpp" line="1382" />
         <source>Bottom-Right</source>
         <translation>右下</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1235" />
-        <location filename="../src/PinWindow.cpp" line="1420" />
-        <location filename="../src/PinWindow.cpp" line="2297" />
+        <location filename="../src/PinWindow.cpp" line="1236" />
+        <location filename="../src/PinWindow.cpp" line="1421" />
+        <location filename="../src/PinWindow.cpp" line="2298" />
         <source>Zoom</source>
         <translation>ズーム</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1253" />
+        <location filename="../src/PinWindow.cpp" line="1254" />
         <source>33.3%</source>
         <translation>33.3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1256" />
+        <location filename="../src/PinWindow.cpp" line="1257" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1259" />
+        <location filename="../src/PinWindow.cpp" line="1260" />
         <source>66.7%</source>
         <translation>66.7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1262" />
+        <location filename="../src/PinWindow.cpp" line="1263" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1265" />
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1275" />
+        <location filename="../src/PinWindow.cpp" line="1276" />
         <source>Smoothing</source>
         <translation>スムージング</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1310" />
+        <location filename="../src/PinWindow.cpp" line="1311" />
         <source>Image processing</source>
         <translation>画像処理</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1313" />
+        <location filename="../src/PinWindow.cpp" line="1314" />
         <source>Rotate left</source>
         <translation>左に回転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1316" />
+        <location filename="../src/PinWindow.cpp" line="1317" />
         <source>Rotate right</source>
         <translation>右に回転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1319" />
+        <location filename="../src/PinWindow.cpp" line="1320" />
         <source>Horizontal flip</source>
         <translation>水平反転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1322" />
+        <location filename="../src/PinWindow.cpp" line="1323" />
         <source>Vertical flip</source>
         <translation>垂直反転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1326" />
+        <location filename="../src/PinWindow.cpp" line="1327" />
         <source>Crop</source>
         <translation>切り抜き</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1284" />
-        <location filename="../src/PinWindow.cpp" line="1422" />
-        <location filename="../src/PinWindow.cpp" line="2299" />
+        <location filename="../src/PinWindow.cpp" line="1285" />
+        <location filename="../src/PinWindow.cpp" line="1423" />
+        <location filename="../src/PinWindow.cpp" line="2300" />
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1288" />
+        <location filename="../src/PinWindow.cpp" line="1289" />
         <source>Increase by %1%</source>
         <translation>%1% 増加</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1295" />
+        <location filename="../src/PinWindow.cpp" line="1296" />
         <source>Decrease by %1%</source>
         <translation>%1% 減少</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1404" />
+        <location filename="../src/PinWindow.cpp" line="1405" />
         <source>Copy All</source>
         <translation>すべてコピー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1419" />
-        <location filename="../src/PinWindow.cpp" line="2296" />
+        <location filename="../src/PinWindow.cpp" line="1420" />
+        <location filename="../src/PinWindow.cpp" line="2297" />
         <source>Size</source>
         <translation>サイズ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1421" />
-        <location filename="../src/PinWindow.cpp" line="2298" />
+        <location filename="../src/PinWindow.cpp" line="1422" />
+        <location filename="../src/PinWindow.cpp" line="2299" />
         <source>Rotation</source>
         <translation>回転</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="1424" />
+        <location filename="../src/PinWindow.cpp" line="2301" />
         <source>X-mirror</source>
         <translation>X軸ミラー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>Y-mirror</source>
         <translation>Y軸ミラー</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
         <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
         <location filename="../src/PinWindow.cpp" line="2107" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>Yes</source>
         <translation>はい</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1423" />
         <location filename="../src/PinWindow.cpp" line="1424" />
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="1425" />
         <location filename="../src/PinWindow.cpp" line="2107" />
-        <location filename="../src/PinWindow.cpp" line="2300" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <location filename="../src/PinWindow.cpp" line="2301" />
+        <location filename="../src/PinWindow.cpp" line="2302" />
         <source>No</source>
         <translation>いいえ</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1447" />
-        <location filename="../src/PinWindow.cpp" line="3245" />
+        <location filename="../src/PinWindow.cpp" line="1448" />
+        <location filename="../src/PinWindow.cpp" line="3309" />
         <source>Start Live Update</source>
         <translation>ライブ更新を開始</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2102" />
+        <location filename="../src/PinWindow.cpp" line="2103" />
         <source>Size: %1</source>
         <translation>サイズ：%1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3245" />
+        <location filename="../src/PinWindow.cpp" line="3309" />
         <source>Stop Live Update</source>
         <translation>ライブ更新を停止</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1460" />
-        <location filename="../src/PinWindow.cpp" line="3249" />
+        <location filename="../src/PinWindow.cpp" line="1461" />
+        <location filename="../src/PinWindow.cpp" line="3313" />
         <source>Pause Live Update</source>
         <translation>ライブ更新を一時停止</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3249" />
+        <location filename="../src/PinWindow.cpp" line="3313" />
         <source>Resume Live Update</source>
         <translation>ライブ更新を再開</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1473" />
+        <location filename="../src/PinWindow.cpp" line="1474" />
         <source>Frame Rate</source>
         <translation>フレームレート</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1495" />
+        <location filename="../src/PinWindow.cpp" line="1496" />
         <source>Move to Screen</source>
         <translation>画面へ移動</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1477" />
+        <location filename="../src/PinWindow.cpp" line="1478" />
         <source>%1 FPS</source>
         <translation>%1 フレーム/秒</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1511" />
+        <location filename="../src/PinWindow.cpp" line="1512" />
         <source>Close</source>
         <translation>閉じる</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1501" />
+        <location filename="../src/PinWindow.cpp" line="1502" />
         <source>Close All Pins</source>
         <translation>すべてのピンを閉じる</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="721" />
+        <location filename="../src/PinWindow.cpp" line="722" />
         <source>Zoom %1%</source>
         <translation>ズーム %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="726" />
+        <location filename="../src/PinWindow.cpp" line="727" />
         <source>Opacity %1%</source>
         <translation>不透明度 %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1238" />
+        <location filename="../src/PinWindow.cpp" line="1239" />
         <source>Zoom In</source>
         <translation>ズームイン</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1242" />
+        <location filename="../src/PinWindow.cpp" line="1243" />
         <source>Zoom Out</source>
         <translation>ズームアウト</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1246" />
-        <location filename="../src/PinWindow.cpp" line="1301" />
+        <location filename="../src/PinWindow.cpp" line="1247" />
+        <location filename="../src/PinWindow.cpp" line="1302" />
         <source>Reset to 100%</source>
         <translation>100% にリセット</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1609" />
+        <location filename="../src/PinWindow.cpp" line="1610" />
         <source>Screen %1</source>
         <translation>画面 %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1611" />
+        <location filename="../src/PinWindow.cpp" line="1612" />
         <source> (Primary)</source>
         <translation> （メイン）</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1657" />
+        <location filename="../src/PinWindow.cpp" line="1658" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>一度に%1個以上のピンを結合できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1665" />
+        <location filename="../src/PinWindow.cpp" line="1666" />
         <source>Need at least 2 pins to merge</source>
         <translation>結合するには少なくとも2つのピンが必要です</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1679" />
+        <location filename="../src/PinWindow.cpp" line="1680" />
         <source>No primary screen available</source>
         <translation>プライマリスクリーンが利用できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1708" />
+        <location filename="../src/PinWindow.cpp" line="1709" />
         <source>Failed to create merged pin</source>
         <translation>結合ピンの作成に失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1778" />
-        <location filename="../src/PinWindow.cpp" line="1810" />
+        <location filename="../src/PinWindow.cpp" line="1779" />
+        <location filename="../src/PinWindow.cpp" line="1811" />
         <source>Failed to save screenshot: %1</source>
         <translation>スクリーンショットの保存に失敗しました: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1791" />
+        <location filename="../src/PinWindow.cpp" line="1792" />
         <source>Save Screenshot</source>
         <translation>スクリーンショットを保存</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1793" />
-        <location filename="../src/PinWindow.cpp" line="6467" />
+        <location filename="../src/PinWindow.cpp" line="1794" />
+        <location filename="../src/PinWindow.cpp" line="6551" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG 画像 (*.png);;JPEG 画像 (*.jpg *.jpeg);;すべてのファイル (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1823" />
-        <location filename="../src/PinWindow.cpp" line="1844" />
-        <location filename="../src/PinWindow.cpp" line="6371" />
-        <location filename="../src/PinWindow.cpp" line="6396" />
+        <location filename="../src/PinWindow.cpp" line="1824" />
+        <location filename="../src/PinWindow.cpp" line="1845" />
+        <location filename="../src/PinWindow.cpp" line="6455" />
+        <location filename="../src/PinWindow.cpp" line="6480" />
         <source>Copy failed</source>
         <translation>コピーに失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1844" />
+        <location filename="../src/PinWindow.cpp" line="1845" />
         <source>Copied to clipboard</source>
         <translation>クリップボードにコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1856" />
-        <location filename="../src/PinWindow.cpp" line="5728" />
+        <location filename="../src/PinWindow.cpp" line="1857" />
+        <location filename="../src/PinWindow.cpp" line="5798" />
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="171" />
         <source>Please wait for auto-blur to finish</source>
         <translation>自動ぼかしが完了するまでお待ちください</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1998" />
-        <location filename="../src/PinWindow.cpp" line="2076" />
+        <location filename="../src/PinWindow.cpp" line="1999" />
+        <location filename="../src/PinWindow.cpp" line="2077" />
         <source>Copied %1 characters</source>
         <translation>%1文字をコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2002" />
+        <location filename="../src/PinWindow.cpp" line="2003" />
         <source>No text found</source>
         <translation>テキストが見つかりません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2007" />
-        <location filename="../src/PinWindow.cpp" line="2023" />
+        <location filename="../src/PinWindow.cpp" line="2008" />
+        <location filename="../src/PinWindow.cpp" line="2024" />
         <source>Text copied</source>
         <translation>テキストをコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2087" />
+        <location filename="../src/PinWindow.cpp" line="2088" />
         <source>No QR code found</source>
         <translation>QRコードが見つかりません</translation>
     </message>
@@ -2029,90 +2160,90 @@ Size: %2</source>
         <translation>サイズ: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2103" />
+        <location filename="../src/PinWindow.cpp" line="2104" />
         <source>Zoom: %1%</source>
         <translation>ズーム: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2104" />
+        <location filename="../src/PinWindow.cpp" line="2105" />
         <source>Rotation: %1°</source>
         <translation>回転: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2105" />
+        <location filename="../src/PinWindow.cpp" line="2106" />
         <source>Opacity: %1%</source>
         <translation>不透明度: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2106" />
+        <location filename="../src/PinWindow.cpp" line="2107" />
         <source>X-mirror: %1</source>
         <translation>X軸ミラー: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2107" />
+        <location filename="../src/PinWindow.cpp" line="2108" />
         <source>Y-mirror: %1</source>
         <translation>Y軸ミラー: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2667" />
+        <location filename="../src/PinWindow.cpp" line="2637" />
         <source>Live Update (L to stop, P to pause)</source>
         <translation>ライブ更新 (L で停止、P で一時停止)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5121" />
+        <location filename="../src/PinWindow.cpp" line="5191" />
         <source>Stop live capture before running auto-blur</source>
         <translation>自動ぼかしを実行する前にライブキャプチャを停止してください</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5144" />
+        <location filename="../src/PinWindow.cpp" line="5214" />
         <source>Face detection unavailable</source>
         <translation>顔検出を利用できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5154" />
+        <location filename="../src/PinWindow.cpp" line="5224" />
         <source>Detection unavailable</source>
         <translation>検出を利用できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="5184" />
+        <location filename="../src/PinWindow.cpp" line="5254" />
         <source>Unable to snapshot the current image</source>
         <translation>現在の画像のスナップショットを取得できません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6376" />
-        <location filename="../src/PinWindow.cpp" line="6440" />
-        <location filename="../src/PinWindow.cpp" line="6476" />
+        <location filename="../src/PinWindow.cpp" line="6460" />
+        <location filename="../src/PinWindow.cpp" line="6524" />
+        <location filename="../src/PinWindow.cpp" line="6560" />
         <source>Beautify rendering failed</source>
         <translation>美化レンダリングに失敗しました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6265" />
+        <location filename="../src/PinWindow.cpp" line="6349" />
         <source>Unable to apply region layout</source>
         <translation>領域レイアウトを適用できませんでした</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6396" />
+        <location filename="../src/PinWindow.cpp" line="6480" />
         <source>Beautified image copied</source>
         <translation>美化画像をコピーしました</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1726" />
-        <location filename="../src/PinWindow.cpp" line="1764" />
-        <location filename="../src/PinWindow.cpp" line="1798" />
-        <location filename="../src/PinWindow.cpp" line="6409" />
-        <location filename="../src/PinWindow.cpp" line="6435" />
-        <location filename="../src/PinWindow.cpp" line="6471" />
+        <location filename="../src/PinWindow.cpp" line="1727" />
+        <location filename="../src/PinWindow.cpp" line="1765" />
+        <location filename="../src/PinWindow.cpp" line="1799" />
+        <location filename="../src/PinWindow.cpp" line="6493" />
+        <location filename="../src/PinWindow.cpp" line="6519" />
+        <location filename="../src/PinWindow.cpp" line="6555" />
         <source>No image available to save</source>
         <translation>保存できる画像がありません</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6455" />
-        <location filename="../src/PinWindow.cpp" line="6490" />
+        <location filename="../src/PinWindow.cpp" line="6539" />
+        <location filename="../src/PinWindow.cpp" line="6574" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>美化スクリーンショットの保存に失敗しました: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="6465" />
+        <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>美化スクリーンショットを保存</translation>
     </message>
@@ -2540,7 +2671,7 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="38" />
         <location filename="../src/qml/QmlRecordingControlBar.mm" line="33" />
-        <location filename="../src/MainApplication.cpp" line="1417" />
+        <location filename="../src/MainApplication.cpp" line="1402" />
         <source>Resume Recording</source>
         <translation>録画を再開</translation>
     </message>
@@ -2548,7 +2679,7 @@ Size: %2</source>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="37" />
         <location filename="../src/qml/QmlRecordingControlBar.mm" line="35" />
         <location filename="../src/MainApplication.cpp" line="496" />
-        <location filename="../src/MainApplication.cpp" line="1418" />
+        <location filename="../src/MainApplication.cpp" line="1403" />
         <source>Pause Recording</source>
         <translation>録画を一時停止</translation>
     </message>
@@ -2659,82 +2790,66 @@ Size: %2</source>
 <context>
     <name>RecordingLibraryDialog</name>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="14" />
         <source>Recording Library</source>
         <translation>録画ライブラリ</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="16" />
         <source>Editable projects: %1 on this computer</source>
         <translation>編集可能なプロジェクト: このコンピューター上で %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="17" />
         <source>No editable projects</source>
         <translation>編集可能なプロジェクトはありません</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="57" />
         <source>Keeping new projects is off. Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>新しいプロジェクトの保持はオフです。プロジェクトには、ぼかしたり切り抜いたりした部分も含む録画全体が残ります。</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="58" />
         <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>プロジェクトには、ぼかしたり切り抜いたりした部分も含む録画全体が残ります。</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="69" />
         <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
         <translation>保存後に録画を再編集するには、設定 &gt; 録画 で「編集可能なプロジェクトを保持」をオンにしてください。</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="128" />
         <source>Delete this project? The file you saved from it stays.</source>
         <translation>このプロジェクトを削除しますか? 保存したファイルは残ります。</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="144" />
         <source>Open</source>
         <translation>開く</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="147" />
         <source>Open %1</source>
         <translation>%1 を開く</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="154" />
         <source>Show in Folder</source>
         <translation>フォルダーに表示</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="157" />
         <source>Show %1 in Folder</source>
         <translation>%1 をフォルダーに表示</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="164" />
         <source>Delete</source>
         <translation>削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="164" />
         <source>Delete...</source>
         <translation>削除...</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="167" />
         <source>Delete %1</source>
         <translation>%1 を削除</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="181" />
         <source>Cancel</source>
         <translation>キャンセル</translation>
     </message>
     <message>
-        <location filename="../src/qml/dialogs/RecordingLibraryDialog.qml" line="205" />
         <source>Close</source>
         <translation>閉じる</translation>
     </message>
@@ -6169,11 +6284,48 @@ It may be in use by another application.</source>
     </message>
 </context>
 <context>
+    <name>SnapTray::LibraryModel</name>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="115" />
+        <source>Screenshot</source>
+        <translation>スクリーンショット</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="115" />
+        <source>Editable project</source>
+        <translation>編集可能なプロジェクト</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="153" />
+        <source>Open in the recording preview</source>
+        <translation>録画プレビューで開いています</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="154" />
+        <source>Not saved yet</source>
+        <translation>未保存</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="155" />
+        <source>Saved as %1</source>
+        <translation>%1 として保存済み</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/LibraryModel.cpp" line="156" />
+        <source>Saved file was moved or deleted</source>
+        <translation>保存したファイルは移動または削除されました</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::QmlHistoryWindow</name>
     <message>
-        <location filename="../src/qml/QmlHistoryWindow.cpp" line="96" />
         <source>History</source>
         <translation>履歴</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlHistoryWindow.cpp" line="121" />
+        <source>Library</source>
+        <translation>ライブラリ</translation>
     </message>
 </context>
 <context>
@@ -6196,12 +6348,12 @@ It may be in use by another application.</source>
 <context>
     <name>SnapTray::RecordingLibraryViewModel</name>
     <message>
-        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="53" />
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="58" />
         <source>%1, %2, created %3</source>
         <translation>%1、%2、作成 %3</translation>
     </message>
     <message>
-        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="58" />
+        <location filename="../src/qml/RecordingLibraryViewModel.cpp" line="63" />
         <source>Open in the preview</source>
         <translation>プレビューで開いています</translation>
     </message>

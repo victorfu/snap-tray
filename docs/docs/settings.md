@@ -46,7 +46,7 @@ Frame rate, default output format, preview-first export behavior, audio source/d
 
 Screenshot and recording folders plus filename format templates.
 
-Enable **Remember last folder** to make Region, Pin, Beautify, and History Save As dialogs reopen in the folder of the last successful manual image save. Auto-save continues to use the Screenshots folder.
+Enable **Remember last folder** to make Region, Pin, Beautify, and Library Save As dialogs reopen in the folder of the last successful manual image save. Auto-save continues to use the Screenshots folder.
 
 ### Updates
 

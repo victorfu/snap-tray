@@ -166,7 +166,7 @@ Recorded on macOS 27.0.1 / Qt 6.12.0 from a scripted session that sends real mou
 
   ![New recording](/assets/images/developer/editor/videos/editor-220-flow.gif)
 
-- Kept project (#220): export with "Keep editable projects" on, reopen from Recording Library, delete a mask, undo, redo, export again, reopen again.
+- Kept project (#220): export with "Keep editable projects" on, reopen from the Library's Recordings, delete a mask, undo, redo, export again, reopen again.
 
   ![Reopened project](/assets/images/developer/editor/videos/editor-220-reopen.gif)
 
@@ -333,4 +333,55 @@ SNAPTRAY_PIN_DESIGN_DIR=../docs/assets/images/developer/pin ./bin/PinWindow_Evid
 SNAPTRAY_PIN_DESIGN_DIR=../docs/assets/images/developer/pin SNAPTRAY_PIN_TRANSLATION=$PWD/snaptray_de.qm ./bin/PinWindow_Evidence screenshots:light
 SNAPTRAY_PIN_VIDEO_DIR=/tmp/pin-video ./bin/PinWindow_Evidence operationVideo
 ffmpeg -framerate 10 -i /tmp/pin-video/frame-%05d.png -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" pin-hover-controls.mp4
+```
+
+## Library
+
+Applies to the Library window (#226): the former History window, now holding screenshots and editable recording projects. Design: `docs/superpowers/specs/2026-11-05-capture-library-design.md`.
+
+### Contract
+
+- One window, opened by the tray's **Library** (hotkey "Library") and, on its **Recordings** section, by **Recording Library...**. The storage models stay separate: `HistoryStore` for screenshots, `RecordingProjects` for projects. `LibraryModel` maps both into one list, and every row keeps its source row so actions reach the right backend.
+- The sidebar has **All Captures**, **Screenshots** and **Recordings**, each with a count. **Smart Folders** filter screenshots. "All Captures" merges both kinds in the window's sort order: newest or oldest by capture or recording time, or largest first.
+- No row has its own buttons. One command bar and one context menu act on the selection, with actions for its kind:
+  - Screenshot: Edit, Pin, Copy, Save As..., Delete...
+  - Project: Open in Editor, Show Saved File (only when that file exists), Show Project Folder, Delete Project...
+
+  The caption says what is selected. `Return` opens, `Delete` asks.
+- Each card or row names its kind ("Screenshot", "Editable project"). A project's detail line says whether it was saved and under which name, or that the saved file was moved, or that it is open in the recording preview. A project open in the preview cannot be opened again or deleted.
+- Delete always asks, in a strip above the results that names what goes and what stays. Esc, Cancel or a new selection cancels it, and Esc closes the window only when nothing is pending.
+- Where projects are shown, a note says that projects keep the full recording, how many days unchanged projects are kept, and whether keeping is off.
+- Below 820 px the sidebar becomes a row of section buttons and the smart folders move into a menu next to the sort (Screenshots only); below 720 px the header stacks. The minimum window width is 640 px.
+
+### Acceptance matrix
+
+| Check | macOS | Windows | Ubuntu 22.04 X11 beta |
+| --- | --- | --- | --- |
+| Build and repository tests | `scripts/run-tests.sh` | CI build and tests only | CI build and tests only |
+| Sections, counts, merge order, roles | `Qml_LibraryModel`, `Qml_LibraryWindow` | CI tests only | CI tests only |
+| Actions per kind, delete confirmation, busy project, privacy note | `Qml_LibraryWindow` | CI tests only | CI tests only |
+| Wide and narrow, light/dark/German | Evidence below (`Qml_LibraryEvidence`) | Pending manual pass (#238) | Pending manual pass (#238) |
+| Physical DPI scales | 2× only | Pending (#238) | Pending (#238) |
+| Screen reader names | Roles and names set in QML (list items, buttons, checked sections, alert strip); no VoiceOver session | Pending (Narrator) | Pending (Orca) |
+
+### Evidence
+
+macOS 27.0.1 / Qt 6.12.0, 2×, generated demo captures.
+
+![All Captures, a project selected](/assets/images/developer/library/01-library-all-light.png)
+
+![Recordings, list view, dark](/assets/images/developer/library/02-recordings-list-dark.png)
+
+![Delete Project confirmation](/assets/images/developer/library/03-delete-project-light.png)
+
+![Narrow window, Screenshots](/assets/images/developer/library/04-narrow-screenshots-dark.png)
+
+![All Captures, German](/assets/images/developer/library/01-library-all-light-de.png)
+
+### Regenerating the Library evidence
+
+```bash
+cd build
+SNAPTRAY_LIBRARY_DESIGN_DIR=../docs/assets/images/developer/library ./bin/Qml_LibraryEvidence screenshots
+SNAPTRAY_LIBRARY_DESIGN_DIR=../docs/assets/images/developer/library SNAPTRAY_LIBRARY_TRANSLATION=$PWD/snaptray_de.qm ./bin/Qml_LibraryEvidence screenshots:light
 ```

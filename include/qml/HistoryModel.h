@@ -3,6 +3,7 @@
 #include "history/HistoryStore.h"
 
 #include <QAbstractListModel>
+#include <QDateTime>
 #include <QObject>
 #include <QUrl>
 
@@ -71,6 +72,9 @@ public:
 
     void refresh();
     HistoryEntry entryAt(int index) const;
+
+    // "Today", "Yesterday", "N days ago": shared with the Library's recordings.
+    static QString relativeDateFor(const QDateTime& time);
 
     Q_INVOKABLE int countForFilter(Filter filter) const;
     Q_INVOKABLE int indexOfId(const QString& id) const;

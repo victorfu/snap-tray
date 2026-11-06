@@ -13,7 +13,10 @@ class RecordingLibraryViewModel : public QObject
     Q_OBJECT
     Q_PROPERTY(QVariantList projects READ projects NOTIFY projectsChanged)
     Q_PROPERTY(QString totalSizeText READ totalSizeText NOTIFY projectsChanged)
-    Q_PROPERTY(bool keepProjects READ keepProjects CONSTANT)
+    // Read live from settings; refresh() re-announces them, so a Library
+    // reopened after a Settings change shows the current values.
+    Q_PROPERTY(bool keepProjects READ keepProjects NOTIFY projectsChanged)
+    Q_PROPERTY(int cleanupDays READ cleanupDays NOTIFY projectsChanged)
 
 public:
     explicit RecordingLibraryViewModel(QObject* parent = nullptr);
@@ -23,7 +26,10 @@ public:
     QVariantList projects() const { return m_rows; }
     QString totalSizeText() const;
     bool keepProjects() const;
+    int cleanupDays() const;
     int count() const { return m_items.size(); }
+    const QList<RecordingProject>& items() const { return m_items; }
+    QString openProjectDir() const { return m_openProjectDir; }
     // The project open in the preview: it can be neither opened again nor
     // deleted until the preview closes.
     void setOpenProjectDir(const QString& dir);
@@ -34,6 +40,8 @@ public:
     // file saved from it stays.
     Q_INVOKABLE void remove(int index);
     Q_INVOKABLE void showInFolder(int index);
+    // Opens the folder of the file last saved from the project, if it exists.
+    Q_INVOKABLE void showSavedFile(int index);
     Q_INVOKABLE void close();
 
 signals:

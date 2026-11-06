@@ -167,8 +167,8 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
     {
         HotkeyAction::HistoryWindow,
         HotkeyCategory::Pin,
-        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "History"),
-        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Open history window"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Library"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Open the Library of screenshots and recordings"),
         "historyWindowHotkey",  // kSettingsKeyHistoryWindowHotkey
         ""                   // Optional, no default
     },
