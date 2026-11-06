@@ -22,7 +22,7 @@ Use `Full Screen Capture` from the tray menu, or bind it in Settings > Hotkeys, 
 Choose what happens next in Settings > Capture > `After full screen capture`:
 
 - `Copy to clipboard` (default)
-- `Save to file`, using your Files settings
+- `Save to file`, using your Saving settings
 - `Open editor`, which opens the capture with the whole screen selected so you can annotate before copying or saving
 
 Captures are added to the [Library](#library).

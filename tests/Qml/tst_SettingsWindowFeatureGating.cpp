@@ -48,6 +48,7 @@ private slots:
     void taskPagesHoldTheFormerSettings();
     void libraryLimitSliderFollowsTheBackend();
     void settingsWindowOpensPagesByKey();
+    void sidebarArrowKeysCrossTheDivider();
     void resetSettingRestoresManagerDefault();
     void resetButtonShowsOnlyWhenChanged();
     void searchFindsSettingsSectionsAndHotkeys();
@@ -240,13 +241,31 @@ void tst_SettingsWindowFeatureGating::settingsWindowOpensPagesByKey()
     QVERIFY(loader(QStringLiteral("general"))->property("active").toBool());
     QVERIFY(!loader(QStringLiteral("saving"))->property("active").toBool()); // loaded on first selection
 
-    for (const QString& key : {QStringLiteral("capture"), QStringLiteral("pins"), QStringLiteral("saving"),
-                               QStringLiteral("hotkeys")}) {
+    // The stack must show the selected page's loader, not just load it:
+    // stackIndexForKey depends on the loaders following pageKeys.
+    const QStringList allKeys = root->property("pageKeys").toStringList();
+    QCOMPARE(allKeys.size(), 9);
+    const auto onlyVisible = [&loader, &allKeys](const QString& key) {
+        for (const QString& other : allKeys) {
+            if (loader(other)->property("visible").toBool() != (other == key))
+                return false;
+        }
+        return true;
+    };
+    QStringList offered = {QStringLiteral("general"), QStringLiteral("capture"), QStringLiteral("pins"),
+                           QStringLiteral("saving"), QStringLiteral("hotkeys"), QStringLiteral("updates"),
+                           QStringLiteral("about")};
+    if (backend.recordingSupported())
+        offered << QStringLiteral("recording");
+    if (backend.ocrSettingsVisible())
+        offered << QStringLiteral("ocr");
+    for (const QString& key : offered) {
         QVariant opened;
         QVERIFY(QMetaObject::invokeMethod(root.get(), "selectPage", Q_RETURN_ARG(QVariant, opened),
                                           Q_ARG(QVariant, key)));
         QVERIFY2(opened.toBool(), qPrintable(key));
         QTRY_VERIFY2(loader(key)->property("item").value<QObject*>() != nullptr, qPrintable(key));
+        QTRY_VERIFY2(onlyVisible(key), qPrintable(key));
     }
 
     for (const QString& removed : {QStringLiteral("advanced"), QStringLiteral("files"), QStringLiteral("watermark")}) {
@@ -261,6 +280,12 @@ void tst_SettingsWindowFeatureGating::settingsWindowOpensPagesByKey()
                                       Q_ARG(QVariant, QStringLiteral("recording"))));
     QCOMPARE(opened.toBool(), backend.recordingSupported());
     QCOMPARE(loader(QStringLiteral("recording"))->property("active").toBool(), backend.recordingSupported());
+
+    // Text Recognition is hidden on Linux beta; it must not load there either.
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "selectPage", Q_RETURN_ARG(QVariant, opened),
+                                      Q_ARG(QVariant, QStringLiteral("ocr"))));
+    QCOMPARE(opened.toBool(), backend.ocrSettingsVisible());
+    QCOMPARE(loader(QStringLiteral("ocr"))->property("active").toBool(), backend.ocrSettingsVisible());
 }
 
 namespace {
@@ -575,6 +600,46 @@ void tst_SettingsWindowFeatureGating::recordingModeFollowsTheSetup()
     QVERIFY(!backend.recordingShowPreview());
     backend.refreshRecordingMode(); // unchanged: no signal
     QCOMPARE(changed.count(), 1);
+}
+
+void tst_SettingsWindowFeatureGating::sidebarArrowKeysCrossTheDivider()
+{
+    // Down from Hotkeys opens Updates past the divider; Up comes back.
+    SnapTray::SettingsBackend backend;
+    QQuickView view;
+    view.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
+    view.setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsWindow.qml")));
+    QCOMPARE(view.status(), QQuickView::Ready);
+    view.resize(900, 560);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    view.requestActivate();
+    QTest::qWaitForWindowActive(&view);
+    QQuickItem* root = view.rootObject();
+
+    const auto pageShown = [root](const QString& key) {
+        auto* loader = root->findChild<QObject*>(QStringLiteral("settingsPageLoader_") + key);
+        return loader && loader->property("visible").toBool();
+    };
+    QVariant opened;
+    QVERIFY(QMetaObject::invokeMethod(root, "selectPage", Q_RETURN_ARG(QVariant, opened),
+                                      Q_ARG(QVariant, QStringLiteral("hotkeys"))));
+    QVERIFY(opened.toBool());
+    QQuickItem* hotkeys = nullptr;
+    QTRY_VERIFY((hotkeys = findItem(root, QStringLiteral("settingsSidebarItem_hotkeys"))) != nullptr);
+    hotkeys->forceActiveFocus();
+    QTRY_VERIFY(hotkeys->hasActiveFocus());
+
+    QTest::keyClick(&view, Qt::Key_Down);
+    QTRY_VERIFY(pageShown(QStringLiteral("updates")));
+    QQuickItem* updates = findItem(root, QStringLiteral("settingsSidebarItem_updates"));
+    QVERIFY(updates);
+    QTRY_VERIFY(updates->hasActiveFocus());
+
+    QTest::keyClick(&view, Qt::Key_Up);
+    QTRY_VERIFY(pageShown(QStringLiteral("hotkeys")));
+    QTRY_VERIFY(hotkeys->hasActiveFocus());
 }
 
 QTEST_MAIN(tst_SettingsWindowFeatureGating)

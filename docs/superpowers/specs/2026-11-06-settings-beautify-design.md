@@ -19,7 +19,7 @@ Issue: [#227](https://github.com/victorfu/snap-tray/issues/227). Tracking: #221.
 - The eight presets are 24 px gradient dots without names. They change only the background, and nothing shows which one is chosen.
 - Padding, corners and shadow are only pixel sliders.
 - Labels end in colons ("Padding:", "  Blur:"), and Shadow uses a hand-made switch without keyboard or screen reader support.
-- The recording editor's **Frame** (#184) uses the same gradients, but with names, a chosen state and the order Background, Padding, Corners, Shadow, Aspect ratio. The two panels describe the same look in different words.
+- The recording editor's **Canvas** (#184) uses the same gradients, but with names, a chosen state and the order Background, Padding, Corners, Shadow, Aspect ratio. The two panels describe the same look in different words.
 
 ## Decisions
 
@@ -33,7 +33,7 @@ Issue: [#227](https://github.com/victorfu/snap-tray/issues/227). Tracking: #221.
 | Saved styles | Named looks (the whole `BeautifySettings`), kept by `BeautifySettingsManager`, at most 8. |
 
 Out of scope:
-- style presets in the recording Frame (it keeps its own Small/Medium/Large amounts);
+- style presets in the recording Canvas (it keeps its own Small/Medium/Large amounts);
 - any change to existing setting keys or stored values. New: `beautify/customStyles` and three named recording defaults.
 
 ## 1. Settings pages
@@ -121,13 +121,13 @@ Each page except About (which already centres the app name) starts with `Setting
 
 ### Background swatches
 
-- The eight gradients (Ocean … Charcoal), 28 px, each with an accessible name ("Background: Ocean") and a tooltip, the same names as the recording Frame.
+- The eight gradients (Ocean … Charcoal), 28 px, each with an accessible name ("Background: Ocean") and a tooltip, the same names as the recording Canvas.
 - The swatch matching the current linear gradient shows as chosen. Solid colours and the radial gradient are set under Customize.
 
 ### Customize
 
 - Collapsed by default. It stays as left while the panel is reused in a session.
-- Controls in the recording Frame's order, without colons: Background (type), Colors, Padding, Corners, Shadow (the shared `SettingsToggle`), Shadow blur (disabled while the shadow is off), Aspect ratio.
+- Controls in the recording Canvas's order, without colons: Background (type), Colors, Padding, Corners, Shadow (the shared `SettingsToggle`), Shadow blur (disabled while the shadow is off), Aspect ratio.
 - Expanding grows the panel; the panel keeps itself on the screen.
 
 ### Saved styles
@@ -138,14 +138,14 @@ Each page except About (which already centres the app name) starts with `Setting
 - **Rename:** a ✎ on hover or focus (`F2` also works) opens the same inline field in rename mode, prefilled with the name; the button reads "Rename". `renameCustomStyle(index, name)` refuses an empty name or one another saved style uses (any case; changing only the case of its own name is allowed). While the typed name is taken, the field border turns red, a message says so, and Rename is disabled. The look is not changed. Renaming rebuilds the cards, so focus returns to the renamed card afterwards.
 - Stored by `BeautifySettingsManager` as JSON under `beautify/customStyles`; values are clamped on load and unnamed or broken entries are dropped.
 
-### Shared language with the recording Frame
+### Shared language with the recording Canvas
 
-Both use the names Background, Padding, Corners, Shadow and Aspect ratio, the same gradient names, and a chosen ring in the accent colour. The Frame keeps its Small/Medium/Large amounts, because its sizes follow the video size rather than pixels.
+Both use the names Background, Padding, Corners, Shadow and Aspect ratio, the same gradient names, and a chosen ring in the accent colour. The Canvas keeps its Small/Medium/Large amounts, because its sizes follow the video size rather than pixels.
 
 ## 3. Accessibility and keyboard
 
 - Style cards and swatches: Tab stops, Space/Return to apply, `Accessible.Button`, checkable and checked, visible focus ring.
-- Customize: an `Accessible.Button` with an expanded state; Space/Return toggles.
+- Customize: an `Accessible.Button`, checkable, checked while open (Qt Quick has no expanded state for buttons); Space/Return toggles.
 - State is never shown by colour alone: a chosen card also has a thicker ring and is announced as checked; the "Custom" caption names the state.
 
 ## 4. Verification

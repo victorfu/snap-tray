@@ -4,7 +4,7 @@ import SnapTrayQml
 
 // Beautify (#227): results first. Named styles and backgrounds come before the
 // pixel controls, which sit under a collapsible Customize. Names and order
-// follow the recording editor's Frame (Background, Padding, Corners, Shadow,
+// follow the recording editor's Canvas (Background, Padding, Corners, Shadow,
 // Aspect ratio).
 Item {
     id: root
@@ -21,8 +21,11 @@ Item {
     // Naming a style to save (#227); Esc then cancels naming instead of closing.
     property bool namingStyle: false
 
-    // The saved style being renamed, or -1 while naming a new one.
+    // The saved style being renamed, or -1 while naming a new one. The index
+    // follows the style by name when the list changes under it.
     property int renamingIndex: -1
+    property string renamingName: ""
+    property bool committingName: false
     readonly property bool nameTaken: root.namingStyle && root.renamingIndex >= 0 && root.backend
         ? root.backend.customStyleNameTaken(styleNameInput.text, root.renamingIndex)
         : false
@@ -38,7 +41,8 @@ Item {
         if (!root.backend || index < 0 || index >= root.backend.customStyleModel.length)
             return
         root.renamingIndex = index
-        openNameField(root.backend.customStyleModel[index].name)
+        root.renamingName = root.backend.customStyleModel[index].name
+        openNameField(root.renamingName)
     }
 
     function openNameField(text) {
@@ -51,16 +55,18 @@ Item {
     // Returns false (field stays open) when a rename is refused.
     function finishNamingStyle(save) {
         if (save && root.backend && styleNameInput.text.trim().length > 0) {
-            if (root.renamingIndex >= 0) {
-                if (!root.backend.renameCustomStyle(root.renamingIndex, styleNameInput.text))
-                    return false
-            } else {
-                root.backend.saveCustomStyle(styleNameInput.text)
-            }
+            root.committingName = true
+            var ok = root.renamingIndex >= 0
+                ? root.backend.renameCustomStyle(root.renamingIndex, styleNameInput.text)
+                : root.backend.saveCustomStyle(styleNameInput.text)
+            root.committingName = false
+            if (!ok && root.renamingIndex >= 0)
+                return false
         }
         var renamed = root.renamingIndex
         root.namingStyle = false
         root.renamingIndex = -1
+        root.renamingName = ""
         // Renaming rebuilds the cards; give focus back to the renamed one.
         if (renamed >= 0)
             Qt.callLater(function() {
@@ -69,6 +75,26 @@ Item {
                     card.forceActiveFocus()
             })
         return true
+    }
+
+    // Deleting a style (here or in another panel) moves the one being
+    // renamed; follow it by name, and stop renaming if it is gone.
+    Connections {
+        target: root.backend
+        function onCustomStylesChanged() {
+            if (!root.namingStyle || root.renamingIndex < 0 || root.committingName)
+                return
+            var model = root.backend.customStyleModel
+            var wanted = root.renamingName.toLowerCase()
+            for (var i = 0; i < model.length; ++i) {
+                if (model[i].name.toLowerCase() === wanted) {
+                    root.renamingIndex = i
+                    return
+                }
+            }
+            root.renamingIndex = -1
+            root.finishNamingStyle(false)
+        }
     }
 
     readonly property int contentMargin: 16
@@ -83,7 +109,7 @@ Item {
     readonly property color backgroundEnd: root.backend && root.backend.secondaryColorVisible
         ? root.backend.secondaryColor : root.backgroundStart
 
-    // The screen's available height, set by QmlBeautifyPanel (0 = no limit).
+    // Available screen height minus edge margins, set by QmlBeautifyPanel (0 = no limit).
     // A panel taller than that scrolls instead of leaving the screen.
     property int maxHeight: 0
     readonly property int naturalHeight: contentColumn.implicitHeight + 2 * contentMargin
@@ -155,7 +181,11 @@ Item {
                     }
                 }
 
+                // Inside the scroller: keep a vertical drag moving the window,
+                // and never leave the window marked as dragging.
+                preventStealing: true
                 onReleased: root.dragFinished()
+                onCanceled: root.dragFinished()
             }
 
             Text {

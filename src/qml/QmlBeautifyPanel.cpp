@@ -42,16 +42,11 @@ void QmlBeautifyPanel::setSettings(const BeautifySettings& settings)
 void QmlBeautifyPanel::showNear(const QRect& anchorRect)
 {
     ensureView();
-    if (m_rootItem) {
-        QScreen* screen = QGuiApplication::screenAt(anchorRect.center());
-        if (!screen) {
-            screen = QGuiApplication::primaryScreen();
-        }
-        if (screen) {
-            // A panel taller than the screen scrolls instead (Customize open on a short screen).
-            m_rootItem->setProperty("maxHeight", screen->availableGeometry().height() - 2 * kScreenEdgeMargin);
-        }
+    QScreen* screen = QGuiApplication::screenAt(anchorRect.center());
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
     }
+    updateMaxHeight(screen);
     positionNear(anchorRect);
     m_view->show();
     QmlOverlayManager::configureInteractiveOverlayWindow(m_view);
@@ -142,6 +137,11 @@ void QmlBeautifyPanel::onDragMoved(double deltaX, double deltaY)
 void QmlBeautifyPanel::onDragFinished()
 {
     m_isDragging = false;
+    // The drag may have ended on a shorter screen.
+    if (m_view && m_view->isVisible()) {
+        updateMaxHeight(m_view->screen());
+        keepOnScreen();
+    }
     syncCursorSurface();
 }
 
@@ -190,8 +190,22 @@ void QmlBeautifyPanel::ensureView()
             keepOnScreen();
         }
     });
+    connect(m_view, &QWindow::screenChanged, this, [this](QScreen* screen) {
+        if (m_view && m_view->isVisible() && !m_isDragging) {
+            updateMaxHeight(screen);
+        }
+    });
 }
 
+void QmlBeautifyPanel::updateMaxHeight(QScreen* screen)
+{
+    // A panel taller than the screen scrolls instead (Customize open on a short screen).
+    if (m_rootItem && screen) {
+        m_rootItem->setProperty("maxHeight", screen->availableGeometry().height() - 2 * kScreenEdgeMargin);
+    }
+}
+
+// Moves the panel only; the height limit is set by updateMaxHeight().
 void QmlBeautifyPanel::keepOnScreen()
 {
     QScreen* screen = m_view->screen();
@@ -199,9 +213,6 @@ void QmlBeautifyPanel::keepOnScreen()
         return;
     }
     const QRect screenGeom = screen->availableGeometry();
-    if (m_rootItem) {
-        m_rootItem->setProperty("maxHeight", screenGeom.height() - 2 * kScreenEdgeMargin);
-    }
     const int bottomLimit = screenGeom.bottom() - kScreenEdgeMargin - m_view->height();
     if (m_view->y() > bottomLimit) {
         m_view->setY(qMax(screenGeom.top() + kScreenEdgeMargin, bottomLimit));

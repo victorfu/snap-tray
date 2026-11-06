@@ -3,6 +3,7 @@
 #include "qml/BeautifyPanelBackend.h"
 #include "qml/QmlBeautifyPanel.h"
 #include "qml/QmlOverlayManager.h"
+#include "settings/BeautifySettingsManager.h"
 #include "settings/Settings.h"
 
 #include <QAccessible>
@@ -17,6 +18,9 @@
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 namespace {
+
+// QmlBeautifyPanel keeps this gap to the screen edges.
+constexpr int kScreenEdgeMargin = 10;
 
 // Repeater delegates are visual children, not QObject children.
 QQuickItem* findItem(QQuickItem* node, const QString& name)
@@ -45,7 +49,9 @@ private slots:
     void testResultsComeFirst_CustomizeCollapsed();
     void testStyleCardAndShadowToggle();
     void testTallPanelScrollsOnShortScreen();
+    void testCustomizeNearScreenBottomStaysOnScreen();
     void testSaveStyleByName();
+    void testRenameFollowsTheStyleWhenAnotherIsDeleted();
 };
 
 void tst_BeautifyPanelQml::testSliderBindingSurvivesReopen_data()
@@ -212,6 +218,27 @@ void tst_BeautifyPanelQml::testStyleCardAndShadowToggle()
     compact->forceActiveFocus();
     QTest::keyClick(view, Qt::Key_Space);
     QTRY_COMPARE(backend->currentStyle(), 0);
+    // Return does the same.
+    auto* standard = findItem(root, QStringLiteral("beautifyStyle1"));
+    QVERIFY(standard);
+    standard->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_Return);
+    QTRY_COMPARE(backend->currentStyle(), 1);
+    compact->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_Space);
+    QTRY_COMPARE(backend->currentStyle(), 0);
+
+    // Background swatches take Space and Return too.
+    auto* swatch2 = findItem(root, QStringLiteral("beautifyBackground2"));
+    auto* swatch5 = findItem(root, QStringLiteral("beautifyBackground5"));
+    QVERIFY(swatch2 && swatch5);
+    swatch2->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_Space);
+    QTRY_COMPARE(backend->currentPreset(), 2);
+    swatch5->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_Return);
+    QTRY_COMPARE(backend->currentPreset(), 5);
+    QCOMPARE(backend->currentStyle(), 0); // a background leaves the style alone
 
     // The shared switch now drives the shadow, and the blur slider follows it.
     auto* toggle = root->findChild<QObject*>(QStringLiteral("beautifyShadowToggle"));
@@ -223,11 +250,28 @@ void tst_BeautifyPanelQml::testStyleCardAndShadowToggle()
     QVERIFY(!backend->shadowEnabled());
     QVERIFY(!toggle->property("checked").toBool());
     QVERIFY(!blur->isEnabled());
+    // Compact without its shadow is no longer Compact.
+    QCOMPARE(backend->currentStyle(), -1);
+    auto* custom = findItem(root, QStringLiteral("beautifyCustomStyleCaption"));
+    QVERIFY(custom);
+    QTRY_VERIFY(custom->isVisible());
+    QVERIFY(!compact->property("chosen").toBool());
 
     // A value no style has shows "Custom".
+    backend->applyStyle(1);
+    QTRY_VERIFY(!custom->isVisible());
     backend->setPadding(150);
-    auto* custom = findItem(root, QStringLiteral("beautifyCustomStyleCaption"));
     QTRY_VERIFY(custom->isVisible());
+
+    // The Customize header opens and closes with Space and Return.
+    auto* customize = findItem(root, QStringLiteral("beautifyCustomizeToggle"));
+    QVERIFY(customize);
+    const bool expanded = root->property("customizeExpanded").toBool();
+    customize->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_Space);
+    QTRY_COMPARE(root->property("customizeExpanded").toBool(), !expanded);
+    QTest::keyClick(view, Qt::Key_Return);
+    QTRY_COMPARE(root->property("customizeExpanded").toBool(), expanded);
 }
 
 void tst_BeautifyPanelQml::testTallPanelScrollsOnShortScreen()
@@ -240,6 +284,11 @@ void tst_BeautifyPanelQml::testTallPanelScrollsOnShortScreen()
     auto* view = qobject_cast<QQuickView*>(panel.window());
     QVERIFY(view && view->rootObject());
     QQuickItem* root = view->rootObject();
+    // showNear limits the panel to the anchor screen, less the edge margins.
+    if (QScreen* screen = QGuiApplication::screenAt(QPoint(300, 250))) {
+        QCOMPARE(root->property("maxHeight").toInt(),
+                 screen->availableGeometry().height() - 2 * kScreenEdgeMargin);
+    }
     const qreal collapsed = root->property("naturalHeight").toReal();
     QVERIFY(collapsed > 0);
     root->setProperty("customizeExpanded", true);
@@ -253,9 +302,36 @@ void tst_BeautifyPanelQml::testTallPanelScrollsOnShortScreen()
     QVERIFY(scroller->property("interactive").toBool());
     QCOMPARE(scroller->property("contentHeight").toReal(), natural);
 
+    // Resizing the window must not reset the limit it was given.
+    QTRY_COMPARE(qreal(view->height()), natural - 200);
+    QCOMPARE(root->property("maxHeight").toInt(), int(natural) - 200);
+
     root->setProperty("customizeExpanded", false);
     QTRY_COMPARE(root->height(), collapsed);
     QVERIFY(!scroller->property("interactive").toBool());
+}
+
+void tst_BeautifyPanelQml::testCustomizeNearScreenBottomStaysOnScreen()
+{
+    // Anchored at the bottom of the screen, opening Customize grows the panel;
+    // it moves up and keeps the edge margin.
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    const QRect available = screen->availableGeometry();
+    SnapTray::QmlBeautifyPanel panel;
+    panel.setSettings(BeautifySettings{});
+    panel.showNear(QRect(available.left() + 50, available.bottom() - 120, 200, 100));
+    auto* view = qobject_cast<QQuickView*>(panel.window());
+    QVERIFY(view && view->rootObject());
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    QQuickItem* root = view->rootObject();
+    const qreal collapsed = root->height();
+
+    root->setProperty("customizeExpanded", true);
+    QTRY_VERIFY(root->height() > collapsed);
+    QTRY_COMPARE(qreal(view->height()), root->height());
+    QTRY_VERIFY(view->geometry().bottom() <= available.bottom() - kScreenEdgeMargin);
+    QVERIFY(view->geometry().top() >= available.top() + kScreenEdgeMargin);
 }
 
 void tst_BeautifyPanelQml::testSaveStyleByName()
@@ -367,6 +443,54 @@ void tst_BeautifyPanelQml::testSaveStyleByName()
 
     QTest::keyClick(view, Qt::Key_Escape); // now Esc closes the panel again
     QTRY_VERIFY(!panel.isVisible());
+}
+
+void tst_BeautifyPanelQml::testRenameFollowsTheStyleWhenAnotherIsDeleted()
+{
+    // Renaming B while A is deleted must still rename B, not the style that
+    // moved into B's place; deleting B itself ends the rename.
+    auto settings = SnapTray::getSettings();
+    settings.remove(QStringLiteral("beautify/customStyles"));
+    settings.sync();
+    auto cleanup = qScopeGuard([] {
+        auto s = SnapTray::getSettings();
+        s.remove(QStringLiteral("beautify/customStyles"));
+        s.sync();
+    });
+
+    SnapTray::QmlBeautifyPanel panel;
+    panel.setSettings(BeautifySettings{});
+    panel.showNear(QRect(100, 100, 400, 300));
+    auto* view = qobject_cast<QQuickView*>(panel.window());
+    QVERIFY(view && view->rootObject());
+    QQuickItem* root = view->rootObject();
+    auto* backend = panel.findChild<SnapTray::BeautifyPanelBackend*>();
+    QVERIFY(backend);
+    for (const QString& name : {QStringLiteral("A"), QStringLiteral("B"), QStringLiteral("C")}) {
+        QVERIFY(backend->saveCustomStyle(name));
+    }
+    auto* input = findItem(root, QStringLiteral("beautifyStyleNameInput"));
+    QVERIFY(input);
+
+    QVERIFY(QMetaObject::invokeMethod(root, "startRenamingStyle", Q_ARG(QVariant, 1)));
+    QCOMPARE(root->property("renamingIndex").toInt(), 1);
+    backend->deleteCustomStyle(0);
+    QCOMPARE(root->property("renamingIndex").toInt(), 0);
+    input->setProperty("text", QStringLiteral("B2"));
+    QVariant ok;
+    QVERIFY(QMetaObject::invokeMethod(root, "finishNamingStyle", Q_RETURN_ARG(QVariant, ok),
+                                      Q_ARG(QVariant, true)));
+    QVERIFY(ok.toBool());
+    auto stored = BeautifySettingsManager::instance().loadCustomStyles();
+    QCOMPARE(stored.size(), 2);
+    QCOMPARE(stored.at(0).name, QStringLiteral("B2"));
+    QCOMPARE(stored.at(1).name, QStringLiteral("C"));
+
+    QVERIFY(QMetaObject::invokeMethod(root, "startRenamingStyle", Q_ARG(QVariant, 1)));
+    QVERIFY(root->property("namingStyle").toBool());
+    backend->deleteCustomStyle(1);
+    QVERIFY(!root->property("namingStyle").toBool());
+    QCOMPARE(root->property("renamingIndex").toInt(), -1);
 }
 
 QTEST_MAIN(tst_BeautifyPanelQml)

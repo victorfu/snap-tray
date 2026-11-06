@@ -12,6 +12,7 @@ class QEvent;
 class QPixmap;
 class QQuickItem;
 class QQuickView;
+class QScreen;
 class QWindow;
 
 namespace SnapTray {
@@ -49,6 +50,7 @@ private:
     void ensureView();
     void positionNear(const QRect& anchorRect);
     void keepOnScreen();
+    void updateMaxHeight(QScreen* screen);
     void syncCursorSurface();
     bool eventFilter(QObject* watched, QEvent* event) override;
 

@@ -39,6 +39,7 @@ class BeautifyPanelBackend : public QObject
 
 public:
     explicit BeautifyPanelBackend(QObject* parent = nullptr);
+    ~BeautifyPanelBackend() override;
 
     void setSourcePixmap(const QPixmap& pixmap);
     const QPixmap& sourcePixmap() const { return m_sourcePixmap; }
@@ -114,6 +115,7 @@ private:
     void commitSettingsChange();
 
     void setCustomStyles(const QVector<BeautifyCustomStyle>& styles);
+    void reloadCustomStyles();
 
     BeautifySettings m_settings;
     QVector<BeautifyCustomStyle> m_customStyles;

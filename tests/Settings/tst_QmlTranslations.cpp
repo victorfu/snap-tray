@@ -189,8 +189,8 @@ void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
                                     .arg(qmFile, QString::fromUtf8(source))));
             if (source.contains("%1")) {
                 QVERIFY2(translated.contains(QStringLiteral("%1")),
-                         qPrintable(QStringLiteral("%1 translation dropped the %%1 placeholder")
-                                        .arg(qmFile)));
+                         qPrintable(QStringLiteral("%1 translation dropped the %2 placeholder")
+                                        .arg(qmFile, QStringLiteral("%1"))));
             }
         }
     }
@@ -287,7 +287,8 @@ void tst_QmlTranslations::testTaskSettingsAndBeautifyTranslatedForAllLocales()
                                     .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
             if (source.contains("%1")) {
                 QVERIFY2(translated.contains(QStringLiteral("%1")),
-                         qPrintable(QStringLiteral("%1 dropped %%1 in %2").arg(qmFile, QString::fromUtf8(source))));
+                         qPrintable(QStringLiteral("%1 dropped %2 in %3")
+                                        .arg(qmFile, QStringLiteral("%1"), QString::fromUtf8(source))));
             }
         }
     }

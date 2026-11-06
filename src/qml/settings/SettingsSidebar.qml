@@ -494,6 +494,7 @@ Rectangle {
 
                 MouseArea {
                     id: hoverArea
+                    objectName: "settingsSidebarItem_" + navItem.modelData.key
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: CursorTokens.clickable

@@ -3,6 +3,7 @@
 #include "settings/BeautifySettingsManager.h"
 
 #include <QCoreApplication>
+#include <QList>
 #include <QColorDialog>
 #include <QTimer>
 #include <QVariantMap>
@@ -62,6 +63,14 @@ bool sameLook(const BeautifySettings& a, const BeautifySettings& b)
     return a.gradientStartColor == b.gradientStartColor && a.gradientEndColor == b.gradientEndColor;
 }
 
+// Every live backend, so a saved-style change in one panel reaches the
+// others (each pin window keeps its own Beautify panel).
+QList<BeautifyPanelBackend*>& liveBackends()
+{
+    static QList<BeautifyPanelBackend*> backends;
+    return backends;
+}
+
 } // namespace
 
 BeautifyPanelBackend::BeautifyPanelBackend(QObject* parent)
@@ -82,6 +91,18 @@ BeautifyPanelBackend::BeautifyPanelBackend(QObject* parent)
             this, &BeautifyPanelBackend::customStyleStateChanged);
     m_customStyles = BeautifySettingsManager::instance().loadCustomStyles();
     setSettings(BeautifySettingsManager::instance().loadSettings());
+    liveBackends().append(this);
+}
+
+BeautifyPanelBackend::~BeautifyPanelBackend()
+{
+    liveBackends().removeOne(this);
+}
+
+void BeautifyPanelBackend::reloadCustomStyles()
+{
+    m_customStyles = BeautifySettingsManager::instance().loadCustomStyles();
+    emit customStylesChanged();
 }
 
 void BeautifyPanelBackend::setSourcePixmap(const QPixmap& pixmap)
@@ -410,6 +431,13 @@ void BeautifyPanelBackend::setCustomStyles(const QVector<BeautifyCustomStyle>& s
     m_customStyles = styles;
     BeautifySettingsManager::instance().saveCustomStyles(m_customStyles);
     emit customStylesChanged();
+    // Other panels would otherwise write their stale list back later.
+    const QList<BeautifyPanelBackend*> backends = liveBackends();
+    for (BeautifyPanelBackend* other : backends) {
+        if (other != this) {
+            other->reloadCustomStyles();
+        }
+    }
 }
 
 void BeautifyPanelBackend::pickPrimaryColor()

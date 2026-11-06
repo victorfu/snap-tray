@@ -52,6 +52,7 @@ private slots:
     void testCustomStyle_LimitAndNames();
     void testCustomStyle_ManagerClampsBadData();
     void testCustomStyle_Rename();
+    void testCustomStyle_PanelsStayInSync();
 };
 
 void tst_BeautifyPanelBackend::init()
@@ -187,10 +188,18 @@ void tst_BeautifyPanelBackend::testCurrentStyle_CustomWhenNoneMatch()
     backend.setShadowBlur(25);
     QCOMPARE(backend.currentStyle(), -1);
 
-    // Flat ignores the blur value, which is hidden while the shadow is off.
+    // Turning the shadow off on a shadowed style is Custom.
+    backend.applyStyle(1);
+    backend.setShadowEnabled(false);
+    QCOMPARE(backend.currentStyle(), -1);
+
+    // Flat ignores the blur value, which is disabled while the shadow is off.
     backend.applyStyle(3);
     backend.setShadowBlur(90);
     QCOMPARE(backend.currentStyle(), 3);
+    // Turning the shadow on for Flat is Custom too.
+    backend.setShadowEnabled(true);
+    QCOMPARE(backend.currentStyle(), -1);
 }
 
 void tst_BeautifyPanelBackend::testCurrentPreset_FollowsBackground()
@@ -342,6 +351,29 @@ void tst_BeautifyPanelBackend::testCustomStyle_Rename()
     QCOMPARE(stored.size(), 2);
     QCOMPARE(stored.at(0).name, QStringLiteral("Blog posts"));
     QCOMPARE(stored.at(1).name, QStringLiteral("SLIDES"));
+}
+
+void tst_BeautifyPanelBackend::testCustomStyle_PanelsStayInSync()
+{
+    // Each pin window keeps its own panel: a change in one must not be
+    // overwritten by another panel's stale list.
+    SnapTray::BeautifyPanelBackend first;
+    SnapTray::BeautifyPanelBackend second;
+    QSignalSpy secondChanged(&second, &SnapTray::BeautifyPanelBackend::customStylesChanged);
+
+    QVERIFY(first.saveCustomStyle(QStringLiteral("Blog")));
+    QCOMPARE(secondChanged.count(), 1);
+    QCOMPARE(second.customStyleModel().size(), 1);
+
+    QVERIFY(second.saveCustomStyle(QStringLiteral("Slides")));
+    QCOMPARE(first.customStyleModel().size(), 2);
+    QCOMPARE(BeautifySettingsManager::instance().loadCustomStyles().size(), 2);
+
+    first.deleteCustomStyle(0);
+    QVERIFY(second.renameCustomStyle(0, QStringLiteral("Talks"))); // index 0 is now Slides
+    const auto stored = BeautifySettingsManager::instance().loadCustomStyles();
+    QCOMPARE(stored.size(), 1);
+    QCOMPARE(stored.at(0).name, QStringLiteral("Talks"));
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)

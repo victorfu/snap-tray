@@ -22,7 +22,7 @@ doc_order: 1
 在 Settings > Capture > `After full screen capture` 選擇擷取後的動作：
 
 - `Copy to clipboard`（預設）
-- `Save to file`，依照 Files 設定儲存
+- `Save to file`，依照 Saving 頁的設定儲存
 - `Open editor`，以選取整個螢幕的狀態開啟編輯，可先標註再複製或儲存
 
 截圖會加入[素材庫](#library)。

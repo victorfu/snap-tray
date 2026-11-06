@@ -2,8 +2,8 @@
 last_modified_at: 2026-11-06
 layout: docs
 title: 設定
-seo_title: "SnapTray 設定說明：調整檔案、平台限定 OCR 與錄影、浮水印與更新策略"
-description: 調整檔案路徑、平台限定 OCR 與錄影、浮水印及更新策略。
+seo_title: "SnapTray 設定說明：擷取、Pin 視窗、儲存、平台限定錄影與文字辨識"
+description: 調整擷取、Pin 視窗、儲存與浮水印、平台限定錄影與文字辨識、快捷鍵及更新策略。
 permalink: /zh-tw/docs/settings/
 lang: zh-tw
 route_key: docs_settings
@@ -13,7 +13,7 @@ doc_order: 4
 
 ## 設定頁面
 
-頁面依任務分組，每頁開頭有標題和一句說明。Updates 與 About 在分隔線下方。
+頁面依任務分組，除 About 外，每頁開頭有標題和一句說明。Updates 與 About 在分隔線下方。
 
 Recording 與 Text Recognition 僅 macOS 與 Windows 提供。Linux beta 不包含這些功能，
 因此會隱藏這兩頁。

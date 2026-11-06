@@ -2,8 +2,8 @@
 last_modified_at: 2026-11-06
 layout: docs
 title: Settings
-seo_title: "SnapTray Settings: Files, OCR, Watermark and Platform-Specific Recording"
-description: Tune SnapTray behavior for files, platform-specific OCR and recording, watermarking, and updates.
+seo_title: "SnapTray Settings: Capture, Pin Windows, Saving, Recording and Text Recognition"
+description: Tune capture, pin windows, saving and watermarks, platform-specific recording and text recognition, hotkeys, and updates.
 permalink: /docs/settings/
 lang: en
 route_key: docs_settings
@@ -13,8 +13,8 @@ doc_order: 4
 
 ## Settings pages
 
-Pages are grouped by task. Each page starts with a title and a sentence saying
-what it covers. Updates and About sit below a divider.
+Pages are grouped by task. Every page except About starts with a title and a
+sentence saying what it covers. Updates and About sit below a divider.
 
 Recording and Text Recognition are available on macOS and Windows only. Linux
 beta hides both pages because those features are not included.
