@@ -1,5 +1,6 @@
 #include <QtTest>
 #include <QEnterEvent>
+#include <QCursor>
 #include <QHelpEvent>
 #include <QGuiApplication>
 #include <QMenu>
@@ -23,10 +24,20 @@
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 // #225: the hover bar inside a real pin.
+//
+// Hover is driven by synthetic events and a fake cursor provider, so the real
+// pointer is parked off the pins for the whole suite. A pin shown under a
+// resting cursor gets its OS hover handshake asynchronously, after
+// qWaitForWindowExposed() and after the synthetic events. Windows CI parks the
+// cursor at screen center, on the test pins: there the handshake delivered
+// Enter, Leave, Enter, and the real Leave dismissed the Live hint or stopped
+// the bar's show timer before the test observed them.
 class TestPinHoverIntegration : public QObject
 {
     Q_OBJECT
 private slots:
+    void initTestCase();
+    void cleanupTestCase();
     void hoverShowsBarWithValues();
     void barZoomRequestZoomsPin();
     void suppressedStates_data();
@@ -49,17 +60,46 @@ private:
         p.fill(Qt::darkCyan);
         return p;
     }
-    // Shows the pin and hovers it with the controller's cursor on the pin.
-    static void hover(PinWindow& window)
+    // Shows the pin with the real pointer elsewhere; see the class comment.
+    void showWithoutRealHover(PinWindow& window) const
     {
         window.show();
         QVERIFY(QTest::qWaitForWindowExposed(&window));
+        if (m_cursorParked) QVERIFY(!window.frameGeometry().contains(QCursor::pos()));
+    }
+    // Shows the pin and hovers it with the controller's cursor on the pin.
+    void hover(PinWindow& window) const
+    {
+        showWithoutRealHover(window);
+        if (QTest::currentTestFailed()) return;
         QEnterEvent enter(QPointF(100, 100), QPointF(100, 100), window.mapToGlobal(QPointF(100, 100)));
         QCoreApplication::sendEvent(&window, &enter);
         QVERIFY(window.m_hoverBar);
         window.m_hoverBar->setCursorPositionProvider([&window] { return window.mapToGlobal(QPoint(100, 100)); });
     }
+
+    static constexpr int kCursorParkingInset = 8;
+    QPoint m_originalCursor;
+    bool m_cursorParked = false;
 };
+
+void TestPinHoverIntegration::initTestCase()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    m_originalCursor = QCursor::pos();
+    // Test pins open near the center of the primary screen; a corner is clear of them.
+    const QPoint parked = screen->availableGeometry().bottomRight()
+        - QPoint(kCursorParkingInset, kCursorParkingInset);
+    QCursor::setPos(parked);
+    m_cursorParked = QCursor::pos() == parked;
+    if (!m_cursorParked) qWarning("Could not park the system cursor; real hover events may race the tests.");
+}
+
+void TestPinHoverIntegration::cleanupTestCase()
+{
+    if (m_cursorParked) QCursor::setPos(m_originalCursor);
+}
 
 void TestPinHoverIntegration::hoverShowsBarWithValues()
 {
@@ -209,8 +249,8 @@ void TestPinHoverIntegration::liveIndicatorTooltipIsExcluded()
     const auto restore = qScopeGuard([&] { settings.saveShowHoverControls(savedSetting); });
     settings.saveShowHoverControls(showHoverControls);
     PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
-    window.show();
-    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    // The real pointer stays off the pin: a real Leave dismisses the hint.
+    showWithoutRealHover(window);
     window.m_isLiveMode = true; // Exercise hints without starting a capture or requesting TCC.
     const QList<WId> excluded = prepareCapture ? window.liveCaptureExcludedWindowIds() : QList<WId>();
     const QPoint dot(PinWindow::kLiveIndicatorMargin + 3, PinWindow::kLiveIndicatorMargin + 3);
@@ -272,8 +312,7 @@ void TestPinHoverIntegration::liveIndicatorTooltipIsExcluded()
 void TestPinHoverIntegration::liveCaptureExcludesHoverWindows()
 {
     PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
-    window.show();
-    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    showWithoutRealHover(window);
     const QList<WId> ids = window.liveCaptureExcludedWindowIds();
     QCOMPARE(ids.size(), 5);
     QVERIFY(ids.contains(window.winId()));
