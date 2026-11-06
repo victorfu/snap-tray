@@ -67,6 +67,9 @@ bool sameLook(const BeautifySettings& a, const BeautifySettings& b)
     if (a.shadowEnabled && a.shadowBlur != b.shadowBlur) {
         return false;
     }
+    if (a.borderEnabled && (a.borderWidth != b.borderWidth || a.borderColor != b.borderColor)) {
+        return false;
+    }
     if (a.backgroundType == BeautifyBackgroundType::Solid) {
         return a.backgroundColor == b.backgroundColor;
     }

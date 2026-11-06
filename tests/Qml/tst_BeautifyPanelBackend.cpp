@@ -66,6 +66,7 @@ private slots:
     void testCustomStyle_PanelsStayInSync();
     void testCustomStyle_RelativeToScreenshotSize();
     void testCustomStyle_SavedInRecordingEditorApplies();
+    void testCustomStyle_BorderWidthAndColorMatch();
     void testBorder_SavedWithTheLook();
 };
 
@@ -481,4 +482,28 @@ void tst_BeautifyPanelBackend::testBorder_SavedWithTheLook()
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)
+void tst_BeautifyPanelBackend::testCustomStyle_BorderWidthAndColorMatch()
+{
+    // Two styles that differ only in their border draw differently, so the
+    // one applied is the one selected.
+    SnapTray::FrameStyle thin;
+    thin.borderEnabled = true;
+    thin.borderWidth = 2.0 / SnapTray::FrameStyle::kReferenceShortSide;
+    thin.borderColor = QColor(255, 255, 255);
+    SnapTray::FrameStyle red = thin;
+    red.borderColor = QColor(255, 0, 0);
+    SnapTray::FrameStyle wide = thin;
+    wide.borderWidth = 6.0 / SnapTray::FrameStyle::kReferenceShortSide;
+    auto& library = SnapTray::FrameStyleLibrary::instance();
+    QVERIFY(library.save(QStringLiteral("Thin"), thin));
+    QVERIFY(library.save(QStringLiteral("Red"), red));
+    QVERIFY(library.save(QStringLiteral("Wide"), wide));
+
+    SnapTray::BeautifyPanelBackend backend;
+    for (int i = 0; i < 3; ++i) {
+        backend.applyCustomStyle(i);
+        QCOMPARE(backend.currentCustomStyle(), i);
+    }
+}
+
 #include "tst_BeautifyPanelBackend.moc"
