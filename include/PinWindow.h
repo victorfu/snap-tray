@@ -268,6 +268,7 @@ private:
     QSize baseContentLogicalSize() const;
     QSize transformedContentLogicalSize() const;
     void setContentLogicalSize(const QSize& logicalSize);
+    void updateAccessibleName();
     static QRectF preciseSourceSampleRectForRegion(const QRect& globalRegion,
                                                    const QRect& screenGeometry,
                                                    qreal dpr);

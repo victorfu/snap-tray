@@ -1902,9 +1902,14 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="566" />
+        <location filename="../src/PinWindow.cpp" line="2160" />
         <source>Pinned image</source>
         <translation>고정된 이미지</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="2161" />
+        <source>Pinned image, %1</source>
+        <translation>고정된 이미지, %1</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="1222" />

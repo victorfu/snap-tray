@@ -1,6 +1,10 @@
 #include <QtTest/QtTest>
 #include <cmath>
 #include <QThread>
+#include <QAccessible>
+#include <QQuickItem>
+#include <QQuickWindow>
+#include <functional>
 
 #include "IVideoEncoder.h"
 #include "encoding/IntermediateQuality.h"
@@ -1647,6 +1651,34 @@ void tst_RecordingPreviewExport::closeDuringExportAsks()
     QVERIFY(!view->close());
     QVERIFY(backend.exportCloseQuestionPending());
     QVERIFY(backend.isProcessing());
+    // #253: the question and both answers reach screen readers.
+    auto* quickView = qobject_cast<QQuickWindow*>(view);
+    QVERIFY(quickView);
+    const auto findItem = [quickView](const QString& name) {
+        std::function<QQuickItem*(QQuickItem*)> walk = [&](QQuickItem* node) -> QQuickItem* {
+            if (node->objectName() == name) return node;
+            for (QQuickItem* child : node->childItems()) {
+                if (QQuickItem* found = walk(child)) return found;
+            }
+            return nullptr;
+        };
+        return walk(quickView->contentItem());
+    };
+    QQuickItem* question = findItem(QStringLiteral("previewExportCloseQuestion"));
+    QTRY_VERIFY(question && question->isVisible());
+    QAccessibleInterface* questionAccessible = QAccessible::queryAccessibleInterface(question);
+    QVERIFY(questionAccessible);
+    QCOMPARE(questionAccessible->role(), QAccessible::AlertMessage);
+    QVERIFY(!questionAccessible->text(QAccessible::Name).isEmpty());
+    for (const QString& name : {QStringLiteral("previewKeepExportingButton"),
+                                QStringLiteral("previewCancelExportFromCloseButton")}) {
+        QQuickItem* button = findItem(name);
+        QVERIFY2(button && button->isVisible(), qPrintable(name));
+        QAccessibleInterface* buttonAccessible = QAccessible::queryAccessibleInterface(button);
+        QVERIFY2(buttonAccessible, qPrintable(name));
+        QCOMPARE(buttonAccessible->role(), QAccessible::Button);
+        QVERIFY2(!buttonAccessible->text(QAccessible::Name).isEmpty(), qPrintable(name));
+    }
     backend.keepExporting();
     QVERIFY(!backend.exportCloseQuestionPending());
     QVERIFY(backend.isProcessing());

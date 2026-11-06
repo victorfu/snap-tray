@@ -149,7 +149,7 @@ Fixed (each with a regression test that fails before the fix):
 - Drop-downs (Settings, Library sort and smart folders, editor Preview speed and Aspect ratio) read only their label; they now read the label and the current choice.
 - Repeated buttons could not be told apart: two "Open Settings" (now with the permission and its status), two "Browse..." (now with the folder and path), and Edit/Clear/Reset on every hotkey row (now with the action; Edit also reads the shortcut and its status). The filename template field is named (`settingsControlsHaveDistinctNames`).
 - Exclusive editor choices built from buttons (codec, Blurred Video/Image background, zoom scale, crop aspect) are radio buttons with a selected state (`choicesReadTheirStateToScreenReaders`).
-- Pin windows were unnamed dialogs; they are named "Pinned image".
+- Pin windows were unnamed dialogs; they are named "Pinned image" with the image size (for example "Pinned image, 800 × 600 px"), so several pins can be told apart (#253).
 
 The gaps that audit left were fixed in [#248](https://github.com/victorfu/snap-tray/issues/248), again checked in the AX tree of the running app:
 
