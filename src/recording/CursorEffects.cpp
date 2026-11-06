@@ -13,18 +13,27 @@ namespace SnapTray {
 
 namespace {
 
-struct SmoothingTau {
+struct SmoothingLevel {
     CursorEffectSettings::Smoothing smoothing;
     const char* name;
-    double tauMs; // time constant of the low-pass filter
+    SpringParameters spring;
 };
 
-constexpr SmoothingTau kSmoothing[] = {
-    {CursorEffectSettings::Smoothing::Off, "off", 0.0},
-    {CursorEffectSettings::Smoothing::Low, "low", 40.0},
-    {CursorEffectSettings::Smoothing::Medium, "medium", 80.0},
-    {CursorEffectSettings::Smoothing::High, "high", 140.0},
+// Critically damped: friction = 2 * sqrt(tension * mass).
+constexpr SmoothingLevel kSmoothing[] = {
+    {CursorEffectSettings::Smoothing::Off, "off", {2500.0, 100.0, 1.0}},
+    {CursorEffectSettings::Smoothing::Low, "low", {2500.0, 100.0, 1.0}},
+    {CursorEffectSettings::Smoothing::Medium, "medium", {900.0, 60.0, 1.0}},
+    {CursorEffectSettings::Smoothing::High, "high", {400.0, 40.0, 1.0}},
 };
+constexpr SpringParameters kClickSpring{3600.0, 120.0, 1.0};
+constexpr SpringParameters kDragSpring{6400.0, 160.0, 1.0};
+constexpr double kSpringStepMs = 1000.0 / 120.0;
+constexpr double kLeadTransitionMs = 50.0;
+constexpr qint64 kSpringSettleMs = 1000;
+constexpr qint64 kJitterWindowMs = 100;
+constexpr double kJitterDistanceSquared = 4.0;
+constexpr double kCoalesceDistanceSquared = 0.25;
 
 struct MotionBlurLevel {
     CursorEffectSettings::MotionBlur blur;
@@ -43,10 +52,6 @@ constexpr MotionBlurLevel kMotionBlur[] = {
 constexpr double kBlurGhostAlpha = 0.5;
 // Ghosts closer than this to the pointer (output pixels) add nothing.
 constexpr double kBlurMinDistancePx = 1.0;
-
-// The filter looks this many time constants back; older positions weigh
-// less than e^-6 (0.25 %).
-constexpr double kSmoothingWindowTaus = 6.0;
 
 // Ripple look, in logical pixels of the recorded screen.
 constexpr double kRippleStartRadius = 6.0;
@@ -199,12 +204,15 @@ CursorEffectRenderer::CursorEffectRenderer(const CursorTimeline& timeline, const
     , m_settings(settings)
     , m_clipEndMs(clipEndMs)
 {
+    rebuildSpringPaths();
 }
 
 void CursorEffectRenderer::setTimeline(const TimelineMap& timeline)
 {
+    if (m_kept == timeline.segments()) return;
     m_kept = timeline.segments();
     m_map = timeline;
+    rebuildSpringPaths();
 }
 
 qint64 CursorEffectRenderer::partStart(qint64 ms) const
@@ -225,47 +233,130 @@ qint64 CursorEffectRenderer::partEnd(qint64 ms) const
     return ms;
 }
 
-double CursorEffectRenderer::smoothingTauMs(CursorEffectSettings::Smoothing smoothing)
-{
-    for (const auto& entry : kSmoothing) {
-        if (entry.smoothing == smoothing) return entry.tauMs;
-    }
-    return 0.0;
-}
-
 QPointF CursorEffectRenderer::rawPosition(qint64 sourceMs) const
 {
     const CursorSample* sample = m_timeline.sampleAt(sourceMs);
     return sample ? QPointF(sample->position) : QPointF();
 }
 
-QPointF CursorEffectRenderer::smoothedPosition(qint64 sourceMs, double tauMs) const
+void CursorEffectRenderer::rebuildSpringPaths()
 {
-    // Exponential low-pass of the recorded (piecewise constant) path, in
-    // closed form over a fixed window: a function of time only.
+    m_paths.clear();
+    if (m_settings.smoothing == CursorEffectSettings::Smoothing::Off || m_timeline.samples.empty()) return;
+    SpringParameters normal = kSmoothing[1].spring;
+    for (const auto& level : kSmoothing)
+        if (level.smoothing == m_settings.smoothing) normal = level.spring;
     const auto& samples = m_timeline.samples;
-    // Never smooth toward where the pointer was in a part that is cut out.
-    const double windowStart = std::max(double(sourceMs) - kSmoothingWindowTaus * tauMs, double(partStart(sourceMs)));
-    auto it = std::upper_bound(samples.begin(), samples.end(), sourceMs,
-                               [](qint64 t, const CursorSample& s) { return t < s.tMs; });
-    if (it == samples.begin()) return QPointF(samples.front().position);
-    QPointF sum;
-    double weight = 0.0;
-    double segmentEnd = double(sourceMs);
-    for (auto s = it; s != samples.begin();) {
-        --s;
-        // The first sample also stands for the time before it.
-        const double segmentStart = s == samples.begin() ? windowStart : std::max(double(s->tMs), windowStart);
-        if (segmentEnd > segmentStart) {
-            const double w = std::exp(-(double(sourceMs) - segmentEnd) / tauMs)
-                - std::exp(-(double(sourceMs) - segmentStart) / tauMs);
-            sum += QPointF(s->position) * w;
-            weight += w;
+    const auto& buttons = m_timeline.buttons;
+    qint64 last = samples.back().tMs;
+    if (!buttons.empty()) last = std::max(last, buttons.back().tMs);
+    const auto parts = m_kept.empty()
+        ? std::vector<TimelineSegment>{{samples.front().tMs, last + kSpringSettleMs, 1.0}}
+        : m_kept;
+    for (const auto& part : parts) {
+        const qint64 start = std::max(part.startMs, samples.front().tMs);
+        const qint64 end = std::min(part.endMs, last + kSpringSettleMs);
+        if (end <= start) continue;
+        SpringPath input;
+        input.knots.push_back({double(start), rawPosition(start)});
+        auto sample = std::upper_bound(samples.begin(), samples.end(), start,
+            [](qint64 t, const CursorSample& s) { return t < s.tMs; });
+        bool lastSemantic = true;
+        for (; sample != samples.end() && sample->tMs < part.endMs; ++sample) {
+            const auto& previous = *(sample - 1);
+            const bool semantic = sample->shapeId != previous.shapeId || sample->visible != previous.visible;
+            const QPointF delta = QPointF(sample->position) - input.knots.back().position;
+            const bool interior = sample + 1 != samples.end() && (sample + 1)->tMs < part.endMs;
+            if (interior && !semantic && (sample + 1)->shapeId == sample->shapeId
+                && (sample + 1)->visible == sample->visible) {
+                const QPointF back = QPointF((sample + 1)->position) - QPointF(sample->position);
+                if ((sample + 1)->tMs - previous.tMs <= kJitterWindowMs
+                    && QPointF::dotProduct(delta, delta) <= kJitterDistanceSquared
+                    && QPointF::dotProduct(back, back) <= kJitterDistanceSquared
+                    && QPointF::dotProduct(delta, back) < 0.0) continue;
+                if (sample->tMs - input.knots.back().ms < kJitterWindowMs
+                    && QPointF::dotProduct(delta, delta) < kCoalesceDistanceSquared) continue;
+            }
+            // Keep first/last and shape/visibility boundaries. Coalesce dense
+            // interior samples into the latest sample in their 120 Hz cell.
+            if (interior && !semantic && !lastSemantic && input.knots.size() > 1
+                && std::floor((sample->tMs - start) / kSpringStepMs)
+                   == std::floor((input.knots.back().ms - start) / kSpringStepMs)) {
+                input.knots.back() = {double(sample->tMs), QPointF(sample->position)};
+            } else {
+                input.knots.push_back({double(sample->tMs), QPointF(sample->position)});
+            }
+            lastSemantic = semantic;
         }
-        segmentEnd = segmentStart;
-        if (segmentStart <= windowStart) break;
+        auto event = std::lower_bound(buttons.begin(), buttons.end(), start,
+            [](const CursorButtonEvent& e, qint64 t) { return e.tMs < t; });
+        const auto eventEnd = std::lower_bound(event, buttons.end(), part.endMs,
+            [](const CursorButtonEvent& e, qint64 t) { return e.tMs < t; });
+        // Event positions are authoritative, and lead must stop at the next
+        // event so a drag cannot run beyond its release then snap backwards.
+        for (auto e = event; e != eventEnd; ++e)
+            input.knots.push_back({double(e->tMs), QPointF(e->position)});
+        std::stable_sort(input.knots.begin(), input.knots.end(),
+            [](const SpringPath::Knot& a, const SpringPath::Knot& b) { return a.ms < b.ms; });
+        std::vector<SpringPath::Knot> unique;
+        unique.reserve(input.knots.size());
+        for (const auto& knot : input.knots) {
+            if (!unique.empty() && unique.back().ms == knot.ms) unique.back() = knot;
+            else unique.push_back(knot);
+        }
+        input.knots = std::move(unique);
+        std::vector<const CursorButtonEvent*> presses;
+        for (auto e = event; e != eventEnd; ++e) if (e->down) presses.push_back(&*e);
+        size_t nextPress = 0;
+        // Only held state is carried into a part, never spring momentum.
+        Qt::MouseButtons held = m_timeline.buttonsDownAt(start);
+        QPointF position = rawPosition(start), velocity;
+        double time = double(start), leadMs = normal.leadSeconds() * 1000.0;
+        PartPath result{part.startMs, part.endMs, {}};
+        result.path.knots.reserve(size_t((end - start) / kSpringStepMs) + 2);
+        result.path.knots.push_back({time, position});
+        qint64 step = 1;
+        while (time < end) {
+            while (event != eventEnd && event->tMs <= time) {
+                position = QPointF(event->position);
+                velocity = {};
+                if (event->down) held |= event->button; else held &= ~Qt::MouseButtons(event->button);
+                result.path.knots.back().position = position;
+                ++event;
+            }
+            while (nextPress < presses.size() && presses[nextPress]->tMs <= time) ++nextPress;
+            const bool anticipate = !held && nextPress < presses.size()
+                && presses[nextPress]->tMs - time <= kClickLookaheadMs;
+            const auto parameters = held ? kDragSpring : (anticipate ? kClickSpring : normal);
+            const double grid = start + step * kSpringStepMs;
+            double next = std::min(double(end), grid);
+            if (event != eventEnd) next = std::min(next, double(event->tMs));
+            const double dt = next - time;
+            const double nextLead = leadMs + (parameters.leadSeconds() * 1000.0 - leadMs)
+                * (1.0 - std::exp(-dt / kLeadTransitionMs));
+            const auto target = [&](double t, double lead) {
+                if (anticipate) return QPointF(presses[nextPress]->position);
+                const double targetTime = event != eventEnd ? std::min(t + lead, double(event->tMs)) : t + lead;
+                return input.at(targetTime);
+            };
+            advanceSpring(position, velocity, target(time, leadMs), target(next, nextLead), dt / 1000.0, parameters);
+            time = next;
+            leadMs = nextLead;
+            if (time >= grid) ++step;
+            result.path.knots.push_back({time, position});
+        }
+        m_paths.push_back(std::move(result));
     }
-    return weight > 0.0 ? sum / weight : QPointF((it - 1)->position);
+}
+
+QPointF CursorEffectRenderer::springPosition(qint64 sourceMs) const
+{
+    auto it = std::upper_bound(m_paths.begin(), m_paths.end(), sourceMs,
+        [](qint64 t, const PartPath& p) { return t < p.startMs; });
+    if (it == m_paths.begin()) return rawPosition(sourceMs);
+    --it;
+    if (!m_kept.empty() && sourceMs >= it->endMs) return rawPosition(sourceMs);
+    return it->path.at(double(sourceMs));
 }
 
 qint64 CursorEffectRenderer::distanceToButtonEvent(qint64 sourceMs) const
@@ -384,13 +475,8 @@ std::optional<QPointF> CursorEffectRenderer::positionAt(qint64 sourceMs) const
     const CursorSample* sample = m_timeline.sampleAt(sourceMs);
     if (!sample || sourceMs < m_timeline.samples.front().tMs || !sample->visible) return std::nullopt;
     const QPointF raw(sample->position);
-    double tau = smoothingTauMs(m_settings.smoothing);
-    if (tau <= 0.0) return raw;
-    if (m_timeline.buttonsDownAt(sourceMs)) tau *= kDragSmoothingFactor;
-    // Near a press or release the pointer is exactly where the click was:
-    // smoothing fades out instead of drifting toward another target.
-    const double fade = std::clamp(double(distanceToButtonEvent(sourceMs)) / kClickSnapMs, 0.0, 1.0);
-    return raw + (smoothedPosition(sourceMs, tau) - raw) * fade;
+    if (m_settings.smoothing == CursorEffectSettings::Smoothing::Off) return raw;
+    return springPosition(sourceMs);
 }
 
 void CursorEffectRenderer::paint(QImage& frame, qint64 sourceMs, const CursorFrameMapping& mapping) const

@@ -1,9 +1,13 @@
 #pragma once
 
+#include "recording/CursorEffects.h"
+
 #include <QPointer>
 #include <QQuickPaintedItem>
 #include <QRectF>
 #include <QtQml/qqmlregistration.h>
+
+#include <memory>
 
 class RecordingPreviewBackend;
 
@@ -39,6 +43,8 @@ signals:
 
 private:
     QPointer<RecordingPreviewBackend> m_backend;
+    std::shared_ptr<const SnapTray::CursorTimeline> m_cachedTimeline;
+    std::unique_ptr<SnapTray::CursorEffectRenderer> m_renderer;
     qint64 m_position = 0;
     QRectF m_contentRect;
 };

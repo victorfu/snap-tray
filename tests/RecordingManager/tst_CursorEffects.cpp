@@ -46,6 +46,12 @@ class TestCursorEffects : public QObject
     Q_OBJECT
 
 private slots:
+    void springSteadyMotion();
+    void springEventsAndSeeks();
+    void springCutsDoNotLookAhead();
+    void springPrecomputationBudget();
+    void springJumpAndVisibility();
+    void springJitterPreservesShapeBoundaries();
     void settingsRoundTrip();
     void availabilityFollowsTheSidecar();
     void pointerDrawnAtHotspotThroughCrop();
@@ -66,6 +72,138 @@ private slots:
     void advancedEffectsDrawThroughCrop();
     void nothingReachesAcrossACut();
 };
+
+void TestCursorEffects::springSteadyMotion()
+{
+    CursorTimeline t;
+    for (qint64 ms = 0; ms <= 4000; ms += 8)
+        t.samples.push_back({ms, QPoint(int(ms), int(ms / 2)), true, 0});
+    for (auto level : {CursorEffectSettings::Smoothing::Low, CursorEffectSettings::Smoothing::Medium,
+                       CursorEffectSettings::Smoothing::High}) {
+        CursorEffectSettings s;
+        s.smoothing = level;
+        CursorEffectRenderer renderer(t, s);
+        // Baseline lowpass at 1000 px/s: Low 43.5369, Medium 82.8739,
+        // High 141.951 source px behind at 3000 ms (8 ms samples).
+        for (qint64 ms = 2000; ms < 3000; ms += 8) {
+            const QPointF error = *renderer.pointerPosition(ms) - QPointF(ms, ms / 2);
+            QVERIFY2(std::hypot(error.x(), error.y()) < 2.0, qPrintable(QString::number(error.x())));
+        }
+    }
+    // No version key: existing recipes deliberately adopt the new model.
+    const auto legacy = CursorEffectSettings::fromJson({{QStringLiteral("smoothing"), QStringLiteral("high")}});
+    QVERIFY(qAbs(CursorEffectRenderer(t, legacy).pointerPosition(3000)->x() - 3000) < 2.0);
+}
+
+void TestCursorEffects::springEventsAndSeeks()
+{
+    CursorTimeline t;
+    t.samples = {{0, QPoint(0, 0), true, 0}, {1000, QPoint(100, 50), true, 0},
+                 {1100, QPoint(100, 50), true, 0}, {1200, QPoint(110, 55), true, 0},
+                 {1600, QPoint(200, 100), true, 0}, {2000, QPoint(3840, 2160), true, 0},
+                 {3000, QPoint(3840, 2160), true, 0}};
+    t.buttons = {{1003, Qt::LeftButton, true, QPoint(100, 50), false},
+                 {1051, Qt::LeftButton, false, QPoint(100, 50), false},
+                 {1157, Qt::LeftButton, true, QPoint(110, 55), false},
+                 {1631, Qt::LeftButton, false, QPoint(200, 100), false}};
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::High;
+    CursorEffectRenderer r(t, s);
+    for (const auto& e : t.buttons) QCOMPARE(*r.pointerPosition(e.tMs), QPointF(e.position));
+    std::vector<QPointF> forward;
+    for (qint64 ms = 0; ms < 4000; ++ms) {
+        const auto p = *r.pointerPosition(ms);
+        QVERIFY(p.x() >= 0 && p.x() <= 3840);
+        QVERIFY(p.y() >= 0 && p.y() <= 2160);
+        forward.push_back(p);
+    }
+    for (int i = 3999; i >= 0; --i) QCOMPARE(*r.pointerPosition(i), forward[size_t(i)]);
+    CursorEffectRenderer rebuilt(t, s);
+    for (int i = 0; i < 4000; ++i) {
+        const int ms = (i * 997) % 4000;
+        QCOMPARE(*rebuilt.pointerPosition(ms), forward[size_t(ms)]);
+    }
+}
+
+void TestCursorEffects::springCutsDoNotLookAhead()
+{
+    CursorTimeline a;
+    a.samples = {{0, QPoint(10, 20), true, 0}, {900, QPoint(10, 20), true, 0},
+                 {1100, QPoint(3000, 2000), true, 0}, {2100, QPoint(30, 40), true, 0}};
+    a.buttons = {{1100, Qt::LeftButton, true, QPoint(3000, 2000), false},
+                 {1200, Qt::LeftButton, false, QPoint(3000, 2000), false}};
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::High;
+    CursorEffectRenderer r(a, s);
+    r.setTimeline(TimelineMap({{0, 1000, 1}, {2100, 2600, 1}}));
+    for (qint64 ms = 0; ms < 1000; ms += 7) QCOMPARE(*r.pointerPosition(ms), QPointF(10, 20));
+    QCOMPARE(*r.pointerPosition(2100), QPointF(30, 40));
+    // Reapplying the identical map must not alter any result.
+    const auto before = r.pointerPosition(2300);
+    r.setTimeline(TimelineMap({{0, 1000, 1}, {2100, 2600, 1}}));
+    QCOMPARE(r.pointerPosition(2300), before);
+}
+
+void TestCursorEffects::springJumpAndVisibility()
+{
+    CursorTimeline t;
+    t.samples = {{0, QPoint(0, 0), true, 0}, {999, QPoint(0, 0), true, 0},
+                 {1000, QPoint(3840, 2160), true, 1}, {3000, QPoint(3840, 2160), true, 1}};
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::High;
+    CursorEffectRenderer r(t, s);
+    double last = 0;
+    for (qint64 ms = 0; ms <= 3000; ++ms) {
+        const auto p = *r.pointerPosition(ms);
+        QVERIFY(p.x() >= last && p.x() <= 3840);
+        last = p.x();
+    }
+    t.samples.insert(t.samples.begin() + 3, {2000, QPoint(3840, 2160), false, 1});
+    CursorEffectRenderer hidden(t, s);
+    QVERIFY(!hidden.pointerPosition(2500));
+    QVERIFY(hidden.pointerPosition(3000));
+    s.stillEndMs = 500;
+    s.hiddenRanges = {{2100, 2300}};
+    CursorEffectRenderer frozen(t, s, 2000);
+    QCOMPARE(frozen.pointerPosition(1999), frozen.pointerPosition(1500));
+}
+
+void TestCursorEffects::springJitterPreservesShapeBoundaries()
+{
+    CursorTimeline t;
+    t.samples = {{0, QPoint(0, 0), true, 0}, {950, QPoint(0, 0), true, 0},
+                 {1000, QPoint(1, 0), true, 0}, {1030, QPoint(0, 0), true, 0},
+                 {2000, QPoint(0, 0), true, 0}};
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::High;
+    CursorEffectRenderer filtered(t, s);
+    QCOMPARE(*CursorEffectRenderer(t, {}).pointerPosition(1000), QPointF(1, 0));
+    for (int ms = 900; ms < 1200; ++ms) QCOMPARE(*filtered.pointerPosition(ms), QPointF(0, 0));
+    // The same tiny move at a shape transition is an endpoint to preserve.
+    t.samples[2].shapeId = t.samples[3].shapeId = t.samples[4].shapeId = 1;
+    CursorEffectRenderer semantic(t, s);
+    QVERIFY(semantic.pointerPosition(1000)->x() > 0.0);
+}
+
+void TestCursorEffects::springPrecomputationBudget()
+{
+    CursorTimeline t;
+    for (int i = 0; i <= 72000; ++i)
+        t.samples.push_back({qint64(i) * 1000 / 120, QPoint(i % 3840, i % 2160), true, 0});
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::High;
+    QElapsedTimer timer;
+    timer.start();
+    CursorEffectRenderer r(t, s);
+    const double elapsedMs = timer.nsecsElapsed() / 1e6;
+    qInfo("10-minute 120 Hz spring precomputation: %.3f ms", elapsedMs);
+#ifdef NDEBUG
+    QVERIFY(elapsedMs < 50.0);
+#else
+    QVERIFY(elapsedMs < 1000.0);
+#endif
+    QVERIFY(r.pointerPosition(599000).has_value());
+}
 
 void TestCursorEffects::settingsRoundTrip()
 {
@@ -168,9 +306,9 @@ void TestCursorEffects::clicksKeepTheRealPosition()
     CursorEffectSettings s;
     s.smoothing = CursorEffectSettings::Smoothing::High;
     CursorEffectRenderer renderer(t, s);
-    // Without the snap, High smoothing would still be far behind at the press.
-    QCOMPARE(*renderer.pointerPosition(300), QPointF(150, 80));
-    QCOMPARE(*renderer.pointerPosition(340), QPointF(150, 80));
+    // Button events are authoritative even when the sampled path differs.
+    QCOMPARE(*renderer.pointerPosition(300), QPointF(t.buttons[0].position));
+    QCOMPARE(*renderer.pointerPosition(340), QPointF(t.buttons[1].position));
 }
 
 void TestCursorEffects::rippleAnchoredToThePress()

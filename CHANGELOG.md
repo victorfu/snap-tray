@@ -12,6 +12,8 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Improved
 
+- Recording pointer smoothing now uses a lag-compensated spring with click anticipation and tighter drag tracking. Off remains the default. Existing projects with smoothing enabled use the new path when exported again; their pointer motion can differ from earlier exports.
+
 - Settings pages are now grouped by task: General, Capture, Pin Windows, Recording, Saving, Text Recognition, and Hotkeys. The former Advanced, Files, and Watermark settings moved to Capture, Pin Windows, and Saving; your settings are kept. Every page except About starts with a title and a short description.
 - Settings can be searched (Ctrl+F or Cmd+F): results open the page and highlight the setting. A setting you changed shows a reset button that restores its default.
 - Beautify opens on named styles (Compact, Standard, Spacious, Flat) and named backgrounds. Padding, corners, shadow, and the other details are under Customize. Save style… keeps up to 8 looks of your own by name, which you can rename or delete.
