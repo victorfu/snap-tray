@@ -243,7 +243,12 @@ public:
             rendered.wait(300);
         }
         QTest::qWait(80);
-        return m_view.grabWindow();
+        QImage image = m_view.grabWindow();
+        // The software scene graph returns a device-pixel grab tagged with
+        // ratio 1 (seen at 1.5x and 2x on X11), so take the ratio from the
+        // grab's size instead, as tst_RecordingPreviewMasks does (#254).
+        if (m_view.width() > 0) image.setDevicePixelRatio(qreal(image.width()) / m_view.width());
+        return image;
     }
 
     QQuickItem* find(const QString& name) const
