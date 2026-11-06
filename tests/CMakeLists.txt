@@ -674,6 +674,9 @@ set_tests_properties(PinWindow_PinHoverBar PROPERTIES TIMEOUT 60 LABELS "unit;in
 add_executable(PinWindow_PinHoverIntegration PinWindow/tst_PinHoverIntegration.cpp)
 target_link_libraries(PinWindow_PinHoverIntegration PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(PinWindow_PinHoverIntegration PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(PinWindow_PinHoverIntegration PRIVATE X11::X11)
+endif()
 add_test(NAME PinWindow_PinHoverIntegration COMMAND PinWindow_PinHoverIntegration)
 set_tests_properties(PinWindow_PinHoverIntegration PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 

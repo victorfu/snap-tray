@@ -16,6 +16,11 @@
 #include "qml/PinHoverBarViewModel.h"
 #include "settings/PinWindowSettingsManager.h"
 
+#ifdef Q_OS_LINUX
+#include <QtGui/qguiapplication_platform.h>
+#include <X11/Xlib.h>
+#endif
+
 #ifdef Q_OS_WIN
 #include "platform/CaptureExclusionPolicy.h"
 #include <Windows.h>
@@ -39,6 +44,8 @@ private slots:
     void initTestCase();
     void cleanupTestCase();
     void hoverShowsBarWithValues();
+    void x11HoverWindowsStackAbovePin_data();
+    void x11HoverWindowsStackAbovePin();
     void barZoomRequestZoomsPin();
     void suppressedStates_data();
     void suppressedStates();
@@ -109,6 +116,80 @@ void TestPinHoverIntegration::hoverShowsBarWithValues()
     QCOMPARE(window.m_hoverBarViewModel->zoomPercent(), 100);
     QCOMPARE(window.m_hoverBarViewModel->opacityPercent(), 100);
     QVERIFY(window.frameGeometry().contains(window.m_hoverBar->barGeometry()));
+}
+
+void TestPinHoverIntegration::x11HoverWindowsStackAbovePin_data()
+{
+    QTest::addColumn<bool>("prepareCapture");
+    QTest::newRow("lazy") << false;
+    QTest::newRow("prepared-for-live-capture") << true;
+}
+
+void TestPinHoverIntegration::x11HoverWindowsStackAbovePin()
+{
+#ifndef Q_OS_LINUX
+    QSKIP("X11 stacking regression");
+#else
+    auto* x11 = qGuiApp->nativeInterface<QNativeInterface::QX11Application>();
+    if (!x11) QSKIP("Requires the xcb platform");
+    Display* display = x11->display();
+    QFETCH(bool, prepareCapture);
+    PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    showWithoutRealHover(window);
+    if (prepareCapture) window.liveCaptureExcludedWindowIds();
+    hover(window);
+    QTRY_VERIFY_WITH_TIMEOUT(window.m_hoverBar->isBarVisible(), 1500);
+
+    // XQueryTree lists siblings bottom-to-top. Follow WM frames to root
+    // children so this detects the original bug under Mutter, not only Xvfb.
+    const auto rootChild = [display](::Window child) {
+        for (;;) {
+            ::Window root = 0, parent = 0, *children = nullptr;
+            unsigned int count = 0;
+            const bool ok = XQueryTree(display, child, &root, &parent, &children, &count);
+            if (children) XFree(children);
+            if (!ok || !parent) return ::Window(0);
+            if (parent == root) return child;
+            child = parent;
+        }
+    };
+    const auto abovePin = [&](QWindow* overlay) {
+        XSync(display, False);
+        const ::Window pinChild = rootChild(window.winId());
+        const ::Window overlayChild = rootChild(overlay->winId());
+        ::Window root = 0, parent = 0, *children = nullptr;
+        unsigned int count = 0;
+        if (!XQueryTree(display, DefaultRootWindow(display), &root, &parent, &children, &count))
+            return false;
+        int pinIndex = -1, overlayIndex = -1;
+        for (unsigned int i = 0; i < count; ++i) {
+            if (children[i] == pinChild) pinIndex = int(i);
+            if (children[i] == overlayChild) overlayIndex = int(i);
+        }
+        if (children) XFree(children);
+        XWindowAttributes attributes{};
+        return pinIndex >= 0 && overlayIndex > pinIndex
+            && XGetWindowAttributes(display, overlay->winId(), &attributes)
+            && attributes.map_state == IsViewable && attributes.override_redirect;
+    };
+    QWindow* bar = window.m_hoverBar->barWindow();
+    QVERIFY(QTest::qWaitForWindowExposed(bar));
+    QTRY_VERIFY(abovePin(bar));
+    QVERIFY(bar->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
+    for (int panel : {PinHoverBarViewModel::ZoomPanel, PinHoverBarViewModel::OpacityPanel}) {
+        window.m_hoverBarViewModel->openPanel(panel);
+        QTRY_VERIFY(window.m_hoverBar->isPanelVisible());
+        QWindow* panelWindow = window.m_hoverBar->panelWindow();
+        QVERIFY(QTest::qWaitForWindowExposed(panelWindow));
+        QTRY_VERIFY(abovePin(panelWindow));
+        QVERIFY(panelWindow->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
+        window.m_hoverBarViewModel->closePanel();
+    }
+    window.m_hoverBar->hideNow();
+    window.raise();
+    window.m_hoverBar->showNow();
+    QTRY_VERIFY(abovePin(bar));
+#endif
 }
 
 void TestPinHoverIntegration::barZoomRequestZoomsPin()

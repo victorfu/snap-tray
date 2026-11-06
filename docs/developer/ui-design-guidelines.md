@@ -349,11 +349,36 @@ Applies to pin windows (#225). Design: `docs/superpowers/specs/2026-11-05-pin-wi
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
 | Build and repository tests | `scripts/run-tests.sh`, all suites | CI build and tests only | CI build and tests only |
-| Hover bar, panels, compact bar, light/dark/German | Evidence below (`PinWindow_Evidence`) | Pending manual pass (#238) | Fails under GNOME: the bar and panels open beneath the override-redirect pin (#250). Fixtures render correctly |
-| Bar follows pin drag/zoom; hides in excluded states | `PinWindow_PinHoverBar`, `PinWindow_PinHoverIntegration` | CI tests only | CI tests only (Xvfb has no window manager, see #250) |
+| Hover bar, panels, compact bar, light/dark/German | Evidence below (`PinWindow_Evidence`) | Pending manual pass (#238) | Original GNOME stacking failure fixed in #250; native stacking regression passes (see below). Full theme/localization manual pass remains pending |
+| Bar follows pin drag/zoom; hides in excluded states | `PinWindow_PinHoverBar`, `PinWindow_PinHoverIntegration` | CI tests only | Both automated suites pass under GNOME X11 / Qt 6.12.0 (#250); physical-pointer acceptance remains pending |
 | Click-through pill and tray exit | `PinWindow_Transform`, `App_MainApplicationTrayMenu`; screenshot below | Pending manual pass (#238) | Not supported (no click-through) |
 | Physical DPI scales | 2× only | Pending (#238) | Physical 2×; 1× and 1.5× renderings |
 | Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `Qml_PinHoverBarQml`, `PinWindow_Transform` | Pending (Narrator) | AT-SPI exposes "Pin controls" with named buttons; on `747e15df` (before #247) the pin window itself carried only the app name (#253) |
+
+### X11 stacking regression (#250)
+
+The hover bar and value panel inherit the pin owner's
+`X11BypassWindowManagerHint` before native window creation. Their existing
+`raise()` after showing then keeps them above an override-redirect pin, while
+ordinary managed owners keep managed overlays.
+
+On Ubuntu 22.04.5 / GNOME X11 / Qt 6.12.0, the new
+`PinWindow_PinHoverIntegration::x11HoverWindowsStackAbovePin` failed before
+this fix and passed after it, for both lazy creation and windows prepared for
+Live Update capture exclusion. It checks native root-child stacking order
+(including WM frames), map state and override-redirect state for the bar and
+both panels, then hides and re-shows the bar after raising the pin.
+
+Run it from a GNOME X11 session after building the test target:
+
+```bash
+QT_QPA_PLATFORM=xcb QT_QUICK_BACKEND=software \
+  ./build/bin/PinWindow_PinHoverIntegration x11HoverWindowsStackAbovePin
+```
+
+The same test runs under Xvfb in CI, but a pass there alone is not evidence of
+correct stacking under a window manager. This automated check does not replace
+the remaining manual theme, localization and accessibility acceptance items.
 
 ### Evidence
 
