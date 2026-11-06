@@ -4,7 +4,10 @@
 #include "recording/ZoomTrack.h"
 
 #include <QFont>
+#include <QLineF>
 #include <QPainter>
+
+#include <cmath>
 
 using namespace SnapTray;
 
@@ -75,6 +78,10 @@ private slots:
     void viewportIsStableAndBounded();
     void reducedMotionAndOff();
     void touchingSegmentsBlend();
+    void zoomChangesEvenlyInScale();
+    void panFollowsVanWijkNuijPath();
+    void farPanZoomsOutOnTheWay();
+    void panIsSlowerOnScreen();
     void segmentsNormalizeAndRoundTrip();
     void demoContactSheet();
 };
@@ -421,6 +428,112 @@ void TestZoomTrack::touchingSegmentsBlend()
     // Less Motion keeps a cut: no motion rather than a fast pan.
     track.reduceMotion = true;
     QCOMPARE(track.viewportAt(3999, kBounds), track.viewportAt(2500, kBounds));
+}
+
+// #263: the zoom changes by the same factor in equal (eased) steps, so it
+// never seems to rush at one end: log(scale) follows the easing curve.
+void TestZoomTrack::zoomChangesEvenlyInScale()
+{
+    const QPointF centre = kBounds.center();
+    const auto smootherstep = [](double x) { return x * x * x * (x * (x * 6.0 - 15.0) + 10.0); };
+    const auto checkLogScale = [&](const ZoomTrack& track, qint64 fromMs, qint64 toMs, double fromScale,
+                                   double toScale) {
+        for (int i = 1; i < 10; ++i) {
+            const double x = i / 10.0;
+            const qint64 t = fromMs + qint64(std::llround(x * double(toMs - fromMs)));
+            const double eased = smootherstep(double(t - fromMs) / double(toMs - fromMs));
+            const double expected = std::exp(std::log(fromScale) + eased * (std::log(toScale) - std::log(fromScale)));
+            const double scale = kBounds.width() / track.viewportAt(t, kBounds).width();
+            QVERIFY2(qAbs(scale / expected - 1.0) < 0.01,
+                     qPrintable(QStringLiteral("t=%1 scale %2 expected %3").arg(t).arg(scale).arg(expected)));
+        }
+    };
+    // 1x -> 2x on the way in, and 4x -> 1x on the way out.
+    checkLogScale(trackOf({{2000, 4000, 2.0, centre}}), 2000 - ZoomTrack::kTransitionMs, 2000, 1.0, 2.0);
+    checkLogScale(trackOf({{2000, 4000, 4.0, centre}}), 4000, 4000 + ZoomTrack::kTransitionMs, 4.0, 1.0);
+    // 2x -> 4x between touching segments (blend centred on their boundary).
+    checkLogScale(trackOf({{2000, 4000, 2.0, centre}, {4000, 6000, 4.0, centre}}),
+                  4000 - ZoomTrack::kMinBlendMs / 2, 4000 + ZoomTrack::kMinBlendMs / 2, 2.0, 4.0);
+    // Halfway in time is the geometric middle: sqrt(2), not the 1.33x a linear width gives.
+    const double half = kBounds.width() / trackOf({{2000, 4000, 2.0, centre}})
+                                              .viewportAt(2000 - ZoomTrack::kTransitionMs / 2, kBounds).width();
+    QVERIFY(qAbs(half - std::sqrt(2.0)) < 1e-6);
+}
+
+// #263: a pan between zoomed segments takes van Wijk and Nuij's smooth and
+// efficient path. Expected values come from d3-interpolate's interpolateZoom
+// (rho = sqrt 2) at the smootherstep-eased times, computed independently.
+void TestZoomTrack::panFollowsVanWijkNuijPath()
+{
+    // Gap 600 ms: a direct pan from 4000 to 4600 ms.
+    const ZoomTrack track = trackOf({{2000, 4000, 3.0, QPointF(700, 400)}, {4600, 6600, 3.0, QPointF(1200, 700)}});
+    struct Expected { qint64 t; double cx, cy, width; };
+    const Expected expected[] = {
+        {4150, 738.312266183, 422.987359710, 711.213308531},
+        {4300, 950.000000000, 550.000000000, 865.794432877},
+        {4450, 1161.687733817, 677.012640290, 711.213308531},
+    };
+    for (const auto& e : expected) {
+        const QRectF view = track.viewportAt(e.t, kBounds);
+        QVERIFY2(qAbs(view.center().x() - e.cx) < 1e-3 && qAbs(view.center().y() - e.cy) < 1e-3
+                     && qAbs(view.width() - e.width) < 1e-3,
+                 qPrintable(QStringLiteral("t=%1: (%2, %3) w %4").arg(e.t).arg(view.center().x())
+                                .arg(view.center().y()).arg(view.width())));
+    }
+    // The ends are exactly the segments' views.
+    QCOMPARE(track.viewportAt(4000, kBounds), track.viewportAt(3000, kBounds));
+    QCOMPARE(track.viewportAt(4600, kBounds), track.viewportAt(5000, kBounds));
+}
+
+// #263: between far-apart zooms the path pulls out on the way, so the viewer
+// keeps their bearings, and stays a continuous, bounded, undistorted view.
+void TestZoomTrack::farPanZoomsOutOnTheWay()
+{
+    const ZoomTrack track = trackOf({{2000, 4000, 3.0, QPointF(250, 150)}, {4000, 6000, 3.0, QPointF(1700, 950)}});
+    const QRectF start = track.viewportAt(3000, kBounds);
+    const QRectF end = track.viewportAt(5000, kBounds);
+    double minScale = ZoomTrack::kMaxScale;
+    QRectF last = start;
+    for (qint64 t = 3000; t <= 5000; ++t) {
+        const QRectF view = track.viewportAt(t, kBounds);
+        QVERIFY(inside(kBounds, view));
+        QVERIFY(qAbs(view.width() / view.height() - kBounds.width() / kBounds.height()) < 1e-6);
+        // Continuous: no frame-to-frame jump (1 ms apart).
+        QVERIFY2(QLineF(view.center(), last.center()).length() < 20 && qAbs(view.width() - last.width()) < 20,
+                 qPrintable(QStringLiteral("jump at %1").arg(t)));
+        minScale = std::min(minScale, kBounds.width() / view.width());
+        last = view;
+    }
+    QVERIFY2(minScale < 2.0, qPrintable(QString::number(minScale)));
+    QVERIFY(minScale >= 1.0 - 1e-9);
+    QCOMPARE(last, end);
+}
+
+// #263: panning at 3x no longer sweeps the screen three times as fast as at
+// 1x: the peak on-screen speed is below the old straight-line pan's.
+void TestZoomTrack::panIsSlowerOnScreen()
+{
+    const ZoomSegment a{2000, 4000, 3.0, QPointF(500, 400)};
+    const ZoomSegment b{4600, 6600, 3.0, QPointF(1400, 650)};
+    const ZoomTrack track = trackOf({a, b});
+    const QRectF from = track.viewportAt(3000, kBounds);
+    const QRectF to = track.viewportAt(5000, kBounds);
+    const auto smootherstep = [](double x) { return x * x * x * (x * (x * 6.0 - 15.0) + 10.0); };
+    double peakNew = 0.0;
+    double peakOld = 0.0;
+    QRectF lastNew = from;
+    QPointF lastOld = from.center();
+    for (qint64 t = 4001; t <= 4600; ++t) {
+        const QRectF view = track.viewportAt(t, kBounds);
+        // Distance moved on screen: source pixels over the view's width.
+        peakNew = std::max(peakNew, QLineF(view.center(), lastNew.center()).length() / view.width());
+        lastNew = view;
+        const double eased = smootherstep(double(t - 4000) / 600.0);
+        const QPointF old = from.center() + (to.center() - from.center()) * eased; // same width throughout
+        peakOld = std::max(peakOld, QLineF(old, lastOld).length() / from.width());
+        lastOld = old;
+    }
+    QVERIFY2(peakNew < peakOld * 0.95, qPrintable(QStringLiteral("%1 vs %2").arg(peakNew).arg(peakOld)));
 }
 
 void TestZoomTrack::demoContactSheet()

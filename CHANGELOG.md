@@ -12,6 +12,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Improved
 
+- Recording zoom transitions now change the zoom evenly instead of rushing at one end, and a pan between zooms far apart pulls back on the way instead of sweeping across the screen at full zoom. Existing projects keep their zoom segments; only the frames during a transition differ when exported again.
 - Recording pointer smoothing now uses a lag-compensated spring with click anticipation and tighter drag tracking. Off remains the default. Existing projects with smoothing enabled use the new path when exported again; their pointer motion can differ from earlier exports.
 
 - Settings pages are now grouped by task: General, Capture, Pin Windows, Recording, Saving, Text Recognition, and Hotkeys. The former Advanced, Files, and Watermark settings moved to Capture, Pin Windows, and Saving; your settings are kept. Every page except About starts with a title and a short description.

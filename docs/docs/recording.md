@@ -168,7 +168,7 @@ Full-screen recordings often make buttons and text small once shared. The previe
 - **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
 - Zooms appear in the Zoom lane. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less motion** makes all zooms smaller and slower without direct pans, **Zoom effects** turns them all off without deleting them, and **Delete zoom** removes one.
 
-The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Zooms are available for MP4, GIF and WebP.
+Zooming in and out changes the size evenly from start to finish, and a pan between zooms far apart pulls back a little on the way so you can see where it goes. The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Zooms are available for MP4, GIF and WebP.
 
 ### Follow cursor during zoom
 
