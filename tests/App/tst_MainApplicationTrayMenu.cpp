@@ -10,6 +10,10 @@
 #include "IVideoEncoder.h"
 
 #include "cli/IPCProtocol.h"
+#include "cli/CLIResult.h"
+#include "cli/commands/GuiCommand.h"
+#include "RegionSelector.h"
+#include "history/HistoryRecorder.h"
 #include "hotkey/HotkeyManager.h"
 #include "qml/QmlDialog.h"
 #include "qml/ScreenPickerViewModel.h"
@@ -31,6 +35,10 @@
 #include <QSettings>
 #include <QTranslator>
 #include <QBuffer>
+#include <QDataStream>
+#include <QLocalServer>
+#include <QLocalSocket>
+#include <QUuid>
 #include <QImageReader>
 #include <QTemporaryDir>
 #include <QScreen>
@@ -45,6 +53,61 @@ QString translationFilePath()
 {
     return QDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR))
         .filePath(QStringLiteral("snaptray_zh_TW.qm"));
+}
+
+// A connected CLI <-> main instance socket pair for scripted `gui` tests.
+struct CLISocketPair {
+    QLocalServer server;
+    QLocalSocket client;
+    QLocalSocket* serverSide = nullptr;
+
+    bool open()
+    {
+        const QString name = QStringLiteral("snaptray-test-%1")
+                                 .arg(QUuid::createUuid().toString(QUuid::Id128));
+        if (!server.listen(name)) return false;
+        client.connectToServer(name);
+        if (!client.waitForConnected(1000) || !server.waitForNewConnection(1000)) return false;
+        serverSide = server.nextPendingConnection();
+        return serverSide != nullptr;
+    }
+
+    // Reads one length-prefixed response, as IPCProtocol::sendCommand does.
+    bool readResponse(SnapTray::CLI::IPCResponse* response)
+    {
+        QByteArray buffer;
+        QDeadlineTimer deadline(5000);
+        while (!deadline.hasExpired()) {
+            QCoreApplication::processEvents();
+            client.waitForReadyRead(10);
+            buffer.append(client.readAll());
+            if (buffer.size() < static_cast<int>(sizeof(quint32))) continue;
+            QDataStream stream(buffer);
+            quint32 size = 0;
+            stream >> size;
+            if (buffer.size() < static_cast<qsizetype>(sizeof(quint32) + size)) continue;
+            *response = SnapTray::CLI::IPCResponse::fromJson(buffer.mid(sizeof(quint32), size));
+            return true;
+        }
+        return false;
+    }
+};
+
+QByteArray scriptedGuiCommand(const QJsonObject& options)
+{
+    SnapTray::CLI::IPCMessage message;
+    message.command = QStringLiteral("gui");
+    message.options = options;
+    return message.toJson();
+}
+
+QPixmap solidScreenSnapshot(QScreen* screen)
+{
+    const qreal dpr = screen->devicePixelRatio();
+    QPixmap pixmap(screen->geometry().size() * dpr);
+    pixmap.fill(Qt::darkCyan);
+    pixmap.setDevicePixelRatio(dpr);
+    return pixmap;
 }
 
 class FakeUpdateService final : public IUpdateService
@@ -158,6 +221,11 @@ private slots:
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_removedRecordCommandIsIgnored();
     void handleCLICommand_deferredUntilFullScreenExportFinishes();
+    void scriptedGui_finishRepliesWithSelectionAndImage();
+    void scriptedGui_escapeRepliesCancelled();
+    void scriptedGui_pinOptionPinsTheCapture();
+    void scriptedGui_rejectedWhileCaptureActive();
+    void scriptedGui_recordsLastRegion();
     void screenPickerClosed_deletesWrapperAndViewModel();
     void trayDisableClickThroughItem();
     void queuedHistoryEntryRechecksCaptureMode();
@@ -702,6 +770,240 @@ void tst_MainApplicationTrayMenu::handleCLICommand_deferredUntilFullScreenExport
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
+namespace {
+
+// Finishing a capture records history on a worker thread: keep it out of the
+// user's history and drain it before the test ends.
+class ScopedTestHistory
+{
+public:
+    ScopedTestHistory()
+        : m_previous(qgetenv("SNAPTRAY_HISTORY_DIR"))
+        , m_hadPrevious(qEnvironmentVariableIsSet("SNAPTRAY_HISTORY_DIR"))
+    {
+        qputenv("SNAPTRAY_HISTORY_DIR", m_directory.path().toLocal8Bit());
+    }
+    ~ScopedTestHistory()
+    {
+        SnapTray::HistoryRecorder::instance().waitForIdleForTests();
+        if (m_hadPrevious) {
+            qputenv("SNAPTRAY_HISTORY_DIR", m_previous);
+        } else {
+            qunsetenv("SNAPTRAY_HISTORY_DIR");
+        }
+    }
+    bool isValid() const { return m_directory.isValid(); }
+
+private:
+    QTemporaryDir m_directory;
+    QByteArray m_previous;
+    bool m_hadPrevious = false;
+};
+
+QJsonObject initialRegionJson(const QRect& rect)
+{
+    return {{SnapTray::CLI::GuiCommand::kResultX, rect.x()},
+            {SnapTray::CLI::GuiCommand::kResultY, rect.y()},
+            {SnapTray::CLI::GuiCommand::kResultWidth, rect.width()},
+            {SnapTray::CLI::GuiCommand::kResultHeight, rect.height()}};
+}
+
+QRect testRegionOnPrimaryScreen()
+{
+    const QRect screen = QGuiApplication::primaryScreen()->geometry();
+    return QRect(screen.topLeft() + QPoint(40, 30), QSize(120, 80));
+}
+
+} // namespace
+
+void tst_MainApplicationTrayMenu::scriptedGui_finishRepliesWithSelectionAndImage()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    const QRect region = testRegionOnPrimaryScreen();
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionWantImage, true},
+                            {GuiCommand::kOptionInitialRegion, initialRegionJson(region)}}),
+        pair.serverSide);
+
+    QPointer<RegionSelector> selector = application.m_captureManager->m_regionSelector;
+    QVERIFY(selector);
+    QVERIFY(application.m_captureManager->isScriptedCapturePending());
+    // Nothing is answered until the user finishes.
+    QTest::qWait(50);
+    QCOMPARE(pair.client.bytesAvailable(), qint64(0));
+
+    QTest::keyClick(selector.data(), Qt::Key_Return);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(response.success);
+    QCOMPARE(response.code, static_cast<int>(CLIResult::Code::Success));
+    QCOMPARE(QRect(response.result[GuiCommand::kResultX].toInt(),
+                   response.result[GuiCommand::kResultY].toInt(),
+                   response.result[GuiCommand::kResultWidth].toInt(),
+                   response.result[GuiCommand::kResultHeight].toInt()),
+             region);
+    QCOMPARE(response.result[GuiCommand::kResultScreen].toInt(),
+             QGuiApplication::screens().indexOf(QGuiApplication::primaryScreen()));
+    QImage image;
+    QVERIFY(image.loadFromData(response.data, "PNG"));
+    const qreal dpr = response.result[GuiCommand::kResultDevicePixelRatio].toDouble();
+    QCOMPARE(image.size(), (QSizeF(region.size()) * dpr).toSize());
+
+    // Script destinations replace the default pin.
+    QTRY_VERIFY(!selector);
+    QCOMPARE(created.count(), 0);
+    QVERIFY(!application.m_captureManager->isScriptedCapturePending());
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::scriptedGui_escapeRepliesCancelled()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionWantImage, true},
+                            {GuiCommand::kOptionAcceptOnSelect, true}}),
+        pair.serverSide);
+
+    QPointer<RegionSelector> selector = application.m_captureManager->m_regionSelector;
+    QVERIFY(selector);
+    QTest::keyClick(selector.data(), Qt::Key_Escape);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(!response.success);
+    QCOMPARE(response.code, static_cast<int>(CLIResult::Code::Cancelled));
+    QVERIFY(response.data.isEmpty());
+    QTRY_VERIFY(!selector);
+    QCOMPARE(created.count(), 0);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::scriptedGui_pinOptionPinsTheCapture()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionPin, true},
+                            {GuiCommand::kOptionInitialRegion,
+                             initialRegionJson(testRegionOnPrimaryScreen())}}),
+        pair.serverSide);
+
+    QPointer<RegionSelector> selector = application.m_captureManager->m_regionSelector;
+    QVERIFY(selector);
+    QTest::keyClick(selector.data(), Qt::Key_Return);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(response.success);
+    // Only --pin: no image travels back to the CLI.
+    QVERIFY(response.data.isEmpty());
+    QTRY_COMPARE(created.count(), 1);
+
+    application.m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::scriptedGui_rejectedWhileCaptureActive()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+
+    application.m_captureManager->startRegionCapture(false);
+    QPointer<RegionSelector> existing = application.m_captureManager->m_regionSelector;
+    QVERIFY(existing);
+    QVERIFY(application.m_captureManager->isActive());
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionWantImage, true}}),
+        pair.serverSide);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(!response.success);
+    QCOMPARE(response.code, static_cast<int>(CLIResult::Code::GeneralError));
+    QVERIFY2(response.error.contains(QStringLiteral("already in progress")),
+             qPrintable(response.error));
+    // The open capture is left alone, and no second selector opened.
+    QCOMPARE(application.m_captureManager->m_regionSelector.data(), existing.data());
+
+    existing->close();
+    QTRY_VERIFY(!existing);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::scriptedGui_recordsLastRegion()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    const QRect region = testRegionOnPrimaryScreen();
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionInitialRegion, initialRegionJson(region)}}),
+        pair.serverSide);
+    QPointer<RegionSelector> selector = application.m_captureManager->m_regionSelector;
+    QVERIFY(selector);
+    QTest::keyClick(selector.data(), Qt::Key_Return);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(response.success);
+    const auto stored = RegionCaptureSettingsManager::instance().lastCaptureRegion();
+    QVERIFY(stored.has_value());
+    QCOMPARE(stored->globalRect, region);
+    QCOMPARE(stored->screenName, QGuiApplication::primaryScreen()->name());
+    QTRY_VERIFY(!selector);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
 void tst_MainApplicationTrayMenu::handleCLICommand_removedRecordCommandIsIgnored()
 {
     using namespace SnapTray::CLI;
@@ -833,6 +1135,8 @@ void tst_MainApplicationTrayMenu::clearAllTestSettings()
     auto settings = SnapTray::getSettings();
     settings.remove(QString::fromLatin1(SnapTray::kSettingsKeyHotkeyRegistrationCounter));
     settings.remove(QStringLiteral("regionCapture/delayedCaptureSeconds"));
+    settings.remove(QStringLiteral("regionCapture/lastRegion"));
+    settings.remove(QStringLiteral("regionCapture/lastRegionScreen"));
     settings.remove(QStringLiteral("update/autoCheck"));
     settings.remove(QStringLiteral("update/checkIntervalHours"));
     settings.remove(QStringLiteral("update/lastCheckTime"));

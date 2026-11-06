@@ -2,6 +2,7 @@
 #define SINGLEINSTANCEGUARD_H
 
 #include <QByteArray>
+#include <QLocalSocket>
 #include <QObject>
 #include <memory>
 
@@ -20,7 +21,10 @@ public:
 
 signals:
     void activateRequested();
-    void commandReceived(const QByteArray& commandData);
+    // replySocket stays open until the CLI disconnects, so a command that
+    // promised a result can answer later (IPCProtocol::writeResponse). It is
+    // owned by the guard and deleted when the CLI disconnects.
+    void commandReceived(const QByteArray& commandData, QLocalSocket* replySocket);
 
 private slots:
     void onNewConnection();

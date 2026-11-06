@@ -405,8 +405,11 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
 {
     // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
 
+    const bool scripted = m_scriptedCapturePending;
+    const bool createPin = !scripted || m_scriptedCapture.pinResult;
+
     // Use the global coordinates computed by RegionSelector
-    if (m_pinManager) {
+    if (m_pinManager && createPin) {
         QScreen *targetScreen = nullptr;
         if (!globalRect.isEmpty()) {
             targetScreen = QGuiApplication::screenAt(globalRect.center());
@@ -461,13 +464,75 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
         }
     }
 
+    if (scripted) {
+        m_scriptedCapturePending = false;
+        emit scriptedCaptureFinished(screenshot, globalRect);
+    }
     emit captureCompleted(screenshot);
 }
 
 void CaptureManager::onSelectionCancelled()
 {
     // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
+    cancelPendingScriptedCapture();
     emit captureCancelled();
+}
+
+void CaptureManager::cancelPendingScriptedCapture()
+{
+    if (!m_scriptedCapturePending) {
+        return;
+    }
+    m_scriptedCapturePending = false;
+    emit scriptedCaptureCancelled();
+}
+
+bool CaptureManager::startScriptedRegionCapture(const ScriptedCaptureOptions& options)
+{
+    if (isActive()) {
+        return false;
+    }
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+
+    if (options.initialGlobalRegion.isEmpty()) {
+        startCaptureInternal(
+            options.acceptOnSelect ? CaptureEntryMode::QuickPin : CaptureEntryMode::Region,
+            !options.acceptOnSelect);
+    }
+    else {
+        QScreen* screen = QGuiApplication::screenAt(options.initialGlobalRegion.center());
+        if (!screen) {
+            qWarning() << "CaptureManager: No screen contains the scripted initial region"
+                       << options.initialGlobalRegion;
+            return false;
+        }
+        emit captureStarted();
+        QWidget* popup = QApplication::activePopupWidget();
+        QWidget* modal = QApplication::activeModalWidget();
+        const QPixmap preCapture = captureSnapshot(screen);
+        closeTransientWindows(popup, modal);
+        startPresetRegionCapture(screen,
+                                 options.initialGlobalRegion.intersected(screen->geometry()),
+                                 preCapture,
+                                 options.acceptOnSelect);
+    }
+
+    if (!m_regionSelector) {
+        return false;
+    }
+
+    m_scriptedCapture = options;
+    m_scriptedCapturePending = options.reportResult;
+    if (m_scriptedCapturePending) {
+        // Copy, Save and other actions also close the selector; the script
+        // then gets no capture, which is reported like a cancel.
+        connect(m_regionSelector, &QObject::destroyed, this, [this]() {
+            cancelPendingScriptedCapture();
+        });
+    }
+    return true;
 }
 
 void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *screen)
@@ -488,10 +553,14 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
 
 void CaptureManager::startPresetRegionCapture(QScreen *screen,
                                               const QRect &region,
-                                              const QPixmap &preCapture)
+                                              const QPixmap &preCapture,
+                                              bool quickPinMode)
 {
     // Create RegionSelector
     m_regionSelector = createRegionSelector(false);
+    if (quickPinMode) {
+        m_regionSelector->setQuickPinMode(true);
+    }
 
     // Keep detector state aligned with the prepared reveal flow used by normal region entry.
     if (m_windowDetector && screen) {

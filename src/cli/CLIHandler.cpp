@@ -115,16 +115,38 @@ CLIResult CLIHandler::process(const QStringList& arguments)
         msg.command = command->name();
         msg.options = command->buildIPCMessage(parser);
 
-        auto response = ipc.sendCommand(msg, command->requiresResponse());
+        const bool waitResponse = command->requiresResponse(parser);
+        const auto response = ipc.sendCommand(
+            msg, waitResponse, command->responseTimeoutMs(parser));
 
-        if (!response.success && !response.error.isEmpty()) {
-            return CLIResult::error(CLIResult::Code::GeneralError, response.error);
-        }
-        return CLIResult::success(response.message);
+        CLIResult result = command->handleResponse(parser, response);
+        result.warnings = validationResult.warnings + result.warnings;
+        return result;
     }
 
     // Local execution
     return command->execute(parser);
+}
+
+CLIResult CLICommand::handleResponse(const QCommandLineParser& /*parser*/,
+                                     const IPCResponse& response) const
+{
+    if (response.success) {
+        return CLIResult::success(response.message);
+    }
+
+    // Older behavior: an unsuccessful response without an error text is not an error.
+    if (response.error.isEmpty() && response.code == IPCResponse::kUnsetCode) {
+        return CLIResult::success(response.message);
+    }
+
+    const bool knownFailureCode =
+        response.code > static_cast<int>(CLIResult::Code::Success)
+        && response.code <= static_cast<int>(CLIResult::Code::Cancelled);
+    return CLIResult::error(
+        knownFailureCode ? static_cast<CLIResult::Code>(response.code)
+                         : CLIResult::Code::GeneralError,
+        response.error);
 }
 
 CLICommand* CLIHandler::findCommand(const QString& name) const

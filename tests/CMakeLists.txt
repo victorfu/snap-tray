@@ -1215,6 +1215,11 @@ target_link_libraries(CLI_FeatureGating PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_FeatureGating COMMAND CLI_FeatureGating)
 set_tests_properties(CLI_FeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(CLI_GuiCommandOptions CLI/tst_GuiCommandOptions.cpp)
+target_link_libraries(CLI_GuiCommandOptions PRIVATE snaptray_cli Qt6::Test)
+add_test(NAME CLI_GuiCommandOptions COMMAND CLI_GuiCommandOptions)
+set_tests_properties(CLI_GuiCommandOptions PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(CLI_CaptureOutputHelper CLI/tst_CaptureOutputHelper.cpp)
 target_link_libraries(CLI_CaptureOutputHelper PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_CaptureOutputHelper COMMAND CLI_CaptureOutputHelper)

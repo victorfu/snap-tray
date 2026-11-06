@@ -240,6 +240,7 @@ private:
     bool applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry);
     void clearHistoryReplaySelectionState();
     void setSelectionWindowMetadata(const QString& title, const QString& ownerApp);
+    void rememberLastCaptureRegion(const QRect& globalRect, QScreen* screen) const;
     void recordCaptureSession(const QPixmap& resultPixmap);
     void recordCaptureSession(const QImage& resultImage);
     struct SelectorCaptureContext;

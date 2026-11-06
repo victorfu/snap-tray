@@ -1811,11 +1811,19 @@ void RegionSelector::setSelectionWindowMetadata(const QString& title, const QStr
     }
 }
 
+void RegionSelector::rememberLastCaptureRegion(const QRect& globalRect, QScreen* screen) const
+{
+    // `snaptray gui --last-region` starts from this.
+    RegionCaptureSettingsManager::instance().setLastCaptureRegion(
+        globalRect, screen ? screen->name() : QString());
+}
+
 void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
 {
     if (resultPixmap.isNull()) {
         return;
     }
+    rememberLastCaptureRegion(localToGlobal(currentHistorySelectionRect()), m_currentScreen);
 
     auto snapshot = makeHistoryCaptureSnapshot();
     if (!snapshot.has_value()) {
@@ -1841,6 +1849,7 @@ void RegionSelector::recordCaptureSession(const QImage& resultImage)
     if (resultImage.isNull()) {
         return;
     }
+    rememberLastCaptureRegion(localToGlobal(currentHistorySelectionRect()), m_currentScreen);
 
     auto snapshot = makeHistoryCaptureSnapshot();
     if (!snapshot.has_value()) {
@@ -2178,6 +2187,7 @@ void RegionSelector::finishPreservedSelection()
     if (snapshot) {
         submitPendingHistorySubmission({std::move(*snapshot), result.toImage()});
     }
+    rememberLastCaptureRegion(globalRect, QGuiApplication::screenAt(globalRect.center()));
     emit regionSelected(result, globalRect.topLeft(), globalRect);
     close();
 }
