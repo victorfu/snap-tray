@@ -1813,6 +1813,36 @@ Tamanho: %2</translation>
         <source>Selected: %1</source>
         <translation>Selecionado: %1</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="43" />
+        <source>Red</source>
+        <translation>Vermelho</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="44" />
+        <source>Yellow</source>
+        <translation>Amarelo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="45" />
+        <source>Green</source>
+        <translation>Verde</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="46" />
+        <source>Purple</source>
+        <translation>Roxo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="47" />
+        <source>Black</source>
+        <translation>Preto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="48" />
+        <source>White</source>
+        <translation>Branco</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -7076,6 +7106,31 @@ Ele pode estar em uso por outro aplicativo.</translation>
 <context>
     <name>TextFormattingSection</name>
     <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Bold</source>
+        <translation>Negrito</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Italic</source>
+        <translation>Itálico</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Underline</source>
+        <translation>Sublinhado</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Font size</source>
+        <translation>Tamanho da fonte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Font</source>
+        <translation>Fonte</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/TextFormattingSection.qml" line="19" />
         <source>Default</source>
         <translation>Padrão</translation>
@@ -7525,6 +7580,152 @@ Ele pode estar em uso por outro aplicativo.</translation>
         <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="54" />
         <source>Select Color</source>
         <translation>Selecionar cor</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotationStyleLabels</name>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>No Arrow</source>
+        <translation>Sem seta</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow</source>
+        <translation>Seta no fim</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow Outline</source>
+        <translation>Seta vazada no fim</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow Line</source>
+        <translation>Seta de linha no fim</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Both Ends</source>
+        <translation>Setas nas duas pontas</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Both Ends Outline</source>
+        <translation>Setas vazadas nas duas pontas</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Solid</source>
+        <translation>Contínua</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Dashed</source>
+        <translation>Tracejada</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Dotted</source>
+        <translation>Pontilhada</translation>
+    </message>
+</context>
+<context>
+    <name>ArrowStyleSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ArrowStyleSection.qml" />
+        <source>Arrow style</source>
+        <translation>Estilo da seta</translation>
+    </message>
+</context>
+<context>
+    <name>ColorPaletteSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Red</source>
+        <translation>Vermelho</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Yellow</source>
+        <translation>Amarelo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Green</source>
+        <translation>Verde</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Purple</source>
+        <translation>Roxo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Black</source>
+        <translation>Preto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>White</source>
+        <translation>Branco</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Custom color</source>
+        <translation>Cor personalizada</translation>
+    </message>
+</context>
+<context>
+    <name>LineStyleSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/LineStyleSection.qml" />
+        <source>Line style</source>
+        <translation>Estilo da linha</translation>
+    </message>
+</context>
+<context>
+    <name>ShapeSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Ellipse</source>
+        <translation>Elipse</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Rectangle</source>
+        <translation>Retângulo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Filled</source>
+        <translation>Preenchido</translation>
+    </message>
+</context>
+<context>
+    <name>SizeSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Small</source>
+        <translation>Pequeno</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Medium</source>
+        <translation>Médio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Large</source>
+        <translation>Grande</translation>
+    </message>
+</context>
+<context>
+    <name>WidthSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/WidthSection.qml" />
+        <source>Width</source>
+        <translation>Espessura</translation>
     </message>
 </context>
 </TS>

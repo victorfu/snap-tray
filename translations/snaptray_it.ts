@@ -1813,6 +1813,36 @@ Dimensione: %2</translation>
         <source>Selected: %1</source>
         <translation>Selezionato: %1</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="43" />
+        <source>Red</source>
+        <translation>Rosso</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="44" />
+        <source>Yellow</source>
+        <translation>Giallo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="45" />
+        <source>Green</source>
+        <translation>Verde</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="46" />
+        <source>Purple</source>
+        <translation>Viola</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="47" />
+        <source>Black</source>
+        <translation>Nero</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="48" />
+        <source>White</source>
+        <translation>Bianco</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -7076,6 +7106,31 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
 <context>
     <name>TextFormattingSection</name>
     <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Bold</source>
+        <translation>Grassetto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Italic</source>
+        <translation>Corsivo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Underline</source>
+        <translation>Sottolineato</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Font size</source>
+        <translation>Dimensione carattere</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Font</source>
+        <translation>Carattere</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/TextFormattingSection.qml" line="19" />
         <source>Default</source>
         <translation>Predefinito</translation>
@@ -7525,6 +7580,152 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
         <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="54" />
         <source>Select Color</source>
         <translation>Seleziona colore</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotationStyleLabels</name>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>No Arrow</source>
+        <translation>Nessuna freccia</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow</source>
+        <translation>Freccia alla fine</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow Outline</source>
+        <translation>Freccia vuota alla fine</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow Line</source>
+        <translation>Freccia a linee alla fine</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Both Ends</source>
+        <translation>Frecce a entrambe le estremità</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Both Ends Outline</source>
+        <translation>Frecce vuote a entrambe le estremità</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Solid</source>
+        <translation>Continua</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Dashed</source>
+        <translation>Tratteggiata</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Dotted</source>
+        <translation>Punteggiata</translation>
+    </message>
+</context>
+<context>
+    <name>ArrowStyleSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ArrowStyleSection.qml" />
+        <source>Arrow style</source>
+        <translation>Stile freccia</translation>
+    </message>
+</context>
+<context>
+    <name>ColorPaletteSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Red</source>
+        <translation>Rosso</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Yellow</source>
+        <translation>Giallo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Green</source>
+        <translation>Verde</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Purple</source>
+        <translation>Viola</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Black</source>
+        <translation>Nero</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>White</source>
+        <translation>Bianco</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Custom color</source>
+        <translation>Colore personalizzato</translation>
+    </message>
+</context>
+<context>
+    <name>LineStyleSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/LineStyleSection.qml" />
+        <source>Line style</source>
+        <translation>Stile linea</translation>
+    </message>
+</context>
+<context>
+    <name>ShapeSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Ellipse</source>
+        <translation>Ellisse</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Rectangle</source>
+        <translation>Rettangolo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Filled</source>
+        <translation>Riempito</translation>
+    </message>
+</context>
+<context>
+    <name>SizeSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Small</source>
+        <translation>Piccolo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Medium</source>
+        <translation>Medio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Large</source>
+        <translation>Grande</translation>
+    </message>
+</context>
+<context>
+    <name>WidthSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/WidthSection.qml" />
+        <source>Width</source>
+        <translation>Spessore</translation>
     </message>
 </context>
 </TS>

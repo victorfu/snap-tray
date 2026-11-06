@@ -16,6 +16,8 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 - Settings can be searched (Ctrl+F or Cmd+F): results open the page and highlight the setting. A setting you changed shows a reset button that restores its default.
 - Beautify opens on named styles (Compact, Standard, Spacious, Flat) and named backgrounds. Padding, corners, shadow, and the other details are under Customize. Save style… keeps up to 8 looks of your own by name, which you can rename or delete.
 - VoiceOver and other screen readers can now use more of SnapTray. Capture toolbar buttons and More menu items have names, and the selected tool reads as selected. Settings pages can be switched by screen reader, and drop-downs read their current choice. Permission, Browse and hotkey buttons say what they apply to. Export codec and background choices read which one is selected. Pinned images are named.
+- Screen readers can also use the style options under the capture toolbar (sizes, colors, width, arrow and line styles, shapes, text formatting, Auto Blur), hear which Library item and section is selected, and hear sliders with their unit ("100%"). Unavailable toolbar buttons such as Undo read as unavailable, the editor behind the export panel can no longer be reached, and on macOS the tray icon is named, including the recording status.
+- The arrow and line style menus are now translated; they were English-only.
 
 ### Fixed
 

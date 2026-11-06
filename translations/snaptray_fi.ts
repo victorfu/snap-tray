@@ -1813,6 +1813,36 @@ Koko: %2</translation>
         <source>Selected: %1</source>
         <translation>Valittu: %1</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="43" />
+        <source>Red</source>
+        <translation>Punainen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="44" />
+        <source>Yellow</source>
+        <translation>Keltainen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="45" />
+        <source>Green</source>
+        <translation>Vihreä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="46" />
+        <source>Purple</source>
+        <translation>Violetti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="47" />
+        <source>Black</source>
+        <translation>Musta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="48" />
+        <source>White</source>
+        <translation>Valkoinen</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -7076,6 +7106,31 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
 <context>
     <name>TextFormattingSection</name>
     <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Bold</source>
+        <translation>Lihavointi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Italic</source>
+        <translation>Kursivointi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Underline</source>
+        <translation>Alleviivaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Font size</source>
+        <translation>Fonttikoko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Font</source>
+        <translation>Fontti</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/TextFormattingSection.qml" line="19" />
         <source>Default</source>
         <translation>Oletus</translation>
@@ -7525,6 +7580,152 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="54" />
         <source>Select Color</source>
         <translation>Valitse väri</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotationStyleLabels</name>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>No Arrow</source>
+        <translation>Ei nuolta</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow</source>
+        <translation>Nuoli lopussa</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow Outline</source>
+        <translation>Ääriviivanuoli lopussa</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow Line</source>
+        <translation>Viivanuoli lopussa</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Both Ends</source>
+        <translation>Nuolet molemmissa päissä</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Both Ends Outline</source>
+        <translation>Ääriviivanuolet molemmissa päissä</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Solid</source>
+        <translation>Yhtenäinen</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Dashed</source>
+        <translation>Katkoviiva</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Dotted</source>
+        <translation>Pisteviiva</translation>
+    </message>
+</context>
+<context>
+    <name>ArrowStyleSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ArrowStyleSection.qml" />
+        <source>Arrow style</source>
+        <translation>Nuolen tyyli</translation>
+    </message>
+</context>
+<context>
+    <name>ColorPaletteSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Red</source>
+        <translation>Punainen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Yellow</source>
+        <translation>Keltainen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Green</source>
+        <translation>Vihreä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Purple</source>
+        <translation>Violetti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Black</source>
+        <translation>Musta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>White</source>
+        <translation>Valkoinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Custom color</source>
+        <translation>Mukautettu väri</translation>
+    </message>
+</context>
+<context>
+    <name>LineStyleSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/LineStyleSection.qml" />
+        <source>Line style</source>
+        <translation>Viivan tyyli</translation>
+    </message>
+</context>
+<context>
+    <name>ShapeSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Ellipse</source>
+        <translation>Ellipsi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Rectangle</source>
+        <translation>Suorakulmio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Filled</source>
+        <translation>Täytetty</translation>
+    </message>
+</context>
+<context>
+    <name>SizeSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Small</source>
+        <translation>Pieni</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Medium</source>
+        <translation>Keskikokoinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Large</source>
+        <translation>Suuri</translation>
+    </message>
+</context>
+<context>
+    <name>WidthSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/WidthSection.qml" />
+        <source>Width</source>
+        <translation>Leveys</translation>
     </message>
 </context>
 </TS>

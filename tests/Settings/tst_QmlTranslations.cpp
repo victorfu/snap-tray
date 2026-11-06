@@ -29,6 +29,7 @@ private slots:
     void testRememberLastFolderTranslatedForAllLocales();
     void testTaskSettingsAndBeautifyTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
+    void testStyleStripNamesTranslatedForAllLocales();
     void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
     void testRecordingPreviewCropTranslatedForAllLocales();
     void testRecordingWarningTitleTranslatedForAllLocales();
@@ -320,6 +321,48 @@ void tst_QmlTranslations::testAutoBlurHintTranslatedForAllLocales()
         QVERIFY2(translated != QString::fromUtf8(source),
                  qPrintable(QStringLiteral("%1 fell back to English for the auto-blur hint")
                                 .arg(qmFile)));
+    }
+}
+
+// #248: the names screen readers hear for the style strip, the pin window and
+// the arrow/line style menus (which were English-only before) are translated.
+void tst_QmlTranslations::testStyleStripNamesTranslatedForAllLocales()
+{
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"PinToolOptionsViewModel", "Red"},
+        {"PinToolOptionsViewModel", "Yellow"},
+        {"PinToolOptionsViewModel", "Green"},
+        {"PinToolOptionsViewModel", "Purple"},
+        {"PinToolOptionsViewModel", "Black"},
+        {"PinToolOptionsViewModel", "White"},
+        {"ColorPaletteSection", "Custom color"},
+        {"WidthSection", "Width"},
+        {"ArrowStyleSection", "Arrow style"},
+        {"LineStyleSection", "Line style"},
+        {"ShapeSection", "Filled"},
+        {"TextFormattingSection", "Bold"},
+        {"TextFormattingSection", "Font size"},
+        {"AnnotationStyleLabels", "Both Ends Outline"},
+        {"AnnotationStyleLabels", "Dashed"},
+        {"PinWindow", "Pinned image"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")}, QDir::Files, QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+        }
     }
 }
 

@@ -32,6 +32,9 @@ class PinToolOptionsViewModel : public QObject
 
     // Color section
     Q_PROPERTY(QVariantList colorPalette READ colorPalette CONSTANT)
+    // Same entries as colorPalette, each as {color, name}, so a swatch's
+    // screen reader name travels with its color (#248).
+    Q_PROPERTY(QVariantList colorPaletteOptions READ colorPaletteOptions CONSTANT)
     Q_PROPERTY(QColor currentColor READ currentColor WRITE setCurrentColor NOTIFY currentColorChanged)
 
     // Width section
@@ -56,6 +59,9 @@ class PinToolOptionsViewModel : public QObject
     // Arrow/Line style section
     Q_PROPERTY(int arrowStyle READ arrowStyle WRITE setArrowStyle NOTIFY arrowStyleChanged)
     Q_PROPERTY(int lineStyle READ lineStyle WRITE setLineStyle NOTIFY lineStyleChanged)
+    // Translated names of the current styles, for screen readers (#248).
+    Q_PROPERTY(QString arrowStyleLabel READ arrowStyleLabel NOTIFY arrowStyleChanged)
+    Q_PROPERTY(QString lineStyleLabel READ lineStyleLabel NOTIFY lineStyleChanged)
 
     // Step badge size section
     Q_PROPERTY(int stepBadgeSize READ stepBadgeSize WRITE setStepBadgeSize NOTIFY stepBadgeSizeChanged)
@@ -99,6 +105,7 @@ public:
 
     // Color
     QVariantList colorPalette() const { return m_colorPalette; }
+    QVariantList colorPaletteOptions() const;
     QColor currentColor() const { return m_currentColor; }
     void setCurrentColor(const QColor& color);
 
@@ -135,6 +142,8 @@ public:
     void setArrowStyle(int style);
     int lineStyle() const { return m_lineStyle; }
     void setLineStyle(int style);
+    QString arrowStyleLabel() const;
+    QString lineStyleLabel() const;
 
     // Step badge size
     int stepBadgeSize() const { return m_stepBadgeSize; }
@@ -290,6 +299,7 @@ private:
 
     // Color
     QVariantList m_colorPalette;
+    QStringList m_colorPaletteNames; // untranslated, same order as m_colorPalette
     QColor m_currentColor{0xFF, 0x3B, 0x30}; // Default red (DesignSystem::annotationRed)
 
     // Width

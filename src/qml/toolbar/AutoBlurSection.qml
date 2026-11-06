@@ -22,6 +22,13 @@ Item {
         id: autoBlurButton
         objectName: "autoBlurButton"
         anchors.fill: parent
+        // Screen readers (#248): the hint already says what it does.
+        Accessible.role: Accessible.Button
+        Accessible.name: root.hasViewModel ? root.viewModel.autoBlurHintText : ""
+        Accessible.onPressAction: {
+            if (root.hasViewModel)
+                root.viewModel.handleAutoBlurClicked()
+        }
         radius: 4
         readonly property bool emphasized: root.hintActive || blurMouse.containsMouse
         color: {

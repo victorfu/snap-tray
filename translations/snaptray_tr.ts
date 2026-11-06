@@ -1812,6 +1812,36 @@ Boyut: %2</translation>
         <source>Selected: %1</source>
         <translation>Seçili: %1</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="43" />
+        <source>Red</source>
+        <translation>Kırmızı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="44" />
+        <source>Yellow</source>
+        <translation>Sarı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="45" />
+        <source>Green</source>
+        <translation>Yeşil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="46" />
+        <source>Purple</source>
+        <translation>Mor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="47" />
+        <source>Black</source>
+        <translation>Siyah</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="48" />
+        <source>White</source>
+        <translation>Beyaz</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -7072,6 +7102,31 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
 <context>
     <name>TextFormattingSection</name>
     <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Bold</source>
+        <translation>Kalın</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Italic</source>
+        <translation>İtalik</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Underline</source>
+        <translation>Altı çizili</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Font size</source>
+        <translation>Yazı tipi boyutu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/TextFormattingSection.qml" />
+        <source>Font</source>
+        <translation>Yazı tipi</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/TextFormattingSection.qml" line="19" />
         <source>Default</source>
         <translation>Varsayılan</translation>
@@ -7521,6 +7576,152 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="54" />
         <source>Select Color</source>
         <translation>Renk Seç</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotationStyleLabels</name>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>No Arrow</source>
+        <translation>Ok yok</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow</source>
+        <translation>Sonda ok</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow Outline</source>
+        <translation>Sonda boş ok</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>End Arrow Line</source>
+        <translation>Sonda çizgi ok</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Both Ends</source>
+        <translation>Her iki uçta ok</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Both Ends Outline</source>
+        <translation>Her iki uçta boş ok</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Solid</source>
+        <translation>Düz</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Dashed</source>
+        <translation>Kesikli</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
+        <source>Dotted</source>
+        <translation>Noktalı</translation>
+    </message>
+</context>
+<context>
+    <name>ArrowStyleSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ArrowStyleSection.qml" />
+        <source>Arrow style</source>
+        <translation>Ok stili</translation>
+    </message>
+</context>
+<context>
+    <name>ColorPaletteSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Red</source>
+        <translation>Kırmızı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Yellow</source>
+        <translation>Sarı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Green</source>
+        <translation>Yeşil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Purple</source>
+        <translation>Mor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Black</source>
+        <translation>Siyah</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>White</source>
+        <translation>Beyaz</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Custom color</source>
+        <translation>Özel renk</translation>
+    </message>
+</context>
+<context>
+    <name>LineStyleSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/LineStyleSection.qml" />
+        <source>Line style</source>
+        <translation>Çizgi stili</translation>
+    </message>
+</context>
+<context>
+    <name>ShapeSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Ellipse</source>
+        <translation>Elips</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Rectangle</source>
+        <translation>Dikdörtgen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ShapeSection.qml" />
+        <source>Filled</source>
+        <translation>Dolgulu</translation>
+    </message>
+</context>
+<context>
+    <name>SizeSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Small</source>
+        <translation>Küçük</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Medium</source>
+        <translation>Orta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/SizeSection.qml" />
+        <source>Large</source>
+        <translation>Büyük</translation>
+    </message>
+</context>
+<context>
+    <name>WidthSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/WidthSection.qml" />
+        <source>Width</source>
+        <translation>Kalınlık</translation>
     </message>
 </context>
 </TS>

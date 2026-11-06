@@ -1,4 +1,5 @@
 #include "region/RegionSettingsHelper.h"
+#include "annotations/AnnotationStyleLabels.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
@@ -34,29 +35,21 @@ static QSettings getSettings()
     return SnapTray::getSettings();
 }
 
-struct ArrowStyleMenuEntry {
-    LineEndStyle value;
-    const char* label;
+// Menu order; names come from AnnotationStyleLabels (#248), shared with the
+// screen reader names.
+constexpr LineEndStyle kArrowStyleEntries[] = {
+    LineEndStyle::None,
+    LineEndStyle::EndArrow,
+    LineEndStyle::EndArrowOutline,
+    LineEndStyle::EndArrowLine,
+    LineEndStyle::BothArrow,
+    LineEndStyle::BothArrowOutline,
 };
 
-constexpr ArrowStyleMenuEntry kArrowStyleEntries[] = {
-    {LineEndStyle::None, QT_TR_NOOP("No Arrow")},
-    {LineEndStyle::EndArrow, QT_TR_NOOP("End Arrow")},
-    {LineEndStyle::EndArrowOutline, QT_TR_NOOP("End Arrow Outline")},
-    {LineEndStyle::EndArrowLine, QT_TR_NOOP("End Arrow Line")},
-    {LineEndStyle::BothArrow, QT_TR_NOOP("Both Ends")},
-    {LineEndStyle::BothArrowOutline, QT_TR_NOOP("Both Ends Outline")},
-};
-
-struct LineStyleMenuEntry {
-    LineStyle value;
-    const char* label;
-};
-
-constexpr LineStyleMenuEntry kLineStyleEntries[] = {
-    {LineStyle::Solid, QT_TR_NOOP("Solid")},
-    {LineStyle::Dashed, QT_TR_NOOP("Dashed")},
-    {LineStyle::Dotted, QT_TR_NOOP("Dotted")},
+constexpr LineStyle kLineStyleEntries[] = {
+    LineStyle::Solid,
+    LineStyle::Dashed,
+    LineStyle::Dotted,
 };
 
 static Qt::PenStyle qtPenStyleForLineStyle(LineStyle style)
@@ -375,15 +368,15 @@ void RegionSettingsHelper::populateArrowStyleMenu(QMenu* menu, LineEndStyle curr
     const QColor iconColor = menu->palette().color(QPalette::WindowText);
     const QColor iconBackground = menu->palette().color(QPalette::Window);
 
-    for (const auto& entry : kArrowStyleEntries) {
+    for (const LineEndStyle style : kArrowStyleEntries) {
         QAction* action = menu->addAction(
-            createArrowStyleMenuIcon(entry.value, iconColor, iconBackground),
-            tr(entry.label));
+            createArrowStyleMenuIcon(style, iconColor, iconBackground),
+            AnnotationStyleLabels::arrowStyle(style));
         action->setCheckable(true);
-        action->setChecked(entry.value == currentStyle);
+        action->setChecked(style == currentStyle);
         group->addAction(action);
-        connect(action, &QAction::triggered, this, [this, value = entry.value]() {
-            emit arrowStyleSelected(value);
+        connect(action, &QAction::triggered, this, [this, style]() {
+            emit arrowStyleSelected(style);
         });
     }
 }
@@ -394,15 +387,15 @@ void RegionSettingsHelper::populateLineStyleMenu(QMenu* menu, LineStyle currentS
     group->setExclusive(true);
     const QColor iconColor = menu->palette().color(QPalette::WindowText);
 
-    for (const auto& entry : kLineStyleEntries) {
+    for (const LineStyle style : kLineStyleEntries) {
         QAction* action = menu->addAction(
-            createLineStyleMenuIcon(entry.value, iconColor),
-            tr(entry.label));
+            createLineStyleMenuIcon(style, iconColor),
+            AnnotationStyleLabels::lineStyle(style));
         action->setCheckable(true);
-        action->setChecked(entry.value == currentStyle);
+        action->setChecked(style == currentStyle);
         group->addAction(action);
-        connect(action, &QAction::triggered, this, [this, value = entry.value]() {
-            emit lineStyleSelected(value);
+        connect(action, &QAction::triggered, this, [this, style]() {
+            emit lineStyleSelected(style);
         });
     }
 }

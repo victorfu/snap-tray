@@ -49,6 +49,11 @@ Item {
     width: 28
     height: 24
     opacity: root.isDisabled ? 0.4 : 1.0
+    // Screen readers read a disabled button as unavailable (#248). A disabled
+    // item gets no hover, so a toolbar that wants tooltips on disabled
+    // buttons covers them itself (see the disabled-button hover MouseArea in
+    // FloatingToolbar.qml).
+    enabled: !root.isDisabled
 
     signal clicked(int buttonId)
     signal hovered(int buttonId, real globalX, real globalY, real w, real h)

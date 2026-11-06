@@ -37,6 +37,15 @@ Item {
                 width: 22
                 height: 22
                 radius: 4
+                // Screen readers (#248): the full size name, not the S/M/L dot.
+                Accessible.role: Accessible.RadioButton
+                Accessible.name: [qsTr("Small"), qsTr("Medium"), qsTr("Large")][modelData.value] || modelData.label
+                Accessible.checkable: true
+                Accessible.checked: root.stepBadgeSizeValue === modelData.value
+                Accessible.onPressAction: {
+                    if (root.hasViewModel)
+                        root.viewModel.handleStepBadgeSizeSelected(modelData.value)
+                }
                 color: root.stepBadgeSizeValue === modelData.value ? root.btnActiveBg
                      : sizeMouse.containsMouse ? root.btnHoverBg
                      : "transparent"

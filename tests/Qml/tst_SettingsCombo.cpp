@@ -36,6 +36,7 @@ private slots:
     void initTestCase();
     void everyOptionFitsWhateverIsSelected();
     void screenReadersHearValuesAndPermissions();
+    void slidersReadTheirUnit();
 };
 
 void TestSettingsCombo::initTestCase()
@@ -173,6 +174,43 @@ void TestSettingsCombo::screenReadersHearValuesAndPermissions()
     QCOMPARE(button->text(QAccessible::Name), QStringLiteral("Open Settings, Screen Recording, Not Granted"));
     permission->setProperty("granted", true);
     QTRY_COMPARE(button->text(QAccessible::Name), QStringLiteral("Open Settings, Screen Recording, Granted"));
+}
+
+// #248: sliders read a bare number ("100"), not the value with its unit.
+void TestSettingsCombo::slidersReadTheirUnit()
+{
+    QQuickView view;
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
+    QQmlComponent component(view.engine());
+    component.setData(
+        "import QtQuick\n"
+        "import SnapTrayQml\n"
+        "Item {\n"
+        "  width: 600; height: 100\n"
+        "  SettingsSlider {\n"
+        "    objectName: 'slider'\n"
+        "    width: parent.width\n"
+        "    label: 'Default opacity'\n"
+        "    from: 10; to: 100; value: 40; suffix: '%'\n"
+        "  }\n"
+        "}\n", QUrl("qrc:/SnapTrayQml/controls/SettingsSliderAccessibilityHost.qml"));
+    QScopedPointer<QObject> created(component.create());
+    QVERIFY2(created, qPrintable(component.errorString()));
+    auto* root = qobject_cast<QQuickItem*>(created.data());
+    root->setParentItem(view.contentItem());
+    view.resize(600, 100);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    QQuickItem* row = root->findChild<QQuickItem*>("slider");
+    QVERIFY(row);
+    QQuickItem* input = row->findChild<QQuickItem*>("settingsSliderInput");
+    QVERIFY(input);
+    QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(input);
+    QVERIFY(accessible);
+    QCOMPARE(accessible->role(), QAccessible::Slider);
+    QCOMPARE(accessible->text(QAccessible::Name), QStringLiteral("Default opacity, 40%"));
+    row->setProperty("value", 75);
+    QTRY_COMPARE(accessible->text(QAccessible::Name), QStringLiteral("Default opacity, 75%"));
 }
 
 QTEST_MAIN(TestSettingsCombo)

@@ -44,6 +44,19 @@ Item {
             width: 28
             height: 28
 
+            // Screen readers (#248): the width is only adjustable with the
+            // mouse wheel, so offer it as a slider with increase/decrease.
+            // Qt's accessibility value interface reads value, minimumValue,
+            // maximumValue and stepSize from the item for the Slider role.
+            readonly property real value: root.currentWidthValue
+            readonly property real minimumValue: root.minWidthValue
+            readonly property real maximumValue: root.maxWidthValue
+            readonly property real stepSize: 1
+            Accessible.role: Accessible.Slider
+            Accessible.name: qsTr("Width") + ", " + root.currentWidthValue
+            Accessible.onIncreaseAction: if (root.hasViewModel) root.viewModel.handleWidthWheelDelta(1)
+            Accessible.onDecreaseAction: if (root.hasViewModel) root.viewModel.handleWidthWheelDelta(-1)
+
             // Blue container
             Rectangle {
                 id: widthPreviewContainer
@@ -91,6 +104,14 @@ Item {
                     required property var modelData
 
                     objectName: "mosaicWidthPresetButton_" + modelData.value
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: qsTr("Width") + ", " + modelData.value
+                    Accessible.checkable: true
+                    Accessible.checked: selected
+                    Accessible.onPressAction: {
+                        if (root.hasViewModel)
+                            root.viewModel.handleMosaicWidthPresetSelected(modelData.value)
+                    }
                     width: 22
                     height: 22
                     radius: 4

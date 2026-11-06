@@ -88,7 +88,8 @@ GlassSurface {
             to: root.maximum
             stepSize: 1
             value: root.current
-            Accessible.name: root.isZoom ? qsTr("Zoom level") : qsTr("Opacity level")
+            // With its unit (#248); the slider value alone is a bare number.
+            Accessible.name: (root.isZoom ? qsTr("Zoom level") : qsTr("Opacity level")) + ", " + valueText.text
             onMoved: root.request(Math.round(value))
         }
 

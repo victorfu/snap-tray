@@ -36,6 +36,7 @@
 #include "utils/CoordinateHelper.h"
 #ifdef Q_OS_MACOS
 #include "platform/MacTrayActivationGuard.h"
+#include "platform/MacTrayAccessibility.h"
 #endif
 
 #include <QFile>
@@ -1501,6 +1502,17 @@ void MainApplication::updateTrayToolTip()
         m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility") + QStringLiteral("\n") + statusLine);
     } else {
         m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
+    }
+#endif
+#ifdef Q_OS_MACOS
+    // The status item has only a tooltip; give VoiceOver the same text (#248).
+    // Warn once: the recording status updates this every second.
+    static bool warnedNoStatusItem = false;
+    if (!SnapTray::setMacTrayAccessibilityLabel(
+            m_trayIcon->toolTip().replace(QLatin1Char('\n'), QStringLiteral(", ")))
+        && !warnedNoStatusItem) {
+        warnedNoStatusItem = true;
+        qWarning() << "MainApplication: no macOS status item to set the tray accessibility label on";
     }
 #endif
 }

@@ -151,14 +151,14 @@ Fixed (each with a regression test that fails before the fix):
 - Exclusive editor choices built from buttons (codec, Blurred Video/Image background, zoom scale, crop aspect) are radio buttons with a selected state (`choicesReadTheirStateToScreenReaders`).
 - Pin windows were unnamed dialogs; they are named "Pinned image" with the image size (for example "Pinned image, 800 × 600 px"), so several pins can be told apart (#253).
 
-Remaining gaps, tracked in [#248](https://github.com/victorfu/snap-tray/issues/248):
+The gaps that audit left were fixed in [#248](https://github.com/victorfu/snap-tray/issues/248), again checked in the AX tree of the running app:
 
-- The style strip below the capture toolbar (sizes, colors, width, arrow and line styles, shape fill, text formatting, Auto Blur) has no accessible names or states.
-- A toolbar button that is only drawn as disabled (for example Undo with nothing to undo) is not reported as unavailable.
-- Library results are list items, which Qt exposes on macOS as static text without a selected state; section buttons report selection as a 0/1 value.
-- The tray icon has only its tooltip (AX help), no label; Qt's tray icon offers no accessible name.
-- While the export panel is open, the editor controls behind it stay in the accessibility tree.
-- Sliders read bare numbers ("100", not "100%").
+- The style strip below the capture toolbar: sizes and colors are named choices (the custom color button reads the current color); the stroke width is a slider with increase and decrease, and Mosaic's widths are choices; the arrow and line style buttons read the current style; shapes are choices and Filled is a checkbox; Bold, Italic and Underline are checkboxes; font size and font read their value; Auto Blur is named by its hint (`Qml_ToolOptionsAccessibility`). The arrow and line style names are now translated, in the menus too, where they were English-only.
+- A toolbar button drawn as disabled (Undo with nothing to undo) is reported as unavailable; a hover layer keeps its tooltip (`tst_ToolbarOverflow::disabledButtonsReadAsUnavailableButKeepTooltips`).
+- Library results read as one-of-many choices with a selected state, sections and smart folders as tabs, and Grid/List as a choice (`tst_LibraryWindow::itemsAndSectionsReadTheirSelection`).
+- The macOS tray icon has an accessibility label: "SnapTray - Screenshot Utility", followed by the tray's recording status (state, elapsed time, mode, audio and warnings) from the start of a recording until it is finished (`Platform_MacTrayAccessibility`).
+- While the modal export panel is open, the editor behind it is disabled, so screen readers cannot operate it there either; it is usable again when the panel closes (`tst_RecordingEditor::exportPanelKeepsTheEditorOutOfReach`).
+- Sliders read their value with its unit, for example "Default opacity, 100%" (`tst_SettingsCombo::slidersReadTheirUnit`, `Qml_PinHoverBarQml`).
 
 ### Ubuntu 22.04 X11 pass (#238)
 
@@ -292,7 +292,7 @@ Applies to the Region Capture toolbar, the Pin Window annotation toolbar, and th
 | Restyle a selected annotation, undo/redo, defaults untouched | Video below + `*_StyleSync::selectedArrowStyleIsUndoable` (region, pin, canvas) | Pending manual pass | `*_StyleSync` and the operation videos pass locally; real geometry undo and Esc during a drag in region capture, see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
 | Long translation (German) | Screenshots below | Pending manual pass | Fixtures in German on Ubuntu; same known style-strip overflow on the narrow screen |
 | High DPI | 2× (Retina) screenshots below | 150 % pending | Physical 2×; 1× and 1.5× renderings |
-| Screen readers (toolbar, More menu, strip label) | Toolbar and More: AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; the style strip controls are unnamed ([gaps](#macos-accessibility-audit)) | Pending Narrator pass | Fails on `747e15df` (before #247): AT-SPI showed the strip label but no toolbar buttons; `ToolbarButton.qml` set no accessible role or name, on every platform (#251). #247 names the buttons; not re-checked on Ubuntu |
+| Screen readers (toolbar, More menu, strip label) | Toolbar, More and the style strip: AX audit passed after #238 and #248 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session | Pending Narrator pass | Fails on `747e15df` (before #247): AT-SPI showed the strip label but no toolbar buttons; `ToolbarButton.qml` set no accessible role or name, on every platform (#251). #247 names the buttons; not re-checked on Ubuntu |
 
 Known limit: on very narrow screens (about 400 px) the style strip itself does not collapse, so its last control can run past the edge (see the narrow screenshots). The toolbar above it always fits.
 
@@ -410,7 +410,7 @@ Applies to the Library window (#226): the former History window, now holding scr
 | Actions per kind, delete confirmation, busy project, privacy note | `Qml_LibraryWindow` | CI tests only | CI tests only |
 | Wide and narrow, light/dark/German | Evidence below (`Qml_LibraryEvidence`) | Pending manual pass (#238) | Fixtures on Ubuntu at 2×, light and dark; German not run |
 | Physical DPI scales | 2× only | Pending (#238) | Physical 2× only |
-| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; list items lack a selected state ([gaps](#macos-accessibility-audit)) | Pending (Narrator) | Not inspected |
+| Screen reader names | AX audit passed after #238 and #248 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session | Pending (Narrator) | Not inspected |
 
 ### Evidence
 

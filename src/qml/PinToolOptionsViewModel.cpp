@@ -1,4 +1,7 @@
 #include "qml/PinToolOptionsViewModel.h"
+#include "annotations/AnnotationStyleLabels.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "tools/ToolSectionConfig.h"
@@ -30,17 +33,37 @@ PinToolOptionsViewModel::PinToolOptionsViewModel(QObject* parent)
 void PinToolOptionsViewModel::buildColorPalette()
 {
     m_colorPalette.clear();
-    // Match ColorSection's default palette
-    const QColor colors[] = {
-        DesignSystem::instance().annotationRed(),
-        QColor(255, 240, 120),  // Yellow
-        QColor(80, 200, 120),   // Green
-        QColor(0x6C, 0x5C, 0xE7), // Primary purple
-        QColor(33, 37, 41),     // Black (soft)
-        Qt::white               // White
+    m_colorPaletteNames.clear();
+    // Match ColorSection's default palette. Each color keeps its name, which
+    // screen readers read for its swatch (#248).
+    const struct {
+        QColor color;
+        const char* name;
+    } entries[] = {
+        {DesignSystem::instance().annotationRed(), QT_TR_NOOP("Red")},
+        {QColor(255, 240, 120), QT_TR_NOOP("Yellow")},
+        {QColor(80, 200, 120), QT_TR_NOOP("Green")},
+        {QColor(0x6C, 0x5C, 0xE7), QT_TR_NOOP("Purple")}, // Primary purple
+        {QColor(33, 37, 41), QT_TR_NOOP("Black")},         // Soft black
+        {QColor(Qt::white), QT_TR_NOOP("White")},
     };
-    for (const auto& c : colors)
-        m_colorPalette.append(QVariant::fromValue(c));
+    for (const auto& entry : entries) {
+        m_colorPalette.append(QVariant::fromValue(entry.color));
+        m_colorPaletteNames.append(QString::fromLatin1(entry.name));
+    }
+}
+
+QVariantList PinToolOptionsViewModel::colorPaletteOptions() const
+{
+    QVariantList options;
+    options.reserve(m_colorPalette.size());
+    for (qsizetype i = 0; i < m_colorPalette.size(); ++i) {
+        options.append(QVariantMap{
+            {"color", m_colorPalette.at(i)},
+            {"name", tr(m_colorPaletteNames.at(i).toLatin1().constData())},
+        });
+    }
+    return options;
 }
 
 bool PinToolOptionsViewModel::hasContent() const
@@ -134,6 +157,16 @@ void PinToolOptionsViewModel::showForTool(int toolId)
 QString PinToolOptionsViewModel::autoBlurHintText() const
 {
     return tr("Automatically detect and blur faces and credentials");
+}
+
+QString PinToolOptionsViewModel::arrowStyleLabel() const
+{
+    return AnnotationStyleLabels::arrowStyle(static_cast<LineEndStyle>(m_arrowStyle));
+}
+
+QString PinToolOptionsViewModel::lineStyleLabel() const
+{
+    return AnnotationStyleLabels::lineStyle(static_cast<LineStyle>(m_lineStyle));
 }
 
 // ── Property setters ──

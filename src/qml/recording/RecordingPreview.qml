@@ -579,7 +579,10 @@ Item {
     RecordingEditorShell {
         id: editorShell
         anchors.fill: parent
-        enabled: !backend.isProcessing && !backend.projectLoading
+        // Behind the modal export panel the editor cannot be used; disabling it
+        // keeps screen readers from operating it there too (#248). `opened`
+        // turns false when closing starts, so focus can return on close.
+        enabled: !backend.isProcessing && !backend.projectLoading && !exportPanel.opened
         inspectorVisible: root.wideEditor || root.inspectorOpen
         inspectorOverlay: !root.wideEditor
         inspectorTitle: root.inspectorTitle
