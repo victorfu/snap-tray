@@ -26,20 +26,93 @@ double smootherstep(double x)
     return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
 }
 
-QRectF lerp(const QRectF& a, const QRectF& b, double t)
+// Keep a view inside the picture: corners and edges clamp, never show outside.
+QRectF clampedInto(QRectF rect, const QRectF& bounds)
 {
-    return QRectF(a.x() + (b.x() - a.x()) * t, a.y() + (b.y() - a.y()) * t,
-                  a.width() + (b.width() - a.width()) * t, a.height() + (b.height() - a.height()) * t);
+    rect.moveLeft(std::clamp(rect.left(), bounds.left(), bounds.right() - rect.width()));
+    rect.moveTop(std::clamp(rect.top(), bounds.top(), bounds.bottom() - rect.height()));
+    return rect;
 }
 
 QRectF frameFor(const QPointF& focus, double scale, const QRectF& bounds)
 {
     const QSizeF size = bounds.size() / std::max(1.0, scale);
-    QRectF rect(focus - QPointF(size.width() / 2, size.height() / 2), size);
-    // Keep the view inside the picture: corners and edges clamp, never show outside.
-    rect.moveLeft(std::clamp(rect.left(), bounds.left(), bounds.right() - rect.width()));
-    rect.moveTop(std::clamp(rect.top(), bounds.top(), bounds.bottom() - rect.height()));
-    return rect;
+    return clampedInto(QRectF(focus - QPointF(size.width() / 2, size.height() / 2), size), bounds);
+}
+
+// How far a long pan pulls out on its way (#263): van Wijk and Nuij's rho;
+// larger pulls out more. sqrt(2) is d3's default for interpolateZoom.
+constexpr double kZoomPanRho = 1.4142135623730951;
+// Views whose centres are closer than this (source pixels) only zoom.
+constexpr double kPureZoomDistance = 1e-6;
+
+// The view between two views (same aspect ratio as `bounds`) that van Wijk
+// and Nuij show looks steadiest: J. J. van Wijk, W. A. A. Nuij, "Smooth and
+// efficient zooming and panning", IEEE InfoVis 2003. Along it the perceived
+// motion (pan measured in view widths, plus zoom) is uniform, so the scale
+// changes by equal factors in equal steps and a far pan pulls out on the way
+// instead of sweeping the screen at full zoom. t is 0..1 along the path; the
+// ends are exactly `from` and `to`.
+class ZoomPanPath {
+public:
+    ZoomPanPath(const QRectF& from, const QRectF& to)
+        : m_from(from), m_to(to), m_c0(from.center()), m_delta(to.center() - from.center()),
+          m_w0(from.width())
+    {
+        const double w1 = to.width();
+        m_distance = std::hypot(m_delta.x(), m_delta.y());
+        if (m_w0 <= 0.0 || w1 <= 0.0) return;
+        if (m_distance < kPureZoomDistance) {
+            m_widthRatio = w1 / m_w0;
+            return;
+        }
+        constexpr double rho2 = kZoomPanRho * kZoomPanRho;
+        const double d2 = m_distance * m_distance;
+        const double b0 = (w1 * w1 - m_w0 * m_w0 + rho2 * rho2 * d2) / (2.0 * m_w0 * rho2 * m_distance);
+        const double b1 = (w1 * w1 - m_w0 * m_w0 - rho2 * rho2 * d2) / (2.0 * w1 * rho2 * m_distance);
+        // r = ln(sqrt(b^2 + 1) - b), written as -asinh(b) to stay exact for large b.
+        m_r0 = -std::asinh(b0);
+        m_length = (-std::asinh(b1) - m_r0) / kZoomPanRho;
+        m_panning = true;
+    }
+
+    QRectF at(double t, const QRectF& bounds) const
+    {
+        if (t <= 0.0) return m_from;
+        if (t >= 1.0) return m_to;
+        double width = m_w0;
+        double progress = t; // of the way from one centre to the other
+        if (m_panning) {
+            const double r = kZoomPanRho * t * m_length + m_r0;
+            progress = m_w0 / (kZoomPanRho * kZoomPanRho * m_distance)
+                * (std::cosh(m_r0) * std::tanh(r) - std::sinh(m_r0));
+            width = m_w0 * std::cosh(m_r0) / std::cosh(r);
+        } else {
+            width = m_w0 * std::pow(m_widthRatio, t);
+        }
+        // Never wider than the picture (a long pan's pull-out stops at the whole view).
+        width = std::min(width, bounds.width());
+        const QSizeF size(width, width * bounds.height() / bounds.width());
+        const QPointF centre = m_c0 + m_delta * progress;
+        return clampedInto(QRectF(centre - QPointF(size.width() / 2, size.height() / 2), size), bounds);
+    }
+
+private:
+    QRectF m_from;
+    QRectF m_to;
+    QPointF m_c0;
+    QPointF m_delta;
+    double m_w0 = 0.0;
+    double m_distance = 0.0;
+    double m_widthRatio = 1.0; // pure zoom: end width over start width
+    double m_r0 = 0.0;
+    double m_length = 0.0;     // the path's length S
+    bool m_panning = false;
+};
+
+QRectF easedTransition(const QRectF& from, const QRectF& to, double t, const QRectF& bounds)
+{
+    return ZoomPanPath(from, to).at(smootherstep(t), bounds);
 }
 
 struct Interaction {
@@ -88,10 +161,11 @@ QRectF ZoomTrack::viewportAt(qint64 sourceMs, const QRectF& bounds) const
         return frameFor(s.focus, std::min(s.scale, maxScale), bounds);
     };
 
-    // Close together: pan (and re-zoom) straight across the gap. Segments
-    // that touch or nearly touch still get kMinBlendMs, centred on their
-    // boundary, instead of a cut (#176 review). Less Motion keeps the cut:
-    // no motion at all is gentler than a fast pan.
+    // Close together in time: pan (and re-zoom) directly across the gap,
+    // along the zoom-and-pan path (#263), which pulls out on the way when the
+    // views are far apart. Segments that touch or nearly touch still get
+    // kMinBlendMs, centred on their boundary, instead of a cut (#176 review).
+    // Less Motion keeps the cut: no motion at all is gentler than a fast pan.
     if (!reduceMotion) {
         for (size_t i = 0; i + 1 < m_segments.size(); ++i) {
             const ZoomSegment& a = m_segments[i];
@@ -101,7 +175,7 @@ QRectF ZoomTrack::viewportAt(qint64 sourceMs, const QRectF& bounds) const
             const double from = std::min(double(a.endMs), middle - kMinBlendMs / 2.0);
             const double to = std::max(double(b.startMs), middle + kMinBlendMs / 2.0);
             if (sourceMs > from && sourceMs < to) {
-                return lerp(frame(a), frame(b), smootherstep((sourceMs - from) / (to - from)));
+                return easedTransition(frame(a), frame(b), (sourceMs - from) / (to - from), bounds);
             }
         }
     }
@@ -118,10 +192,10 @@ QRectF ZoomTrack::viewportAt(qint64 sourceMs, const QRectF& bounds) const
     const qint64 room = previous && next ? (next->startMs - previous->endMs) / 2 : transition;
     const qint64 ramp = std::max<qint64>(1, std::min(transition, room));
     if (previous && sourceMs < previous->endMs + ramp) {
-        return lerp(frame(*previous), bounds, smootherstep(double(sourceMs - previous->endMs) / ramp));
+        return easedTransition(frame(*previous), bounds, double(sourceMs - previous->endMs) / ramp, bounds);
     }
     if (next && sourceMs > next->startMs - ramp) {
-        return lerp(bounds, frame(*next), smootherstep(double(sourceMs - (next->startMs - ramp)) / ramp));
+        return easedTransition(bounds, frame(*next), double(sourceMs - (next->startMs - ramp)) / ramp, bounds);
     }
     return bounds;
 }
