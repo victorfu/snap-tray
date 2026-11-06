@@ -109,6 +109,8 @@ QImage TestPinWindowEvidence::compose(PinWindow& pin, const QPoint& cursor, bool
     QImage out(area.size(), QImage::Format_ARGB32_Premultiplied);
     QPainter p(&out);
     p.setRenderHint(QPainter::Antialiasing);
+    // Grabs are scaled into logical geometry at 1.5x and 2x; filter them.
+    p.setRenderHint(QPainter::SmoothPixmapTransform);
     QLinearGradient backdrop(0, 0, area.width(), area.height());
     const bool dark = ToolbarStyleConfig::loadStyle() == ToolbarStyleType::Dark;
     backdrop.setColorAt(0, dark ? QColor("#1f2433") : QColor("#9fb7d6"));
