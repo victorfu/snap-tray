@@ -58,6 +58,32 @@ public:
         selector.mouseMoveEvent(&moveEvent);
     }
 
+    static void dispatchWidgetMousePress(RegionSelector& selector, const QPoint& localPos)
+    {
+        const QPoint globalPos = selector.mapToGlobal(localPos);
+        QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                               QPointF(localPos),
+                               QPointF(localPos),
+                               QPointF(globalPos),
+                               Qt::LeftButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+        selector.mousePressEvent(&pressEvent);
+    }
+
+    static void dispatchWidgetMouseRelease(RegionSelector& selector, const QPoint& localPos)
+    {
+        const QPoint globalPos = selector.mapToGlobal(localPos);
+        QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                                 QPointF(localPos),
+                                 QPointF(localPos),
+                                 QPointF(globalPos),
+                                 Qt::LeftButton,
+                                 Qt::NoButton,
+                                 Qt::NoModifier);
+        selector.mouseReleaseEvent(&releaseEvent);
+    }
+
     static void dispatchWindowEnter(QWindow* window, const QPoint& globalPos)
     {
         if (!window) {

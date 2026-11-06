@@ -594,6 +594,7 @@ private:
 
     // Quick Pin mode (select region and pin immediately, skip toolbar)
     bool m_quickPinMode = false;
+    bool m_quickPinPressOnCompletedSelection = false;
 
     // Painting component
     RegionPainter* m_painter;

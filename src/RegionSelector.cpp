@@ -2795,9 +2795,12 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionIn
     // detached chrome paints. Keep the chrome handoff for the control panel,
     // but do not put toolbar creation and its first frame behind that paint.
     const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
+    // Quick Pin mode finishes on release and never shows annotation controls,
+    // even when it starts from an already completed preset selection.
     const bool shouldShowSelectionUi =
         initialRevealVisible &&
         hasSelectableCapture &&
+        !m_quickPinMode &&
         !m_exportInProgress;
 
     if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
@@ -4327,6 +4330,15 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
         }
     }
 
+    // A preset selection (scripted --region/--last-region) is already complete,
+    // so moving, resizing or edge-adjusting it never emits selectionFinished.
+    // In Quick Pin mode the release must still accept the selection.
+    if (event->button() == Qt::LeftButton) {
+        m_quickPinPressOnCompletedSelection =
+            m_quickPinMode && !m_inputState.multiRegionMode &&
+            m_selectionManager->isComplete();
+    }
+
     m_inputHandler->handleMousePress(event);
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
     // QML multi-region panel handles cursor internally
@@ -4366,6 +4378,12 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
         !m_selectionManager->isComplete() && m_qmlToolbar) {
         m_qmlToolbar->beginSelectionTiming();
     }
+    const bool acceptAdjustedSelectionOnRelease =
+        event->button() == Qt::LeftButton && !releasedOverFloatingUi &&
+        m_quickPinPressOnCompletedSelection;
+    if (event->button() == Qt::LeftButton) {
+        m_quickPinPressOnCompletedSelection = false;
+    }
     m_inputHandler->handleMouseRelease(
         event,
         releasedOverFloatingUi
@@ -4373,6 +4391,10 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
             : RegionInputHandler::ReleaseTarget::Canvas);
     if (releasedOverFloatingUi) {
         syncFloatingUiCursor();
+        return;
+    }
+    if (acceptAdjustedSelectionOnRelease && m_selectionManager->isComplete()) {
+        finishSelection();
         return;
     }
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
