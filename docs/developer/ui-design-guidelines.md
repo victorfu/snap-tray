@@ -126,15 +126,15 @@ Record actual environment, results, and evidence for each implementation; a blan
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
-| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | CI build and tests only | CI build and tests only |
-| Wide/narrow, light/dark, selection/export | QML screenshot fixtures (below) | Pending manual pass | Pending manual pass |
-| Pending input, drag/undo, close/cancel | Automated preview suites; operation videos; exporting, close-while-exporting and cancelled screenshots (below) | CI tests only | CI tests only |
-| New recording end-to-end (trim → split/speed → canvas → text/mask/zoom → export) | Scripted real-input session, `editor-220-flow` | Pending manual pass | Pending manual pass |
-| Reopened project (reopen → change → undo/redo → save → reopen) | Scripted real-input session, `editor-220-reopen`; `tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits`, `tst_RecordingEditor::redoAndReopenKeepSelectionHonest` | CI tests only | CI tests only |
-| Long translations | de, fi, ru, el at 1200 × 800 and 640 × 480 (below) | Pending | Pending |
-| Multiple DPI scales | 1×, 1.5× and 2× renderings (`QT_SCALE_FACTOR` on a Retina display, below); no physical 1× display | Pending (100/150/200 %) | Pending |
-| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `inspectorControlsAreNamed`, `choicesReadTheirStateToScreenReaders` | Pending (Narrator) | Pending (Orca) |
-| Floating tools at screen edges/multiple displays | Outside this editor change | Pending follow-up | Pending follow-up |
+| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | CI build and tests only | `scripts/run-tests.sh` on a 2× desktop: 231 of 233; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
+| Wide/narrow, light/dark, selection/export | QML screenshot fixtures (below) | Pending manual pass | The same fixtures rendered on Ubuntu at 2×, light and dark |
+| Pending input, drag/undo, close/cancel | Automated preview suites; operation videos; exporting, close-while-exporting and cancelled screenshots (below) | CI tests only | Preview suites and operation videos pass locally; closing during a real export asks Keep/Cancel, Keep finishes it |
+| New recording end-to-end (trim → split/speed → canvas → text/mask/zoom → export) | Scripted real-input session, `editor-220-flow` | Pending manual pass | Real-input session (XTest): split, 2×, mask, text, zoom, undo/redo, MP4 export; trim and canvas not exercised; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
+| Reopened project (reopen → change → undo/redo → save → reopen) | Scripted real-input session, `editor-220-reopen`; `tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits`, `tst_RecordingEditor::redoAndReopenKeepSelectionHonest` | CI tests only | `operationVideoReopen` passes locally; no real reopen session |
+| Long translations | de, fi, ru, el at 1200 × 800 and 640 × 480 (below) | Pending | de, fi, ru, el at 1200 × 800 and 640 × 480 rendered on Ubuntu at 2×; every control reachable |
+| Multiple DPI scales | 1×, 1.5× and 2× renderings (`QT_SCALE_FACTOR` on a Retina display, below); no physical 1× display | Pending (100/150/200 %) | Physical 2× (Xft.dpi 192); 1× and 1.5× rendered with `QT_ENABLE_HIGHDPI_SCALING=0` and `QT_SCALE_FACTOR=0.75`. GNOME on X11 offers no 150 %; one display, so no mixed DPI |
+| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `inspectorControlsAreNamed`, `choicesReadTheirStateToScreenReaders` | Pending (Narrator) | AT-SPI tree of the live editor (what Orca reads): buttons, combo boxes, timeline parts and inspector rows named, shortcuts in descriptions; the export panel's dialog has no name (#253). No spoken Orca session |
+| Floating tools at screen edges/multiple displays | Outside this editor change | Pending follow-up | Pending follow-up (one display) |
 
 #220 was closed on the macOS evidence above. The pending Windows, Ubuntu 22.04 X11 beta, physical-DPI and screen reader passes are tracked in [#238](https://github.com/victorfu/snap-tray/issues/238); update this matrix with their results.
 
@@ -159,6 +159,32 @@ Remaining gaps, tracked in [#248](https://github.com/victorfu/snap-tray/issues/2
 - The tray icon has only its tooltip (AX help), no label; Qt's tray icon offers no accessible name.
 - While the export panel is open, the editor controls behind it stay in the accessibility tree.
 - Sliders read bare numbers ("100", not "100%").
+
+### Ubuntu 22.04 X11 pass (#238)
+
+Ubuntu 22.04.5 on X11 under GNOME (mutter), Qt 6.12.0, debug build of `747e15df`. One 3840 × 2160 display at Xft.dpi 192, so Qt runs at 2×. The app ran with its own `XDG_CONFIG_HOME` and `XDG_DATA_HOME`. Input came from XTest (real X pointer and key events), pictures from `import -window root` and `ffmpeg -f x11grab`. Accessible names were read from the AT-SPI tree with pyatspi, the same tree Orca reads; no spoken Orca session was run. The fixtures and operation videos of this page were regenerated on the same machine with the commands in each "Regenerating" block.
+
+- **Tests.** 231 of 233 suites pass. `Qml_RecordingPreviewMasks` failed only at 2× with `QT_QUICK_BACKEND=software`: that scene graph tags its device-pixel grab with ratio 1, so the test measured the editor's title instead of the picture. The test now takes the ratio from the grab's size. `Qml_DialogModality::growingDialogStaysOnScreen` fails under mutter at any scale: when a centred dialog grows, the window manager moves it back on screen before `QmlDialog::keepViewOnScreen` runs, and the dialog takes that move for the user's and stops centring. It stays on screen (#252). CI's Xvfb has no window manager, so it does not see either case.
+- **Recording and editor.** Real-input session: the record hotkey started a full-screen recording (X11 shared memory, `h264_vaapi`, countdown). In the editor: seek on the timeline, S split at 0:04.005, the second part at 2× (the bar showed "Export 0:03.487 / 0:07.601"), mask, text and zoom from Add effect, four undos and four redos, typing `s`, Space and Delete in the text field without splitting, playing or deleting, Space to play and pause. Closing the window during the MP4 export asked to keep or cancel, and keeping it wrote a 7.623 s file with every edit burned in. The Add effect menu opened downward and its last item was cut off by the window's bottom edge (#253).
+- **Capture toolbar and geometry undo.** In region capture a drawn rectangle shows "Selected: Rectangle"; a drag, Ctrl+Z and Ctrl+Shift+Z each act as one step at the right place. Esc during a drag puts the rectangle back, releasing the button afterwards does not move it, and the next Ctrl+Z undoes the previous move, so the cancelled drag never reached the history. Screen Canvas shows the three groups and the finish band. Pin annotation and Screen Canvas drags were not repeated by hand; the shared `ShapeAnnotationEditor` videos and suites pass on this machine.
+- **Pins.** The hover bar and its panels never show. Pins bypass the window manager on Linux (`Qt::X11BypassWindowManagerHint`), and override-redirect windows stack above every managed window, including the bar, which is mapped at the right place inside the pin's bottom edge (#250). At 95 % opacity the bar shows faintly through the pin. Keys, badges and the grouped context menu work.
+- **Screen readers.** The editor and the pin bar are named. The capture, pin annotation and Screen Canvas toolbars expose no buttons at all: `ToolbarButton.qml` sets no accessible role or name, which affects every platform (#251). The export panel's dialog and each pin window lack a name of their own (#253).
+
+![Esc during a drag in region capture: mid-drag, after Esc, after release, after Ctrl+Z](/assets/images/developer/linux/01-region-esc-during-drag.png)
+
+![Pin at 95 % opacity, with the hover bar visible through it](/assets/images/developer/linux/02-pin-hover-bar-under-pin.png)
+
+![Pin context menu with the Opacity submenu](/assets/images/developer/linux/03-pin-context-menu.png)
+
+![Editor after split, 2× and three effects](/assets/images/developer/linux/04-editor-split-speed-effects.png)
+
+![Closing the editor during an export](/assets/images/developer/linux/05-editor-close-while-exporting.png)
+
+![Screen Canvas toolbar](/assets/images/developer/linux/06-canvas-toolbar.png)
+
+![Narrow editor in Finnish at 2×](/assets/images/developer/linux/07-editor-narrow-fi-2x.png)
+
+Not covered by this pass: a reopened kept project, a narrow or second display, mixed DPI, physical 1× and 1.5× desktops, spoken Orca output, the Library and Settings screen reader trees, and the "drag while changing colour" and crop undo items of #238 by hand.
 
 ### Actual editor evidence
 
@@ -260,13 +286,13 @@ Applies to the Region Capture toolbar, the Pin Window annotation toolbar, and th
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 |
 | --- | --- | --- | --- |
-| Groups, finish band, normal width (light/dark) | Screenshots below | Pending manual pass | Pending manual pass |
-| Collapse into More on a narrow screen, menu by keyboard | Screenshots below + `tst_ToolbarOverflow` | Pending manual pass | Pending manual pass |
-| Selection placement at screen edges and on a narrow side monitor | `tst_ToolbarOverflow::selectionPlacementStaysOnScreen` | Pending manual pass | Pending manual pass |
-| Restyle a selected annotation, undo/redo, defaults untouched | Video below + `*_StyleSync::selectedArrowStyleIsUndoable` (region, pin, canvas) | Pending manual pass | Pending manual pass |
-| Long translation (German) | Screenshots below | Pending manual pass | Pending manual pass |
-| High DPI | 2× (Retina) screenshots below | 150 % pending | Pending manual pass |
-| Screen readers (toolbar, More menu, strip label) | Toolbar and More: AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; the style strip controls are unnamed ([gaps](#macos-accessibility-audit)) | Pending Narrator pass | Pending Orca pass |
+| Groups, finish band, normal width (light/dark) | Screenshots below | Pending manual pass | Real region capture and Screen Canvas on X11 at 2×; fixtures light and dark |
+| Collapse into More on a narrow screen, menu by keyboard | Screenshots below + `tst_ToolbarOverflow` | Pending manual pass | Fixtures at 1×, 1.5× and 2× + `tst_ToolbarOverflow`; no narrow physical screen |
+| Selection placement at screen edges and on a narrow side monitor | `tst_ToolbarOverflow::selectionPlacementStaysOnScreen` | Pending manual pass | `tst_ToolbarOverflow` passes; no side monitor |
+| Restyle a selected annotation, undo/redo, defaults untouched | Video below + `*_StyleSync::selectedArrowStyleIsUndoable` (region, pin, canvas) | Pending manual pass | `*_StyleSync` and the operation videos pass locally; real geometry undo and Esc during a drag in region capture, see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
+| Long translation (German) | Screenshots below | Pending manual pass | Fixtures in German on Ubuntu; same known style-strip overflow on the narrow screen |
+| High DPI | 2× (Retina) screenshots below | 150 % pending | Physical 2×; 1× and 1.5× renderings |
+| Screen readers (toolbar, More menu, strip label) | Toolbar and More: AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; the style strip controls are unnamed ([gaps](#macos-accessibility-audit)) | Pending Narrator pass | Fails on `747e15df` (before #247): AT-SPI showed the strip label but no toolbar buttons; `ToolbarButton.qml` set no accessible role or name, on every platform (#251). #247 names the buttons; not re-checked on Ubuntu |
 
 Known limit: on very narrow screens (about 400 px) the style strip itself does not collapse, so its last control can run past the edge (see the narrow screenshots). The toolbar above it always fits.
 
@@ -323,11 +349,11 @@ Applies to pin windows (#225). Design: `docs/superpowers/specs/2026-11-05-pin-wi
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
 | Build and repository tests | `scripts/run-tests.sh`, all suites | CI build and tests only | CI build and tests only |
-| Hover bar, panels, compact bar, light/dark/German | Evidence below (`PinWindow_Evidence`) | Pending manual pass (#238) | Pending manual pass (#238) |
-| Bar follows pin drag/zoom; hides in excluded states | `PinWindow_PinHoverBar`, `PinWindow_PinHoverIntegration` | CI tests only | CI tests only |
+| Hover bar, panels, compact bar, light/dark/German | Evidence below (`PinWindow_Evidence`) | Pending manual pass (#238) | Fails under GNOME: the bar and panels open beneath the override-redirect pin (#250). Fixtures render correctly |
+| Bar follows pin drag/zoom; hides in excluded states | `PinWindow_PinHoverBar`, `PinWindow_PinHoverIntegration` | CI tests only | CI tests only (Xvfb has no window manager, see #250) |
 | Click-through pill and tray exit | `PinWindow_Transform`, `App_MainApplicationTrayMenu`; screenshot below | Pending manual pass (#238) | Not supported (no click-through) |
-| Physical DPI scales | 2× only | Pending (#238) | Pending (#238) |
-| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `Qml_PinHoverBarQml`, `PinWindow_Transform` | Pending (Narrator) | Pending (Orca) |
+| Physical DPI scales | 2× only | Pending (#238) | Physical 2×; 1× and 1.5× renderings |
+| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `Qml_PinHoverBarQml`, `PinWindow_Transform` | Pending (Narrator) | AT-SPI exposes "Pin controls" with named buttons; on `747e15df` (before #247) the pin window itself carried only the app name (#253) |
 
 ### Evidence
 
@@ -382,9 +408,9 @@ Applies to the Library window (#226): the former History window, now holding scr
 | Build and repository tests | `scripts/run-tests.sh` | CI build and tests only | CI build and tests only |
 | Sections, counts, merge order, roles | `Qml_LibraryModel`, `Qml_LibraryWindow` | CI tests only | CI tests only |
 | Actions per kind, delete confirmation, busy project, privacy note | `Qml_LibraryWindow` | CI tests only | CI tests only |
-| Wide and narrow, light/dark/German | Evidence below (`Qml_LibraryEvidence`) | Pending manual pass (#238) | Pending manual pass (#238) |
-| Physical DPI scales | 2× only | Pending (#238) | Pending (#238) |
-| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; list items lack a selected state ([gaps](#macos-accessibility-audit)) | Pending (Narrator) | Pending (Orca) |
+| Wide and narrow, light/dark/German | Evidence below (`Qml_LibraryEvidence`) | Pending manual pass (#238) | Fixtures on Ubuntu at 2×, light and dark; German not run |
+| Physical DPI scales | 2× only | Pending (#238) | Physical 2× only |
+| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; list items lack a selected state ([gaps](#macos-accessibility-audit)) | Pending (Narrator) | Not inspected |
 
 ### Evidence
 
@@ -451,9 +477,9 @@ Applies to the Settings window and the Beautify panel (#227). Design: `docs/supe
 | Per-setting reset, search and reveal, label column | `Qml_SettingsWindowFeatureGating` | CI tests only | CI tests only |
 | Saved styles | `Qml_BeautifyPanelBackend`, `Qml_BeautifyPanelQml` | CI tests only | CI tests only |
 | Moved strings keep their translations | `Settings_QmlTranslations` | CI tests only | CI tests only |
-| Ordinary and minimum window, light/dark/German | Evidence below (`Qml_SettingsEvidence`) | Pending manual pass (#238) | Pending manual pass (#238) |
-| Physical DPI scales | 2× only | Pending (#238) | Pending (#238) |
-| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `Qml_SettingsWindowFeatureGating`, `Qml_SettingsCombo` | Pending (Narrator) | Pending (Orca) |
+| Ordinary and minimum window, light/dark/German | Evidence below (`Qml_SettingsEvidence`) | Pending manual pass (#238) | Fixtures on Ubuntu at 2×, light and dark; German not run |
+| Physical DPI scales | 2× only | Pending (#238) | Physical 2× only |
+| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `Qml_SettingsWindowFeatureGating`, `Qml_SettingsCombo` | Pending (Narrator) | Not inspected |
 
 ### Evidence
 
