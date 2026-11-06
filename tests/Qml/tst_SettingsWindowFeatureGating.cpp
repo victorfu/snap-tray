@@ -608,6 +608,23 @@ void tst_SettingsWindowFeatureGating::recordingModeFollowsTheSetup()
 void tst_SettingsWindowFeatureGating::sidebarArrowKeysCrossTheDivider()
 {
     // Down from Hotkeys opens Updates past the divider; Up comes back.
+    // On Windows the Hotkeys page may ask about the Print Screen shortcut in a
+    // modal box, which would block the test; answer "don't ask again" for it.
+    const QString promptKey = QStringLiteral("hotkeys/ignorePrintScreenSnippingPrompt");
+    const QVariant savedPrompt = SnapTray::getSettings().value(promptKey);
+    {
+        auto settings = SnapTray::getSettings();
+        settings.setValue(promptKey, true);
+        settings.sync();
+    }
+    auto restorePrompt = qScopeGuard([promptKey, savedPrompt] {
+        auto settings = SnapTray::getSettings();
+        if (savedPrompt.isValid())
+            settings.setValue(promptKey, savedPrompt);
+        else
+            settings.remove(promptKey);
+        settings.sync();
+    });
     SnapTray::SettingsBackend backend;
     QQuickView view;
     view.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
