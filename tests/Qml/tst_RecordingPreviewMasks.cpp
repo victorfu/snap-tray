@@ -65,7 +65,9 @@ int previewEdges(QQuickView* view, QQuickItem* player)
     const QRectF content = player->property("contentRect").toRectF();
     if (shot.isNull() || content.isEmpty()) return -1;
     const QRectF scene = player->mapRectToScene(content).adjusted(2, 2, -2, -2);
-    const qreal dpr = shot.devicePixelRatio();
+    // The software scene graph returns a device-pixel grab tagged with ratio 1
+    // (seen at 2x on X11), so take the ratio from the grab's size instead.
+    const qreal dpr = view->width() > 0 ? qreal(shot.width()) / view->width() : shot.devicePixelRatio();
     const QRect pixels = QRectF(scene.topLeft() * dpr, scene.size() * dpr)
         .toAlignedRect().intersected(shot.rect());
     return pixels.isEmpty() ? -1 : edges(shot, pixels);
