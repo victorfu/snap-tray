@@ -114,7 +114,7 @@ int BeautifyPanelBackend::styleShortSide() const
     }
     const qreal dpr = m_sourcePixmap.devicePixelRatio() > 0.0 ? m_sourcePixmap.devicePixelRatio() : 1.0;
     const QSize logical = CoordinateHelper::toLogical(m_sourcePixmap.size(), dpr);
-    return std::max(1, std::min(logical.width(), logical.height()));
+    return (std::max)(1, (std::min)(logical.width(), logical.height()));
 }
 
 BeautifySettings BeautifyPanelBackend::settingsFor(const FrameStyle& style) const
