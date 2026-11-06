@@ -8,6 +8,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Added
 
+- Added drawing order for annotations: Bring Forward, Send Backward, Bring to Front, and Send to Back for the selected annotation, with `Cmd+]`/`Cmd+[` (`Option` for front/back) on macOS and `Ctrl+]`/`Ctrl+[` (`Shift` for front/back) on Windows and Linux, buttons on the style bar, and an Arrange submenu on pins. Forward and Backward skip annotations that do not overlap. Step numbers keep the order the badges were placed in. On a pin with an annotation selected, `Ctrl/Cmd+]` now brings it forward instead of resetting opacity.
 - Added Delayed Capture to the tray menu, with 3, 5, and 10 second countdowns and an optional hotkey. A click-through countdown pill lets you open menus or hover controls first; when it ends, SnapTray hides the pill, freezes the screen, and opens Region Capture on it. The countdown can be cancelled from the tray or by pressing the hotkey again.
 
 ### Improved

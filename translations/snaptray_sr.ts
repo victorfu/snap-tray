@@ -1904,6 +1904,11 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <location filename="../src/PinWindow.cpp" line="1224" />
+        <source>Arrange</source>
+        <translation>Распореди</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="2160" />
         <source>Pinned image</source>
         <translation>Закачена слика</translation>
@@ -7632,6 +7637,49 @@ It may be in use by another application.</source>
         <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
         <source>Dotted</source>
         <translation>Тачкаста</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotationZOrderCommands</name>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Bring Forward</source>
+        <translation>Помери напред</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Send Backward</source>
+        <translation>Помери назад</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Bring to Front</source>
+        <translation>Постави у први план</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Send to Back</source>
+        <translation>Постави у позадину</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved forward</source>
+        <translation>Померено напред</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved backward</source>
+        <translation>Померено назад</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved to front</source>
+        <translation>Постављено у први план</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved to back</source>
+        <translation>Постављено у позадину</translation>
     </message>
 </context>
 <context>

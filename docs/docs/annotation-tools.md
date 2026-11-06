@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-05
+last_modified_at: 2026-11-06
 layout: docs
 title: Annotation Tools
 seo_title: "SnapTray Annotation Tools: Draw, Text, Mosaic and Steps"
@@ -44,6 +44,19 @@ Select a text, arrow, line, or shape annotation. The style bar then says **Selec
 With nothing selected, the style bar says **New object** and changes apply to the next annotation you draw. Changing a selected annotation never changes those settings.
 
 Moving, rotating, or resizing an annotation, dragging an arrow's ends or curve, dragging a line's points, and editing a text again are each one undo step. Press `Esc` during a drag to put the annotation back where it was.
+
+## Putting one annotation above another
+
+Select an annotation, then change which annotations it covers:
+
+| Command | macOS | Windows / Linux |
+|---|---|---|
+| Bring Forward | `⌘]` | `Ctrl+]` |
+| Send Backward | `⌘[` | `Ctrl+[` |
+| Bring to Front | `⌥⌘]` | `Ctrl+Shift+]` |
+| Send to Back | `⌥⌘[` | `Ctrl+Shift+[` |
+
+The same four commands are buttons at the end of the style bar for a selected text, arrow, line, or shape, and an **Arrange** submenu in a pin's right-click menu. Bring Forward and Send Backward go past the next annotation that overlaps the selected one, so each press makes a visible change; with nothing overlapping in that direction they go all the way. Pressing the same command several times in a row is one undo step. Step numbers never change when you rearrange: they follow the order you placed the badges in. Copy, Save, and Pin use the order you see.
 
 ## When the toolbar does not fit
 

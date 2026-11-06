@@ -14,6 +14,7 @@
 #include "annotations/MosaicStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "annotations/MarkerStroke.h"
+#include "annotations/ArrowAnnotation.h"
 #include "capture/ICaptureEngine.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
@@ -71,6 +72,72 @@ private slots:
         window.setOpacity(0.4);
         QTest::keyClick(&window, Qt::Key_BracketRight);
         QVERIFY(window.opacity() > 0.4 && window.opacity() < 1.0);
+    }
+    // #268: with an annotation selected, Cmd/Ctrl+] brings it forward instead
+    // of resetting opacity; without one it still resets opacity, and plain
+    // ] / [ always step opacity.
+    void testZOrderShortcutTakesPrecedenceWithSelection() {
+        PinWindow window(createTestPixmap(200, 150), QPoint(), nullptr, false, false);
+        if (!window.m_toolManager) {
+            window.initializeAnnotationComponents();
+        }
+        window.enterAnnotationMode();
+        AnnotationLayer* layer = window.m_annotationLayer;
+        layer->addItem(std::make_unique<ArrowAnnotation>(QPoint(10, 10), QPoint(80, 80), Qt::red, 3));
+        layer->addItem(std::make_unique<ArrowAnnotation>(QPoint(10, 80), QPoint(80, 10), Qt::blue, 3));
+        const auto bottomId = layer->idAt(0);
+        layer->setSelectedIndex(0);
+
+        window.setOpacity(0.4);
+        QTest::keyClick(&window, Qt::Key_BracketRight, Qt::ControlModifier);
+        QCOMPARE(layer->idAt(1), bottomId);
+        QCOMPARE(window.opacity(), 0.4);
+        // Already in front: still consumed, so opacity is untouched.
+        QTest::keyClick(&window, Qt::Key_BracketRight, Qt::ControlModifier);
+        QCOMPARE(window.opacity(), 0.4);
+        QTest::keyClick(&window, Qt::Key_BracketLeft, Qt::ControlModifier);
+        QCOMPARE(layer->idAt(0), bottomId);
+
+        // Plain ] keeps stepping opacity with a selection.
+        QTest::keyClick(&window, Qt::Key_BracketRight);
+        QVERIFY(window.opacity() > 0.4);
+
+        layer->clearSelection();
+        window.setOpacity(0.4);
+        QTest::keyClick(&window, Qt::Key_BracketRight, Qt::ControlModifier);
+        QCOMPARE(window.opacity(), 1.0);
+        QCOMPARE(layer->idAt(0), bottomId);
+    }
+    void testArrangeMenuFollowsSelection() {
+        PinWindow window(createTestPixmap(200, 150), QPoint(), nullptr, false, false);
+        if (!window.m_toolManager) {
+            window.initializeAnnotationComponents();
+        }
+        window.enterAnnotationMode();
+        window.createContextMenu();
+        AnnotationLayer* layer = window.m_annotationLayer;
+        layer->addItem(std::make_unique<ArrowAnnotation>(QPoint(10, 10), QPoint(80, 80), Qt::red, 3));
+        layer->addItem(std::make_unique<ArrowAnnotation>(QPoint(10, 80), QPoint(80, 10), Qt::blue, 3));
+
+        window.refreshContextMenuState();
+        QVERIFY(!window.m_arrangeMenu->menuAction()->isVisible());
+
+        layer->setSelectedIndex(1);   // already in front
+        window.refreshContextMenuState();
+        QVERIFY(window.m_arrangeMenu->menuAction()->isVisible());
+        QAction* forward = nullptr;
+        QAction* toBack = nullptr;
+        for (QAction* action : window.m_arrangeMenu->actions()) {
+            const auto move = static_cast<AnnotationLayer::ZOrderMove>(action->data().toInt());
+            if (move == AnnotationLayer::ZOrderMove::Forward) forward = action;
+            if (move == AnnotationLayer::ZOrderMove::ToBack) toBack = action;
+        }
+        QVERIFY(forward && toBack);
+        QVERIFY(!forward->isEnabled());
+        QVERIFY(toBack->isEnabled());
+        const auto frontId = layer->idAt(1);
+        toBack->trigger();
+        QCOMPARE(layer->idAt(0), frontId);
     }
     // Badges say which value they show, for every way the value changes.
     void testBadgeNamesValueForEverySource() {

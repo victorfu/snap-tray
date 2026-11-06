@@ -1903,6 +1903,11 @@ Storlek: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <location filename="../src/PinWindow.cpp" line="1224" />
+        <source>Arrange</source>
+        <translation>Ordna</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="2160" />
         <source>Pinned image</source>
         <translation>Fäst bild</translation>
@@ -7628,6 +7633,49 @@ Den kan användas av ett annat program.</translation>
         <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
         <source>Dotted</source>
         <translation>Prickad</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotationZOrderCommands</name>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Bring Forward</source>
+        <translation>Flytta framåt</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Send Backward</source>
+        <translation>Flytta bakåt</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Bring to Front</source>
+        <translation>Placera längst fram</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Send to Back</source>
+        <translation>Placera längst bak</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved forward</source>
+        <translation>Flyttad framåt</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved backward</source>
+        <translation>Flyttad bakåt</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved to front</source>
+        <translation>Placerad längst fram</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved to back</source>
+        <translation>Placerad längst bak</translation>
     </message>
 </context>
 <context>

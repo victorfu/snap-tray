@@ -1902,6 +1902,11 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <location filename="../src/PinWindow.cpp" line="1224" />
+        <source>Arrange</source>
+        <translation>配置</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="2160" />
         <source>Pinned image</source>
         <translation>ピン留めされた画像</translation>
@@ -7624,6 +7629,49 @@ It may be in use by another application.</source>
         <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
         <source>Dotted</source>
         <translation>点線</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotationZOrderCommands</name>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Bring Forward</source>
+        <translation>前面へ移動</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Send Backward</source>
+        <translation>背面へ移動</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Bring to Front</source>
+        <translation>最前面へ移動</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Send to Back</source>
+        <translation>最背面へ移動</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved forward</source>
+        <translation>前面へ移動しました</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved backward</source>
+        <translation>背面へ移動しました</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved to front</source>
+        <translation>最前面へ移動しました</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved to back</source>
+        <translation>最背面へ移動しました</translation>
     </message>
 </context>
 <context>

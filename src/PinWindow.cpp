@@ -6,6 +6,7 @@
 #include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationStyleEditor.h"
+#include "annotations/AnnotationZOrderCommands.h"
 #include "annotations/AnnotationStyle.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
@@ -1219,6 +1220,22 @@ void PinWindow::createContextMenu()
     m_contextMenu = new QMenu(this);
 
     // Grouped by task (#225): View | Output | Modes | Pins | Close.
+    // Arrange leads while an annotation is selected (#268); hidden otherwise.
+    m_arrangeMenu = m_contextMenu->addMenu(tr("Arrange"));
+    m_arrangeMenu->menuAction()->setObjectName(QStringLiteral("pinMenuArrange"));
+    for (const auto move : {AnnotationZOrderCommands::Move::Forward,
+                            AnnotationZOrderCommands::Move::Backward,
+                            AnnotationZOrderCommands::Move::ToFront,
+                            AnnotationZOrderCommands::Move::ToBack}) {
+        QAction* action = m_arrangeMenu->addAction(AnnotationZOrderCommands::actionText(move));
+        action->setData(static_cast<int>(move));
+        action->setShortcut(AnnotationZOrderCommands::shortcut(move));
+        connect(action, &QAction::triggered, this, [this, move]() {
+            if (m_styleEditor && m_styleEditor->applyZOrder(move)) update();
+        });
+    }
+    m_contextMenu->addSeparator();
+
     // Show Toolbar action
     m_showToolbarAction = m_contextMenu->addAction(tr("Show Toolbar"));
     m_showToolbarAction->setObjectName(QStringLiteral("pinMenuShowToolbar"));
@@ -3303,6 +3320,16 @@ void PinWindow::refreshContextMenuState()
 {
     refreshMoveToScreenMenu();
 
+    if (m_arrangeMenu) {
+        const bool hasSelection = m_annotationMode && m_annotationLayer && m_styleEditor
+            && m_annotationLayer->selectedIndex() >= 0;
+        m_arrangeMenu->menuAction()->setVisible(hasSelection);
+        for (QAction* action : m_arrangeMenu->actions()) {
+            const auto move = static_cast<AnnotationLayer::ZOrderMove>(action->data().toInt());
+            action->setEnabled(hasSelection && m_annotationLayer->zOrderTargetIndex(move) >= 0);
+        }
+    }
+
     // Update Show Toolbar checked state
     if (m_showToolbarAction) {
         m_showToolbarAction->setChecked(m_toolbarVisible);
@@ -3428,6 +3455,13 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
         }
         if (event->matches(QKeySequence::Redo)) {
             handleToolbarRedo();
+            event->accept();
+            return;
+        }
+        // Drawing order (#268). With an annotation selected, Cmd/Ctrl+] is
+        // Bring Forward rather than Reset Opacity; plain ] and [ stay opacity.
+        if (m_styleEditor && m_styleEditor->handleZOrderKey(event)) {
+            update();
             event->accept();
             return;
         }

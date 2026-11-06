@@ -117,6 +117,7 @@ class tst_AnnotationSerializer : public QObject
 
 private slots:
     void testRoundtripPreservesSupportedAnnotations();
+    void testRoundtripKeepsDrawingOrderAndStepNumbers();
     void testBulkRoundtripPreservesVisibleSceneAndBoundedUndo();
     void testSerializeExcludesRemovedCommandPayload();
     void testDeserializeFailureClearsLayerOnce();
@@ -277,6 +278,39 @@ void tst_AnnotationSerializer::testDeserializeFailureClearsLayerOnce()
     QCOMPARE(changedSpy.count(), 1);
     QVERIFY(layer.isEmpty());
     QVERIFY(!layer.canUndo());
+}
+
+// #268: a rearranged scene reopens in the same drawing order with the same
+// step numbers, which follow placement order rather than drawing order.
+void tst_AnnotationSerializer::testRoundtripKeepsDrawingOrderAndStepNumbers()
+{
+    AnnotationLayer source;
+    for (int i = 1; i <= 3; ++i) {
+        source.addItem(std::make_unique<StepBadgeAnnotation>(QPoint(20 * i, 20), Qt::red, i));
+    }
+    source.setSelectedIndex(0);
+    QVERIFY(source.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));   // 2, 3, 1
+
+    const auto numbersOf = [](AnnotationLayer& layer) {
+        QList<int> numbers;
+        for (int i = 0; i < static_cast<int>(layer.itemCount()); ++i) {
+            numbers.append(static_cast<StepBadgeAnnotation*>(layer.itemAt(i))->number());
+        }
+        return numbers;
+    };
+    QCOMPARE(numbersOf(source), QList<int>({2, 3, 1}));
+
+    AnnotationLayer restored;
+    QString error;
+    QVERIFY2(SnapTray::deserializeAnnotationLayer(
+                 SnapTray::serializeAnnotationLayer(source), &restored, makeSharedPixmap(), &error),
+             qPrintable(error));
+    QCOMPARE(numbersOf(restored), QList<int>({2, 3, 1}));
+
+    // Deleting badge 2 renumbers by placement: badge 3 becomes 2.
+    restored.setSelectedIndex(0);
+    QVERIFY(restored.removeSelectedItem());
+    QCOMPARE(numbersOf(restored), QList<int>({2, 1}));
 }
 
 QTEST_MAIN(tst_AnnotationSerializer)
