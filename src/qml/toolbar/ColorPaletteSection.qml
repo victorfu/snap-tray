@@ -25,10 +25,22 @@ Item {
     width: implicitWidth
     height: implicitHeight
 
+    // Preset names in palette order (PinToolOptionsViewModel::buildColorPalette).
+    readonly property var presetNames: [qsTr("Red"), qsTr("Yellow"), qsTr("Green"),
+                                        qsTr("Purple"), qsTr("Black"), qsTr("White")]
+
     // Custom color swatch (shows current color)
     Rectangle {
         id: customSwatch
+        objectName: "customColorSwatch"
         x: root.sectionPadding
+        // Screen readers (#248): opens the color picker; reads the current color.
+        Accessible.role: Accessible.Button
+        Accessible.name: qsTr("Custom color") + ", " + root.currentColorValue.toString().toUpperCase()
+        Accessible.onPressAction: {
+            if (root.hasViewModel)
+                root.viewModel.handleCustomColorClicked()
+        }
         width: root.swatchSize
         height: root.swatchSize
         radius: 3
@@ -109,6 +121,14 @@ Item {
                 required property var modelData
                 required property int index
                 objectName: "colorSwatch_" + index
+                Accessible.role: Accessible.RadioButton
+                Accessible.name: root.presetNames[index] || modelData.toString().toUpperCase()
+                Accessible.checkable: true
+                Accessible.checked: modelData == root.currentColorValue
+                Accessible.onPressAction: {
+                    if (root.hasViewModel)
+                        root.viewModel.handleColorClicked(index)
+                }
                 width: root.swatchSize
                 height: root.swatchSize
                 radius: 3

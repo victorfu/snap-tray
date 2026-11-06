@@ -64,7 +64,10 @@ void tst_RecordingPreviewMp4Options::panelSetsAndRemembersTheOptions()
     QVERIFY(!panel->isVisible());
     QVERIFY(QMetaObject::invokeMethod(open, "clicked"));
     QTRY_VERIFY(panel->isVisible());
-    QVERIFY(formatRow->isEnabled()); // Export no longer replaces project navigation.
+    // Behind the modal panel the editor is out of reach, for screen readers
+    // too (#248); export no longer replaces project navigation, so it is
+    // usable again once the panel closes (checked below).
+    QVERIFY(!formatRow->isEnabled());
 
     QQuickItem* resolution = item(view, "previewMp4Resolution");
     QQuickItem* frameRate = item(view, "previewMp4FrameRate");

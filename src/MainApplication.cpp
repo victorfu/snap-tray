@@ -36,6 +36,7 @@
 #include "utils/CoordinateHelper.h"
 #ifdef Q_OS_MACOS
 #include "platform/MacTrayActivationGuard.h"
+#include "platform/MacTrayAccessibility.h"
 #endif
 
 #include <QFile>
@@ -1502,6 +1503,11 @@ void MainApplication::updateTrayToolTip()
     } else {
         m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
     }
+#endif
+#ifdef Q_OS_MACOS
+    // The status item has only a tooltip; give VoiceOver the same text (#248).
+    SnapTray::setMacTrayAccessibilityLabel(
+        m_trayIcon->toolTip().replace(QLatin1Char('\n'), QStringLiteral(", ")));
 #endif
 }
 

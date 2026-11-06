@@ -218,6 +218,19 @@ if(TARGET Qt6::QOffscreenIntegrationPlugin)
         "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
 endif()
 
+add_executable(Qml_ToolOptionsAccessibility Qml/tst_ToolOptionsAccessibility.cpp)
+target_link_libraries(Qml_ToolOptionsAccessibility PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_ToolOptionsAccessibility COMMAND Qml_ToolOptionsAccessibility)
+set_tests_properties(Qml_ToolOptionsAccessibility PROPERTIES
+    TIMEOUT 60
+    LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+if(TARGET Qt6::QOffscreenIntegrationPlugin)
+    set_property(TEST Qml_ToolOptionsAccessibility APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
+endif()
+
 add_executable(Qml_FloatingSubToolbarAutoBlurHint Qml/tst_FloatingSubToolbarAutoBlurHint.cpp)
 target_link_libraries(Qml_FloatingSubToolbarAutoBlurHint PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 add_test(NAME Qml_FloatingSubToolbarAutoBlurHint COMMAND Qml_FloatingSubToolbarAutoBlurHint)
@@ -487,6 +500,11 @@ if(APPLE)
     target_link_libraries(Platform_MacTrayActivationGuard PRIVATE snaptray_platform Qt6::Test)
     add_test(NAME Platform_MacTrayActivationGuard COMMAND Platform_MacTrayActivationGuard)
     set_tests_properties(Platform_MacTrayActivationGuard PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+
+    add_executable(Platform_MacTrayAccessibility Platform/tst_MacTrayAccessibility.mm)
+    target_link_libraries(Platform_MacTrayAccessibility PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_MacTrayAccessibility COMMAND Platform_MacTrayAccessibility)
+    set_tests_properties(Platform_MacTrayAccessibility PROPERTIES TIMEOUT 30 LABELS "unit;integration")
 
     add_executable(Platform_MacDockPresence Platform/tst_MacDockPresence.mm)
     target_link_libraries(Platform_MacDockPresence PRIVATE snaptray_platform Qt6::Test)

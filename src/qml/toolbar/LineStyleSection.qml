@@ -75,6 +75,10 @@ Item {
 
     Rectangle {
         id: buttonRect
+        // Screen readers (#248): opens the style menu; reads the current style.
+        Accessible.role: Accessible.ButtonMenu
+        Accessible.name: root.hasViewModel ? qsTr("Line style") + ", " + root.viewModel.lineStyleLabel : qsTr("Line style")
+        Accessible.onPressAction: root.openMenu()
         y: 1
         width: root.buttonWidth
         height: root.buttonHeight

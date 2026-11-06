@@ -426,7 +426,8 @@ Item {
 
         height: 44
         radius: 12
-        Accessible.role: Accessible.Button
+        // A tab (#248): read as "selected" instead of a 0/1 value.
+        Accessible.role: Accessible.PageTab
         Accessible.name: countLabel !== "" ? textLabel + ", " + countLabel : textLabel
         Accessible.checkable: true
         Accessible.checked: active
@@ -556,10 +557,15 @@ Item {
         signal openRequested(string entryKey)
         signal contextMenuRequested(real globalX, real globalY, string entryKey)
 
-        Accessible.role: Accessible.ListItem
+        // One selected item at a time (#248): Qt exposes a ListItem on macOS
+        // as static text without its selected state, so read it as a radio
+        // button; press selects it like a click.
+        Accessible.role: Accessible.RadioButton
         Accessible.name: titleText + ", " + kindText
         Accessible.description: metaText
-        Accessible.selected: selected
+        Accessible.checkable: true
+        Accessible.checked: selected
+        Accessible.onPressAction: gridCard.selectedEntry(gridCard.entryKey)
 
         radius: 18
         color: gridMouse.pressed
@@ -701,10 +707,15 @@ Item {
         signal openRequested(string entryKey)
         signal contextMenuRequested(real globalX, real globalY, string entryKey)
 
-        Accessible.role: Accessible.ListItem
+        // One selected item at a time (#248): Qt exposes a ListItem on macOS
+        // as static text without its selected state, so read it as a radio
+        // button; press selects it like a click.
+        Accessible.role: Accessible.RadioButton
         Accessible.name: titleText + ", " + kindText
         Accessible.description: metaText
-        Accessible.selected: selected
+        Accessible.checkable: true
+        Accessible.checked: selected
+        Accessible.onPressAction: listRow.selectedEntry(listRow.entryKey)
 
         radius: 16
         color: listMouse.pressed
@@ -1175,6 +1186,7 @@ Item {
                             border.width: root.currentSource === modelData.source ? 1 : 0
                             color: root.currentSource === modelData.source
                                 ? ComponentTokens.toolbarPopupSelected : "transparent"
+                            Accessible.role: Accessible.PageTab
                             Accessible.checkable: true
                             Accessible.checked: root.currentSource === modelData.source
                             onClicked: root.showSection(modelData.source)
@@ -1445,8 +1457,10 @@ Item {
                                     width: parent.width / 2
                                     height: parent.height
                                     selected: !root.listMode
-                                    Accessible.role: Accessible.Button
+                                    Accessible.role: Accessible.RadioButton
                                     Accessible.name: qsTr("Grid view")
+                                    Accessible.checkable: true
+                                    Accessible.checked: !root.listMode
                                     onClicked: root.listMode = false
 
                                     GridGlyph {
@@ -1459,8 +1473,10 @@ Item {
                                     width: parent.width / 2
                                     height: parent.height
                                     selected: root.listMode
-                                    Accessible.role: Accessible.Button
+                                    Accessible.role: Accessible.RadioButton
                                     Accessible.name: qsTr("List view")
+                                    Accessible.checkable: true
+                                    Accessible.checked: root.listMode
                                     onClicked: root.listMode = true
 
                                     ListGlyph {

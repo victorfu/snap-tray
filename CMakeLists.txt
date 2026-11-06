@@ -302,6 +302,7 @@ add_library(snaptray_core STATIC
     src/annotations/MarkerStroke.cpp
     src/annotations/LineAnnotationGeometry.cpp
     src/annotations/ArrowAnnotation.cpp
+    src/annotations/AnnotationStyleLabels.cpp
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
     src/annotations/AnnotationStyle.cpp
@@ -591,6 +592,7 @@ add_library(snaptray_platform STATIC
         src/platform/WindowLevel_mac.mm
         src/platform/MacDockPresence_mac.mm
         src/platform/MacTrayActivationGuard_mac.mm
+        src/platform/MacTrayAccessibility_mac.mm
         src/platform/PlatformFeatures_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm

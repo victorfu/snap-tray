@@ -56,6 +56,7 @@ private slots:
     void redoAndReopenKeepSelectionHonest();
     void inspectorControlsAreNamed();
     void choicesReadTheirStateToScreenReaders();
+    void exportPanelKeepsTheEditorOutOfReach();
     void outputTimeFollowsCutsAndSpeed();
     void canvasClickSelectsObjects();
     void backgroundImageShowsThumbnail();
@@ -1458,6 +1459,36 @@ void tst_RecordingEditor::choicesReadTheirStateToScreenReaders()
         QTRY_VERIFY(hevcAccessible->state().checked);
         QVERIFY(!h264Accessible->state().checked);
     }
+    backend.requestDiscard();
+}
+
+// #248: behind the modal export panel, the editor stayed reachable for screen
+// readers. It is disabled while the panel is open and usable again after.
+void tst_RecordingEditor::exportPanelKeepsTheEditorOutOfReach()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() > 0);
+    QQuickItem* split = item(view, "previewSplit");
+    QVERIFY(split);
+    QVERIFY(split->isEnabled());
+
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openExport"));
+    QObject* popup = view->rootObject()->findChild<QObject*>("previewExportPanel");
+    QTRY_VERIFY(popup && popup->property("opened").toBool());
+    QVERIFY(!split->isEnabled());
+    QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(split);
+    QVERIFY(accessible);
+    QVERIFY(accessible->state().disabled);
+
+    QMetaObject::invokeMethod(popup, "close");
+    QTRY_VERIFY(!popup->property("visible").toBool());
+    QTRY_VERIFY(split->isEnabled());
     backend.requestDiscard();
 }
 

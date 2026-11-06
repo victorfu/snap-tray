@@ -31,7 +31,9 @@ SettingsRow {
         live: true
 
         Accessible.role: Accessible.Slider
-        Accessible.name: root.label
+        // The value with its unit (#248): the slider's own value is a bare
+        // number, so "100" would be read instead of "100%".
+        Accessible.name: root.label + ", " + valueText.text
 
         onMoved: {
             root.moved(Math.round(slider.value))

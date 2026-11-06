@@ -44,6 +44,7 @@ private slots:
     void overflowClosesOnRelayout();
     void overflowReturnsFocusToMore();
     void buttonsAndMoreRowsAreNamedForScreenReaders();
+    void disabledButtonsReadAsUnavailableButKeepTooltips();
 };
 
 void TestToolbarOverflow::standaloneEngineCanImportModule()
@@ -399,6 +400,77 @@ void TestToolbarOverflow::buttonsAndMoreRowsAreNamedForScreenReaders()
     row->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
     QCOMPARE(triggered.count(), 1);
     QCOMPARE(QStringLiteral("overflowButton_%1").arg(triggered.at(0).at(0).toInt()), pressable->objectName());
+    toolbar.hide();
+}
+
+// #248: a button only drawn as disabled (Undo with nothing to undo) was read
+// as available. It is disabled for screen readers now, and still shows its
+// tooltip on hover through the toolbar's hover layer.
+void TestToolbarOverflow::disabledButtonsReadAsUnavailableButKeepTooltips()
+{
+    RegionToolbarViewModel vm;
+    vm.setCanUndo(false);
+    QmlFloatingToolbar toolbar(&vm);
+    toolbar.applyOverflowLayout(QRect(0, 0, 1600, 400));
+    toolbar.show();
+    QVERIFY(QTest::qWaitForWindowExposed(toolbar.m_view));
+
+    QQuickItem* undo = nullptr;
+    QList<QQuickItem*> pending{toolbar.m_rootItem};
+    while (!pending.isEmpty() && !undo) {
+        QQuickItem* node = pending.takeLast();
+        pending.append(node->childItems());
+        if (node->property("accessibleCheckable").isValid()
+                && node->property("buttonId").toInt() == int(ToolId::Undo))
+            undo = node;
+    }
+    QVERIFY(undo);
+    QVERIFY(undo->property("isDisabled").toBool());
+    QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(undo);
+    QVERIFY(accessible);
+    QVERIFY(accessible->state().disabled);
+
+    // Repeater delegates are in the visual tree, not QObject children.
+    QQuickItem* hover = nullptr;
+    const QString hoverName = QStringLiteral("toolbarDisabledHover_%1").arg(int(ToolId::Undo));
+    pending = {toolbar.m_rootItem};
+    while (!pending.isEmpty() && !hover) {
+        QQuickItem* node = pending.takeLast();
+        pending.append(node->childItems());
+        if (node->objectName() == hoverName) hover = node;
+    }
+    QVERIFY(hover);
+    QVERIFY(hover->property("enabled").toBool());
+    QSignalSpy hovered(toolbar.m_rootItem, SIGNAL(buttonHovered(int,double,double,double,double)));
+    QVERIFY(hovered.isValid());
+    const QPoint center = undo->mapToScene(QPointF(undo->width() / 2, undo->height() / 2)).toPoint();
+    QTest::mouseMove(toolbar.m_view, center + QPoint(0, 1));
+    QTest::mouseMove(toolbar.m_view, center);
+    QTRY_VERIFY(hovered.count() > 0);
+    QCOMPARE(hovered.last().at(0).toInt(), int(ToolId::Undo));
+
+    // Once available, the button is enabled again and the layer steps aside.
+    // The row may be rebuilt, so look both items up again.
+    vm.setCanUndo(true);
+    const auto findNamed = [&](const std::function<bool(QQuickItem*)>& match) -> QQuickItem* {
+        QList<QQuickItem*> nodes{toolbar.m_rootItem};
+        while (!nodes.isEmpty()) {
+            QQuickItem* node = nodes.takeLast();
+            nodes.append(node->childItems());
+            if (match(node)) return node;
+        }
+        return nullptr;
+    };
+    QTRY_VERIFY([&] {
+        QQuickItem* button = findNamed([](QQuickItem* node) {
+            return node->property("accessibleCheckable").isValid()
+                && node->property("buttonId").toInt() == int(ToolId::Undo);
+        });
+        QQuickItem* layer = findNamed([&](QQuickItem* node) { return node->objectName() == hoverName; });
+        QAccessibleInterface* now = button ? QAccessible::queryAccessibleInterface(button) : nullptr;
+        // MouseArea.enabled (not Item::isEnabled) decides whether it takes hover.
+        return now && !now->state().disabled && layer && !layer->property("enabled").toBool();
+    }());
     toolbar.hide();
 }
 

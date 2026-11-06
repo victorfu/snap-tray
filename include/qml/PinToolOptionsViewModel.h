@@ -56,6 +56,9 @@ class PinToolOptionsViewModel : public QObject
     // Arrow/Line style section
     Q_PROPERTY(int arrowStyle READ arrowStyle WRITE setArrowStyle NOTIFY arrowStyleChanged)
     Q_PROPERTY(int lineStyle READ lineStyle WRITE setLineStyle NOTIFY lineStyleChanged)
+    // Translated names of the current styles, for screen readers (#248).
+    Q_PROPERTY(QString arrowStyleLabel READ arrowStyleLabel NOTIFY arrowStyleChanged)
+    Q_PROPERTY(QString lineStyleLabel READ lineStyleLabel NOTIFY lineStyleChanged)
 
     // Step badge size section
     Q_PROPERTY(int stepBadgeSize READ stepBadgeSize WRITE setStepBadgeSize NOTIFY stepBadgeSizeChanged)
@@ -135,6 +138,8 @@ public:
     void setArrowStyle(int style);
     int lineStyle() const { return m_lineStyle; }
     void setLineStyle(int style);
+    QString arrowStyleLabel() const;
+    QString lineStyleLabel() const;
 
     // Step badge size
     int stepBadgeSize() const { return m_stepBadgeSize; }

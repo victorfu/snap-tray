@@ -227,6 +227,29 @@ Item {
 
                             onUnhovered: root.buttonUnhovered()
                         }
+
+                        // A disabled button gets no hover (#248); keep its
+                        // tooltip, for example why Undo is unavailable, from here.
+                        MouseArea {
+                            objectName: "toolbarDisabledHover_" + delegateLoader.buttonId
+                            x: toolbarButton.x
+                            y: toolbarButton.y
+                            width: toolbarButton.width
+                            height: toolbarButton.height
+                            enabled: toolbarButton.isDisabled
+                            hoverEnabled: true
+                            acceptedButtons: Qt.NoButton
+                            cursorShape: CursorTokens.toolbarControl
+                            onContainsMouseChanged: {
+                                if (containsMouse) {
+                                    var mapped = toolbarButton.mapToItem(null, 0, 0)
+                                    root.buttonHovered(toolbarButton.buttonId, mapped.x, mapped.y,
+                                                       toolbarButton.width, toolbarButton.height)
+                                } else {
+                                    root.buttonUnhovered()
+                                }
+                            }
+                        }
                     }
                 }
             }

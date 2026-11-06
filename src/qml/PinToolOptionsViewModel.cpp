@@ -1,4 +1,7 @@
 #include "qml/PinToolOptionsViewModel.h"
+#include "annotations/AnnotationStyleLabels.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "tools/ToolSectionConfig.h"
@@ -134,6 +137,16 @@ void PinToolOptionsViewModel::showForTool(int toolId)
 QString PinToolOptionsViewModel::autoBlurHintText() const
 {
     return tr("Automatically detect and blur faces and credentials");
+}
+
+QString PinToolOptionsViewModel::arrowStyleLabel() const
+{
+    return AnnotationStyleLabels::arrowStyle(static_cast<LineEndStyle>(m_arrowStyle));
+}
+
+QString PinToolOptionsViewModel::lineStyleLabel() const
+{
+    return AnnotationStyleLabels::lineStyle(static_cast<LineStyle>(m_lineStyle));
 }
 
 // ── Property setters ──

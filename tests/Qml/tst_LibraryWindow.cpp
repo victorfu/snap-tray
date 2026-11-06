@@ -1,3 +1,4 @@
+#include <QAccessible>
 #include <QtTest/QtTest>
 
 #include "history/HistoryStore.h"
@@ -78,6 +79,7 @@ private slots:
     void reopeningClearsPendingDelete();
     void openingInPreviewCancelsPendingDelete();
     void cancelledDeleteReturnsFocus();
+    void itemsAndSectionsReadTheirSelection();
 
 private:
     QQuickItem* item(const char* name) const;
@@ -161,6 +163,54 @@ void tst_LibraryWindow::click(const char* name)
     QVERIFY2(button->isVisible(), name);
     QVERIFY2(button->property("enabledButton").toBool(), name);
     QMetaObject::invokeMethod(button, "clicked");
+}
+
+// #248: items were list items, which Qt exposes on macOS as static text
+// without a selected state, and sections reported selection as a 0/1 value.
+// Items read as one-of-many choices, sections as tabs, and the view toggle
+// says which view is shown.
+void tst_LibraryWindow::itemsAndSectionsReadTheirSelection()
+{
+    QAccessibleInterface* all = QAccessible::queryAccessibleInterface(item("librarySection_all"));
+    QAccessibleInterface* recordings = QAccessible::queryAccessibleInterface(item("librarySection_recordings"));
+    QVERIFY(all && recordings);
+    QCOMPARE(all->role(), QAccessible::PageTab);
+    QVERIFY(all->state().checked);
+    QVERIFY(!recordings->state().checked);
+
+    QList<QAccessibleInterface*> entries;
+    QAccessibleInterface* gridView = nullptr;
+    QAccessibleInterface* listView = nullptr;
+    std::function<void(QQuickItem*)> walk = [&](QQuickItem* node) {
+        if (!node->isVisible()) return;
+        if (QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(node)) {
+            const QString name = accessible->text(QAccessible::Name);
+            if (name == QStringLiteral("Grid view")) gridView = accessible;
+            else if (name == QStringLiteral("List view")) listView = accessible;
+            else if (accessible->role() == QAccessible::RadioButton) entries << accessible;
+        }
+        for (QQuickItem* child : node->childItems()) walk(child);
+    };
+    walk(qobject_cast<QQuickItem*>(root()));
+    QCOMPARE(entries.size(), library()->rowCount());
+    QVERIFY(gridView && listView);
+    QVERIFY(gridView->state().checked);
+    QVERIFY(!listView->state().checked);
+
+    select(library()->keyAt(0));
+    int checked = 0;
+    QAccessibleInterface* unselected = nullptr;
+    for (QAccessibleInterface* entry : entries) {
+        QVERIFY(entry->state().checkable);
+        if (entry->state().checked) ++checked;
+        else unselected = entry;
+    }
+    QCOMPARE(checked, 1);
+    QVERIFY(unselected);
+    const QString before = root()->property("selectedKey").toString();
+    unselected->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QTRY_VERIFY(root()->property("selectedKey").toString() != before);
+    QTRY_VERIFY(unselected->state().checked);
 }
 
 void tst_LibraryWindow::sectionsAndCounts()

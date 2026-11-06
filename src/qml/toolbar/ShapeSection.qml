@@ -45,6 +45,15 @@ Item {
                 width: 22
                 height: 22
                 radius: 4
+                // Screen readers (#248).
+                Accessible.role: Accessible.RadioButton
+                Accessible.name: modelData.iconKey === "ellipse" ? qsTr("Ellipse") : qsTr("Rectangle")
+                Accessible.checkable: true
+                Accessible.checked: root.shapeTypeValue === modelData.value
+                Accessible.onPressAction: {
+                    if (root.hasViewModel)
+                        root.viewModel.handleShapeTypeSelected(modelData.value)
+                }
                 color: root.shapeTypeValue === modelData.value ? root.btnActiveBg
                      : shapeMouse.containsMouse ? root.btnHoverBg
                      : "transparent"
@@ -81,6 +90,17 @@ Item {
         width: 22
         height: 22
         radius: 4
+        // A toggle between outline and filled (#248): a checkbox, not a cycle.
+        Accessible.role: Accessible.CheckBox
+        Accessible.name: qsTr("Filled")
+        Accessible.checkable: true
+        Accessible.checked: root.shapeFillModeValue === 1
+        Accessible.onPressAction: fillBtn.toggleFill()
+        Accessible.onToggleAction: fillBtn.toggleFill()
+        function toggleFill() {
+            if (root.hasViewModel)
+                root.viewModel.handleShapeFillModeSelected(root.shapeFillModeValue === 0 ? 1 : 0)
+        }
         color: root.shapeFillModeValue === 1 ? root.btnActiveBg
              : fillMouse.containsMouse ? root.btnHoverBg
              : "transparent"
@@ -106,13 +126,8 @@ Item {
             anchors.fill: parent
             cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
-            onClicked: {
-                if (!root.hasViewModel)
-                    return
-                // Toggle between 0 (outline) and 1 (filled)
-                var next = root.shapeFillModeValue === 0 ? 1 : 0
-                root.viewModel.handleShapeFillModeSelected(next)
-            }
+            // Toggle between 0 (outline) and 1 (filled)
+            onClicked: fillBtn.toggleFill()
         }
     }
 }

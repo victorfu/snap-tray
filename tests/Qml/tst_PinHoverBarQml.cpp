@@ -141,6 +141,9 @@ void tst_PinHoverBarQml::opacityPanelRangeAndReset()
     QCOMPARE(slider->property("from").toReal(), 10.0);
     QCOMPARE(slider->property("to").toReal(), 100.0);
     QCOMPARE(slider->property("value").toReal(), 40.0);
+    // #248: the slider reads its value with the unit, not a bare "40".
+    QCOMPARE(QQmlProperty(slider, QStringLiteral("Accessible.name"), qmlContext(slider)).read().toString(),
+             QStringLiteral("Opacity level, 40%"));
     QSignalSpy opacity(&vm, &PinHoverBarViewModel::opacityRequested);
     click(view.get(), find(view.get(), "pinValuePreset_50"));
     QCOMPARE(opacity.count(), 1);

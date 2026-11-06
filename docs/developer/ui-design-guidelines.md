@@ -151,14 +151,14 @@ Fixed (each with a regression test that fails before the fix):
 - Exclusive editor choices built from buttons (codec, Blurred Video/Image background, zoom scale, crop aspect) are radio buttons with a selected state (`choicesReadTheirStateToScreenReaders`).
 - Pin windows were unnamed dialogs; they are named "Pinned image".
 
-Remaining gaps, tracked in [#248](https://github.com/victorfu/snap-tray/issues/248):
+The gaps that audit left were fixed in [#248](https://github.com/victorfu/snap-tray/issues/248), again checked in the AX tree of the running app:
 
-- The style strip below the capture toolbar (sizes, colors, width, arrow and line styles, shape fill, text formatting, Auto Blur) has no accessible names or states.
-- A toolbar button that is only drawn as disabled (for example Undo with nothing to undo) is not reported as unavailable.
-- Library results are list items, which Qt exposes on macOS as static text without a selected state; section buttons report selection as a 0/1 value.
-- The tray icon has only its tooltip (AX help), no label; Qt's tray icon offers no accessible name.
-- While the export panel is open, the editor controls behind it stay in the accessibility tree.
-- Sliders read bare numbers ("100", not "100%").
+- The style strip below the capture toolbar: sizes and colors are named choices (the custom color button reads the current color); the stroke width is a slider with increase and decrease, and Mosaic's widths are choices; the arrow and line style buttons read the current style; shapes are choices and Filled is a checkbox; Bold, Italic and Underline are checkboxes; font size and font read their value; Auto Blur is named by its hint (`Qml_ToolOptionsAccessibility`). The arrow and line style names are now translated, in the menus too, where they were English-only.
+- A toolbar button drawn as disabled (Undo with nothing to undo) is reported as unavailable; a hover layer keeps its tooltip (`tst_ToolbarOverflow::disabledButtonsReadAsUnavailableButKeepTooltips`).
+- Library results read as one-of-many choices with a selected state, sections and smart folders as tabs, and Grid/List as a choice (`tst_LibraryWindow::itemsAndSectionsReadTheirSelection`).
+- The macOS tray icon has an accessibility label: "SnapTray - Screenshot Utility", followed by the recording status while recording (`Platform_MacTrayAccessibility`).
+- While the modal export panel is open, the editor behind it is disabled, so screen readers cannot operate it there either; it is usable again when the panel closes (`tst_RecordingEditor::exportPanelKeepsTheEditorOutOfReach`).
+- Sliders read their value with its unit, for example "Default opacity, 100%" (`TestSettingsCombo::slidersReadTheirUnit`, `Qml_PinHoverBarQml`).
 
 ### Actual editor evidence
 
@@ -266,7 +266,7 @@ Applies to the Region Capture toolbar, the Pin Window annotation toolbar, and th
 | Restyle a selected annotation, undo/redo, defaults untouched | Video below + `*_StyleSync::selectedArrowStyleIsUndoable` (region, pin, canvas) | Pending manual pass | Pending manual pass |
 | Long translation (German) | Screenshots below | Pending manual pass | Pending manual pass |
 | High DPI | 2× (Retina) screenshots below | 150 % pending | Pending manual pass |
-| Screen readers (toolbar, More menu, strip label) | Toolbar and More: AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; the style strip controls are unnamed ([gaps](#macos-accessibility-audit)) | Pending Narrator pass | Pending Orca pass |
+| Screen readers (toolbar, More menu, strip label) | Toolbar, More and the style strip: AX audit passed after #238 and #248 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session | Pending Narrator pass | Pending Orca pass |
 
 Known limit: on very narrow screens (about 400 px) the style strip itself does not collapse, so its last control can run past the edge (see the narrow screenshots). The toolbar above it always fits.
 
@@ -384,7 +384,7 @@ Applies to the Library window (#226): the former History window, now holding scr
 | Actions per kind, delete confirmation, busy project, privacy note | `Qml_LibraryWindow` | CI tests only | CI tests only |
 | Wide and narrow, light/dark/German | Evidence below (`Qml_LibraryEvidence`) | Pending manual pass (#238) | Pending manual pass (#238) |
 | Physical DPI scales | 2× only | Pending (#238) | Pending (#238) |
-| Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; list items lack a selected state ([gaps](#macos-accessibility-audit)) | Pending (Narrator) | Pending (Orca) |
+| Screen reader names | AX audit passed after #238 and #248 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session | Pending (Narrator) | Pending (Orca) |
 
 ### Evidence
 
