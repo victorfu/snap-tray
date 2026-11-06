@@ -6,6 +6,7 @@
 #include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationStyleEditor.h"
+#include "annotation/ColorPickOverlay.h"
 #include "annotations/AnnotationStyle.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
@@ -3419,6 +3420,14 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    // I picks a color from the pinned image (#271).
+    if (m_annotationMode && event->key() == Qt::Key_I && !event->modifiers()
+        && m_subToolbar && m_subToolbar->viewModel()->showColorSection()) {
+        startColorPick();
+        event->accept();
+        return;
+    }
+
     // Undo/Redo in annotation mode
     if (m_annotationMode && m_annotationLayer) {
         if (event->matches(QKeySequence::Undo)) {
@@ -3526,6 +3535,9 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
 void PinWindow::closeEvent(QCloseEvent* event)
 {
+    if (m_colorPickOverlay) {
+        m_colorPickOverlay->cancel();
+    }
     emit closed(this);
     event->accept();
 }
@@ -3799,6 +3811,8 @@ void PinWindow::initializeAnnotationComponents()
         this, &PinWindow::onColorSelected);
     connect(optionsVM, &PinToolOptionsViewModel::customColorPickerRequested,
         this, &PinWindow::onMoreColorsRequested);
+    connect(optionsVM, &PinToolOptionsViewModel::colorPickRequested,
+        this, &PinWindow::startColorPick);
     connect(optionsVM, &PinToolOptionsViewModel::widthValueChanged,
         this, &PinWindow::onWidthChanged);
     connect(optionsVM, &PinToolOptionsViewModel::arrowStyleSelected,
@@ -5509,6 +5523,43 @@ void PinWindow::onMoreColorsRequested()
                 m_subToolbar->viewModel()->setCurrentColor(color);
             }
         });
+}
+
+ColorPickSource PinWindow::colorPickSource() const
+{
+    ColorPickSource source;
+    source.sampleRect = QRect(mapToGlobal(QPoint(0, 0)), size());
+    // Cover the pin's screen so the magnifier fits next to a small pin.
+    const QScreen* pinScreen = screen();
+    source.overlayGeometry = pinScreen ? pinScreen->geometry() : source.sampleRect;
+    // The pinned image as shown (rotation, flip, crop, zoom) without
+    // annotations. Nearest-neighbour scaling keeps every pixel an original
+    // pixel instead of a blend of neighbours.
+    source.image = buildDisplayPixmap(size(), Qt::FastTransformation).toImage();
+    return source;
+}
+
+void PinWindow::startColorPick()
+{
+    if (m_colorPickOverlay || !m_annotationMode || isRegionLayoutMode()) {
+        return;
+    }
+    m_colorPickOverlay = ColorPickOverlay::begin(
+        this, colorPickSource(), [this](const QColor& color) { applyPickedColor(color); });
+}
+
+void PinWindow::applyPickedColor(const QColor& color)
+{
+    // Same path as the custom color dialog: a selected annotation takes the
+    // color as one undoable change; otherwise it becomes the current color.
+    if (m_subToolbar
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::Color, color)) {
+        return;
+    }
+    onColorSelected(color);
+    if (m_subToolbar) {
+        m_subToolbar->viewModel()->setCurrentColor(color);
+    }
 }
 
 // ============================================================================

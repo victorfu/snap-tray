@@ -54,6 +54,8 @@ class ToolbarTooltipController;
 class PinToolbarViewModel;
 class PinToolOptionsViewModel;
 class AnnotationStyleEditor;
+class ColorPickOverlay;
+struct ColorPickSource;
 class AnnotationLayer;
 class AnnotationItem;
 class ToolManager;
@@ -345,6 +347,10 @@ private:
     void onFontFamilySelected(const QString& family);
     void onAutoBlurRequested();
     void onMoreColorsRequested();
+    // Eyedropper (#271): picks from the pinned image, not its annotations.
+    void startColorPick();
+    ColorPickSource colorPickSource() const;
+    void applyPickedColor(const QColor& color);
 
     // Text annotation helper methods
     bool handleTextEditorPress(const QPoint& pos);
@@ -572,6 +578,7 @@ private:
 
     // Color picker dialog
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
+    QPointer<ColorPickOverlay> m_colorPickOverlay;
 
     // Shared annotation setup/signals helper
     std::unique_ptr<AnnotationContext> m_annotationContext;

@@ -507,6 +507,29 @@
     </message>
 </context>
 <context>
+    <name>ColorPickOverlay</name>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Pick color from screen</source>
+        <translation>화면에서 색상 추출</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Click or Enter: Use color</source>
+        <translation>클릭 또는 Enter: 색상 사용</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Arrow keys: 1 px, Esc: Cancel</source>
+        <translation>화살표 키: 1px 이동, Esc: 취소</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Color set to %1</source>
+        <translation>색상이 %1(으)로 설정됨</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -7670,6 +7693,16 @@ It may be in use by another application.</source>
         <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
         <source>Custom color</source>
         <translation>사용자 지정 색상</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Pick color from screen</source>
+        <translation>화면에서 색상 추출</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Shortcut: I</source>
+        <translation>단축키: I</translation>
     </message>
 </context>
 <context>

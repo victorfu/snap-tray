@@ -32,6 +32,7 @@
 #include "cursor/CursorStyleCatalog.h"
 #include "pinwindow/RegionLayoutManager.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "annotation/ColorPickOverlay.h"
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
 #include "beautify/BeautifySettings.h"
@@ -165,6 +166,8 @@ private slots:
     void testAnnotationToolUsesWindowDevicePixelRatio();
     void testStrokeAndMosaicWidthsRestoreIndependently();
     void selectedArrowStyleIsUndoable();
+    void colorPickSamplesPinnedPixelsNotAnnotations();
+    void pickedColorEditsSelectionUndoably();
     void arrowEndpointDragIsUndoable();
     void emojiMoveIsUndoable();
     void escapeMidDragRestores();
@@ -1101,6 +1104,82 @@ void TestPinWindowStyleSync::selectedArrowStyleIsUndoable()
     window.handleToolbarToolSelected(static_cast<int>(ToolId::Marker));
     QVERIFY(!vm->editingSelection());
     QCOMPARE(vm->currentWidth(), window.m_toolManager->width());
+}
+
+namespace {
+// Every pixel has its own color, so a wrong coordinate shows.
+QImage uniquePixels(const QSize& size)
+{
+    QImage image(size, QImage::Format_ARGB32_Premultiplied);
+    for (int y = 0; y < size.height(); ++y)
+        for (int x = 0; x < size.width(); ++x)
+            image.setPixelColor(x, y, QColor(x * 5 % 256, y * 7 % 256, (x + y) % 256));
+    return image;
+}
+}  // namespace
+
+// #271: the eyedropper samples the pinned image as shown, never annotations,
+// and a zoomed pin yields original pixels rather than blends of neighbours.
+void TestPinWindowStyleSync::colorPickSamplesPinnedPixelsNotAnnotations()
+{
+    const QImage original = uniquePixels(QSize(40, 30));
+    PinWindow window(QPixmap::fromImage(original), QPoint(0, 0));
+    if (!window.m_toolManager) window.initializeAnnotationComponents();
+    window.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(0, 15), QPoint(40, 15), Qt::blue, 12));
+
+    window.setZoomLevel(2.0);
+    ColorPickSource source = window.colorPickSource();
+    QVERIFY(source.isValid());
+    QCOMPARE(source.sampleRect.size(), QSize(80, 60));
+    QCOMPARE(source.image.size(), QSize(80, 60));
+    for (const QPoint& pixel : {QPoint(0, 0), QPoint(13, 15), QPoint(39, 29), QPoint(20, 14)}) {
+        for (const QPoint& sub : {QPoint(0, 0), QPoint(1, 1)}) {
+            QCOMPARE(ColorPick::colorAt(source.image, pixel * 2 + sub),
+                     original.pixelColor(pixel));
+        }
+    }
+
+    // Rotation and flips are part of the image as shown.
+    window.setZoomLevel(1.0);
+    window.rotateRight();
+    source = window.colorPickSource();
+    const QImage rotated = original.transformed(QTransform().rotate(90));
+    QCOMPARE(source.image.size(), rotated.size());
+    QCOMPARE(ColorPick::colorAt(source.image, QPoint(3, 31)), rotated.pixelColor(3, 31));
+    QCOMPARE(ColorPick::colorAt(source.image, QPoint(29, 0)), rotated.pixelColor(29, 0));
+}
+
+void TestPinWindowStyleSync::pickedColorEditsSelectionUndoably()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor savedColor = settings.loadColor();
+    const auto restore = qScopeGuard([&] { settings.saveColor(savedColor); });
+    settings.saveColor(Qt::red);
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    if (!window.m_toolManager) window.initializeAnnotationComponents();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Arrow));
+    auto* vm = window.m_subToolbar->viewModel();
+    const QColor picked(0x1a, 0x73, 0xe8);
+
+    // Nothing selected: the picked color becomes the current, saved color.
+    window.applyPickedColor(picked);
+    QCOMPARE(vm->currentColor(), picked);
+    QCOMPARE(window.m_toolManager->color(), picked);
+    QCOMPARE(settings.loadColor(), picked);
+
+    // A selected annotation takes it as one undoable change.
+    settings.saveColor(Qt::red);
+    window.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::green, 3));
+    window.m_annotationLayer->setSelectedIndex(0);
+    QVERIFY(vm->editingSelection());
+    window.applyPickedColor(picked);
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(window.m_annotationLayer->itemAt(0)); };
+    QCOMPARE(arrow()->color(), picked);
+    QCOMPARE(settings.loadColor(), QColor(Qt::red));
+    window.handleToolbarUndo();
+    QCOMPARE(arrow()->color(), QColor(Qt::green));
 }
 
 // A PinWindow with the Arrow tool, so annotation handles take the mouse.

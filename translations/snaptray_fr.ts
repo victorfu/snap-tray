@@ -507,6 +507,29 @@
     </message>
 </context>
 <context>
+    <name>ColorPickOverlay</name>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Pick color from screen</source>
+        <translation>Prélever une couleur à l’écran</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Click or Enter: Use color</source>
+        <translation>Clic ou Entrée : utiliser la couleur</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Arrow keys: 1 px, Esc: Cancel</source>
+        <translation>Flèches : 1 px, Échap : annuler</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Color set to %1</source>
+        <translation>Couleur définie sur %1</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -7674,6 +7697,16 @@ Il est peut-être utilisé par une autre application.</translation>
         <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
         <source>Custom color</source>
         <translation>Couleur personnalisée</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Pick color from screen</source>
+        <translation>Prélever une couleur à l’écran</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Shortcut: I</source>
+        <translation>Raccourci : I</translation>
     </message>
 </context>
 <context>

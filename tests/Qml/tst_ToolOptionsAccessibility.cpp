@@ -173,6 +173,15 @@ void tst_ToolOptionsAccessibility::colorsAreNamedChoices()
     QVERIFY(customClicked.isValid());
     custom->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
     QCOMPARE(customClicked.count(), 1);
+
+    // The eyedropper (#271) is a named button that starts picking.
+    QAccessibleInterface* pick = named(view->rootObject(), QStringLiteral("Pick color from screen"));
+    QVERIFY(pick);
+    QCOMPARE(pick->role(), QAccessible::Button);
+    QSignalSpy pickRequested(&viewModel, &PinToolOptionsViewModel::colorPickRequested);
+    pick->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(pickRequested.count(), 1);
+    QCOMPARE(customClicked.count(), 1);
 }
 
 // The swatch names come with their colors from the view model, so a palette

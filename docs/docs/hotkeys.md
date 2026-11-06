@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-10-20
+last_modified_at: 2026-11-06
 layout: docs
 title: Hotkeys
 seo_title: "SnapTray Hotkeys: Capture and Platform-Specific Recording Shortcuts"
@@ -32,6 +32,10 @@ doc_order: 3
 - Show Recording Controls: brings the floating control bar back onto the recorded screen (macOS/Windows)
 
 Recording actions appear only where recording is available. A recording hotkey pressed again within a fraction of a second, for example through key repeat, counts as one press.
+
+## Keys inside an editor
+
+The hotkeys above work anywhere. Inside Region Capture, a Pin Window, or Screen Canvas, single keys act on that editor and cannot be rebound, for example `I` to pick a color from the screen (see [Annotation Tools](/docs/annotation-tools/#picking-a-color-from-the-screen)). Each page lists its own keys.
 
 ## Hotkey categories
 

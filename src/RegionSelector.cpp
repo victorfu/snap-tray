@@ -1,6 +1,7 @@
 #include "RegionSelector.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationStyleEditor.h"
+#include "annotation/ColorPickOverlay.h"
 #include "annotations/AnnotationStyle.h"
 #include "history/AnnotationSerializer.h"
 #include "history/HistoryRecorder.h"
@@ -536,6 +537,8 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::onColorSelected);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::customColorPickerRequested,
         this, &RegionSelector::onMoreColorsRequested);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorPickRequested,
+        this, &RegionSelector::startColorPick);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::widthValueChanged,
         this, &RegionSelector::onLineWidthChanged);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::arrowStyleSelected,
@@ -1234,6 +1237,34 @@ void RegionSelector::onMoreColorsRequested()
             syncColorToAllWidgets(color);
         },
         m_colorPickerDialogFactory);
+}
+
+ColorPickSource RegionSelector::colorPickSource() const
+{
+    ColorPickSource source;
+    source.overlayGeometry = QRect(mapToGlobal(QPoint(0, 0)), size());
+    source.sampleRect = source.overlayGeometry;
+    source.image = m_backgroundPixmap.toImage();
+    return source;
+}
+
+void RegionSelector::startColorPick()
+{
+    if (m_colorPickOverlay || !m_selectionManager->isComplete()) {
+        return;
+    }
+    m_colorPickOverlay = ColorPickOverlay::begin(
+        this, colorPickSource(), [this](const QColor& color) { applyPickedColor(color); });
+}
+
+void RegionSelector::applyPickedColor(const QColor& color)
+{
+    // Same path as the custom color dialog: a selected annotation takes the
+    // color as one undoable change; otherwise it becomes the current color.
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::Color, color)) {
+        return;
+    }
+    syncColorToAllWidgets(color);
 }
 
 void RegionSelector::onLineWidthChanged(int width)
@@ -3633,6 +3664,11 @@ bool RegionSelector::hasBlockingTransientUiOpen() const
         return true;
     }
 
+    // The eyedropper owns Esc and focus while it runs.
+    if (m_colorPickOverlay) {
+        return true;
+    }
+
     if (QApplication::activePopupWidget() || QApplication::activeModalWidget()) {
         return true;
     }
@@ -4538,6 +4574,10 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     else if (event->key() == Qt::Key_M) {
         setMultiRegionMode(!m_inputState.multiRegionMode);
     }
+    else if (event->key() == Qt::Key_I && !event->modifiers()
+             && m_toolOptionsViewModel->showColorSection()) {
+        startColorPick();
+    }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
         if (shouldShowMagnifier()) {
@@ -4650,6 +4690,9 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     }
 
     m_isClosing = true;
+    if (m_colorPickOverlay) {
+        m_colorPickOverlay->cancel();
+    }
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
     m_selectionCompletionHandoffPending = false;

@@ -9,6 +9,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 ### Added
 
 - Added Delayed Capture to the tray menu, with 3, 5, and 10 second countdowns and an optional hotkey. A click-through countdown pill lets you open menus or hover controls first; when it ends, SnapTray hides the pill, freezes the screen, and opens Region Capture on it. The countdown can be cancelled from the tray or by pressing the hotkey again.
+- Added an eyedropper to the annotation color bar in Region Capture, Pin Windows, and Screen Canvas. Click it or press `I`, then click a pixel to make its color the current color, or the color of the selected annotation (one undo step). A magnifier shows the color code; arrow keys move one physical pixel, `Enter` picks, and `Esc` cancels. It picks from the screenshot or pinned image itself, never from annotations or SnapTray's toolbars.
 
 ### Improved
 

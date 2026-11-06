@@ -214,6 +214,8 @@ signals:
     // Action signals (QML → C++)
     void colorSelected(const QColor& color);
     void customColorPickerRequested();
+    // Eyedropper (#271): the host samples a color from its own image.
+    void colorPickRequested();
     void widthValueChanged(int width);
     void boldToggled(bool enabled);
     void italicToggled(bool enabled);
@@ -234,6 +236,7 @@ public slots:
     // Called from QML
     void handleColorClicked(int index);
     void handleCustomColorClicked();
+    void handleColorPickClicked();
     void handleWidthChanged(int width);
     void handleMosaicWidthPresetSelected(int width);
     void handleBoldToggled();

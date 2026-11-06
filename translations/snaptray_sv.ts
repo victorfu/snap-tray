@@ -507,6 +507,29 @@
     </message>
 </context>
 <context>
+    <name>ColorPickOverlay</name>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Pick color from screen</source>
+        <translation>Hämta färg från skärmen</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Click or Enter: Use color</source>
+        <translation>Klicka eller Retur: använd färgen</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Arrow keys: 1 px, Esc: Cancel</source>
+        <translation>Piltangenter: 1 px, Esc: avbryt</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Color set to %1</source>
+        <translation>Färgen är nu %1</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -7674,6 +7697,16 @@ Den kan användas av ett annat program.</translation>
         <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
         <source>Custom color</source>
         <translation>Anpassad färg</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Pick color from screen</source>
+        <translation>Hämta färg från skärmen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Shortcut: I</source>
+        <translation>Kortkommando: I</translation>
     </message>
 </context>
 <context>

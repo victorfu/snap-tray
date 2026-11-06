@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-02-26
+last_modified_at: 2026-11-06
 layout: docs
 title: Pin Window
 seo_title: "SnapTray Pin Window: Keep Image References Always on Top"
@@ -48,6 +48,7 @@ The bar fades out when the pointer leaves the pin, and stays hidden while you dr
 | Reset opacity to 100% | `Ctrl/Cmd` + `]` |
 | Start / stop Live Update | `L` |
 | Pause / resume Live Update | `P` |
+| Pick a color from the pinned image (while annotating) | `I` |
 | Show toolbar | `Space` |
 | Close | `Esc` |
 

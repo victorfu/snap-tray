@@ -44,6 +44,8 @@ class QScreen;
 class RegionToolbarViewModel;
 class PinToolOptionsViewModel;
 class AnnotationStyleEditor;
+class ColorPickOverlay;
+struct ColorPickSource;
 namespace SnapTray {
 class QmlFloatingToolbar;
 class QmlFloatingSubToolbar;
@@ -183,6 +185,10 @@ private:
     // Color and style actions
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
+    // Eyedropper (#271): picks from the frozen screenshot, not annotations.
+    void startColorPick();
+    ColorPickSource colorPickSource() const;
+    void applyPickedColor(const QColor& color);
     void syncColorToRuntimeState(const QColor& color);
     void syncColorToAllWidgets(const QColor &color);
 
@@ -444,6 +450,7 @@ private:
 
     // Color picker dialog
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
+    QPointer<ColorPickOverlay> m_colorPickOverlay;
 
     // Startup protection - track window activation for robust deactivate handling
     int m_activationCount = 0;

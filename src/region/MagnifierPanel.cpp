@@ -118,7 +118,8 @@ void MagnifierPanel::preWarmCache(const QPoint& cursorPos, const QPixmap& backgr
     ensureBackgroundImageCache(backgroundPixmap, false, "preWarmCache");
 
     // Pre-compute the magnifier cache for the initial position
-    updateMagnifierCache(cursorPos, backgroundPixmap);
+    updateMagnifierCache(CoordinateHelper::toPhysical(cursorPos, m_devicePixelRatio),
+                         backgroundPixmap);
 }
 
 QString MagnifierPanel::colorString() const
@@ -138,15 +139,19 @@ QString MagnifierPanel::colorString() const
 
 QString MagnifierPanel::coordinateString() const
 {
-    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
-    const QPoint physicalPos = CoordinateHelper::toPhysical(m_currentCursorPos, dpr);
-    return QString("(%1 , %2)").arg(physicalPos.x()).arg(physicalPos.y());
+    return QString("(%1 , %2)").arg(m_currentDevicePos.x()).arg(m_currentDevicePos.y());
 }
 
-void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
+void MagnifierPanel::setHintLines(const QString& first, const QString& second)
+{
+    m_hintLine1 = first;
+    m_hintLine2 = second;
+}
+
+void MagnifierPanel::updateMagnifierCache(const QPoint& devicePos, const QPixmap& backgroundPixmap)
 {
     // 1. Check position cache FIRST to avoid unnecessary work
-    const QPoint currentDevicePos = CoordinateHelper::toPhysical(cursorPos, m_devicePixelRatio);
+    const QPoint currentDevicePos = devicePos;
     const int deviceX = currentDevicePos.x();
     const int deviceY = currentDevicePos.y();
     if (m_cacheValid && m_cachedDevicePosition == currentDevicePos) {
@@ -213,23 +218,30 @@ void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap
 void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
                           const QSize& viewportSize, const QPixmap& backgroundPixmap)
 {
-    m_currentCursorPos = cursorPos;
+    drawAt(painter, cursorPos, CoordinateHelper::toPhysical(cursorPos, m_devicePixelRatio),
+           viewportSize, backgroundPixmap);
+}
 
-    // Calculate panel position (cursor at top-left corner, like Snipaste/PixPin)
+void MagnifierPanel::drawAt(QPainter& painter, const QPoint& anchorPos, const QPoint& devicePos,
+                            const QSize& viewportSize, const QPixmap& backgroundPixmap)
+{
+    m_currentDevicePos = devicePos;
+
+    // Calculate panel position (anchor at top-left corner, like Snipaste/PixPin)
     int panelWidth = kWidth;
     int offset = 20;  // Small offset from cursor
-    int panelX = cursorPos.x() + offset;
-    int panelY = cursorPos.y() + offset;
+    int panelX = anchorPos.x() + offset;
+    int panelY = anchorPos.y() + offset;
 
     // Calculate total panel height (magnifier + coordinates + color + hotkey instructions)
     int totalHeight = kHeight + 85;  // magnifier + coords + color + 2 lines of hotkey hints
 
     // Boundary checking - flip to other side if near edges
     if (panelX + panelWidth + 10 > viewportSize.width()) {
-        panelX = cursorPos.x() - panelWidth - offset;  // Place to left of cursor
+        panelX = anchorPos.x() - panelWidth - offset;  // Place to left of cursor
     }
     if (panelY + totalHeight + 10 > viewportSize.height()) {
-        panelY = cursorPos.y() - totalHeight - offset;  // Place above cursor
+        panelY = anchorPos.y() - totalHeight - offset;  // Place above cursor
     }
     // Ensure minimum margins
     panelX = qMax(10, panelX);
@@ -248,7 +260,7 @@ void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
 
     // Update magnifier cache if needed
     // This will also update m_currentColor
-    updateMagnifierCache(cursorPos, backgroundPixmap);
+    updateMagnifierCache(devicePos, backgroundPixmap);
 
     // Draw cached magnified pixmap
     painter.drawPixmap(magX, magY, m_magnifierPixmapCache);
@@ -331,10 +343,11 @@ void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int
     painter.setFont(smallFont);
     painter.setPen(QColor(200, 200, 200));
 
-    QString instruction1 = tr("Shift: Switch color format");
+    const QString instruction1 =
+        m_hintLine1.isEmpty() ? tr("Shift: Switch color format") : m_hintLine1;
     painter.drawText(panelX, infoY, panelWidth, 14, Qt::AlignCenter, instruction1);
 
     infoY += 14;
-    QString instruction2 = tr("C: Copy color value");
+    const QString instruction2 = m_hintLine2.isEmpty() ? tr("C: Copy color value") : m_hintLine2;
     painter.drawText(panelX, infoY, panelWidth, 14, Qt::AlignCenter, instruction2);
 }

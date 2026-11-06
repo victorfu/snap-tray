@@ -26,6 +26,7 @@
 #include "qml/PinToolOptionsViewModel.h"
 #include "platform/QtQuickBackendPolicy.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "annotation/ColorPickOverlay.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
 #include "region/RegionInputHandler.h"
@@ -126,6 +127,8 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testStrokeAndMosaicWidthsRestoreIndependently();
     void selectedArrowStyleIsUndoable();
+    void colorPickSamplesFrozenScreenshot();
+    void pickedColorEditsSelectionUndoably();
     void arrowEndpointDragIsUndoable();
     void polylineVertexDragIsUndoable();
     void emojiMoveIsUndoable();
@@ -448,6 +451,63 @@ void TestRegionSelectorStyleSync::testUsesAuthorityModeByDefault()
 {
     RegionSelector selector;
     QCOMPARE(CursorAuthority::instance().modeForWidget(&selector), CursorSurfaceMode::Authority);
+}
+
+// #271: the eyedropper samples the frozen screenshot, not annotations, and
+// only once a region is selected.
+void TestRegionSelectorStyleSync::colorPickSamplesFrozenScreenshot()
+{
+    RegionSelector selector;
+    selector.resize(200, 150);
+    QImage screenshot(400, 300, QImage::Format_ARGB32_Premultiplied);
+    screenshot.fill(QColor(10, 20, 30));
+    screenshot.setPixelColor(41, 61, QColor(250, 128, 3));
+    screenshot.setDevicePixelRatio(2.0);
+    selector.m_backgroundPixmap = QPixmap::fromImage(screenshot);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(0, 30), QPoint(200, 30), Qt::red, 12));
+
+    const ColorPickSource source = selector.colorPickSource();
+    QVERIFY(source.isValid());
+    QCOMPARE(source.sampleRect.size(), QSize(200, 150));
+    QCOMPARE(source.image.devicePixelRatio(), 2.0);
+    // Logical (20.5, 30.5) is physical (41, 61), under the arrow.
+    const QPoint pixel = ColorPick::pixelAt(QPointF(20.5, 30.5), 2.0, source.image.size());
+    QCOMPARE(ColorPick::colorAt(source.image, pixel), QColor(250, 128, 3));
+
+    // Before a region is selected there is nothing to annotate.
+    selector.startColorPick();
+    QVERIFY(!selector.m_colorPickOverlay);
+}
+
+void TestRegionSelectorStyleSync::pickedColorEditsSelectionUndoably()
+{
+    ScopedWidthSettings restoreWidths;
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor savedColor = settings.loadColor();
+    const auto restore = qScopeGuard([&] { settings.saveColor(savedColor); });
+    settings.saveColor(Qt::red);
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    auto* vm = selector.m_toolOptionsViewModel;
+    const QColor picked(0x1a, 0x73, 0xe8);
+
+    selector.applyPickedColor(picked);
+    QCOMPARE(vm->currentColor(), picked);
+    QCOMPARE(selector.m_toolManager->color(), picked);
+    QCOMPARE(settings.loadColor(), picked);
+
+    settings.saveColor(Qt::red);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::green, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    QVERIFY(vm->editingSelection());
+    selector.applyPickedColor(picked);
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    QCOMPARE(arrow()->color(), picked);
+    QCOMPARE(settings.loadColor(), QColor(Qt::red));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(arrow()->color(), QColor(Qt::green));
 }
 
 void TestRegionSelectorStyleSync::selectedArrowStyleIsUndoable()

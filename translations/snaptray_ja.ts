@@ -507,6 +507,29 @@
     </message>
 </context>
 <context>
+    <name>ColorPickOverlay</name>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Pick color from screen</source>
+        <translation>画面から色を取得</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Click or Enter: Use color</source>
+        <translation>クリックまたは Enter: この色を使用</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Arrow keys: 1 px, Esc: Cancel</source>
+        <translation>矢印キー: 1 px 移動、Esc: キャンセル</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Color set to %1</source>
+        <translation>色を %1 に設定しました</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -7670,6 +7693,16 @@ It may be in use by another application.</source>
         <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
         <source>Custom color</source>
         <translation>カスタムカラー</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Pick color from screen</source>
+        <translation>画面から色を取得</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Shortcut: I</source>
+        <translation>ショートカット: I</translation>
     </message>
 </context>
 <context>

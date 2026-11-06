@@ -16,6 +16,10 @@
 #include "qml/PinToolOptionsViewModel.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "annotation/ColorPickOverlay.h"
+#include "qml/QmlFloatingSubToolbar.h"
+#include "qml/QmlFloatingToolbar.h"
+#include <QScreen>
 #include <QScopeGuard>
 
 class TestScreenCanvasStyleSync : public QObject
@@ -30,6 +34,8 @@ private slots:
     void testCustomColorSynchronizesSession_data();
     void testCustomColorSynchronizesSession();
     void selectedArrowStyleIsUndoable();
+    void colorPickSamplesScreenWithCanvasHidden();
+    void pickedColorEditsSelectionUndoably();
     void polylineMoveIsUndoable();
     void arrowEndpointDragIsUndoable();
     void escapeMidDragRestores();
@@ -223,6 +229,89 @@ void TestScreenCanvasStyleSync::selectedArrowStyleIsUndoable()
     session.handlePersistentToolClick(ToolId::Pencil);
     QVERIFY(!vm->editingSelection());
     QCOMPARE(session.m_annotationLayer->selectedIndex(), -1);
+}
+
+// #271: the eyedropper samples a snapshot of the screen taken with the
+// canvas (and its annotations) hidden.
+void TestScreenCanvasStyleSync::colorPickSamplesScreenWithCanvasHidden()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    ScreenCanvasSession session;
+    session.m_qmlToolbar.reset();
+    session.m_qmlSubToolbar.reset();
+    session.m_isOpen = true;
+    session.m_bgMode = CanvasBackgroundMode::Screen;
+    ScreenCanvas surface(&session);
+    surface.initializeForScreenSurface(
+        screen, ScreenCanvasSession::virtualDesktopGeometry(QGuiApplication::screens()));
+    surface.setSharedToolManager(session.m_toolManager);
+    session.m_surfaces = {&surface};
+    session.m_activeSurface = &surface;
+    session.m_activationScreen = screen;
+    session.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(0, 5), QPoint(200, 5), Qt::red, 12));
+    const auto cleanup = qScopeGuard([&] {
+        session.m_surfaces.clear();
+        session.m_activeSurface = nullptr;
+        session.m_isOpen = false;
+    });
+    surface.show();
+    QCoreApplication::processEvents();
+
+    const QColor desktop(12, 34, 56);
+    bool canvasHidden = false;
+    session.m_screenSnapshotProvider = [&](QScreen* target) {
+        canvasHidden = !surface.isVisible();
+        QPixmap pixmap(target->geometry().size() * target->devicePixelRatio());
+        pixmap.fill(desktop);
+        pixmap.setDevicePixelRatio(target->devicePixelRatio());
+        return pixmap;
+    };
+
+    const ColorPickSource source = session.colorPickSource(screen);
+    QVERIFY(source.isValid());
+    QVERIFY(canvasHidden);
+    QVERIFY(surface.isVisible());
+    QCOMPARE(source.sampleRect, screen->geometry());
+    QCOMPARE(source.image.devicePixelRatio(), screen->devicePixelRatio());
+    QCOMPARE(ColorPick::colorAt(source.image, QPoint(10, 5)), desktop);
+
+    // A whiteboard samples as its fill color.
+    session.m_bgMode = CanvasBackgroundMode::Whiteboard;
+    QCOMPARE(ColorPick::colorAt(session.colorPickSource(screen).image, QPoint(10, 5)),
+             QColor(Qt::white));
+}
+
+void TestScreenCanvasStyleSync::pickedColorEditsSelectionUndoably()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor savedColor = settings.loadColor();
+    const auto restore = qScopeGuard([&] { settings.saveColor(savedColor); });
+    settings.saveColor(Qt::red);
+    ScreenCanvasSession session;
+    auto* surface = new ScreenCanvas;
+    session.m_surfaces = {surface};
+    session.m_activeSurface = surface;
+    auto* vm = session.m_toolOptionsViewModel;
+    const QColor picked(0x1a, 0x73, 0xe8);
+
+    session.applyPickedColor(picked);
+    QCOMPARE(vm->currentColor(), picked);
+    QCOMPARE(session.m_toolManager->color(), picked);
+    QCOMPARE(settings.loadColor(), picked);
+
+    settings.saveColor(Qt::red);
+    session.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(120, 20), Qt::green, 3));
+    session.m_annotationLayer->setSelectedIndex(0);
+    QVERIFY(vm->editingSelection());
+    session.applyPickedColor(picked);
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(session.m_annotationLayer->itemAt(0)); };
+    QCOMPARE(arrow()->color(), picked);
+    QCOMPARE(settings.loadColor(), QColor(Qt::red));
+    session.handleUndoAction(ToolId::Undo);
+    QCOMPARE(arrow()->color(), QColor(Qt::green));
 }
 
 void TestScreenCanvasStyleSync::toolInUseStaysOutOfOverflowWithStripCollapsed()

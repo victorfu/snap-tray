@@ -507,6 +507,29 @@
     </message>
 </context>
 <context>
+    <name>ColorPickOverlay</name>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Pick color from screen</source>
+        <translation>Επιλογή χρώματος από την οθόνη</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Click or Enter: Use color</source>
+        <translation>Κλικ ή Enter: χρήση χρώματος</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Arrow keys: 1 px, Esc: Cancel</source>
+        <translation>Βέλη: 1 px, Esc: ακύρωση</translation>
+    </message>
+    <message>
+        <location filename="../src/annotation/ColorPickOverlay.cpp" />
+        <source>Color set to %1</source>
+        <translation>Το χρώμα ορίστηκε σε %1</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -7674,6 +7697,16 @@ It may be in use by another application.</source>
         <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
         <source>Custom color</source>
         <translation>Προσαρμοσμένο χρώμα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Pick color from screen</source>
+        <translation>Επιλογή χρώματος από την οθόνη</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ColorPaletteSection.qml" />
+        <source>Shortcut: I</source>
+        <translation>Συντόμευση: I</translation>
     </message>
 </context>
 <context>

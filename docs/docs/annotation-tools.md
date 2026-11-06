@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-05
+last_modified_at: 2026-11-06
 layout: docs
 title: Annotation Tools
 seo_title: "SnapTray Annotation Tools: Draw, Text, Mosaic and Steps"
@@ -44,6 +44,26 @@ Select a text, arrow, line, or shape annotation. The style bar then says **Selec
 With nothing selected, the style bar says **New object** and changes apply to the next annotation you draw. Changing a selected annotation never changes those settings.
 
 Moving, rotating, or resizing an annotation, dragging an arrow's ends or curve, dragging a line's points, and editing a text again are each one undo step. Press `Esc` during a drag to put the annotation back where it was.
+
+## Picking a color from the screen
+
+Click the eyedropper next to the custom color swatch, or press `I`, to take a color from the image you are annotating, for example to match a brand color or a button. A magnifier shows the pixels under the pointer and the color code.
+
+- Click to use the color. You can also hold the button, move to fine-tune, and release.
+- The arrow keys move one physical pixel at a time, even on a 2x display. Press `Enter` to use the color.
+- `Esc`, a right click, or a click outside the image cancels and keeps the current color.
+
+The color comes from the image itself, never from annotations you drew or from SnapTray's toolbars:
+
+| Where | Picks from |
+|---|---|
+| Region Capture | The frozen screenshot |
+| Pin Window | The pinned image, as shown (zoom, rotation, flip) |
+| Screen Canvas | A snapshot of the screen under the pointer, taken with the canvas hidden when you start picking and discarded afterwards. A whiteboard or blackboard gives its own color. |
+
+With an annotation selected, the color applies to it and `Ctrl/Cmd + Z` undoes it. With nothing selected, the color becomes the current color and is remembered for next time, like any color you choose. Screen readers announce the result, for example "Color set to #1A73E8".
+
+`I` works whenever the color palette is shown, except while you type in a text box. Before you select a region, `C` still copies the color code under the magnifier.
 
 ## When the toolbar does not fit
 

@@ -1486,6 +1486,11 @@ target_link_libraries(Annotations_AnnotationStyleEditor PRIVATE snaptray_ui Qt6:
 add_test(NAME Annotations_AnnotationStyleEditor COMMAND Annotations_AnnotationStyleEditor)
 set_tests_properties(Annotations_AnnotationStyleEditor PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_ColorPickOverlay Annotations/tst_ColorPickOverlay.cpp)
+target_link_libraries(Annotations_ColorPickOverlay PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_ColorPickOverlay COMMAND Annotations_ColorPickOverlay)
+set_tests_properties(Annotations_ColorPickOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_AnnotationLayer Annotations/tst_AnnotationLayer.cpp)
 target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_AnnotationLayer COMMAND Annotations_AnnotationLayer)
