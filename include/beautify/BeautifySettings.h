@@ -41,14 +41,13 @@ struct BeautifySettings {
     int shadowOffsetY = 8;
     QColor shadowColor{0, 0, 0, 80};
 
+    // Border drawn just inside the screenshot's edge (#269)
+    bool borderEnabled = false;
+    int borderWidth = 2;
+    QColor borderColor{255, 255, 255, 170};
+
     // Aspect ratio of output
     BeautifyAspectRatio aspectRatio = BeautifyAspectRatio::Auto;
-};
-
-// A look the user saved by name (#227): the whole BeautifySettings.
-struct BeautifyCustomStyle {
-    QString name;
-    BeautifySettings look;
 };
 
 struct BeautifyPreset {

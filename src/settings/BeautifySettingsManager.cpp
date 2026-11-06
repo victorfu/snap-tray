@@ -28,6 +28,14 @@ BeautifySettings BeautifySettingsManager::loadSettings() const
     s.shadowOffsetY = loadShadowOffsetY();
     s.shadowColor = loadShadowColor();
     s.aspectRatio = loadAspectRatio();
+    {
+        auto stored = SnapTray::getSettings();
+        const BeautifySettings d;
+        s.borderEnabled = stored.value(kKeyBorderEnabled, d.borderEnabled).toBool();
+        s.borderWidth = std::clamp(stored.value(kKeyBorderWidth, d.borderWidth).toInt(), kMinBorderWidth, kMaxBorderWidth);
+        const QColor borderColor = stored.value(kKeyBorderColor, d.borderColor).value<QColor>();
+        s.borderColor = borderColor.isValid() ? borderColor : d.borderColor;
+    }
     return s;
 }
 
@@ -46,6 +54,10 @@ void BeautifySettingsManager::saveSettings(const BeautifySettings& s)
     saveShadowOffsetY(s.shadowOffsetY);
     saveShadowColor(s.shadowColor);
     saveAspectRatio(s.aspectRatio);
+    auto stored = SnapTray::getSettings();
+    stored.setValue(kKeyBorderEnabled, s.borderEnabled);
+    stored.setValue(kKeyBorderWidth, s.borderWidth);
+    stored.setValue(kKeyBorderColor, s.borderColor);
 }
 
 BeautifyBackgroundType BeautifySettingsManager::loadBackgroundType() const
@@ -216,39 +228,17 @@ void BeautifySettingsManager::saveAspectRatio(BeautifyAspectRatio ratio)
 
 namespace {
 
-QJsonObject customStyleToJson(const BeautifyCustomStyle& style)
-{
-    const BeautifySettings& s = style.look;
-    return QJsonObject{
-        {QStringLiteral("name"), style.name},
-        {QStringLiteral("backgroundType"), static_cast<int>(s.backgroundType)},
-        {QStringLiteral("backgroundColor"), s.backgroundColor.name(QColor::HexArgb)},
-        {QStringLiteral("gradientStartColor"), s.gradientStartColor.name(QColor::HexArgb)},
-        {QStringLiteral("gradientEndColor"), s.gradientEndColor.name(QColor::HexArgb)},
-        {QStringLiteral("gradientAngle"), s.gradientAngle},
-        {QStringLiteral("padding"), s.padding},
-        {QStringLiteral("cornerRadius"), s.cornerRadius},
-        {QStringLiteral("shadowEnabled"), s.shadowEnabled},
-        {QStringLiteral("shadowBlur"), s.shadowBlur},
-        {QStringLiteral("shadowOffsetX"), s.shadowOffsetX},
-        {QStringLiteral("shadowOffsetY"), s.shadowOffsetY},
-        {QStringLiteral("shadowColor"), s.shadowColor.name(QColor::HexArgb)},
-        {QStringLiteral("aspectRatio"), static_cast<int>(s.aspectRatio)},
-    };
-}
-
 QColor colorOr(const QJsonObject& json, const char* key, const QColor& fallback)
 {
     const QColor color(json.value(QLatin1String(key)).toString());
     return color.isValid() ? color : fallback;
 }
 
-BeautifyCustomStyle customStyleFromJson(const QJsonObject& json)
+// A style saved before #269: pixel values, clamped like the single settings.
+BeautifySettings legacyStyleFromJson(const QJsonObject& json)
 {
     const BeautifySettings d;
-    BeautifyCustomStyle style;
-    style.name = json.value(QStringLiteral("name")).toString().trimmed();
-    BeautifySettings& s = style.look;
+    BeautifySettings s;
     s.backgroundType = static_cast<BeautifyBackgroundType>(
         std::clamp(json.value(QStringLiteral("backgroundType")).toInt(static_cast<int>(d.backgroundType)), 0, 2));
     s.backgroundColor = colorOr(json, "backgroundColor", d.backgroundColor);
@@ -264,39 +254,53 @@ BeautifyCustomStyle customStyleFromJson(const QJsonObject& json)
     s.shadowColor = colorOr(json, "shadowColor", d.shadowColor);
     s.aspectRatio = static_cast<BeautifyAspectRatio>(
         std::clamp(json.value(QStringLiteral("aspectRatio")).toInt(static_cast<int>(d.aspectRatio)), 0, 5));
-    return style;
+    return s;
+}
+
+QJsonArray readArray(const QSettings& settings, const char* key)
+{
+    return QJsonDocument::fromJson(settings.value(QLatin1String(key)).toString().toUtf8()).array();
 }
 
 } // namespace
 
-QVector<BeautifyCustomStyle> BeautifySettingsManager::loadCustomStyles() const
+QVector<SnapTray::NamedFrameStyle> BeautifySettingsManager::loadFrameStyles() const
 {
     auto settings = SnapTray::getSettings();
-    const QJsonArray array = QJsonDocument::fromJson(
-        settings.value(kKeyCustomStyles).toString().toUtf8()).array();
-    QVector<BeautifyCustomStyle> styles;
-    for (const QJsonValue& value : array) {
-        BeautifyCustomStyle style = customStyleFromJson(value.toObject());
-        if (!style.name.isEmpty() && styles.size() < kMaxCustomStyles) {
-            styles.append(style);
+    QVector<SnapTray::NamedFrameStyle> styles;
+    const auto add = [&styles](const QString& name, const SnapTray::FrameStyle& style) {
+        const QString trimmed = name.trimmed();
+        if (!trimmed.isEmpty() && styles.size() < kMaxCustomStyles) {
+            styles.append({trimmed, style});
         }
+    };
+    if (settings.contains(QLatin1String(kKeyFrameStyles))) {
+        for (const QJsonValue& value : readArray(settings, kKeyFrameStyles)) {
+            const QJsonObject json = value.toObject();
+            add(json.value(QStringLiteral("name")).toString(),
+                SnapTray::FrameStyle::fromJson(json.value(QStringLiteral("style")).toObject()));
+        }
+        return styles;
+    }
+    for (const QJsonValue& value : readArray(settings, kKeyCustomStyles)) {
+        const QJsonObject json = value.toObject();
+        add(json.value(QStringLiteral("name")).toString(),
+            SnapTray::FrameStyle::fromBeautify(legacyStyleFromJson(json)));
     }
     return styles;
 }
 
-void BeautifySettingsManager::saveCustomStyles(const QVector<BeautifyCustomStyle>& styles)
+void BeautifySettingsManager::saveFrameStyles(const QVector<SnapTray::NamedFrameStyle>& styles)
 {
     QJsonArray array;
     for (const auto& style : styles) {
-        if (!style.name.trimmed().isEmpty() && array.size() < kMaxCustomStyles) {
-            array.append(customStyleToJson(style));
+        const QString name = style.name.trimmed();
+        if (!name.isEmpty() && array.size() < kMaxCustomStyles) {
+            array.append(QJsonObject{{QStringLiteral("name"), name}, {QStringLiteral("style"), style.style.toJson()}});
         }
     }
+    // Kept even when empty: a missing key would bring the old styles back.
     auto settings = SnapTray::getSettings();
-    if (array.isEmpty()) {
-        settings.remove(kKeyCustomStyles);
-    } else {
-        settings.setValue(kKeyCustomStyles,
-                          QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact)));
-    }
+    settings.setValue(QLatin1String(kKeyFrameStyles),
+                      QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact)));
 }

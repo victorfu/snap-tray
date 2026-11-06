@@ -235,6 +235,11 @@ Item {
     // The frame around the export (#184), in RecordingAppearance order.
     property bool appearanceOpen: false
     readonly property var appearanceAmountLabels: [qsTr("None"), qsTr("Small"), qsTr("Medium"), qsTr("Large")]
+    // RecordingAppearance::Amount::Custom: a size from a saved style (#269).
+    readonly property int appearanceCustomAmount: 4
+    function appearanceAmountText(amount) {
+        return amount === appearanceCustomAmount ? qsTr("Custom") : appearanceAmountLabels[amount]
+    }
     readonly property var appearanceRatioLabels: [qsTr("Auto"), "1:1", "16:9", "4:3", "9:16", "2:1"]
     // Shown in the preview: the frame, unless the crop is being edited or the
     // original is compared.
@@ -2262,7 +2267,7 @@ Item {
                     iconSource: root.iconUrl("frame")
                     text: qsTr("Canvas")
                     summary: backend.appearanceEnabled
-                        ? qsTr("Frame on · padding %1").arg(root.appearanceAmountLabels[backend.appearancePadding])
+                        ? qsTr("Frame on · padding %1").arg(root.appearanceAmountText(backend.appearancePadding))
                         : qsTr("No frame")
                     unavailableReason: qsTr("A frame needs GIF or WebP on this system.")
                     tooltipText: qsTr("A background, padding, rounded corners, a shadow and a border around the video")
@@ -2905,9 +2910,196 @@ Item {
                     on: backend.appearanceEnabled
                     onClicked: backend.appearanceEnabled = !backend.appearanceEnabled
                 }
+                // Saved styles, one list with screenshot Beautify (#269).
+                Column {
+                    id: frameStyles
+                    objectName: "previewAppearanceStyles"
+                    width: parent.width
+                    spacing: 8
+                    property bool naming: false
+                    property int renamingIndex: -1
+                    // Saving under a saved name updates that style; renaming to one is refused.
+                    readonly property bool nameTaken: naming && renamingIndex >= 0
+                                                      && backend.frameStyleNameTaken(frameStyleName.text, renamingIndex)
+                    readonly property bool canSave: naming && frameStyleName.text.trim().length > 0 && !nameTaken
+
+                    function startNaming(index) {
+                        renamingIndex = index
+                        frameStyleName.text = index >= 0 ? backend.frameStyleModel[index].name : backend.suggestedFrameStyleName()
+                        naming = true
+                        frameStyleName.forceActiveFocus()
+                        frameStyleName.selectAll()
+                    }
+                    function finishNaming(commit) {
+                        if (commit) {
+                            if (!canSave)
+                                return
+                            var ok = renamingIndex >= 0 ? backend.renameFrameStyle(renamingIndex, frameStyleName.text)
+                                                        : backend.saveFrameStyle(frameStyleName.text)
+                            if (!ok)
+                                return
+                        }
+                        naming = false
+                        renamingIndex = -1
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: qsTr("Saved styles")
+                        color: root.textSecondary
+                        font.pixelSize: SemanticTokens.fontSizeCaption
+                        font.family: SemanticTokens.fontFamily
+                    }
+                    Text {
+                        objectName: "previewAppearanceStylesEmpty"
+                        width: parent.width
+                        visible: backend.frameStyleModel.length === 0
+                        text: qsTr("Styles you save here or in Beautify appear in both places.")
+                        wrapMode: Text.WordWrap
+                        color: root.textSecondary
+                        font.pixelSize: SemanticTokens.fontSizeSmall
+                        font.family: SemanticTokens.fontFamily
+                    }
+                    Flow {
+                        width: parent.width
+                        spacing: 8
+                        visible: backend.frameStyleModel.length > 0
+                        Repeater {
+                            model: backend.frameStyleModel
+                            SegmentButton {
+                                required property int index
+                                required property var modelData
+                                objectName: "previewAppearanceStyle" + index
+                                minimumButtonWidth: 0
+                                text: modelData.name
+                                accessibleName: qsTr("Saved style: %1").arg(modelData.name)
+                                selected: backend.currentFrameStyle === index
+                                exclusive: true
+                                onClicked: backend.applyFrameStyle(index)
+                            }
+                        }
+                    }
+                    Flow {
+                        width: parent.width
+                        spacing: 8
+                        visible: !frameStyles.naming
+                        SegmentButton {
+                            objectName: "previewAppearanceStyleSave"
+                            minimumButtonWidth: 0
+                            quiet: true
+                            text: qsTr("Save style…")
+                            enabled: !backend.frameStylesFull
+                            tooltipText: backend.frameStylesFull
+                                ? qsTr("You can keep up to %1 saved styles. Delete one to save another.").arg(backend.maxFrameStyles)
+                                : qsTr("Save this frame as a style for recordings and screenshots")
+                            onClicked: frameStyles.startNaming(-1)
+                        }
+                        SegmentButton {
+                            objectName: "previewAppearanceStyleRename"
+                            minimumButtonWidth: 0
+                            quiet: true
+                            visible: backend.currentFrameStyle >= 0
+                            text: qsTr("Rename")
+                            accessibleName: backend.currentFrameStyle >= 0
+                                ? qsTr("Rename style %1").arg(backend.frameStyleModel[backend.currentFrameStyle].name) : ""
+                            onClicked: frameStyles.startNaming(backend.currentFrameStyle)
+                        }
+                        SegmentButton {
+                            objectName: "previewAppearanceStyleDelete"
+                            minimumButtonWidth: 0
+                            quiet: true
+                            destructive: true
+                            visible: backend.currentFrameStyle >= 0
+                            text: qsTr("Delete")
+                            accessibleName: backend.currentFrameStyle >= 0
+                                ? qsTr("Delete style %1").arg(backend.frameStyleModel[backend.currentFrameStyle].name) : ""
+                            onClicked: backend.deleteFrameStyle(backend.currentFrameStyle)
+                        }
+                    }
+                    Row {
+                        objectName: "previewAppearanceStyleNameRow"
+                        width: parent.width
+                        spacing: 8
+                        visible: frameStyles.naming
+                        TextField {
+                            id: frameStyleName
+                            objectName: "previewAppearanceStyleName"
+                            width: parent.width - frameStyleCommit.width - frameStyleCancel.width - 2 * parent.spacing
+                            height: ComponentTokens.recordingPreviewControlButtonHeight
+                            leftPadding: 8
+                            rightPadding: 8
+                            verticalAlignment: TextInput.AlignVCenter
+                            font.pixelSize: SemanticTokens.fontSizeSmall
+                            font.family: SemanticTokens.fontFamily
+                            color: root.textPrimary
+                            selectByMouse: true
+                            maximumLength: 40
+                            Accessible.name: qsTr("Style name")
+                            background: Rectangle {
+                                radius: SemanticTokens.radiusSmall
+                                color: ComponentTokens.editorControl
+                                border.width: 1
+                                border.color: frameStyles.nameTaken
+                                    ? SemanticTokens.statusError
+                                    : frameStyleName.activeFocus ? root.accent : root.borderColor
+                            }
+                            Keys.onReturnPressed: frameStyles.finishNaming(true)
+                            Keys.onEnterPressed: frameStyles.finishNaming(true)
+                            Keys.onEscapePressed: function(event) {
+                                frameStyles.finishNaming(false)
+                                event.accepted = true
+                            }
+                        }
+                        SegmentButton {
+                            id: frameStyleCommit
+                            objectName: "previewAppearanceStyleNameSave"
+                            minimumButtonWidth: 0
+                            primary: true
+                            enabled: frameStyles.canSave
+                            text: frameStyles.renamingIndex >= 0 ? qsTr("Rename") : qsTr("Save")
+                            onClicked: frameStyles.finishNaming(true)
+                        }
+                        SegmentButton {
+                            id: frameStyleCancel
+                            objectName: "previewAppearanceStyleNameCancel"
+                            minimumButtonWidth: 0
+                            quiet: true
+                            text: qsTr("Cancel")
+                            onClicked: frameStyles.finishNaming(false)
+                        }
+                    }
+                    Text {
+                        objectName: "previewAppearanceStyleNameTaken"
+                        width: parent.width
+                        visible: frameStyles.nameTaken
+                        text: qsTr("Another saved style already has this name.")
+                        wrapMode: Text.WordWrap
+                        color: SemanticTokens.statusError
+                        font.pixelSize: SemanticTokens.fontSizeSmall
+                        font.family: SemanticTokens.fontFamily
+                    }
+                }
                 Flow {
                     width: parent.width
                     spacing: 8
+                // A gradient from a saved style that is not one of the presets.
+                Rectangle {
+                    objectName: "previewAppearanceGradientCustom"
+                    visible: backend.appearanceGradientPreset < 0
+                    readonly property bool chosen: backend.appearanceEnabled && backend.appearanceBackground === 0
+                    width: ComponentTokens.recordingPreviewControlButtonHeight
+                    height: width
+                    radius: SemanticTokens.radiusSmall
+                    border.width: chosen ? 2 : 1
+                    border.color: chosen ? root.accent : root.borderColor
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: backend.appearanceGradientStart }
+                        GradientStop { position: 1; color: backend.appearanceGradientEnd }
+                    }
+                    Accessible.role: Accessible.Graphic
+                    Accessible.name: qsTr("Background: Custom gradient")
+                }
                 Repeater {
                     model: backend.appearanceGradients
                     Rectangle {
@@ -3038,7 +3230,8 @@ Item {
                     tooltipText: qsTr("Space around the video")
                     label: qsTr("Padding")
                     choices: root.appearanceAmountLabels
-                    currentIndex: backend.appearancePadding
+                    currentIndex: backend.appearancePadding === root.appearanceCustomAmount ? -1 : backend.appearancePadding
+                    currentValueText: backend.appearancePadding === root.appearanceCustomAmount ? qsTr("Custom") : ""
                     onActivated: function(index) { backend.appearancePadding = index }
                 }
                 EditorChoice {
@@ -3046,7 +3239,8 @@ Item {
                     tooltipText: qsTr("How round the video's corners are")
                     label: qsTr("Corners")
                     choices: root.appearanceAmountLabels
-                    currentIndex: backend.appearanceCorners
+                    currentIndex: backend.appearanceCorners === root.appearanceCustomAmount ? -1 : backend.appearanceCorners
+                    currentValueText: backend.appearanceCorners === root.appearanceCustomAmount ? qsTr("Custom") : ""
                     onActivated: function(index) { backend.appearanceCorners = index }
                 }
                 EditorSwitch {

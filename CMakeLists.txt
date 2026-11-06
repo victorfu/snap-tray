@@ -325,6 +325,8 @@ add_library(snaptray_core STATIC
     src/settings/WindowsPrintScreenSettingsManager.cpp
     src/settings/LanguageManager.cpp
     src/beautify/BeautifyRenderer.cpp
+    src/beautify/FrameStyle.cpp
+    src/beautify/FrameStyleLibrary.cpp
     src/update/UpdateSettingsManager.cpp
     src/platform/PlatformCapabilities.cpp
     src/platform/MacCLIInstaller.cpp
@@ -378,6 +380,7 @@ add_library(snaptray_core STATIC
     include/settings/ScreenCanvasSettingsManager.h
     include/settings/WindowsPrintScreenSettingsManager.h
     include/settings/SettingsTheme.h
+    include/beautify/FrameStyleLibrary.h
     include/cursor/CursorAuthority.h
     include/cursor/CursorPlatformApplier.h
     include/cursor/CursorStyleCatalog.h

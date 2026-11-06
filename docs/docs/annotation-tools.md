@@ -69,11 +69,11 @@ On a narrow screen, less-used buttons move into **More** (⋯), starting with QR
 
 - **Style** sets padding, corners and shadow together: **Compact**, **Standard** (the default), **Spacious** or **Flat** (no shadow, square corners). The chosen style is outlined; after your own changes it reads **Custom**.
 - **Background** offers eight named gradients. A style keeps the background, and a background keeps the style.
-- **Customize** opens the details: background type (solid, linear or radial gradient), colors, padding, corners, shadow, shadow blur and aspect ratio.
-- **Save style…** keeps the whole current look (background, padding, corners, shadow and aspect ratio) under a name you choose. Saved styles appear below the built-in ones; click one to use it, rename it with its **✎** (or `F2` when it has keyboard focus), or delete it with its **×** (or `Delete`). Two saved styles cannot share a name. Saving under an existing name updates that style. You can keep up to 8.
+- **Customize** opens the details: background type (solid, linear or radial gradient), colors, padding, corners, shadow, shadow blur, border and aspect ratio.
+- **Save style…** keeps the whole current look (background, padding, corners, shadow, border and aspect ratio) under a name you choose. Sizes are kept relative to the screenshot's shorter side, so a style looks the same on a small or a large picture. Saved styles are shared with the recording editor's **Canvas**: a style saved in either place can be used in both. Styles saved before this change keep their look on a picture 1440 px on its shorter side. Saved styles appear below the built-in ones; click one to use it, rename it with its **✎** (or `F2` when it has keyboard focus), or delete it with its **×** (or `Delete`). Two saved styles cannot share a name. Saving under an existing name updates that style. You can keep up to 8.
 - **Copy** and **Save** remember the look for next time.
 
-The recording editor's **Canvas** uses the same gradients and the same names (Background, Padding, Corners, Shadow, Aspect ratio).
+The recording editor's **Canvas** uses the same gradients, the same names (Background, Padding, Corners, Shadow, Border, Aspect ratio) and the same saved styles.
 
 ## Export actions
 

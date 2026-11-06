@@ -320,6 +320,11 @@
         <source>Rename (F2)</source>
         <translation>Přejmenovat (F2)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="756" />
+        <source>Border</source>
+        <translation>Rámeček</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -5279,6 +5284,71 @@ Velikost: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>Výchozí</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
+        <source>Another saved style already has this name.</source>
+        <translation>Jiný uložený styl už má tento název.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <source>Background: Custom gradient</source>
+        <translation>Pozadí: vlastní přechod</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3015" />
+        <source>Delete style %1</source>
+        <translation>Smazat styl %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3002" />
+        <source>Rename</source>
+        <translation>Přejmenovat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3004" />
+        <source>Rename style %1</source>
+        <translation>Přejmenovat styl %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3059" />
+        <source>Save</source>
+        <translation>Uložit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <source>Save style…</source>
+        <translation>Uložit styl…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2994" />
+        <source>Save this frame as a style for recordings and screenshots</source>
+        <translation>Uložit tento rámeček jako styl pro nahrávky a snímky obrazovky</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
+        <source>Saved style: %1</source>
+        <translation>Uložený styl: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
+        <source>Saved styles</source>
+        <translation>Uložené styly</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
+        <source>Style name</source>
+        <translation>Název stylu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2957" />
+        <source>Styles you save here or in Beautify appear in both places.</source>
+        <translation>Styly uložené zde nebo v Zkrášlení se zobrazí na obou místech.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2993" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>Můžete uchovat až %1 uložených stylů. Chcete-li uložit další, jeden smažte.</translation>
     </message>
 </context>
 <context>

@@ -320,6 +320,11 @@
         <source>Rename (F2)</source>
         <translation>Byt namn (F2)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="756" />
+        <source>Border</source>
+        <translation>Kant</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -5275,6 +5280,71 @@ Storlek: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>Standard</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
+        <source>Another saved style already has this name.</source>
+        <translation>En annan sparad stil har redan det här namnet.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <source>Background: Custom gradient</source>
+        <translation>Bakgrund: anpassad toning</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3015" />
+        <source>Delete style %1</source>
+        <translation>Ta bort stil %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3002" />
+        <source>Rename</source>
+        <translation>Byt namn</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3004" />
+        <source>Rename style %1</source>
+        <translation>Byt namn på stil %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3059" />
+        <source>Save</source>
+        <translation>Spara</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <source>Save style…</source>
+        <translation>Spara stil…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2994" />
+        <source>Save this frame as a style for recordings and screenshots</source>
+        <translation>Spara den här ramen som en stil för inspelningar och skärmbilder</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
+        <source>Saved style: %1</source>
+        <translation>Sparad stil: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
+        <source>Saved styles</source>
+        <translation>Sparade stilar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
+        <source>Style name</source>
+        <translation>Stilnamn</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2957" />
+        <source>Styles you save here or in Beautify appear in both places.</source>
+        <translation>Stilar du sparar här eller i Försköna visas på båda ställena.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2993" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>Du kan behålla upp till %1 sparade stilar. Ta bort en för att spara en till.</translation>
     </message>
 </context>
 <context>

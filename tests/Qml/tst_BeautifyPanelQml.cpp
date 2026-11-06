@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 
+#include "beautify/FrameStyleLibrary.h"
 #include "qml/BeautifyPanelBackend.h"
 #include "qml/QmlBeautifyPanel.h"
 #include "qml/QmlOverlayManager.h"
@@ -341,11 +342,15 @@ void tst_BeautifyPanelQml::testSaveStyleByName()
     // closing the panel; Return saves; the saved card can be deleted by key.
     auto settings = SnapTray::getSettings();
     settings.remove(QStringLiteral("beautify/customStyles"));
+    settings.remove(QStringLiteral("beautify/frameStyles"));
     settings.sync();
+    SnapTray::FrameStyleLibrary::instance().reload();
     auto cleanup = qScopeGuard([] {
         auto s = SnapTray::getSettings();
         s.remove(QStringLiteral("beautify/customStyles"));
+        s.remove(QStringLiteral("beautify/frameStyles"));
         s.sync();
+        SnapTray::FrameStyleLibrary::instance().reload();
     });
 
     SnapTray::QmlBeautifyPanel panel;
@@ -452,11 +457,15 @@ void tst_BeautifyPanelQml::testRenameFollowsTheStyleWhenAnotherIsDeleted()
     // moved into B's place; deleting B itself ends the rename.
     auto settings = SnapTray::getSettings();
     settings.remove(QStringLiteral("beautify/customStyles"));
+    settings.remove(QStringLiteral("beautify/frameStyles"));
     settings.sync();
+    SnapTray::FrameStyleLibrary::instance().reload();
     auto cleanup = qScopeGuard([] {
         auto s = SnapTray::getSettings();
         s.remove(QStringLiteral("beautify/customStyles"));
+        s.remove(QStringLiteral("beautify/frameStyles"));
         s.sync();
+        SnapTray::FrameStyleLibrary::instance().reload();
     });
 
     SnapTray::QmlBeautifyPanel panel;
@@ -482,7 +491,7 @@ void tst_BeautifyPanelQml::testRenameFollowsTheStyleWhenAnotherIsDeleted()
     QVERIFY(QMetaObject::invokeMethod(root, "finishNamingStyle", Q_RETURN_ARG(QVariant, ok),
                                       Q_ARG(QVariant, true)));
     QVERIFY(ok.toBool());
-    auto stored = BeautifySettingsManager::instance().loadCustomStyles();
+    auto stored = BeautifySettingsManager::instance().loadFrameStyles();
     QCOMPARE(stored.size(), 2);
     QCOMPARE(stored.at(0).name, QStringLiteral("B2"));
     QCOMPARE(stored.at(1).name, QStringLiteral("C"));

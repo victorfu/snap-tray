@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 
+#include "beautify/FrameStyleLibrary.h"
 #include "qml/BeautifyPanelBackend.h"
 #include "settings/BeautifySettingsManager.h"
 #include "settings/Settings.h"
@@ -24,8 +25,18 @@ void clearBeautifySettings()
     settings.remove(QStringLiteral("beautify/shadowOffsetY"));
     settings.remove(QStringLiteral("beautify/shadowColor"));
     settings.remove(QStringLiteral("beautify/aspectRatio"));
+    settings.remove(QStringLiteral("beautify/borderEnabled"));
+    settings.remove(QStringLiteral("beautify/borderWidth"));
+    settings.remove(QStringLiteral("beautify/borderColor"));
     settings.remove(QStringLiteral("beautify/customStyles"));
+    settings.remove(QStringLiteral("beautify/frameStyles"));
     settings.sync();
+    SnapTray::FrameStyleLibrary::instance().reload();
+}
+
+int storedPadding(const SnapTray::NamedFrameStyle& style)
+{
+    return style.style.toBeautify(SnapTray::FrameStyle::kReferenceShortSide).padding;
 }
 
 } // namespace
@@ -53,6 +64,9 @@ private slots:
     void testCustomStyle_ManagerClampsBadData();
     void testCustomStyle_Rename();
     void testCustomStyle_PanelsStayInSync();
+    void testCustomStyle_RelativeToScreenshotSize();
+    void testCustomStyle_SavedInRecordingEditorApplies();
+    void testBorder_SavedWithTheLook();
 };
 
 void tst_BeautifyPanelBackend::init()
@@ -266,7 +280,7 @@ void tst_BeautifyPanelBackend::testCustomStyle_SaveApplyDelete()
     backend.deleteCustomStyle(0);
     QCOMPARE(backend.customStyleModel().size(), 0);
     QCOMPARE(backend.currentCustomStyle(), -1);
-    QVERIFY(BeautifySettingsManager::instance().loadCustomStyles().isEmpty());
+    QVERIFY(BeautifySettingsManager::instance().loadFrameStyles().isEmpty());
 }
 
 void tst_BeautifyPanelBackend::testCustomStyle_SameNameUpdates()
@@ -306,18 +320,32 @@ void tst_BeautifyPanelBackend::testCustomStyle_ManagerClampsBadData()
                       QStringLiteral(R"([{"name":"Wild","padding":9999,"cornerRadius":-3,"backgroundType":7,)"
                                      R"("gradientStartColor":"not a colour","aspectRatio":42},{"name":"   "},"junk"])"));
     settings.sync();
-    const auto styles = BeautifySettingsManager::instance().loadCustomStyles();
+    // Styles from before #269 are clamped like the single settings, then converted.
+    const auto styles = BeautifySettingsManager::instance().loadFrameStyles();
     QCOMPARE(styles.size(), 1);
     QCOMPARE(styles.at(0).name, QStringLiteral("Wild"));
-    QCOMPARE(styles.at(0).look.padding, 200);
-    QCOMPARE(styles.at(0).look.cornerRadius, 0);
-    QCOMPARE(styles.at(0).look.backgroundType, BeautifyBackgroundType::RadialGradient);
-    QCOMPARE(styles.at(0).look.gradientStartColor, BeautifySettings{}.gradientStartColor);
-    QCOMPARE(styles.at(0).look.aspectRatio, BeautifyAspectRatio::Twitter_2_1);
+    const BeautifySettings look = styles.at(0).style.toBeautify(SnapTray::FrameStyle::kReferenceShortSide);
+    QCOMPARE(look.padding, 200);
+    QCOMPARE(look.cornerRadius, 0);
+    QCOMPARE(look.backgroundType, BeautifyBackgroundType::RadialGradient);
+    QCOMPARE(look.gradientStartColor, BeautifySettings{}.gradientStartColor);
+    QCOMPARE(look.aspectRatio, BeautifyAspectRatio::Twitter_2_1);
 
     settings.setValue(QStringLiteral("beautify/customStyles"), QStringLiteral("{broken"));
     settings.sync();
-    QVERIFY(BeautifySettingsManager::instance().loadCustomStyles().isEmpty());
+    QVERIFY(BeautifySettingsManager::instance().loadFrameStyles().isEmpty());
+
+    // The shared format keeps sizes within the picture and drops unnamed entries.
+    settings.setValue(QStringLiteral("beautify/frameStyles"),
+                      QStringLiteral(R"([{"name":"Huge","style":{"padding":50,"cornerRadius":-1,"background":"nope",)"
+                                     R"("aspectRatio":-4}},{"name":""},"junk"])"));
+    settings.sync();
+    const auto shared = BeautifySettingsManager::instance().loadFrameStyles();
+    QCOMPARE(shared.size(), 1);
+    QCOMPARE(shared.at(0).style.padding, 1.0);
+    QCOMPARE(shared.at(0).style.cornerRadius, 0.0);
+    QCOMPARE(shared.at(0).style.background, SnapTray::FrameStyle::Background::LinearGradient);
+    QCOMPARE(shared.at(0).style.aspectRatio, BeautifyAspectRatio::Auto);
 }
 
 void tst_BeautifyPanelBackend::testCustomStyle_Rename()
@@ -347,7 +375,7 @@ void tst_BeautifyPanelBackend::testCustomStyle_Rename()
         QVERIFY(backend.renameCustomStyle(1, QStringLiteral("SLIDES"))); // unchanged: no write
         QCOMPARE(changed.count(), 2);
     }
-    const auto stored = BeautifySettingsManager::instance().loadCustomStyles();
+    const auto stored = BeautifySettingsManager::instance().loadFrameStyles();
     QCOMPARE(stored.size(), 2);
     QCOMPARE(stored.at(0).name, QStringLiteral("Blog posts"));
     QCOMPARE(stored.at(1).name, QStringLiteral("SLIDES"));
@@ -367,13 +395,89 @@ void tst_BeautifyPanelBackend::testCustomStyle_PanelsStayInSync()
 
     QVERIFY(second.saveCustomStyle(QStringLiteral("Slides")));
     QCOMPARE(first.customStyleModel().size(), 2);
-    QCOMPARE(BeautifySettingsManager::instance().loadCustomStyles().size(), 2);
+    QCOMPARE(BeautifySettingsManager::instance().loadFrameStyles().size(), 2);
 
     first.deleteCustomStyle(0);
     QVERIFY(second.renameCustomStyle(0, QStringLiteral("Talks"))); // index 0 is now Slides
-    const auto stored = BeautifySettingsManager::instance().loadCustomStyles();
+    const auto stored = BeautifySettingsManager::instance().loadFrameStyles();
     QCOMPARE(stored.size(), 1);
     QCOMPARE(stored.at(0).name, QStringLiteral("Talks"));
+}
+
+void tst_BeautifyPanelBackend::testCustomStyle_RelativeToScreenshotSize()
+{
+    // #269: a style keeps sizes relative to the picture's shorter side.
+    SnapTray::BeautifyPanelBackend small;
+    QPixmap smallShot(1280, 720);
+    smallShot.fill(Qt::white);
+    small.setSourcePixmap(smallShot);
+    small.setPadding(64);
+    small.setCornerRadius(10);
+    QVERIFY(small.saveCustomStyle(QStringLiteral("Docs")));
+    QCOMPARE(small.currentCustomStyle(), 0);
+    QCOMPARE(small.customStyleModel().at(0).toMap().value(QStringLiteral("padding")).toInt(), 64);
+    // Stored at the reference size (1440): twice as large as on a 720 px picture.
+    QCOMPARE(storedPadding(SnapTray::FrameStyleLibrary::instance().styles().at(0)), 128);
+
+    SnapTray::BeautifyPanelBackend large;
+    QPixmap largeShot(1440, 1440);
+    largeShot.fill(Qt::white);
+    large.setSourcePixmap(largeShot);
+    large.applyCustomStyle(0);
+    QCOMPARE(large.padding(), 128);
+    QCOMPARE(large.cornerRadius(), 20);
+    QCOMPARE(large.currentCustomStyle(), 0);
+
+    // A 2x screenshot is measured in logical pixels.
+    SnapTray::BeautifyPanelBackend retina;
+    QPixmap retinaShot(2560, 1440);
+    retinaShot.setDevicePixelRatio(2.0);
+    retinaShot.fill(Qt::white);
+    retina.setSourcePixmap(retinaShot);
+    retina.applyCustomStyle(0);
+    QCOMPARE(retina.padding(), 64);
+}
+
+void tst_BeautifyPanelBackend::testCustomStyle_SavedInRecordingEditorApplies()
+{
+    // A style saved from a recording's frame shows up and applies here.
+    SnapTray::BeautifyPanelBackend backend;
+    QSignalSpy changed(&backend, &SnapTray::BeautifyPanelBackend::customStylesChanged);
+    SnapTray::FrameStyle style;
+    style.background = SnapTray::FrameStyle::Background::Solid;
+    style.solidColor = QColor(20, 30, 40);
+    style.padding = 0.05;
+    style.cornerRadius = 0.02;
+    style.borderEnabled = true;
+    QVERIFY(SnapTray::FrameStyleLibrary::instance().save(QStringLiteral("From recording"), style));
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(backend.customStyleModel().size(), 1);
+
+    QPixmap shot(1000, 800);
+    shot.fill(Qt::white);
+    backend.setSourcePixmap(shot);
+    backend.applyCustomStyle(0);
+    QCOMPARE(backend.backgroundType(), static_cast<int>(BeautifyBackgroundType::Solid));
+    QCOMPARE(backend.primaryColor(), QColor(20, 30, 40));
+    QCOMPARE(backend.padding(), 40);
+    QCOMPARE(backend.cornerRadius(), 16);
+    QVERIFY(backend.borderEnabled());
+    QCOMPARE(backend.currentCustomStyle(), 0);
+}
+
+void tst_BeautifyPanelBackend::testBorder_SavedWithTheLook()
+{
+    {
+        SnapTray::BeautifyPanelBackend backend;
+        QVERIFY(!backend.borderEnabled());
+        backend.setBorderEnabled(true);
+        backend.requestSave(); // keeps the look for the next panel
+    }
+    SnapTray::BeautifyPanelBackend reopened;
+    QVERIFY(reopened.borderEnabled());
+    QVERIFY(reopened.saveCustomStyle(QStringLiteral("Bordered")));
+    reopened.setBorderEnabled(false);
+    QCOMPARE(reopened.currentCustomStyle(), -1); // the border is part of the look
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)

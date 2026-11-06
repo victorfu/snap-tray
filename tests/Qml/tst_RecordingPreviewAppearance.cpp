@@ -6,9 +6,11 @@
 #include <QTemporaryDir>
 
 #include "IVideoEncoder.h"
+#include "beautify/FrameStyleLibrary.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/RecordingAppearance.h"
 #include "settings/RecordingSettingsManager.h"
+#include "settings/Settings.h"
 
 // The preview's frame around the export (#184) against the real QML.
 class tst_RecordingPreviewAppearance : public QObject
@@ -18,6 +20,8 @@ class tst_RecordingPreviewAppearance : public QObject
 private slots:
     void panelEditsTheFrame();
     void undoAndResetKeepTheLook();
+    void savedStylesAreShared();
+    void savedStylesInThePanel();
 
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
@@ -66,9 +70,24 @@ QQuickView* tst_RecordingPreviewAppearance::openPreview(RecordingPreviewBackend&
     return QTest::qWaitForWindowExposed(view) ? view : nullptr;
 }
 
+namespace {
+// Repeater delegates are only in the visual tree, not among QObject children.
+QQuickItem* findVisual(QQuickItem* node, const QString& name)
+{
+    if (!node) return nullptr;
+    if (node->objectName() == name) return node;
+    for (QQuickItem* child : node->childItems()) {
+        if (QQuickItem* found = findVisual(child, name)) return found;
+    }
+    return nullptr;
+}
+} // namespace
+
 QQuickItem* tst_RecordingPreviewAppearance::item(QQuickView* view, const char* name)
 {
-    return view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(name));
+    const QString wanted = QString::fromLatin1(name);
+    if (auto* found = view->rootObject()->findChild<QQuickItem*>(wanted)) return found;
+    return findVisual(qobject_cast<QQuickItem*>(view->rootObject()), wanted);
 }
 
 void tst_RecordingPreviewAppearance::panelEditsTheFrame()
@@ -195,6 +214,159 @@ void tst_RecordingPreviewAppearance::undoAndResetKeepTheLook()
     QCOMPARE(backend.exportContentSize(), QSize(160, 90));
     const QRectF canvas = backend.appearanceCanvasInView(QRectF(0, 0, 160, 90));
     QVERIFY(canvas.width() > 160 && canvas.height() > 90);
+}
+
+namespace {
+// Saved styles live in the Beautify settings; each test starts without any.
+auto withoutSavedStyles()
+{
+    const auto clear = [] {
+        auto settings = SnapTray::getSettings();
+        settings.remove(QStringLiteral("beautify/customStyles"));
+        settings.remove(QStringLiteral("beautify/frameStyles"));
+        settings.sync();
+        SnapTray::FrameStyleLibrary::instance().reload();
+    };
+    clear();
+    return qScopeGuard(clear);
+}
+} // namespace
+
+void tst_RecordingPreviewAppearance::savedStylesAreShared()
+{
+    // #269: one list with screenshot Beautify, both ways.
+    auto styles = withoutSavedStyles();
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QJsonObject remembered = RecordingSettingsManager::instance().appearance();
+    auto restore = qScopeGuard([remembered]() { RecordingSettingsManager::instance().setAppearance(remembered); });
+    RecordingSettingsManager::instance().setAppearance({});
+
+    RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(QSize(320, 180));
+    QCOMPARE(backend.frameStyleModel().size(), 0);
+    QCOMPARE(backend.currentFrameStyle(), -1);
+
+    // Saved here: in the shared list, as relative sizes.
+    backend.setAppearanceEnabled(true);
+    backend.setAppearancePadding(int(SnapTray::RecordingAppearance::Amount::Large));
+    backend.setAppearanceBorder(true);
+    QVERIFY(backend.saveFrameStyle(QStringLiteral("Talk")));
+    const auto& library = SnapTray::FrameStyleLibrary::instance();
+    QCOMPARE(library.count(), 1);
+    QCOMPARE(library.styles().at(0).style.padding, SnapTray::RecordingAppearance::kPaddingFractions[3]);
+    QVERIFY(library.styles().at(0).style.borderEnabled);
+    QCOMPARE(backend.currentFrameStyle(), 0);
+
+    // Saved in Beautify (pixels on a 1440 px picture): shows up here.
+    QSignalSpy listChanged(&backend, &RecordingPreviewBackend::frameStylesChanged);
+    BeautifySettings shot;
+    shot.backgroundType = BeautifyBackgroundType::Solid;
+    shot.backgroundColor = QColor(200, 30, 60);
+    shot.padding = 100;
+    shot.cornerRadius = 30;
+    shot.shadowBlur = 25;
+    QVERIFY(SnapTray::FrameStyleLibrary::instance().save(QStringLiteral("Docs"),
+                                                         SnapTray::FrameStyle::fromBeautify(shot)));
+    QCOMPARE(listChanged.count(), 1);
+    QCOMPARE(backend.frameStyleModel().size(), 2);
+    QCOMPARE(backend.frameStyleModel().at(1).toMap().value(QStringLiteral("name")).toString(), QStringLiteral("Docs"));
+
+    // Applied over a blurred-video background: that stays, the rest changes.
+    backend.setAppearanceBackground(int(SnapTray::RecordingAppearance::Background::BlurredVideo));
+    backend.applyFrameStyle(1);
+    QCOMPARE(backend.appearanceBackground(), int(SnapTray::RecordingAppearance::Background::BlurredVideo));
+    QCOMPARE(backend.appearancePadding(), int(SnapTray::RecordingAppearance::Amount::Custom));
+    QCOMPARE(backend.appearanceCorners(), int(SnapTray::RecordingAppearance::Amount::Custom));
+    QVERIFY(!backend.appearanceBorder());
+    QCOMPARE(backend.appearanceSolidColor(), QColor(200, 30, 60));
+    QCOMPARE(backend.currentFrameStyle(), 1);
+    // On a 1440 px picture the recording uses the screenshot's pixels.
+    const BeautifySettings pixels = backend.appearance().beautifyFor(QSize(2560, 1440));
+    QCOMPARE(pixels.padding, 100);
+    QCOMPARE(pixels.cornerRadius, 30);
+    QCOMPARE(pixels.shadowBlur, 25);
+    // An edit like any other: undo brings the previous look back.
+    backend.undo();
+    QCOMPARE(backend.appearancePadding(), int(SnapTray::RecordingAppearance::Amount::Large));
+    // Talk's look again; the blurred-video background is the recording's own.
+    QCOMPARE(backend.currentFrameStyle(), 0);
+
+    QVERIFY(backend.renameFrameStyle(0, QStringLiteral("Talks")));
+    QVERIFY(!backend.renameFrameStyle(0, QStringLiteral("docs"))); // another style's name
+    QVERIFY(backend.frameStyleNameTaken(QStringLiteral("TALKS")));
+    backend.deleteFrameStyle(0);
+    QCOMPARE(library.count(), 1);
+    QCOMPARE(library.styles().at(0).name, QStringLiteral("Docs"));
+    backend.applyFrameStyle(7); // out of range: nothing
+}
+
+void tst_RecordingPreviewAppearance::savedStylesInThePanel()
+{
+    auto styles = withoutSavedStyles();
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QJsonObject remembered = RecordingSettingsManager::instance().appearance();
+    auto restore = qScopeGuard([remembered]() { RecordingSettingsManager::instance().setAppearance(remembered); });
+    RecordingSettingsManager::instance().setAppearance({});
+
+    const QString video = dir.filePath(QStringLiteral("recording.mp4"));
+    if (!writeRecording(video, QSize(320, 180))) QSKIP("No native encoder for the fixture recording");
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.videoSize().isEmpty(), 10000);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceOptions"), "clicked"));
+    QTRY_VERIFY(item(view, "previewAppearancePanel")->isVisible());
+    QVERIFY(item(view, "previewAppearanceStylesEmpty")->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceToggle"), "clicked"));
+    QVERIFY(backend.appearanceEnabled());
+
+    // Save Style… asks for a name, prefilled with a free one.
+    QQuickItem* name = item(view, "previewAppearanceStyleName");
+    QVERIFY(name);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleSave"), "clicked"));
+    QTRY_VERIFY(item(view, "previewAppearanceStyleNameRow")->isVisible());
+    QCOMPARE(name->property("text").toString(), QStringLiteral("My style 1"));
+    name->setProperty("text", QStringLiteral("Launch video"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleNameSave"), "clicked"));
+    QTRY_VERIFY(!item(view, "previewAppearanceStyleNameRow")->isVisible());
+    QCOMPARE(SnapTray::FrameStyleLibrary::instance().count(), 1);
+    QCOMPARE(SnapTray::FrameStyleLibrary::instance().styles().at(0).name, QStringLiteral("Launch video"));
+
+    // The saved style is a chosen, named choice for screen readers.
+    QQuickItem* chip = nullptr;
+    QTRY_VERIFY((chip = item(view, "previewAppearanceStyle0")) != nullptr);
+    QTRY_VERIFY(chip->property("selected").toBool());
+    QCOMPARE(chip->property("text").toString(), QStringLiteral("Launch video"));
+
+    // A style from Beautify with sizes between the presets reads as Custom.
+    SnapTray::FrameStyle between;
+    between.padding = 0.05;
+    between.cornerRadius = 0.02;
+    QVERIFY(SnapTray::FrameStyleLibrary::instance().save(QStringLiteral("Between"), between));
+    QTRY_VERIFY(item(view, "previewAppearanceStyle1") != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyle1"), "clicked"));
+    QCOMPARE(backend.currentFrameStyle(), 1);
+    QTRY_COMPARE(item(view, "previewAppearancePadding")->property("currentIndex").toInt(), -1);
+    QCOMPARE(item(view, "previewAppearancePadding")->property("currentValueText").toString(), QStringLiteral("Custom"));
+    QVERIFY(!item(view, "previewAppearanceGradientCustom")->isVisible()); // the default gradient is a preset
+
+    // Rename and delete act on the chosen style.
+    QVERIFY(item(view, "previewAppearanceStyleRename")->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleRename"), "clicked"));
+    QTRY_COMPARE(name->property("text").toString(), QStringLiteral("Between"));
+    name->setProperty("text", QStringLiteral("launch VIDEO"));
+    QTRY_VERIFY(item(view, "previewAppearanceStyleNameTaken")->isVisible());
+    QVERIFY(!item(view, "previewAppearanceStyleNameSave")->isEnabled());
+    name->setProperty("text", QStringLiteral("Wide"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleNameSave"), "clicked"));
+    QTRY_COMPARE(SnapTray::FrameStyleLibrary::instance().styles().at(1).name, QStringLiteral("Wide"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleDelete"), "clicked"));
+    QCOMPARE(SnapTray::FrameStyleLibrary::instance().count(), 1);
+    backend.requestDiscard();
 }
 
 QTEST_MAIN(tst_RecordingPreviewAppearance)

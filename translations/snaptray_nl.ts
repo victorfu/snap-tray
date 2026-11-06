@@ -320,6 +320,11 @@
         <source>Rename (F2)</source>
         <translation>Hernoemen (F2)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="756" />
+        <source>Border</source>
+        <translation>Rand</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -5275,6 +5280,71 @@ Grootte: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>Standaard</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
+        <source>Another saved style already has this name.</source>
+        <translation>Een andere opgeslagen stijl heeft deze naam al.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <source>Background: Custom gradient</source>
+        <translation>Achtergrond: aangepast verloop</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3015" />
+        <source>Delete style %1</source>
+        <translation>Stijl %1 verwijderen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3002" />
+        <source>Rename</source>
+        <translation>Hernoemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3004" />
+        <source>Rename style %1</source>
+        <translation>Stijl %1 hernoemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3059" />
+        <source>Save</source>
+        <translation>Opslaan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <source>Save style…</source>
+        <translation>Stijl opslaan…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2994" />
+        <source>Save this frame as a style for recordings and screenshots</source>
+        <translation>Dit kader opslaan als stijl voor opnames en schermafbeeldingen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
+        <source>Saved style: %1</source>
+        <translation>Opgeslagen stijl: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
+        <source>Saved styles</source>
+        <translation>Opgeslagen stijlen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
+        <source>Style name</source>
+        <translation>Stijlnaam</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2957" />
+        <source>Styles you save here or in Beautify appear in both places.</source>
+        <translation>Stijlen die je hier of in Verfraaien opslaat, verschijnen op beide plekken.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2993" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>Je kunt maximaal %1 opgeslagen stijlen bewaren. Verwijder er een om een andere op te slaan.</translation>
     </message>
 </context>
 <context>

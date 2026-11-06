@@ -2,6 +2,7 @@
 #define BEAUTIFYSETTINGSMANAGER_H
 
 #include "beautify/BeautifySettings.h"
+#include "beautify/FrameStyle.h"
 
 class BeautifySettingsManager {
 public:
@@ -49,12 +50,18 @@ public:
     BeautifyAspectRatio loadAspectRatio() const;
     void saveAspectRatio(BeautifyAspectRatio ratio);
 
-    // Saved styles (#227), oldest first. Values are clamped like the single
-    // settings; entries without a name are dropped; at most kMaxCustomStyles.
-    QVector<BeautifyCustomStyle> loadCustomStyles() const;
-    void saveCustomStyles(const QVector<BeautifyCustomStyle>& styles);
+    // Saved styles (#227), shared with the recording frame (#269), oldest
+    // first. Entries without a name are dropped; at most kMaxCustomStyles.
+    // The first read after #269 converts the pixel styles kept under
+    // beautify/customStyles at FrameStyle::kReferenceShortSide; that key is
+    // left as it was.
+    QVector<SnapTray::NamedFrameStyle> loadFrameStyles() const;
+    void saveFrameStyles(const QVector<SnapTray::NamedFrameStyle>& styles);
 
     static constexpr int kMaxCustomStyles = 8;
+    // Border width in pixels; the border itself is new in #269.
+    static constexpr int kMinBorderWidth = 1;
+    static constexpr int kMaxBorderWidth = 40;
 
 private:
     BeautifySettingsManager() = default;
@@ -74,7 +81,12 @@ private:
     static constexpr const char* kKeyShadowOffsetY      = "beautify/shadowOffsetY";
     static constexpr const char* kKeyShadowColor        = "beautify/shadowColor";
     static constexpr const char* kKeyAspectRatio        = "beautify/aspectRatio";
+    static constexpr const char* kKeyBorderEnabled      = "beautify/borderEnabled";
+    static constexpr const char* kKeyBorderWidth        = "beautify/borderWidth";
+    static constexpr const char* kKeyBorderColor        = "beautify/borderColor";
+    // Pixel styles from before #269, read once to fill kKeyFrameStyles.
     static constexpr const char* kKeyCustomStyles       = "beautify/customStyles";
+    static constexpr const char* kKeyFrameStyles        = "beautify/frameStyles";
 };
 
 #endif // BEAUTIFYSETTINGSMANAGER_H

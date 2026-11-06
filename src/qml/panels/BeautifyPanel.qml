@@ -750,6 +750,17 @@ Item {
                 }
             }
 
+            // Shared with the recording frame's border (#269).
+            SettingsToggle {
+                objectName: "beautifyBorderToggle"
+                label: qsTr("Border")
+                checked: root.backend ? root.backend.borderEnabled : false
+                onToggled: function(checked) {
+                    if (root.backend)
+                        root.backend.borderEnabled = checked
+                }
+            }
+
             SettingsCombo {
                 objectName: "beautifyAspectRatio"
                 label: qsTr("Aspect ratio")

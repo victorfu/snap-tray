@@ -1,6 +1,7 @@
 #pragma once
 
 #include "beautify/BeautifySettings.h"
+#include "beautify/FrameStyle.h"
 
 #include <QObject>
 #include <QPixmap>
@@ -23,12 +24,14 @@ class BeautifyPanelBackend : public QObject
     Q_PROPERTY(int aspectRatio READ aspectRatio WRITE setAspectRatio NOTIFY settingsStateChanged)
     Q_PROPERTY(bool shadowEnabled READ shadowEnabled WRITE setShadowEnabled NOTIFY settingsStateChanged)
     Q_PROPERTY(int shadowBlur READ shadowBlur WRITE setShadowBlur NOTIFY settingsStateChanged)
+    Q_PROPERTY(bool borderEnabled READ borderEnabled WRITE setBorderEnabled NOTIFY settingsStateChanged)
     Q_PROPERTY(QVariantList presetModel READ presetModel NOTIFY presetModelChanged)
     Q_PROPERTY(QVariantList styleModel READ styleModel CONSTANT)
     // Index of the style/background preset matching the current settings, or -1.
     Q_PROPERTY(int currentStyle READ currentStyle NOTIFY settingsStateChanged)
     Q_PROPERTY(int currentPreset READ currentPreset NOTIFY settingsStateChanged)
-    // Saved styles (#227): the whole look, kept by BeautifySettingsManager.
+    // Saved styles (#227), shared with the recording frame (#269): sizes are
+    // kept relative to the picture and shown in pixels for this screenshot.
     Q_PROPERTY(QVariantList customStyleModel READ customStyleModel NOTIFY customStylesChanged)
     Q_PROPERTY(int currentCustomStyle READ currentCustomStyle NOTIFY customStyleStateChanged)
     Q_PROPERTY(bool customStylesFull READ customStylesFull NOTIFY customStylesChanged)
@@ -68,6 +71,9 @@ public:
 
     int shadowBlur() const { return m_settings.shadowBlur; }
     void setShadowBlur(int blur);
+
+    bool borderEnabled() const { return m_settings.borderEnabled; }
+    void setBorderEnabled(bool enabled);
 
     QVariantList presetModel() const { return m_presetModel; }
     QVariantList styleModel() const;
@@ -114,11 +120,13 @@ private:
     void schedulePreviewUpdate();
     void commitSettingsChange();
 
-    void setCustomStyles(const QVector<BeautifyCustomStyle>& styles);
-    void reloadCustomStyles();
+    // The screenshot's shorter side in logical pixels, which saved styles are
+    // measured against; the reference size while there is no screenshot.
+    int styleShortSide() const;
+    // A saved style in this screenshot's pixels, within the panel's ranges.
+    BeautifySettings settingsFor(const SnapTray::FrameStyle& style) const;
 
     BeautifySettings m_settings;
-    QVector<BeautifyCustomStyle> m_customStyles;
     QPixmap m_sourcePixmap;
     QVariantList m_presetModel;
     QTimer* m_previewTimer = nullptr;

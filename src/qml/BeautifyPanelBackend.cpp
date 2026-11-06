@@ -1,6 +1,8 @@
 #include "qml/BeautifyPanelBackend.h"
 
+#include "beautify/FrameStyleLibrary.h"
 #include "settings/BeautifySettingsManager.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QCoreApplication>
 #include <QList>
@@ -46,12 +48,20 @@ constexpr BeautifyStylePreset kStylePresets[] = {
 };
 constexpr int kStyleCount = int(std::size(kStylePresets));
 
+// The panel's control ranges, in logical pixels (as BeautifySettingsManager
+// clamps the stored values).
+constexpr int kMinPadding = 16;
+constexpr int kMaxPadding = 200;
+constexpr int kMaxCornerRadius = 40;
+constexpr int kMaxShadowBlur = 100;
+constexpr int kMaxShadowOffset = 50;
+
 // The parts of a look the panel shows; a saved style matches when they agree.
 bool sameLook(const BeautifySettings& a, const BeautifySettings& b)
 {
     if (a.backgroundType != b.backgroundType || a.padding != b.padding
         || a.cornerRadius != b.cornerRadius || a.shadowEnabled != b.shadowEnabled
-        || a.aspectRatio != b.aspectRatio) {
+        || a.borderEnabled != b.borderEnabled || a.aspectRatio != b.aspectRatio) {
         return false;
     }
     if (a.shadowEnabled && a.shadowBlur != b.shadowBlur) {
@@ -61,14 +71,6 @@ bool sameLook(const BeautifySettings& a, const BeautifySettings& b)
         return a.backgroundColor == b.backgroundColor;
     }
     return a.gradientStartColor == b.gradientStartColor && a.gradientEndColor == b.gradientEndColor;
-}
-
-// Every live backend, so a saved-style change in one panel reaches the
-// others (each pin window keeps its own Beautify panel).
-QList<BeautifyPanelBackend*>& liveBackends()
-{
-    static QList<BeautifyPanelBackend*> backends;
-    return backends;
 }
 
 } // namespace
@@ -89,26 +91,43 @@ BeautifyPanelBackend::BeautifyPanelBackend(QObject* parent)
             this, &BeautifyPanelBackend::customStyleStateChanged);
     connect(this, &BeautifyPanelBackend::customStylesChanged,
             this, &BeautifyPanelBackend::customStyleStateChanged);
-    m_customStyles = BeautifySettingsManager::instance().loadCustomStyles();
+    // One list for every pin window's panel and the recording editor (#269).
+    connect(&FrameStyleLibrary::instance(), &FrameStyleLibrary::stylesChanged,
+            this, &BeautifyPanelBackend::customStylesChanged);
     setSettings(BeautifySettingsManager::instance().loadSettings());
-    liveBackends().append(this);
 }
 
-BeautifyPanelBackend::~BeautifyPanelBackend()
-{
-    liveBackends().removeOne(this);
-}
-
-void BeautifyPanelBackend::reloadCustomStyles()
-{
-    m_customStyles = BeautifySettingsManager::instance().loadCustomStyles();
-    emit customStylesChanged();
-}
+BeautifyPanelBackend::~BeautifyPanelBackend() = default;
 
 void BeautifyPanelBackend::setSourcePixmap(const QPixmap& pixmap)
 {
     m_sourcePixmap = pixmap;
+    // Saved styles are measured against the screenshot's size.
+    emit customStylesChanged();
     schedulePreviewUpdate();
+}
+
+int BeautifyPanelBackend::styleShortSide() const
+{
+    if (m_sourcePixmap.isNull()) {
+        return FrameStyle::kReferenceShortSide;
+    }
+    const qreal dpr = m_sourcePixmap.devicePixelRatio() > 0.0 ? m_sourcePixmap.devicePixelRatio() : 1.0;
+    const QSize logical = CoordinateHelper::toLogical(m_sourcePixmap.size(), dpr);
+    return std::max(1, std::min(logical.width(), logical.height()));
+}
+
+BeautifySettings BeautifyPanelBackend::settingsFor(const FrameStyle& style) const
+{
+    BeautifySettings s = style.toBeautify(styleShortSide());
+    s.padding = std::clamp(s.padding, kMinPadding, kMaxPadding);
+    s.cornerRadius = std::clamp(s.cornerRadius, 0, kMaxCornerRadius);
+    s.shadowBlur = std::clamp(s.shadowBlur, 0, kMaxShadowBlur);
+    s.shadowOffsetX = std::clamp(s.shadowOffsetX, -kMaxShadowOffset, kMaxShadowOffset);
+    s.shadowOffsetY = std::clamp(s.shadowOffsetY, -kMaxShadowOffset, kMaxShadowOffset);
+    s.borderWidth = std::clamp(s.borderWidth, BeautifySettingsManager::kMinBorderWidth,
+                               BeautifySettingsManager::kMaxBorderWidth);
+    return s;
 }
 
 void BeautifyPanelBackend::setSettings(const BeautifySettings& settings)
@@ -154,7 +173,7 @@ bool BeautifyPanelBackend::secondaryColorVisible() const
 
 void BeautifyPanelBackend::setPadding(int padding)
 {
-    padding = qBound(16, padding, 200);
+    padding = qBound(kMinPadding, padding, kMaxPadding);
     if (m_settings.padding == padding) {
         return;
     }
@@ -165,7 +184,7 @@ void BeautifyPanelBackend::setPadding(int padding)
 
 void BeautifyPanelBackend::setCornerRadius(int radius)
 {
-    radius = qBound(0, radius, 40);
+    radius = qBound(0, radius, kMaxCornerRadius);
     if (m_settings.cornerRadius == radius) {
         return;
     }
@@ -203,12 +222,22 @@ void BeautifyPanelBackend::setShadowEnabled(bool enabled)
 
 void BeautifyPanelBackend::setShadowBlur(int blur)
 {
-    blur = qBound(0, blur, 100);
+    blur = qBound(0, blur, kMaxShadowBlur);
     if (m_settings.shadowBlur == blur) {
         return;
     }
 
     m_settings.shadowBlur = blur;
+    commitSettingsChange();
+}
+
+void BeautifyPanelBackend::setBorderEnabled(bool enabled)
+{
+    if (m_settings.borderEnabled == enabled) {
+        return;
+    }
+
+    m_settings.borderEnabled = enabled;
     commitSettingsChange();
 }
 
@@ -309,8 +338,8 @@ void BeautifyPanelBackend::applyStyle(int index)
 QVariantList BeautifyPanelBackend::customStyleModel() const
 {
     QVariantList model;
-    for (const auto& style : m_customStyles) {
-        const BeautifySettings& look = style.look;
+    for (const auto& style : FrameStyleLibrary::instance().styles()) {
+        const BeautifySettings look = settingsFor(style.style);
         const bool solid = look.backgroundType == BeautifyBackgroundType::Solid;
         model.append(QVariantMap{
             {QStringLiteral("name"), style.name},
@@ -327,8 +356,9 @@ QVariantList BeautifyPanelBackend::customStyleModel() const
 
 int BeautifyPanelBackend::currentCustomStyle() const
 {
-    for (int i = 0; i < m_customStyles.size(); ++i) {
-        if (sameLook(m_customStyles.at(i).look, m_settings)) {
+    const auto& styles = FrameStyleLibrary::instance().styles();
+    for (int i = 0; i < styles.size(); ++i) {
+        if (sameLook(settingsFor(styles.at(i).style), m_settings)) {
             return i;
         }
     }
@@ -337,107 +367,46 @@ int BeautifyPanelBackend::currentCustomStyle() const
 
 bool BeautifyPanelBackend::customStylesFull() const
 {
-    return m_customStyles.size() >= BeautifySettingsManager::kMaxCustomStyles;
+    return FrameStyleLibrary::instance().isFull();
 }
 
 int BeautifyPanelBackend::maxCustomStyles() const
 {
-    return BeautifySettingsManager::kMaxCustomStyles;
+    return FrameStyleLibrary::maxStyles();
 }
 
 QString BeautifyPanelBackend::suggestedCustomStyleName() const
 {
-    for (int n = 1;; ++n) {
-        const QString name = QCoreApplication::translate("BeautifyPanel", "My style %1").arg(n);
-        const bool taken = std::any_of(m_customStyles.cbegin(), m_customStyles.cend(),
-                                       [&name](const BeautifyCustomStyle& s) {
-                                           return s.name.compare(name, Qt::CaseInsensitive) == 0;
-                                       });
-        if (!taken) {
-            return name;
-        }
-    }
+    return FrameStyleLibrary::instance().suggestedName();
 }
 
 bool BeautifyPanelBackend::saveCustomStyle(const QString& name)
 {
-    const QString trimmed = name.trimmed();
-    if (trimmed.isEmpty()) {
-        return false;
-    }
-    QVector<BeautifyCustomStyle> styles = m_customStyles;
-    auto existing = std::find_if(styles.begin(), styles.end(), [&trimmed](const BeautifyCustomStyle& s) {
-        return s.name.compare(trimmed, Qt::CaseInsensitive) == 0;
-    });
-    if (existing != styles.end()) {
-        existing->name = trimmed;
-        existing->look = m_settings;
-    } else if (styles.size() < BeautifySettingsManager::kMaxCustomStyles) {
-        styles.append({trimmed, m_settings});
-    } else {
-        return false;
-    }
-    setCustomStyles(styles);
-    return true;
+    return FrameStyleLibrary::instance().save(name, FrameStyle::fromBeautify(m_settings, styleShortSide()));
 }
 
 void BeautifyPanelBackend::applyCustomStyle(int index)
 {
-    if (index < 0 || index >= m_customStyles.size()) {
+    const auto& styles = FrameStyleLibrary::instance().styles();
+    if (index < 0 || index >= styles.size()) {
         return;
     }
-    setSettings(m_customStyles.at(index).look);
+    setSettings(settingsFor(styles.at(index).style));
 }
 
 void BeautifyPanelBackend::deleteCustomStyle(int index)
 {
-    if (index < 0 || index >= m_customStyles.size()) {
-        return;
-    }
-    QVector<BeautifyCustomStyle> styles = m_customStyles;
-    styles.removeAt(index);
-    setCustomStyles(styles);
+    FrameStyleLibrary::instance().remove(index);
 }
 
 bool BeautifyPanelBackend::customStyleNameTaken(const QString& name, int exceptIndex) const
 {
-    const QString trimmed = name.trimmed();
-    for (int i = 0; i < m_customStyles.size(); ++i) {
-        if (i != exceptIndex && m_customStyles.at(i).name.compare(trimmed, Qt::CaseInsensitive) == 0) {
-            return true;
-        }
-    }
-    return false;
+    return FrameStyleLibrary::instance().nameTaken(name, exceptIndex);
 }
 
 bool BeautifyPanelBackend::renameCustomStyle(int index, const QString& name)
 {
-    const QString trimmed = name.trimmed();
-    if (index < 0 || index >= m_customStyles.size() || trimmed.isEmpty()
-        || customStyleNameTaken(trimmed, index)) {
-        return false;
-    }
-    if (m_customStyles.at(index).name == trimmed) {
-        return true;
-    }
-    QVector<BeautifyCustomStyle> styles = m_customStyles;
-    styles[index].name = trimmed;
-    setCustomStyles(styles);
-    return true;
-}
-
-void BeautifyPanelBackend::setCustomStyles(const QVector<BeautifyCustomStyle>& styles)
-{
-    m_customStyles = styles;
-    BeautifySettingsManager::instance().saveCustomStyles(m_customStyles);
-    emit customStylesChanged();
-    // Other panels would otherwise write their stale list back later.
-    const QList<BeautifyPanelBackend*> backends = liveBackends();
-    for (BeautifyPanelBackend* other : backends) {
-        if (other != this) {
-            other->reloadCustomStyles();
-        }
-    }
+    return FrameStyleLibrary::instance().rename(index, name);
 }
 
 void BeautifyPanelBackend::pickPrimaryColor()
