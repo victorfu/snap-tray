@@ -1477,9 +1477,12 @@ void tst_RecordingEditor::effectMenuFitsTheWindow()
     const auto cleanup = qScopeGuard([&] { backend.requestDiscard(); });
     QTRY_VERIFY(backend.duration() > 0);
 
-    for (const QSize size : {QSize(1028, 806), QSize(1200, 640), QSize(1200, 900)}) {
-        view->resize(size);
-        QTRY_COMPARE(view->rootObject()->size().toSize(), size);
+    for (const QSize requested : {QSize(1028, 806), QSize(1200, 640), QSize(1200, 900)}) {
+        view->resize(requested);
+        // A small screen (CI runners) clamps the window: check against the
+        // size it got, which is what the user would see.
+        QTRY_COMPARE(view->rootObject()->size().toSize(), view->size());
+        const QSize size = view->size();
         QVERIFY(QMetaObject::invokeMethod(item(view, "previewAddEffect"), "clicked"));
         QQuickItem* addImage = nullptr;
         QTRY_VERIFY((addImage = delegate(view, QStringLiteral("previewAddImage"))) && addImage->isVisible());
