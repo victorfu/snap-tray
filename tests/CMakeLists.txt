@@ -325,7 +325,12 @@ add_executable(Qml_RecordingCropOverlay Qml/tst_RecordingCropOverlay.cpp)
 target_link_libraries(Qml_RecordingCropOverlay PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_RecordingCropOverlay PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME Qml_RecordingCropOverlay COMMAND Qml_RecordingCropOverlay)
-set_tests_properties(Qml_RecordingCropOverlay PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+# These suites drive many full preview/editor windows. Pin the software scene graph:
+# on a GPU desktop session (GNOME X11, NVIDIA) every OpenGL swap of these test
+# windows can block for about a second, which pushes both suites past their
+# timeouts (#264).
+set_tests_properties(Qml_RecordingCropOverlay PROPERTIES TIMEOUT 60 LABELS "unit;integration"
+    ENVIRONMENT "QT_QUICK_BACKEND=software")
 
 add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
 target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)
@@ -552,7 +557,9 @@ if(APPLE OR WIN32 OR SNAPTRAY_ENABLE_LINUX_RECORDING)
     target_link_libraries(Qml_RecordingEditor PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
     target_sources(Qml_RecordingEditor PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
     add_test(NAME Qml_RecordingEditor COMMAND Qml_RecordingEditor)
-    set_tests_properties(Qml_RecordingEditor PROPERTIES TIMEOUT 120 LABELS "integration")
+    # Software scene graph for the same reason as Qml_RecordingCropOverlay (#264).
+    set_tests_properties(Qml_RecordingEditor PROPERTIES TIMEOUT 120 LABELS "integration"
+        ENVIRONMENT "QT_QUICK_BACKEND=software")
     add_executable(Qml_RecordingPreviewTimeline Qml/tst_RecordingPreviewTimeline.cpp)
     target_link_libraries(Qml_RecordingPreviewTimeline PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
     target_sources(Qml_RecordingPreviewTimeline PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)

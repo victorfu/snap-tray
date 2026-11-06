@@ -2,6 +2,7 @@
 
 #include "recording/CursorTimeline.h"
 #include "recording/TimelineEdit.h"
+#include "recording/SpringPath.h"
 
 #include <QJsonObject>
 #include <QPointF>
@@ -83,11 +84,9 @@ struct CursorFrameMapping {
 
 class CursorEffectRenderer {
 public:
-    // Ripple timing and the windows around clicks where smoothing yields to
-    // the real position.
+    // Ripple timing and source-time anticipation of a button press.
     static constexpr qint64 kRippleDurationMs = 450;
-    static constexpr qint64 kClickSnapMs = 120;
-    static constexpr double kDragSmoothingFactor = 0.25; // drags follow the hand more closely
+    static constexpr qint64 kClickLookaheadMs = 450;
     // Idle hiding: how long the fade out (and the fade back in, which starts
     // this long before the next movement) takes.
     static constexpr qint64 kIdleFadeMs = 250;
@@ -116,12 +115,12 @@ public:
     void paint(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const;
     void paint(QImage& frame, qint64 sourceMs, const CursorFrameMapping& mapping) const;
 
-    // Time constant of the smoothing filter for a setting (0 = off).
-    static double smoothingTauMs(CursorEffectSettings::Smoothing smoothing);
-
 private:
     QPointF rawPosition(qint64 sourceMs) const;
-    QPointF smoothedPosition(qint64 sourceMs, double tauMs) const;
+    void rebuildSpringPaths();
+    QPointF springPosition(qint64 sourceMs) const;
+    struct PartPath { qint64 startMs; qint64 endMs; SpringPath path; };
+    std::vector<PartPath> m_paths;
     // The time the pointer is shown as being at: frozen near the clip end.
     qint64 effectiveTime(qint64 sourceMs) const;
     std::optional<QPointF> positionAt(qint64 ms) const;

@@ -21,13 +21,16 @@ void RecordingCursorOverlay::setBackend(QObject* object)
     auto* backend = qobject_cast<RecordingPreviewBackend*>(object);
     if (m_backend == backend) return;
     if (m_backend) disconnect(m_backend, nullptr, this, nullptr);
+    m_renderer.reset();
+    m_cachedTimeline.reset();
     m_backend = backend;
     if (m_backend) {
-        connect(m_backend, &RecordingPreviewBackend::cursorEffectsChanged, this, [this] { update(); });
-        connect(m_backend, &RecordingPreviewBackend::videoSizeChanged, this, [this] { update(); });
+        connect(m_backend, &RecordingPreviewBackend::cursorEffectsChanged, this, [this] { m_renderer.reset(); update(); });
+        connect(m_backend, &RecordingPreviewBackend::videoSizeChanged, this, [this] { m_renderer.reset(); update(); });
         // "Still end" depends on where the clip ends.
-        connect(m_backend, &RecordingPreviewBackend::trimRangeChanged, this, [this] { update(); });
-        connect(m_backend, &RecordingPreviewBackend::timelineChanged, this, [this] { update(); });
+        connect(m_backend, &RecordingPreviewBackend::trimRangeChanged, this, [this] { m_renderer.reset(); update(); });
+        connect(m_backend, &RecordingPreviewBackend::durationChanged, this, [this] { m_renderer.reset(); update(); });
+        connect(m_backend, &RecordingPreviewBackend::timelineChanged, this, [this] { m_renderer.reset(); update(); });
     }
     emit backendChanged();
     update();
@@ -60,9 +63,12 @@ void RecordingCursorOverlay::paint(QPainter* painter)
     painter->setClipRect(m_contentRect);
     painter->translate(m_contentRect.topLeft());
     painter->scale(m_contentRect.width() / videoSize.width(), m_contentRect.height() / videoSize.height());
-    SnapTray::CursorEffectRenderer renderer(*m_backend->cursorTimeline(), m_backend->cursorEffects(),
-                                            m_backend->effectsClipEnd());
-    if (m_backend->hasTimelineEdits()) renderer.setTimeline(m_backend->timelineMap());
-    renderer.paint(*painter, m_position, {QRect(), videoSize, videoSize});
+    if (!m_renderer) {
+        m_cachedTimeline = m_backend->cursorTimelineSnapshot();
+        m_renderer = std::make_unique<SnapTray::CursorEffectRenderer>(
+            *m_cachedTimeline, m_backend->cursorEffects(), m_backend->effectsClipEnd());
+        if (!m_backend->timelineMap().isEmpty()) m_renderer->setTimeline(m_backend->timelineMap());
+    }
+    m_renderer->paint(*painter, m_position, {QRect(), videoSize, videoSize});
     painter->restore();
 }

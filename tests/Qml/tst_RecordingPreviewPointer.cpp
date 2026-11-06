@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include <QGuiApplication>
+#include <QPainter>
 #include <QKeySequence>
 #include <QQuickItem>
 #include <QQuickView>
@@ -9,6 +10,7 @@
 #include <functional>
 
 #include "qml/RecordingPreviewBackend.h"
+#include "qml/RecordingCursorOverlay.h"
 #include "recording/CursorTimeline.h"
 #include "recording/KeyTimeline.h"
 #include "recording/AudioTracks.h"
@@ -23,6 +25,7 @@ private slots:
     void controlsFollowThePointerData();
     void controlsHiddenWithoutPointerData();
     void overlayFollowsEachFrameTime();
+    void springOverlayInvalidatesWithEdits();
     void advancedPointerOptions();
     void keysPanelEditsTheHints();
     void overlayPanelEditsText();
@@ -407,6 +410,53 @@ void tst_RecordingPreviewPointer::overlayFollowsEachFrameTime()
         QCOMPARE(player->property("framePosition").toLongLong(), t);
         QCOMPARE(overlay->property("position").toLongLong(), t);
     }
+}
+
+void tst_RecordingPreviewPointer::springOverlayInvalidatesWithEdits()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("spring.mp4"));
+    const auto saved = RecordingSettingsManager::instance().pointerEffects();
+    auto restore = qScopeGuard([saved] { RecordingSettingsManager::instance().setPointerEffects(saved); });
+    RecordingSettingsManager::instance().setPointerEffects({});
+    {
+        SnapTray::CursorTimelineWriter writer(SnapTray::CursorTimelineSidecar::pathFor(video));
+        SnapTray::CursorTimelineInfo info;
+        info.frameSize = QSize(320, 240);
+        QVERIFY(writer.open(info));
+        for (int ms = 0; ms <= 2000; ms += 20)
+            writer.addSample({ms, QPoint(20 + (ms / 10) % 200, 80), true, 0});
+        QVERIFY(writer.finish());
+    }
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(QSize(320, 240));
+    backend.updateDuration(2000);
+    backend.setCursorSmoothing(3);
+    RecordingCursorOverlay overlay;
+    overlay.setBackend(&backend);
+    overlay.setContentRect(QRectF(0, 0, 320, 240));
+    const auto check = [&](qint64 ms) {
+        QImage actual(320, 240, QImage::Format_ARGB32_Premultiplied);
+        actual.fill(Qt::transparent);
+        QImage expected = actual;
+        overlay.setPosition(ms);
+        { QPainter painter(&actual); overlay.paint(&painter); }
+        SnapTray::CursorEffectRenderer fresh(*backend.cursorTimeline(), backend.cursorEffects(), backend.effectsClipEnd());
+        fresh.setTimeline(backend.timelineMap());
+        fresh.paint(expected, ms, {QRect(), QSize(320, 240), QSize(320, 240)});
+        QCOMPARE(actual, expected);
+    };
+    check(1900);
+    check(400); // backwards seek reuses the same immutable path
+    backend.setCursorSmoothing(1);
+    check(400);
+    backend.setCursorStillEnd(500);
+    backend.setTrimEnd(1600);
+    check(1550);
+    backend.undo();
+    check(1550);
+    overlay.setBackend(nullptr);
 }
 
 QTEST_MAIN(tst_RecordingPreviewPointer)

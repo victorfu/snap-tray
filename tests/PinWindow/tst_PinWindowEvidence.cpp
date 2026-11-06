@@ -109,28 +109,32 @@ QImage TestPinWindowEvidence::compose(PinWindow& pin, const QPoint& cursor, bool
     QImage out(area.size(), QImage::Format_ARGB32_Premultiplied);
     QPainter p(&out);
     p.setRenderHint(QPainter::Antialiasing);
+    // Grabs are scaled into logical geometry at 1.5x and 2x; filter them.
+    p.setRenderHint(QPainter::SmoothPixmapTransform);
     QLinearGradient backdrop(0, 0, area.width(), area.height());
     const bool dark = ToolbarStyleConfig::loadStyle() == ToolbarStyleType::Dark;
     backdrop.setColorAt(0, dark ? QColor("#1f2433") : QColor("#9fb7d6"));
     backdrop.setColorAt(1, dark ? QColor("#38283f") : QColor("#d8c3d9"));
     p.fillRect(out.rect(), backdrop);
-    const auto draw = [&](const QImage& image, const QPoint& globalTopLeft) {
+    // Each grab is drawn into its window's logical geometry. The grab's own
+    // ratio can't be trusted: the software scene graph returns a device-pixel
+    // QQuickWindow grab tagged with ratio 1 (seen at 1.5x and 2x on X11).
+    const auto draw = [&](const QImage& image, const QRect& globalGeometry) {
         QImage copy = image;
         copy.setDevicePixelRatio(1.0);
-        const QSize logical = image.size() / image.devicePixelRatio();
-        p.drawImage(QRect(globalTopLeft - area.topLeft(), logical), copy);
+        p.drawImage(globalGeometry.translated(-area.topLeft()), copy);
     };
     p.setOpacity(pin.opacity());
-    draw(pin.grab().toImage(), pinRect.topLeft());
+    draw(pin.grab().toImage(), pinRect);
     p.setOpacity(1.0);
     if (auto* pill = pin.findChild<ClickThroughExitButton*>(); pill && pill->isVisible())
-        draw(pill->grab().toImage(), pill->geometry().topLeft());
+        draw(pill->grab().toImage(), pill->geometry());
     if (pin.m_hoverBar && pin.m_hoverBar->isBarVisible())
         draw(static_cast<QQuickWindow*>(pin.m_hoverBar->barWindow())->grabWindow(),
-             pin.m_hoverBar->barGeometry().topLeft());
+             pin.m_hoverBar->barGeometry());
     if (pin.m_hoverBar && pin.m_hoverBar->isPanelVisible())
         draw(static_cast<QQuickWindow*>(pin.m_hoverBar->panelWindow())->grabWindow(),
-             pin.m_hoverBar->panelWindow()->geometry().topLeft());
+             pin.m_hoverBar->panelWindow()->geometry());
     if (cursor.x() >= 0) {
         const QPointF c = cursor - area.topLeft();
         QPainterPath arrow;

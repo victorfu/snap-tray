@@ -162,7 +162,7 @@ QPointF ZoomTrack::focusAt(const ZoomSegment& segment, qint64 ms) const
 }
 
 void ZoomTrack::prepareFollow(const CursorTimeline& cursor, const CursorEffectSettings& settings,
-                              const TimelineMap& timeline, const QRectF& bounds, bool cursorHasTimelineEdits)
+                              const TimelineMap& timeline, const QRectF& bounds)
 {
     m_follow.assign(m_segments.size(), {});
     m_followBounds = bounds;
@@ -175,7 +175,7 @@ void ZoomTrack::prepareFollow(const CursorTimeline& cursor, const CursorEffectSe
     constexpr double kMaxWidthsPerSecond = 1.0;
     constexpr double kEdgeFraction = 0.08;
     CursorEffectRenderer renderer(cursor, settings, timeline.isEmpty() ? -1 : timeline.sourceEndMs());
-    if (!timeline.isEmpty() && cursorHasTimelineEdits) renderer.setTimeline(timeline);
+    if (!timeline.isEmpty()) renderer.setTimeline(timeline);
     for (const auto& event : cursor.buttons) {
         if (!event.synthetic && bounds.contains(QPointF(event.position)) && renderer.pointerPosition(event.tMs))
             m_followButtons.push_back(event);

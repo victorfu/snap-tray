@@ -61,7 +61,7 @@ public:
 
     // Derived data only: rebuilt when geometry, cursor settings or edits change.
     void prepareFollow(const CursorTimeline& cursor, const CursorEffectSettings& settings,
-                       const TimelineMap& timeline, const QRectF& bounds, bool cursorHasTimelineEdits = true);
+                       const TimelineMap& timeline, const QRectF& bounds);
 
     QJsonObject toJson() const;
     static ZoomTrack fromJson(const QJsonObject& json);
