@@ -309,7 +309,11 @@ void tst_IPCProtocol::testWaitIndefinitely_ReturnsLateResponseWithPayload()
     expected.result = QJsonObject{{"width", 640}};
     expected.data = QByteArray(256 * 1024, '\x7f');
     QVERIFY(IPCProtocol::writeResponse(client.get(), expected));
-    QVERIFY(client->waitForBytesWritten(kSocketTimeoutMs) || client->bytesToWrite() == 0);
+    // The payload is larger than one socket write, and nothing runs an event
+    // loop here, so drain every chunk before blocking on the future.
+    while (client->bytesToWrite() > 0) {
+        QVERIFY(client->waitForBytesWritten(kSocketTimeoutMs));
+    }
 
     QVERIFY(future.wait_for(std::chrono::milliseconds(kFutureTimeoutMs)) == std::future_status::ready);
     const IPCResponse actual = future.get();
