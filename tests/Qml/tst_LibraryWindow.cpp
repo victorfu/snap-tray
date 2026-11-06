@@ -211,6 +211,34 @@ void tst_LibraryWindow::itemsAndSectionsReadTheirSelection()
     unselected->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
     QTRY_VERIFY(root()->property("selectedKey").toString() != before);
     QTRY_VERIFY(unselected->state().checked);
+
+    // List mode: rows read the same way, and List view becomes the choice.
+    root()->setProperty("listMode", true);
+    const auto collect = [&] {
+        entries.clear();
+        gridView = nullptr;
+        listView = nullptr;
+        walk(qobject_cast<QQuickItem*>(root()));
+    };
+    QTRY_VERIFY([&] { collect(); return entries.size() == library()->rowCount(); }());
+    QVERIFY(gridView && listView);
+    QVERIFY(!gridView->state().checked);
+    QVERIFY(listView->state().checked);
+
+    const QString listBefore = root()->property("selectedKey").toString();
+    checked = 0;
+    unselected = nullptr;
+    for (QAccessibleInterface* entry : entries) {
+        QCOMPARE(entry->role(), QAccessible::RadioButton);
+        QVERIFY(entry->state().checkable);
+        if (entry->state().checked) ++checked;
+        else unselected = entry;
+    }
+    QCOMPARE(checked, 1);
+    QVERIFY(unselected);
+    unselected->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QTRY_VERIFY(root()->property("selectedKey").toString() != listBefore);
+    QTRY_VERIFY(unselected->state().checked);
 }
 
 void tst_LibraryWindow::sectionsAndCounts()
@@ -374,8 +402,21 @@ void tst_LibraryWindow::narrowLayoutUsesSectionRow()
     QTRY_COMPARE(m_window->view()->width(), 700);
     QTRY_VERIFY(!item("librarySidebar")->isVisible());
     QVERIFY(item("librarySectionRow")->isVisible());
+
+    // The narrow row's sections read as tabs with the current one checked (#248).
+    QAccessibleInterface* all = QAccessible::queryAccessibleInterface(item("libraryNarrowSection_all"));
+    QAccessibleInterface* recordings =
+        QAccessible::queryAccessibleInterface(item("libraryNarrowSection_recordings"));
+    QVERIFY(all && recordings);
+    QCOMPARE(all->role(), QAccessible::PageTab);
+    QCOMPARE(recordings->role(), QAccessible::PageTab);
+    QVERIFY(all->state().checked);
+    QVERIFY(!recordings->state().checked);
+
     QMetaObject::invokeMethod(item("libraryNarrowSection_recordings"), "clicked");
     QCOMPARE(library()->source(), int(LibraryModel::Recordings));
+    QTRY_VERIFY(recordings->state().checked);
+    QVERIFY(!all->state().checked);
 }
 
 // Review: the narrow layout keeps the smart folders (spec: a Filter menu).

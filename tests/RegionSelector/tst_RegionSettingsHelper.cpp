@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "TextFormattingState.h"
+#include "annotations/AnnotationStyleLabels.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "region/RegionSettingsHelper.h"
@@ -109,6 +110,7 @@ private slots:
     void testLoadTextFormatting_UsesDefaultsWithoutKeys();
     void testShowArrowStyleDropdown_EmitsSelectedStyle();
     void testShowLineStyleDropdown_EmitsSelectedStyle();
+    void testStyleMenusNameEachEntryFromAnnotationStyleLabels();
 
 private:
     QHash<QString, QVariant> m_savedValues;
@@ -244,6 +246,42 @@ void tst_RegionSettingsHelper::testShowLineStyleDropdown_EmitsSelectedStyle()
     actions.at(2)->trigger();
     QCOMPARE(spy.count(), 1);
     QCOMPARE(spy.at(0).at(0).toInt(), static_cast<int>(LineStyle::Dotted));
+}
+
+// Each menu entry is named by AnnotationStyleLabels for the style it emits, so
+// a style added to the menus without a label fails here instead of showing a
+// blank item (and an empty screen reader name on the button) (#248).
+void tst_RegionSettingsHelper::testStyleMenusNameEachEntryFromAnnotationStyleLabels()
+{
+    RegionSettingsHelper helper;
+
+    QMenu arrowMenu;
+    helper.populateArrowStyleMenu(&arrowMenu, LineEndStyle::None);
+    QSignalSpy arrowSpy(&helper, &RegionSettingsHelper::arrowStyleSelected);
+    const auto arrowActions = arrowMenu.actions();
+    QVERIFY(!arrowActions.isEmpty());
+    for (QAction* action : arrowActions) {
+        arrowSpy.clear();
+        action->trigger();
+        QCOMPARE(arrowSpy.count(), 1);
+        const auto style = static_cast<LineEndStyle>(arrowSpy.at(0).at(0).toInt());
+        QVERIFY2(!action->text().isEmpty(), "arrow style menu entry has no name");
+        QCOMPARE(action->text(), AnnotationStyleLabels::arrowStyle(style));
+    }
+
+    QMenu lineMenu;
+    helper.populateLineStyleMenu(&lineMenu, LineStyle::Solid);
+    QSignalSpy lineSpy(&helper, &RegionSettingsHelper::lineStyleSelected);
+    const auto lineActions = lineMenu.actions();
+    QVERIFY(!lineActions.isEmpty());
+    for (QAction* action : lineActions) {
+        lineSpy.clear();
+        action->trigger();
+        QCOMPARE(lineSpy.count(), 1);
+        const auto style = static_cast<LineStyle>(lineSpy.at(0).at(0).toInt());
+        QVERIFY2(!action->text().isEmpty(), "line style menu entry has no name");
+        QCOMPARE(action->text(), AnnotationStyleLabels::lineStyle(style));
+    }
 }
 
 QTEST_MAIN(tst_RegionSettingsHelper)

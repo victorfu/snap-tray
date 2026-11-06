@@ -35,9 +35,8 @@ static QSettings getSettings()
     return SnapTray::getSettings();
 }
 
-// Menu order; the names come from AnnotationStyleLabels (#248), which also
-// gives them to screen readers. QT_TR_NOOP here had no class context, so the
-// names were never translated.
+// Menu order; names come from AnnotationStyleLabels (#248), shared with the
+// screen reader names.
 constexpr LineEndStyle kArrowStyleEntries[] = {
     LineEndStyle::None,
     LineEndStyle::EndArrow,

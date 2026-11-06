@@ -46,6 +46,8 @@ Item {
 
             // Screen readers (#248): the width is only adjustable with the
             // mouse wheel, so offer it as a slider with increase/decrease.
+            // Qt's accessibility value interface reads value, minimumValue,
+            // maximumValue and stepSize from the item for the Slider role.
             readonly property real value: root.currentWidthValue
             readonly property real minimumValue: root.minWidthValue
             readonly property real maximumValue: root.maxWidthValue

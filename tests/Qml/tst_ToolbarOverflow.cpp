@@ -449,6 +449,20 @@ void TestToolbarOverflow::disabledButtonsReadAsUnavailableButKeepTooltips()
     QTRY_VERIFY(hovered.count() > 0);
     QCOMPARE(hovered.last().at(0).toInt(), int(ToolId::Undo));
 
+    // Leaving the disabled button hides its tooltip.
+    QSignalSpy unhovered(toolbar.m_rootItem, SIGNAL(buttonUnhovered()));
+    QVERIFY(unhovered.isValid());
+    QTest::mouseMove(toolbar.m_view, QPoint(1, 1));
+    QTRY_VERIFY(unhovered.count() > 0);
+    QTRY_VERIFY(!hover->property("containsMouse").toBool());
+
+    // Back on the button, then it becomes available with the pointer resting
+    // on it: the layer lets go and the button's own MouseArea takes the hover.
+    QTest::mouseMove(toolbar.m_view, center);
+    QTRY_VERIFY(hover->property("containsMouse").toBool());
+    hovered.clear();
+    unhovered.clear();
+
     // Once available, the button is enabled again and the layer steps aside.
     // The row may be rebuilt, so look both items up again.
     vm.setCanUndo(true);
@@ -471,6 +485,11 @@ void TestToolbarOverflow::disabledButtonsReadAsUnavailableButKeepTooltips()
         // MouseArea.enabled (not Item::isEnabled) decides whether it takes hover.
         return now && !now->state().disabled && layer && !layer->property("enabled").toBool();
     }());
+    QQuickItem* layer = findNamed([&](QQuickItem* node) { return node->objectName() == hoverName; });
+    QVERIFY(layer);
+    QTRY_VERIFY(!layer->property("containsMouse").toBool());
+    QTRY_VERIFY(!hovered.isEmpty());
+    QCOMPARE(hovered.last().at(0).toInt(), int(ToolId::Undo));
     toolbar.hide();
 }
 

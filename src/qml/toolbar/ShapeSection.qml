@@ -97,6 +97,7 @@ Item {
         Accessible.checked: root.shapeFillModeValue === 1
         Accessible.onPressAction: fillBtn.toggleFill()
         Accessible.onToggleAction: fillBtn.toggleFill()
+        // Toggle between 0 (outline) and 1 (filled)
         function toggleFill() {
             if (root.hasViewModel)
                 root.viewModel.handleShapeFillModeSelected(root.shapeFillModeValue === 0 ? 1 : 0)
@@ -126,7 +127,6 @@ Item {
             anchors.fill: parent
             cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
-            // Toggle between 0 (outline) and 1 (filled)
             onClicked: fillBtn.toggleFill()
         }
     }

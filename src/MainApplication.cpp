@@ -1506,8 +1506,14 @@ void MainApplication::updateTrayToolTip()
 #endif
 #ifdef Q_OS_MACOS
     // The status item has only a tooltip; give VoiceOver the same text (#248).
-    SnapTray::setMacTrayAccessibilityLabel(
-        m_trayIcon->toolTip().replace(QLatin1Char('\n'), QStringLiteral(", ")));
+    // Warn once: the recording status updates this every second.
+    static bool warnedNoStatusItem = false;
+    if (!SnapTray::setMacTrayAccessibilityLabel(
+            m_trayIcon->toolTip().replace(QLatin1Char('\n'), QStringLiteral(", ")))
+        && !warnedNoStatusItem) {
+        warnedNoStatusItem = true;
+        qWarning() << "MainApplication: no macOS status item to set the tray accessibility label on";
+    }
 #endif
 }
 
