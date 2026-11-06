@@ -233,6 +233,23 @@ jobs:
         if: always()
         run: sccache --show-stats
 
+      - name: DIAG repeat PinHoverIntegration
+        if: always()
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:QT_ROOT_DIR\bin;$env:PATH"
+          $fails = 0
+          for ($i = 1; $i -le 25; $i++) {
+            $out = & build\tests\PinWindow_PinHoverIntegration.exe liveIndicatorTooltipIsExcluded 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 0) { $fails++; Write-Host "=== RUN $i FAILED ==="; Write-Host $out }
+            elseif ($i -le 2) { Write-Host "=== RUN $i passed ==="; Write-Host $out }
+          }
+          Write-Host "DIAG failures: $fails / 25"
+          for ($i = 1; $i -le 5; $i++) {
+            $out = & build\tests\PinWindow_PinHoverIntegration.exe 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 0) { Write-Host "=== FULL RUN $i FAILED ==="; Write-Host $out }
+          }
+
       - name: Run Tests
         run: ctest --test-dir build --output-on-failure --output-junit "${{ github.workspace }}/build/test-results.xml" -C Release
 

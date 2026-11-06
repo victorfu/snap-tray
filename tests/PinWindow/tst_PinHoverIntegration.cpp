@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QEnterEvent>
 #include <QHelpEvent>
+#include <QCursor>
 #include <QGuiApplication>
 #include <QMenu>
 #include <QScreen>
@@ -209,8 +210,21 @@ void TestPinHoverIntegration::liveIndicatorTooltipIsExcluded()
     const auto restore = qScopeGuard([&] { settings.saveShowHoverControls(savedSetting); });
     settings.saveShowHoverControls(showHoverControls);
     PinWindow window(pixmap(), QPoint(150, 150), nullptr, false, false);
+    // DIAG(flaky-live-tooltip): record events reaching the pin.
+    struct DiagFilter : QObject {
+        QStringList log;
+        bool eventFilter(QObject* o, QEvent* e) override {
+            log << QStringLiteral("%1:%2").arg(o->objectName().isEmpty() ? QString::fromLatin1(o->metaObject()->className()) : o->objectName()).arg(int(e->type()));
+            return false;
+        }
+    } diag;
+    window.installEventFilter(&diag);
     window.show();
     QVERIFY(QTest::qWaitForWindowExposed(&window));
+    qWarning() << "DIAG after expose:" << diag.log.join(' ') << "active" << window.isActiveWindow()
+               << "cursor" << QCursor::pos() << "frame" << window.frameGeometry()
+               << "bar" << (window.m_hoverBar != nullptr);
+    diag.log.clear();
     window.m_isLiveMode = true; // Exercise hints without starting a capture or requesting TCC.
     const QList<WId> excluded = prepareCapture ? window.liveCaptureExcludedWindowIds() : QList<WId>();
     const QPoint dot(PinWindow::kLiveIndicatorMargin + 3, PinWindow::kLiveIndicatorMargin + 3);
@@ -228,7 +242,15 @@ void TestPinHoverIntegration::liveIndicatorTooltipIsExcluded()
         }
     }
     QVERIFY(tooltip);
+    qWarning() << "DIAG after help:" << diag.log.join(' ');
+    diag.log.clear();
+    QTest::qWait(300);
+    qWarning() << "DIAG after wait:" << diag.log.join(' ') << "view" << tooltip->isVisible()
+               << "root" << tooltip->rootObject()->isVisible() << "active" << window.isActiveWindow()
+               << "focusWindow" << QGuiApplication::focusWindow()
+               << "cursor" << QCursor::pos();
     QTRY_VERIFY(tooltip->isVisible() && tooltip->rootObject()->isVisible());
+    window.removeEventFilter(&diag);
     const WId tooltipId = tooltip->winId();
     if (prepareCapture) QVERIFY(excluded.contains(tooltipId));
     QVERIFY(tooltip->flags().testFlag(Qt::WindowTransparentForInput));
