@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-04
+last_modified_at: 2026-11-06
 layout: docs
 title: UI Design Guidelines
 description: Shared visual direction and interaction rules for SnapTray capture tools, editing windows, and libraries.
@@ -106,7 +106,7 @@ Keep the user documentation aligned with actual platform capabilities and the de
 
 ## Rollout boundaries
 
-The first implementation introduces neutral editor surface tokens, a stable editor shell, a scrollable inspector, a separate export popup, explicit choices, mutually exclusive effect selection, named effect lanes, and release-to-commit range dragging. Shared dialog buttons gain keyboard activation and visible focus. Pin, library, settings navigation, and Beautify are still governed by the specification above; this editor change does not claim to redesign those surfaces. The capture/annotation toolbars follow the contract in [Capture toolbar](#capture-toolbar) below (#224).
+The first implementation introduces neutral editor surface tokens, a stable editor shell, a scrollable inspector, a separate export popup, explicit choices, mutually exclusive effect selection, named effect lanes, and release-to-commit range dragging. Shared dialog buttons gain keyboard activation and visible focus. This editor change does not claim to redesign other surfaces. The capture/annotation toolbars follow [Capture toolbar](#capture-toolbar) (#224), pins [Pin window](#pin-window) (#225), the Library [Library](#library) (#226), and settings and Beautify [Settings and Beautify](#settings-and-beautify) (#227).
 
 The remaining product work is tracked by [#221](https://github.com/victorfu/snap-tray/issues/221): capture/annotation action grouping and overflow; pin mode visibility and reset controls; library browsing and project/output distinction; settings information architecture; and shared Beautify presets. Follow-up implementation is tracked in [#224](https://github.com/victorfu/snap-tray/issues/224) (capture/annotation), [#225](https://github.com/victorfu/snap-tray/issues/225) (pin windows), [#226](https://github.com/victorfu/snap-tray/issues/226) (library), and [#227](https://github.com/victorfu/snap-tray/issues/227) (settings/Beautify). Search, favorites, renaming, and batch actions remain candidates.
 
@@ -384,4 +384,73 @@ macOS 27.0.1 / Qt 6.12.0, 2×, generated demo captures.
 cd build
 SNAPTRAY_LIBRARY_DESIGN_DIR=../docs/assets/images/developer/library ./bin/Qml_LibraryEvidence screenshots
 SNAPTRAY_LIBRARY_DESIGN_DIR=../docs/assets/images/developer/library SNAPTRAY_LIBRARY_TRANSLATION=$PWD/snaptray_de.qm ./bin/Qml_LibraryEvidence screenshots:light
+```
+
+## Settings and Beautify
+
+Applies to the Settings window and the Beautify panel (#227). Design: `docs/superpowers/specs/2026-11-06-settings-beautify-design.md`.
+
+### Contract
+
+- **Pages by task:** General, Capture, Pin Windows, Recording, Saving, Text Recognition, Hotkeys. Updates and About come after a divider.
+  - Recording is shown only when `recordingSupported`, and Text Recognition only when `ocrSettingsVisible`.
+  - Pages load on first selection.
+  - The keys are `general`, `capture`, `pins`, `recording`, `saving`, `ocr`, `hotkeys`, `updates`, `about`. `SettingsWindow.selectPage(key)` opens one.
+- **What moved:**
+  - Advanced is split. Capture gets After Capture, Region Selector and Auto Blur. Pin Windows gets Appearance and Steps.
+  - Files and Watermark become Saving.
+  - "Max history entries" becomes **Saving > Library > Screenshots kept in Library**.
+  - Setting keys, managers and stored values are unchanged.
+- **Page header:** every page except About starts with `SettingsPageHeader`, a title and one sentence. The header can hold a page-wide action, such as Hotkeys' **Restore All Defaults**.
+- **Defaults and reset:**
+  - Settings save at once.
+  - Only Hotkeys can reset (per shortcut, and all at once).
+  - Search and per-setting reset are out of scope.
+- **Beautify, results first:**
+  - The panel shows the preview, then **Style**, **Background** and a collapsed **Customize**.
+  - The four styles are Compact, Standard (the defaults), Spacious and Flat. A style sets padding, corners and shadow, and leaves the background and ratio alone. The card matching the current values is chosen; otherwise the caption reads **Custom**.
+  - The background swatches are the eight named gradients, the same as the recording Canvas.
+  - Customize lists Background type, Colors, Padding, Corners, Shadow (the shared `SettingsToggle`), Shadow blur and Aspect ratio, with no colons. It stays open or closed while the panel is reused. When opening it grows the panel, the panel stays on the screen.
+- **Keyboard and names:**
+  - Style cards, swatches, color chips and Customize are Tab stops. Space and Return activate them.
+  - Each has a button role and a name ("Style: Standard", "Background: Ocean"). Cards and swatches also report checked.
+  - A chosen item has a thicker ring as well as the accent colour.
+
+### Acceptance matrix
+
+| Check | macOS | Windows | Ubuntu 22.04 X11 beta |
+| --- | --- | --- | --- |
+| Build and repository tests | `scripts/run-tests.sh` | CI build and tests only | CI build and tests only |
+| Page order, groups, gating, removed pages | `Qml_SettingsWindowFeatureGating` | CI tests only | CI tests only |
+| Former settings reachable on their new page | `Qml_SettingsWindowFeatureGating` | CI tests only | CI tests only |
+| Style and background presets, chosen and Custom states | `Qml_BeautifyPanelBackend`, `Qml_BeautifyPanelQml` | CI tests only | CI tests only |
+| Moved strings keep their translations | `Settings_QmlTranslations` | CI tests only | CI tests only |
+| Ordinary and minimum window, light/dark/German | Evidence below (`Qml_SettingsEvidence`) | Pending manual pass (#238) | Pending manual pass (#238) |
+| Physical DPI scales | 2× only | Pending (#238) | Pending (#238) |
+| Screen reader names | Roles and names set in QML; no VoiceOver session | Pending (Narrator) | Pending (Orca) |
+
+### Evidence
+
+macOS 27.0.1 / Qt 6.12.0, 2×.
+
+![Settings, Capture page](/assets/images/developer/settings/01-settings-capture-light.png)
+
+![Settings, Saving page scrolled to Watermark and Library, dark](/assets/images/developer/settings/02-settings-saving-dark.png)
+
+![Settings at the minimum window size, Pin Windows](/assets/images/developer/settings/03-settings-pins-minimum-light.png)
+
+![Beautify, styles and backgrounds](/assets/images/developer/settings/04-beautify-styles-light.png)
+
+![Beautify, Spacious on Lavender with Customize open, dark](/assets/images/developer/settings/05-beautify-customize-dark.png)
+
+![Settings, Capture page, German](/assets/images/developer/settings/01-settings-capture-light-de.png)
+
+![Beautify, German](/assets/images/developer/settings/04-beautify-styles-light-de.png)
+
+### Regenerating the Settings evidence
+
+```bash
+cd build
+SNAPTRAY_SETTINGS_DESIGN_DIR=../docs/assets/images/developer/settings ./bin/Qml_SettingsEvidence screenshots
+SNAPTRAY_SETTINGS_DESIGN_DIR=../docs/assets/images/developer/settings SNAPTRAY_SETTINGS_TRANSLATION=$PWD/snaptray_de.qm ./bin/Qml_SettingsEvidence screenshots:light
 ```

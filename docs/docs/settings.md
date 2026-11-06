@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-08-25
+last_modified_at: 2026-11-06
 layout: docs
 title: Settings
 seo_title: "SnapTray Settings: Files, OCR, Watermark and Platform-Specific Recording"
@@ -11,42 +11,48 @@ doc_group: workflow
 doc_order: 4
 ---
 
-## Settings tabs
+## Settings pages
 
-OCR and Recording tabs are available on macOS and Windows only. Linux beta hides
-both tabs because those features are not included.
+Pages are grouped by task. Each page starts with a title and a sentence saying
+what it covers. Updates and About sit below a divider.
+
+Recording and Text Recognition are available on macOS and Windows only. Linux
+beta hides both pages because those features are not included.
 
 ### General
 
 Launch at startup, display language, app theme, and CLI install/uninstall.
 
-On macOS, this tab also shows Screen Recording and Accessibility permission status with one-click system settings shortcuts.
+On macOS, this page also shows Screen Recording and Accessibility permission status with one-click system settings shortcuts.
 
-### Hotkeys
+### Capture
 
-Centralized hotkey editor by functional category.
+- **After Capture**: what `After full screen capture` does (copy, save, or open the editor).
+- **Region Selector**: the cursor companion (magnifier) and shortcut hints.
+- **Auto Blur**: blur type and intensity used when Auto Blur hides faces and text.
 
-### Advanced
+### Pin Windows
 
-Region capture magnifier toggle, capture shortcut hints, blur intensity/type, and pin window defaults (opacity, opacity step, zoom step, cache limits).
-
-### Watermark
-
-Watermark image selection, whether it applies to screenshots/recordings, opacity, scale, margin, and position preview.
-
-### OCR
-
-OCR language order and post-recognition behavior.
+Default opacity, **Show controls on hover**, and how much each opacity or zoom step changes.
 
 ### Recording
 
 Frame rate, default output format, preview-first export behavior, audio source/device, and countdown.
 
-### Files
+### Saving
 
-Screenshot and recording folders plus filename format templates.
+- Screenshot and recording folders, and the filename format template.
+- Auto-save and **Remember last folder**: with it on, Region, Pin, Beautify, and Library Save As dialogs reopen in the folder of the last successful manual image save. Auto-save continues to use the Screenshots folder.
+- **Watermark**: the image, whether it applies to screenshots and recordings, opacity, scale, margin, and position, with a preview.
+- **Library**: how many screenshots the Library keeps. When there are more, the oldest are removed from the Library; files you saved stay where they are.
 
-Enable **Remember last folder** to make Region, Pin, Beautify, and Library Save As dialogs reopen in the folder of the last successful manual image save. Auto-save continues to use the Screenshots folder.
+### Text Recognition
+
+OCR language order and post-recognition behavior.
+
+### Hotkeys
+
+Centralized hotkey editor by functional category. Each shortcut can be reset, and **Restore All Defaults** resets them all.
 
 ### Updates
 
@@ -55,6 +61,8 @@ Current version, auto-check interval, last-checked status, and manual check now.
 ### About
 
 App name, version, copyright, author, and website link.
+
+Settings save as soon as you change them. Apart from hotkeys, there is no reset to defaults.
 
 ## Recommended baseline profile
 

@@ -63,6 +63,17 @@ On a narrow screen, less-used buttons move into **More** (⋯), starting with QR
 - Use marker for emphasis, not for dense text.
 - Prefer step badges for procedural screenshots.
 
+## Beautify
+
+**Beautify** on the pin toolbar puts the screenshot on a background, ready to share.
+
+- **Style** sets padding, corners and shadow together: **Compact**, **Standard** (the default), **Spacious** or **Flat** (no shadow, square corners). The chosen style is outlined; after your own changes it reads **Custom**.
+- **Background** offers eight named gradients. A style keeps the background, and a background keeps the style.
+- **Customize** opens the details: background type (solid, linear or radial gradient), colors, padding, corners, shadow, shadow blur and aspect ratio.
+- **Copy** and **Save** remember the look for next time.
+
+The recording editor's **Canvas** uses the same gradients and the same names (Background, Padding, Corners, Shadow, Aspect ratio).
+
 ## Export actions
 
 - `Enter` to pin result
