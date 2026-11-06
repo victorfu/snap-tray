@@ -233,11 +233,6 @@ jobs:
         if: always()
         run: sccache --show-stats
 
-      - name: DIAG repeat PinHoverIntegration
-        if: always()
-        continue-on-error: true
-        run: ctest --test-dir build -C Release -R "^PinWindow_PinHoverIntegration$" --repeat until-fail:30 -V
-
       - name: Run Tests
         run: ctest --test-dir build --output-on-failure --output-junit "${{ github.workspace }}/build/test-results.xml" -C Release
 
@@ -250,3 +245,17 @@ jobs:
             build/test-results.xml
             build/Testing/Temporary/LastTest.log
             build/Testing/Temporary/LastTestsFailed.log
+
+      - name: DIAG repeat PinHoverIntegration
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $passed = 0; $out = ""
+          for ($i = 1; $i -le 60; $i++) {
+            $out = ctest --test-dir build -C Release -R "^PinWindow_PinHoverIntegration$" -V 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 0) { Write-Host "DIAG RUN $i FAILED"; break }
+            $passed++
+          }
+          Write-Host "DIAG passed runs: $passed"
+          $out -split "`n" | Select-String -Pattern "\(lazy\)|FAIL|Totals|Loc:" | ForEach-Object { $_.Line }
