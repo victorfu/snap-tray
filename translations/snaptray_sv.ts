@@ -19,118 +19,6 @@
     </message>
 </context>
 <context>
-    <name>AdvancedSettings</name>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
-        <source>Cursor companion</source>
-        <translation>Markörhjälp</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26" />
-        <source>Off</source>
-        <translation>Av</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27" />
-        <source>Magnifier</source>
-        <translation>Förstoringsglas</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28" />
-        <source>Beaver</source>
-        <translation>Bäver</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
-        <source>Capture</source>
-        <translation>Fångst</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="35" />
-        <source>Show shortcut hints</source>
-        <translation>Visa genvägstips</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="51" />
-        <source>Blur</source>
-        <translation>Oskärpa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="54" />
-        <source>Blur intensity</source>
-        <translation>Oskärpeintensitet:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="62" />
-        <source>Blur type</source>
-        <translation>Oskärpetyp:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="64" />
-        <source>Pixelate</source>
-        <translation>Pixelera</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="65" />
-        <source>Gaussian</source>
-        <translation>Gaussisk</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="71" />
-        <source>Pin Window</source>
-        <translation>Fäst fönster</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="74" />
-        <source>Default opacity</source>
-        <translation>Standardopacitet:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="83" />
-        <source>Opacity step</source>
-        <translation>Opacitetssteg:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="92" />
-        <source>Show controls on hover</source>
-        <translation>Visa kontroller vid hovring</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="98" />
-        <source>Zoom step</source>
-        <translation>Zoomsteg:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="107" />
-        <source>Max history entries</source>
-        <translation>Max antal historikposter</translation>
-    </message>
-    <message>
-        <source>Max cache files</source>
-        <translation>Max cachefiler:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>After full screen capture</source>
-        <translation>Efter helskärmsfångst</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
-        <source>Copy to clipboard</source>
-        <translation>Kopiera till urklipp</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
-        <source>Save to file</source>
-        <translation>Spara till fil</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
-        <source>Open editor</source>
-        <translation>Öppna redigerare</translation>
-    </message>
-</context>
-<context>
     <name>AppImageUpdateDialog</name>
     <message>
         <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="9" />
@@ -223,11 +111,6 @@
         <translation>Träkol</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="191" />
-        <source>Background:</source>
-        <translation>Bakgrund:</translation>
-    </message>
-    <message>
         <source>Solid</source>
         <translation>Enfärgad</translation>
     </message>
@@ -240,62 +123,139 @@
         <translation>Radiell gradient</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="202" />
-        <source>Colors:</source>
-        <translation>Färger:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="244" />
-        <source>Padding:</source>
-        <translation>Inre marginal:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="258" />
-        <source>Corners:</source>
-        <translation>Hörn:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="271" />
-        <source>Ratio:</source>
-        <translation>Förhållande:</translation>
-    </message>
-    <message>
         <source>Auto</source>
         <translation>Automatiskt</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="79" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="97" />
         <source>Beautify</source>
         <translation>Försköna</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="282" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="585" />
         <source>Shadow</source>
         <translation>Skugga</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="323" />
-        <source>  Blur:</source>
-        <translation>  Oskärpa:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="626" />
         <source>Copy</source>
         <translation>Kopiera</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="348" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="632" />
         <source>Save</source>
         <translation>Spara</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="355" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="121" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="639" />
         <source>Close</source>
         <translation>Stäng</translation>
     </message>
     <message>
         <source>Select Color</source>
         <translation>Välj färg</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="187" />
+        <source>Style</source>
+        <translation>Stil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="203" />
+        <source>Custom</source>
+        <translation>Anpassad</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="231" />
+        <source>Style: %1</source>
+        <translation>Stil: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <source>Background</source>
+        <translation>Bakgrund</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="382" />
+        <source>Background: %1</source>
+        <translation>Bakgrund: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="424" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="456" />
+        <source>Customize</source>
+        <translation>Anpassa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="426" />
+        <source>Hide padding, corners, shadow and other details</source>
+        <translation>Dölj marginal, hörn, skugga och andra detaljer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="427" />
+        <source>Show padding, corners, shadow and other details</source>
+        <translation>Visa marginal, hörn, skugga och andra detaljer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="490" />
+        <source>Background type</source>
+        <translation>Bakgrundstyp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="500" />
+        <source>Colors</source>
+        <translation>Färger</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="508" />
+        <source>First color</source>
+        <translation>Första färg</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="509" />
+        <source>Second color</source>
+        <translation>Andra färg</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="559" />
+        <source>Padding</source>
+        <translation>Marginal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="572" />
+        <source>Corners</source>
+        <translation>Hörn</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="595" />
+        <source>Shadow blur</source>
+        <translation>Skuggoskärpa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="610" />
+        <source>Aspect ratio</source>
+        <translation>Bildförhållande</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="40" />
+        <source>Compact</source>
+        <translation>Kompakt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
+        <source>Standard</source>
+        <translation>Standard</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
+        <source>Spacious</source>
+        <translation>Luftig</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
+        <source>Flat</source>
+        <translation>Platt</translation>
     </message>
 </context>
 <context>
@@ -304,6 +264,104 @@
         <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="34" />
         <source>Laser Pointer</source>
         <translation>Laserpekare</translation>
+    </message>
+</context>
+<context>
+    <name>CaptureSettings</name>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
+        <source>Capture</source>
+        <translation>Fångst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="23" />
+        <source>What happens when you take a screenshot, and how the region selector helps you aim.</source>
+        <translation>Vad som händer när du tar en skärmbild och hur områdesväljaren hjälper dig att sikta.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="26" />
+        <source>After Capture</source>
+        <translation>Efter fångst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="30" />
+        <source>After full screen capture</source>
+        <translation>Efter helskärmsfångst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="32" />
+        <source>Copy to clipboard</source>
+        <translation>Kopiera till urklipp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
+        <source>Save to file</source>
+        <translation>Spara till fil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
+        <source>Open editor</source>
+        <translation>Öppna redigerare</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="40" />
+        <source>Region Selector</source>
+        <translation>Områdesväljare</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="44" />
+        <source>Cursor companion</source>
+        <translation>Markörhjälp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
+        <source>Off</source>
+        <translation>Av</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="47" />
+        <source>Magnifier</source>
+        <translation>Förstoringsglas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
+        <source>Beaver</source>
+        <translation>Bäver</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="56" />
+        <source>Show shortcut hints</source>
+        <translation>Visa genvägstips</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="62" />
+        <source>Auto Blur</source>
+        <translation>Automatisk oskärpa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="63" />
+        <source>How faces and text are hidden when you use Auto Blur.</source>
+        <translation>Hur ansikten och text döljs när du använder automatisk oskärpa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="68" />
+        <source>Blur type</source>
+        <translation>Oskärpetyp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="70" />
+        <source>Pixelate</source>
+        <translation>Pixelera</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="71" />
+        <source>Gaussian</source>
+        <translation>Gaussisk</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="79" />
+        <source>Blur intensity</source>
+        <translation>Oskärpeintensitet</translation>
     </message>
 </context>
 <context>
@@ -408,71 +466,6 @@
     </message>
 </context>
 <context>
-    <name>FilesSettings</name>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
-        <source>Save Locations</source>
-        <translation>Sparplatser</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="24" />
-        <source>Screenshots</source>
-        <translation>Skärmbilder:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="30" />
-        <source>Recordings</source>
-        <translation>Inspelningar:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="36" />
-        <source>Filename Format</source>
-        <translation>Filnamnsformat</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="39" />
-        <source>Template</source>
-        <translation>Mall:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="74" />
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation>Token: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="84" />
-        <source>Preview: </source>
-        <translation>Förhandsvisning: </translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="92" />
-        <source>Save Behavior</source>
-        <translation>Sparbeteende</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="95" />
-        <source>Auto-save screenshots</source>
-        <translation>Spara skärmbilder automatiskt</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
-        <source>Remember last folder</source>
-        <translation>Kom ihåg senaste mappen</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
-        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
-        <translation>När en bild sparas manuellt öppnas dialogrutan i mappen för den senaste lyckade sparningen. Automatisk sparning använder fortfarande skärmbildsmappen ovan.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="109" />
-        <source>Auto-save recordings</source>
-        <translation>Spara inspelningar automatiskt</translation>
-    </message>
-</context>
-<context>
     <name>FloatingToolbar</name>
     <message>
         <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="241" />
@@ -483,99 +476,109 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
 <context>
     <name>GeneralSettings</name>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="36" />
         <source>Start on login</source>
         <translation>Starta vid inloggning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="39" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="44" />
         <source>Language</source>
         <translation>Språk</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="42" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="47" />
         <source>Display language</source>
         <translation>Visningsspråk:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="53" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
         <source>Appearance</source>
         <translation>Utseende</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="56" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="61" />
         <source>App theme</source>
         <translation>Apptema</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="63" />
         <source>Dark</source>
         <translation>Mörkt</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="59" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="64" />
         <source>Light</source>
         <translation>Ljust</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
         <source>Permissions</source>
         <translation>Behörigheter</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="77" />
         <source>Screen Recording</source>
         <translation>Skärminspelning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="73" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
         <source>Required for capturing screenshots and recording your screen.</source>
         <translation>Krävs för att ta skärmbilder och spela in skärmen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
         <source>Accessibility</source>
         <translation>Tillgänglighet:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="81" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="86" />
         <source>Required for global hotkeys and window detection.</source>
         <translation>Krävs för globala snabbtangenter och fönsteridentifiering.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="87" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
         <source>Command Line</source>
         <translation>Kommandoradsgränssnitt</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="97" />
         <source>CLI Status</source>
         <translation>CLI-status</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="116" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
         <source>Please wait...</source>
         <translation>Vänta...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="118" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="123" />
         <source>'snaptray' command is available</source>
         <translation>Kommandot 'snaptray' är tillgängligt i terminalen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="119" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="124" />
         <source>'snaptray' command is not installed</source>
         <translation>Kommandot 'snaptray' är inte installerat</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
         <source>Uninstall CLI</source>
         <translation>Avinstallera CLI</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
         <source>Install CLI</source>
         <translation>Installera CLI</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <source>General</source>
+        <translation>Allmänt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="32" />
+        <source>Startup, language, theme and the permissions SnapTray needs.</source>
+        <translation>Start, språk, tema och de behörigheter SnapTray behöver.</translation>
     </message>
 </context>
 <context>
@@ -585,7 +588,7 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <translation>Historik</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1278" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1299" />
         <location filename="../src/PinWindow.cpp" line="1430" />
         <source>Open History Folder</source>
         <translation>Öppna historikmapp</translation>
@@ -599,7 +602,7 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <translation>Skärmbilder som du tar i SnapTray visas här.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="877" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="895" />
         <source>No results</source>
         <translation>Inga resultat</translation>
     </message>
@@ -608,11 +611,13 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <translation>Prova en annan smart mapp.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1091" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1109" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1313" />
         <source>Smart Folders</source>
         <translation>Smarta mappar</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1310" />
         <source>All Screenshots</source>
         <translation>Alla skärmbilder</translation>
     </message>
@@ -635,32 +640,32 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <translation>Kan spelas upp igen</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="874" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="892" />
         <source>No editable projects</source>
         <translation>Inga redigerbara projekt</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="876" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="894" />
         <source>Nothing here yet</source>
         <translation>Här finns inget ännu</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="879" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="897" />
         <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
         <translation>Slå på Behåll redigerbara projekt i Inställningar &gt; Inspelning för att redigera inspelningar igen efter att du sparat.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="881" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="899" />
         <source>Screenshots you capture in SnapTray, and recordings you keep as editable projects, will appear here.</source>
         <translation>Skärmbilder du tar i SnapTray och inspelningar du behåller som redigerbara projekt visas här.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="882" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="900" />
         <source>Try a different section or smart folder.</source>
         <translation>Prova en annan sektion eller smart mapp.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1056" />
         <source>SnapTray</source>
         <translation>SnapTray</translation>
     </message>
@@ -684,7 +689,7 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <translation>Spara som</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1483" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1550" />
         <source>Delete</source>
         <translation>Ta bort</translation>
     </message>
@@ -752,73 +757,73 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <translation>Ta bort projekt...</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="597" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="615" />
         <source>Preview unavailable</source>
         <translation>Förhandsvisning ej tillgänglig</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1051" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1248" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1069" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1256" />
         <source>Library</source>
         <translation>Bibliotek</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1224" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1268" />
         <source>Editable project selected</source>
         <translation>Redigerbart projekt markerat</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1225" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1269" />
         <source>Screenshot selected</source>
         <translation>Skärmbild markerad</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1226" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1270" />
         <source>Nothing selected</source>
         <translation>Inget markerat</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1289" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1356" />
         <source>Sort</source>
         <translation>Sortera</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1381" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1448" />
         <source>Grid view</source>
         <translation>Rutnätsvy</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1395" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1462" />
         <source>List view</source>
         <translation>Listvy</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1428" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
         <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>Projekt behåller hela inspelningen, även det du har gjort suddigt eller beskurit bort.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1430" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1497" />
         <source>Projects not changed for %1 days are removed automatically.</source>
         <translation>Projekt som inte ändrats på %1 dagar tas bort automatiskt.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1432" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1499" />
         <source>Keeping new projects is off.</source>
         <translation>Behåll nya projekt är avstängt.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1466" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1533" />
         <source>Delete this editable project? Its full recording and edits are removed. The file you saved from it stays.</source>
         <translation>Ta bort det här redigerbara projektet? Hela inspelningen och redigeringarna tas bort. Filen du sparade från det finns kvar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1467" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1534" />
         <source>Delete this screenshot from the Library? Files you saved from it stay.</source>
         <translation>Ta bort den här skärmbilden från biblioteket? Filer du sparade från den finns kvar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1563" />
         <source>Cancel</source>
         <translation>Avbryt</translation>
     </message>
@@ -871,50 +876,55 @@ Filstorlek: %3</translation>
     <name>HotkeySettings</name>
     <message>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="53" />
-        <source>Keyboard Shortcuts</source>
-        <translation>Tangentbordsgenvägar</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="65" />
         <source>Restore All Defaults</source>
         <translation>Återställ alla standardvärden</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="151" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="162" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="186" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="137" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="148" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="172" />
         <source>Not Set</source>
         <translation>Inte inställd</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="181" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="167" />
         <source>Conflict</source>
         <translation>Konflikt</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="183" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="169" />
         <source>Active</source>
         <translation>Aktiv</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="185" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="171" />
         <source>Disabled</source>
         <translation>Inaktiverad</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="208" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="194" />
         <source>Edit</source>
         <translation>Redigera</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="213" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="199" />
         <source>Clear</source>
         <translation>Rensa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="218" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="204" />
         <source>Reset</source>
         <translation>Återställ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="48" />
+        <source>Hotkeys</source>
+        <translation>Snabbtangenter</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
+        <source>Keyboard shortcuts for every task, grouped by what they do.</source>
+        <translation>Kortkommandon för varje uppgift, grupperade efter funktion.</translation>
     </message>
 </context>
 <context>
@@ -1460,7 +1470,7 @@ Filstorlek: %3</translation>
 <context>
     <name>OCRSettings</name>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="57" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="62" />
         <source>Select and order the languages for OCR recognition.
 English is always included and cannot be removed.</source>
         <translation>Välj och ordna språken för OCR-igenkänning.
@@ -1471,59 +1481,69 @@ Engelska ingår alltid och kan inte tas bort.</translation>
         <translation>Läser in språk...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="92" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="97" />
         <source>Preparing OCR languages...</source>
         <translation>Förbereder OCR-språk...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="105" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="110" />
         <source>The settings window is ready. OCR languages are loading in the background.</source>
         <translation>Inställningsfönstret är redo. OCR-språk läses in i bakgrunden.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="107" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="112" />
         <source>No OCR languages are available on this device right now.</source>
         <translation>Inga OCR-språk är tillgängliga på den här enheten just nu.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="108" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="113" />
         <source>OCR is not available on this device.</source>
         <translation>OCR är inte tillgängligt på den här enheten.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="137" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="142" />
         <source>Available Languages</source>
         <translation>Tillgängliga språk</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="217" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="222" />
         <source>Add selected language</source>
         <translation>Lägg till valt språk</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="231" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="236" />
         <source>Remove selected language</source>
         <translation>Ta bort valt språk</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="250" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="255" />
         <source>Selected Languages</source>
         <translation>Valda språk</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="372" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
         <source>After OCR Recognition</source>
         <translation>Efter OCR-igenkänning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="382" />
         <source>Copy text directly to clipboard</source>
         <translation>Kopiera text direkt till urklipp</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="378" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
         <source>Show editor to review and edit text</source>
         <translation>Visa redigerare för att granska och redigera text</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="55" />
+        <source>Text Recognition</source>
+        <translation>Textigenkänning</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="56" />
+        <source>Which languages are recognized in screenshots, and what happens with the text.</source>
+        <translation>Vilka språk som känns igen i skärmbilder och vad som händer med texten.</translation>
     </message>
 </context>
 <context>
@@ -2247,6 +2267,49 @@ Storlek: %2</translation>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Spara förskönad skärmbild</translation>
+    </message>
+</context>
+<context>
+    <name>PinWindowSettings</name>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
+        <source>Pin Windows</source>
+        <translation>Fästa fönster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="23" />
+        <source>How new pins look, and how much each zoom or opacity step changes.</source>
+        <translation>Hur nya fästen ser ut och hur mycket varje zoom- eller opacitetssteg ändrar.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="26" />
+        <source>Appearance</source>
+        <translation>Utseende</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="30" />
+        <source>Default opacity</source>
+        <translation>Standardopacitet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="40" />
+        <source>Show controls on hover</source>
+        <translation>Visa kontroller vid hovring</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="45" />
+        <source>Steps</source>
+        <translation>Steg</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="49" />
+        <source>Opacity step</source>
+        <translation>Opacitetssteg</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="59" />
+        <source>Zoom step</source>
+        <translation>Zoomsteg</translation>
     </message>
 </context>
 <context>
@@ -5349,37 +5412,37 @@ Storlek: %2</translation>
 <context>
     <name>RecordingSettings</name>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="251" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="256" />
         <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
         <translation>Bekräfta skärm, mikrofon och systemljud före varje inspelning. När av startar inspelningen direkt med de här inställningarna.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="250" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="255" />
         <source>Show setup before recording</source>
         <translation>Visa inställningar före inspelning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
         <source>Frame rate</source>
         <translation>Bildfrekvens</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="94" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
         <source>10 FPS</source>
         <translation>10 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="95" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
         <source>15 FPS</source>
         <translation>15 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
         <source>24 FPS</source>
         <translation>24 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
         <source>30 FPS</source>
         <translation>30 FPS</translation>
     </message>
@@ -5388,17 +5451,17 @@ Storlek: %2</translation>
         <translation>Utdataformat:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="109" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>MP4 (H.264)</source>
         <translation>MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="115" />
         <source>GIF</source>
         <translation>GIF</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
         <source>WebP</source>
         <translation>WebP</translation>
     </message>
@@ -5423,42 +5486,42 @@ Bäst för korta klipp och delning på webben.
 Ljud stöds inte för GIF-inspelningar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="159" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="164" />
         <source>Audio</source>
         <translation>Ljud</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="162" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
         <source>Record audio</source>
         <translation>Spela in ljud</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="176" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
         <source>Source</source>
         <translation>Källa:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="179" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="184" />
         <source>Microphone</source>
         <translation>Mikrofon</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="180" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="185" />
         <source>System Audio</source>
         <translation>Systemljud</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
         <source>Both (Mixed)</source>
         <translation>Båda (Mixat)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="106" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
         <source>Default output format</source>
         <translation>Standardformat för export</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="123" />
         <source>Recording quality</source>
         <translation>Inspelningskvalitet</translation>
     </message>
@@ -5498,27 +5561,27 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <translation>MP4 spelar in direkt med H.264-video och valfritt ljud.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="166" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
         <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
         <translation>Ljud fångas i den tillfälliga MP4-inspelningen. Endast MP4-export behåller ljudet.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="168" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="173" />
         <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
         <translation>Ljud är bara tillgängligt för direkt MP4-inspelning eller när Visa förhandsvisning är aktiverat.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="213" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="218" />
         <source>Loading audio devices...</source>
         <translation>Laddar ljudenheter...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="225" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="230" />
         <source>The recording page is ready. Input devices are loading in the background.</source>
         <translation>Inspelningssidan är redo. Inmatningsenheter laddas i bakgrunden.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="236" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="241" />
         <source>Input device</source>
         <translation>Inmatningsenhet</translation>
     </message>
@@ -5536,77 +5599,77 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <translation>Låt det här vara på för att trimma eller exportera efter inspelning. Förhandsvisningsinspelningar fångas alltid först som MP4.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="355" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="360" />
         <source>Countdown</source>
         <translation>Nedräkning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="358" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="363" />
         <source>Show countdown</source>
         <translation>Visa nedräkning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="364" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
         <source>Duration</source>
         <translation>Nedräkningens längd:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="366" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="371" />
         <source>1 second</source>
         <translation>1 sekund</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="367" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
         <source>2 seconds</source>
         <translation>2 sekunder</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="368" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="373" />
         <source>3 seconds</source>
         <translation>3 sekunder</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="374" />
         <source>4 seconds</source>
         <translation>4 sekunder</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="370" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="375" />
         <source>5 seconds</source>
         <translation>5 sekunder</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="130" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="135" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>Kvaliteten på den sparade videon. Med förhandsgranskning på spelas inspelningar in i hög kvalitet och konverteras till denna kvalitet när du sparar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="268" />
         <source>All keys, including typed text</source>
         <translation>Alla tangenter, även skriven text</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="273" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="278" />
         <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
         <translation>För kortkommandotips i förhandsvisningen. Tangenterna stannar med den tillfälliga inspelningen och raderas med den; de finns aldrig i den sparade filen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="279" />
         <source>Not available on this system yet</source>
         <translation>Inte tillgängligt på det här systemet ännu</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="261" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="266" />
         <source>Off</source>
         <translation>Av</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="258" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
         <source>Record keys</source>
         <translation>Spela in tangenter</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="262" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="267" />
         <source>Shortcuts only</source>
         <translation>Endast kortkommandon</translation>
     </message>
@@ -5631,79 +5694,89 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <translation>90 dagar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="332" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
         <source>Keep editable projects</source>
         <translation>Behåll redigerbara projekt</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="342" />
         <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
         <translation>Behåll inspelningen och dina ändringar efter att du sparat, så att du kan ändra och exportera den igen från inspelningsbiblioteket. Projekt behåller hela skärminspelningen, pekaren, tangenterna och ljudspåren, även det du har gjort suddigt eller beskurit bort, och tar diskutrymme.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="345" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="350" />
         <source>Delete projects not changed for</source>
         <translation>Ta bort projekt som inte ändrats på</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="284" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="289" />
         <source>After recording</source>
         <translation>Efter inspelning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="292" />
         <source>Edit in the preview</source>
         <translation>Redigera i förhandsvisningen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="288" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="293" />
         <source>Save right away</source>
         <translation>Spara direkt</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="300" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="305" />
         <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
         <translation>Snabbläge: filen sparas i sitt slutliga format så fort du stoppar, utan förhandsvisning och utan redigeringsspår.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="309" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
         <source>After saving</source>
         <translation>Efter att ha sparat</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="312" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="317" />
         <source>Do nothing</source>
         <translation>Gör ingenting</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="318" />
         <source>Copy the file</source>
         <translation>Kopiera filen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="319" />
         <source>Show in folder</source>
         <translation>Visa i mapp</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="299" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="304" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Redigeringsläge: trimma, beskär och lägg till effekter i förhandsvisningen och spara sedan. Inspelningar med förhandsvisning spelas alltid in som MP4 först.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
         <source>Choose an area before recording</source>
         <translation>Välj ett område före inspelning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="324" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="329" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>Dra över skärmen för att välja vad som ska spelas in. Redigeringsläget spelar fortfarande in hela skärmen och öppnar förhandsvisningen beskuren till området, så att du kan ändra det; snabbläget spelar bara in området.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="343" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>Projekt behålls när du sparar från förhandsvisningen. Slå på Visa förhandsvisning för att använda dem.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <source>Recording</source>
+        <translation>Inspelning</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
+        <source>How screen recordings start, what they capture, and what happens when you stop.</source>
+        <translation>Hur skärminspelningar startar, vad de spelar in och vad som händer när du stoppar.</translation>
     </message>
 </context>
 <context>
@@ -5854,6 +5927,161 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <location filename="../src/region/RegionSettingsHelper.cpp" line="345" />
         <source>Default</source>
         <translation>Standard</translation>
+    </message>
+</context>
+<context>
+    <name>SavingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="24" />
+        <source>Saving</source>
+        <translation>Sparande</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="25" />
+        <source>Where screenshots and recordings are saved, how they are named, and the watermark added to them.</source>
+        <translation>Var skärmbilder och inspelningar sparas, hur de namnges och vattenstämpeln som läggs till.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="28" />
+        <source>Save Locations</source>
+        <translation>Sparplatser</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="32" />
+        <source>Screenshots</source>
+        <translation>Skärmbilder</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="38" />
+        <source>Recordings</source>
+        <translation>Inspelningar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="44" />
+        <source>Filename Format</source>
+        <translation>Filnamnsformat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="47" />
+        <source>Template</source>
+        <translation>Mall</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="82" />
+        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
+        <translation>Token: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="92" />
+        <source>Preview: </source>
+        <translation>Förhandsvisning: </translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="100" />
+        <source>Save Behavior</source>
+        <translation>Sparbeteende</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
+        <source>Auto-save screenshots</source>
+        <translation>Spara skärmbilder automatiskt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="110" />
+        <source>Remember last folder</source>
+        <translation>Kom ihåg senaste mappen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="111" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>När en bild sparas manuellt öppnas dialogrutan i mappen för den senaste lyckade sparningen. Automatisk sparning använder fortfarande skärmbildsmappen ovan.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="117" />
+        <source>Auto-save recordings</source>
+        <translation>Spara inspelningar automatiskt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
+        <source>Watermark</source>
+        <translation>Vattenstämpel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="127" />
+        <source>Apply to images</source>
+        <translation>Tillämpa på bilder</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="133" />
+        <source>Apply to recordings</source>
+        <translation>Tillämpa på inspelningar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="152" />
+        <source>Image</source>
+        <translation>Bild</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="158" />
+        <source>Scale</source>
+        <translation>Skala</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="167" />
+        <source>Opacity</source>
+        <translation>Opacitet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="176" />
+        <source>Margin</source>
+        <translation>Marginal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="185" />
+        <source>Position</source>
+        <translation>Placering</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="187" />
+        <source>Top-Left</source>
+        <translation>Uppe till vänster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
+        <source>Top-Right</source>
+        <translation>Uppe till höger</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="189" />
+        <source>Bottom-Left</source>
+        <translation>Nere till vänster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="190" />
+        <source>Bottom-Right</source>
+        <translation>Nere till höger</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="221" />
+        <source>No image</source>
+        <translation>Ingen bild</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="232" />
+        <source>Library</source>
+        <translation>Bibliotek</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="236" />
+        <source>Screenshots kept in Library</source>
+        <translation>Skärmbilder kvar i biblioteket</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
+        <source>When there are more, the oldest are removed from the Library. Files you saved stay where they are.</source>
+        <translation>När det finns fler tas de äldsta bort från biblioteket. Filer du har sparat ligger kvar där de är.</translation>
     </message>
 </context>
 <context>
@@ -6094,61 +6322,53 @@ Ljud stöds inte för GIF-inspelningar.</translation>
 <context>
     <name>SettingsSidebar</name>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="23" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
         <source>General</source>
         <translation>Allmänt</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
         <source>Hotkeys</source>
         <translation>Snabbtangenter</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
-        <source>Advanced</source>
-        <translation>Avancerat</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
-        <source>Watermark</source>
-        <translation>Vattenstämpel</translation>
-    </message>
-    <message>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="29" />
-        <source>OCR</source>
-        <translation>OCR</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="32" />
         <source>Recording</source>
         <translation>Inspelning</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="34" />
-        <source>Files</source>
-        <translation>Filer</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
         <source>Updates</source>
         <translation>Uppdateringar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="37" />
         <source>About</source>
         <translation>Om</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
+        <source>Capture</source>
+        <translation>Fångst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
+        <source>Pin Windows</source>
+        <translation>Fästa fönster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="31" />
+        <source>Saving</source>
+        <translation>Sparande</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
+        <source>Text Recognition</source>
+        <translation>Textigenkänning</translation>
     </message>
 </context>
 <context>
     <name>SettingsWindow</name>
-    <message>
-        <source>Cancel</source>
-        <translation>Avbryt</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation>Spara</translation>
-    </message>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
@@ -6327,7 +6547,7 @@ Den kan användas av ett annat program.</translation>
         <translation>Historik</translation>
     </message>
     <message>
-        <location filename="../src/qml/QmlHistoryWindow.cpp" line="121" />
+        <location filename="../src/qml/QmlHistoryWindow.cpp" line="124" />
         <source>Library</source>
         <translation>Bibliotek</translation>
     </message>
@@ -6965,127 +7185,74 @@ Den kan användas av ett annat program.</translation>
 <context>
     <name>UpdatesSettings</name>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="30" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="35" />
         <source>Version</source>
         <translation>Version</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="33" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="38" />
         <source>Current Version</source>
         <translation>Aktuell version</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="58" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="63" />
         <source>Automatic Updates</source>
         <translation>Automatiska uppdateringar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="61" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="66" />
         <source>Auto-check updates</source>
         <translation>Automatisk koll</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="68" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
         <source>Check frequency</source>
         <translation>Kontrollfrekvens</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="70" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
         <source>Every day</source>
         <translation>Varje dag</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="71" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="76" />
         <source>Every 3 days</source>
         <translation>Var 3:e dag</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="72" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
         <source>Every week</source>
         <translation>Varje vecka</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
         <source>Every 2 weeks</source>
         <translation>Varannan vecka</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="74" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
         <source>Every month</source>
         <translation>Varje månad</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
         <source>Checking...</source>
         <translation>Kontrollerar...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
         <source>Check Now</source>
         <translation>Kontrollera nu</translation>
     </message>
-</context>
-<context>
-    <name>WatermarkSettings</name>
     <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="23" />
-        <source>Apply to images</source>
-        <translation>Tillämpa på bilder</translation>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="31" />
+        <source>Updates</source>
+        <translation>Uppdateringar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="29" />
-        <source>Apply to recordings</source>
-        <translation>Tillämpa på inspelningar</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="48" />
-        <source>Image</source>
-        <translation>Bild:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="54" />
-        <source>Scale</source>
-        <translation>Skala:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="63" />
-        <source>Opacity</source>
-        <translation>Opacitet</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="72" />
-        <source>Margin</source>
-        <translation>Marginal:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="81" />
-        <source>Position</source>
-        <translation>Placering</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="83" />
-        <source>Top-Left</source>
-        <translation>Uppe till vänster</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="84" />
-        <source>Top-Right</source>
-        <translation>Uppe till höger</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="85" />
-        <source>Bottom-Left</source>
-        <translation>Nere till vänster</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="86" />
-        <source>Bottom-Right</source>
-        <translation>Nere till höger</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="117" />
-        <source>No image</source>
-        <translation>Ingen bild</translation>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="32" />
+        <source>Your version, and how SnapTray checks for new ones.</source>
+        <translation>Din version och hur SnapTray söker efter nya.</translation>
     </message>
 </context>
 <context>

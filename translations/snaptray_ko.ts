@@ -19,118 +19,6 @@
     </message>
 </context>
 <context>
-    <name>AdvancedSettings</name>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
-        <source>Cursor companion</source>
-        <translation>커서 보조 표시</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26" />
-        <source>Off</source>
-        <translation>끔</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27" />
-        <source>Magnifier</source>
-        <translation>돋보기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28" />
-        <source>Beaver</source>
-        <translation>비버</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
-        <source>Capture</source>
-        <translation>캡처</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="35" />
-        <source>Show shortcut hints</source>
-        <translation>바로가기 힌트 표시</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="51" />
-        <source>Blur</source>
-        <translation>흐림</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="54" />
-        <source>Blur intensity</source>
-        <translation>흐림 강도:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="62" />
-        <source>Blur type</source>
-        <translation>흐림 유형:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="64" />
-        <source>Pixelate</source>
-        <translation>픽셀화</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="65" />
-        <source>Gaussian</source>
-        <translation>가우시안</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="71" />
-        <source>Pin Window</source>
-        <translation>핀 창</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="74" />
-        <source>Default opacity</source>
-        <translation>기본 불투명도:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="83" />
-        <source>Opacity step</source>
-        <translation>불투명도 단계:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="92" />
-        <source>Show controls on hover</source>
-        <translation>마우스를 올리면 컨트롤 표시</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="98" />
-        <source>Zoom step</source>
-        <translation>확대/축소 단계:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="107" />
-        <source>Max history entries</source>
-        <translation>최대 기록 항목 수</translation>
-    </message>
-    <message>
-        <source>Max cache files</source>
-        <translation>최대 캐시 파일 수:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>After full screen capture</source>
-        <translation>전체 화면 캡처 후 동작</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
-        <source>Copy to clipboard</source>
-        <translation>클립보드에 복사</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
-        <source>Save to file</source>
-        <translation>파일로 저장</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
-        <source>Open editor</source>
-        <translation>편집기 열기</translation>
-    </message>
-</context>
-<context>
     <name>AppImageUpdateDialog</name>
     <message>
         <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="9" />
@@ -223,11 +111,6 @@
         <translation>차콜</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="191" />
-        <source>Background:</source>
-        <translation>배경:</translation>
-    </message>
-    <message>
         <source>Solid</source>
         <translation>단색</translation>
     </message>
@@ -240,62 +123,139 @@
         <translation>방사형 그라데이션</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="202" />
-        <source>Colors:</source>
-        <translation>색상:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="244" />
-        <source>Padding:</source>
-        <translation>여백:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="258" />
-        <source>Corners:</source>
-        <translation>모서리:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="271" />
-        <source>Ratio:</source>
-        <translation>비율:</translation>
-    </message>
-    <message>
         <source>Auto</source>
         <translation>자동</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="79" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="97" />
         <source>Beautify</source>
         <translation>꾸미기</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="282" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="585" />
         <source>Shadow</source>
         <translation>그림자</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="323" />
-        <source>  Blur:</source>
-        <translation>  블러:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="626" />
         <source>Copy</source>
         <translation>복사</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="348" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="632" />
         <source>Save</source>
         <translation>저장</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="355" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="121" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="639" />
         <source>Close</source>
         <translation>닫기</translation>
     </message>
     <message>
         <source>Select Color</source>
         <translation>색상 선택</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="187" />
+        <source>Style</source>
+        <translation>스타일</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="203" />
+        <source>Custom</source>
+        <translation>사용자 지정</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="231" />
+        <source>Style: %1</source>
+        <translation>스타일: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <source>Background</source>
+        <translation>배경</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="382" />
+        <source>Background: %1</source>
+        <translation>배경: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="424" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="456" />
+        <source>Customize</source>
+        <translation>세부 조정</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="426" />
+        <source>Hide padding, corners, shadow and other details</source>
+        <translation>여백, 모서리, 그림자 및 기타 세부 설정 숨기기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="427" />
+        <source>Show padding, corners, shadow and other details</source>
+        <translation>여백, 모서리, 그림자 및 기타 세부 설정 표시</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="490" />
+        <source>Background type</source>
+        <translation>배경 유형</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="500" />
+        <source>Colors</source>
+        <translation>색상</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="508" />
+        <source>First color</source>
+        <translation>첫 번째 색상</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="509" />
+        <source>Second color</source>
+        <translation>두 번째 색상</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="559" />
+        <source>Padding</source>
+        <translation>여백</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="572" />
+        <source>Corners</source>
+        <translation>모서리</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="595" />
+        <source>Shadow blur</source>
+        <translation>그림자 흐림</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="610" />
+        <source>Aspect ratio</source>
+        <translation>화면 비율</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="40" />
+        <source>Compact</source>
+        <translation>컴팩트</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
+        <source>Standard</source>
+        <translation>표준</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
+        <source>Spacious</source>
+        <translation>여유</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
+        <source>Flat</source>
+        <translation>플랫</translation>
     </message>
 </context>
 <context>
@@ -304,6 +264,104 @@
         <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="34" />
         <source>Laser Pointer</source>
         <translation>레이저 포인터</translation>
+    </message>
+</context>
+<context>
+    <name>CaptureSettings</name>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
+        <source>Capture</source>
+        <translation>캡처</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="23" />
+        <source>What happens when you take a screenshot, and how the region selector helps you aim.</source>
+        <translation>스크린샷을 찍을 때의 동작과 영역 선택기로 정확하게 선택하는 방법.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="26" />
+        <source>After Capture</source>
+        <translation>캡처 후</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="30" />
+        <source>After full screen capture</source>
+        <translation>전체 화면 캡처 후 동작</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="32" />
+        <source>Copy to clipboard</source>
+        <translation>클립보드에 복사</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
+        <source>Save to file</source>
+        <translation>파일로 저장</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
+        <source>Open editor</source>
+        <translation>편집기 열기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="40" />
+        <source>Region Selector</source>
+        <translation>영역 선택기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="44" />
+        <source>Cursor companion</source>
+        <translation>커서 보조 표시</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
+        <source>Off</source>
+        <translation>끔</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="47" />
+        <source>Magnifier</source>
+        <translation>돋보기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
+        <source>Beaver</source>
+        <translation>비버</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="56" />
+        <source>Show shortcut hints</source>
+        <translation>바로가기 힌트 표시</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="62" />
+        <source>Auto Blur</source>
+        <translation>자동 블러</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="63" />
+        <source>How faces and text are hidden when you use Auto Blur.</source>
+        <translation>자동 블러를 사용할 때 얼굴과 텍스트를 가리는 방식.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="68" />
+        <source>Blur type</source>
+        <translation>흐림 유형</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="70" />
+        <source>Pixelate</source>
+        <translation>픽셀화</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="71" />
+        <source>Gaussian</source>
+        <translation>가우시안</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="79" />
+        <source>Blur intensity</source>
+        <translation>흐림 강도</translation>
     </message>
 </context>
 <context>
@@ -408,71 +466,6 @@
     </message>
 </context>
 <context>
-    <name>FilesSettings</name>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
-        <source>Save Locations</source>
-        <translation>저장 위치</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="24" />
-        <source>Screenshots</source>
-        <translation>스크린샷:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="30" />
-        <source>Recordings</source>
-        <translation>녹화:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="36" />
-        <source>Filename Format</source>
-        <translation>파일 이름 형식</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="39" />
-        <source>Template</source>
-        <translation>템플릿:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="74" />
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation>토큰: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-날짜 토큰: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, 또는 {date}</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="84" />
-        <source>Preview: </source>
-        <translation>미리보기: </translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="92" />
-        <source>Save Behavior</source>
-        <translation>저장 동작</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="95" />
-        <source>Auto-save screenshots</source>
-        <translation>스크린샷 자동 저장</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
-        <source>Remember last folder</source>
-        <translation>마지막 폴더 기억</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
-        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
-        <translation>이미지를 수동으로 저장할 때 마지막으로 저장에 성공한 폴더에서 대화 상자가 열립니다. 자동 저장은 계속 위의 스크린샷 폴더를 사용합니다.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="109" />
-        <source>Auto-save recordings</source>
-        <translation>녹화 자동 저장</translation>
-    </message>
-</context>
-<context>
     <name>FloatingToolbar</name>
     <message>
         <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="241" />
@@ -483,99 +476,109 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>GeneralSettings</name>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="36" />
         <source>Start on login</source>
         <translation>로그인 시 시작</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="39" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="44" />
         <source>Language</source>
         <translation>언어</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="42" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="47" />
         <source>Display language</source>
         <translation>표시 언어:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="53" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
         <source>Appearance</source>
         <translation>외관</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="56" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="61" />
         <source>App theme</source>
         <translation>앱 테마</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="63" />
         <source>Dark</source>
         <translation>다크</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="59" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="64" />
         <source>Light</source>
         <translation>라이트</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
         <source>Permissions</source>
         <translation>권한</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="77" />
         <source>Screen Recording</source>
         <translation>화면 녹화</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="73" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
         <source>Required for capturing screenshots and recording your screen.</source>
         <translation>스크린샷 캡처 및 화면 녹화에 필요합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
         <source>Accessibility</source>
         <translation>손쉬운 사용:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="81" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="86" />
         <source>Required for global hotkeys and window detection.</source>
         <translation>전역 단축키 및 창 감지에 필요합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="87" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
         <source>Command Line</source>
         <translation>명령줄 인터페이스</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="97" />
         <source>CLI Status</source>
         <translation>CLI 상태</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="116" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
         <source>Please wait...</source>
         <translation>잠시만 기다려 주세요...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="118" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="123" />
         <source>'snaptray' command is available</source>
         <translation>'snaptray' 명령을 터미널에서 사용할 수 있습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="119" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="124" />
         <source>'snaptray' command is not installed</source>
         <translation>'snaptray' 명령이 설치되어 있지 않습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
         <source>Uninstall CLI</source>
         <translation>CLI 제거</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
         <source>Install CLI</source>
         <translation>CLI 설치</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <source>General</source>
+        <translation>일반</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="32" />
+        <source>Startup, language, theme and the permissions SnapTray needs.</source>
+        <translation>시작, 언어, 테마 및 SnapTray에 필요한 권한.</translation>
     </message>
 </context>
 <context>
@@ -585,7 +588,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>기록</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1278" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1299" />
         <location filename="../src/PinWindow.cpp" line="1430" />
         <source>Open History Folder</source>
         <translation>기록 폴더 열기</translation>
@@ -599,7 +602,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>SnapTray에서 캡처한 스크린샷이 여기에 표시됩니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="877" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="895" />
         <source>No results</source>
         <translation>결과 없음</translation>
     </message>
@@ -608,11 +611,13 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>다른 스마트 폴더를 시도해 보세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1091" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1109" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1313" />
         <source>Smart Folders</source>
         <translation>스마트 폴더</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1310" />
         <source>All Screenshots</source>
         <translation>모든 스크린샷</translation>
     </message>
@@ -635,32 +640,32 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>다시 재생 가능</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="874" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="892" />
         <source>No editable projects</source>
         <translation>편집 가능한 프로젝트 없음</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="876" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="894" />
         <source>Nothing here yet</source>
         <translation>아직 항목이 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="879" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="897" />
         <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
         <translation>저장한 뒤 녹화를 다시 편집하려면 설정 &gt; 녹화에서 편집 가능한 프로젝트 보관을 켜세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="881" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="899" />
         <source>Screenshots you capture in SnapTray, and recordings you keep as editable projects, will appear here.</source>
         <translation>SnapTray에서 찍은 스크린샷과 편집 가능한 프로젝트로 보관한 녹화가 여기에 표시됩니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="882" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="900" />
         <source>Try a different section or smart folder.</source>
         <translation>다른 섹션이나 스마트 폴더를 선택해 보세요.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1056" />
         <source>SnapTray</source>
         <translation>SnapTray</translation>
     </message>
@@ -684,7 +689,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>다른 이름으로 저장</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1483" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1550" />
         <source>Delete</source>
         <translation>삭제</translation>
     </message>
@@ -752,73 +757,73 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>프로젝트 삭제...</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="597" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="615" />
         <source>Preview unavailable</source>
         <translation>미리 보기를 사용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1051" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1248" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1069" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1256" />
         <source>Library</source>
         <translation>보관함</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1224" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1268" />
         <source>Editable project selected</source>
         <translation>편집 가능한 프로젝트 선택됨</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1225" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1269" />
         <source>Screenshot selected</source>
         <translation>스크린샷 선택됨</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1226" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1270" />
         <source>Nothing selected</source>
         <translation>선택한 항목 없음</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1289" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1356" />
         <source>Sort</source>
         <translation>정렬</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1381" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1448" />
         <source>Grid view</source>
         <translation>격자 보기</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1395" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1462" />
         <source>List view</source>
         <translation>목록 보기</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1428" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
         <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>프로젝트에는 흐리게 하거나 잘라 낸 부분을 포함한 전체 녹화가 남습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1430" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1497" />
         <source>Projects not changed for %1 days are removed automatically.</source>
         <translation>%1일 동안 변경되지 않은 프로젝트는 자동으로 삭제됩니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1432" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1499" />
         <source>Keeping new projects is off.</source>
         <translation>새 프로젝트 보관이 꺼져 있습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1466" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1533" />
         <source>Delete this editable project? Its full recording and edits are removed. The file you saved from it stays.</source>
         <translation>이 편집 가능한 프로젝트를 삭제할까요? 전체 녹화와 편집 내용이 삭제됩니다. 저장한 파일은 남습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1467" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1534" />
         <source>Delete this screenshot from the Library? Files you saved from it stay.</source>
         <translation>이 스크린샷을 보관함에서 삭제할까요? 저장한 파일은 남습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1563" />
         <source>Cancel</source>
         <translation>취소</translation>
     </message>
@@ -871,50 +876,55 @@ File size: %3</source>
     <name>HotkeySettings</name>
     <message>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="53" />
-        <source>Keyboard Shortcuts</source>
-        <translation>키보드 단축키</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="65" />
         <source>Restore All Defaults</source>
         <translation>모든 기본값 복원</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="151" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="162" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="186" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="137" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="148" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="172" />
         <source>Not Set</source>
         <translation>설정되지 않음</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="181" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="167" />
         <source>Conflict</source>
         <translation>충돌</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="183" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="169" />
         <source>Active</source>
         <translation>활성</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="185" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="171" />
         <source>Disabled</source>
         <translation>비활성</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="208" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="194" />
         <source>Edit</source>
         <translation>편집</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="213" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="199" />
         <source>Clear</source>
         <translation>지우기</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="218" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="204" />
         <source>Reset</source>
         <translation>재설정</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="48" />
+        <source>Hotkeys</source>
+        <translation>단축키</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
+        <source>Keyboard shortcuts for every task, grouped by what they do.</source>
+        <translation>모든 작업의 키보드 단축키를 기능별로 묶었습니다.</translation>
     </message>
 </context>
 <context>
@@ -1459,7 +1469,7 @@ File size: %3</source>
 <context>
     <name>OCRSettings</name>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="57" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="62" />
         <source>Select and order the languages for OCR recognition.
 English is always included and cannot be removed.</source>
         <translation>OCR 인식을 위한 언어를 선택하고 순서를 정하세요.
@@ -1470,59 +1480,69 @@ English is always included and cannot be removed.</source>
         <translation>언어 불러오는 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="92" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="97" />
         <source>Preparing OCR languages...</source>
         <translation>OCR 언어 준비 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="105" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="110" />
         <source>The settings window is ready. OCR languages are loading in the background.</source>
         <translation>설정 창이 준비되었습니다. OCR 언어는 백그라운드에서 불러오는 중입니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="107" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="112" />
         <source>No OCR languages are available on this device right now.</source>
         <translation>현재 이 기기에서 사용할 수 있는 OCR 언어가 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="108" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="113" />
         <source>OCR is not available on this device.</source>
         <translation>이 기기에서는 OCR을 사용할 수 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="137" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="142" />
         <source>Available Languages</source>
         <translation>사용 가능한 언어</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="217" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="222" />
         <source>Add selected language</source>
         <translation>선택한 언어 추가</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="231" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="236" />
         <source>Remove selected language</source>
         <translation>선택한 언어 제거</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="250" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="255" />
         <source>Selected Languages</source>
         <translation>선택된 언어</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="372" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
         <source>After OCR Recognition</source>
         <translation>OCR 인식 후</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="382" />
         <source>Copy text directly to clipboard</source>
         <translation>텍스트를 클립보드에 바로 복사</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="378" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
         <source>Show editor to review and edit text</source>
         <translation>편집기를 표시하여 텍스트 확인 및 편집</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="55" />
+        <source>Text Recognition</source>
+        <translation>텍스트 인식</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="56" />
+        <source>Which languages are recognized in screenshots, and what happens with the text.</source>
+        <translation>스크린샷에서 인식할 언어와 인식된 텍스트의 처리 방식.</translation>
     </message>
 </context>
 <context>
@@ -2246,6 +2266,49 @@ Size: %2</source>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>꾸민 스크린샷 저장</translation>
+    </message>
+</context>
+<context>
+    <name>PinWindowSettings</name>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
+        <source>Pin Windows</source>
+        <translation>핀 창</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="23" />
+        <source>How new pins look, and how much each zoom or opacity step changes.</source>
+        <translation>새 핀의 모양과 확대/축소 또는 불투명도 한 단계의 변화량.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="26" />
+        <source>Appearance</source>
+        <translation>모양</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="30" />
+        <source>Default opacity</source>
+        <translation>기본 불투명도</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="40" />
+        <source>Show controls on hover</source>
+        <translation>마우스를 올리면 컨트롤 표시</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="45" />
+        <source>Steps</source>
+        <translation>단계</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="49" />
+        <source>Opacity step</source>
+        <translation>불투명도 단계</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="59" />
+        <source>Zoom step</source>
+        <translation>확대/축소 단계</translation>
     </message>
 </context>
 <context>
@@ -5345,37 +5408,37 @@ Size: %2</source>
 <context>
     <name>RecordingSettings</name>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="251" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="256" />
         <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
         <translation>녹화할 때마다 화면, 마이크, 시스템 오디오를 확인합니다. 끄면 이 설정으로 바로 녹화를 시작합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="250" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="255" />
         <source>Show setup before recording</source>
         <translation>녹화 전에 설정 표시</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
         <source>Frame rate</source>
         <translation>프레임 속도</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="94" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
         <source>10 FPS</source>
         <translation>10 프레임/초</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="95" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
         <source>15 FPS</source>
         <translation>15 프레임/초</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
         <source>24 FPS</source>
         <translation>24 프레임/초</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
         <source>30 FPS</source>
         <translation>30 프레임/초</translation>
     </message>
@@ -5384,17 +5447,17 @@ Size: %2</source>
         <translation>출력 형식:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="109" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>MP4 (H.264)</source>
         <translation>MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="115" />
         <source>GIF</source>
         <translation>GIF</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
         <source>WebP</source>
         <translation>WebP</translation>
     </message>
@@ -5419,42 +5482,42 @@ Audio is not supported for GIF recordings.</source>
 GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="159" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="164" />
         <source>Audio</source>
         <translation>오디오</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="162" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
         <source>Record audio</source>
         <translation>오디오 녹음</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="176" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
         <source>Source</source>
         <translation>소스:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="179" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="184" />
         <source>Microphone</source>
         <translation>마이크</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="180" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="185" />
         <source>System Audio</source>
         <translation>시스템 오디오</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
         <source>Both (Mixed)</source>
         <translation>둘 다 (혼합)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="106" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
         <source>Default output format</source>
         <translation>기본 출력 형식</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="123" />
         <source>Recording quality</source>
         <translation>녹화 품질</translation>
     </message>
@@ -5494,27 +5557,27 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <translation>MP4는 H.264 비디오와 선택적 오디오로 직접 녹화합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="166" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
         <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
         <translation>오디오는 임시 MP4 녹화에 캡처됩니다. 오디오를 유지하는 것은 MP4 내보내기뿐입니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="168" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="173" />
         <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
         <translation>오디오는 MP4로 직접 녹화하거나 "미리보기 표시"가 켜져 있을 때만 사용할 수 있습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="213" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="218" />
         <source>Loading audio devices...</source>
         <translation>오디오 장치 불러오는 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="225" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="230" />
         <source>The recording page is ready. Input devices are loading in the background.</source>
         <translation>녹화 페이지가 준비되었습니다. 입력 장치를 백그라운드에서 불러오는 중입니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="236" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="241" />
         <source>Input device</source>
         <translation>입력 장치</translation>
     </message>
@@ -5532,77 +5595,77 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <translation>녹화 후 자르기 또는 내보내기를 하려면 이 옵션을 켜 두세요. 미리보기 녹화는 항상 먼저 MP4로 캡처됩니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="355" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="360" />
         <source>Countdown</source>
         <translation>카운트다운</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="358" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="363" />
         <source>Show countdown</source>
         <translation>카운트다운 표시</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="364" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
         <source>Duration</source>
         <translation>카운트다운 시간:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="366" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="371" />
         <source>1 second</source>
         <translation>1초</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="367" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
         <source>2 seconds</source>
         <translation>2초</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="368" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="373" />
         <source>3 seconds</source>
         <translation>3초</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="374" />
         <source>4 seconds</source>
         <translation>4초</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="370" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="375" />
         <source>5 seconds</source>
         <translation>5초</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="130" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="135" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>저장되는 동영상의 화질입니다. 미리보기가 켜져 있으면 고화질로 녹화한 뒤 저장할 때 이 화질로 변환합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="268" />
         <source>All keys, including typed text</source>
         <translation>입력한 글자를 포함한 모든 키</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="273" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="278" />
         <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
         <translation>미리보기의 단축키 표시용입니다. 키는 임시 녹화와 함께 보관되고 함께 삭제되며, 저장된 파일에는 들어가지 않습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="279" />
         <source>Not available on this system yet</source>
         <translation>이 시스템에서는 아직 사용할 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="261" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="266" />
         <source>Off</source>
         <translation>끔</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="258" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
         <source>Record keys</source>
         <translation>키 기록</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="262" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="267" />
         <source>Shortcuts only</source>
         <translation>단축키만</translation>
     </message>
@@ -5627,79 +5690,89 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <translation>90일</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="332" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
         <source>Keep editable projects</source>
         <translation>편집 가능한 프로젝트 보관</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="342" />
         <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
         <translation>저장한 뒤에도 녹화와 편집 내용을 보관해 녹화 보관함에서 다시 변경하고 내보낼 수 있습니다. 프로젝트에는 흐리게 하거나 잘라 낸 부분을 포함한 전체 화면 녹화와 포인터, 키, 오디오 트랙이 남으며 디스크 공간을 사용합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="345" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="350" />
         <source>Delete projects not changed for</source>
         <translation>다음 기간 동안 변경되지 않은 프로젝트 삭제</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="284" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="289" />
         <source>After recording</source>
         <translation>녹화 후</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="292" />
         <source>Edit in the preview</source>
         <translation>미리보기에서 편집</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="288" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="293" />
         <source>Save right away</source>
         <translation>바로 저장</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="300" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="305" />
         <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
         <translation>빠른 모드: 중지하는 즉시 최종 형식으로 저장되며, 미리보기와 편집용 트랙이 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="309" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
         <source>After saving</source>
         <translation>저장 후</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="312" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="317" />
         <source>Do nothing</source>
         <translation>아무것도 안 함</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="318" />
         <source>Copy the file</source>
         <translation>파일 복사</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="319" />
         <source>Show in folder</source>
         <translation>폴더에서 보기</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="299" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="304" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>편집 모드: 미리보기에서 다듬기, 자르기, 효과 추가를 한 뒤 저장합니다. 미리보기 녹화는 항상 먼저 MP4로 녹화됩니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
         <source>Choose an area before recording</source>
         <translation>녹화 전에 영역 선택</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="324" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="329" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>화면 위를 드래그하여 녹화할 대상을 고릅니다. 편집 모드는 계속 전체 화면을 녹화하고 영역으로 잘라 낸 미리보기를 열어 나중에 바꿀 수 있습니다. 빠른 모드는 영역만 녹화합니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="343" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>프로젝트는 미리보기에서 저장할 때 보관됩니다. 사용하려면 미리보기 표시를 켜세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <source>Recording</source>
+        <translation>녹화</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
+        <source>How screen recordings start, what they capture, and what happens when you stop.</source>
+        <translation>화면 녹화의 시작 방법, 녹화 대상, 중지 후 동작.</translation>
     </message>
 </context>
 <context>
@@ -5850,6 +5923,161 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <location filename="../src/region/RegionSettingsHelper.cpp" line="345" />
         <source>Default</source>
         <translation>기본값</translation>
+    </message>
+</context>
+<context>
+    <name>SavingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="24" />
+        <source>Saving</source>
+        <translation>저장</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="25" />
+        <source>Where screenshots and recordings are saved, how they are named, and the watermark added to them.</source>
+        <translation>스크린샷과 녹화가 저장되는 위치, 이름 지정 방식, 추가되는 워터마크.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="28" />
+        <source>Save Locations</source>
+        <translation>저장 위치</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="32" />
+        <source>Screenshots</source>
+        <translation>스크린샷</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="38" />
+        <source>Recordings</source>
+        <translation>녹화</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="44" />
+        <source>Filename Format</source>
+        <translation>파일 이름 형식</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="47" />
+        <source>Template</source>
+        <translation>템플릿</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="82" />
+        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
+        <translation>토큰: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+날짜 토큰: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, 또는 {date}</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="92" />
+        <source>Preview: </source>
+        <translation>미리보기: </translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="100" />
+        <source>Save Behavior</source>
+        <translation>저장 동작</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
+        <source>Auto-save screenshots</source>
+        <translation>스크린샷 자동 저장</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="110" />
+        <source>Remember last folder</source>
+        <translation>마지막 폴더 기억</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="111" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>이미지를 수동으로 저장할 때 마지막으로 저장에 성공한 폴더에서 대화 상자가 열립니다. 자동 저장은 계속 위의 스크린샷 폴더를 사용합니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="117" />
+        <source>Auto-save recordings</source>
+        <translation>녹화 자동 저장</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
+        <source>Watermark</source>
+        <translation>워터마크</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="127" />
+        <source>Apply to images</source>
+        <translation>이미지에 적용</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="133" />
+        <source>Apply to recordings</source>
+        <translation>녹화에 적용</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="152" />
+        <source>Image</source>
+        <translation>이미지</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="158" />
+        <source>Scale</source>
+        <translation>크기 조절</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="167" />
+        <source>Opacity</source>
+        <translation>불투명도</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="176" />
+        <source>Margin</source>
+        <translation>여백</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="185" />
+        <source>Position</source>
+        <translation>위치</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="187" />
+        <source>Top-Left</source>
+        <translation>왼쪽 위</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
+        <source>Top-Right</source>
+        <translation>오른쪽 위</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="189" />
+        <source>Bottom-Left</source>
+        <translation>왼쪽 아래</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="190" />
+        <source>Bottom-Right</source>
+        <translation>오른쪽 아래</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="221" />
+        <source>No image</source>
+        <translation>이미지 없음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="232" />
+        <source>Library</source>
+        <translation>보관함</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="236" />
+        <source>Screenshots kept in Library</source>
+        <translation>보관함에 유지할 스크린샷 수</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
+        <source>When there are more, the oldest are removed from the Library. Files you saved stay where they are.</source>
+        <translation>이보다 많으면 가장 오래된 항목부터 보관함에서 제거됩니다. 저장한 파일은 그대로 남습니다.</translation>
     </message>
 </context>
 <context>
@@ -6090,61 +6318,53 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
 <context>
     <name>SettingsSidebar</name>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="23" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
         <source>General</source>
         <translation>일반</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
         <source>Hotkeys</source>
         <translation>단축키</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
-        <source>Advanced</source>
-        <translation>고급</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
-        <source>Watermark</source>
-        <translation>워터마크</translation>
-    </message>
-    <message>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="29" />
-        <source>OCR</source>
-        <translation>OCR</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="32" />
         <source>Recording</source>
         <translation>녹화</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="34" />
-        <source>Files</source>
-        <translation>파일</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
         <source>Updates</source>
         <translation>업데이트</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="37" />
         <source>About</source>
         <translation>정보</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
+        <source>Capture</source>
+        <translation>캡처</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
+        <source>Pin Windows</source>
+        <translation>핀 창</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="31" />
+        <source>Saving</source>
+        <translation>저장</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
+        <source>Text Recognition</source>
+        <translation>텍스트 인식</translation>
     </message>
 </context>
 <context>
     <name>SettingsWindow</name>
-    <message>
-        <source>Cancel</source>
-        <translation>취소</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation>저장</translation>
-    </message>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
@@ -6323,7 +6543,7 @@ It may be in use by another application.</source>
         <translation>기록</translation>
     </message>
     <message>
-        <location filename="../src/qml/QmlHistoryWindow.cpp" line="121" />
+        <location filename="../src/qml/QmlHistoryWindow.cpp" line="124" />
         <source>Library</source>
         <translation>보관함</translation>
     </message>
@@ -6961,127 +7181,74 @@ It may be in use by another application.</source>
 <context>
     <name>UpdatesSettings</name>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="30" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="35" />
         <source>Version</source>
         <translation>버전</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="33" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="38" />
         <source>Current Version</source>
         <translation>현재 버전</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="58" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="63" />
         <source>Automatic Updates</source>
         <translation>자동 업데이트</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="61" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="66" />
         <source>Auto-check updates</source>
         <translation>자동으로 업데이트 확인</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="68" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
         <source>Check frequency</source>
         <translation>확인 빈도</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="70" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
         <source>Every day</source>
         <translation>매일</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="71" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="76" />
         <source>Every 3 days</source>
         <translation>3일마다</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="72" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
         <source>Every week</source>
         <translation>매주</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
         <source>Every 2 weeks</source>
         <translation>2주마다</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="74" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
         <source>Every month</source>
         <translation>매월</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
         <source>Checking...</source>
         <translation>확인 중...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
         <source>Check Now</source>
         <translation>지금 확인</translation>
     </message>
-</context>
-<context>
-    <name>WatermarkSettings</name>
     <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="23" />
-        <source>Apply to images</source>
-        <translation>이미지에 적용</translation>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="31" />
+        <source>Updates</source>
+        <translation>업데이트</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="29" />
-        <source>Apply to recordings</source>
-        <translation>녹화에 적용</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="48" />
-        <source>Image</source>
-        <translation>이미지:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="54" />
-        <source>Scale</source>
-        <translation>크기 조절:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="63" />
-        <source>Opacity</source>
-        <translation>불투명도</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="72" />
-        <source>Margin</source>
-        <translation>여백:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="81" />
-        <source>Position</source>
-        <translation>위치</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="83" />
-        <source>Top-Left</source>
-        <translation>왼쪽 위</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="84" />
-        <source>Top-Right</source>
-        <translation>오른쪽 위</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="85" />
-        <source>Bottom-Left</source>
-        <translation>왼쪽 아래</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="86" />
-        <source>Bottom-Right</source>
-        <translation>오른쪽 아래</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="117" />
-        <source>No image</source>
-        <translation>이미지 없음</translation>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="32" />
+        <source>Your version, and how SnapTray checks for new ones.</source>
+        <translation>현재 버전과 SnapTray가 새 버전을 확인하는 방식.</translation>
     </message>
 </context>
 <context>
