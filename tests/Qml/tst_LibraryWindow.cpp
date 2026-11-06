@@ -77,6 +77,7 @@ private slots:
     void narrowLayoutReachesSmartFolders();
     void reopeningClearsPendingDelete();
     void openingInPreviewCancelsPendingDelete();
+    void cancelledDeleteReturnsFocus();
 
 private:
     QQuickItem* item(const char* name) const;
@@ -365,6 +366,36 @@ void tst_LibraryWindow::openingInPreviewCancelsPendingDelete()
     QVERIFY(item("libraryConfirmStrip")->isVisible());
     m_window->setOpenProjectDir(m_project);
     QTRY_VERIFY(!item("libraryConfirmStrip")->isVisible());
+    QVERIFY(QFileInfo::exists(m_project));
+}
+
+// Review: a selection or section change that drops the question also takes
+// keyboard focus back from the hidden Delete button, so Return opens the new
+// selection instead of confirming nothing.
+void tst_LibraryWindow::cancelledDeleteReturnsFocus()
+{
+    auto* rootItem = qobject_cast<QQuickItem*>(root());
+    QVERIFY(rootItem);
+
+    select(m_project);
+    click("libraryAction_deleteProject");
+    QTRY_VERIFY(item("libraryConfirmDelete")->hasActiveFocus());
+    select(m_savedProject);
+    QVERIFY(!item("libraryConfirmStrip")->isVisible());
+    QVERIFY(!item("libraryConfirmDelete")->hasActiveFocus());
+    QVERIFY(rootItem->hasActiveFocus());
+    QSignalSpy open(m_window.get(), &QmlHistoryWindow::openProjectRequested);
+    QTest::keyClick(m_window->view(), Qt::Key_Return);
+    QCOMPARE(open.count(), 1);
+    QCOMPARE(open.first().first().toString(), m_savedProject);
+
+    // Changing sections does the same.
+    select(m_project);
+    click("libraryAction_deleteProject");
+    QTRY_VERIFY(item("libraryConfirmDelete")->hasActiveFocus());
+    QMetaObject::invokeMethod(item("librarySection_screenshots"), "clicked");
+    QVERIFY(!item("libraryConfirmStrip")->isVisible());
+    QVERIFY(rootItem->hasActiveFocus());
     QVERIFY(QFileInfo::exists(m_project));
 }
 

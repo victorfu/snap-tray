@@ -221,10 +221,21 @@ Item {
         root.forceActiveFocus()
     }
 
+    // Every path that drops the question (a new selection, section or smart
+    // folder, a rebuild, a project opened in the preview) only clears
+    // confirmKey. Take focus back from the hidden strip so Return opens the
+    // selection instead of reaching its Delete button.
+    onConfirmingChanged: {
+        if (!confirming && (confirmDeleteButton.activeFocus || confirmCancelButton.activeFocus))
+            root.forceActiveFocus()
+    }
+
     // A project opened in the preview cannot be deleted: drop the question.
     onSelectedBusyChanged: if (selectedBusy && confirming) confirmKey = ""
 
     function confirmDelete() {
+        if (!confirming)
+            return
         if (selectedKind === kindRecording && selectedBusy) {
             cancelDelete()
             return
@@ -1547,6 +1558,7 @@ Item {
                         }
 
                         HistoryActionButton {
+                            id: confirmCancelButton
                             objectName: "libraryConfirmCancel"
                             textLabel: qsTr("Cancel")
                             activeFocusOnTab: true
