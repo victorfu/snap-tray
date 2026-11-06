@@ -2921,7 +2921,11 @@ Item {
                     // Saving under a saved name updates that style; renaming to one is refused.
                     readonly property bool nameTaken: naming && renamingIndex >= 0
                                                       && backend.frameStyleNameTaken(frameStyleName.text, renamingIndex)
+                    // A new name needs a free place; a saved name is updated in place.
+                    readonly property bool wouldNotFit: naming && renamingIndex < 0 && backend.frameStylesFull
+                                                        && !backend.frameStyleNameTaken(frameStyleName.text, -1)
                     readonly property bool canSave: naming && frameStyleName.text.trim().length > 0 && !nameTaken
+                                                    && !wouldNotFit
 
                     function startNaming(index) {
                         renamingIndex = index
@@ -3077,6 +3081,19 @@ Item {
                         color: SemanticTokens.statusError
                         font.pixelSize: SemanticTokens.fontSizeSmall
                         font.family: SemanticTokens.fontFamily
+                    }
+                    // The list can fill up from Beautify while a name is typed here.
+                    Text {
+                        objectName: "previewAppearanceStyleNameFull"
+                        width: parent.width
+                        visible: frameStyles.wouldNotFit
+                        text: qsTr("You can keep up to %1 saved styles. Delete one to save another.").arg(backend.maxFrameStyles)
+                        wrapMode: Text.WordWrap
+                        color: SemanticTokens.statusError
+                        font.pixelSize: SemanticTokens.fontSizeSmall
+                        font.family: SemanticTokens.fontFamily
+                        Accessible.role: Accessible.AlertMessage
+                        Accessible.name: text
                     }
                 }
                 Flow {

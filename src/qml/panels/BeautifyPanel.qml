@@ -29,6 +29,11 @@ Item {
     readonly property bool nameTaken: root.namingStyle && root.renamingIndex >= 0 && root.backend
         ? root.backend.customStyleNameTaken(styleNameInput.text, root.renamingIndex)
         : false
+    // A new name needs a free place (the list is shared with other panels and
+    // the recording editor); a saved name is updated in place.
+    readonly property bool wouldNotFit: root.namingStyle && root.renamingIndex < 0 && root.backend
+        ? root.backend.customStylesFull && !root.backend.customStyleNameTaken(styleNameInput.text, -1)
+        : false
 
     function startNamingStyle() {
         if (!root.backend || root.backend.customStylesFull)
@@ -52,7 +57,7 @@ Item {
         styleNameInput.selectAll()
     }
 
-    // Returns false (field stays open) when a rename is refused.
+    // Returns false (field stays open) when a save or rename is refused.
     function finishNamingStyle(save) {
         if (save && root.backend && styleNameInput.text.trim().length > 0) {
             root.committingName = true
@@ -60,7 +65,7 @@ Item {
                 ? root.backend.renameCustomStyle(root.renamingIndex, styleNameInput.text)
                 : root.backend.saveCustomStyle(styleNameInput.text)
             root.committingName = false
-            if (!ok && root.renamingIndex >= 0)
+            if (!ok)
                 return false
         }
         var renamed = root.renamingIndex
@@ -396,7 +401,7 @@ Item {
                 objectName: "beautifyStyleNameSave"
                 text: root.renamingIndex >= 0 ? qsTr("Rename") : qsTr("Save")
                 primary: true
-                enabled: styleNameInput.text.trim().length > 0 && !root.nameTaken
+                enabled: styleNameInput.text.trim().length > 0 && !root.nameTaken && !root.wouldNotFit
                 onClicked: root.finishNamingStyle(true)
             }
 
@@ -413,6 +418,22 @@ Item {
             visible: root.nameTaken
             height: visible ? implicitHeight : 0
             text: qsTr("Another saved style already has this name.")
+            color: SemanticTokens.statusError
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            wrapMode: Text.Wrap
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: text
+        }
+
+        Text {
+            objectName: "beautifyStyleNameFull"
+            width: parent.width
+            visible: root.wouldNotFit
+            height: visible ? implicitHeight : 0
+            text: root.backend
+                ? qsTr("You can keep up to %1 saved styles. Delete one to save another.").arg(root.backend.maxCustomStyles)
+                : ""
             color: SemanticTokens.statusError
             font.pixelSize: SemanticTokens.fontSizeCaption
             font.family: SemanticTokens.fontFamily

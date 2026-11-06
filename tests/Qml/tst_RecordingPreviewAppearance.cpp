@@ -383,6 +383,25 @@ void tst_RecordingPreviewAppearance::savedStylesInThePanel()
     QTRY_VERIFY(customSwatch->property("chosen").toBool());
     QCOMPARE(backend.appearanceGradientPreset(), int(SnapTray::RecordingAppearance::kCustomGradient));
     QCOMPARE(backend.appearanceGradientStart(), custom.gradientStart);
+
+    // The list fills up from Beautify while a name is typed: Save is off and
+    // says why, and a saved name (an update) can still be saved.
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleSave"), "clicked"));
+    QTRY_VERIFY(item(view, "previewAppearanceStyleNameRow")->isVisible());
+    QVERIFY(!item(view, "previewAppearanceStyleNameFull")->isVisible());
+    while (!SnapTray::FrameStyleLibrary::instance().isFull()) {
+        const int n = SnapTray::FrameStyleLibrary::instance().count();
+        QVERIFY(SnapTray::FrameStyleLibrary::instance().save(QStringLiteral("Beautify %1").arg(n),
+                                                             SnapTray::FrameStyle()));
+    }
+    name->setProperty("text", QStringLiteral("Brand new"));
+    QTRY_VERIFY(item(view, "previewAppearanceStyleNameFull")->isVisible());
+    QVERIFY(!item(view, "previewAppearanceStyleNameSave")->isEnabled());
+    name->setProperty("text", QStringLiteral("own GRADIENT"));
+    QTRY_VERIFY(!item(view, "previewAppearanceStyleNameFull")->isVisible());
+    QVERIFY(item(view, "previewAppearanceStyleNameSave")->isEnabled());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleNameCancel"), "clicked"));
+    QTRY_VERIFY(!item(view, "previewAppearanceStyleNameRow")->isVisible());
     backend.requestDiscard();
 }
 
