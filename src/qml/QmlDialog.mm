@@ -250,6 +250,7 @@ void QmlDialog::placeView(const QPoint& topLeft)
         screen = m_view->screen() ? m_view->screen() : QGuiApplication::primaryScreen();
     }
     m_placedAt = screen ? keptInsideBounds(topLeft, m_view->size(), screen->availableGeometry()) : topLeft;
+    m_placedSize = m_view->size();
     m_view->setPosition(m_placedAt);
 }
 
@@ -259,8 +260,14 @@ void QmlDialog::keepViewOnScreen()
         return;
     }
 
-    // Moved since it was placed: the user's place is kept, only on screen.
-    if (m_view->position() != m_placedAt) {
+    // A window manager can constrain the old position to the new size before
+    // delivering the resize notification (e.g. Mutter on X11). That is still
+    // our centered placement, not a user move. Other moves keep the user's
+    // position and only constrain it to the screen.
+    const QPoint constrainedPlacement = m_centeredOn
+        ? keptInsideBounds(m_placedAt, m_view->size(), m_centeredOn->availableGeometry())
+        : m_placedAt;
+    if (m_view->position() != m_placedAt && m_view->position() != constrainedPlacement) {
         m_centeredOn = nullptr;
     }
     placeView(m_centeredOn
@@ -286,6 +293,13 @@ void QmlDialog::syncCursorSurface()
 bool QmlDialog::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_view && event) {
+        // A move at the last placed size is independent of content growth.
+        // Remember it now, before a later resize can constrain it to the same
+        // screen edge as our former centered position.
+        if (event->type() == QEvent::Move && m_view->isVisible()
+            && m_view->size() == m_placedSize && m_view->position() != m_placedAt) {
+            m_centeredOn = nullptr;
+        }
         if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {

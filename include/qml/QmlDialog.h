@@ -62,7 +62,8 @@ private:
     // The screen a centered dialog stays centered on when its content grows
     // after it is shown; null once it is placed at a point or moved.
     QPointer<QScreen> m_centeredOn;
-    QPoint m_placedAt; // where the view was last put; elsewhere means moved by the user
+    QPoint m_placedAt; // last requested placement, before any window-manager constraint
+    QSize m_placedSize;
 };
 
 } // namespace SnapTray
