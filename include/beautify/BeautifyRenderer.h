@@ -19,6 +19,9 @@ public:
                                const BeautifySettings& settings);
     static void drawShadow(QPainter& painter, const QRect& insetRect,
                            const BeautifySettings& settings);
+    // The border just inside the picture's edge, following its corners.
+    static void drawBorder(QPainter& painter, const QRect& insetRect,
+                           const BeautifySettings& settings);
     static QRect calculateInsetRect(const QSize& outputSize, const QSize& sourceSize,
                                     const BeautifySettings& settings);
     static QSize applyAspectRatio(const QSize& baseSize, BeautifyAspectRatio ratio);

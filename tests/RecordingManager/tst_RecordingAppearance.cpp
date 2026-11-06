@@ -4,6 +4,7 @@
 #include <QImage>
 #include <QPainter>
 
+#include "beautify/BeautifyRenderer.h"
 #include "recording/RecordingAppearance.h"
 
 using namespace SnapTray;
@@ -54,6 +55,13 @@ private slots:
     void translucentColorsRenderOpaque();
     void opaqueAndAlphaFormatsRenderIdentically();
     void costAt4K();
+    // Shared styles (#269)
+    void oldLookIsUnchanged();
+    void styleRoundTrip();
+    void styleKeepsRecordingBackground();
+    void customValuesJsonRoundTrip();
+    void inactiveCustomValuesIgnored();
+    void sameStyleMatchesScreenshot();
 };
 
 void TestRecordingAppearance::disabledIsIdentity()
@@ -315,6 +323,265 @@ void TestRecordingAppearance::costAt4K()
               perFrame);
         // Next to decoding and encoding a 4K frame; loose for slow CI.
         QVERIFY(perFrame < 250.0);
+    }
+}
+
+namespace {
+
+// A style that uses everything the presets cannot express.
+FrameStyle customStyle()
+{
+    FrameStyle style;
+    style.background = FrameStyle::Background::LinearGradient;
+    style.gradientStart = QColor(250, 120, 30);
+    style.gradientEnd = QColor(40, 20, 160);
+    style.gradientAngle = 45;
+    style.padding = 0.05;
+    style.cornerRadius = 0.025;
+    style.shadowEnabled = true;
+    style.shadowBlur = 0.03;
+    style.shadowOffsetX = 0.01;
+    style.shadowOffsetY = 0.02;
+    style.shadowColor = QColor(10, 0, 40, 110);
+    style.borderEnabled = true;
+    style.borderWidth = 0.01;
+    style.borderColor = QColor(255, 255, 255, 200);
+    style.aspectRatio = BeautifyAspectRatio::Auto;
+    return style;
+}
+
+} // namespace
+
+void TestRecordingAppearance::oldLookIsUnchanged()
+{
+    // A frame saved before #269 (only the old keys) keeps its pixel values.
+    const QJsonObject old{{QStringLiteral("enabled"), true},
+                          {QStringLiteral("background"), QStringLiteral("gradient")},
+                          {QStringLiteral("gradientPreset"), 2},
+                          {QStringLiteral("solidColor"), QStringLiteral("#ffffff")},
+                          {QStringLiteral("imagePath"), QString()},
+                          {QStringLiteral("padding"), QStringLiteral("medium")},
+                          {QStringLiteral("corners"), QStringLiteral("large")},
+                          {QStringLiteral("shadow"), true},
+                          {QStringLiteral("border"), true},
+                          {QStringLiteral("aspectRatio"), 0}};
+    const auto a = RecordingAppearance::fromJson(old);
+    const QSize content(1920, 1080);
+    const BeautifySettings s = a.beautifyFor(content);
+    const BeautifyPreset preset = beautifyPresets().at(2);
+    QCOMPARE(s.backgroundType, BeautifyBackgroundType::LinearGradient);
+    QCOMPARE(s.gradientStartColor, preset.gradientStart);
+    QCOMPARE(s.gradientEndColor, preset.gradientEnd);
+    QCOMPARE(s.gradientAngle, preset.gradientAngle);
+    QCOMPARE(s.padding, 86);      // round(1080 * 0.08)
+    QCOMPARE(s.cornerRadius, 65); // round(1080 * 0.06)
+    QCOMPARE(s.shadowBlur, 43);   // round(1080 * 0.04)
+    QCOMPARE(s.shadowOffsetX, 0);
+    QCOMPARE(s.shadowOffsetY, 11); // round(1080 * 0.01)
+    QCOMPARE(s.shadowColor, QColor(0, 0, 0, 80));
+    QCOMPARE(a.borderWidth(content), 4); // round(1080 * 0.004)
+    QCOMPARE(a.outputSize(content), QSize(2092, 1252));
+    // And it reads back the same after a save in this version.
+    QCOMPARE(RecordingAppearance::fromJson(a.toJson()), a);
+}
+
+void TestRecordingAppearance::styleRoundTrip()
+{
+    RecordingAppearance a;
+    a.applyFrameStyle(customStyle());
+    QVERIFY(a.enabled);
+    QCOMPARE(a.background, RecordingAppearance::Background::Gradient);
+    QCOMPARE(a.gradientPreset, RecordingAppearance::kCustomGradient);
+    QCOMPARE(a.padding, RecordingAppearance::Amount::Custom);
+    QCOMPARE(a.corners, RecordingAppearance::Amount::Custom);
+    QCOMPARE(a.frameStyle(), customStyle());
+
+    // Preset sizes and gradients are recognised as the presets.
+    FrameStyle presetLike;
+    presetLike.gradientStart = beautifyPresets().at(4).gradientStart;
+    presetLike.gradientEnd = beautifyPresets().at(4).gradientEnd;
+    presetLike.gradientAngle = beautifyPresets().at(4).gradientAngle;
+    presetLike.padding = RecordingAppearance::kPaddingFractions[1];
+    presetLike.cornerRadius = RecordingAppearance::kCornerFractions[3];
+    a.applyFrameStyle(presetLike);
+    QCOMPARE(a.gradientPreset, 4);
+    QCOMPARE(a.padding, RecordingAppearance::Amount::Small);
+    QCOMPARE(a.corners, RecordingAppearance::Amount::Large);
+    QCOMPARE(a.frameStyle(), presetLike);
+
+    // Radial and solid backgrounds.
+    FrameStyle radial = customStyle();
+    radial.background = FrameStyle::Background::RadialGradient;
+    a.applyFrameStyle(radial);
+    QCOMPARE(a.beautifyFor(QSize(800, 600)).backgroundType, BeautifyBackgroundType::RadialGradient);
+    FrameStyle solid = customStyle();
+    solid.background = FrameStyle::Background::Solid;
+    solid.solidColor = QColor(9, 99, 199);
+    a.applyFrameStyle(solid);
+    QCOMPARE(a.background, RecordingAppearance::Background::Solid);
+    QCOMPARE(a.frameStyle(), solid);
+}
+
+void TestRecordingAppearance::styleKeepsRecordingBackground()
+{
+    // Acceptance (#269): recording-only choices survive applying a style.
+    for (const auto background : {RecordingAppearance::Background::BlurredVideo,
+                                  RecordingAppearance::Background::Image}) {
+        RecordingAppearance a;
+        a.enabled = true;
+        a.background = background;
+        a.imagePath = QStringLiteral("/tmp/bg.png");
+        a.applyFrameStyle(customStyle());
+        QCOMPARE(a.background, background);
+        QCOMPARE(a.imagePath, QStringLiteral("/tmp/bg.png"));
+        // The rest of the look is the style's, with its gradient underneath.
+        QCOMPARE(a.frameStyle(), customStyle());
+    }
+
+    // Solid and radial styles also come back whole from beneath them, and a
+    // missing image shows the style's own background.
+    FrameStyle solid = customStyle();
+    solid.background = FrameStyle::Background::Solid;
+    solid.solidColor = QColor(9, 99, 199);
+    FrameStyle radial = customStyle();
+    radial.background = FrameStyle::Background::RadialGradient;
+    for (const auto background : {RecordingAppearance::Background::BlurredVideo,
+                                  RecordingAppearance::Background::Image}) {
+        for (const FrameStyle& style : {solid, radial}) {
+            RecordingAppearance a;
+            a.enabled = true;
+            a.background = background;
+            a.applyFrameStyle(style);
+            QCOMPARE(a.background, background);
+            QCOMPARE(a.frameStyle(), style);
+            QCOMPARE(RecordingAppearance::fromJson(a.toJson()).frameStyle(), style);
+        }
+    }
+    RecordingAppearance missingImage;
+    missingImage.enabled = true;
+    missingImage.background = RecordingAppearance::Background::Image;
+    missingImage.applyFrameStyle(solid);
+    QCOMPARE(missingImage.beautifyFor(QSize(800, 600)).backgroundType, BeautifyBackgroundType::Solid);
+    // Nothing drawn over the solid color: nothing beneath it to remember.
+    missingImage.background = RecordingAppearance::Background::Solid;
+    RecordingAppearance plain = missingImage;
+    plain.solidUnderneath = false;
+    QCOMPARE(missingImage, plain);
+
+    // A style saved from a tiny screenshot stays within the recording's range.
+    FrameStyle wide = customStyle();
+    wide.padding = 1.6;
+    wide.shadowOffsetY = -3.0;
+    RecordingAppearance a;
+    a.applyFrameStyle(wide);
+    QCOMPARE(a.customPadding, 1.0);
+    QCOMPARE(a.shadowOffsetY, -1.0);
+    QCOMPARE(RecordingAppearance::fromJson(a.toJson()), a);
+}
+
+void TestRecordingAppearance::inactiveCustomValuesIgnored()
+{
+    // A custom size or gradient left behind by choosing a preset neither
+    // makes two identical frames differ nor reaches the saved JSON.
+    RecordingAppearance a;
+    a.applyFrameStyle(customStyle());
+    a.padding = RecordingAppearance::Amount::Large;
+    a.corners = RecordingAppearance::Amount::Small;
+    a.gradientPreset = 3;
+    RecordingAppearance b;
+    b.applyFrameStyle(customStyle());
+    b.padding = RecordingAppearance::Amount::Large;
+    b.corners = RecordingAppearance::Amount::Small;
+    b.gradientPreset = 3;
+    b.customPadding = 0.5;
+    b.gradientStart = QColor(1, 2, 3);
+    b.gradientRadial = true;
+    QCOMPARE(a, b);
+    QCOMPARE(a.toJson(), b.toJson());
+    const QJsonObject json = b.toJson();
+    QCOMPARE(json.value(QStringLiteral("customPadding")).toDouble(), 0.0);
+    QCOMPARE(json.value(QStringLiteral("gradientRadial")).toBool(), false);
+
+    b.dropInactiveCustomValues();
+    QCOMPARE(b.customPadding, 0.0);
+    QCOMPARE(b.gradientRadial, false);
+    QCOMPARE(b.gradientStart, RecordingAppearance().gradientStart);
+
+    // Values in use are kept.
+    RecordingAppearance c;
+    c.applyFrameStyle(customStyle());
+    const RecordingAppearance before = c;
+    c.dropInactiveCustomValues();
+    QCOMPARE(c.customPadding, before.customPadding);
+    QCOMPARE(c.gradientStart, before.gradientStart);
+    QCOMPARE(c.frameStyle(), customStyle());
+}
+
+void TestRecordingAppearance::customValuesJsonRoundTrip()
+{
+    RecordingAppearance a;
+    a.applyFrameStyle(customStyle());
+    QCOMPARE(RecordingAppearance::fromJson(a.toJson()), a);
+    const auto wild = RecordingAppearance::fromJson({{QStringLiteral("padding"), QStringLiteral("custom")},
+                                                     {QStringLiteral("customPadding"), 50.0},
+                                                     {QStringLiteral("gradientPreset"), -1},
+                                                     {QStringLiteral("gradientStart"), QStringLiteral("#80ff0000")}});
+    QCOMPARE(wild.padding, RecordingAppearance::Amount::Custom);
+    QCOMPARE(wild.customPadding, 1.0); // never more than the picture
+    QCOMPARE(wild.gradientPreset, RecordingAppearance::kCustomGradient);
+    QCOMPARE(wild.gradientStart.alpha(), 255); // a video frame has nothing behind it
+}
+
+void TestRecordingAppearance::sameStyleMatchesScreenshot()
+{
+    // Acceptance (#269): one style on a screenshot and on a recording frame
+    // gives the same background, padding, corners, shadow and border where
+    // both use the same pixels. Screenshot Beautify uses a style's pixels at
+    // FrameStyle::kReferenceShortSide; the recording frame scales with the
+    // video, so the two meet on a picture with that shorter side.
+    // Allowed: kChannelTolerance per channel on at most kMaxDifferingShare of
+    // the pixels (anti-aliased edges are drawn through different image
+    // formats), and the same size exactly.
+    constexpr int kChannelTolerance = 2;
+    constexpr double kMaxDifferingShare = 0.001;
+    const QSize size(1600, FrameStyle::kReferenceShortSide);
+    QImage picture(size, QImage::Format_RGB32);
+    picture.fill(QColor(30, 160, 220));
+    QPainter painter(&picture);
+    painter.fillRect(QRect(160, 120, 800, 480), QColor(240, 200, 40));
+    painter.end();
+
+    for (const auto background : {FrameStyle::Background::LinearGradient, FrameStyle::Background::RadialGradient,
+                                  FrameStyle::Background::Solid}) {
+        FrameStyle style = customStyle();
+        style.background = background;
+        style.solidColor = QColor(70, 80, 90);
+
+        const QImage screenshot = BeautifyRenderer::applyToPixmap(QPixmap::fromImage(picture),
+                                                                  style.toBeautify(FrameStyle::kReferenceShortSide))
+                                      .toImage()
+                                      .convertToFormat(QImage::Format_RGB32);
+        RecordingAppearance a;
+        a.applyFrameStyle(style);
+        const QImage frame = RecordingAppearanceRenderer(a, size).compose(picture).convertToFormat(QImage::Format_RGB32);
+        QCOMPARE(frame.size(), screenshot.size());
+
+        qint64 differing = 0;
+        int worst = 0;
+        for (int y = 0; y < frame.height(); ++y) {
+            const auto* f = reinterpret_cast<const QRgb*>(frame.constScanLine(y));
+            const auto* s = reinterpret_cast<const QRgb*>(screenshot.constScanLine(y));
+            for (int x = 0; x < frame.width(); ++x) {
+                const int d = std::max({qAbs(qRed(f[x]) - qRed(s[x])), qAbs(qGreen(f[x]) - qGreen(s[x])),
+                                        qAbs(qBlue(f[x]) - qBlue(s[x]))});
+                worst = std::max(worst, d);
+                if (d > kChannelTolerance) ++differing;
+            }
+        }
+        const double share = double(differing) / (frame.width() * frame.height());
+        qInfo("background %d: worst channel difference %d, %.4f%% of pixels beyond %d", int(background), worst,
+              share * 100.0, kChannelTolerance);
+        QVERIFY2(share <= kMaxDifferingShare, qPrintable(QStringLiteral("%1 pixels differ").arg(differing)));
     }
 }
 

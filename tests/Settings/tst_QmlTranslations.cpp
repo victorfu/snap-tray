@@ -30,6 +30,7 @@ private slots:
     void testTaskSettingsAndBeautifyTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
     void testStyleStripNamesTranslatedForAllLocales();
+    void testSharedFrameStylesTranslatedForAllLocales();
     void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
     void testRecordingPreviewCropTranslatedForAllLocales();
     void testRecordingWarningTitleTranslatedForAllLocales();
@@ -351,6 +352,46 @@ void tst_QmlTranslations::testStyleStripNamesTranslatedForAllLocales()
     const QStringList qmFiles = translationsDir.entryList(
         {QStringLiteral("snaptray_*.qm")}, QDir::Files, QDir::Name);
     QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+        }
+    }
+}
+
+void tst_QmlTranslations::testSharedFrameStylesTranslatedForAllLocales()
+{
+    // #269: saved styles in the recording editor, and the Beautify border.
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"BeautifyPanel", "Border"},
+        {"RecordingPreview", "Saved styles"},
+        {"RecordingPreview", "Styles you save here or in Beautify appear in both places."},
+        {"RecordingPreview", "Save style…"},
+        {"RecordingPreview", "Save this frame as a style for recordings and screenshots"},
+        {"RecordingPreview", "You can keep up to %1 saved styles. Delete one to save another."},
+        {"RecordingPreview", "Saved style: %1"},
+        {"RecordingPreview", "Rename"},
+        {"RecordingPreview", "Rename style %1"},
+        {"RecordingPreview", "Delete style %1"},
+        {"RecordingPreview", "Style name"},
+        {"RecordingPreview", "Save"},
+        {"RecordingPreview", "Another saved style already has this name."},
+        {"RecordingPreview", "Background: Custom gradient"},
+        {"RecordingPreview", "Custom"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")}, QDir::Files, QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
 
     for (const QString& qmFile : qmFiles) {
         QTranslator translator;

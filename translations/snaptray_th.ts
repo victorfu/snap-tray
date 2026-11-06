@@ -268,6 +268,11 @@
         <source>Rename (F2)</source>
         <translation>เปลี่ยนชื่อ (F2)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="756" />
+        <source>Border</source>
+        <translation>เส้นขอบ</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -5067,6 +5072,71 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>ค่าเริ่มต้น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
+        <source>Another saved style already has this name.</source>
+        <translation>มีสไตล์ที่บันทึกไว้อื่นใช้ชื่อนี้อยู่แล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <source>Background: Custom gradient</source>
+        <translation>พื้นหลัง: ไล่สีแบบกำหนดเอง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3015" />
+        <source>Delete style %1</source>
+        <translation>ลบสไตล์ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3002" />
+        <source>Rename</source>
+        <translation>เปลี่ยนชื่อ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3004" />
+        <source>Rename style %1</source>
+        <translation>เปลี่ยนชื่อสไตล์ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3059" />
+        <source>Save</source>
+        <translation>บันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <source>Save style…</source>
+        <translation>บันทึกสไตล์…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2994" />
+        <source>Save this frame as a style for recordings and screenshots</source>
+        <translation>บันทึกกรอบนี้เป็นสไตล์สำหรับการบันทึกหน้าจอและภาพหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
+        <source>Saved style: %1</source>
+        <translation>สไตล์ที่บันทึกไว้: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
+        <source>Saved styles</source>
+        <translation>สไตล์ที่บันทึกไว้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
+        <source>Style name</source>
+        <translation>ชื่อสไตล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2957" />
+        <source>Styles you save here or in Beautify appear in both places.</source>
+        <translation>สไตล์ที่คุณบันทึกที่นี่หรือในการตกแต่งจะแสดงในทั้งสองที่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2993" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>คุณเก็บสไตล์ที่บันทึกไว้ได้สูงสุด %1 รายการ ลบหนึ่งรายการเพื่อบันทึกสไตล์ใหม่</translation>
     </message>
 </context>
 <context>

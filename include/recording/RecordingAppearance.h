@@ -1,6 +1,7 @@
 #pragma once
 
 #include "beautify/BeautifySettings.h"
+#include "beautify/FrameStyle.h"
 
 #include <QColor>
 #include <QImage>
@@ -20,23 +21,52 @@ class QPainter;
 // picture, then this frame around it, then any MP4 resize. Nothing drawn
 // here is taken from unmasked pixels: the blurred background is made from
 // the picture after its masks.
+//
+// A saved style shared with screenshot Beautify (FrameStyle, #269) can set
+// any look; values between the presets show as Custom. The blurred-video
+// and image backgrounds belong to recordings only and are kept when a style
+// is applied.
 namespace SnapTray {
 
 struct RecordingAppearance {
     enum class Background { Gradient, Solid, BlurredVideo, Image };
-    enum class Amount { None, Small, Medium, Large }; // padding and corner presets
+    // Padding and corner presets; Custom uses customPadding / customCorners.
+    enum class Amount { None, Small, Medium, Large, Custom };
+    // gradientPreset value for the gradient in gradientStart/End/Angle/Radial.
+    static constexpr int kCustomGradient = -1;
 
     bool enabled = false;
     Background background = Background::Gradient;
-    int gradientPreset = 0;          // index into beautifyPresets()
+    int gradientPreset = 0;          // index into beautifyPresets(), or kCustomGradient
+    QColor gradientStart{0, 180, 219};
+    QColor gradientEnd{0, 131, 176};
+    int gradientAngle = 135;
+    bool gradientRadial = false;
     QColor solidColor{Qt::white};
     QString imagePath;               // Background::Image
+    // Under a blurred-video or image background: the style beneath is the
+    // solid color rather than the gradient (a missing image shows it too).
+    bool solidUnderneath = false;
     Amount padding = Amount::Medium;
     Amount corners = Amount::Medium;
+    double customPadding = 0.0;      // fractions of the shorter side, for Amount::Custom
+    double customCorners = 0.0;
     bool shadow = true;
+    double shadowBlur = kShadowBlurFraction;
+    double shadowOffsetX = 0.0;
+    double shadowOffsetY = kShadowOffsetFraction;
+    QColor shadowColor{0, 0, 0, 80};
     bool border = false;
+    double borderFraction = kBorderFraction;
+    QColor borderColor{255, 255, 255, 170};
     BeautifyAspectRatio aspectRatio = BeautifyAspectRatio::Auto;
 
+    // Resets the custom sizes and gradient while a preset is in use, and the
+    // background beneath when nothing is drawn over it, so a value left from
+    // an earlier choice is not compared or saved.
+    void dropInactiveCustomValues();
+
+    // Compares the look in use: inactive custom values are ignored.
     bool operator==(const RecordingAppearance& o) const;
     bool operator!=(const RecordingAppearance& o) const { return !(*this == o); }
 
@@ -44,6 +74,15 @@ struct RecordingAppearance {
     static RecordingAppearance fromJson(const QJsonObject& json); // missing or unknown keys keep defaults
     // A first look taken from the screenshot Beautify settings.
     static RecordingAppearance fromBeautify(const BeautifySettings& settings);
+
+    // The look as a shared style. With a blurred-video or image background
+    // the style carries the solid color or gradient underneath.
+    FrameStyle frameStyle() const;
+    // Takes a shared style's look and switches the frame on. A blurred-video
+    // or image background stays; the style's solid or gradient background is
+    // kept beneath it. frameStyle() then gives the style back, except that
+    // recording colors are opaque.
+    void applyFrameStyle(const FrameStyle& style);
 
     // Pixel values for a picture of this size, in BeautifySettings terms.
     BeautifySettings beautifyFor(const QSize& contentSize) const;
@@ -60,6 +99,10 @@ struct RecordingAppearance {
     static constexpr double kShadowOffsetFraction = 0.01;
     static constexpr double kBorderFraction = 0.004;
     static const QColor kBorderColor;
+
+private:
+    double paddingFraction() const;
+    double cornerFraction() const;
 };
 
 // Draws the frame for one picture size. Keeps the parts that do not change

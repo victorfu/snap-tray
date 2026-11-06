@@ -320,6 +320,11 @@
         <source>Rename (F2)</source>
         <translation>Renomear (F2)</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="756" />
+        <source>Border</source>
+        <translation>Borda</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -5284,6 +5289,71 @@ Tamanho: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="2614" />
         <source>Default</source>
         <translation>Padrão</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3075" />
+        <source>Another saved style already has this name.</source>
+        <translation>Outro estilo salvo já tem este nome.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3101" />
+        <source>Background: Custom gradient</source>
+        <translation>Fundo: gradiente personalizado</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3015" />
+        <source>Delete style %1</source>
+        <translation>Excluir estilo %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3002" />
+        <source>Rename</source>
+        <translation>Renomear</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3004" />
+        <source>Rename style %1</source>
+        <translation>Renomear estilo %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3059" />
+        <source>Save</source>
+        <translation>Salvar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2990" />
+        <source>Save style…</source>
+        <translation>Salvar estilo…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2994" />
+        <source>Save this frame as a style for recordings and screenshots</source>
+        <translation>Salvar esta moldura como estilo para gravações e capturas de tela</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2975" />
+        <source>Saved style: %1</source>
+        <translation>Estilo salvo: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2948" />
+        <source>Saved styles</source>
+        <translation>Estilos salvos</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="3037" />
+        <source>Style name</source>
+        <translation>Nome do estilo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2957" />
+        <source>Styles you save here or in Beautify appear in both places.</source>
+        <translation>Os estilos que você salvar aqui ou em Embelezar aparecem nos dois lugares.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="2993" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>Você pode manter até %1 estilos salvos. Exclua um para salvar outro.</translation>
     </message>
 </context>
 <context>

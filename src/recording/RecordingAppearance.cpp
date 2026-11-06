@@ -40,7 +40,44 @@ constexpr Named<RecordingAppearance::Amount> kAmounts[] = {
     {RecordingAppearance::Amount::Small, "small"},
     {RecordingAppearance::Amount::Medium, "medium"},
     {RecordingAppearance::Amount::Large, "large"},
+    {RecordingAppearance::Amount::Custom, "custom"},
 };
+
+// Fractions closer than this are the same size (a style read back from JSON).
+constexpr double kFractionTolerance = 1e-6;
+constexpr double kMaxFraction = 1.0;
+
+// The preset a fraction is, or Custom.
+template <size_t N>
+RecordingAppearance::Amount amountFor(double fraction, const double (&presets)[N])
+{
+    for (size_t i = 0; i < N; ++i) {
+        if (std::abs(presets[i] - fraction) < kFractionTolerance) return RecordingAppearance::Amount(i);
+    }
+    return RecordingAppearance::Amount::Custom;
+}
+
+double fractionOr(const QJsonObject& json, const char* key, double fallback, double low = 0.0)
+{
+    const QJsonValue value = json.value(QLatin1String(key));
+    if (!value.isDouble() || !std::isfinite(value.toDouble())) return fallback;
+    return std::clamp(value.toDouble(), low, kMaxFraction);
+}
+
+QColor colorOr(const QJsonObject& json, const char* key, const QColor& fallback)
+{
+    const QColor color(json.value(QLatin1String(key)).toString());
+    return color.isValid() ? color : fallback;
+}
+
+QColor opaque(const QColor& color)
+{
+    // A video frame has nothing behind it, so the frame's color is always
+    // opaque (PR #198 review).
+    QColor c = color.toRgb();
+    c.setAlpha(255);
+    return c;
+}
 
 template <typename Enum, size_t N>
 const char* nameOf(const Named<Enum> (&table)[N], Enum value)
@@ -87,25 +124,73 @@ void drawCover(QPainter& painter, const QRect& target, const QImage& image)
 
 } // namespace
 
-bool RecordingAppearance::operator==(const RecordingAppearance& o) const
+// amountFor() maps a preset's array index to its Amount.
+static_assert(std::size(RecordingAppearance::kPaddingFractions) == size_t(RecordingAppearance::Amount::Custom));
+static_assert(std::size(RecordingAppearance::kCornerFractions) == size_t(RecordingAppearance::Amount::Custom));
+
+void RecordingAppearance::dropInactiveCustomValues()
 {
-    return enabled == o.enabled && background == o.background && gradientPreset == o.gradientPreset
-        && solidColor == o.solidColor && imagePath == o.imagePath && padding == o.padding && corners == o.corners
-        && shadow == o.shadow && border == o.border && aspectRatio == o.aspectRatio;
+    const RecordingAppearance defaults;
+    if (padding != Amount::Custom) customPadding = defaults.customPadding;
+    if (corners != Amount::Custom) customCorners = defaults.customCorners;
+    if (background != Background::BlurredVideo && background != Background::Image) {
+        solidUnderneath = defaults.solidUnderneath;
+    }
+    if (gradientPreset != kCustomGradient) {
+        gradientStart = defaults.gradientStart;
+        gradientEnd = defaults.gradientEnd;
+        gradientAngle = defaults.gradientAngle;
+        gradientRadial = defaults.gradientRadial;
+    }
+}
+
+bool RecordingAppearance::operator==(const RecordingAppearance& other) const
+{
+    RecordingAppearance self = *this;
+    RecordingAppearance o = other;
+    self.dropInactiveCustomValues();
+    o.dropInactiveCustomValues();
+    return self.enabled == o.enabled && self.background == o.background
+        && self.gradientPreset == o.gradientPreset && self.gradientStart == o.gradientStart
+        && self.gradientEnd == o.gradientEnd && self.gradientAngle == o.gradientAngle
+        && self.gradientRadial == o.gradientRadial && self.solidColor == o.solidColor
+        && self.imagePath == o.imagePath && self.solidUnderneath == o.solidUnderneath && self.padding == o.padding && self.corners == o.corners
+        && self.customPadding == o.customPadding && self.customCorners == o.customCorners
+        && self.shadow == o.shadow && self.shadowBlur == o.shadowBlur
+        && self.shadowOffsetX == o.shadowOffsetX && self.shadowOffsetY == o.shadowOffsetY
+        && self.shadowColor == o.shadowColor && self.border == o.border
+        && self.borderFraction == o.borderFraction && self.borderColor == o.borderColor
+        && self.aspectRatio == o.aspectRatio;
 }
 
 QJsonObject RecordingAppearance::toJson() const
 {
-    return {{QStringLiteral("enabled"), enabled},
-            {QStringLiteral("background"), QLatin1String(nameOf(kBackgrounds, background))},
-            {QStringLiteral("gradientPreset"), gradientPreset},
-            {QStringLiteral("solidColor"), solidColor.name(QColor::HexRgb)},
-            {QStringLiteral("imagePath"), imagePath},
-            {QStringLiteral("padding"), QLatin1String(nameOf(kAmounts, padding))},
-            {QStringLiteral("corners"), QLatin1String(nameOf(kAmounts, corners))},
-            {QStringLiteral("shadow"), shadow},
-            {QStringLiteral("border"), border},
-            {QStringLiteral("aspectRatio"), int(aspectRatio)}};
+    RecordingAppearance a = *this;
+    a.dropInactiveCustomValues();
+    return {{QStringLiteral("enabled"), a.enabled},
+            {QStringLiteral("background"), QLatin1String(nameOf(kBackgrounds, a.background))},
+            {QStringLiteral("gradientPreset"), a.gradientPreset},
+            {QStringLiteral("solidColor"), a.solidColor.name(QColor::HexRgb)},
+            {QStringLiteral("imagePath"), a.imagePath},
+            {QStringLiteral("padding"), QLatin1String(nameOf(kAmounts, a.padding))},
+            {QStringLiteral("corners"), QLatin1String(nameOf(kAmounts, a.corners))},
+            {QStringLiteral("shadow"), a.shadow},
+            {QStringLiteral("border"), a.border},
+            {QStringLiteral("aspectRatio"), int(a.aspectRatio)},
+            // From a shared style (#269); older versions ignore them.
+            {QStringLiteral("gradientStart"), a.gradientStart.name(QColor::HexRgb)},
+            {QStringLiteral("gradientEnd"), a.gradientEnd.name(QColor::HexRgb)},
+            {QStringLiteral("gradientAngle"), a.gradientAngle},
+            {QStringLiteral("gradientRadial"), a.gradientRadial},
+            {QStringLiteral("solidUnderneath"), a.solidUnderneath},
+            {QStringLiteral("customPadding"), a.customPadding},
+            {QStringLiteral("customCorners"), a.customCorners},
+            {QStringLiteral("shadowBlur"), a.shadowBlur},
+            {QStringLiteral("shadowOffsetX"), a.shadowOffsetX},
+            {QStringLiteral("shadowOffsetY"), a.shadowOffsetY},
+            {QStringLiteral("shadowColor"), a.shadowColor.name(QColor::HexArgb)},
+            {QStringLiteral("borderWidth"), a.borderFraction},
+            {QStringLiteral("borderColor"), a.borderColor.name(QColor::HexArgb)}};
 }
 
 RecordingAppearance RecordingAppearance::fromJson(const QJsonObject& json)
@@ -114,14 +199,27 @@ RecordingAppearance RecordingAppearance::fromJson(const QJsonObject& json)
     a.enabled = json.value(QStringLiteral("enabled")).toBool(a.enabled);
     a.background = valueOf(kBackgrounds, json.value(QStringLiteral("background")).toString(), a.background);
     const int preset = json.value(QStringLiteral("gradientPreset")).toInt(a.gradientPreset);
-    if (preset >= 0 && preset < beautifyPresets().size()) a.gradientPreset = preset;
+    if (preset >= kCustomGradient && preset < beautifyPresets().size()) a.gradientPreset = preset;
+    a.gradientStart = opaque(colorOr(json, "gradientStart", a.gradientStart));
+    a.gradientEnd = opaque(colorOr(json, "gradientEnd", a.gradientEnd));
+    a.gradientAngle = std::clamp(json.value(QStringLiteral("gradientAngle")).toInt(a.gradientAngle), 0, 360);
+    a.gradientRadial = json.value(QStringLiteral("gradientRadial")).toBool(a.gradientRadial);
     const QColor solid(json.value(QStringLiteral("solidColor")).toString());
     if (solid.isValid()) a.solidColor = solid;
     a.imagePath = json.value(QStringLiteral("imagePath")).toString();
+    a.solidUnderneath = json.value(QStringLiteral("solidUnderneath")).toBool(a.solidUnderneath);
     a.padding = valueOf(kAmounts, json.value(QStringLiteral("padding")).toString(), a.padding);
     a.corners = valueOf(kAmounts, json.value(QStringLiteral("corners")).toString(), a.corners);
+    a.customPadding = fractionOr(json, "customPadding", a.customPadding);
+    a.customCorners = fractionOr(json, "customCorners", a.customCorners);
     a.shadow = json.value(QStringLiteral("shadow")).toBool(a.shadow);
+    a.shadowBlur = fractionOr(json, "shadowBlur", a.shadowBlur);
+    a.shadowOffsetX = fractionOr(json, "shadowOffsetX", a.shadowOffsetX, -kMaxFraction);
+    a.shadowOffsetY = fractionOr(json, "shadowOffsetY", a.shadowOffsetY, -kMaxFraction);
+    a.shadowColor = colorOr(json, "shadowColor", a.shadowColor);
     a.border = json.value(QStringLiteral("border")).toBool(a.border);
+    a.borderFraction = fractionOr(json, "borderWidth", a.borderFraction);
+    a.borderColor = colorOr(json, "borderColor", a.borderColor);
     const int ratio = json.value(QStringLiteral("aspectRatio")).toInt(int(a.aspectRatio));
     if (ratio >= 0 && ratio <= kMaxAspectRatio) a.aspectRatio = BeautifyAspectRatio(ratio);
     return a;
@@ -132,10 +230,8 @@ RecordingAppearance RecordingAppearance::fromBeautify(const BeautifySettings& se
     RecordingAppearance a;
     if (settings.backgroundType == BeautifyBackgroundType::Solid) {
         a.background = Background::Solid;
-        // Screenshot Beautify allows a translucent color; a video frame has
-        // nothing behind it, so the frame's color is always opaque (PR #198 review).
-        a.solidColor = settings.backgroundColor.toRgb();
-        a.solidColor.setAlpha(255);
+        // Screenshot Beautify allows a translucent color (PR #198 review).
+        a.solidColor = opaque(settings.backgroundColor);
     }
     const auto presets = beautifyPresets();
     for (int i = 0; i < presets.size(); ++i) {
@@ -149,26 +245,103 @@ RecordingAppearance RecordingAppearance::fromBeautify(const BeautifySettings& se
     return a;
 }
 
+double RecordingAppearance::paddingFraction() const
+{
+    return padding == Amount::Custom ? customPadding : kPaddingFractions[int(padding)];
+}
+
+double RecordingAppearance::cornerFraction() const
+{
+    return corners == Amount::Custom ? customCorners : kCornerFractions[int(corners)];
+}
+
+FrameStyle RecordingAppearance::frameStyle() const
+{
+    FrameStyle f;
+    const bool recordingBackground = background == Background::BlurredVideo || background == Background::Image;
+    if (background == Background::Solid || (recordingBackground && solidUnderneath)) {
+        f.background = FrameStyle::Background::Solid;
+    } else if (gradientPreset == kCustomGradient) {
+        f.background = gradientRadial ? FrameStyle::Background::RadialGradient : FrameStyle::Background::LinearGradient;
+    } else {
+        f.background = FrameStyle::Background::LinearGradient;
+    }
+    f.solidColor = solidColor;
+    if (gradientPreset == kCustomGradient) {
+        f.gradientStart = gradientStart;
+        f.gradientEnd = gradientEnd;
+        f.gradientAngle = gradientAngle;
+    } else {
+        const auto presets = beautifyPresets();
+        const BeautifyPreset& preset = presets.at(std::clamp(gradientPreset, 0, int(presets.size()) - 1));
+        f.gradientStart = preset.gradientStart;
+        f.gradientEnd = preset.gradientEnd;
+        f.gradientAngle = preset.gradientAngle;
+    }
+    f.padding = paddingFraction();
+    f.cornerRadius = cornerFraction();
+    f.shadowEnabled = shadow;
+    f.shadowBlur = shadowBlur;
+    f.shadowOffsetX = shadowOffsetX;
+    f.shadowOffsetY = shadowOffsetY;
+    f.shadowColor = shadowColor;
+    f.borderEnabled = border;
+    f.borderWidth = borderFraction;
+    f.borderColor = borderColor;
+    f.aspectRatio = aspectRatio;
+    return f;
+}
+
+void RecordingAppearance::applyFrameStyle(const FrameStyle& style)
+{
+    enabled = true;
+    const bool recordingBackground = background == Background::BlurredVideo || background == Background::Image;
+    // Both colors are taken, so the style reads back from frameStyle() (with
+    // opaque colors), whatever background is drawn over it.
+    solidColor = opaque(style.solidColor);
+    const auto presets = beautifyPresets();
+    gradientPreset = kCustomGradient;
+    for (int i = 0; style.background != FrameStyle::Background::RadialGradient && i < presets.size(); ++i) {
+        if (presets[i].gradientStart == style.gradientStart && presets[i].gradientEnd == style.gradientEnd
+            && presets[i].gradientAngle == style.gradientAngle) {
+            gradientPreset = i;
+            break;
+        }
+    }
+    gradientStart = opaque(style.gradientStart);
+    gradientEnd = opaque(style.gradientEnd);
+    gradientAngle = style.gradientAngle;
+    gradientRadial = style.background == FrameStyle::Background::RadialGradient;
+    if (!recordingBackground) {
+        background = style.background == FrameStyle::Background::Solid ? Background::Solid : Background::Gradient;
+    }
+    solidUnderneath = style.background == FrameStyle::Background::Solid;
+    // A style saved from a tiny screenshot can be wider than the picture;
+    // keep it within the range the recording JSON accepts.
+    const auto size = [](double fraction) { return std::clamp(fraction, 0.0, kMaxFraction); };
+    const auto offset = [](double fraction) { return std::clamp(fraction, -kMaxFraction, kMaxFraction); };
+    padding = amountFor(size(style.padding), kPaddingFractions);
+    customPadding = padding == Amount::Custom ? size(style.padding) : 0.0;
+    corners = amountFor(size(style.cornerRadius), kCornerFractions);
+    customCorners = corners == Amount::Custom ? size(style.cornerRadius) : 0.0;
+    shadow = style.shadowEnabled;
+    shadowBlur = size(style.shadowBlur);
+    shadowOffsetX = offset(style.shadowOffsetX);
+    shadowOffsetY = offset(style.shadowOffsetY);
+    shadowColor = style.shadowColor;
+    border = style.borderEnabled;
+    borderFraction = size(style.borderWidth);
+    borderColor = style.borderColor;
+    aspectRatio = style.aspectRatio;
+}
+
 BeautifySettings RecordingAppearance::beautifyFor(const QSize& contentSize) const
 {
-    const int side = shortSide(contentSize);
-    BeautifySettings s;
-    const auto presets = beautifyPresets();
-    const BeautifyPreset& preset = presets.at(std::clamp(gradientPreset, 0, int(presets.size()) - 1));
-    s.backgroundType = background == Background::Solid ? BeautifyBackgroundType::Solid
-                                                       : BeautifyBackgroundType::LinearGradient;
-    s.backgroundColor = solidColor;
-    s.gradientStartColor = preset.gradientStart;
-    s.gradientEndColor = preset.gradientEnd;
-    s.gradientAngle = preset.gradientAngle;
-    s.padding = int(std::lround(side * kPaddingFractions[int(padding)]));
-    s.cornerRadius = int(std::lround(side * kCornerFractions[int(corners)]));
-    s.shadowEnabled = shadow;
-    s.shadowBlur = std::max(1, int(std::lround(side * kShadowBlurFraction)));
-    s.shadowOffsetX = 0;
-    s.shadowOffsetY = int(std::lround(side * kShadowOffsetFraction));
-    s.aspectRatio = aspectRatio;
-    return s;
+    // The same fractions-to-pixels conversion screenshot Beautify uses, at
+    // this picture's size. Screenshots use FrameStyle::kReferenceShortSide
+    // (and clamp to their control ranges; recording colors are opaque), so
+    // the two meet on a picture with that shorter side.
+    return frameStyle().toBeautify(shortSide(contentSize));
 }
 
 QSize RecordingAppearance::outputSize(const QSize& contentSize) const
@@ -187,7 +360,7 @@ QRect RecordingAppearance::contentRect(const QSize& contentSize) const
 
 int RecordingAppearance::borderWidth(const QSize& contentSize) const
 {
-    return border ? std::max(1, int(std::lround(shortSide(contentSize) * kBorderFraction))) : 0;
+    return border ? beautifyFor(contentSize).borderWidth : 0;
 }
 
 double RecordingAppearance::cornerRadius(const QSize& contentSize) const
@@ -241,12 +414,9 @@ void RecordingAppearanceRenderer::drawBackground(QPainter& painter, const QImage
         painter.fillRect(all, QColor(0, 0, 0, kBlurDimAlpha));
         return;
     }
-    // Solid or gradient; a missing image or picture falls back to the gradient.
-    BeautifySettings settings = m_settings;
-    if (m_appearance.background != RecordingAppearance::Background::Solid) {
-        settings.backgroundType = BeautifyBackgroundType::LinearGradient;
-    }
-    BeautifyRenderer::drawBackground(painter, all, settings);
+    // Solid or gradient; a missing image or picture falls back to the style
+    // beneath (solidUnderneath), which beautifyFor() gives.
+    BeautifyRenderer::drawBackground(painter, all, m_settings);
 }
 
 void RecordingAppearanceRenderer::drawDecorations(QPainter& painter) const
@@ -256,17 +426,7 @@ void RecordingAppearanceRenderer::drawDecorations(QPainter& painter) const
 
 void RecordingAppearanceRenderer::drawBorder(QPainter& painter) const
 {
-    const int width = m_appearance.borderWidth(m_contentSize);
-    if (width <= 0) return;
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    // Inside the picture's edge, so the frame size does not change.
-    const QRectF edge = QRectF(m_contentRect).adjusted(width / 2.0, width / 2.0, -width / 2.0, -width / 2.0);
-    const double radius = std::max(0.0, m_settings.cornerRadius - width / 2.0);
-    painter.setPen(QPen(RecordingAppearance::kBorderColor, width));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(edge, radius, radius);
-    painter.restore();
+    BeautifyRenderer::drawBorder(painter, m_contentRect, m_settings);
 }
 
 QImage RecordingAppearanceRenderer::compose(const QImage& content, const QImage& blurSource) const

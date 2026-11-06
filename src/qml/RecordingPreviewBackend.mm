@@ -11,6 +11,7 @@
 #include "encoding/IntermediateQuality.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/BeautifySettingsManager.h"
+#include "beautify/FrameStyleLibrary.h"
 #include "recording/RecordingAppearance.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
@@ -107,6 +108,11 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
         ? SnapTray::RecordingAppearance::fromBeautify(BeautifySettingsManager::instance().loadSettings())
         : SnapTray::RecordingAppearance::fromJson(appearance);
     m_editHistory.reset(currentEditState());
+    // Saved styles are one list with screenshot Beautify (#269).
+    connect(&SnapTray::FrameStyleLibrary::instance(), &SnapTray::FrameStyleLibrary::stylesChanged, this,
+            &RecordingPreviewBackend::frameStylesChanged);
+    connect(this, &RecordingPreviewBackend::frameStylesChanged, this, &RecordingPreviewBackend::frameStyleStateChanged);
+    connect(this, &RecordingPreviewBackend::appearanceChanged, this, &RecordingPreviewBackend::frameStyleStateChanged);
     // Availability depends on the format (MP4 needs a capable transcoder).
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::cursorEffectsChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
@@ -259,6 +265,77 @@ QVariantList RecordingPreviewBackend::appearanceGradients() const
     return list;
 }
 
+QVariantList RecordingPreviewBackend::frameStyleModel() const
+{
+    QVariantList model;
+    for (const auto& style : SnapTray::FrameStyleLibrary::instance().styles()) {
+        const bool solid = style.style.background == SnapTray::FrameStyle::Background::Solid;
+        model.append(QVariantMap{{QStringLiteral("name"), style.name},
+                                 {QStringLiteral("startColor"), solid ? style.style.solidColor : style.style.gradientStart},
+                                 {QStringLiteral("endColor"), solid ? style.style.solidColor : style.style.gradientEnd}});
+    }
+    return model;
+}
+
+int RecordingPreviewBackend::currentFrameStyle() const
+{
+    if (!m_appearance.enabled) return -1;
+    const auto& styles = SnapTray::FrameStyleLibrary::instance().styles();
+    // Compared the way it would be applied, so a translucent screenshot
+    // color still matches its opaque recording counterpart.
+    for (int i = 0; i < styles.size(); ++i) {
+        SnapTray::RecordingAppearance applied = m_appearance;
+        applied.applyFrameStyle(styles.at(i).style);
+        if (applied.background == m_appearance.background && applied.frameStyle() == m_appearance.frameStyle()) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool RecordingPreviewBackend::frameStylesFull() const
+{
+    return SnapTray::FrameStyleLibrary::instance().isFull();
+}
+
+int RecordingPreviewBackend::maxFrameStyles() const
+{
+    return SnapTray::FrameStyleLibrary::maxStyles();
+}
+
+void RecordingPreviewBackend::applyFrameStyle(int index)
+{
+    const auto& styles = SnapTray::FrameStyleLibrary::instance().styles();
+    if (index < 0 || index >= styles.size()) return;
+    const SnapTray::FrameStyle style = styles.at(index).style;
+    editAppearance([&style](SnapTray::RecordingAppearance& a) { a.applyFrameStyle(style); });
+}
+
+bool RecordingPreviewBackend::saveFrameStyle(const QString& name)
+{
+    return SnapTray::FrameStyleLibrary::instance().save(name, m_appearance.frameStyle());
+}
+
+bool RecordingPreviewBackend::renameFrameStyle(int index, const QString& name)
+{
+    return SnapTray::FrameStyleLibrary::instance().rename(index, name);
+}
+
+void RecordingPreviewBackend::deleteFrameStyle(int index)
+{
+    SnapTray::FrameStyleLibrary::instance().remove(index);
+}
+
+bool RecordingPreviewBackend::frameStyleNameTaken(const QString& name, int exceptIndex) const
+{
+    return SnapTray::FrameStyleLibrary::instance().nameTaken(name, exceptIndex);
+}
+
+QString RecordingPreviewBackend::suggestedFrameStyleName() const
+{
+    return SnapTray::FrameStyleLibrary::instance().suggestedName();
+}
+
 void RecordingPreviewBackend::setAppearance(const SnapTray::RecordingAppearance& appearance)
 {
     if (m_appearance == appearance) return;
@@ -271,6 +348,17 @@ void RecordingPreviewBackend::editAppearance(const std::function<void(SnapTray::
     if (isProcessing()) return; // a running export keeps what it started with
     SnapTray::RecordingAppearance appearance = m_appearance;
     change(appearance);
+    // Switching from a solid color to a blurred-video or image background
+    // keeps the solid color as the style beneath it.
+    const auto drawnOver = [](SnapTray::RecordingAppearance::Background b) {
+        return b == SnapTray::RecordingAppearance::Background::BlurredVideo
+            || b == SnapTray::RecordingAppearance::Background::Image;
+    };
+    if (drawnOver(appearance.background) && !drawnOver(m_appearance.background)) {
+        appearance.solidUnderneath = m_appearance.background == SnapTray::RecordingAppearance::Background::Solid;
+    }
+    // A preset chosen after a custom size or gradient leaves nothing behind.
+    appearance.dropInactiveCustomValues();
     if (appearance == m_appearance) return;
     rememberAppearance(appearance);
     setAppearance(appearance);
