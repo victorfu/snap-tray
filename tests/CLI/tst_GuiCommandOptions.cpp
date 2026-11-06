@@ -112,6 +112,8 @@ private slots:
     void handleResponse_savesToOutputFile();
     void handleResponse_saveFailureReturnsFileError();
     void handleResponse_rawWritesPngData();
+    void handleResponse_preservesTransparentCorners_data();
+    void handleResponse_preservesTransparentCorners();
     void handleResponse_missingImageIsError();
     void handleResponse_pinOnly();
     void lastCaptureRegionSetting_roundTrip();
@@ -433,6 +435,46 @@ void tst_GuiCommandOptions::handleResponse_rawWritesPngData()
     QImage image;
     QVERIFY(image.loadFromData(result.data, "PNG"));
     QCOMPARE(image.size(), QSize(16, 9));
+}
+
+void tst_GuiCommandOptions::handleResponse_preservesTransparentCorners_data()
+{
+    QTest::addColumn<bool>("raw");
+    QTest::newRow("output-file") << false;
+    QTest::newRow("raw") << true;
+}
+
+void tst_GuiCommandOptions::handleResponse_preservesTransparentCorners()
+{
+    // A rounded selection arrives with transparent corners; scripted output
+    // must keep them like the selector's own Save does.
+    QFETCH(bool, raw);
+    QImage rounded(QSize(16, 16), QImage::Format_ARGB32);
+    rounded.fill(Qt::magenta);
+    rounded.setPixelColor(0, 0, Qt::transparent);
+    QByteArray encoded;
+    QBuffer buffer(&encoded);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(rounded.save(&buffer, "PNG"));
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("rounded.png"));
+    auto gui = parseGui(raw ? QStringList{"--raw"} : QStringList{"-o", path});
+    QVERIFY(gui);
+    const CLIResult result = gui->command.handleResponse(
+        gui->parser, completedResponse(QRect(0, 0, 16, 16), 0, encoded));
+    QVERIFY2(result.isSuccess(), qPrintable(result.message));
+
+    QImage output;
+    if (raw) {
+        QVERIFY(output.loadFromData(result.data, "PNG"));
+    } else {
+        QVERIFY(output.load(path));
+    }
+    QVERIFY(output.hasAlphaChannel());
+    QCOMPARE(qAlpha(output.pixel(0, 0)), 0);
+    QCOMPARE(qAlpha(output.pixel(8, 8)), 255);
 }
 
 void tst_GuiCommandOptions::handleResponse_missingImageIsError()

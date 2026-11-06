@@ -320,6 +320,7 @@ CLIResult GuiCommand::handleResponse(const QCommandLineParser& parser,
             CaptureOutputOptions options;
             options.outputFile = parser.value(kOptOutput);
             options.savePath = parser.value(kOptPath);
+            options.preserveAlpha = true;
             CLIResult saved = emitCaptureOutput(pixmap, options, metadata);
             if (!saved.isSuccess()) return saved;
             messages.append(saved.message);
@@ -328,6 +329,7 @@ CLIResult GuiCommand::handleResponse(const QCommandLineParser& parser,
         if (parser.isSet(kOptRaw)) {
             CaptureOutputOptions options;
             options.toRaw = true;
+            options.preserveAlpha = true;
             // stdout carries only the PNG bytes.
             return emitCaptureOutput(pixmap, options, metadata);
         }

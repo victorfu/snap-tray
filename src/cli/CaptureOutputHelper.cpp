@@ -46,10 +46,13 @@ QString resolveCaptureType(const CaptureMetadata& metadata)
     return metadata.captureType.isEmpty() ? QStringLiteral("Screenshot") : metadata.captureType;
 }
 
-QImage prepareImageForRawOrSave(const QPixmap& screenshot, QScreen* sourceScreen)
+QImage prepareImageForRawOrSave(const QPixmap& screenshot,
+                                QScreen* sourceScreen,
+                                bool preserveAlpha)
 {
+    const QImage::Format format = preserveAlpha ? QImage::Format_ARGB32 : QImage::Format_RGB32;
     return tagImageWithScreenColorSpace(
-        screenshot.toImage().convertToFormat(QImage::Format_RGB32), sourceScreen);
+        screenshot.toImage().convertToFormat(format), sourceScreen);
 }
 
 QImage prepareImageForClipboard(const QPixmap& screenshot, QScreen* sourceScreen)
@@ -112,7 +115,8 @@ CLIResult emitCaptureOutput(
     QCoreApplication::processEvents();
 
     if (options.toRaw) {
-        QImage rawImage = prepareImageForRawOrSave(screenshot, metadata.sourceScreen);
+        QImage rawImage =
+            prepareImageForRawOrSave(screenshot, metadata.sourceScreen, options.preserveAlpha);
 
         QByteArray data;
         QBuffer buffer(&data);
@@ -137,7 +141,8 @@ CLIResult emitCaptureOutput(
     // Ensure directory exists
     QDir().mkpath(QFileInfo(filePath).absolutePath());
 
-    QImage image = prepareImageForRawOrSave(screenshot, metadata.sourceScreen);
+    QImage image =
+        prepareImageForRawOrSave(screenshot, metadata.sourceScreen, options.preserveAlpha);
     ImageSaveUtils::Error saveError;
     bool success;
     if (options.outputFile.isEmpty()) {
