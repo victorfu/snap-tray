@@ -127,28 +127,29 @@
         <translation>自動</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="97" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="131" />
         <source>Beautify</source>
         <translation>美化</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="585" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="647" />
         <source>Shadow</source>
         <translation>陰影</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="626" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="688" />
         <source>Copy</source>
         <translation>複製</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="632" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="694" />
         <source>Save</source>
         <translation>儲存</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="121" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="639" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="155" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="701" />
         <source>Close</source>
         <translation>關閉</translation>
     </message>
@@ -157,105 +158,141 @@
         <translation>選擇顏色</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="187" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="221" />
         <source>Style</source>
         <translation>樣式</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="203" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="238" />
         <source>Custom</source>
         <translation>自訂</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="231" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="356" />
         <source>Style: %1</source>
         <translation>樣式：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="404" />
         <source>Background</source>
         <translation>背景</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="382" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="444" />
         <source>Background: %1</source>
         <translation>背景：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="424" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="456" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="486" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="518" />
         <source>Customize</source>
         <translation>自訂調整</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="426" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="488" />
         <source>Hide padding, corners, shadow and other details</source>
         <translation>隱藏內距、圓角、陰影和其他細節</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="427" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="489" />
         <source>Show padding, corners, shadow and other details</source>
         <translation>顯示內距、圓角、陰影和其他細節</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="490" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="552" />
         <source>Background type</source>
         <translation>背景類型</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="500" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="562" />
         <source>Colors</source>
         <translation>顏色</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="508" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="570" />
         <source>First color</source>
         <translation>第一個顏色</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="509" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
         <source>Second color</source>
         <translation>第二個顏色</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="559" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="621" />
         <source>Padding</source>
         <translation>內距</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="572" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="634" />
         <source>Corners</source>
         <translation>圓角</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="595" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="657" />
         <source>Shadow blur</source>
         <translation>陰影模糊</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="610" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="672" />
         <source>Aspect ratio</source>
         <translation>長闊比</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="40" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
         <source>Compact</source>
         <translation>緊湊</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
         <source>Standard</source>
         <translation>標準</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
         <source>Spacious</source>
         <translation>寬鬆</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="44" />
         <source>Flat</source>
         <translation>扁平</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="252" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="261" />
+        <source>Save style…</source>
+        <translation>儲存樣式…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="267" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>最多可保留 %1 個已儲存的樣式。刪除一個才能再儲存新的。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="319" />
+        <source>Style name</source>
+        <translation>樣式名稱</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="337" />
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="387" />
+        <source>Saved style: %1</source>
+        <translation>已儲存的樣式：%1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="842" />
+        <source>Delete style %1</source>
+        <translation>刪除樣式 %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
+        <source>My style %1</source>
+        <translation>我的樣式 %1</translation>
     </message>
 </context>
 <context>
@@ -279,87 +316,97 @@
         <translation>擷取螢幕截圖時會發生甚麼，以及區域選取器如何幫你精準選取。</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
         <location filename="../src/qml/settings/CaptureSettings.qml" line="26" />
         <source>After Capture</source>
         <translation>擷取後</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="30" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="31" />
         <source>After full screen capture</source>
         <translation>全螢幕截圖後</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="32" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
         <source>Copy to clipboard</source>
         <translation>複製到剪貼簿</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
         <source>Save to file</source>
         <translation>儲存至檔案</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="35" />
         <source>Open editor</source>
         <translation>開啟編輯器</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="40" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="41" />
         <source>Region Selector</source>
         <translation>區域選取器</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
         <source>Cursor companion</source>
         <translation>游標輔助顯示</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
         <source>Off</source>
         <translation>關閉</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="47" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="49" />
         <source>Magnifier</source>
         <translation>放大鏡</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="50" />
         <source>Beaver</source>
         <translation>海狸</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="56" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="59" />
         <source>Show shortcut hints</source>
         <translation>顯示快捷鍵提示</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="62" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="65" />
         <source>Auto Blur</source>
         <translation>自動模糊</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="63" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="66" />
         <source>How faces and text are hidden when you use Auto Blur.</source>
         <translation>使用自動模糊時，臉孔和文字會如何被隱藏。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="68" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="72" />
         <source>Blur type</source>
         <translation>模糊類型</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="70" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="74" />
         <source>Pixelate</source>
         <translation>像素化</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="71" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="75" />
         <source>Gaussian</source>
         <translation>高斯</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="79" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="84" />
         <source>Blur intensity</source>
         <translation>模糊強度</translation>
     </message>
@@ -476,97 +523,108 @@
 <context>
     <name>GeneralSettings</name>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="36" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="77" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="38" />
         <source>Start on login</source>
         <translation>登入時啟動</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="46" />
         <source>Language</source>
         <translation>語言</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="47" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="51" />
         <source>Display language</source>
         <translation>顯示語言：</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="62" />
         <source>Appearance</source>
         <translation>外觀</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="61" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
         <source>App theme</source>
         <translation>應用程式主題</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="63" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="69" />
         <source>Dark</source>
         <translation>深色</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="64" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="70" />
         <source>Light</source>
         <translation>淺色</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
         <source>Permissions</source>
         <translation>權限</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="77" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="84" />
         <source>Screen Recording</source>
         <translation>屏幕錄製</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
         <source>Required for capturing screenshots and recording your screen.</source>
         <translation>擷取螢幕截圖及錄製畫面所需。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="93" />
         <source>Accessibility</source>
         <translation>輔助功能：</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="86" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="94" />
         <source>Required for global hotkeys and window detection.</source>
         <translation>全域快捷鍵及視窗偵測所需。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="100" />
         <source>Command Line</source>
         <translation>命令行介面</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="105" />
         <source>CLI Status</source>
         <translation>CLI 狀態</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
         <source>Please wait...</source>
         <translation>請稍候...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="123" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="131" />
         <source>'snaptray' command is available</source>
         <translation>「snaptray」指令已在終端機中可用</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="124" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="132" />
         <source>'snaptray' command is not installed</source>
         <translation>「snaptray」指令未安裝</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Uninstall CLI</source>
         <translation>解除安裝 CLI</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Install CLI</source>
         <translation>安裝 CLI</translation>
     </message>
@@ -1520,17 +1578,18 @@ English is always included and cannot be removed.</source>
         <translation>已選語言</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="135" />
         <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
         <source>After OCR Recognition</source>
         <translation>OCR 識別後</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="382" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
         <source>Copy text directly to clipboard</source>
         <translation>直接複製文字到剪貼簿</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="384" />
         <source>Show editor to review and edit text</source>
         <translation>顯示編輯器以查看和編輯文字</translation>
     </message>
@@ -2281,32 +2340,40 @@ Size: %2</source>
         <translation>新釘選的外觀，以及每次縮放或不透明度調整的幅度。</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="26" />
         <source>Appearance</source>
         <translation>外觀</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="30" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="31" />
         <source>Default opacity</source>
         <translation>預設不透明度</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="40" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="42" />
         <source>Show controls on hover</source>
         <translation>滑鼠停留時顯示控制項</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="45" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="47" />
         <source>Steps</source>
         <translation>步進</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="49" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="52" />
         <source>Opacity step</source>
         <translation>不透明度步進</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="59" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="63" />
         <source>Zoom step</source>
         <translation>縮放步進</translation>
     </message>
@@ -5408,42 +5475,45 @@ Size: %2</source>
 <context>
     <name>RecordingSettings</name>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="256" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="264" />
         <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
         <translation>每次錄製前確認螢幕、麥克風與系統音訊。關閉時會直接以這些設定開始錄製。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="255" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="113" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
         <source>Show setup before recording</source>
         <translation>錄製前顯示設定</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="98" />
         <source>Frame rate</source>
         <translation>幀率</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
         <source>10 FPS</source>
         <translation>10 幀/秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
         <source>15 FPS</source>
         <translation>15 幀/秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
         <source>24 FPS</source>
         <translation>24 幀/秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="103" />
         <source>30 FPS</source>
         <translation>30 幀/秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="113" />
         <source>Default output format</source>
         <translation>預設輸出格式</translation>
     </message>
@@ -5452,22 +5522,23 @@ Size: %2</source>
         <translation>輸出格式：</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
         <source>MP4 (H.264)</source>
         <translation>MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="115" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="117" />
         <source>GIF</source>
         <translation>GIF</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
         <source>WebP</source>
         <translation>WebP</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="123" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="112" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="126" />
         <source>Recording quality</source>
         <translation>錄製質素</translation>
     </message>
@@ -5522,57 +5593,63 @@ Audio is not supported for GIF recordings.</source>
 GIF 錄製不支援音訊。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="164" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
         <source>Audio</source>
         <translation>音頻</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
         <source>Record audio</source>
         <translation>錄製音頻</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="175" />
         <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
         <translation>音頻會先錄入暫存的 MP4 錄影中。只有 MP4 匯出才能保留音頻。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="173" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="177" />
         <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
         <translation>只有直接錄製為 MP4，或啟用「顯示預覽」時，才能使用音頻。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
         <source>Source</source>
         <translation>來源：</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="184" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
         <source>Microphone</source>
         <translation>麥克風</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="185" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="190" />
         <source>System Audio</source>
         <translation>系統音頻</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="191" />
         <source>Both (Mixed)</source>
         <translation>兩者（混合）</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="218" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="223" />
         <source>Loading audio devices...</source>
         <translation>正在載入音頻裝置...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="230" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="235" />
         <source>The recording page is ready. Input devices are loading in the background.</source>
         <translation>錄製頁面已可使用，輸入裝置會在背景載入。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="241" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="248" />
         <source>Input device</source>
         <translation>輸入裝置</translation>
     </message>
@@ -5590,77 +5667,82 @@ GIF 錄製不支援音訊。</translation>
         <translation>開啟後可在錄製完成後進行修剪或匯出。預覽錄影一律會先以 MP4 擷取。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="360" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
         <source>Countdown</source>
         <translation>倒數計時</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="363" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="376" />
         <source>Show countdown</source>
         <translation>顯示倒數計時</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="383" />
         <source>Duration</source>
         <translation>倒數計時時長：</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="371" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="385" />
         <source>1 second</source>
         <translation>1 秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="386" />
         <source>2 seconds</source>
         <translation>2 秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="373" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="387" />
         <source>3 seconds</source>
         <translation>3 秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="374" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="388" />
         <source>4 seconds</source>
         <translation>4 秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="375" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="389" />
         <source>5 seconds</source>
         <translation>5 秒</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="135" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="138" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>儲存影片的畫質。開啟預覽時,錄影會以高畫質擷取,儲存時再轉換為此畫質。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="268" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="276" />
         <source>All keys, including typed text</source>
         <translation>所有按鍵（包括輸入的文字）</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="278" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="286" />
         <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
         <translation>用於預覽中的快捷鍵提示。按鍵只與暫存錄影一起保存並隨之刪除，絕不會出現在儲存的檔案中。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="279" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
         <source>Not available on this system yet</source>
         <translation>此系統尚未可用</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="266" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
         <source>Off</source>
         <translation>關閉</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="114" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="271" />
         <source>Record keys</source>
         <translation>記錄按鍵</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="267" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="275" />
         <source>Shortcuts only</source>
         <translation>僅快捷鍵</translation>
     </message>
@@ -5685,22 +5767,25 @@ GIF 錄製不支援音訊。</translation>
         <translation>90 日</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="128" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="348" />
         <source>Keep editable projects</source>
         <translation>保留可編輯項目</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="342" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="353" />
         <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
         <translation>儲存後保留錄影及你的編輯，方便日後在錄影庫中再次修改和匯出。項目會保留完整的螢幕錄影及其指標、按鍵和音軌，包括你模糊或裁走的內容，並會佔用磁碟空間。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="350" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="129" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="362" />
         <source>Delete projects not changed for</source>
         <translation>刪除未有變更超過以下時間的項目</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="289" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="127" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="298" />
         <source>After recording</source>
         <translation>錄影後</translation>
     </message>
@@ -5710,57 +5795,59 @@ GIF 錄製不支援音訊。</translation>
         <translation>錄影會直接儲存為無聲 MP4 檔案，不顯示預覽。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="292" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="301" />
         <source>Edit in the preview</source>
         <translation>在預覽中編輯</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="293" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="302" />
         <source>Save right away</source>
         <translation>立即儲存</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="305" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
         <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
         <translation>快速模式：停止後立即以最終格式儲存檔案，沒有預覽，亦不保留編輯用軌道。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="132" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
         <source>After saving</source>
         <translation>儲存後</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="317" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="326" />
         <source>Do nothing</source>
         <translation>不執行任何操作</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="318" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="327" />
         <source>Copy the file</source>
         <translation>複製檔案</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="319" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
         <source>Show in folder</source>
         <translation>在資料夾中顯示</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="304" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>編輯模式：在預覽中修剪、裁切並加入效果，然後儲存。有預覽的錄影一律先以 MP4 錄製。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="115" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
         <source>Choose an area before recording</source>
         <translation>錄影前選擇範圍</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="329" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="339" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>在螢幕上拖曳以選擇要錄影的內容。編輯模式仍會錄製整個螢幕，並以裁切至該範圍的狀態開啟預覽，方便你修改；快速模式只錄製該範圍。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="343" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="354" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>從預覽中儲存時才會保留項目。要使用項目，請開啟「顯示預覽」。</translation>
     </message>
@@ -5938,144 +6025,172 @@ GIF 錄製不支援音訊。</translation>
         <translation>截圖和錄影儲存的位置、命名方式，以及加上的水印。</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
         <location filename="../src/qml/settings/SavingSettings.qml" line="28" />
         <source>Save Locations</source>
         <translation>儲存位置</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="32" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="33" />
         <source>Screenshots</source>
         <translation>截圖</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="38" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="40" />
         <source>Recordings</source>
         <translation>錄製</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="46" />
         <source>Filename Format</source>
         <translation>檔案名稱格式</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="47" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="50" />
         <source>Template</source>
         <translation>範本</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="82" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="85" />
         <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>標記：{prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 日期標記：{yyyyMMdd_HHmmss}、{yyyy-MM-dd_HH-mm-ss} 或 {date}</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="95" />
         <source>Preview: </source>
         <translation>預覽：</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="100" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
         <source>Save Behavior</source>
         <translation>儲存行為</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="107" />
         <source>Auto-save screenshots</source>
         <translation>自動儲存截圖</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="110" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="115" />
         <source>Remember last folder</source>
         <translation>記住上次使用的資料夾</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="116" />
         <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
         <translation>手動儲存影像時，對話框會在上次成功儲存的資料夾中開啟。自動儲存仍會使用上方的「螢幕截圖」資料夾。</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="117" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
         <source>Auto-save recordings</source>
         <translation>自動儲存錄製</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="129" />
         <source>Watermark</source>
         <translation>水印</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="127" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="134" />
         <source>Apply to images</source>
         <translation>套用至圖片</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="133" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="141" />
         <source>Apply to recordings</source>
         <translation>套用至錄製</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="152" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="161" />
         <source>Image</source>
         <translation>圖片</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="158" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="168" />
         <source>Scale</source>
         <translation>縮放</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="167" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="178" />
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="176" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
         <source>Margin</source>
         <translation>邊距</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="185" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="198" />
         <source>Position</source>
         <translation>位置</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="187" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="200" />
         <source>Top-Left</source>
         <translation>左上</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="201" />
         <source>Top-Right</source>
         <translation>右上</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="189" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="202" />
         <source>Bottom-Left</source>
         <translation>左下</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="190" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="203" />
         <source>Bottom-Right</source>
         <translation>右下</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="221" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="234" />
         <source>No image</source>
         <translation>無圖片</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="232" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
         <source>Library</source>
         <translation>素材庫</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="236" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="250" />
         <source>Screenshots kept in Library</source>
         <translation>素材庫保留的截圖數</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="259" />
         <source>When there are more, the oldest are removed from the Library. Files you saved stay where they are.</source>
         <translation>超過數量時，最舊的截圖會從素材庫移除。你儲存的檔案會留在原處。</translation>
     </message>
@@ -6316,6 +6431,19 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     </message>
 </context>
 <context>
+    <name>SettingsRow</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="96" />
+        <source>Reset %1 to default</source>
+        <translation>將 %1 重設為預設值</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="123" />
+        <source>Reset to default</source>
+        <translation>重設為預設值</translation>
+    </message>
+</context>
+<context>
     <name>SettingsSidebar</name>
     <message>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
@@ -6361,6 +6489,32 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
         <source>Text Recognition</source>
         <translation>文字辨識</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="159" />
+        <source>Page</source>
+        <translation>頁面</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="240" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="260" />
+        <source>Search settings</source>
+        <translation>搜尋設定</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="279" />
+        <source>Clear search</source>
+        <translation>清除搜尋</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="315" />
+        <source>Search results</source>
+        <translation>搜尋結果</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="383" />
+        <source>No settings match “%1”</source>
+        <translation>沒有符合「%1」的設定</translation>
     </message>
 </context>
 <context>
@@ -6682,133 +6836,133 @@ It may be in use by another application.</source>
 <context>
     <name>SnapTray::SettingsBackend</name>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1018" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1138" />
         <source>Never</source>
         <translation>從不</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1106" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1226" />
         <source>Could not install the CLI. Check permissions and try again.</source>
         <translation>無法安裝 CLI。請檢查權限後再試。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1107" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1227" />
         <source>Could not uninstall the CLI. Check permissions and try again.</source>
         <translation>無法解除安裝 CLI。請檢查權限後再試。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1140" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1260" />
         <source>Select Screenshot Folder</source>
         <translation>選擇截圖資料夾</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1148" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1268" />
         <source>Select Recording Folder</source>
         <translation>選擇錄製資料夾</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1276" />
         <source>Select Watermark Image</source>
         <translation>選擇水印圖片</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1157" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1277" />
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>圖像 (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="271" />
         <source>Disable Windows Print Screen Shortcut?</source>
         <translation>關閉 Windows Print Screen 快捷鍵？</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="227" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="291" />
         <source>Windows Print Screen Shortcut Disabled</source>
         <translation>已關閉 Windows Print Screen 快捷鍵</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="234" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="298" />
         <source>Windows Setting Not Changed</source>
         <translation>未更改 Windows 設定</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="235" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="299" />
         <source>SnapTray could not change the Windows Print Screen setting.</source>
         <translation>SnapTray 無法更改 Windows Print Screen 設定。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="176" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="240" />
         <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
         <translation>已儲存 %1，但無法啟用，因為該快捷鍵已被其他應用程式或系統使用。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="145" />
-        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="209" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="225" />
         <source>Hotkey Conflict</source>
         <translation>快捷鍵衝突</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="220" />
         <source>Defaults were restored, but these shortcuts are still inactive: %1</source>
         <translation>已還原預設值，但以下快捷鍵仍未生效：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="181" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="245" />
         <source>%1 was saved, but it could not be activated. %2</source>
         <translation>已儲存 %1，但無法啟用。%2</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="210" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="274" />
         <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
         <translation>Windows 正在使用 Print Screen 鍵開啟其 Snipping Tool，導致 SnapTray 無法將 Print Screen 用作快捷鍵。是否關閉此設定，讓 SnapTray 可以使用 Print Screen 鍵？</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="214" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="278" />
         <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
         <translation>完成後請重新啟動 SnapTray。如果 Windows 仍然開啟 Snipping Tool，請登出 Windows（或重新啟動）後再試一次。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="219" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="283" />
         <source>No, don't ask again</source>
         <translation>否，不要再詢問</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="228" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="292" />
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>重新啟動 SnapTray 即可使用 Print Screen。如果仍然開啟 Snipping Tool，請登出 Windows 後重新登入。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="348" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="468" />
         <source>Checking start on login status...</source>
         <translation>正在檢查登入時啟動狀態…</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="376" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="496" />
         <source>Updating start on login status...</source>
         <translation>正在更新登入時啟動狀態…</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="427" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="547" />
         <source>Start on login status error: %1</source>
         <translation>登入時啟動狀態錯誤：%1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="437" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="557" />
         <source>Disabled in system startup settings. Re-enable it there.</source>
         <translation>已在系統啟動設定中停用。請在該處重新啟用。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="440" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="560" />
         <source>Disabled by your organization.</source>
         <translation>已由你的機構停用。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="443" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="563" />
         <source>Enabled by your organization.</source>
         <translation>已由你的機構啟用。</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="446" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="566" />
         <source>Start on login is unavailable for this package.</source>
         <translation>此套件無法使用登入時啟動功能。</translation>
     </message>
@@ -7191,52 +7345,56 @@ It may be in use by another application.</source>
         <translation>目前版本</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="63" />
         <source>Automatic Updates</source>
         <translation>自動更新</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="66" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="67" />
         <source>Auto-check updates</source>
         <translation>自動檢查更新</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
         <source>Check frequency</source>
         <translation>檢查頻率</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
         <source>Every day</source>
         <translation>每日</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="76" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
         <source>Every 3 days</source>
         <translation>每 3 日</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
         <source>Every week</source>
         <translation>每星期</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="80" />
         <source>Every 2 weeks</source>
         <translation>每兩星期</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="81" />
         <source>Every month</source>
         <translation>每月</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Checking...</source>
         <translation>檢查中…</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Check Now</source>
         <translation>立即檢查</translation>
     </message>

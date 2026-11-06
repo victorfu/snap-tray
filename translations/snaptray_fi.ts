@@ -127,28 +127,29 @@
         <translation>Automaattinen</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="97" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="131" />
         <source>Beautify</source>
         <translation>Kaunista</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="585" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="647" />
         <source>Shadow</source>
         <translation>Varjo</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="626" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="688" />
         <source>Copy</source>
         <translation>Kopioi</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="632" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="694" />
         <source>Save</source>
         <translation>Tallenna</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="121" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="639" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="155" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="701" />
         <source>Close</source>
         <translation>Sulje</translation>
     </message>
@@ -157,105 +158,141 @@
         <translation>Valitse väri</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="187" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="221" />
         <source>Style</source>
         <translation>Tyyli</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="203" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="238" />
         <source>Custom</source>
         <translation>Mukautettu</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="231" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="356" />
         <source>Style: %1</source>
         <translation>Tyyli: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="404" />
         <source>Background</source>
         <translation>Tausta</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="382" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="444" />
         <source>Background: %1</source>
         <translation>Tausta: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="424" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="456" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="486" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="518" />
         <source>Customize</source>
         <translation>Mukauta</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="426" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="488" />
         <source>Hide padding, corners, shadow and other details</source>
         <translation>Piilota reunus, kulmat, varjo ja muut tiedot</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="427" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="489" />
         <source>Show padding, corners, shadow and other details</source>
         <translation>Näytä reunus, kulmat, varjo ja muut tiedot</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="490" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="552" />
         <source>Background type</source>
         <translation>Taustan tyyppi</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="500" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="562" />
         <source>Colors</source>
         <translation>Värit</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="508" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="570" />
         <source>First color</source>
         <translation>Ensimmäinen väri</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="509" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
         <source>Second color</source>
         <translation>Toinen väri</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="559" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="621" />
         <source>Padding</source>
         <translation>Reunus</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="572" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="634" />
         <source>Corners</source>
         <translation>Kulmat</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="595" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="657" />
         <source>Shadow blur</source>
         <translation>Varjon sumennus</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="610" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="672" />
         <source>Aspect ratio</source>
         <translation>Kuvasuhde</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="40" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
         <source>Compact</source>
         <translation>Tiivis</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
         <source>Standard</source>
         <translation>Vakio</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
         <source>Spacious</source>
         <translation>Väljä</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="44" />
         <source>Flat</source>
         <translation>Litteä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="252" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="261" />
+        <source>Save style…</source>
+        <translation>Tallenna tyyli…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="267" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>Voit säilyttää enintään %1 tallennettua tyyliä. Poista yksi tallentaaksesi uuden.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="319" />
+        <source>Style name</source>
+        <translation>Tyylin nimi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="337" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="387" />
+        <source>Saved style: %1</source>
+        <translation>Tallennettu tyyli: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="842" />
+        <source>Delete style %1</source>
+        <translation>Poista tyyli %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
+        <source>My style %1</source>
+        <translation>Oma tyyli %1</translation>
     </message>
 </context>
 <context>
@@ -279,87 +316,97 @@
         <translation>Mitä tapahtuu, kun otat kuvakaappauksen, ja miten alueen valitsin auttaa tähtäämään.</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
         <location filename="../src/qml/settings/CaptureSettings.qml" line="26" />
         <source>After Capture</source>
         <translation>Kaappauksen jälkeen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="30" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="31" />
         <source>After full screen capture</source>
         <translation>Koko näytön kaappauksen jälkeen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="32" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
         <source>Copy to clipboard</source>
         <translation>Kopioi leikepöydälle</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
         <source>Save to file</source>
         <translation>Tallenna tiedostoon</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="35" />
         <source>Open editor</source>
         <translation>Avaa editori</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="40" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="41" />
         <source>Region Selector</source>
         <translation>Alueen valitsin</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
         <source>Cursor companion</source>
         <translation>Kohdistimen apuri</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
         <source>Off</source>
         <translation>Pois</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="47" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="49" />
         <source>Magnifier</source>
         <translation>Suurennuslasi</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="50" />
         <source>Beaver</source>
         <translation>Majava</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="56" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="59" />
         <source>Show shortcut hints</source>
         <translation>Näytä pikanäppäinvihjeet</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="62" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="65" />
         <source>Auto Blur</source>
         <translation>Automaattinen sumennus</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="63" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="66" />
         <source>How faces and text are hidden when you use Auto Blur.</source>
         <translation>Miten kasvot ja teksti piilotetaan automaattisella sumennuksella.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="68" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="72" />
         <source>Blur type</source>
         <translation>Sumennustyyppi</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="70" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="74" />
         <source>Pixelate</source>
         <translation>Pikselöi</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="71" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="75" />
         <source>Gaussian</source>
         <translation>Gaussinen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="79" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="84" />
         <source>Blur intensity</source>
         <translation>Sumennuksen voimakkuus</translation>
     </message>
@@ -476,97 +523,108 @@
 <context>
     <name>GeneralSettings</name>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="36" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="77" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="38" />
         <source>Start on login</source>
         <translation>Käynnistä kirjautuessa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="46" />
         <source>Language</source>
         <translation>Kieli</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="47" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="51" />
         <source>Display language</source>
         <translation>Näyttökieli:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="62" />
         <source>Appearance</source>
         <translation>Ulkoasu</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="61" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
         <source>App theme</source>
         <translation>Sovelluksen teema</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="63" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="69" />
         <source>Dark</source>
         <translation>Tumma</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="64" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="70" />
         <source>Light</source>
         <translation>Vaalea</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
         <source>Permissions</source>
         <translation>Käyttöoikeudet</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="77" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="84" />
         <source>Screen Recording</source>
         <translation>Näytön tallennus</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
         <source>Required for capturing screenshots and recording your screen.</source>
         <translation>Vaaditaan kuvakaappausten ottamiseen ja näytön tallentamiseen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="93" />
         <source>Accessibility</source>
         <translation>Esteettömyys:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="86" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="94" />
         <source>Required for global hotkeys and window detection.</source>
         <translation>Vaaditaan globaaleihin pikanäppäimiin ja ikkunoiden tunnistukseen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="100" />
         <source>Command Line</source>
         <translation>Komentorivirajapinta</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="105" />
         <source>CLI Status</source>
         <translation>CLI-tila</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
         <source>Please wait...</source>
         <translation>Odota hetki...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="123" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="131" />
         <source>'snaptray' command is available</source>
         <translation>'snaptray'-komento on käytettävissä päätteessä</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="124" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="132" />
         <source>'snaptray' command is not installed</source>
         <translation>'snaptray'-komentoa ei ole asennettu</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Uninstall CLI</source>
         <translation>Poista CLI</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Install CLI</source>
         <translation>Asenna CLI</translation>
     </message>
@@ -1521,17 +1579,18 @@ Englanti sisältyy aina eikä sitä voi poistaa.</translation>
         <translation>Valitut kielet</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="135" />
         <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
         <source>After OCR Recognition</source>
         <translation>OCR-tunnistuksen jälkeen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="382" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
         <source>Copy text directly to clipboard</source>
         <translation>Kopioi teksti suoraan leikepöydälle</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="384" />
         <source>Show editor to review and edit text</source>
         <translation>Näytä editori tekstin tarkistamiseen ja muokkaamiseen</translation>
     </message>
@@ -2282,32 +2341,40 @@ Koko: %2</translation>
         <translation>Miltä uudet kiinnitykset näyttävät ja kuinka paljon kukin zoomaus- tai läpinäkyvyysaskel muuttaa.</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="26" />
         <source>Appearance</source>
         <translation>Ulkoasu</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="30" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="31" />
         <source>Default opacity</source>
         <translation>Oletusläpinäkyvyys</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="40" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="42" />
         <source>Show controls on hover</source>
         <translation>Näytä ohjaimet osoitettaessa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="45" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="47" />
         <source>Steps</source>
         <translation>Askeleet</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="49" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="52" />
         <source>Opacity step</source>
         <translation>Läpinäkyvyyden askel</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="59" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="63" />
         <source>Zoom step</source>
         <translation>Zoomausaskel</translation>
     </message>
@@ -5412,37 +5479,39 @@ Koko: %2</translation>
 <context>
     <name>RecordingSettings</name>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="256" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="264" />
         <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
         <translation>Vahvista näyttö, mikrofoni ja järjestelmän ääni ennen jokaista tallennusta. Kun pois päältä, tallennus alkaa heti näillä asetuksilla.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="255" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="113" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
         <source>Show setup before recording</source>
         <translation>Näytä asetukset ennen tallennusta</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="98" />
         <source>Frame rate</source>
         <translation>Kuvataajuus</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
         <source>10 FPS</source>
         <translation>10 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
         <source>15 FPS</source>
         <translation>15 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
         <source>24 FPS</source>
         <translation>24 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="103" />
         <source>30 FPS</source>
         <translation>30 FPS</translation>
     </message>
@@ -5451,17 +5520,17 @@ Koko: %2</translation>
         <translation>Tulostemuoto:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
         <source>MP4 (H.264)</source>
         <translation>MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="115" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="117" />
         <source>GIF</source>
         <translation>GIF</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
         <source>WebP</source>
         <translation>WebP</translation>
     </message>
@@ -5486,42 +5555,49 @@ Paras lyhyille leikkeille ja verkkojakoon.
 GIF-tallennuksissa ääntä ei tueta.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="164" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
         <source>Audio</source>
         <translation>Ääni</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
         <source>Record audio</source>
         <translation>Tallenna ääni</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
         <source>Source</source>
         <translation>Lähde:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="184" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
         <source>Microphone</source>
         <translation>Mikrofoni</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="185" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="190" />
         <source>System Audio</source>
         <translation>Järjestelmän ääni</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="191" />
         <source>Both (Mixed)</source>
         <translation>Molemmat (Miksattu)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="113" />
         <source>Default output format</source>
         <translation>Oletusvientimuoto</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="123" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="112" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="126" />
         <source>Recording quality</source>
         <translation>Tallennuslaatu</translation>
     </message>
@@ -5561,27 +5637,28 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <translation>MP4 tallentaa suoraan H.264-videolla ja valinnaisella äänellä.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="175" />
         <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
         <translation>Ääni tallennetaan väliaikaiseen MP4-tallenteeseen. Vain MP4-vienti säilyttää äänen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="173" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="177" />
         <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
         <translation>Ääni on käytettävissä vain suorassa MP4-tallennuksessa tai kun Näytä esikatselu on käytössä.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="218" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="223" />
         <source>Loading audio devices...</source>
         <translation>Ladataan äänilaitteita...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="230" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="235" />
         <source>The recording page is ready. Input devices are loading in the background.</source>
         <translation>Tallennussivu on valmis. Syöttölaitteita ladataan taustalla.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="241" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="248" />
         <source>Input device</source>
         <translation>Syöttölaite</translation>
     </message>
@@ -5599,77 +5676,82 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <translation>Pidä tämä käytössä, jotta voit rajata tai viedä tallenteen tallennuksen jälkeen. Esikatselutallenteet kaapataan aina ensin MP4-muodossa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="360" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
         <source>Countdown</source>
         <translation>Lähtölaskenta</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="363" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="376" />
         <source>Show countdown</source>
         <translation>Näytä lähtölaskenta</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="383" />
         <source>Duration</source>
         <translation>Lähtölaskennan kesto:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="371" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="385" />
         <source>1 second</source>
         <translation>1 sekunti</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="386" />
         <source>2 seconds</source>
         <translation>2 sekuntia</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="373" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="387" />
         <source>3 seconds</source>
         <translation>3 sekuntia</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="374" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="388" />
         <source>4 seconds</source>
         <translation>4 sekuntia</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="375" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="389" />
         <source>5 seconds</source>
         <translation>5 sekuntia</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="135" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="138" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>Tallennetun videon laatu. Kun esikatselu on käytössä, tallenteet kaapataan korkealaatuisina ja muunnetaan tähän laatuun tallennettaessa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="268" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="276" />
         <source>All keys, including typed text</source>
         <translation>Kaikki näppäimet, myös kirjoitettu teksti</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="278" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="286" />
         <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
         <translation>Esikatselun pikanäppäinvihjeitä varten. Näppäimet säilyvät väliaikaisen tallenteen kanssa ja poistetaan sen mukana; ne eivät koskaan ole tallennetussa tiedostossa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="279" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
         <source>Not available on this system yet</source>
         <translation>Ei vielä käytettävissä tässä järjestelmässä</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="266" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
         <source>Off</source>
         <translation>Pois</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="114" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="271" />
         <source>Record keys</source>
         <translation>Tallenna näppäimet</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="267" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="275" />
         <source>Shortcuts only</source>
         <translation>Vain pikanäppäimet</translation>
     </message>
@@ -5694,77 +5776,82 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <translation>90 päivää</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="128" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="348" />
         <source>Keep editable projects</source>
         <translation>Säilytä muokattavat projektit</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="342" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="353" />
         <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
         <translation>Tallennuksen jälkeen säilytä tallenne ja muokkauksesi, jotta voit muuttaa ja viedä sen uudelleen tallennekirjastosta. Projektit säilyttävät koko näytön tallenteen, sen osoittimen, näppäimet ja ääniraidat, myös sen, minkä sumensit tai rajasit pois, ja vievät levytilaa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="350" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="129" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="362" />
         <source>Delete projects not changed for</source>
         <translation>Poista projektit, joita ei ole muutettu</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="289" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="127" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="298" />
         <source>After recording</source>
         <translation>Tallennuksen jälkeen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="292" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="301" />
         <source>Edit in the preview</source>
         <translation>Muokkaa esikatselussa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="293" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="302" />
         <source>Save right away</source>
         <translation>Tallenna heti</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="305" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
         <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
         <translation>Pikatila: tiedosto tallennetaan lopulliseen muotoonsa heti, kun lopetat, ilman esikatselua ja muokkausraitoja.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="132" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
         <source>After saving</source>
         <translation>Tallennuksen jälkeen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="317" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="326" />
         <source>Do nothing</source>
         <translation>Älä tee mitään</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="318" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="327" />
         <source>Copy the file</source>
         <translation>Kopioi tiedosto</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="319" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
         <source>Show in folder</source>
         <translation>Näytä kansiossa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="304" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Muokkaustila: lyhennä, rajaa ja lisää tehosteita esikatselussa ja tallenna sitten. Esikatseltavat tallenteet tallennetaan aina ensin MP4-muodossa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="115" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
         <source>Choose an area before recording</source>
         <translation>Valitse alue ennen tallennusta</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="329" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="339" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>Valitse tallennettava vetämällä näytön yli. Muokkaustila tallentaa silti koko näytön ja avaa esikatselun alueeseen rajattuna, joten voit muuttaa sitä; pikatila tallentaa vain alueen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="343" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="354" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>Projektit säilytetään, kun tallennat esikatselusta. Ota Näytä esikatselu käyttöön, jotta voit käyttää niitä.</translation>
     </message>
@@ -5942,144 +6029,172 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <translation>Mihin kuvakaappaukset ja tallenteet tallennetaan, miten ne nimetään ja mikä vesileima niihin lisätään.</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
         <location filename="../src/qml/settings/SavingSettings.qml" line="28" />
         <source>Save Locations</source>
         <translation>Tallennussijainnit</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="32" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="33" />
         <source>Screenshots</source>
         <translation>Kuvakaappaukset</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="38" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="40" />
         <source>Recordings</source>
         <translation>Tallennukset</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="46" />
         <source>Filename Format</source>
         <translation>Tiedostonimen muoto</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="47" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="50" />
         <source>Template</source>
         <translation>Malli</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="82" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="85" />
         <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>Tunnisteet: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="95" />
         <source>Preview: </source>
         <translation>Esikatselu: </translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="100" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
         <source>Save Behavior</source>
         <translation>Tallennuskäyttäytyminen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="107" />
         <source>Auto-save screenshots</source>
         <translation>Tallenna kuvakaappaukset automaattisesti</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="110" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="115" />
         <source>Remember last folder</source>
         <translation>Muista viimeksi käytetty kansio</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="116" />
         <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
         <translation>Kun kuva tallennetaan manuaalisesti, valintaikkuna avautuu viimeksi onnistuneessa tallennuksessa käytettyyn kansioon. Automaattinen tallennus käyttää edelleen yllä määritettyä kuvakaappauskansiota.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="117" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
         <source>Auto-save recordings</source>
         <translation>Tallenna tallenteet automaattisesti</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="129" />
         <source>Watermark</source>
         <translation>Vesileima</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="127" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="134" />
         <source>Apply to images</source>
         <translation>Käytä kuviin</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="133" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="141" />
         <source>Apply to recordings</source>
         <translation>Käytä tallennuksiin</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="152" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="161" />
         <source>Image</source>
         <translation>Kuva</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="158" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="168" />
         <source>Scale</source>
         <translation>Mittakaava</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="167" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="178" />
         <source>Opacity</source>
         <translation>Läpinäkyvyys</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="176" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
         <source>Margin</source>
         <translation>Marginaali</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="185" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="198" />
         <source>Position</source>
         <translation>Sijainti</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="187" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="200" />
         <source>Top-Left</source>
         <translation>Vasen yläkulma</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="201" />
         <source>Top-Right</source>
         <translation>Oikea yläkulma</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="189" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="202" />
         <source>Bottom-Left</source>
         <translation>Vasen alakulma</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="190" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="203" />
         <source>Bottom-Right</source>
         <translation>Oikea alakulma</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="221" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="234" />
         <source>No image</source>
         <translation>Ei kuvaa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="232" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
         <source>Library</source>
         <translation>Kirjasto</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="236" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="250" />
         <source>Screenshots kept in Library</source>
         <translation>Kirjastossa säilytettävät kuvakaappaukset</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="259" />
         <source>When there are more, the oldest are removed from the Library. Files you saved stay where they are.</source>
         <translation>Kun niitä on enemmän, vanhimmat poistetaan kirjastosta. Tallentamasi tiedostot pysyvät paikallaan.</translation>
     </message>
@@ -6320,6 +6435,19 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
     </message>
 </context>
 <context>
+    <name>SettingsRow</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="96" />
+        <source>Reset %1 to default</source>
+        <translation>Palauta oletus: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="123" />
+        <source>Reset to default</source>
+        <translation>Palauta oletus</translation>
+    </message>
+</context>
+<context>
     <name>SettingsSidebar</name>
     <message>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
@@ -6365,6 +6493,32 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
         <source>Text Recognition</source>
         <translation>Tekstintunnistus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="159" />
+        <source>Page</source>
+        <translation>Sivu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="240" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="260" />
+        <source>Search settings</source>
+        <translation>Hae asetuksista</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="279" />
+        <source>Clear search</source>
+        <translation>Tyhjennä haku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="315" />
+        <source>Search results</source>
+        <translation>Hakutulokset</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="383" />
+        <source>No settings match “%1”</source>
+        <translation>Haulla ”%1” ei löytynyt asetuksia</translation>
     </message>
 </context>
 <context>
@@ -6686,133 +6840,133 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
 <context>
     <name>SnapTray::SettingsBackend</name>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1018" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1138" />
         <source>Never</source>
         <translation>Ei koskaan</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1106" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1226" />
         <source>Could not install the CLI. Check permissions and try again.</source>
         <translation>CLI:n asentaminen epäonnistui. Tarkista käyttöoikeudet ja yritä uudelleen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1107" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1227" />
         <source>Could not uninstall the CLI. Check permissions and try again.</source>
         <translation>CLI:n asennuksen poistaminen epäonnistui. Tarkista käyttöoikeudet ja yritä uudelleen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1140" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1260" />
         <source>Select Screenshot Folder</source>
         <translation>Valitse kuvakaappauskansio</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1148" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1268" />
         <source>Select Recording Folder</source>
         <translation>Valitse tallennuskansio</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1276" />
         <source>Select Watermark Image</source>
         <translation>Valitse vesileimakuva</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1157" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1277" />
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>Kuvat (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="271" />
         <source>Disable Windows Print Screen Shortcut?</source>
         <translation>Poistetaanko Windowsin Print Screen -pikanäppäin käytöstä?</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="227" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="291" />
         <source>Windows Print Screen Shortcut Disabled</source>
         <translation>Windowsin Print Screen -pikanäppäin poistettiin käytöstä</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="234" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="298" />
         <source>Windows Setting Not Changed</source>
         <translation>Windows-asetusta ei muutettu</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="235" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="299" />
         <source>SnapTray could not change the Windows Print Screen setting.</source>
         <translation>SnapTray ei voinut muuttaa Windowsin Print Screen -asetusta.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="176" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="240" />
         <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
         <translation>%1 tallennettiin, mutta sitä ei voitu aktivoida, koska pikanäppäin on jo toisen sovelluksen tai järjestelmän käytössä.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="145" />
-        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="209" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="225" />
         <source>Hotkey Conflict</source>
         <translation>Pikanäppäinristiriita</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="220" />
         <source>Defaults were restored, but these shortcuts are still inactive: %1</source>
         <translation>Oletukset palautettiin, mutta nämä pikanäppäimet ovat yhä passiivisia: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="181" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="245" />
         <source>%1 was saved, but it could not be activated. %2</source>
         <translation>%1 tallennettiin, mutta sitä ei voitu aktivoida. %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="210" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="274" />
         <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
         <translation>Windows käyttää Print Screen -näppäintä avatakseen Snipping Tool -työkalun, mikä estää SnapTrayta käyttämästä Print Screeniä pikanäppäimenä. Poistetaanko tämä käytöstä, jotta SnapTray voi käyttää Print Screen -näppäintä?</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="214" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="278" />
         <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
         <translation>Käynnistä tämän jälkeen SnapTray uudelleen. Jos Windows avaa edelleen Snipping Toolin, kirjaudu ulos Windowsista (tai käynnistä uudelleen) ja yritä uudelleen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="219" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="283" />
         <source>No, don't ask again</source>
         <translation>Ei, älä kysy uudelleen</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="228" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="292" />
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Käynnistä SnapTray uudelleen käyttääksesi Print Screeniä. Jos Snipping Tool avautuu edelleen, kirjaudu ulos Windowsista ja takaisin sisään.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="348" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="468" />
         <source>Checking start on login status...</source>
         <translation>Tarkistetaan kirjautumisen yhteydessä käynnistämisen tilaa...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="376" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="496" />
         <source>Updating start on login status...</source>
         <translation>Päivitetään kirjautumisen yhteydessä käynnistämisen tilaa...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="427" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="547" />
         <source>Start on login status error: %1</source>
         <translation>Kirjautumisen yhteydessä käynnistämisen tilavirhe: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="437" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="557" />
         <source>Disabled in system startup settings. Re-enable it there.</source>
         <translation>Poistettu käytöstä järjestelmän käynnistysasetuksissa. Ota se uudelleen käyttöön siellä.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="440" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="560" />
         <source>Disabled by your organization.</source>
         <translation>Organisaatiosi on poistanut tämän käytöstä.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="443" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="563" />
         <source>Enabled by your organization.</source>
         <translation>Organisaatiosi on ottanut tämän käyttöön.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="446" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="566" />
         <source>Start on login is unavailable for this package.</source>
         <translation>Kirjautumisen yhteydessä käynnistäminen ei ole käytettävissä tälle paketille.</translation>
     </message>
@@ -7195,52 +7349,56 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <translation>Nykyinen versio</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="63" />
         <source>Automatic Updates</source>
         <translation>Automaattiset päivitykset</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="66" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="67" />
         <source>Auto-check updates</source>
         <translation>Autotarkistus</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
         <source>Check frequency</source>
         <translation>Tarkistusväli</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
         <source>Every day</source>
         <translation>Joka päivä</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="76" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
         <source>Every 3 days</source>
         <translation>Joka 3. päivä</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
         <source>Every week</source>
         <translation>Joka viikko</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="80" />
         <source>Every 2 weeks</source>
         <translation>Joka 2. viikko</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="81" />
         <source>Every month</source>
         <translation>Joka kuukausi</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Checking...</source>
         <translation>Tarkistetaan...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Check Now</source>
         <translation>Tarkista nyt</translation>
     </message>

@@ -127,28 +127,29 @@
         <translation>Automático</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="97" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="131" />
         <source>Beautify</source>
         <translation>Embellecer</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="585" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="647" />
         <source>Shadow</source>
         <translation>Sombra</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="626" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="688" />
         <source>Copy</source>
         <translation>Copiar</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="632" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="694" />
         <source>Save</source>
         <translation>Guardar</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="121" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="639" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="155" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="701" />
         <source>Close</source>
         <translation>Cerrar</translation>
     </message>
@@ -157,105 +158,141 @@
         <translation>Seleccionar color</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="187" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="221" />
         <source>Style</source>
         <translation>Estilo</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="203" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="238" />
         <source>Custom</source>
         <translation>Personalizado</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="231" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="356" />
         <source>Style: %1</source>
         <translation>Estilo: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="404" />
         <source>Background</source>
         <translation>Fondo</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="382" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="444" />
         <source>Background: %1</source>
         <translation>Fondo: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="424" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="456" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="486" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="518" />
         <source>Customize</source>
         <translation>Personalizar</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="426" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="488" />
         <source>Hide padding, corners, shadow and other details</source>
         <translation>Ocultar margen, esquinas, sombra y otros detalles</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="427" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="489" />
         <source>Show padding, corners, shadow and other details</source>
         <translation>Mostrar margen, esquinas, sombra y otros detalles</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="490" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="552" />
         <source>Background type</source>
         <translation>Tipo de fondo</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="500" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="562" />
         <source>Colors</source>
         <translation>Colores</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="508" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="570" />
         <source>First color</source>
         <translation>Primer color</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="509" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
         <source>Second color</source>
         <translation>Segundo color</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="559" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="621" />
         <source>Padding</source>
         <translation>Margen</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="572" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="634" />
         <source>Corners</source>
         <translation>Esquinas</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="595" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="657" />
         <source>Shadow blur</source>
         <translation>Desenfoque de sombra</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="610" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="672" />
         <source>Aspect ratio</source>
         <translation>Relación de aspecto</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="40" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
         <source>Compact</source>
         <translation>Compacto</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
         <source>Standard</source>
         <translation>Estándar</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
         <source>Spacious</source>
         <translation>Amplio</translation>
     </message>
     <message>
-        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="44" />
         <source>Flat</source>
         <translation>Plano</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="252" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="261" />
+        <source>Save style…</source>
+        <translation>Guardar estilo…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="267" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>Puedes conservar hasta %1 estilos guardados. Elimina uno para guardar otro.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="319" />
+        <source>Style name</source>
+        <translation>Nombre del estilo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="337" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="387" />
+        <source>Saved style: %1</source>
+        <translation>Estilo guardado: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="842" />
+        <source>Delete style %1</source>
+        <translation>Eliminar estilo %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
+        <source>My style %1</source>
+        <translation>Mi estilo %1</translation>
     </message>
 </context>
 <context>
@@ -279,87 +316,97 @@
         <translation>Qué pasa cuando tomas una captura de pantalla y cómo el selector de región te ayuda a apuntar.</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
         <location filename="../src/qml/settings/CaptureSettings.qml" line="26" />
         <source>After Capture</source>
         <translation>Después de capturar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="30" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="31" />
         <source>After full screen capture</source>
         <translation>Después de la captura de pantalla completa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="32" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
         <source>Copy to clipboard</source>
         <translation>Copiar al portapapeles</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
         <source>Save to file</source>
         <translation>Guardar en archivo</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="35" />
         <source>Open editor</source>
         <translation>Abrir editor</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="40" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="41" />
         <source>Region Selector</source>
         <translation>Selector de región</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
         <source>Cursor companion</source>
         <translation>Acompañante del cursor</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
         <source>Off</source>
         <translation>Desactivado</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="47" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="49" />
         <source>Magnifier</source>
         <translation>Lupa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="50" />
         <source>Beaver</source>
         <translation>Castor</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="56" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="59" />
         <source>Show shortcut hints</source>
         <translation>Mostrar sugerencias de atajos</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="62" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="65" />
         <source>Auto Blur</source>
         <translation>Desenfoque automático</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="63" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="66" />
         <source>How faces and text are hidden when you use Auto Blur.</source>
         <translation>Cómo se ocultan rostros y texto al usar el desenfoque automático.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="68" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="72" />
         <source>Blur type</source>
         <translation>Tipo de difuminado</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="70" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="74" />
         <source>Pixelate</source>
         <translation>Pixelar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="71" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="75" />
         <source>Gaussian</source>
         <translation>Gaussiano</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/CaptureSettings.qml" line="79" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="84" />
         <source>Blur intensity</source>
         <translation>Intensidad de difuminado</translation>
     </message>
@@ -476,97 +523,108 @@
 <context>
     <name>GeneralSettings</name>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="36" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="77" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="38" />
         <source>Start on login</source>
         <translation>Iniciar al iniciar sesión</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="46" />
         <source>Language</source>
         <translation>Idioma</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="47" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="51" />
         <source>Display language</source>
         <translation>Idioma de la interfaz:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="62" />
         <source>Appearance</source>
         <translation>Apariencia</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="61" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
         <source>App theme</source>
         <translation>Tema de la aplicación</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="63" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="69" />
         <source>Dark</source>
         <translation>Oscuro</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="64" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="70" />
         <source>Light</source>
         <translation>Claro</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
         <source>Permissions</source>
         <translation>Permisos</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="77" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="84" />
         <source>Screen Recording</source>
         <translation>Grabación de pantalla</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
         <source>Required for capturing screenshots and recording your screen.</source>
         <translation>Necesario para capturar pantallas y grabar la pantalla.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="93" />
         <source>Accessibility</source>
         <translation>Accesibilidad:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="86" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="94" />
         <source>Required for global hotkeys and window detection.</source>
         <translation>Necesario para atajos globales y detección de ventanas.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="100" />
         <source>Command Line</source>
         <translation>Interfaz de línea de comandos</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="105" />
         <source>CLI Status</source>
         <translation>Estado del CLI</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
         <source>Please wait...</source>
         <translation>Espere por favor...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="123" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="131" />
         <source>'snaptray' command is available</source>
         <translation>El comando 'snaptray' está disponible en la terminal</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="124" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="132" />
         <source>'snaptray' command is not installed</source>
         <translation>El comando 'snaptray' no está instalado</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Uninstall CLI</source>
         <translation>Desinstalar CLI</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="134" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Install CLI</source>
         <translation>Instalar CLI</translation>
     </message>
@@ -1521,17 +1579,18 @@ El inglés siempre está incluido y no se puede quitar.</translation>
         <translation>Idiomas seleccionados</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="135" />
         <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
         <source>After OCR Recognition</source>
         <translation>Después del reconocimiento OCR</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="382" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
         <source>Copy text directly to clipboard</source>
         <translation>Copiar texto directamente al portapapeles</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="384" />
         <source>Show editor to review and edit text</source>
         <translation>Mostrar editor para revisar y editar texto</translation>
     </message>
@@ -2282,32 +2341,40 @@ Tamaño: %2</translation>
         <translation>Cómo se ven los nuevos fijados y cuánto cambia cada paso de zoom u opacidad.</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="26" />
         <source>Appearance</source>
         <translation>Apariencia</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="30" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="31" />
         <source>Default opacity</source>
         <translation>Opacidad predeterminada</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="40" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="42" />
         <source>Show controls on hover</source>
         <translation>Mostrar controles al pasar el cursor</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="45" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="47" />
         <source>Steps</source>
         <translation>Pasos</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="49" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="52" />
         <source>Opacity step</source>
         <translation>Paso de opacidad</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/PinWindowSettings.qml" line="59" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="63" />
         <source>Zoom step</source>
         <translation>Paso de zoom</translation>
     </message>
@@ -5412,37 +5479,39 @@ Tamaño: %2</translation>
 <context>
     <name>RecordingSettings</name>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="256" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="264" />
         <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
         <translation>Confirma la pantalla, el micrófono y el audio del sistema antes de cada grabación. Si está desactivado, la grabación empieza de inmediato con esta configuración.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="255" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="113" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
         <source>Show setup before recording</source>
         <translation>Mostrar configuración antes de grabar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="98" />
         <source>Frame rate</source>
         <translation>Velocidad de cuadros</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
         <source>10 FPS</source>
         <translation>10 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
         <source>15 FPS</source>
         <translation>15 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
         <source>24 FPS</source>
         <translation>24 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="103" />
         <source>30 FPS</source>
         <translation>30 FPS</translation>
     </message>
@@ -5451,17 +5520,17 @@ Tamaño: %2</translation>
         <translation>Formato de salida:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
         <source>MP4 (H.264)</source>
         <translation>MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="115" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="117" />
         <source>GIF</source>
         <translation>GIF</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
         <source>WebP</source>
         <translation>WebP</translation>
     </message>
@@ -5486,42 +5555,49 @@ Ideal para clips cortos y compartir en la web.
 El audio no es compatible con grabaciones GIF.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="164" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
         <source>Audio</source>
         <translation>Audio</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
         <source>Record audio</source>
         <translation>Grabar audio</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
         <source>Source</source>
         <translation>Fuente:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="184" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
         <source>Microphone</source>
         <translation>Micrófono</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="185" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="190" />
         <source>System Audio</source>
         <translation>Audio del sistema</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="191" />
         <source>Both (Mixed)</source>
         <translation>Ambos (Mezclados)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="113" />
         <source>Default output format</source>
         <translation>Formato de salida predeterminado</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="123" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="112" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="126" />
         <source>Recording quality</source>
         <translation>Calidad de grabación</translation>
     </message>
@@ -5561,27 +5637,28 @@ El audio no es compatible con grabaciones GIF.</translation>
         <translation>MP4 graba directamente con video H.264 y audio opcional.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="175" />
         <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
         <translation>El audio se captura en la grabación temporal MP4. Solo la exportación MP4 conserva el audio.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="173" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="177" />
         <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
         <translation>El audio solo está disponible para grabación directa en MP4 o cuando Mostrar vista previa está activado.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="218" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="223" />
         <source>Loading audio devices...</source>
         <translation>Cargando dispositivos de audio...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="230" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="235" />
         <source>The recording page is ready. Input devices are loading in the background.</source>
         <translation>La página de grabación está lista. Los dispositivos de entrada se están cargando en segundo plano.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="241" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="248" />
         <source>Input device</source>
         <translation>Dispositivo de entrada</translation>
     </message>
@@ -5599,77 +5676,82 @@ El audio no es compatible con grabaciones GIF.</translation>
         <translation>Mantén esto activado para recortar o exportar después de grabar. Las grabaciones con vista previa siempre se capturan primero como MP4.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="360" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
         <source>Countdown</source>
         <translation>Cuenta regresiva</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="363" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="376" />
         <source>Show countdown</source>
         <translation>Mostrar cuenta regresiva</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="383" />
         <source>Duration</source>
         <translation>Duración de la cuenta regresiva:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="371" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="385" />
         <source>1 second</source>
         <translation>1 segundo</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="386" />
         <source>2 seconds</source>
         <translation>2 segundos</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="373" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="387" />
         <source>3 seconds</source>
         <translation>3 segundos</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="374" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="388" />
         <source>4 seconds</source>
         <translation>4 segundos</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="375" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="389" />
         <source>5 seconds</source>
         <translation>5 segundos</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="135" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="138" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>Calidad del video guardado. Con la vista previa activada, las grabaciones se capturan en alta calidad y se convierten a esta calidad al guardar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="268" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="276" />
         <source>All keys, including typed text</source>
         <translation>Todas las teclas, incluido el texto escrito</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="278" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="286" />
         <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
         <translation>Para indicaciones de atajos en la vista previa. Las teclas se quedan con la grabación temporal y se eliminan con ella; nunca están en el archivo guardado.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="279" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
         <source>Not available on this system yet</source>
         <translation>Aún no está disponible en este sistema</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="266" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
         <source>Off</source>
         <translation>Desactivado</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="114" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="271" />
         <source>Record keys</source>
         <translation>Grabar teclas</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="267" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="275" />
         <source>Shortcuts only</source>
         <translation>Solo atajos</translation>
     </message>
@@ -5694,77 +5776,82 @@ El audio no es compatible con grabaciones GIF.</translation>
         <translation>90 días</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="128" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="348" />
         <source>Keep editable projects</source>
         <translation>Conservar proyectos editables</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="342" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="353" />
         <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
         <translation>Después de guardar, conserva la grabación y tus ediciones para cambiarla y exportarla de nuevo desde la Biblioteca de grabaciones. Los proyectos conservan la grabación completa de la pantalla, su puntero, teclas y pistas de audio, incluido lo que hayas difuminado o recortado, y ocupan espacio en disco.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="350" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="129" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="362" />
         <source>Delete projects not changed for</source>
         <translation>Eliminar proyectos sin cambios durante</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="289" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="127" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="298" />
         <source>After recording</source>
         <translation>Después de grabar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="292" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="301" />
         <source>Edit in the preview</source>
         <translation>Editar en la vista previa</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="293" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="302" />
         <source>Save right away</source>
         <translation>Guardar de inmediato</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="305" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
         <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
         <translation>Modo rápido: el archivo se guarda en su formato final en cuanto te detienes, sin vista previa ni pistas de edición.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="132" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
         <source>After saving</source>
         <translation>Después de guardar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="317" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="326" />
         <source>Do nothing</source>
         <translation>No hacer nada</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="318" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="327" />
         <source>Copy the file</source>
         <translation>Copiar el archivo</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="319" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
         <source>Show in folder</source>
         <translation>Mostrar en la carpeta</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="304" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Modo de edición: recorta, encuadra y añade efectos en la vista previa y luego guarda. Las grabaciones con vista previa siempre se capturan primero como MP4.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="115" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
         <source>Choose an area before recording</source>
         <translation>Elegir un área antes de grabar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="329" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="339" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>Arrastra sobre la pantalla para elegir qué grabar. El modo de edición sigue grabando toda la pantalla y abre la vista previa recortada al área para que puedas cambiarla; el modo rápido graba solo el área.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="343" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="354" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>Los proyectos se conservan cuando guardas desde la vista previa. Activa Mostrar vista previa para usarlos.</translation>
     </message>
@@ -5942,144 +6029,172 @@ El audio no es compatible con grabaciones GIF.</translation>
         <translation>Dónde se guardan las capturas de pantalla y las grabaciones, cómo se nombran y la marca de agua que se les agrega.</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
         <location filename="../src/qml/settings/SavingSettings.qml" line="28" />
         <source>Save Locations</source>
         <translation>Ubicaciones de guardado</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="32" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="33" />
         <source>Screenshots</source>
         <translation>Capturas de pantalla</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="38" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="40" />
         <source>Recordings</source>
         <translation>Grabaciones</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="44" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="46" />
         <source>Filename Format</source>
         <translation>Formato de nombre de archivo</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="47" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="50" />
         <source>Template</source>
         <translation>Plantilla</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="82" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="85" />
         <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="95" />
         <source>Preview: </source>
         <translation>Vista previa: </translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="100" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
         <source>Save Behavior</source>
         <translation>Comportamiento de guardado</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="107" />
         <source>Auto-save screenshots</source>
         <translation>Guardar capturas automáticamente</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="110" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="115" />
         <source>Remember last folder</source>
         <translation>Recordar la última carpeta</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="116" />
         <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
         <translation>Al guardar una imagen manualmente, el diálogo se abre en la carpeta del último guardado correcto. El guardado automático sigue usando la carpeta Capturas de pantalla indicada arriba.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="117" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
         <source>Auto-save recordings</source>
         <translation>Guardar grabaciones automáticamente</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="129" />
         <source>Watermark</source>
         <translation>Marca de agua</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="127" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="134" />
         <source>Apply to images</source>
         <translation>Aplicar a imágenes</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="133" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="141" />
         <source>Apply to recordings</source>
         <translation>Aplicar a grabaciones</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="152" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="161" />
         <source>Image</source>
         <translation>Imagen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="158" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="168" />
         <source>Scale</source>
         <translation>Escala</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="167" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="178" />
         <source>Opacity</source>
         <translation>Opacidad</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="176" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
         <source>Margin</source>
         <translation>Margen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="185" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="198" />
         <source>Position</source>
         <translation>Posición</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="187" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="200" />
         <source>Top-Left</source>
         <translation>Superior izquierda</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="201" />
         <source>Top-Right</source>
         <translation>Superior derecha</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="189" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="202" />
         <source>Bottom-Left</source>
         <translation>Inferior izquierda</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="190" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="203" />
         <source>Bottom-Right</source>
         <translation>Inferior derecha</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="221" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="234" />
         <source>No image</source>
         <translation>Sin imagen</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="232" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
         <source>Library</source>
         <translation>Biblioteca</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="236" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="250" />
         <source>Screenshots kept in Library</source>
         <translation>Capturas conservadas en la biblioteca</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="259" />
         <source>When there are more, the oldest are removed from the Library. Files you saved stay where they are.</source>
         <translation>Si hay más, las más antiguas se quitan de la biblioteca. Los archivos que guardaste se quedan donde están.</translation>
     </message>
@@ -6320,6 +6435,19 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
     </message>
 </context>
 <context>
+    <name>SettingsRow</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="96" />
+        <source>Reset %1 to default</source>
+        <translation>Restablecer %1 a predeterminado</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="123" />
+        <source>Reset to default</source>
+        <translation>Restablecer a predeterminado</translation>
+    </message>
+</context>
+<context>
     <name>SettingsSidebar</name>
     <message>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
@@ -6365,6 +6493,32 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
         <source>Text Recognition</source>
         <translation>Reconocimiento de texto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="159" />
+        <source>Page</source>
+        <translation>Página</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="240" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="260" />
+        <source>Search settings</source>
+        <translation>Buscar configuración</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="279" />
+        <source>Clear search</source>
+        <translation>Borrar búsqueda</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="315" />
+        <source>Search results</source>
+        <translation>Resultados de búsqueda</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="383" />
+        <source>No settings match “%1”</source>
+        <translation>Ninguna configuración coincide con “%1”</translation>
     </message>
 </context>
 <context>
@@ -6686,133 +6840,133 @@ Puede estar en uso por otra aplicación.</translation>
 <context>
     <name>SnapTray::SettingsBackend</name>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1018" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1138" />
         <source>Never</source>
         <translation>Nunca</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1106" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1226" />
         <source>Could not install the CLI. Check permissions and try again.</source>
         <translation>No se pudo instalar la CLI. Revisa los permisos e inténtalo de nuevo.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1107" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1227" />
         <source>Could not uninstall the CLI. Check permissions and try again.</source>
         <translation>No se pudo desinstalar la CLI. Revisa los permisos e inténtalo de nuevo.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1140" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1260" />
         <source>Select Screenshot Folder</source>
         <translation>Seleccionar carpeta de capturas de pantalla</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1148" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1268" />
         <source>Select Recording Folder</source>
         <translation>Seleccionar carpeta de grabaciones</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1276" />
         <source>Select Watermark Image</source>
         <translation>Seleccionar imagen de marca de agua</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1157" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1277" />
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>Imágenes (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="271" />
         <source>Disable Windows Print Screen Shortcut?</source>
         <translation>¿Desactivar el atajo Print Screen de Windows?</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="227" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="291" />
         <source>Windows Print Screen Shortcut Disabled</source>
         <translation>Atajo Print Screen de Windows desactivado</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="234" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="298" />
         <source>Windows Setting Not Changed</source>
         <translation>No se cambió la configuración de Windows</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="235" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="299" />
         <source>SnapTray could not change the Windows Print Screen setting.</source>
         <translation>SnapTray no pudo cambiar la configuración de Print Screen de Windows.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="176" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="240" />
         <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
         <translation>Se guardó %1, pero no se pudo activar porque el atajo ya está en uso por otra app o por el sistema.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="145" />
-        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="209" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="225" />
         <source>Hotkey Conflict</source>
         <translation>Conflicto de atajo de teclado</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="220" />
         <source>Defaults were restored, but these shortcuts are still inactive: %1</source>
         <translation>Se restauraron los valores predeterminados, pero estos atajos siguen inactivos: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="181" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="245" />
         <source>%1 was saved, but it could not be activated. %2</source>
         <translation>Se guardó %1, pero no se pudo activar. %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="210" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="274" />
         <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
         <translation>Windows está usando la tecla Print Screen para abrir su Snipping Tool, lo que impide que SnapTray use Print Screen como atajo. ¿Desactivar esto para que SnapTray pueda usar la tecla Print Screen?</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="214" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="278" />
         <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
         <translation>Después de esto, reinicia SnapTray. Si Windows sigue abriendo Snipping Tool, cierra sesión en Windows (o reinicia) e inténtalo de nuevo.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="219" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="283" />
         <source>No, don't ask again</source>
         <translation>No, no volver a preguntar</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="228" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="292" />
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Reinicia SnapTray para usar Print Screen. Si sigue abriendo Snipping Tool, cierra sesión en Windows y vuelve a iniciarla.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="348" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="468" />
         <source>Checking start on login status...</source>
         <translation>Comprobando el estado de inicio al iniciar sesión...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="376" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="496" />
         <source>Updating start on login status...</source>
         <translation>Actualizando el estado de inicio al iniciar sesión...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="427" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="547" />
         <source>Start on login status error: %1</source>
         <translation>Error del estado de inicio al iniciar sesión: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="437" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="557" />
         <source>Disabled in system startup settings. Re-enable it there.</source>
         <translation>Desactivado en la configuración de inicio del sistema. Vuelve a activarlo ahí.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="440" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="560" />
         <source>Disabled by your organization.</source>
         <translation>Desactivado por tu organización.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="443" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="563" />
         <source>Enabled by your organization.</source>
         <translation>Activado por tu organización.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="446" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="566" />
         <source>Start on login is unavailable for this package.</source>
         <translation>El inicio al iniciar sesión no está disponible para este paquete.</translation>
     </message>
@@ -7195,52 +7349,56 @@ Puede estar en uso por otra aplicación.</translation>
         <translation>Versión actual</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="63" />
         <source>Automatic Updates</source>
         <translation>Actualizaciones automáticas</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="66" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="67" />
         <source>Auto-check updates</source>
         <translation>Revisión automática</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
         <source>Check frequency</source>
         <translation>Frecuencia</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
         <source>Every day</source>
         <translation>Cada día</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="76" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
         <source>Every 3 days</source>
         <translation>Cada 3 días</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
         <source>Every week</source>
         <translation>Cada semana</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="80" />
         <source>Every 2 weeks</source>
         <translation>Cada 2 semanas</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="81" />
         <source>Every month</source>
         <translation>Cada mes</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Checking...</source>
         <translation>Verificando...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="122" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Check Now</source>
         <translation>Verificar ahora</translation>
     </message>
