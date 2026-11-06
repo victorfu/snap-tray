@@ -50,6 +50,10 @@ struct FrameStyle {
     // The picture size pixel styles from before #269 are converted at: their
     // look on a picture with this shorter side is unchanged.
     static constexpr int kReferenceShortSide = 1440;
+    // The largest size fraction a saved style keeps: Beautify's biggest slider
+    // value (200 px padding) over a 1 px short side. Larger values are damaged
+    // data. Each side clamps to its own range when it applies a style.
+    static constexpr double kMaxSizeFraction = 200.0;
 
     bool operator==(const FrameStyle& o) const;
     bool operator!=(const FrameStyle& o) const { return !(*this == o); }

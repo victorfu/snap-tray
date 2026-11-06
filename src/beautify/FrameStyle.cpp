@@ -10,12 +10,6 @@ namespace {
 // Fractions are compared to this many decimals, so a style read back from
 // JSON still matches the one it was written from.
 constexpr double kFractionTolerance = 1e-6;
-// The largest size a valid screenshot can save: Beautify's biggest slider
-// value (200 px padding) over a 1 px short side. Anything above that is damaged
-// data. Smaller limits would change styles saved from tiny screenshots, whose
-// padding can be wider than the picture. Each side clamps to its own range when
-// it applies a style.
-constexpr double kMaxSizeFraction = 200.0;
 constexpr int kMaxAngle = 360;
 constexpr int kMaxAspectRatio = int(BeautifyAspectRatio::Twitter_2_1);
 
@@ -82,7 +76,7 @@ double fractionOr(const QJsonObject& json, const char* key, double fallback, dou
 {
     const QJsonValue value = json.value(QLatin1String(key));
     if (!value.isDouble() || !std::isfinite(value.toDouble())) return fallback;
-    return std::clamp(value.toDouble(), low, kMaxSizeFraction);
+    return std::clamp(value.toDouble(), low, FrameStyle::kMaxSizeFraction);
 }
 
 } // namespace
@@ -188,8 +182,8 @@ FrameStyle FrameStyle::fromJson(const QJsonObject& json)
     f.cornerRadius = fractionOr(json, "cornerRadius", f.cornerRadius);
     f.shadowEnabled = json.value(QStringLiteral("shadowEnabled")).toBool(f.shadowEnabled);
     f.shadowBlur = fractionOr(json, "shadowBlur", f.shadowBlur);
-    f.shadowOffsetX = fractionOr(json, "shadowOffsetX", f.shadowOffsetX, -kMaxSizeFraction);
-    f.shadowOffsetY = fractionOr(json, "shadowOffsetY", f.shadowOffsetY, -kMaxSizeFraction);
+    f.shadowOffsetX = fractionOr(json, "shadowOffsetX", f.shadowOffsetX, -FrameStyle::kMaxSizeFraction);
+    f.shadowOffsetY = fractionOr(json, "shadowOffsetY", f.shadowOffsetY, -FrameStyle::kMaxSizeFraction);
     f.shadowColor = colorOr(json, "shadowColor", f.shadowColor);
     f.borderEnabled = json.value(QStringLiteral("borderEnabled")).toBool(f.borderEnabled);
     f.borderWidth = fractionOr(json, "borderWidth", f.borderWidth);

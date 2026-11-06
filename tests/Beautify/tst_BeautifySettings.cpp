@@ -654,7 +654,7 @@ void tst_BeautifySettings::testFrameStyle_JsonRoundTrip()
     QCOMPARE(SnapTray::FrameStyle::fromJson(small.toJson()).toBeautify(40).padding, 64);
     // Damaged values are still kept within bounds.
     const auto damaged = SnapTray::FrameStyle::fromJson({{QStringLiteral("padding"), 1e9}});
-    QVERIFY(damaged.padding < 1e9);
+    QCOMPARE(damaged.padding, SnapTray::FrameStyle::kMaxSizeFraction);
 }
 
 void tst_BeautifySettings::testFrameStyles_SaveLoad()

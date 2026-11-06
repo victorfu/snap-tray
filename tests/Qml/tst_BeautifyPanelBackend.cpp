@@ -335,14 +335,14 @@ void tst_BeautifyPanelBackend::testCustomStyle_ManagerClampsBadData()
     settings.sync();
     QVERIFY(BeautifySettingsManager::instance().loadFrameStyles().isEmpty());
 
-    // The shared format keeps sizes within the picture and drops unnamed entries.
+    // The shared format keeps sizes within its limit and drops unnamed entries.
     settings.setValue(QStringLiteral("beautify/frameStyles"),
-                      QStringLiteral(R"([{"name":"Huge","style":{"padding":50,"cornerRadius":-1,"background":"nope",)"
+                      QStringLiteral(R"([{"name":"Huge","style":{"padding":5000,"cornerRadius":-1,"background":"nope",)"
                                      R"("aspectRatio":-4}},{"name":""},"junk"])"));
     settings.sync();
     const auto shared = BeautifySettingsManager::instance().loadFrameStyles();
     QCOMPARE(shared.size(), 1);
-    QCOMPARE(shared.at(0).style.padding, 1.0);
+    QCOMPARE(shared.at(0).style.padding, SnapTray::FrameStyle::kMaxSizeFraction);
     QCOMPARE(shared.at(0).style.cornerRadius, 0.0);
     QCOMPARE(shared.at(0).style.background, SnapTray::FrameStyle::Background::LinearGradient);
     QCOMPARE(shared.at(0).style.aspectRatio, BeautifyAspectRatio::Auto);
