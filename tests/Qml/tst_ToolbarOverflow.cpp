@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QAccessible>
 #include <QQuickView>
 #include <QQuickItem>
 #include <QPointer>
@@ -42,6 +43,7 @@ private slots:
     void selectionPlacementStaysOnScreen();
     void overflowClosesOnRelayout();
     void overflowReturnsFocusToMore();
+    void buttonsAndMoreRowsAreNamedForScreenReaders();
 };
 
 void TestToolbarOverflow::standaloneEngineCanImportModule()
@@ -332,6 +334,71 @@ void TestToolbarOverflow::overflowReturnsFocusToMore()
     QVERIFY(more);
     // The toolbar window never takes keyboard focus; More holds focus within it.
     QTRY_VERIFY(more->hasFocus());
+    toolbar.hide();
+}
+
+// #238: VoiceOver read the capture toolbar as unnamed groups. Every button is
+// named by its tooltip, the active drawing tool reads as checked (an action
+// such as Copy is not a toggle), and More rows are named, pressable menu items.
+void TestToolbarOverflow::buttonsAndMoreRowsAreNamedForScreenReaders()
+{
+    RegionToolbarViewModel vm;
+    vm.setActiveTool(int(ToolId::Arrow));
+    QmlFloatingToolbar toolbar(&vm);
+    toolbar.applyOverflowLayout(QRect(0, 0, 300, 400));
+    toolbar.show();
+    QCoreApplication::processEvents();
+
+    QHash<int, QAccessibleInterface*> buttons;
+    QStringList unnamed;
+    QList<QQuickItem*> pending{toolbar.m_rootItem};
+    while (!pending.isEmpty()) {
+        QQuickItem* node = pending.takeLast();
+        pending.append(node->childItems());
+        // ToolbarButton items (their Loader also carries buttonId).
+        if (!node->isVisible() || !node->property("accessibleCheckable").isValid()) continue;
+        QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(node);
+        QVERIFY(accessible);
+        QCOMPARE(accessible->role(), QAccessible::Button);
+        if (accessible->text(QAccessible::Name).trimmed().isEmpty())
+            unnamed << node->objectName() + QLatin1Char('#') + node->property("buttonId").toString();
+        buttons.insert(node->property("buttonId").toInt(), accessible);
+    }
+    QVERIFY2(unnamed.isEmpty(), qPrintable(unnamed.join(QLatin1String(", "))));
+    QVERIFY(buttons.contains(int(ToolId::Arrow)));
+    QVERIFY(buttons.contains(int(ToolId::Copy)));
+    QVERIFY(buttons.value(int(ToolId::Arrow))->state().checkable);
+    QVERIFY(buttons.value(int(ToolId::Arrow))->state().checked);
+    QVERIFY(!buttons.value(int(ToolId::Copy))->state().checkable);
+    QVERIFY(buttons.value(int(ToolId::Arrow))->text(QAccessible::Name).contains(QStringLiteral("Arrow")));
+
+    toolbar.onOverflowRequested(0, 0, 28, 24);
+    QVERIFY(toolbar.m_overflow->isVisible());
+    QQuickItem* menuRoot = toolbar.m_overflow->m_rootItem;
+    QVERIFY(menuRoot);
+    QList<QQuickItem*> rows;
+    pending = {menuRoot};
+    while (!pending.isEmpty()) {
+        QQuickItem* node = pending.takeLast();
+        pending.append(node->childItems());
+        if (node->objectName().startsWith(QLatin1String("overflowButton_"))) rows << node;
+    }
+    QVERIFY(!rows.isEmpty());
+    QQuickItem* pressable = nullptr;
+    for (QQuickItem* row : rows) {
+        QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(row);
+        QVERIFY(accessible);
+        QCOMPARE(accessible->role(), QAccessible::MenuItem);
+        QVERIFY2(!accessible->text(QAccessible::Name).trimmed().isEmpty(), qPrintable(row->objectName()));
+        if (!pressable && !accessible->state().disabled) pressable = row;
+    }
+    QVERIFY(pressable);
+    QSignalSpy triggered(menuRoot, SIGNAL(actionTriggered(int)));
+    QAccessibleInterface* row = QAccessible::queryAccessibleInterface(pressable);
+    QVERIFY(row->actionInterface());
+    row->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(triggered.count(), 1);
+    QCOMPARE(QStringLiteral("overflowButton_%1").arg(triggered.at(0).at(0).toInt()), pressable->objectName());
     toolbar.hide();
 }
 

@@ -399,6 +399,7 @@ Rectangle {
         visible: !root.searching
         interactive: false
         currentIndex: root.currentIndex
+        Accessible.role: Accessible.PageTabList
         keyNavigationEnabled: true
         activeFocusOnTab: true
 
@@ -501,8 +502,16 @@ Rectangle {
                     cursorShape: CursorTokens.clickable
                     focus: true
 
-                    Accessible.role: Accessible.MenuItem
+                    // A page tab (#238): VoiceOver reads which page is open and
+                    // can switch pages with its press action.
+                    Accessible.role: Accessible.PageTab
                     Accessible.name: navItem.label
+                    Accessible.checkable: true
+                    Accessible.checked: navItem.isActive
+                    Accessible.onPressAction: {
+                        forceActiveFocus()
+                        root.currentIndex = navItem.index
+                    }
 
                     onClicked: {
                         forceActiveFocus()

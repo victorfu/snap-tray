@@ -49,6 +49,8 @@ private slots:
     void libraryLimitSliderFollowsTheBackend();
     void settingsWindowOpensPagesByKey();
     void sidebarArrowKeysCrossTheDivider();
+    void sidebarPagesArePageTabsForScreenReaders();
+    void settingsControlsHaveDistinctNames();
     void resetSettingRestoresManagerDefault();
     void resetButtonShowsOnlyWhenChanged();
     void searchFindsSettingsSectionsAndHotkeys();
@@ -660,6 +662,111 @@ void tst_SettingsWindowFeatureGating::sidebarArrowKeysCrossTheDivider()
     QTest::keyClick(&view, Qt::Key_Up);
     QTRY_VERIFY(pageShown(QStringLiteral("hotkeys")));
     QTRY_VERIFY(hotkeys->hasActiveFocus());
+}
+
+// #238: VoiceOver read the sidebar entries as menu items without a state, and
+// its press action did nothing, so pages could not be switched. They are page
+// tabs now: the open page reads as checked and press opens the page.
+void tst_SettingsWindowFeatureGating::sidebarPagesArePageTabsForScreenReaders()
+{
+    SnapTray::SettingsBackend backend;
+    QQuickView view;
+    view.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
+    view.setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsWindow.qml")));
+    QCOMPARE(view.status(), QQuickView::Ready);
+    view.resize(900, 560);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    QQuickItem* root = view.rootObject();
+    const auto pageShown = [root](const QString& key) {
+        auto* loader = root->findChild<QObject*>(QStringLiteral("settingsPageLoader_") + key);
+        return loader && loader->property("visible").toBool();
+    };
+    QVariant opened;
+    QVERIFY(QMetaObject::invokeMethod(root, "selectPage", Q_RETURN_ARG(QVariant, opened),
+                                      Q_ARG(QVariant, QStringLiteral("general"))));
+    QQuickItem* general = nullptr;
+    QQuickItem* capture = nullptr;
+    QTRY_VERIFY((general = findItem(root, QStringLiteral("settingsSidebarItem_general"))) != nullptr);
+    QTRY_VERIFY((capture = findItem(root, QStringLiteral("settingsSidebarItem_capture"))) != nullptr);
+    QAccessibleInterface* generalTab = QAccessible::queryAccessibleInterface(general);
+    QAccessibleInterface* captureTab = QAccessible::queryAccessibleInterface(capture);
+    QVERIFY(generalTab && captureTab);
+    QCOMPARE(generalTab->role(), QAccessible::PageTab);
+    QVERIFY(!generalTab->text(QAccessible::Name).isEmpty());
+    QVERIFY(generalTab->state().checkable);
+    QTRY_VERIFY(generalTab->state().checked);
+    QVERIFY(!captureTab->state().checked);
+
+    QVERIFY(captureTab->actionInterface());
+    captureTab->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QTRY_VERIFY(pageShown(QStringLiteral("capture")));
+    QTRY_VERIFY(captureTab->state().checked);
+    QVERIFY(!generalTab->state().checked);
+}
+
+// #238: VoiceOver could not tell repeated buttons apart: two "Open Settings"
+// (General), two "Browse..." (Saving), and Edit/Clear/Reset on every hotkey
+// row. On every page, each button and drop-down has its own name. (HotkeyManager
+// is not initialised here, so the hotkey rows are checked in the AX audit.)
+void tst_SettingsWindowFeatureGating::settingsControlsHaveDistinctNames()
+{
+    // Hotkeys may ask about Print Screen on Windows in a modal box.
+    const QString promptKey = QStringLiteral("hotkeys/ignorePrintScreenSnippingPrompt");
+    const QVariant savedPrompt = SnapTray::getSettings().value(promptKey);
+    {
+        auto settings = SnapTray::getSettings();
+        settings.setValue(promptKey, true);
+        settings.sync();
+    }
+    auto restorePrompt = qScopeGuard([promptKey, savedPrompt] {
+        auto settings = SnapTray::getSettings();
+        if (savedPrompt.isValid())
+            settings.setValue(promptKey, savedPrompt);
+        else
+            settings.remove(promptKey);
+        settings.sync();
+    });
+    SnapTray::SettingsBackend backend;
+    QQuickView view;
+    view.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
+    view.setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsWindow.qml")));
+    QCOMPARE(view.status(), QQuickView::Ready);
+    view.resize(900, 560);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    QQuickItem* root = view.rootObject();
+
+    QStringList duplicates;
+    for (const QString& key : {QStringLiteral("general"), QStringLiteral("capture"),
+                               QStringLiteral("pins"), QStringLiteral("recording"),
+                               QStringLiteral("saving"), QStringLiteral("ocr"),
+                               QStringLiteral("hotkeys"), QStringLiteral("updates")}) {
+        QVariant opened;
+        QVERIFY(QMetaObject::invokeMethod(root, "selectPage", Q_RETURN_ARG(QVariant, opened),
+                                          Q_ARG(QVariant, key)));
+        if (!opened.toBool()) continue; // a page this platform does not show
+        auto* loader = root->findChild<QQuickItem*>(QStringLiteral("settingsPageLoader_") + key);
+        QVERIFY(loader);
+        QTRY_VERIFY(loader->isVisible() && !loader->childItems().isEmpty());
+        QTest::qWait(50);
+        QHash<QString, int> seen;
+        QList<QQuickItem*> pending{loader};
+        while (!pending.isEmpty()) {
+            QQuickItem* node = pending.takeLast();
+            if (!node->isVisible()) continue;
+            pending.append(node->childItems());
+            QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(node);
+            if (!accessible) continue;
+            const QAccessible::Role role = accessible->role();
+            if (role != QAccessible::Button && role != QAccessible::ComboBox) continue;
+            const QString name = accessible->text(QAccessible::Name);
+            if (++seen[name] == 2) duplicates << key + QStringLiteral(": ") + name;
+        }
+    }
+    QVERIFY2(duplicates.isEmpty(), qPrintable(duplicates.join(QLatin1String("\n"))));
 }
 
 QTEST_MAIN(tst_SettingsWindowFeatureGating)

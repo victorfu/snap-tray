@@ -46,6 +46,8 @@ SettingsRow {
         SettingsButton {
             id: browseBtn
             text: qsTr("Browse...")
+            // Several rows have Browse (#238): name the folder and read the path.
+            Accessible.name: text + ", " + root.label + ", " + (root.path.length > 0 ? root.path : root.placeholder)
             anchors.verticalCenter: parent.verticalCenter
             onClicked: root.browseClicked()
         }
