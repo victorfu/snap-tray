@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-17
+last_modified_at: 2026-11-06
 layout: docs
 title: 螢幕畫布
 seo_title: "SnapTray 螢幕畫布：在全螢幕即時標註，適合直播講解與操作教學示範"
@@ -35,6 +35,7 @@ doc_order: 3
 
 - Undo / Redo
 - Clear
+- `I` 從畫面取色（見[標註工具](/zh-tw/docs/annotation-tools/)）
 - `Esc` 離開
 
 ## 何時用畫布、何時用截圖

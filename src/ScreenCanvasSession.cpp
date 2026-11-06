@@ -6,6 +6,7 @@
 #include "ScreenCanvas.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationStyleEditor.h"
+#include "annotation/ColorPickOverlay.h"
 #include "annotations/AnnotationStyle.h"
 #include "qml/ToolbarOverflowLayout.h"
 #include "annotation/AnnotationRenderHelper.h"
@@ -314,6 +315,8 @@ void ScreenCanvasSession::initializeSharedState()
             this, &ScreenCanvasSession::onColorSelected);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::customColorPickerRequested,
             this, &ScreenCanvasSession::onMoreColorsRequested);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorPickRequested,
+            this, &ScreenCanvasSession::startColorPick);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::widthValueChanged,
             this, &ScreenCanvasSession::onLineWidthChanged);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::arrowStyleSelected,
@@ -497,6 +500,9 @@ void ScreenCanvasSession::close()
     }
 
     m_isClosing = true;
+    if (m_colorPickOverlay) {
+        m_colorPickOverlay->cancel();
+    }
     if (!m_skipToolbarPlacementSaveOnClose) {
         saveToolbarPlacement();
     }
@@ -2044,6 +2050,9 @@ void ScreenCanvasSession::handleSurfaceKeyPress(ScreenCanvas* surface, QKeyEvent
             return;
         }
         close();
+    } else if (event->key() == Qt::Key_I && !event->modifiers()
+               && m_toolOptionsViewModel->showColorSection()) {
+        startColorPick();
     } else if (event->key() == Qt::Key_W) {
         setBackgroundMode(m_bgMode == CanvasBackgroundMode::Whiteboard
                               ? CanvasBackgroundMode::Screen
@@ -2118,6 +2127,44 @@ void ScreenCanvasSession::onMoreColorsRequested()
             }
             onColorSelected(color);
         });
+}
+
+ColorPickSource ScreenCanvasSession::colorPickSource(QScreen* screen) const
+{
+    ColorPickSource source;
+    if (!screen) {
+        return source;
+    }
+    source.overlayGeometry = screen->geometry();
+    source.sampleRect = source.overlayGeometry;
+    // Hides the canvas while it grabs the screen; a whiteboard or blackboard
+    // yields its fill color.
+    source.image = buildCopyExportBasePixmap(screen, false).toImage();
+    return source;
+}
+
+void ScreenCanvasSession::startColorPick()
+{
+    if (m_colorPickOverlay || !m_isOpen) {
+        return;
+    }
+    QScreen* screen = resolveCopyTargetScreen();
+    QWidget* host = surfaceForScreen(screen);
+    if (!host) {
+        host = m_activeSurface;
+    }
+    m_colorPickOverlay = ColorPickOverlay::begin(
+        host, colorPickSource(screen), [this](const QColor& color) { applyPickedColor(color); });
+}
+
+void ScreenCanvasSession::applyPickedColor(const QColor& color)
+{
+    // Same path as the custom color dialog: a selected annotation takes the
+    // color as one undoable change; otherwise it becomes the current color.
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::Color, color)) {
+        return;
+    }
+    onColorSelected(color);
 }
 
 QPoint ScreenCanvasSession::colorPickerAnchorPoint() const

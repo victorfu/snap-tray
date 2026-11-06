@@ -413,6 +413,11 @@ void PinToolOptionsViewModel::handleCustomColorClicked()
     emit customColorPickerRequested();
 }
 
+void PinToolOptionsViewModel::handleColorPickClicked()
+{
+    emit colorPickRequested();
+}
+
 void PinToolOptionsViewModel::handleWidthChanged(int width)
 {
     if (routeToSelection(StyleProperty::Width, qBound(minWidth(), width, maxWidth()))) return;

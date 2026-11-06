@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-02-26
+last_modified_at: 2026-11-06
 layout: docs
 title: 釘選視窗
 seo_title: "SnapTray 釘選視窗：將參考圖片固定在最上層，支援縮放、透明度與即時標註"
@@ -48,6 +48,7 @@ doc_order: 1
 | 不透明度重設為 100% | `Ctrl/Cmd` + `]` |
 | 開始 / 停止即時更新 | `L` |
 | 暫停 / 繼續即時更新 | `P` |
+| 從釘選圖取色（標註時） | `I` |
 | 顯示工具列 | `Space` |
 | 關閉 | `Esc` |
 

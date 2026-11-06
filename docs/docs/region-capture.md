@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-10-20
+last_modified_at: 2026-11-06
 layout: docs
 title: Region Capture
 seo_title: "SnapTray Region Capture: Precise Screenshots and Magnifier"
@@ -73,6 +73,7 @@ After the selection is complete, the toolbar supports:
 | Copy color code under cursor (when magnifier mode is active) | `C` |
 | Constrain ratio | Hold `Shift` |
 | Toggle multi-region | `M` |
+| Pick a color from the screenshot (after selecting a region) | `I` |
 | Cancel | `Esc` |
 
 ## Library

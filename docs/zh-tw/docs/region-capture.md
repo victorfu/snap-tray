@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-10-20
+last_modified_at: 2026-11-06
 layout: docs
 title: 區域截圖
 seo_title: "SnapTray 區域截圖：放大鏡、視窗偵測、多區域與快速匯出的高精度擷取"
@@ -73,6 +73,7 @@ doc_order: 1
 | 複製游標下色碼（放大鏡模式啟用時） | `C` |
 | 鎖定比例 | 按住 `Shift` |
 | 切換多區域 | `M` |
+| 從截圖取色（選取區域之後） | `I` |
 | 取消 | `Esc` |
 
 ## 素材庫 {#library}

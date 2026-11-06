@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-10-20
+last_modified_at: 2026-11-06
 layout: docs
 title: 快捷鍵
 seo_title: "SnapTray 快捷鍵設定：自訂截圖與平台限定錄影快速鍵"
@@ -28,6 +28,10 @@ doc_order: 3
 - 素材庫（Library）
 - Toggle Hide/Show All Pins
 - Record Screen（僅 macOS/Windows）
+
+## 編輯畫面內的按鍵
+
+上面的快捷鍵在任何地方都能用。在區域截圖、釘選視窗或螢幕畫布中，單一按鍵只作用於該畫面，無法重新綁定，例如按 `I` 從畫面取色（見[標註工具](/zh-tw/docs/annotation-tools/)）。各頁面會列出各自的按鍵。
 
 ## 分類管理
 

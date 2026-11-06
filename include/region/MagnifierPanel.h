@@ -43,6 +43,20 @@ public:
               const QSize& viewportSize, const QPixmap& backgroundPixmap);
 
     /**
+     * @brief Draw the panel next to anchorPos, magnifying devicePos.
+     *
+     * Decouples placement from sampling: anchorPos (logical, viewport
+     * coordinates) places the panel, devicePos is the physical pixel of
+     * backgroundPixmap to magnify. Lets a caller address single physical
+     * pixels that no logical point maps to, such as at 2x scaling.
+     */
+    void drawAt(QPainter& painter, const QPoint& anchorPos, const QPoint& devicePos,
+                const QSize& viewportSize, const QPixmap& backgroundPixmap);
+
+    // Replaces the two hotkey hint lines; empty strings restore the defaults.
+    void setHintLines(const QString& first, const QString& second);
+
+    /**
      * @brief Get the color at the current cursor position.
      * @return The color at the cursor, or black if out of bounds.
      */
@@ -81,7 +95,7 @@ public:
 private:
     void initializeGridCache();
     void ensureBackgroundImageCache(const QPixmap& backgroundPixmap, bool logIfSlow, const char* context);
-    void updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap);
+    void updateMagnifierCache(const QPoint& devicePos, const QPixmap& backgroundPixmap);
     void drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth);
 
 
@@ -97,7 +111,9 @@ private:
 
     // Current state
     QColor m_currentColor;
-    QPoint m_currentCursorPos;
+    QPoint m_currentDevicePos;
+    QString m_hintLine1;
+    QString m_hintLine2;
 };
 
 #endif // MAGNIFIERPANEL_H

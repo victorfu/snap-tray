@@ -48,6 +48,7 @@ The bar fades out when the pointer leaves the pin, and stays hidden while you dr
 | Reset opacity to 100% | `Ctrl/Cmd` + `]` (Bring Forward while an annotation is selected) |
 | Start / stop Live Update | `L` |
 | Pause / resume Live Update | `P` |
+| Pick a color from the pinned image (while annotating) | `I` |
 | Show toolbar | `Space` |
 | Close | `Esc` |
 

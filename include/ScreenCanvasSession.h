@@ -36,6 +36,8 @@ class InlineTextEditor;
 class LaserPointerRenderer;
 class PinToolOptionsViewModel;
 class AnnotationStyleEditor;
+class ColorPickOverlay;
+struct ColorPickSource;
 class PolylineAnnotation;
 class RegionSettingsHelper;
 class ShapeAnnotation;
@@ -185,6 +187,11 @@ private:
     void onColorSelected(const QColor& color);
     void onMoreColorsRequested();
     QPoint colorPickerAnchorPoint() const;
+    // Eyedropper (#271): picks from a snapshot of the screen under the
+    // canvas, taken with the canvas hidden and dropped when picking ends.
+    void startColorPick();
+    ColorPickSource colorPickSource(QScreen* screen) const;
+    void applyPickedColor(const QColor& color);
     void onLineWidthChanged(int width);
     void onArrowStyleChanged(LineEndStyle style);
     void onLineStyleChanged(LineStyle style);
@@ -249,6 +256,7 @@ private:
     std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_qmlSubToolbar;
     SnapTray::QmlEmojiPickerPopup* m_emojiPickerPopup = nullptr;
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
+    QPointer<ColorPickOverlay> m_colorPickOverlay;
     LaserPointerRenderer* m_laserRenderer = nullptr;
 
     bool m_toolbarPlacementInitialized = false;
