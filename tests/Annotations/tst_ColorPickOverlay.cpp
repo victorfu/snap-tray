@@ -26,6 +26,7 @@ private slots:
     void escapeRightClickAndOutsideClickCancel_data();
     void escapeRightClickAndOutsideClickCancel();
     void beginReportsOnlyAcceptedColors();
+    void losingActivationCancelsWithoutReclaimingFocus();
     void magnifierSamplesTheDevicePixelItIsGiven();
 
 private:
@@ -231,6 +232,32 @@ void tst_ColorPickOverlay::beginReportsOnlyAcceptedColors()
     QCOMPARE(results.size(), 1);
     QCOMPARE(results.first(), expectedAt(QPoint(7, 9)));
     QTRY_VERIFY(!acceptedPick);
+}
+
+void tst_ColorPickOverlay::losingActivationCancelsWithoutReclaimingFocus()
+{
+    const QRect area(0, 0, 100, 60);
+    ColorPickOverlay overlay({area, area, gradientImage(area.size(), 1.0)});
+    QSignalSpy cancelled(&overlay, &ColorPickOverlay::cancelled);
+
+    // A deactivation before the overlay was ever active is not the user leaving.
+    QEvent deactivate(QEvent::WindowDeactivate);
+    QCoreApplication::sendEvent(&overlay, &deactivate);
+    QCOMPARE(cancelled.size(), 0);
+
+    QEvent activate(QEvent::WindowActivate);
+    QCoreApplication::sendEvent(&overlay, &activate);
+    QCoreApplication::sendEvent(&overlay, &deactivate);
+    QCOMPARE(cancelled.size(), 1);
+    // begin() reads this to leave focus with the window the user chose.
+    QVERIFY(overlay.lostActivation());
+
+    // Esc is an explicit cancel: focus goes back to the host.
+    ColorPickOverlay escaped({area, area, gradientImage(area.size(), 1.0)});
+    QSignalSpy escapedCancelled(&escaped, &ColorPickOverlay::cancelled);
+    QTest::keyClick(&escaped, Qt::Key_Escape);
+    QCOMPARE(escapedCancelled.size(), 1);
+    QVERIFY(!escaped.lostActivation());
 }
 
 void tst_ColorPickOverlay::magnifierSamplesTheDevicePixelItIsGiven()

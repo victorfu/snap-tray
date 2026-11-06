@@ -141,7 +141,12 @@ ColorPickOverlay* ColorPickOverlay::begin(QWidget* host, ColorPickSource source,
                              tr("Color set to %1").arg(ColorPick::hexName(color)));
                          QAccessible::updateAccessibility(&announcement);
                      });
-    QObject::connect(overlay, &ColorPickOverlay::cancelled, overlay, restoreHost);
+    // Leaving for another window cancels without taking focus back from it.
+    QObject::connect(overlay, &ColorPickOverlay::cancelled, overlay, [overlay, restoreHost] {
+        if (!overlay->lostActivation()) {
+            restoreHost();
+        }
+    });
     // A host that goes away mid-pick takes the overlay with it.
     if (host) {
         QObject::connect(host, &QObject::destroyed, overlay, &ColorPickOverlay::cancel);
@@ -348,7 +353,8 @@ bool ColorPickOverlay::event(QEvent* event)
     // so the host never stays behind an invisible input sink.
     if (event->type() == QEvent::WindowActivate) {
         m_wasActive = true;
-    } else if (event->type() == QEvent::WindowDeactivate && m_wasActive) {
+    } else if (event->type() == QEvent::WindowDeactivate && m_wasActive && !m_finished) {
+        m_lostActivation = true;
         cancel();
     }
     return QWidget::event(event);

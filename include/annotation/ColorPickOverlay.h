@@ -74,8 +74,9 @@ public:
     ~ColorPickOverlay() override;
 
     // Starts picking over host; on success onPicked runs with the color, then
-    // a screen reader hears "Color set to #RRGGBB". Focus returns to host
-    // either way. Returns nullptr when source is invalid.
+    // a screen reader hears "Color set to #RRGGBB". Focus returns to host,
+    // except when the pick ended because another window took activation:
+    // that window keeps focus. Returns nullptr when source is invalid.
     static ColorPickOverlay* begin(QWidget* host, ColorPickSource source,
                                    std::function<void(const QColor&)> onPicked);
 
@@ -84,6 +85,8 @@ public:
     bool hasSample() const { return m_hasSample; }
     QPoint samplePixel() const { return m_pixel; }
     QColor currentColor() const;
+    // True once the pick was cancelled because the overlay lost activation.
+    bool lostActivation() const { return m_lostActivation; }
 
 signals:
     void colorPicked(const QColor& color);
@@ -116,5 +119,6 @@ private:
     bool m_pressed = false;
     bool m_finished = false;
     bool m_wasActive = false;
+    bool m_lostActivation = false;
     bool m_cursorHidden = false;
 };
