@@ -1,9 +1,12 @@
 #include <QtTest>
+#include <QScopeGuard>
 #include <QGuiApplication>
 #include <QWheelEvent>
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "RegionSelector.h"
+#include "annotations/StepBadgeAnnotation.h"
+#include "settings/AnnotationSettingsManager.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/RegionToolbarViewModel.h"
@@ -21,6 +24,7 @@ private slots:
     void testCompletedSelectionReopensHiddenSubToolbar();
     void testWheelDoesNotAdjustWidthWithoutCompletedSelection();
     void testMosaicWheelDoesNotAdjustWidthWithCompletedSelection();
+    void testStepBadgeSizeStartsSavedAndWheelStopsAtEnds();
 };
 
 void tst_RegionSelectorMultiRegionSubToolbar::initTestCase()
@@ -143,6 +147,36 @@ void tst_RegionSelectorMultiRegionSubToolbar::testMosaicWheelDoesNotAdjustWidthW
 
     QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 18);
     QVERIFY(!event.isAccepted());
+}
+
+void tst_RegionSelectorMultiRegionSubToolbar::testStepBadgeSizeStartsSavedAndWheelStopsAtEnds()
+{
+    auto& annotationSettings = AnnotationSettingsManager::instance();
+    const StepBadgeSize previous = annotationSettings.loadStepBadgeSize();
+    const auto restore = qScopeGuard([&] { annotationSettings.saveStepBadgeSize(previous); });
+    annotationSettings.saveStepBadgeSize(StepBadgeSize::Large);
+
+    RegionSelector selector;
+    // The S/M/L strip shows the saved size, not the default Medium.
+    QCOMPARE(selector.m_toolOptionsViewModel->stepBadgeSize(), static_cast<int>(StepBadgeSize::Large));
+
+    selector.m_inputState.currentTool = ToolId::StepBadge;
+    auto wheel = [&selector](int deltaY) {
+        QWheelEvent event(QPointF(40, 40), QPointF(40, 40), QPoint(), QPoint(0, deltaY),
+                          Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        selector.wheelEvent(&event);
+        return event.isAccepted();
+    };
+
+    // Scrolling up at Large stays at Large instead of wrapping to Small.
+    QVERIFY(wheel(120));
+    QCOMPARE(selector.m_stepBadgeSize, StepBadgeSize::Large);
+    QCOMPARE(selector.m_toolOptionsViewModel->stepBadgeSize(), static_cast<int>(StepBadgeSize::Large));
+
+    QVERIFY(wheel(-120));
+    QCOMPARE(selector.m_stepBadgeSize, StepBadgeSize::Medium);
+    QCOMPARE(selector.m_toolOptionsViewModel->stepBadgeSize(), static_cast<int>(StepBadgeSize::Medium));
+    QCOMPARE(annotationSettings.loadStepBadgeSize(), StepBadgeSize::Medium);
 }
 
 QTEST_MAIN(tst_RegionSelectorMultiRegionSubToolbar)

@@ -244,6 +244,8 @@ public slots:
 
     // Returns true if the wheel delta was consumed (width adjusted)
     bool handleWidthWheelDelta(int delta);
+    // One size per wheel notch, stopping at Small and Large (no wrap-around).
+    bool handleStepBadgeSizeWheelDelta(int delta);
 
 private:
     void buildColorPalette();

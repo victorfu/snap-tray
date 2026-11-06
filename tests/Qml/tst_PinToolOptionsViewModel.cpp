@@ -42,6 +42,7 @@ private slots:
     void testMosaicWidthWheel_IsNotHandled();
     void testNonMosaicWidthWheel_RemainsHandled();
     void testLaserPointerOptions_ClearMosaicSemantics();
+    void testStepBadgeSizeWheel_StopsAtEnds();
     void testDefaultRed_MatchesDesignSystem();
 };
 
@@ -245,6 +246,37 @@ void tst_PinToolOptionsViewModel::testNonMosaicWidthWheel_RemainsHandled()
     QCOMPARE(viewModel.currentWidth(), 3);
     QCOMPARE(widthSpy.count(), 2);
     QCOMPARE(widthSpy.at(1).at(0).toInt(), 3);
+}
+
+void tst_PinToolOptionsViewModel::testStepBadgeSizeWheel_StopsAtEnds()
+{
+    // The wheel moves one size per notch like the width wheel; it must not
+    // wrap Large -> Small (#221: no cycling through hidden choices).
+    PinToolOptionsViewModel viewModel;
+    QSignalSpy sizeSpy(&viewModel, &PinToolOptionsViewModel::stepBadgeSizeSelected);
+    viewModel.showForTool(static_cast<int>(ToolId::StepBadge));
+    QCOMPARE(viewModel.stepBadgeSize(), 1);
+
+    QVERIFY(viewModel.handleStepBadgeSizeWheelDelta(120));
+    QCOMPARE(viewModel.stepBadgeSize(), 2);
+    QCOMPARE(sizeSpy.count(), 1);
+    QCOMPARE(sizeSpy.at(0).at(0).toInt(), 2);
+
+    QVERIFY(viewModel.handleStepBadgeSizeWheelDelta(120));
+    QCOMPARE(viewModel.stepBadgeSize(), 2);
+    QCOMPARE(sizeSpy.count(), 1);
+
+    QVERIFY(viewModel.handleStepBadgeSizeWheelDelta(-120));
+    QVERIFY(viewModel.handleStepBadgeSizeWheelDelta(-120));
+    QCOMPARE(viewModel.stepBadgeSize(), 0);
+    QCOMPARE(sizeSpy.count(), 3);
+
+    QVERIFY(viewModel.handleStepBadgeSizeWheelDelta(-120));
+    QCOMPARE(viewModel.stepBadgeSize(), 0);
+    QCOMPARE(sizeSpy.count(), 3);
+
+    QVERIFY(!viewModel.handleStepBadgeSizeWheelDelta(0));
+    QCOMPARE(sizeSpy.count(), 3);
 }
 
 void tst_PinToolOptionsViewModel::testLaserPointerOptions_ClearMosaicSemantics()

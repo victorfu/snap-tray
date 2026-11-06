@@ -508,6 +508,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolOptionsViewModel->setCurrentWidth(m_inputState.annotationWidth);
     m_toolOptionsViewModel->setArrowStyle(static_cast<int>(m_inputState.arrowStyle));
     m_toolOptionsViewModel->setLineStyle(static_cast<int>(m_inputState.lineStyle));
+    m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(m_stepBadgeSize));
 
     // Centralized annotation/text setup and common signal wiring
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
@@ -4411,17 +4412,8 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
 
     // Handle scroll wheel for StepBadge size adjustment
     if (m_inputState.currentTool == ToolId::StepBadge) {
-        // Cycle through sizes: Small -> Medium -> Large -> Small
-        int current = static_cast<int>(m_stepBadgeSize);
-        if (delta > 0) {
-            current = (current + 1) % 3;  // Scroll up = increase size
-        }
-        else {
-            current = (current + 2) % 3;  // Scroll down = decrease size
-        }
-        StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
-        onStepBadgeSizeChanged(newSize);
-        m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(newSize));
+        // Scroll up = larger, down = smaller; stops at Small and Large.
+        m_toolOptionsViewModel->handleStepBadgeSizeWheelDelta(delta);
         event->accept();
         return;
     }
