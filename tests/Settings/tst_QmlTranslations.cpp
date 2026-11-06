@@ -329,7 +329,12 @@ void tst_QmlTranslations::testAutoBlurHintTranslatedForAllLocales()
 void tst_QmlTranslations::testStyleStripNamesTranslatedForAllLocales()
 {
     const QList<QPair<QByteArray, QByteArray>> messages = {
-        {"ColorPaletteSection", "Purple"},
+        {"PinToolOptionsViewModel", "Red"},
+        {"PinToolOptionsViewModel", "Yellow"},
+        {"PinToolOptionsViewModel", "Green"},
+        {"PinToolOptionsViewModel", "Purple"},
+        {"PinToolOptionsViewModel", "Black"},
+        {"PinToolOptionsViewModel", "White"},
         {"ColorPaletteSection", "Custom color"},
         {"WidthSection", "Width"},
         {"ArrowStyleSection", "Arrow style"},

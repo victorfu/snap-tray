@@ -32,6 +32,9 @@ class PinToolOptionsViewModel : public QObject
 
     // Color section
     Q_PROPERTY(QVariantList colorPalette READ colorPalette CONSTANT)
+    // Same entries as colorPalette, each as {color, name}, so a swatch's
+    // screen reader name travels with its color (#248).
+    Q_PROPERTY(QVariantList colorPaletteOptions READ colorPaletteOptions CONSTANT)
     Q_PROPERTY(QColor currentColor READ currentColor WRITE setCurrentColor NOTIFY currentColorChanged)
 
     // Width section
@@ -102,6 +105,7 @@ public:
 
     // Color
     QVariantList colorPalette() const { return m_colorPalette; }
+    QVariantList colorPaletteOptions() const;
     QColor currentColor() const { return m_currentColor; }
     void setCurrentColor(const QColor& color);
 
@@ -295,6 +299,7 @@ private:
 
     // Color
     QVariantList m_colorPalette;
+    QStringList m_colorPaletteNames; // untranslated, same order as m_colorPalette
     QColor m_currentColor{0xFF, 0x3B, 0x30}; // Default red (DesignSystem::annotationRed)
 
     // Width

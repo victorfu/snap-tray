@@ -13,7 +13,8 @@ Item {
     readonly property color currentColorValue: root.hasViewModel
         ? root.viewModel.currentColor
         : "transparent"
-    readonly property var paletteModel: root.hasViewModel ? root.viewModel.colorPalette : []
+    // {color, name} entries; the name travels with its color (#248).
+    readonly property var paletteModel: root.hasViewModel ? root.viewModel.colorPaletteOptions : []
 
     readonly property int sectionPadding: 4
     readonly property int swatchSize: 20
@@ -24,10 +25,6 @@ Item {
     implicitHeight: swatchSize
     width: implicitWidth
     height: implicitHeight
-
-    // Preset names in palette order (PinToolOptionsViewModel::buildColorPalette).
-    readonly property var presetNames: [qsTr("Red"), qsTr("Yellow"), qsTr("Green"),
-                                        qsTr("Purple"), qsTr("Black"), qsTr("White")]
 
     // Custom color swatch (shows current color)
     Rectangle {
@@ -120,11 +117,12 @@ Item {
             Rectangle {
                 required property var modelData
                 required property int index
+                readonly property color swatchColor: modelData.color
                 objectName: "colorSwatch_" + index
                 Accessible.role: Accessible.RadioButton
-                Accessible.name: root.presetNames[index] || modelData.toString().toUpperCase()
+                Accessible.name: modelData.name
                 Accessible.checkable: true
-                Accessible.checked: modelData == root.currentColorValue
+                Accessible.checked: swatchColor == root.currentColorValue
                 Accessible.onPressAction: {
                     if (root.hasViewModel)
                         root.viewModel.handleColorClicked(index)
@@ -132,12 +130,12 @@ Item {
                 width: root.swatchSize
                 height: root.swatchSize
                 radius: 3
-                color: modelData
+                color: swatchColor
                 border.width: 1
                 border.color: {
-                    var lum = modelData.r * 0.299 +
-                              modelData.g * 0.587 +
-                              modelData.b * 0.114
+                    var lum = swatchColor.r * 0.299 +
+                              swatchColor.g * 0.587 +
+                              swatchColor.b * 0.114
                     return lum > 0.7
                         ? Qt.rgba(96 / 255, 96 / 255, 96 / 255, 1.0)
                         : Qt.rgba(192 / 255, 192 / 255, 192 / 255, 1.0)
@@ -152,7 +150,7 @@ Item {
                     color: "transparent"
                     border.width: 2
                     border.color: DesignSystem.accentDefault
-                    visible: modelData == root.currentColorValue
+                    visible: swatchColor == root.currentColorValue
                 }
 
                 // Hover effect
@@ -162,7 +160,7 @@ Item {
                     color: "transparent"
                     border.width: 2
                     border.color: DesignSystem.accentDefault
-                    visible: swatchMouse.containsMouse && modelData != root.currentColorValue
+                    visible: swatchMouse.containsMouse && swatchColor != root.currentColorValue
                 }
 
                 MouseArea {

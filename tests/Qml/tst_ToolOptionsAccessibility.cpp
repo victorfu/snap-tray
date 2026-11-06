@@ -28,6 +28,7 @@ private slots:
     void everyStyleControlIsNamed();
     void stepBadgeSizesAreNamedChoices();
     void colorsAreNamedChoices();
+    void paletteNamesStayWithTheirColors();
     void widthIsAnAdjustableSlider();
     void styleMenusReadTheCurrentStyle();
     void textAndShapeTogglesAreCheckboxes();
@@ -172,6 +173,54 @@ void tst_ToolOptionsAccessibility::colorsAreNamedChoices()
     QVERIFY(customClicked.isValid());
     custom->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
     QCOMPARE(customClicked.count(), 1);
+}
+
+// The swatch names come with their colors from the view model, so a palette
+// reordered or changed in C++ cannot leave a swatch named for another color.
+// Each swatch's drawn color is classified by hue and brightness rather than
+// compared with a copy of the palette, so this fails if a name and its color
+// get out of step, and pressing a swatch applies the color it shows.
+void tst_ToolOptionsAccessibility::paletteNamesStayWithTheirColors()
+{
+    const auto colorFamily = [](const QColor& color) -> QString {
+        const QColor hsv = color.toHsv();
+        if (hsv.valueF() < 0.25f) return QStringLiteral("Black");
+        if (hsv.hsvSaturationF() < 0.15f && hsv.valueF() > 0.85f) return QStringLiteral("White");
+        const int hue = hsv.hsvHue();
+        if (hue < 20 || hue >= 340) return QStringLiteral("Red");
+        if (hue >= 40 && hue < 75) return QStringLiteral("Yellow");
+        if (hue >= 90 && hue < 170) return QStringLiteral("Green");
+        if (hue >= 230 && hue < 300) return QStringLiteral("Purple");
+        return QString();
+    };
+
+    PinToolOptionsViewModel viewModel;
+    viewModel.showForTool(int(ToolId::Pencil));
+    const QVariantList options = viewModel.colorPaletteOptions();
+    QCOMPARE(options.size(), viewModel.colorPalette().size());
+    for (qsizetype i = 0; i < options.size(); ++i) {
+        const QVariantMap option = options.at(i).toMap();
+        const QColor color = option.value(QStringLiteral("color")).value<QColor>();
+        QCOMPARE(color, viewModel.colorPalette().at(i).value<QColor>());
+        QCOMPARE(option.value(QStringLiteral("name")).toString(), colorFamily(color));
+    }
+
+    auto view = load(viewModel);
+    QVERIFY(view);
+    int swatches = 0;
+    for (QAccessibleInterface* accessible : accessibles(view->rootObject())) {
+        QObject* swatch = accessible->object();
+        if (!swatch || !swatch->objectName().startsWith(QStringLiteral("colorSwatch_"))) continue;
+        ++swatches;
+        const QColor shown = swatch->property("color").value<QColor>();
+        const QString name = accessible->text(QAccessible::Name);
+        QVERIFY2(!colorFamily(shown).isEmpty(), qPrintable(shown.name()));
+        QVERIFY2(name == colorFamily(shown),
+                 qPrintable(QStringLiteral("swatch %1 is named \"%2\"").arg(shown.name(), name)));
+        accessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+        QCOMPARE(viewModel.currentColor().rgba(), shown.rgba());
+    }
+    QCOMPARE(swatches, options.size());
 }
 
 void tst_ToolOptionsAccessibility::widthIsAnAdjustableSlider()
