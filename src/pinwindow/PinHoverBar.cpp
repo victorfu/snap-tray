@@ -19,6 +19,16 @@
 using SnapTray::QmlOverlayManager;
 
 namespace {
+void setOverlayOwner(QWindow* view, QWindow* owner)
+{
+    // A managed X11 tool window can remain beneath an override-redirect pin
+    // even after raise(). Match the owner's policy before creating the native
+    // surface (including when Live Update prepares capture exclusions).
+    view->setFlag(Qt::X11BypassWindowManagerHint,
+                  owner && owner->flags().testFlag(Qt::X11BypassWindowManagerHint));
+    view->setTransientParent(owner);
+}
+
 QString panelButtonName(int panel)
 {
     return panel == PinHoverBarViewModel::OpacityPanel ? QStringLiteral("pinHoverOpacity")
@@ -56,7 +66,7 @@ void PinHoverBar::setOwner(QWindow* owner)
     if (m_owner == owner) return;
     m_owner = owner;
     for (QQuickView* view : {m_barView, m_panelView}) {
-        if (view) view->setTransientParent(owner);
+        if (view) setOverlayOwner(view, owner);
     }
 }
 
@@ -75,7 +85,7 @@ bool PinHoverBar::ensureBar()
     if (m_barView) return true;
     if (!m_viewModel) return false;
     m_barView = QmlOverlayManager::instance().createToolPanelWindow();
-    m_barView->setTransientParent(m_owner);
+    setOverlayOwner(m_barView, m_owner);
     m_barView->setResizeMode(QQuickView::SizeViewToRootObject);
     m_barView->setInitialProperties({{"viewModel", QVariant::fromValue(static_cast<QObject*>(m_viewModel.data()))}});
     m_barView->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/pin/PinHoverBar.qml")));
@@ -104,7 +114,7 @@ bool PinHoverBar::ensurePanel()
     if (m_panelView) return true;
     if (!m_viewModel) return false;
     m_panelView = QmlOverlayManager::instance().createPopupWindow();
-    m_panelView->setTransientParent(m_owner);
+    setOverlayOwner(m_panelView, m_owner);
     m_panelView->setResizeMode(QQuickView::SizeViewToRootObject);
     m_panelView->setInitialProperties({{"viewModel", QVariant::fromValue(static_cast<QObject*>(m_viewModel.data()))}});
     m_panelView->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/pin/PinValuePanel.qml")));

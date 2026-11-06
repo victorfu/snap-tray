@@ -25,6 +25,7 @@ private slots:
     void init();
     void cleanup();
     void showsAfterDelayOnly();
+    void followsOwnerWindowPolicy();
     void leavingOntoBarKeepsIt();
     void leavingAwayHides();
     void followsPin();
@@ -71,6 +72,31 @@ void tst_PinHoverBar::cleanup()
     m_bar.reset();
     m_vm.reset();
     m_owner.reset();
+}
+
+void tst_PinHoverBar::followsOwnerWindowPolicy()
+{
+    m_bar->showNow();
+    m_vm->openPanel(PinHoverBarViewModel::ZoomPanel);
+    QTRY_VERIFY(m_bar->isPanelVisible());
+    const auto checkOwner = [&](QWindow* owner) {
+        for (QWindow* view : {m_bar->barWindow(), m_bar->panelWindow()}) {
+            QCOMPARE(view->transientParent(), owner);
+            QCOMPARE(view->flags().testFlag(Qt::X11BypassWindowManagerHint),
+                     owner && owner->flags().testFlag(Qt::X11BypassWindowManagerHint));
+            QVERIFY(view->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
+        }
+    };
+    checkOwner(m_owner.get());
+    m_bar->hideNow();
+    QWindow bypassOwner;
+    bypassOwner.setFlag(Qt::X11BypassWindowManagerHint);
+    m_bar->setOwner(&bypassOwner);
+    checkOwner(&bypassOwner);
+    m_bar->setOwner(m_owner.get());
+    checkOwner(m_owner.get());
+    m_bar->setOwner(nullptr);
+    checkOwner(nullptr);
 }
 
 void tst_PinHoverBar::showsAfterDelayOnly()
