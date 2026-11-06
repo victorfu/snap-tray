@@ -62,6 +62,7 @@ private slots:
     void autoZoomKeepsInteractionFocusWithoutFollowing();
     void followDeadZoneAndSeek();
     void followClicksEdgesAndCuts();
+    void followCutResetWaitsForHiddenPointer();
     void followSpeedAndNoOvershoot();
     void repeatedClicksInOneArea();
     void fastMovesAcrossAreas();
@@ -166,6 +167,27 @@ void TestZoomTrack::followClicksEdgesAndCuts()
     auto fixed = trackOf({segment});
     fixed.reduceMotion = true;
     QCOMPARE(track.viewportAt(4000, kBounds), fixed.viewportAt(4000, kBounds));
+}
+
+void TestZoomTrack::followCutResetWaitsForHiddenPointer()
+{
+    // The pointer is hidden across the start of the kept part after a cut;
+    // the camera must still start fresh where the pointer reappears.
+    Script script;
+    script.move(0, QPoint(200, 200));
+    script.move(2200, QPoint(1700, 900));
+    script.move(6000, QPoint(1700, 900));
+    script.sort();
+    ZoomSegment segment{0, 6000, 2.0, QPointF(200, 200), true};
+    segment.follow = true;
+    CursorEffectSettings settings;
+    settings.hiddenRanges = {{2100, 2600}};
+    ZoomTrack track;
+    track.setSegments({segment});
+    track.prepareFollow(script.timeline, settings, TimelineMap({{0, 1200, 1}, {2200, 6000, 1}}), kBounds);
+    const QRectF expected(QPointF(1920 - 960, 1080 - 540), kBounds.size() / 2);
+    QCOMPARE(track.viewportAt(2600, kBounds), expected);
+    QCOMPARE(track.viewportAt(3000, kBounds), expected);
 }
 
 void TestZoomTrack::followSpeedAndNoOvershoot()

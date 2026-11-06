@@ -211,15 +211,17 @@ void ZoomTrack::prepareFollow(const CursorTimeline& cursor, const CursorEffectSe
         std::sort(times.begin(), times.end());
         times.erase(std::unique(times.begin(), times.end()), times.end());
         qint64 previousMs = segment.startMs;
-        int previousPart = timeline.segmentAt(segment.startMs);
+        // The part the camera last moved in. It only advances with a usable
+        // pointer, so a cut crossed while the pointer is hidden still resets.
+        int cameraPart = timeline.segmentAt(segment.startMs);
         for (const qint64 ms : times) {
             const int part = timeline.segmentAt(ms);
             const auto pointer = renderer.pointerPosition(ms);
             if (pointer && (timeline.isEmpty() || part >= 0)) {
                 // A cut starts a fresh camera; deleted time never contributes momentum.
-                if (part != previousPart && part >= 0
-                    && (previousPart < 0 || timeline.segments()[size_t(part)].startMs
-                        > timeline.segments()[size_t(previousPart)].endMs)) {
+                if (part != cameraPart && part >= 0
+                    && (cameraPart < 0 || timeline.segments()[size_t(part)].startMs
+                        > timeline.segments()[size_t(cameraPart)].endMs)) {
                     center = frameFor(*pointer, segment.scale, bounds).center();
                     velocity = {};
                     target = center;
@@ -282,10 +284,10 @@ void ZoomTrack::prepareFollow(const CursorTimeline& cursor, const CursorEffectSe
                     if (corrected != center) { velocity = {}; target = corrected; }
                     center = corrected;
                 }
+                cameraPart = part;
             }
             path.push_back({ms, center});
             previousMs = ms;
-            previousPart = part;
         }
     }
 }
