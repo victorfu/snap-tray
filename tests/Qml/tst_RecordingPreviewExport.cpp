@@ -2049,7 +2049,17 @@ void tst_RecordingPreviewExport::mp4OptionsReachTheOutput()
         RecordingSettingsManager::instance().setMp4ExportOptions(rememberedOptions);
     });
 
+#ifdef Q_OS_WIN
+    // A preference saved by an older version (or another platform) must still
+    // produce H.264 now that Windows no longer offers HEVC export (#210).
+    RecordingSettingsManager::instance().setMp4ExportOptions({{QStringLiteral("codec"), QStringLiteral("hevc")}});
+#endif
+
     RecordingPreviewBackend backend(inputPath);
+#ifdef Q_OS_WIN
+    QCOMPARE(backend.mp4Codec(), int(SnapTray::Mp4ExportOptions::Codec::Hevc));
+    QCOMPARE(backend.effectiveMp4Options().codec, SnapTray::Mp4ExportOptions::Codec::H264);
+#endif
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);
     backend.updateVideoSize(sourceSize);
     backend.updateDuration(kFrameCount * kFrameIntervalMs);

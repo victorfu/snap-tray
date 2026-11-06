@@ -77,6 +77,13 @@ void tst_RecordingPreviewMp4Options::panelSetsAndRemembersTheOptions()
     QCOMPARE(resolution->isEnabled(), backend.mp4OutputOptionsAvailable());
     QCOMPARE(frameRate->isEnabled(), backend.mp4OutputOptionsAvailable());
     QCOMPARE(hevc->isEnabled(), backend.mp4HevcAvailable());
+    QQuickItem* codecGroup = item(view, "previewMp4CodecGroup");
+    QVERIFY(codecGroup);
+    QCOMPARE(codecGroup->isVisible(), backend.mp4HevcAvailable());
+#ifdef Q_OS_WIN
+    QVERIFY(!backend.mp4HevcAvailable());
+    QVERIFY(!hevc->isVisible());
+#endif
 
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewMp4Quality"), "activated", Q_ARG(int, 1)));
     QCOMPARE(backend.mp4Quality(), int(SnapTray::Mp4ExportOptions::Quality::Low));

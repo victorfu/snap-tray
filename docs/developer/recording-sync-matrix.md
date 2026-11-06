@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-02
+last_modified_at: 2026-11-06
 layout: docs
 title: Recording Sync Matrix
 seo_title: "SnapTray Recording Sync Matrix: End-to-End A/V and Fault Injection Tests"
@@ -148,7 +148,7 @@ contract with the newly enabled capabilities.
 | --- | --- | --- |
 | Multiple cuts + 0.5×/1.5×/2× parts; audio pulses at seams | Pending device test | Pending device test |
 | Crop + zoom + masks + text/CJK fonts + frame; MP4/GIF/WebP parity | Pending device test | Pending device test |
-| 1080p/720p/custom width, fractional source fps, 15/30 fps, HEVC available/unavailable | Pending device test | Pending device test |
+| 1080p/720p/custom width, fractional source fps, 15/30 fps, codec choices | Pending device test, including HEVC available/unavailable | Pending device test; H.264 only |
 | Both sources → separate gains/mutes/noise reduction in preview and MP4; recover project | Pending device test | Pending device test |
 | Seek/pause/resume/speed changes with remixed audio and an output device disconnect | Pending device test | Pending device test |
 | Keys off/shortcuts/all; pause boundary; permission refusal; protected input | Input Monitoring + Secure Event Input | UIA password field + secure desktop |

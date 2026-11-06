@@ -331,6 +331,11 @@ add_test(NAME Qml_RecordingCropOverlay COMMAND Qml_RecordingCropOverlay)
 # timeouts (#264).
 set_tests_properties(Qml_RecordingCropOverlay PROPERTIES TIMEOUT 60 LABELS "unit;integration"
     ENVIRONMENT "QT_QUICK_BACKEND=software")
+if(WIN32)
+    # The full 84-case overlay suite takes about 75 s on the Windows 10 Debug
+    # acceptance machine (#210); keep every case within the CTest time budget.
+    set_tests_properties(Qml_RecordingCropOverlay PROPERTIES TIMEOUT 120)
+endif()
 
 add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
 target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)

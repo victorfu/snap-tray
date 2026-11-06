@@ -15,6 +15,11 @@
 #include <QQuickWindow>
 #include <QScopeGuard>
 #include <QTranslator>
+#include <QProcess>
+#include <functional>
+#ifdef Q_OS_WIN
+#include <QtCore/qt_windows.h>
+#endif
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "PinWindow.h"
@@ -72,6 +77,7 @@ private slots:
     void screenshots_data();
     void screenshots();
     void operationVideo();
+    void nativeControlsAndZOrder();
 
 private:
     // Composites the pin and its floating windows over a backdrop.
@@ -329,6 +335,158 @@ void TestPinWindowEvidence::operationVideo()
     pin.m_hoverBar->hideNow();
     frame(16);
     QVERIFY(count > 60);
+}
+
+void TestPinWindowEvidence::nativeControlsAndZOrder()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows native window policy check");
+#else
+    const QString out = qEnvironmentVariable("SNAPTRAY_PIN_NATIVE_DIR");
+    const QString helper = qEnvironmentVariable("SNAPTRAY_FOCUS_HELPER");
+    if (out.isEmpty() || helper.isEmpty()) QSKIP("Set pin native evidence directory and focus helper");
+    QVERIFY(QFileInfo::exists(helper));
+    QVERIFY(QDir().mkpath(out));
+    PinWindow pin(demoImage(QSize(420, 260)), QPoint(240, 200), nullptr, false, false);
+    pin.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pin));
+    pin.activateWindow();
+    QVERIFY(QTest::qWaitForWindowActive(&pin));
+    hover(pin);
+    auto* bar = qobject_cast<QQuickWindow*>(pin.m_hoverBar->barWindow());
+    QVERIFY(bar);
+    const auto openPanel = [&](const QString& button, int expectedPanel) {
+        hover(pin);
+        QVariant rect;
+        auto* root = bar->contentItem()->childItems().first();
+        QVERIFY(QMetaObject::invokeMethod(root, "buttonRect", Q_RETURN_ARG(QVariant, rect),
+                                         Q_ARG(QVariant, button)));
+        QTest::mouseClick(bar, Qt::LeftButton, Qt::NoModifier, rect.toRectF().center().toPoint());
+        QTRY_VERIFY(pin.m_hoverBar->isPanelVisible());
+        QCOMPARE(pin.m_hoverBarViewModel->panel(), expectedPanel);
+    };
+    const auto openZoom = [&] { openPanel(QStringLiteral("pinHoverZoom"), PinHoverBarViewModel::ZoomPanel); };
+    openZoom();
+    auto* panel = qobject_cast<QQuickWindow*>(pin.m_hoverBar->panelWindow());
+    QVERIFY(panel);
+    QVERIFY(QTest::qWaitForWindowExposed(panel));
+    auto* slider = panel->contentItem()->childItems().first()->findChild<QQuickItem*>("pinValueSlider");
+    QVERIFY(slider);
+    auto* handle = slider->property("handle").value<QQuickItem*>();
+    QVERIFY(handle);
+    const QPoint start = handle->mapToScene(QPointF(handle->width()/2, handle->height()/2)).toPoint();
+    const QPoint panelPosition = panel->position();
+    const qreal zoom = pin.zoomLevel();
+    QTest::mousePress(panel, Qt::LeftButton, Qt::NoModifier, start);
+    QTest::mouseMove(panel, start + QPoint(12,0));
+    QTRY_VERIFY(!qFuzzyCompare(pin.zoomLevel(), zoom));
+    QCOMPARE(panel->position(), panelPosition);
+    QTest::mouseRelease(panel, Qt::LeftButton, Qt::NoModifier, start + QPoint(12,0));
+    settle();
+    QVERIFY(pin.m_hoverBar->isPanelVisible());
+    std::function<QQuickItem*(QQuickItem*, const QString&)> findVisual = [&](QQuickItem* root, const QString& name) -> QQuickItem* {
+        if (root->objectName() == name) return root;
+        for (auto* child : root->childItems()) if (auto* found = findVisual(child, name)) return found;
+        return nullptr;
+    };
+    const auto clickPanelButton = [&](const QString& name) {
+        QQuickItem* button = nullptr;
+        QTRY_VERIFY((button = findVisual(panel->contentItem(), name)) && button->isVisible() && button->width() > 0);
+        QTest::mouseClick(panel, Qt::LeftButton, Qt::NoModifier,
+                          button->mapToScene(QPointF(button->width()/2, button->height()/2)).toPoint());
+    };
+    for (const int percent : {33, 50, 100, 200}) {
+        QTest::keyClick(&pin, Qt::Key_0, Qt::ControlModifier);
+        openZoom();
+        clickPanelButton(QStringLiteral("pinValuePreset_%1").arg(percent));
+        QTRY_COMPARE(qRound(pin.zoomLevel()*100), percent);
+    }
+    QTest::keyClick(&pin, Qt::Key_0, Qt::ControlModifier);
+    openPanel(QStringLiteral("pinHoverOpacity"), PinHoverBarViewModel::OpacityPanel);
+    for (const int percent : {50, 75, 100}) {
+        clickPanelButton(QStringLiteral("pinValuePreset_%1").arg(percent));
+        QTRY_COMPARE(qRound(pin.opacity()*100), percent);
+    }
+    slider = findVisual(panel->contentItem(), QStringLiteral("pinValueSlider"));
+    QVERIFY(slider);
+    handle = slider->property("handle").value<QQuickItem*>();
+    QVERIFY(handle);
+    const QPoint opacityStart = handle->mapToScene(QPointF(handle->width()/2, handle->height()/2)).toPoint();
+    const QPoint opacityMinimum = slider->mapToScene(QPointF(slider->property("leftPadding").toReal() + handle->width()/2,
+                                                             slider->height()/2)).toPoint();
+    QTest::mousePress(panel, Qt::LeftButton, Qt::NoModifier, opacityStart);
+    QTest::mouseMove(panel, opacityMinimum);
+    QTRY_COMPARE(qRound(pin.opacity()*100), 10);
+    QTest::mouseRelease(panel, Qt::LeftButton, Qt::NoModifier, opacityMinimum);
+    clickPanelButton(QStringLiteral("pinValueReset"));
+    QTRY_COMPARE(pin.opacity(), 1.0);
+    QTest::keyClick(&pin, Qt::Key_Escape);
+    openZoom();
+    const int rotation = pin.m_rotationAngle;
+    bool sawResize = false;
+    bool panelVisibleAtResize = false;
+    class ResizeObserver final : public QObject {
+    public:
+        std::function<void()> resized;
+        bool eventFilter(QObject*, QEvent* event) override {
+            if (event->type() == QEvent::Resize) resized();
+            return false;
+        }
+    } observer;
+    observer.resized = [&] { sawResize = true; panelVisibleAtResize |= pin.m_hoverBar->isPanelVisible(); };
+    pin.installEventFilter(&observer);
+    QTest::keyClick(&pin, Qt::Key_1);
+    QTRY_VERIFY(!pin.m_hoverBar->isPanelVisible());
+    QTRY_VERIFY(sawResize);
+    QVERIFY(!panelVisibleAtResize);
+    QCOMPARE(pin.m_rotationAngle, (rotation + 90) % 360);
+    pin.removeEventFilter(&observer);
+    QTest::keyClick(&pin, Qt::Key_0, Qt::ControlModifier);
+    QCOMPARE(pin.zoomLevel(), 1.0);
+    QTest::keyClick(&pin, Qt::Key_Equal, Qt::ControlModifier);
+    QVERIFY(pin.zoomLevel() > 1.0);
+    QTest::keyClick(&pin, Qt::Key_0, Qt::ControlModifier);
+    QCOMPARE(pin.zoomLevel(), 1.0);
+    QTest::keyClick(&pin, Qt::Key_BracketLeft);
+    QVERIFY(pin.opacity() < 1.0);
+    QTest::keyClick(&pin, Qt::Key_BracketRight, Qt::ControlModifier);
+    QCOMPARE(pin.opacity(), 1.0);
+    openZoom();
+    settle();
+    const auto above = [](HWND upper, HWND lower) {
+        for (HWND window=GetTopWindow(nullptr); window; window=GetWindow(window,GW_HWNDNEXT)) {
+            if (window==upper) return true;
+            if (window==lower) return false;
+        }
+        return false;
+    };
+    const auto visibleAndAbove = [&] {
+        const HWND pinHandle = reinterpret_cast<HWND>(pin.winId());
+        const HWND barHandle = reinterpret_cast<HWND>(bar->winId());
+        const HWND panelHandle = reinterpret_cast<HWND>(panel->winId());
+        return IsWindowVisible(pinHandle) && IsWindowVisible(barHandle) && IsWindowVisible(panelHandle)
+            && bar->contentItem()->childItems().first()->isVisible()
+            && panel->contentItem()->childItems().first()->isVisible()
+            && bar->opacity() > 0.5 && panel->opacity() > 0.5
+            && above(barHandle,pinHandle) && above(panelHandle,pinHandle);
+    };
+    QVERIFY(visibleAndAbove());
+    QProcess other;
+    other.start(helper);
+    QVERIFY(other.waitForStarted());
+    const auto foregroundPid = [] { DWORD pid=0; GetWindowThreadProcessId(GetForegroundWindow(),&pid); return pid; };
+    QTRY_COMPARE(foregroundPid(), DWORD(other.processId()));
+    QTest::qWait(250);
+    QVERIFY(!pin.isActiveWindow());
+    QVERIFY(visibleAndAbove());
+    QVERIFY(compose(pin).save(out + "/foreign-app-active.png"));
+    qInfo() << "Native pin check: slider stayed fixed; shortcuts passed; bar and panel visible above pin with another process active";
+    QVERIFY(other.waitForFinished(5000));
+    pin.activateWindow();
+    QVERIFY(QTest::qWaitForWindowActive(&pin));
+    QTest::keyClick(&pin, Qt::Key_Escape);
+    QTRY_VERIFY(!pin.m_hoverBar->isPanelVisible());
+#endif
 }
 
 QTEST_MAIN(TestPinWindowEvidence)

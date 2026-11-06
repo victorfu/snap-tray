@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-06
+last_modified_at: 2026-11-07
 layout: docs
 title: UI Design Guidelines
 description: Shared visual direction and interaction rules for SnapTray capture tools, editing windows, and libraries.
@@ -126,17 +126,63 @@ Record actual environment, results, and evidence for each implementation; a blan
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
-| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | CI build and tests only | `scripts/run-tests.sh` on a 2× desktop: 231 of 233; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
-| Wide/narrow, light/dark, selection/export | QML screenshot fixtures (below) | Pending manual pass | The same fixtures rendered on Ubuntu at 2×, light and dark |
-| Pending input, drag/undo, close/cancel | Automated preview suites; operation videos; exporting, close-while-exporting and cancelled screenshots (below) | CI tests only | Preview suites and operation videos pass locally; closing during a real export asks Keep/Cancel, Keep finishes it |
-| New recording end-to-end (trim → split/speed → canvas → text/mask/zoom → export) | Scripted real-input session, `editor-220-flow` | Pending manual pass | Real-input session (XTest): split, 2×, mask, text, zoom, undo/redo, MP4 export; trim and canvas not exercised; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
-| Reopened project (reopen → change → undo/redo → save → reopen) | Scripted real-input session, `editor-220-reopen`; `tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits`, `tst_RecordingEditor::redoAndReopenKeepSelectionHonest` | CI tests only | `operationVideoReopen` passes locally; no real reopen session |
-| Long translations | de, fi, ru, el at 1200 × 800 and 640 × 480 (below) | Pending | de, fi, ru, el at 1200 × 800 and 640 × 480 rendered on Ubuntu at 2×; every control reachable |
-| Multiple DPI scales | 1×, 1.5× and 2× renderings (`QT_SCALE_FACTOR` on a Retina display, below); no physical 1× display | Pending (100/150/200 %) | Physical 2× (Xft.dpi 192); 1× and 1.5× rendered with `QT_ENABLE_HIGHDPI_SCALING=0` and `QT_SCALE_FACTOR=0.75`. GNOME on X11 offers no 150 %; one display, so no mixed DPI |
+| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | Local Windows build passed; focused UI regression 7/7; earlier full baseline and reruns documented in #210 | `scripts/run-tests.sh` on a 2× desktop: 231 of 233; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
+| Wide/narrow, light/dark, selection/export | QML screenshot fixtures (below) | 1200x800/640x480 fixtures passed; representative images inspected (see Windows follow-up) | The same fixtures rendered on Ubuntu at 2×, light and dark |
+| Pending input, drag/undo, close/cancel | Automated preview suites; operation videos; exporting, close-while-exporting and cancelled screenshots (below) | Preview regression and operation scripts passed; QTest-driven | Preview suites and operation videos pass locally; closing during a real export asks Keep/Cancel, Keep finishes it |
+| New recording end-to-end (trim → split/speed → canvas → text/mask/zoom → export) | Scripted real-input session, `editor-220-flow` | Fresh native capture loaded into scripted editor; trim, 2x, canvas, text/mask/zoom, real GIF and H.264 outputs passed; tray handoff not exercised | Real-input session (XTest): split, 2×, mask, text, zoom, undo/redo, MP4 export; trim and canvas not exercised; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
+| Reopened project (reopen → change → undo/redo → save → reopen) | Scripted real-input session, `editor-220-reopen`; `tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits`, `tst_RecordingEditor::redoAndReopenKeepSelectionHonest` | QTest-driven native-recording project reopen/change/undo/redo/export/reopen passed; Library click navigation pending | `operationVideoReopen` passes locally; no real reopen session |
+| Long translations | de, fi, ru, el at 1200 × 800 and 640 × 480 (below) | de/fi/ru/el fixtures passed and representative wide/narrow/export images inspected; exhaustive control walkthrough pending | de, fi, ru, el at 1200 × 800 and 640 × 480 rendered on Ubuntu at 2×; every control reachable |
+| Multiple DPI scales | 1×, 1.5× and 2× renderings (`QT_SCALE_FACTOR` on a Retina display, below); no physical 1× display | 1x/1.5x/2x renderings passed; physical 150%/250% window move exposed a Qt/Windows size jump (see follow-up) | Physical 2× (Xft.dpi 192); 1× and 1.5× rendered with `QT_ENABLE_HIGHDPI_SCALING=0` and `QT_SCALE_FACTOR=0.75`. GNOME on X11 offers no 150 %; one display, so no mixed DPI |
 | Screen reader names | AX audit passed after #238 fixes ([audit](#macos-accessibility-audit)); no VoiceOver speech session; `inspectorControlsAreNamed`, `choicesReadTheirStateToScreenReaders` | Pending (Narrator) | AT-SPI tree of the live editor (what Orca reads): buttons, combo boxes, timeline parts and inspector rows named, shortcuts in descriptions; the export panel's dialog has no name (#253). No spoken Orca session |
 | Floating tools at screen edges/multiple displays | Outside this editor change | Pending follow-up | Pending follow-up (one display) |
 
 #220 was closed on the macOS evidence above. The pending Windows, Ubuntu 22.04 X11 beta, physical-DPI and screen reader passes are tracked in [#238](https://github.com/victorfu/snap-tray/issues/238); update this matrix with their results.
+
+### Windows follow-up (2026-11-06–07, #238)
+
+Windows 10 Pro 22H2 (19045), Qt 6.12.0/MSVC Debug, GTX 1650; physical
+150% ROG PG279Q and 250% UHD HDR displays. Results use QTest-driven real Qt
+windows and native media; they do not constitute a Narrator speech session.
+Evidence is retained locally in `build/issue-238-windows-20261106/`.
+
+- Seventeen corrected evidence groups passed: editor states, source-recording
+  flow/reopen, toolbar/pin renderings at 1x/1.5x/2x, de/fi/ru/el editor text,
+  and German toolbar/pin text. Representative images were visually inspected.
+  On the primary 1.5x display, `QT_SCALE_FACTOR=2/3` and `4/3` simulate 1x and
+  2x; these are not physical Windows scaling changes.
+- A new 6.054-second native DXGI/MF capture was loaded into the editor test.
+  UI operations trimmed it, split it, selected 2x, and added canvas, text,
+  mask and zoom effects. Real GIF and H.264 exports were retained; MP4 was
+  2790x1670 and 2.822 seconds, matching the edit state. File-dialog completion
+  is replaced by controlled file retention in this fixture.
+- Project export/reopen, mask deletion, Undo/Redo, another export and another
+  reopen passed. The fixture calls the same project-opening API as Library;
+  it does not click through Library navigation.
+- Native pin checks passed: actual QTest clicks, slider position stability,
+  zoom presets 33/50/100/200%, opacity presets and 10–100% reset, shortcuts,
+  Escape, and closing the panel before a non-Escape key changes geometry.
+  With a separate process foreground, Win32 visibility and Z-order confirmed
+  that the bar/panel remained visible above the pin.
+- The software-grab DPR metadata bug in #260 also reproduced on Windows.
+  The evidence tools now use source-window dimensions/DPR for composition,
+  including the editor video's drawn pointer. Corrected 1x/1.5x/2x captures
+  passed. These are evidence-tool changes, not a pin placement product fix.
+- Physical mixed-DPI movement remains **not passed**. A 640x480 window moves
+  from 150% to 250% as 636x467, then returns as 1073x821. A plain Qt window
+  without the editor reproduces it, both with and without QtTest's 96-DPI
+  font attribute. This points to Qt/Windows geometry handling; the editor's
+  large size jump is not treated as a passed layout check.
+- Focused regression: seven related CTest suites passed. Narrator speech,
+  exhaustive physical Tab traversal, three-host annotation walkthroughs,
+  and all pin Live/click-through scenarios remain pending.
+
+Reproduce the opt-in hardware checks with `Qml_RecordingEditor
+mixedDpiWindowMove` and `SNAPTRAY_EDITOR_MIXED_DPI_DIR=<evidence-dir>` (two
+screens with distinct DPRs required). Use `SNAPTRAY_EDITOR_SCREEN=primary`
+for deterministic evidence placement. `SNAPTRAY_EDITOR_RECORDING=<mp4>` with
+`SNAPTRAY_EDITOR_VIDEO_DIR` supplies real media to operation fixtures.
+`PinWindow_Evidence nativeControlsAndZOrder` uses `SNAPTRAY_PIN_NATIVE_DIR`
+and `SNAPTRAY_FOCUS_HELPER` for the controlled second-process focus check.
 
 ### macOS accessibility audit
 
@@ -348,7 +394,7 @@ Applies to pin windows (#225). Design: `docs/superpowers/specs/2026-11-05-pin-wi
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
-| Build and repository tests | `scripts/run-tests.sh`, all suites | CI build and tests only | CI build and tests only |
+| Build and repository tests | `scripts/run-tests.sh`, all suites | Local Windows build passed; focused UI regression 7/7; earlier full baseline and reruns documented in #210 | CI build and tests only |
 | Hover bar, panels, compact bar, light/dark/German | Evidence below (`PinWindow_Evidence`) | Pending manual pass (#238) | Original GNOME stacking failure fixed in #250; native stacking regression passes (see below). Full theme/localization manual pass remains pending |
 | Bar follows pin drag/zoom; hides in excluded states | `PinWindow_PinHoverBar`, `PinWindow_PinHoverIntegration` | CI tests only | Both automated suites pass under GNOME X11 / Qt 6.12.0 (#250); physical-pointer acceptance remains pending |
 | Click-through pill and tray exit | `PinWindow_Transform`, `App_MainApplicationTrayMenu`; screenshot below | Pending manual pass (#238) | Not supported (no click-through) |
@@ -440,7 +486,7 @@ The Library is a work window, so it uses the same solid surfaces as the recordin
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
-| Build and repository tests | `scripts/run-tests.sh` | CI build and tests only | CI build and tests only |
+| Build and repository tests | `scripts/run-tests.sh` | Local Windows build passed; focused UI regression 7/7; earlier full baseline and reruns documented in #210 | CI build and tests only |
 | Sections, counts, merge order, roles | `Qml_LibraryModel`, `Qml_LibraryWindow` | CI tests only | CI tests only |
 | Actions per kind, delete confirmation, busy project, privacy note | `Qml_LibraryWindow` | CI tests only | CI tests only |
 | Wide and narrow, light/dark/German | Evidence below (`Qml_LibraryEvidence`) | Pending manual pass (#238) | Fixtures on Ubuntu at 2×, light and dark; German not run |
@@ -505,7 +551,7 @@ Applies to the Settings window and the Beautify panel (#227). Design: `docs/supe
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
-| Build and repository tests | `scripts/run-tests.sh` | CI build and tests only | CI build and tests only |
+| Build and repository tests | `scripts/run-tests.sh` | Local Windows build passed; focused UI regression 7/7; earlier full baseline and reruns documented in #210 | CI build and tests only |
 | Page order, groups, gating, removed pages | `Qml_SettingsWindowFeatureGating` | CI tests only | CI tests only |
 | Former settings reachable on their new page | `Qml_SettingsWindowFeatureGating` | CI tests only | CI tests only |
 | Style and background presets, chosen and Custom states | `Qml_BeautifyPanelBackend`, `Qml_BeautifyPanelQml` | CI tests only | CI tests only |

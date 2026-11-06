@@ -676,8 +676,7 @@ public:
         HRESULT hr = m_com.usable() ? m_mf.result() : m_com.result();
         ComPtr<IMFAttributes> attributes;
         if (SUCCEEDED(hr)) hr = MFCreateAttributes(&attributes, 2);
-        // Offline: do not throttle to wall time. Hardware HEVC encoders may
-        // be the only HEVC implementation installed on this system.
+        // Offline export can encode faster than wall time and use hardware transforms.
         if (SUCCEEDED(hr)) hr = attributes->SetUINT32(MF_SINK_WRITER_DISABLE_THROTTLING, TRUE);
         if (SUCCEEDED(hr)) hr = attributes->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE);
         if (SUCCEEDED(hr)) hr = MFCreateSinkWriterFromURL(nativePath(output).c_str(), nullptr, attributes.Get(), &m_writer);
@@ -808,10 +807,6 @@ public:
     bool supportsOutputOptions() const override { return true; }
     bool supportsSegments() const override { return true; }
     bool supportsAudioMix() const override { return true; }
-    bool supportsVideoCodec(const QString& codec) const override {
-        return IVideoTranscoder::supportsVideoCodec(codec)
-            || (codec == QLatin1String(kVideoCodecHevc) && SnapTray::nativeHevcExportAvailable());
-    }
 
 
 private:
@@ -1467,41 +1462,8 @@ namespace SnapTray {
 std::unique_ptr<NativeEditMedia> createNativeEditMedia() { return std::make_unique<MFEditMedia>(); }
 bool nativeHevcExportAvailable()
 {
-    static const bool available = [] {
-        ComApartment com;
-        MfSession mf;
-        if (!com.usable() || FAILED(mf.result())) return false;
-        IMFActivate** encoders = nullptr;
-        UINT32 count = 0;
-        MFT_REGISTER_TYPE_INFO output{MFMediaType_Video, MFVideoFormat_HEVC};
-        const HRESULT hr = MFTEnumEx(MFT_CATEGORY_VIDEO_ENCODER,
-            MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG_ASYNCMFT | MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SORTANDFILTER,
-            nullptr, &output, &encoders, &count);
-        for (UINT32 i = 0; i < count; ++i) encoders[i]->Release();
-        CoTaskMemFree(encoders);
-        if (FAILED(hr) || count == 0) return false;
-
-        // A GPU encoder may be present without the Windows HEVC extension.
-        // Only offer HEVC when native playback can open the exported file too.
-        IMFActivate** decoders = nullptr;
-        UINT32 decoderCount = 0;
-        MFT_REGISTER_TYPE_INFO input{MFMediaType_Video, MFVideoFormat_HEVC};
-        const HRESULT decoderResult = MFTEnumEx(MFT_CATEGORY_VIDEO_DECODER,
-            MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG_ASYNCMFT | MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SORTANDFILTER,
-            &input, nullptr, &decoders, &decoderCount);
-        bool canDecode = false;
-        for (UINT32 i = 0; i < decoderCount; ++i) {
-            ComPtr<IMFTransform> decoder;
-            if (SUCCEEDED(decoders[i]->ActivateObject(IID_PPV_ARGS(&decoder)))) {
-                canDecode = true;
-                decoder.Reset();
-                decoders[i]->ShutdownObject();
-            }
-            decoders[i]->Release();
-        }
-        CoTaskMemFree(decoders);
-        return SUCCEEDED(decoderResult) && canDecode;
-    }();
-    return available;
+    // Windows exports H.264 without requiring the optional paid HEVC extension.
+    // Keep this policy independent of installed codecs or GPU encoders (#210).
+    return false;
 }
 } // namespace SnapTray

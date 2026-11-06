@@ -368,7 +368,7 @@ private slots:
     void lowerFrameRateKeepsTheCadence();
     void fasterPartKeepsTheFrameRate();
     void hevcOutput();
-    void hevcCapabilityRequiresNativePlayback();
+    void windowsExportsH264Only();
     void sizeEstimateAgainstActual();
     void segmentsStayInSync();
     void segmentsOfAVariableRateSource();
@@ -1144,19 +1144,22 @@ void tst_VideoTranscoder::fasterPartKeepsTheFrameRate()
     QVERIFY2(qAbs(kept - 40) <= 2, qPrintable(QString::number(kept)));
 }
 
-void tst_VideoTranscoder::hevcCapabilityRequiresNativePlayback()
+void tst_VideoTranscoder::windowsExportsH264Only()
 {
 #ifndef Q_OS_WIN
-    QSKIP("Windows HEVC extension capability check");
+    QSKIP("Windows exports H.264 only");
 #else
-    const QString path = QFINDTESTDATA("fixtures/hevc-main.mp4");
-    QVERIFY(!path.isEmpty());
-    auto reader = IVideoFrameReader::create();
-    QVERIFY(reader);
-    const bool readable = reader->load(path) && !reader->frameAt(0).isNull();
-    QVERIFY2(readable || !m_transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecHevc)),
-             qPrintable(QStringLiteral("HEVC export offered without native playback: %1")
-                 .arg(reader->lastError())));
+    QVERIFY(m_transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecH264)));
+    QVERIFY(!m_transcoder->supportsVideoCodec(QString::fromLatin1(kVideoCodecHevc)));
+    VideoTranscodeRequest request;
+    request.inputPath = QFINDTESTDATA("fixtures/hevc-main.mp4");
+    QVERIFY(!request.inputPath.isEmpty());
+    request.outputPath = m_dir.filePath(QStringLiteral("unsupported-hevc.mp4"));
+    request.videoCodec = QString::fromLatin1(kVideoCodecHevc);
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY(!result.success);
+    QCOMPARE(result.errorMessage, QStringLiteral("Unsupported video codec."));
+    QVERIFY(!QFileInfo::exists(request.outputPath));
 #endif
 }
 

@@ -3376,6 +3376,8 @@ Item {
                     onActivated: function(index) { backend.mp4Quality = index }
                 }
                 FieldGroup {
+                    objectName: "previewMp4CodecGroup"
+                    visible: backend.mp4HevcAvailable
                     title: qsTr("Codec")
                     Row {
                         id: codecRow
@@ -3399,10 +3401,7 @@ Item {
                             text: "HEVC"
                             tooltipText: backend.mp4HevcAvailable
                                 ? qsTr("Smaller files at the same quality; some older players cannot open them")
-                                : Qt.platform.os === "windows"
-                                    // The usual reason on Windows: playback needs the Store extension (#210).
-                                    ? qsTr("HEVC export needs HEVC Video Extensions from the Microsoft Store")
-                                    : qsTr("HEVC export is not available on this system")
+                                : qsTr("HEVC export is not available on this system")
                             selected: backend.mp4Codec === 1 && backend.mp4HevcAvailable
                             exclusive: true
                             onClicked: backend.mp4Codec = 1

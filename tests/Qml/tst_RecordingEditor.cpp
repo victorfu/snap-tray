@@ -12,11 +12,15 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QFile>
+#include <QSaveFile>
+#include <QJsonDocument>
+#include <QJsonArray>
 #include <QFileInfo>
 #include <QTranslator>
 #include "ToolbarStyle.h"
 #include "ui/DesignSystem.h"
 #include "IVideoEncoder.h"
+#include "video/IVideoTranscoder.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/AudioTracks.h"
 #include "recording/PreviewEditHistory.h"
@@ -73,6 +77,7 @@ private slots:
     void operationVideoReopen();
     void designEvidenceStates_data();
     void designEvidenceStates();
+    void mixedDpiWindowMove();
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
     static QQuickItem* item(QQuickView* view, const char* name);
@@ -89,6 +94,11 @@ private:
 namespace {
 bool writeRecording(const QString& path, int fps = 10, int frames = 20, QSize size = QSize(160, 90))
 {
+    const QString recording = qEnvironmentVariable("SNAPTRAY_EDITOR_RECORDING");
+    if (!recording.isEmpty() && qEnvironmentVariableIsSet("SNAPTRAY_EDITOR_VIDEO_DIR")) {
+        qInfo() << "Editor evidence uses recording" << recording;
+        return QFile::copy(recording, path);
+    }
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
     if (!encoder || !encoder->start(path, size, fps)) return false;
     QImage frame(size, QImage::Format_ARGB32);
@@ -128,8 +138,9 @@ public:
             rendered.wait(200);
         }
         QImage image = m_view->grabWindow();
-        const qreal dpr = image.devicePixelRatio();
-        image = image.scaledToWidth(qRound(image.width() / dpr), Qt::SmoothTransformation);
+        // Software grabs can carry DPR 1 despite containing high-DPI pixels.
+        // Keep the video, synthetic pointer and caption in window coordinates.
+        image = image.scaled(m_view->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         image.setDevicePixelRatio(1.0);
         QImage out(image.width(), image.height() + kCaption, QImage::Format_RGB32);
         out.fill(QColor("#101114"));
@@ -253,7 +264,27 @@ QQuickView* tst_RecordingEditor::openPreview(RecordingPreviewBackend& backend)
         return view != nullptr;
     };
     if (!QTest::qWaitFor(find, 5000)) return nullptr;
-    return QTest::qWaitForWindowExposed(view) ? view : nullptr;
+    const QString evidenceScreen = qEnvironmentVariable("SNAPTRAY_EDITOR_SCREEN");
+    if (!evidenceScreen.isEmpty()) {
+        QScreen* screen = QGuiApplication::primaryScreen();
+        if (evidenceScreen == QStringLiteral("secondary")) {
+            screen = nullptr;
+            for (auto* candidate : QGuiApplication::screens()) {
+                if (candidate != QGuiApplication::primaryScreen()) { screen = candidate; break; }
+            }
+        }
+        if (!screen) return nullptr;
+        view->setPosition(screen->availableGeometry().topLeft() + QPoint(20, 20));
+    }
+    if (!QTest::qWaitForWindowExposed(view)) return nullptr;
+#ifdef Q_OS_WIN
+    view->requestActivate();
+    if (!QTest::qWaitForWindowActive(view)) return nullptr;
+#endif
+    if (!evidenceScreen.isEmpty())
+        qInfo() << "Editor evidence window" << view->screen()->name()
+                << "DPR" << view->devicePixelRatio() << "size" << view->size();
+    return view;
 }
 
 QQuickItem* tst_RecordingEditor::item(QQuickView* view, const char* name)
@@ -340,6 +371,12 @@ void tst_RecordingEditor::stableLayoutAndExport()
     QCOMPARE(backend.selectedMask(), mask); // opening export does not lose the selection
     QCOMPARE(player->size(), size);
     evidence(view, "editor-export");
+    // Invoking clicked above does not activate the first preview on Windows.
+    // Keyboard input must reach an active window, as it does after a user click.
+#ifdef Q_OS_WIN
+    view->requestActivate();
+    QVERIFY(QTest::qWaitForWindowActive(view));
+#endif
     QTest::keyClick(view, Qt::Key_Escape);
     QTRY_VERIFY(!popup->property("opened").toBool());
     view->resize(640, 480);
@@ -1850,6 +1887,16 @@ void tst_RecordingEditor::designEvidence()
     const auto shot = [&](const QString& name) -> QImage {
         settle();
         const QImage image = view->grabWindow();
+        if (name.startsWith(QStringLiteral("08-export")) || name.startsWith(QStringLiteral("09-export"))) {
+            auto* footer = item(view, "previewExportFooter");
+            auto* back = item(view, "previewExportBack");
+            auto* save = delegate(view, QStringLiteral("previewSaveButton"));
+            if (footer && back && save)
+                qInfo() << "Export footer geometry" << theme << "footer" << footer->width()
+                        << "text" << footer->property("contentWidth")
+                        << "back" << back->mapRectToScene(QRectF(QPointF(), back->size()))
+                        << "save" << save->mapRectToScene(QRectF(QPointF(), save->size()));
+        }
         saved = image.save(out + "/" + name + "-" + theme + ".png") && saved;
         return image;
     };
@@ -2180,6 +2227,8 @@ void tst_RecordingEditor::operationVideo()
         rec.key(Qt::Key_Down, Qt::NoModifier, 3);
         rec.key(Qt::Key_Down, Qt::NoModifier, 3);
         rec.key(Qt::Key_Return, Qt::NoModifier, 10);
+        QCOMPARE(backend.timelineParts().size(), 2);
+        QCOMPARE(backend.timelineParts().at(1).toMap().value("speed").toDouble(), 2.0);
         rec.caption(QStringLiteral("Canvas: a frame and a background for the whole recording"));
         rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
         rec.click(rec.centerOf(item(view, "previewAppearanceOptions")), 8);
@@ -2212,6 +2261,11 @@ void tst_RecordingEditor::operationVideo()
         QQuickItem* addZoom = item(view, "previewAddZoom");
         QTRY_VERIFY(addZoom->isVisible());
         rec.click(rec.centerOf(addZoom), 12);
+        QCOMPARE(backend.masks().size(), 1);
+        QCOMPARE(backend.overlays().size(), 1);
+        QCOMPARE(backend.zoomSegments().size(), 1);
+        QVERIFY(backend.appearanceEnabled());
+        QVERIFY(backend.hasTrim());
         rec.caption(QStringLiteral("Export: choose GIF, then Export"));
         rec.key(Qt::Key_Escape, Qt::NoModifier, 4);
         rec.click(rec.centerOf(item(view, "previewExportOptions")), 10);
@@ -2230,7 +2284,53 @@ void tst_RecordingEditor::operationVideo()
         QVERIFY(!saveRequested.isEmpty());
         rec.caption(QStringLiteral("Exported: next, SnapTray asks where to save the GIF"));
         rec.frame(16);
-        QFile::remove(saveRequested.first().at(0).toString());
+        const QString resultDir = out + QStringLiteral("/220-flow");
+        const auto retain = [](const QString& source, const QString& destination) {
+            QFile input(source);
+            QSaveFile output(destination);
+            if (!input.open(QIODevice::ReadOnly) || !output.open(QIODevice::WriteOnly)) return false;
+            constexpr qint64 kChunkSize = 64 * 1024;
+            while (!input.atEnd()) {
+                const QByteArray bytes = input.read(kChunkSize);
+                if (bytes.isEmpty() || output.write(bytes) != bytes.size()) return false;
+            }
+            return output.commit();
+        };
+        QVERIFY(retain(saveRequested.first().at(0).toString(), resultDir + "/export.gif"));
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+        // Keep the same edits and exercise MP4 through the export controls too.
+        rec.caption(QStringLiteral("Export the same edits as MP4"));
+        rec.click(rec.centerOf(item(view, "previewExportOptions")), 6);
+        QTRY_VERIFY(panel->property("opened").toBool());
+        QVERIFY(QMetaObject::invokeMethod(item(view, "previewExportFormat"), "activated", Q_ARG(int, 0)));
+        QCOMPARE(backend.selectedFormat(), RecordingPreviewBackend::MP4);
+        rec.frame(8);
+        saveRequested.clear();
+        rec.click(rec.centerOf(delegate(view, QStringLiteral("previewSaveButton"))), 2);
+        QTRY_VERIFY_WITH_TIMEOUT(!saveRequested.isEmpty() || !backend.errorMessage().isEmpty(), 90000);
+        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        QVERIFY(!saveRequested.isEmpty());
+        const QString mp4 = resultDir + "/export.mp4";
+        QVERIFY(retain(saveRequested.first().at(0).toString(), mp4));
+        auto transcoder = IVideoTranscoder::create();
+        QVERIFY(transcoder);
+        const auto probe = transcoder->probe(mp4);
+        QVERIFY(probe.valid && probe.durationMs > 0);
+        QCOMPARE(probe.videoCodec, QStringLiteral("h264"));
+        QVERIFY(qAbs(probe.durationMs - backend.trimmedDuration()) <= 100);
+        const QJsonObject edits{{"durationMs", double(backend.duration())},
+            {"trimStart", double(backend.trimStart())}, {"trimEnd", double(backend.trimEnd())},
+            {"outputDurationMs", double(backend.trimmedDuration())},
+            {"parts", QJsonArray::fromVariantList(backend.timelineParts())},
+            {"masks", backend.masks().size()}, {"overlays", backend.overlays().size()},
+            {"zooms", backend.zoomSegments().size()}};
+        QFile editsFile(resultDir + "/edit-state.json");
+        QVERIFY(editsFile.open(QIODevice::WriteOnly));
+        QVERIFY(editsFile.write(QJsonDocument(edits).toJson()) > 0);
+        qInfo() << "Editor flow MP4" << probe.videoSize << probe.durationMs;
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+        rec.caption(QStringLiteral("GIF and MP4 exported with the same edits"));
+        rec.frame(12);
     }
     backend.discard();
 }
@@ -2314,7 +2414,12 @@ void tst_RecordingEditor::operationVideoReopen()
     const auto exportAs = [&](RecordingPreviewBackend& backend, QQuickView* view, const QString& name) {
         QSignalSpy saveRequested(&backend, &RecordingPreviewBackend::saveRequested);
         QSignalSpy closed(&backend, &RecordingPreviewBackend::closed);
+        QSignalSpy exportClicked(item(view, "previewExportOptions"), SIGNAL(clicked()));
+        qInfo() << "Reopen export button" << view->isActive() << view->devicePixelRatio()
+                << rec.centerOf(item(view, "previewExportOptions"));
         rec.click(rec.centerOf(item(view, "previewExportOptions")), 10);
+        qInfo() << "Reopen export clicks" << exportClicked.count();
+        QCOMPARE(exportClicked.count(), 1);
         QObject* panel = view->rootObject()->findChild<QObject*>("previewExportPanel");
         QTRY_VERIFY(panel->property("opened").toBool());
         QQuickItem* saveButton = delegate(view, QStringLiteral("previewSaveButton"));
@@ -2546,6 +2651,88 @@ void tst_RecordingEditor::dialogButtonPreservesMouseFocus()
     QTest::keyClick(view, Qt::Key_Space);
     QCOMPARE(clicked.size(), 2);
     fixture.reset();
+    backend.requestDiscard();
+}
+
+void tst_RecordingEditor::mixedDpiWindowMove()
+{
+    const QString out = qEnvironmentVariable("SNAPTRAY_EDITOR_MIXED_DPI_DIR");
+    if (out.isEmpty()) QSKIP("Set SNAPTRAY_EDITOR_MIXED_DPI_DIR for a real two-screen test");
+    QScreen* primary = QGuiApplication::primaryScreen();
+    QScreen* secondary = nullptr;
+    for (auto* screen : QGuiApplication::screens()) {
+        if (screen != primary && !qFuzzyCompare(screen->devicePixelRatio(), primary->devicePixelRatio())) {
+            secondary = screen;
+            break;
+        }
+    }
+    if (!secondary) QSKIP("Two physical screens with different Qt DPRs are required");
+    QVERIFY(QDir().mkpath(out));
+    QTemporaryDir dir;
+    const QString video = dir.filePath("mixed-dpi.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY(backend.duration() > 0);
+    QVERIFY(seek(view, 1000)); // Static layout evidence; playback is checked separately.
+    QVERIFY(backend.addTextOverlay(0) >= 0);
+    QVERIFY(backend.addMask() >= 0);
+    const auto masks = backend.masks();
+    const auto overlays = backend.overlays();
+    const auto crop = backend.cropRect();
+    int capture = 0;
+    for (const QSize size : {QSize(1200, 800), QSize(640, 480)}) {
+        view->resize(size);
+        QTRY_COMPARE(view->size(), size);
+        const QMargins initialMargins = view->frameMargins();
+        for (QScreen* screen : {primary, secondary, primary}) {
+            view->setPosition(screen->availableGeometry().topLeft() + QPoint(20, 20));
+            view->requestActivate();
+            QTRY_COMPARE(view->screen(), screen);
+            QTRY_COMPARE(view->devicePixelRatio(), screen->devicePixelRatio());
+            QTest::qWait(200);
+            const QSize actualSize = view->size();
+            // Windows can adjust client size as native non-client margins
+            // change. Verify a bounded adjustment and the real UI bounds.
+            const QMargins margins = view->frameMargins();
+            constexpr int kRoundingAllowance = 4;
+            QVERIFY(qAbs(actualSize.width() - size.width()) <= initialMargins.left() + initialMargins.right()
+                    + margins.left() + margins.right() + kRoundingAllowance);
+            QVERIFY(qAbs(actualSize.height() - size.height()) <= initialMargins.top() + initialMargins.bottom()
+                    + margins.top() + margins.bottom() + kRoundingAllowance);
+            QTRY_COMPARE(view->rootObject()->width(), qreal(actualSize.width()));
+            QTRY_COMPARE(view->rootObject()->height(), qreal(actualSize.height()));
+            QTRY_COMPARE(view->rootObject()->property("wideEditor").toBool(), size == QSize(1200, 800));
+            const auto* player = item(view, "previewVideoPlayer");
+            QVERIFY(player && player->width() > 0 && player->height() > 0);
+            const QRectF bounds(QPointF(0, 0), QSizeF(actualSize));
+            QVERIFY(bounds.contains(player->mapRectToScene(QRectF(QPointF(0, 0), player->size()))));
+            QCOMPARE(backend.masks(), masks);
+            QCOMPARE(backend.overlays(), overlays);
+            QCOMPARE(backend.cropRect(), crop);
+            auto* exportButton = item(view, "previewExportOptions");
+            QVERIFY(exportButton && exportButton->isVisible() && exportButton->isEnabled());
+            QVERIFY(QMetaObject::invokeMethod(exportButton, "clicked"));
+            auto* panel = view->rootObject()->findChild<QObject*>("previewExportPanel");
+            QVERIFY(panel);
+            QTRY_VERIFY(panel->property("opened").toBool());
+            const QRectF panelRect(panel->property("x").toReal(), panel->property("y").toReal(),
+                                   panel->property("width").toReal(), panel->property("height").toReal());
+            QVERIFY(bounds.contains(panelRect));
+            QTest::qWait(200);
+            QImage image = view->grabWindow();
+            const qreal dpr = view->devicePixelRatio();
+            QCOMPARE(image.size(), QSize(qRound(actualSize.width() * dpr), qRound(actualSize.height() * dpr)));
+            image.setDevicePixelRatio(dpr);
+            QVERIFY(image.save(out + QStringLiteral("/move-%1.png").arg(capture++, 2, 10, QLatin1Char('0'))));
+            qInfo() << "Mixed DPI move" << screen->name() << "DPR" << dpr
+                    << "requested" << size << "logical" << actualSize << "pixels" << image.size() << "export" << panelRect;
+            QVERIFY(QMetaObject::invokeMethod(panel, "close"));
+            QTRY_VERIFY(!panel->property("opened").toBool());
+        }
+    }
     backend.requestDiscard();
 }
 

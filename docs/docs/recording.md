@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-03
+last_modified_at: 2026-11-06
 layout: docs
 title: Recording
 seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS, Windows and Linux X11"
@@ -250,9 +250,9 @@ With MP4 selected, the **Export…** panel sets the exported file, with its size
 - **Size**: Original, 1080p, 720p or a custom width. The aspect ratio is kept, and the video is never made larger than it was recorded (or cropped).
 - **Frame rate**: Original, 60, 30 or 15 fps, never above the recording's own rate.
 - **Quality**: Default (the quality from Settings > Recording), Low, Medium or High.
-- **Codec**: H.264, which plays everywhere, or HEVC, which makes smaller files at the same quality but does not open in some older players. HEVC is offered only when the system can encode it.
+- **Codec**: Windows exports H.264, without requiring an additional codec purchase. On macOS and Linux, HEVC is also offered when the system can encode it; it makes smaller files at the same quality but does not open in some older players. The codec selector appears only when HEVC is available.
 
-The estimate is the target bitrate over the exported length, so the real file is usually a little smaller. Your last choices are remembered. Choices that change nothing for a recording (for example 1080p for a 720p recording) keep an unedited recording on the fast path, saved without re-encoding. Pointer effects, zooms and masks are drawn on the full-size picture before it is scaled, so they stay in place in a smaller video. These options are available on macOS, Windows and Linux. HEVC availability depends on the installed native encoder or FFmpeg encoder.
+The estimate is the target bitrate over the exported length, so the real file is usually a little smaller. Your last choices are remembered. Choices that change nothing for a recording (for example 1080p for a 720p recording) keep an unedited recording on the fast path, saved without re-encoding. Pointer effects, zooms and masks are drawn on the full-size picture before it is scaled, so they stay in place in a smaller video. Size, frame rate and quality options are available on macOS, Windows and Linux. Previously saved HEVC export choices use H.264 on Windows.
 
 ## Audio options
 
