@@ -48,6 +48,7 @@ class tst_RecordingPreviewZoom : public QObject
     Q_OBJECT
 
 private slots:
+    void manualFocusOverridesAutoFollowStart();
     void followPreviewAndExportAgree();
     void followComposesWithEdits();
     void autoZoomKeepsTheUsersZooms();
@@ -61,6 +62,25 @@ private slots:
     void zoomedPictureStaysInItsFrame();
     void typedTimesStayWithTheirZoom();
 };
+
+void tst_RecordingPreviewZoom::manualFocusOverridesAutoFollowStart()
+{
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    QVERIFY(backend.generateAutoZoom() > 0);
+    QVERIFY(backend.zoomTrack().segments().front().followStart.has_value());
+    backend.setZoomFocusFromView(0, QPointF(960, 540), QRectF(QPointF(), QSizeF(kFrame)));
+    const auto segment = backend.zoomTrack().segments().front();
+    QVERIFY(!segment.followStart.has_value());
+    QCOMPARE(segment.focus, QPointF(960, 540));
+    QVERIFY(segment.manual);
+    QCOMPARE(backend.preparedZoom()->viewportAt(segment.startMs, QRectF(QPointF(), QSizeF(kFrame))).center(), segment.focus);
+    backend.undo();
+    QVERIFY(backend.zoomTrack().segments().front().followStart.has_value());
+}
 
 void tst_RecordingPreviewZoom::followPreviewAndExportAgree()
 {

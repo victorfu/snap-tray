@@ -7,6 +7,7 @@
 #include <QPointF>
 #include <QRectF>
 
+#include <optional>
 #include <vector>
 
 // Zoom and pan after recording (#161): segments that frame part of the
@@ -22,6 +23,7 @@ struct ZoomSegment {
     QPointF focus;      // centre, in source video pixels
     bool manual = false; // added or changed by the user: regenerating keeps it
     bool follow = false; // legacy and manual segments keep their fixed focus
+    std::optional<QPointF> followStart; // optional lead-in camera; focus remains the stationary fallback
 
     bool operator==(const ZoomSegment& o) const;
     bool operator!=(const ZoomSegment& o) const { return !(*this == o); }

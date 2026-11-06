@@ -55,7 +55,7 @@ struct Interaction {
 bool ZoomSegment::operator==(const ZoomSegment& o) const
 {
     return startMs == o.startMs && endMs == o.endMs && qFuzzyCompare(scale, o.scale) && focus == o.focus
-        && follow == o.follow && manual == o.manual;
+        && follow == o.follow && manual == o.manual && followStart == o.followStart;
 }
 
 void ZoomTrack::setSegments(std::vector<ZoomSegment> segments)
@@ -184,7 +184,7 @@ void ZoomTrack::prepareFollow(const CursorTimeline& cursor, const CursorEffectSe
         const auto& segment = m_segments[index];
         if (!segment.follow) continue;
         const QSizeF size = bounds.size() / segment.scale;
-        QPointF center = frameFor(segment.focus, segment.scale, bounds).center();
+        QPointF center = frameFor(segment.followStart.value_or(segment.focus), segment.scale, bounds).center();
         QPointF velocity;
         QPointF target = center;
         auto& path = m_follow[index];
@@ -294,13 +294,19 @@ QJsonObject ZoomTrack::toJson() const
 {
     QJsonArray segments;
     for (const auto& s : m_segments) {
-        segments.append(QJsonObject{{QStringLiteral("start"), s.startMs},
+        QJsonObject segment{{QStringLiteral("start"), s.startMs},
                                     {QStringLiteral("end"), s.endMs},
                                     {QStringLiteral("scale"), s.scale},
                                     {QStringLiteral("x"), s.focus.x()},
                                     {QStringLiteral("y"), s.focus.y()},
                                     {QStringLiteral("manual"), s.manual},
-                                    {QStringLiteral("follow"), s.follow}});
+                                    {QStringLiteral("follow"), s.follow}};
+        if (s.followStart) {
+            segment.insert(QStringLiteral("followStart"),
+                           QJsonObject{{QStringLiteral("x"), s.followStart->x()},
+                                       {QStringLiteral("y"), s.followStart->y()}});
+        }
+        segments.append(segment);
     }
     return {{QStringLiteral("enabled"), enabled},
             {QStringLiteral("reduceMotion"), reduceMotion},
@@ -322,6 +328,11 @@ ZoomTrack ZoomTrack::fromJson(const QJsonObject& json)
         s.focus = QPointF(o.value(QStringLiteral("x")).toDouble(), o.value(QStringLiteral("y")).toDouble());
         s.follow = o.value(QStringLiteral("follow")).toBool(false);
         s.manual = o.value(QStringLiteral("manual")).toBool();
+        const QJsonObject start = o.value(QStringLiteral("followStart")).toObject();
+        if (start.value(QStringLiteral("x")).isDouble() && start.value(QStringLiteral("y")).isDouble()) {
+            const QPointF point(start.value(QStringLiteral("x")).toDouble(), start.value(QStringLiteral("y")).toDouble());
+            if (std::isfinite(point.x()) && std::isfinite(point.y())) s.followStart = point;
+        }
         segments.push_back(s);
     }
     track.setSegments(std::move(segments));
@@ -411,7 +422,8 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
             segment.scale = scale;
             segment.follow = true;
             const auto* initial = timeline.sampleAt(segment.startMs);
-            segment.focus = frameFor(initial ? QPointF(initial->position) : group.area.center(), scale, bounds).center();
+            segment.focus = frameFor(group.area.center(), scale, bounds).center();
+            if (initial) segment.followStart = frameFor(QPointF(initial->position), scale, bounds).center();
             segments.push_back(segment);
         }
         ZoomTrack normalized;

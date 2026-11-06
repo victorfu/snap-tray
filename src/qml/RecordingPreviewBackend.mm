@@ -1232,6 +1232,7 @@ void RecordingPreviewBackend::setZoomFocusFromView(int index, const QPointF& vie
         auto segments = z.segments();
         if (index < 0 || index >= int(segments.size())) return;
         segments[index].focus = videoPoint;
+        segments[index].followStart.reset();
         segments[index].manual = true;
         z.setSegments(std::move(segments));
     });

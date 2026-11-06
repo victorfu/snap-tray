@@ -59,6 +59,7 @@ class TestZoomTrack : public QObject
     Q_OBJECT
 
 private slots:
+    void autoZoomKeepsInteractionFocusWithoutFollowing();
     void followDeadZoneAndSeek();
     void followClicksEdgesAndCuts();
     void followSpeedAndNoOvershoot();
@@ -76,6 +77,35 @@ private slots:
     void segmentsNormalizeAndRoundTrip();
     void demoContactSheet();
 };
+
+void TestZoomTrack::autoZoomKeepsInteractionFocusWithoutFollowing()
+{
+    Script script;
+    script.move(0, QPoint(100, 100));
+    script.click(2000, QPoint(1800, 900));
+    auto segments = script.generate(5000);
+    QCOMPARE(segments.size(), size_t(1));
+    auto following = trackOf(segments, &script.timeline);
+    QCOMPARE(following.viewportAt(segments[0].startMs, kBounds).topLeft(), QPointF(0, 0));
+    // Saving and reopening must retain both the lead-in camera and fixed focus.
+    auto reopened = ZoomTrack::fromJson(following.toJson());
+    reopened.prepareFollow(script.timeline, {}, {}, kBounds);
+    QCOMPARE(reopened.viewportAt(segments[0].startMs, kBounds),
+             following.viewportAt(segments[0].startMs, kBounds));
+    for (bool reduced : {false, true}) {
+        auto stationary = reopened;
+        if (reduced) stationary.reduceMotion = true;
+        else {
+            auto fixed = stationary.segments();
+            fixed[0].follow = false;
+            fixed[0].manual = true;
+            stationary.setSegments(fixed);
+        }
+        for (qint64 ms : {2000, 2080})
+            QVERIFY2(stationary.viewportAt(ms, kBounds).contains(QPointF(1800, 900)),
+                     reduced ? "Less motion hides the triggering click" : "Follow off hides the triggering click");
+    }
+}
 
 void TestZoomTrack::followDeadZoneAndSeek()
 {
