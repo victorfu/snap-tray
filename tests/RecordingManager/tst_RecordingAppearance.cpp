@@ -436,6 +436,16 @@ void TestRecordingAppearance::styleKeepsRecordingBackground()
         // The rest of the look is the style's, with its gradient underneath.
         QCOMPARE(a.frameStyle(), customStyle());
     }
+
+    // A style saved from a tiny screenshot stays within the recording's range.
+    FrameStyle wide = customStyle();
+    wide.padding = 1.6;
+    wide.shadowOffsetY = -3.0;
+    RecordingAppearance a;
+    a.applyFrameStyle(wide);
+    QCOMPARE(a.customPadding, 1.0);
+    QCOMPARE(a.shadowOffsetY, -1.0);
+    QCOMPARE(RecordingAppearance::fromJson(a.toJson()), a);
 }
 
 void TestRecordingAppearance::customValuesJsonRoundTrip()

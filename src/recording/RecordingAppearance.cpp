@@ -282,17 +282,21 @@ void RecordingAppearance::applyFrameStyle(const FrameStyle& style)
     if (!recordingBackground) {
         background = style.background == FrameStyle::Background::Solid ? Background::Solid : Background::Gradient;
     }
-    padding = amountFor(style.padding, kPaddingFractions);
-    customPadding = padding == Amount::Custom ? style.padding : 0.0;
-    corners = amountFor(style.cornerRadius, kCornerFractions);
-    customCorners = corners == Amount::Custom ? style.cornerRadius : 0.0;
+    // A style saved from a tiny screenshot can be wider than the picture;
+    // keep it within the range the recording JSON accepts.
+    const auto size = [](double fraction) { return std::clamp(fraction, 0.0, kMaxFraction); };
+    const auto offset = [](double fraction) { return std::clamp(fraction, -kMaxFraction, kMaxFraction); };
+    padding = amountFor(size(style.padding), kPaddingFractions);
+    customPadding = padding == Amount::Custom ? size(style.padding) : 0.0;
+    corners = amountFor(size(style.cornerRadius), kCornerFractions);
+    customCorners = corners == Amount::Custom ? size(style.cornerRadius) : 0.0;
     shadow = style.shadowEnabled;
-    shadowBlur = style.shadowBlur;
-    shadowOffsetX = style.shadowOffsetX;
-    shadowOffsetY = style.shadowOffsetY;
+    shadowBlur = size(style.shadowBlur);
+    shadowOffsetX = offset(style.shadowOffsetX);
+    shadowOffsetY = offset(style.shadowOffsetY);
     shadowColor = style.shadowColor;
     border = style.borderEnabled;
-    borderFraction = style.borderWidth;
+    borderFraction = size(style.borderWidth);
     borderColor = style.borderColor;
     aspectRatio = style.aspectRatio;
 }

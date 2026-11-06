@@ -10,8 +10,12 @@ namespace {
 // Fractions are compared to this many decimals, so a style read back from
 // JSON still matches the one it was written from.
 constexpr double kFractionTolerance = 1e-6;
-// Keeps a damaged style from producing a frame many times the picture's size.
-constexpr double kMaxSizeFraction = 1.0;
+// The largest size a valid screenshot can save: Beautify's biggest slider
+// value (200 px padding) over a 1 px short side. Anything above that is damaged
+// data. Smaller limits would change styles saved from tiny screenshots, whose
+// padding can be wider than the picture. Each side clamps to its own range when
+// it applies a style.
+constexpr double kMaxSizeFraction = 200.0;
 constexpr int kMaxAngle = 360;
 constexpr int kMaxAspectRatio = int(BeautifyAspectRatio::Twitter_2_1);
 
