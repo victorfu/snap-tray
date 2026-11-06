@@ -263,6 +263,8 @@ Item {
         // Re-evaluate when the zoom, crop or format changes, not only the position.
         void backend.zoomSegments; void backend.zoomEnabled; void backend.zoomReduceMotion
         void backend.cropRect; void backend.selectedFormat
+        void backend.cursorSmoothing; void backend.cursorStillEnd; void backend.timelineParts
+        void backend.showCursor; void backend.pointerHiddenRanges
         if (cropOverlay.editing || root.comparingOriginal || backend.selectedMask >= 0)
             return root.zoomTarget
         // Per frame, like the pointer overlay (#175 review): the reported
@@ -3309,6 +3311,14 @@ Item {
                             }
                         }
                     }
+                }
+                EditorSwitch {
+                    objectName: "previewZoomFollow"
+                    visible: backend.cursorEffectsAvailable
+                    text: qsTr("Follow cursor")
+                    on: zoomPanel.segment !== null && zoomPanel.segment.follow
+                    enabled: !backend.zoomReduceMotion
+                    onClicked: backend.setZoomFollow(backend.selectedZoom, !on)
                 }
                 FieldGroup {
                     title: qsTr("All zooms")

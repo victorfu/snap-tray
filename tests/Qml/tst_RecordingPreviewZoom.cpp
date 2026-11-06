@@ -2,6 +2,7 @@
 
 #include <QGuiApplication>
 #include <QQuickItem>
+#include <QPainter>
 #include <QQuickView>
 #include <QTemporaryDir>
 
@@ -47,6 +48,8 @@ class tst_RecordingPreviewZoom : public QObject
     Q_OBJECT
 
 private slots:
+    void followPreviewAndExportAgree();
+    void followComposesWithEdits();
     void autoZoomKeepsTheUsersZooms();
     void autoZoomNeverLeavesAStaleSelection();
     void withoutPointerDataOnlyManualZoom();
@@ -58,6 +61,84 @@ private slots:
     void zoomedPictureStaysInItsFrame();
     void typedTimesStayWithTheirZoom();
 };
+
+void tst_RecordingPreviewZoom::followPreviewAndExportAgree()
+{
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    SnapTray::ZoomSegment segment{0, 10000, 2.0, QPointF(300, 300), true};
+    segment.follow = true;
+    backend.editZoom([&](SnapTray::ZoomTrack& track) { track.setSegments({segment}); });
+    backend.setShowCursor(false);
+    const auto filter = backend.effectsFrameFilter();
+    QImage source(kFrame, QImage::Format_RGB32);
+    for (int y = 0; y < source.height(); ++y)
+        for (int x = 0; x < source.width(); ++x) source.setPixel(x, y, qRgb(x % 256, y % 256, (x+y) % 256));
+    const QList<qint64> times{0, 1000, 2000, 6000, 7000, 9000, 10000, 7000, 2000};
+    for (qint64 ms : times) {
+        const QRectF view = backend.zoomViewportInView(ms, QRectF(QPointF(), QSizeF(kFrame)));
+        QImage expected(kFrame, source.format());
+        QPainter painter(&expected);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawImage(QRectF(expected.rect()), source, view);
+        painter.end();
+        QImage exported = source;
+        filter(exported, ms);
+        QCOMPARE(exported, expected);
+    }
+    backend.setZoomFollow(0, false);
+    QVERIFY(!backend.zoomSegments().first().toMap().value("follow").toBool());
+    QVERIFY(backend.zoomSegments().first().toMap().value("manual").toBool());
+    const auto fixed = backend.zoomViewportInView(7000, QRectF(QPointF(), QSizeF(kFrame)));
+    QCOMPARE(fixed, backend.zoomViewportInView(2000, QRectF(QPointF(), QSizeF(kFrame))));
+    backend.undo();
+    QVERIFY(backend.zoomSegments().first().toMap().value("follow").toBool());
+}
+
+void tst_RecordingPreviewZoom::followComposesWithEdits()
+{
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    backend.setShowCursor(false);
+    backend.m_cropRect = QRect(100, 100, 1600, 900);
+    backend.m_trimStart = 500;
+    backend.m_trimEnd = 9500;
+    backend.m_timeline.splits = {3000, 6000};
+    backend.m_timeline.parts = {{false, 1.0}, {true, 1.0}, {false, 2.0}};
+    SnapTray::ZoomSegment segment{0, 10000, 2.0, QPointF(300, 300), true};
+    segment.follow = true;
+    backend.editZoom([&](SnapTray::ZoomTrack& track) { track.setSegments({segment}); });
+    backend.m_redaction.masks.push_back({QRect(200, 200, 300, 300), 0, 10000});
+    SnapTray::OverlaySegment title;
+    title.text = QStringLiteral("Form entry");
+    title.fadeMs = 0;
+    backend.m_overlays.segments.push_back(title);
+    const auto filter = backend.effectsFrameFilter();
+    QImage source(kFrame, QImage::Format_RGB32);
+    source.fill(Qt::white);
+    const QRectF bounds(backend.m_cropRect);
+    for (qint64 ms : {500, 2000, 6000, 7000, 9000, 6000, 2000}) {
+        QImage masked = source;
+        backend.m_redaction.apply(masked, ms, QRectF(QPointF(), QSizeF(kFrame)));
+        masked = masked.copy(backend.m_cropRect);
+        const QRectF view = backend.zoomViewportInView(ms, QRectF(QPointF(), QSizeF(kFrame)));
+        QImage expected(masked.size(), masked.format());
+        QPainter painter(&expected);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawImage(QRectF(expected.rect()), masked, view.translated(-bounds.topLeft()));
+        painter.end();
+        backend.m_overlays.paint(expected, ms);
+        QImage exported = source.copy(backend.m_cropRect);
+        filter(exported, ms);
+        QCOMPARE(exported, expected);
+    }
+}
 
 void tst_RecordingPreviewZoom::autoZoomKeepsTheUsersZooms()
 {
@@ -234,6 +315,15 @@ void tst_RecordingPreviewZoom::previewControls()
     QTRY_VERIFY(allInside(panel));
     // Swapping the (wrapped) format row for the editor keeps the video still.
     QCOMPARE(video->height(), videoHeight);
+    QQuickItem* follow = find(QStringLiteral("previewZoomFollow"));
+    QVERIFY(follow);
+    QVERIFY(follow->isVisible());
+    QVERIFY(follow->property("on").toBool());
+    QVERIFY(QMetaObject::invokeMethod(follow, "clicked"));
+    QVERIFY(!backend.zoomTrack().segments().at(1).follow);
+    backend.setZoomReduceMotion(true);
+    QVERIFY(!follow->isEnabled());
+    backend.setZoomReduceMotion(false);
     QQuickItem* scale = find(QStringLiteral("previewZoomScale2")); // 2.5x
     QVERIFY(scale);
     QVERIFY(QMetaObject::invokeMethod(scale, "clicked"));

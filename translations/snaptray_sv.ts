@@ -3310,6 +3310,10 @@ Storlek: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <source>Follow cursor</source>
+        <translation>Följ markören</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>Täck ett känsligt område i den exporterade filen</translation>

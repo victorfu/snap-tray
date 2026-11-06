@@ -397,6 +397,7 @@ public:
     // known; returns its index (or -1).
     Q_INVOKABLE int addZoomAt(qint64 positionMs);
     Q_INVOKABLE void removeZoom(int index);
+    Q_INVOKABLE void setZoomFollow(int index, bool follow);
     Q_INVOKABLE void setZoomScale(int index, qreal scale);
     Q_INVOKABLE bool setZoomRange(int index, qint64 startMs, qint64 endMs);
     Q_INVOKABLE void setZoomFocusFromView(int index, const QPointF& viewPoint, const QRectF& contentRect);
@@ -793,6 +794,8 @@ private:
     // (already cropped); a snapshot of the settings.
     std::function<void(QImage&, qint64)> effectsFrameFilter() const;
     SnapTray::ZoomTrack m_zoom;
+    mutable std::shared_ptr<const SnapTray::ZoomTrack> m_preparedZoom;
+    std::shared_ptr<const SnapTray::ZoomTrack> preparedZoom() const;
     int m_selectedZoom = -1;
     SnapTray::RedactionTrack m_redaction;
     int m_selectedMask = -1;
