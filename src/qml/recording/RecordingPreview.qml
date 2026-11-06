@@ -2917,7 +2917,12 @@ Item {
                     width: parent.width
                     spacing: 8
                     property bool naming: false
+                    // The style being renamed, or -1 while naming a new one. The
+                    // list is shared with every Beautify panel, so the index
+                    // follows the style by name when the list changes.
                     property int renamingIndex: -1
+                    property string renamingName: ""
+                    property bool committingName: false
                     // Saving under a saved name updates that style; renaming to one is refused.
                     readonly property bool nameTaken: naming && renamingIndex >= 0
                                                       && backend.frameStyleNameTaken(frameStyleName.text, renamingIndex)
@@ -2929,7 +2934,8 @@ Item {
 
                     function startNaming(index) {
                         renamingIndex = index
-                        frameStyleName.text = index >= 0 ? backend.frameStyleModel[index].name : backend.suggestedFrameStyleName()
+                        renamingName = index >= 0 ? backend.frameStyleModel[index].name : ""
+                        frameStyleName.text = index >= 0 ? renamingName : backend.suggestedFrameStyleName()
                         naming = true
                         frameStyleName.forceActiveFocus()
                         frameStyleName.selectAll()
@@ -2938,13 +2944,32 @@ Item {
                         if (commit) {
                             if (!canSave)
                                 return
+                            committingName = true
                             var ok = renamingIndex >= 0 ? backend.renameFrameStyle(renamingIndex, frameStyleName.text)
                                                         : backend.saveFrameStyle(frameStyleName.text)
+                            committingName = false
                             if (!ok)
                                 return
                         }
                         naming = false
                         renamingIndex = -1
+                        renamingName = ""
+                    }
+                    Connections {
+                        target: backend
+                        function onFrameStylesChanged() {
+                            if (!frameStyles.naming || frameStyles.renamingIndex < 0 || frameStyles.committingName)
+                                return
+                            var model = backend.frameStyleModel
+                            var wanted = frameStyles.renamingName.toLowerCase()
+                            for (var i = 0; i < model.length; ++i) {
+                                if (model[i].name.toLowerCase() === wanted) {
+                                    frameStyles.renamingIndex = i
+                                    return
+                                }
+                            }
+                            frameStyles.finishNaming(false) // the style is gone
+                        }
                     }
 
                     Text {

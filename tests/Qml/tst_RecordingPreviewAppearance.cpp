@@ -402,6 +402,25 @@ void tst_RecordingPreviewAppearance::savedStylesInThePanel()
     QVERIFY(item(view, "previewAppearanceStyleNameSave")->isEnabled());
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleNameCancel"), "clicked"));
     QTRY_VERIFY(!item(view, "previewAppearanceStyleNameRow")->isVisible());
+
+    // A style deleted in Beautify while another is renamed here: the rename
+    // follows its style by name; deleting that style ends the rename.
+    auto& library = SnapTray::FrameStyleLibrary::instance();
+    QQuickItem* list = item(view, "previewAppearanceStyles");
+    const QString renamed = library.styles().at(2).name;
+    QVERIFY(QMetaObject::invokeMethod(list, "startNaming", Q_ARG(QVariant, 2)));
+    QCOMPARE(name->property("text").toString(), renamed);
+    library.remove(0);
+    QCOMPARE(list->property("renamingIndex").toInt(), 1);
+    name->setProperty("text", QStringLiteral("Followed"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleNameSave"), "clicked"));
+    QTRY_VERIFY(!item(view, "previewAppearanceStyleNameRow")->isVisible());
+    QCOMPARE(library.styles().at(1).name, QStringLiteral("Followed"));
+    QVERIFY(QMetaObject::invokeMethod(list, "startNaming", Q_ARG(QVariant, 1)));
+    QVERIFY(list->property("naming").toBool());
+    library.remove(1);
+    QVERIFY(!list->property("naming").toBool());
+    QCOMPARE(list->property("renamingIndex").toInt(), -1);
     backend.requestDiscard();
 }
 
