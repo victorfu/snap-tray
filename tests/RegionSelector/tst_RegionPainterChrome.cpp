@@ -6,11 +6,14 @@
 #include <QPixmap>
 #include <QWidget>
 
+#include <memory>
+
 #include "region/RegionPainter.h"
 #include "region/SelectionDimensionLabel.h"
 #include "region/SelectionDirtyRegionPlanner.h"
 #include "region/SelectionStateManager.h"
 #include "annotations/AnnotationLayer.h"
+#include "annotations/ShapeAnnotation.h"
 #include "tools/ToolManager.h"
 
 namespace {
@@ -171,6 +174,7 @@ private slots:
     void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
     void testFractionalDprSelectionTransitionNeedsFullRepaint();
     void testPencilPreviewExtendsBeyondDetachedAnnotationViewport();
+    void testIdleSelectionDrawsInLayerOrder();
 };
 
 void tst_RegionPainterChrome::testDirectDimmingMatchesCached_data()
@@ -638,6 +642,63 @@ void tst_RegionPainterChrome::testPencilPreviewExtendsBeyondDetachedAnnotationVi
     }
     QVERIFY(regionHasRedStrokePixel(completedCanvas, outsideProbe));
     QVERIFY(regionHasRedStrokePixel(completedCanvas, prefixProbe));
+}
+
+void tst_RegionPainterChrome::testIdleSelectionDrawsInLayerOrder()
+{
+    QWidget hostWidget;
+    hostWidget.resize(kHostRect.size());
+
+    SelectionStateManager selectionManager;
+    selectionManager.setBounds(kHostRect);
+    selectionManager.setSelectionRect(kSelectionRect);
+
+    // Blue below, red above; they overlap around kOverlapProbe.
+    AnnotationLayer annotationLayer;
+    annotationLayer.addItem(std::make_unique<ShapeAnnotation>(
+        QRect(100, 90, 100, 80), ShapeType::Rectangle, QColor(0, 0, 255), 2, true));
+    annotationLayer.addItem(std::make_unique<ShapeAnnotation>(
+        QRect(150, 120, 100, 70), ShapeType::Rectangle, QColor(255, 0, 0), 2, true));
+    const QPoint kOverlapProbe(175, 145);
+
+    RegionPainter painter;
+    painter.setParentWidget(&hostWidget);
+    painter.setSelectionManager(&selectionManager);
+    painter.setAnnotationLayer(&annotationLayer);
+    painter.setCornerRadius(0);
+    painter.setDevicePixelRatio(1.0);
+
+    QPixmap background(hostWidget.size());
+    background.fill(QColor(245, 247, 250));
+
+    const auto paintOverlap = [&]() {
+        QImage canvas(hostWidget.size(), QImage::Format_ARGB32_Premultiplied);
+        canvas.fill(Qt::transparent);
+        QPainter qp(&canvas);
+        qp.setRenderHint(QPainter::Antialiasing);
+        painter.paint(qp, background);
+        qp.end();
+        return canvas.pixelColor(kOverlapProbe);
+    };
+    const auto isBlue = [](const QColor& c) { return c.blue() > c.red() + 40; };
+    const auto isRed = [](const QColor& c) { return c.red() > c.blue() + 40; };
+
+    // Select the red rectangle and send it to the back: the blue one must
+    // cover the overlap while the selection stays.
+    annotationLayer.setSelectedIndex(1);
+    QVERIFY(annotationLayer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToBack));
+    QCOMPARE(annotationLayer.selectedIndex(), 0);
+    const QColor idleColor = paintOverlap();
+    QVERIFY2(isBlue(idleColor), qPrintable(idleColor.name()));
+
+    // While the selection is being dragged it is lifted on top.
+    QVERIFY(annotationLayer.ensureGesture());
+    const QColor dragColor = paintOverlap();
+    QVERIFY2(isRed(dragColor), qPrintable(dragColor.name()));
+    annotationLayer.cancelGesture();
+
+    const QColor afterDragColor = paintOverlap();
+    QVERIFY2(isBlue(afterDragColor), qPrintable(afterDragColor.name()));
 }
 
 QTEST_MAIN(tst_RegionPainterChrome)
