@@ -426,6 +426,16 @@ Applies to the Library window (#226): the former History window, now holding scr
 - Where projects are shown, a note says that projects keep the full recording, how many days unchanged projects are kept, and whether keeping is off.
 - Below 820 px the sidebar becomes a row of section buttons and the smart folders move into a menu next to the sort (Screenshots only); below 720 px the header stacks. The minimum window width is 640 px.
 
+### Surfaces (#249)
+
+The Library is a work window, so it uses the same solid surfaces as the recording editor and Settings rather than the floating glass of toolbars and pins:
+
+- The window is `editorSurface` edge to edge, with no inset frame. The sidebar is a full-height `settingsSidebarBg` column split from the content by a 1 px `editorBorder` line, as in Settings; narrow windows show the sections as a bar in the same color.
+- Actions sit in a flat top bar like the editor's: `editorSurface` with a bottom `editorBorder` line, borderless buttons that show `editorControlHover` on hover and a 2 px accent ring on focus.
+- The page title uses the Settings page title level (`fontSizeH3`, semibold), with the "Library · what is selected" caption above it.
+- Cards and rows use `radiusMedium`, an `editorSurface` fill and a 1 px `editorBorder` edge; thumbnails sit on `editorCanvas`. Selection is an `editorSelection` tint plus a 2 px accent edge, so it does not rest on hue alone; hover is `editorControlHover`.
+- Controls (sort, smart folder menu, Grid/List switch) and the project note are recessed `editorControl`/`editorCanvas` fields with `editorBorder` edges. The delete strip keeps its red tint (`thumbnailCardErrorBackground`, `editorDestructiveText` edge).
+
 ### Acceptance matrix
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |

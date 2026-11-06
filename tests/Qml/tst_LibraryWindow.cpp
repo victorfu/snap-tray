@@ -80,6 +80,7 @@ private slots:
     void openingInPreviewCancelsPendingDelete();
     void cancelledDeleteReturnsFocus();
     void itemsAndSectionsReadTheirSelection();
+    void solidSurfacesAndSelectionCue();
 
 private:
     QQuickItem* item(const char* name) const;
@@ -488,6 +489,36 @@ void tst_LibraryWindow::cancelledDeleteReturnsFocus()
     QVERIFY(!item("libraryConfirmStrip")->isVisible());
     QVERIFY(rootItem->hasActiveFocus());
     QVERIFY(QFileInfo::exists(m_project));
+}
+
+// #249: the Library is a solid work surface like the recording editor and
+// Settings: no glass or panel surface, opaque sidebar and command bar, and a
+// selection shown by a light fill plus a heavier edge, not color alone.
+void tst_LibraryWindow::solidSurfacesAndSelectionCue()
+{
+    std::function<void(QQuickItem*)> noGlass = [&](QQuickItem* node) {
+        const QByteArray type = node->metaObject()->className();
+        QVERIFY2(!type.startsWith("GlassSurface") && !type.startsWith("PanelSurface"), type.constData());
+        for (QQuickItem* child : node->childItems()) noGlass(child);
+    };
+    noGlass(qobject_cast<QQuickItem*>(root()));
+
+    for (const char* name : {"librarySidebar", "libraryCommandBar"}) {
+        QQuickItem* surface = item(name);
+        QVERIFY2(surface, name);
+        QCOMPARE(surface->property("color").value<QColor>().alphaF(), 1.0);
+        QCOMPARE(surface->property("radius").toReal(), 0.0);
+    }
+
+    const auto cardBorder = [&](const QString& key) {
+        QQuickItem* card = item(QByteArray("libraryCard_" + key.toUtf8()).constData());
+        return card ? card->property("border").value<QObject*>()->property("width").toReal() : -1.0;
+    };
+    select(m_project);
+    QTRY_VERIFY(cardBorder(m_project) > cardBorder(m_savedProject));
+    QVERIFY(cardBorder(m_savedProject) > 0);
+    QQuickItem* selected = item(QByteArray("libraryCard_" + m_project.toUtf8()).constData());
+    QVERIFY(selected->property("radius").toReal() <= 8);
 }
 
 QTEST_MAIN(tst_LibraryWindow)
