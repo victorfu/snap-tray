@@ -44,6 +44,9 @@ struct RecordingAppearance {
     bool gradientRadial = false;
     QColor solidColor{Qt::white};
     QString imagePath;               // Background::Image
+    // Under a blurred-video or image background: the style beneath is the
+    // solid color rather than the gradient (a missing image shows it too).
+    bool solidUnderneath = false;
     Amount padding = Amount::Medium;
     Amount corners = Amount::Medium;
     double customPadding = 0.0;      // fractions of the shorter side, for Amount::Custom
@@ -58,8 +61,9 @@ struct RecordingAppearance {
     QColor borderColor{255, 255, 255, 170};
     BeautifyAspectRatio aspectRatio = BeautifyAspectRatio::Auto;
 
-    // Resets the custom sizes and gradient while a preset is in use, so a
-    // value left from an earlier choice is not compared or saved.
+    // Resets the custom sizes and gradient while a preset is in use, and the
+    // background beneath when nothing is drawn over it, so a value left from
+    // an earlier choice is not compared or saved.
     void dropInactiveCustomValues();
 
     // Compares the look in use: inactive custom values are ignored.
@@ -72,10 +76,12 @@ struct RecordingAppearance {
     static RecordingAppearance fromBeautify(const BeautifySettings& settings);
 
     // The look as a shared style. With a blurred-video or image background
-    // the style carries the gradient underneath.
+    // the style carries the solid color or gradient underneath.
     FrameStyle frameStyle() const;
     // Takes a shared style's look and switches the frame on. A blurred-video
-    // or image background stays; the style's background is kept beneath it.
+    // or image background stays; the style's solid or gradient background is
+    // kept beneath it. frameStyle() then gives the style back, except that
+    // recording colors are opaque.
     void applyFrameStyle(const FrameStyle& style);
 
     // Pixel values for a picture of this size, in BeautifySettings terms.

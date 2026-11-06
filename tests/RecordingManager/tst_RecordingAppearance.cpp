@@ -438,6 +438,36 @@ void TestRecordingAppearance::styleKeepsRecordingBackground()
         QCOMPARE(a.frameStyle(), customStyle());
     }
 
+    // Solid and radial styles also come back whole from beneath them, and a
+    // missing image shows the style's own background.
+    FrameStyle solid = customStyle();
+    solid.background = FrameStyle::Background::Solid;
+    solid.solidColor = QColor(9, 99, 199);
+    FrameStyle radial = customStyle();
+    radial.background = FrameStyle::Background::RadialGradient;
+    for (const auto background : {RecordingAppearance::Background::BlurredVideo,
+                                  RecordingAppearance::Background::Image}) {
+        for (const FrameStyle& style : {solid, radial}) {
+            RecordingAppearance a;
+            a.enabled = true;
+            a.background = background;
+            a.applyFrameStyle(style);
+            QCOMPARE(a.background, background);
+            QCOMPARE(a.frameStyle(), style);
+            QCOMPARE(RecordingAppearance::fromJson(a.toJson()).frameStyle(), style);
+        }
+    }
+    RecordingAppearance missingImage;
+    missingImage.enabled = true;
+    missingImage.background = RecordingAppearance::Background::Image;
+    missingImage.applyFrameStyle(solid);
+    QCOMPARE(missingImage.beautifyFor(QSize(800, 600)).backgroundType, BeautifyBackgroundType::Solid);
+    // Nothing drawn over the solid color: nothing beneath it to remember.
+    missingImage.background = RecordingAppearance::Background::Solid;
+    RecordingAppearance plain = missingImage;
+    plain.solidUnderneath = false;
+    QCOMPARE(missingImage, plain);
+
     // A style saved from a tiny screenshot stays within the recording's range.
     FrameStyle wide = customStyle();
     wide.padding = 1.6;

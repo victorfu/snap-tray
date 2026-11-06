@@ -343,6 +343,15 @@ void RecordingPreviewBackend::editAppearance(const std::function<void(SnapTray::
     if (isProcessing()) return; // a running export keeps what it started with
     SnapTray::RecordingAppearance appearance = m_appearance;
     change(appearance);
+    // Switching from a solid color to a blurred-video or image background
+    // keeps the solid color as the style beneath it.
+    const auto drawnOver = [](SnapTray::RecordingAppearance::Background b) {
+        return b == SnapTray::RecordingAppearance::Background::BlurredVideo
+            || b == SnapTray::RecordingAppearance::Background::Image;
+    };
+    if (drawnOver(appearance.background) && !drawnOver(m_appearance.background)) {
+        appearance.solidUnderneath = m_appearance.background == SnapTray::RecordingAppearance::Background::Solid;
+    }
     // A preset chosen after a custom size or gradient leaves nothing behind.
     appearance.dropInactiveCustomValues();
     if (appearance == m_appearance) return;
