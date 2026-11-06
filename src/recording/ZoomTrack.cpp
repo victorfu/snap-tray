@@ -128,7 +128,9 @@ struct Interaction {
 bool ZoomSegment::operator==(const ZoomSegment& o) const
 {
     return startMs == o.startMs && endMs == o.endMs && qFuzzyCompare(scale, o.scale) && focus == o.focus
-        && follow == o.follow && manual == o.manual && followStart == o.followStart;
+        && follow == o.follow && manual == o.manual && followStart == o.followStart
+        && stationaryScale.has_value() == o.stationaryScale.has_value()
+        && (!stationaryScale || qFuzzyCompare(*stationaryScale, *o.stationaryScale));
 }
 
 void ZoomTrack::setSegments(std::vector<ZoomSegment> segments)
@@ -160,8 +162,12 @@ QRectF ZoomTrack::viewportAt(qint64 sourceMs, const QRectF& bounds) const
     const qint64 transition = reduceMotion ? kReducedMotionTransitionMs : kTransitionMs;
     const double maxScale = reduceMotion ? kReducedMotionMaxScale : kMaxScale;
     const auto frame = [&](const ZoomSegment& s, qint64 ms) {
-        const QPointF focus = !reduceMotion && bounds == m_followBounds ? focusAt(s, ms) : s.focus;
-        return frameFor(focus, std::min(s.scale, maxScale), bounds);
+        const size_t index = size_t(&s - m_segments.data());
+        const bool following = !reduceMotion && bounds == m_followBounds && s.follow
+            && index < m_follow.size() && !m_follow[index].empty();
+        if (following) return frameFor(focusAt(s, ms), std::min(s.scale, maxScale), bounds);
+        const double scale = std::min({s.scale, s.stationaryScale.value_or(s.scale), maxScale});
+        return frameFor(s.focus, scale, bounds);
     };
 
     const auto visibleFrame = [&](QRectF view) {
@@ -382,6 +388,7 @@ QJsonObject ZoomTrack::toJson() const
                            QJsonObject{{QStringLiteral("x"), s.followStart->x()},
                                        {QStringLiteral("y"), s.followStart->y()}});
         }
+        if (s.stationaryScale) segment.insert(QStringLiteral("stationaryScale"), *s.stationaryScale);
         segments.append(segment);
     }
     return {{QStringLiteral("enabled"), enabled},
@@ -409,6 +416,9 @@ ZoomTrack ZoomTrack::fromJson(const QJsonObject& json)
             const QPointF point(start.value(QStringLiteral("x")).toDouble(), start.value(QStringLiteral("y")).toDouble());
             if (std::isfinite(point.x()) && std::isfinite(point.y())) s.followStart = point;
         }
+        const QJsonValue stationary = o.value(QStringLiteral("stationaryScale"));
+        if (stationary.isDouble() && std::isfinite(stationary.toDouble()))
+            s.stationaryScale = std::clamp(stationary.toDouble(), ZoomTrack::kMinScale, ZoomTrack::kMaxScale);
         segments.push_back(s);
     }
     track.setSegments(std::move(segments));
@@ -467,6 +477,13 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
     }
 
     const double maxScale = std::clamp(options.maxScale, ZoomTrack::kMinScale, ZoomTrack::kMaxScale);
+    // The scale at which a fixed view shows the whole area, with a margin.
+    const auto scaleFor = [&](const QRectF& area) {
+        const QRectF framed = area.adjusted(-kMarginFraction * shortSide, -kMarginFraction * shortSide,
+                                            kMarginFraction * shortSide, kMarginFraction * shortSide);
+        return std::clamp(std::min(bounds.width() / framed.width(), bounds.height() / framed.height()),
+                          ZoomTrack::kMinScale, maxScale);
+    };
     const auto clampTime = [&](qint64 t) {
         return options.durationMs > 0 ? std::clamp<qint64>(t, 0, options.durationMs) : std::max<qint64>(t, 0);
     };
@@ -498,7 +515,11 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
             segment.scale = scale;
             segment.follow = true;
             const auto* initial = timeline.sampleAt(segment.startMs);
-            segment.focus = frameFor(group.area.center(), scale, bounds).center();
+            // The following camera tracks the pointer at full scale; holding
+            // still, the view must fit the whole (possibly merged) area.
+            const double stationary = scaleFor(group.area);
+            if (stationary < scale) segment.stationaryScale = stationary;
+            segment.focus = frameFor(group.area.center(), stationary, bounds).center();
             if (initial) segment.followStart = frameFor(QPointF(initial->position), scale, bounds).center();
             segments.push_back(segment);
         }

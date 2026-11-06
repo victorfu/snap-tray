@@ -1199,6 +1199,7 @@ void RecordingPreviewBackend::setZoomScale(int index, qreal scale)
         auto segments = z.segments();
         if (index < 0 || index >= int(segments.size())) return;
         segments[index].scale = scale;
+        segments[index].stationaryScale.reset(); // the user's scale holds in every mode
         segments[index].manual = true;
         z.setSegments(std::move(segments));
     });
@@ -1233,6 +1234,7 @@ void RecordingPreviewBackend::setZoomFocusFromView(int index, const QPointF& vie
         if (index < 0 || index >= int(segments.size())) return;
         segments[index].focus = videoPoint;
         segments[index].followStart.reset();
+        segments[index].stationaryScale.reset(); // the area fit no longer applies to a moved focus
         segments[index].manual = true;
         z.setSegments(std::move(segments));
     });

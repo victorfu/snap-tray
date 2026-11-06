@@ -24,6 +24,10 @@ struct ZoomSegment {
     bool manual = false; // added or changed by the user: regenerating keeps it
     bool follow = false; // legacy and manual segments keep their fixed focus
     std::optional<QPointF> followStart; // optional lead-in camera; focus remains the stationary fallback
+    // Optional cap on scale while the camera holds still (Less motion, Follow
+    // off), so a fixed view at focus still fits every interaction the
+    // following camera tracks at the full scale.
+    std::optional<double> stationaryScale;
 
     bool operator==(const ZoomSegment& o) const;
     bool operator!=(const ZoomSegment& o) const { return !(*this == o); }

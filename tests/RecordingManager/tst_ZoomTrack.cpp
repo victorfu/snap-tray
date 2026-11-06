@@ -257,6 +257,29 @@ void TestZoomTrack::fastMovesAcrossAreas()
     QVERIFY(track.viewportAt(3000, kBounds).contains(QPointF(200, 200)));
     QVERIFY(track.viewportAt(3400, kBounds).contains(QPointF(1700, 900)));
     for (qint64 t = 0; t < 10000; t += 7) QVERIFY(inside(kBounds, track.viewportAt(t, kBounds)));
+    // #266 review: holding still (Less motion, Follow off), the merged
+    // segment's fixed view must still show both clicks, also after reopening.
+    QVERIFY(segments[0].stationaryScale.has_value());
+    auto reopened = ZoomTrack::fromJson(track.toJson());
+    QCOMPARE(reopened, track);
+    reopened.prepareFollow(s.timeline, {}, {}, kBounds);
+    for (bool reduced : {false, true}) {
+        auto stationary = reopened;
+        if (reduced) stationary.reduceMotion = true;
+        else {
+            auto fixed = stationary.segments();
+            fixed[0].follow = false;
+            fixed[0].manual = true;
+            stationary.setSegments(fixed);
+        }
+        for (const QPointF click : {QPointF(200, 200), QPointF(1700, 900)}) {
+            for (qint64 ms : {3000, 3400})
+                QVERIFY2(stationary.viewportAt(ms, kBounds).contains(click),
+                         reduced ? "Less motion hides a merged click" : "Follow off hides a merged click");
+        }
+    }
+    // The following camera keeps its full magnification.
+    QCOMPARE(track.viewportAt(3000, kBounds).width(), kBounds.width() / segments[0].scale);
 }
 
 void TestZoomTrack::quickClicksInThreeAreasStayVisible()
