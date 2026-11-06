@@ -44,6 +44,9 @@ namespace {
 constexpr int kCaption = 40;
 constexpr QSize kNormalSize(980, 520);
 constexpr QSize kNarrowSize(380, 820);
+// A grab's width is rounded to whole device pixels, so the ratio Scene::grab()
+// derives from it can be off by up to 1/width of the window's real ratio.
+constexpr qreal kDprTolerance = 0.01;
 const QRect kNormalSelection(60, 70, 560, 300);
 const QRect kNarrowSelection(40, 70, 300, 300);
 const QPoint kArrowStart(150, 300);
@@ -243,7 +246,12 @@ public:
             rendered.wait(300);
         }
         QTest::qWait(80);
-        return m_view.grabWindow();
+        QImage image = m_view.grabWindow();
+        // The software scene graph returns a device-pixel grab tagged with
+        // ratio 1 (seen at 1.5x and 2x on X11), so take the ratio from the
+        // grab's size instead, as tst_RecordingPreviewMasks does (#254).
+        if (m_view.width() > 0) image.setDevicePixelRatio(qreal(image.width()) / m_view.width());
+        return image;
     }
 
     QQuickItem* find(const QString& name) const
@@ -338,7 +346,11 @@ void tst_ToolbarEvidence::toolbarStates()
         scene.renderBackground();
         save(scene, QStringLiteral("02-selected"));
         // Screenshots are saved at the window's device pixel ratio (2x on Retina).
-        QCOMPARE(scene.grab().devicePixelRatio(), scene.m_view.devicePixelRatio());
+        const qreal grabRatio = scene.grab().devicePixelRatio();
+        QVERIFY2(qAbs(grabRatio - scene.m_view.devicePixelRatio()) < kDprTolerance,
+                 qPrintable(QStringLiteral("grab ratio %1, window ratio %2")
+                                .arg(grabRatio)
+                                .arg(scene.m_view.devicePixelRatio())));
     }
     {   // Narrow screen: low-priority buttons in More, menu open.
         Scene scene(tmp.path(), kNarrowSize);
