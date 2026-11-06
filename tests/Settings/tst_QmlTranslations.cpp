@@ -27,6 +27,7 @@ private slots:
     void testMainApplicationTrayContext();
     void testHotkeyConflictGuidanceTranslatedForAllLocales();
     void testRememberLastFolderTranslatedForAllLocales();
+    void testTaskSettingsAndBeautifyTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
     void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
     void testRecordingPreviewCropTranslatedForAllLocales();
@@ -51,19 +52,19 @@ void tst_QmlTranslations::testQmlSettingsContexts()
              QString::fromUtf8("設定"));
     QCOMPARE(QCoreApplication::translate("GeneralSettings", "Start on login"),
              QString::fromUtf8("登入時啟動"));
-    QCOMPARE(QCoreApplication::translate("AdvancedSettings", "Cursor companion"),
+    QCOMPARE(QCoreApplication::translate("CaptureSettings", "Cursor companion"),
              QString::fromUtf8("游標旁輔助視覺"));
-    QCOMPARE(QCoreApplication::translate("AdvancedSettings", "Beaver"),
+    QCOMPARE(QCoreApplication::translate("CaptureSettings", "Beaver"),
              QString::fromUtf8("海狸"));
     QCOMPARE(QCoreApplication::translate("SettingsSidebar", "General"),
              QString::fromUtf8("一般"));
     QCOMPARE(QCoreApplication::translate("SettingsPermissionRow", "Granted"),
              QString::fromUtf8("已授權"));
-    QCOMPARE(QCoreApplication::translate("FilesSettings", "Remember last folder"),
+    QCOMPARE(QCoreApplication::translate("SavingSettings", "Remember last folder"),
              QString::fromUtf8("記住上次使用的資料夾"));
     QCOMPARE(
         QCoreApplication::translate(
-            "FilesSettings",
+            "SavingSettings",
             "When saving an image manually, the dialog opens in the folder of the last "
             "successful save. Auto-save still uses the Screenshots folder above."),
         QString::fromUtf8(
@@ -197,7 +198,7 @@ void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
 
 void tst_QmlTranslations::testRememberLastFolderTranslatedForAllLocales()
 {
-    const QByteArray context = "FilesSettings";
+    const QByteArray context = "SavingSettings";
     const QList<QByteArray> sources = {
         QByteArray("Remember last folder"),
         QByteArray(
@@ -228,6 +229,58 @@ void tst_QmlTranslations::testRememberLastFolderTranslatedForAllLocales()
                      qPrintable(QStringLiteral(
                                     "%1 fell back to English for the remember-folder text: %2")
                                     .arg(qmFile, QString::fromUtf8(source))));
+        }
+    }
+}
+
+void tst_QmlTranslations::testTaskSettingsAndBeautifyTranslatedForAllLocales()
+{
+    // #227: settings moved to task pages keep their translations under the new
+    // contexts, and the new page names and Beautify strings are translated.
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"CaptureSettings", "Cursor companion"},
+        {"CaptureSettings", "After full screen capture"},
+        {"CaptureSettings", "Auto Blur"},
+        {"PinWindowSettings", "Default opacity"},
+        {"PinWindowSettings", "Show controls on hover"},
+        {"PinWindowSettings", "Pin Windows"},
+        {"SavingSettings", "Apply to images"},
+        {"SavingSettings", "Filename Format"},
+        {"SavingSettings", "Screenshots kept in Library"},
+        {"SettingsSidebar", "Capture"},
+        {"SettingsSidebar", "Pin Windows"},
+        {"SettingsSidebar", "Saving"},
+        {"SettingsSidebar", "Text Recognition"},
+        {"BeautifyPanel", "Customize"},
+        {"BeautifyPanel", "Standard"},
+        {"BeautifyPanel", "Style: %1"},
+        {"BeautifyPanel", "Shadow blur"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            // Empty means missing or unfinished. Some languages keep the English
+            // word (German "Standard", French "Capture"), so equality is allowed.
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 / %3")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+            if (source.contains("%1")) {
+                QVERIFY2(translated.contains(QStringLiteral("%1")),
+                         qPrintable(QStringLiteral("%1 dropped %%1 in %2").arg(qmFile, QString::fromUtf8(source))));
+            }
         }
     }
 }

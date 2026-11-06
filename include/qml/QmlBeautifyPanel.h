@@ -48,8 +48,11 @@ private slots:
 private:
     void ensureView();
     void positionNear(const QRect& anchorRect);
+    void keepOnScreen();
     void syncCursorSurface();
     bool eventFilter(QObject* watched, QEvent* event) override;
+
+    static constexpr int kScreenEdgeMargin = 10;
 
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;

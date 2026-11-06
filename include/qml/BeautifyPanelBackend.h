@@ -24,6 +24,10 @@ class BeautifyPanelBackend : public QObject
     Q_PROPERTY(bool shadowEnabled READ shadowEnabled WRITE setShadowEnabled NOTIFY settingsStateChanged)
     Q_PROPERTY(int shadowBlur READ shadowBlur WRITE setShadowBlur NOTIFY settingsStateChanged)
     Q_PROPERTY(QVariantList presetModel READ presetModel NOTIFY presetModelChanged)
+    Q_PROPERTY(QVariantList styleModel READ styleModel CONSTANT)
+    // Index of the style/background preset matching the current settings, or -1.
+    Q_PROPERTY(int currentStyle READ currentStyle NOTIFY settingsStateChanged)
+    Q_PROPERTY(int currentPreset READ currentPreset NOTIFY settingsStateChanged)
     Q_PROPERTY(QVariantList backgroundTypeModel READ backgroundTypeModel CONSTANT)
     Q_PROPERTY(QVariantList aspectRatioModel READ aspectRatioModel CONSTANT)
     Q_PROPERTY(int previewRevision READ previewRevision NOTIFY previewRevisionChanged)
@@ -60,11 +64,15 @@ public:
     void setShadowBlur(int blur);
 
     QVariantList presetModel() const { return m_presetModel; }
+    QVariantList styleModel() const;
+    int currentStyle() const;
+    int currentPreset() const;
     QVariantList backgroundTypeModel() const;
     QVariantList aspectRatioModel() const;
     int previewRevision() const { return m_previewRevision; }
 
     Q_INVOKABLE void applyPreset(int index);
+    Q_INVOKABLE void applyStyle(int index);
     Q_INVOKABLE void pickPrimaryColor();
     Q_INVOKABLE void pickSecondaryColor();
     Q_INVOKABLE void requestCopy();

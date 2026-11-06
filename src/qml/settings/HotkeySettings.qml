@@ -44,27 +44,13 @@ Flickable {
         padding: ComponentTokens.settingsContentPadding
         spacing: ComponentTokens.settingsColumnSpacing
 
-        // Header row with "Restore All Defaults" button
-        Item {
-            width: parent.width - 2 * ComponentTokens.settingsContentPadding
-            height: 36
-
-            Text {
-                text: qsTr("Keyboard Shortcuts")
-                color: SemanticTokens.textPrimary
-                font.pixelSize: SemanticTokens.fontSizeH3
-                font.weight: Font.DemiBold
-                font.family: SemanticTokens.fontFamily
-                font.letterSpacing: SemanticTokens.letterSpacingDefault
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-            }
+        SettingsPageHeader {
+            title: qsTr("Hotkeys")
+            description: qsTr("Keyboard shortcuts for every task, grouped by what they do.")
 
             SettingsButton {
                 id: restoreBtn
                 text: qsTr("Restore All Defaults")
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
                 onClicked: settingsBackend.restoreAllHotkeys()
             }
         }

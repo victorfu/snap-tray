@@ -27,6 +27,8 @@ Column {
     }
 
     Text {
+        width: root.width
+        wrapMode: Text.WordWrap
         text: root.description
         color: SemanticTokens.textTertiary
         font.pixelSize: SemanticTokens.fontSizeCaption

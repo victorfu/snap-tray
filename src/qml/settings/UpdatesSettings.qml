@@ -27,6 +27,11 @@ Flickable {
         padding: ComponentTokens.settingsContentPadding
         spacing: ComponentTokens.settingsColumnSpacing
 
+        SettingsPageHeader {
+            title: qsTr("Updates")
+            description: qsTr("Your version, and how SnapTray checks for new ones.")
+        }
+
         SettingsSection { title: qsTr("Version") }
 
         SettingsRow {

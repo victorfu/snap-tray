@@ -27,6 +27,11 @@ Flickable {
         padding: ComponentTokens.settingsContentPadding
         spacing: ComponentTokens.settingsColumnSpacing
 
+        SettingsPageHeader {
+            title: qsTr("General")
+            description: qsTr("Startup, language, theme and the permissions SnapTray needs.")
+        }
+
         SettingsToggle {
             label: qsTr("Start on login")
             checked: settingsBackend.startOnLogin

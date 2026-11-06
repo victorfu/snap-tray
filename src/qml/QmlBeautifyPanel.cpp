@@ -42,6 +42,16 @@ void QmlBeautifyPanel::setSettings(const BeautifySettings& settings)
 void QmlBeautifyPanel::showNear(const QRect& anchorRect)
 {
     ensureView();
+    if (m_rootItem) {
+        QScreen* screen = QGuiApplication::screenAt(anchorRect.center());
+        if (!screen) {
+            screen = QGuiApplication::primaryScreen();
+        }
+        if (screen) {
+            // A panel taller than the screen scrolls instead (Customize open on a short screen).
+            m_rootItem->setProperty("maxHeight", screen->availableGeometry().height() - 2 * kScreenEdgeMargin);
+        }
+    }
     positionNear(anchorRect);
     m_view->show();
     QmlOverlayManager::configureInteractiveOverlayWindow(m_view);
@@ -173,6 +183,29 @@ void QmlBeautifyPanel::ensureView()
         connect(m_rootItem, SIGNAL(dragMoved(double,double)), this, SLOT(onDragMoved(double,double)));
         connect(m_rootItem, SIGNAL(dragFinished()), this, SLOT(onDragFinished()));
     }
+
+    // Opening Customize grows the panel; keep its bottom on the screen.
+    connect(m_view, &QWindow::heightChanged, this, [this]() {
+        if (m_view && m_view->isVisible() && !m_isDragging) {
+            keepOnScreen();
+        }
+    });
+}
+
+void QmlBeautifyPanel::keepOnScreen()
+{
+    QScreen* screen = m_view->screen();
+    if (!screen) {
+        return;
+    }
+    const QRect screenGeom = screen->availableGeometry();
+    if (m_rootItem) {
+        m_rootItem->setProperty("maxHeight", screenGeom.height() - 2 * kScreenEdgeMargin);
+    }
+    const int bottomLimit = screenGeom.bottom() - kScreenEdgeMargin - m_view->height();
+    if (m_view->y() > bottomLimit) {
+        m_view->setY(qMax(screenGeom.top() + kScreenEdgeMargin, bottomLimit));
+    }
 }
 
 void QmlBeautifyPanel::positionNear(const QRect& anchorRect)
@@ -192,13 +225,15 @@ void QmlBeautifyPanel::positionNear(const QRect& anchorRect)
 
     int x = anchorRect.right() + gap;
     int y = anchorRect.top();
-    if (screen && x + panelSize.width() > screenGeom.right() - 10) {
+    if (screen && x + panelSize.width() > screenGeom.right() - kScreenEdgeMargin) {
         x = anchorRect.left() - panelSize.width() - gap;
     }
 
     if (screen) {
-        x = qBound(screenGeom.left() + 10, x, screenGeom.right() - panelSize.width() - 10);
-        y = qBound(screenGeom.top() + 10, y, screenGeom.bottom() - panelSize.height() - 10);
+        x = qBound(screenGeom.left() + kScreenEdgeMargin, x,
+                   screenGeom.right() - panelSize.width() - kScreenEdgeMargin);
+        y = qBound(screenGeom.top() + kScreenEdgeMargin, y,
+                   screenGeom.bottom() - panelSize.height() - kScreenEdgeMargin);
     }
 
     m_view->setPosition(x, y);

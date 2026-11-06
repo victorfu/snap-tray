@@ -7,6 +7,8 @@
 #include <QTimer>
 #include <QVariantMap>
 
+#include <iterator>
+
 namespace SnapTray {
 
 namespace {
@@ -15,6 +17,32 @@ QString beautifyText(const char* sourceText)
 {
     return QCoreApplication::translate("BeautifyPanel", sourceText);
 }
+
+// A whole look for the screenshot inset (#227): padding, corners and shadow
+// together. Applying one leaves the background and ratio as they are.
+struct BeautifyStylePreset {
+    const char* name; // translated in the "BeautifyPanel" context
+    int padding;
+    int cornerRadius;
+    bool shadowEnabled;
+    int shadowBlur;
+
+    bool matches(const BeautifySettings& s) const
+    {
+        return s.padding == padding && s.cornerRadius == cornerRadius
+            && s.shadowEnabled == shadowEnabled
+            && (!shadowEnabled || s.shadowBlur == shadowBlur);
+    }
+};
+
+// "Standard" is the BeautifySettings default look.
+constexpr BeautifyStylePreset kStylePresets[] = {
+    {QT_TRANSLATE_NOOP("BeautifyPanel", "Compact"), 32, 8, true, 24},
+    {QT_TRANSLATE_NOOP("BeautifyPanel", "Standard"), 64, 12, true, 40},
+    {QT_TRANSLATE_NOOP("BeautifyPanel", "Spacious"), 128, 16, true, 60},
+    {QT_TRANSLATE_NOOP("BeautifyPanel", "Flat"), 64, 0, false, 40},
+};
+constexpr int kStyleCount = int(std::size(kStylePresets));
 
 } // namespace
 
@@ -173,6 +201,64 @@ void BeautifyPanelBackend::applyPreset(int index)
     m_settings.gradientStartColor = preset.gradientStart;
     m_settings.gradientEndColor = preset.gradientEnd;
     m_settings.gradientAngle = preset.gradientAngle;
+    commitSettingsChange();
+}
+
+QVariantList BeautifyPanelBackend::styleModel() const
+{
+    QVariantList model;
+    for (const auto& style : kStylePresets) {
+        model.append(QVariantMap{
+            {QStringLiteral("name"), beautifyText(style.name)},
+            {QStringLiteral("padding"), style.padding},
+            {QStringLiteral("cornerRadius"), style.cornerRadius},
+            {QStringLiteral("shadowEnabled"), style.shadowEnabled},
+            {QStringLiteral("shadowBlur"), style.shadowBlur},
+        });
+    }
+    return model;
+}
+
+int BeautifyPanelBackend::currentStyle() const
+{
+    for (int i = 0; i < kStyleCount; ++i) {
+        if (kStylePresets[i].matches(m_settings)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int BeautifyPanelBackend::currentPreset() const
+{
+    if (m_settings.backgroundType != BeautifyBackgroundType::LinearGradient) {
+        return -1;
+    }
+    const auto presets = beautifyPresets();
+    for (int i = 0; i < presets.size(); ++i) {
+        const auto& preset = presets.at(i);
+        if (preset.gradientStart == m_settings.gradientStartColor
+            && preset.gradientEnd == m_settings.gradientEndColor) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void BeautifyPanelBackend::applyStyle(int index)
+{
+    if (index < 0 || index >= kStyleCount) {
+        return;
+    }
+
+    const auto& style = kStylePresets[index];
+    if (style.matches(m_settings)) {
+        return;
+    }
+    m_settings.padding = style.padding;
+    m_settings.cornerRadius = style.cornerRadius;
+    m_settings.shadowEnabled = style.shadowEnabled;
+    m_settings.shadowBlur = style.shadowBlur;
     commitSettingsChange();
 }
 

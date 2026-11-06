@@ -38,6 +38,11 @@ private slots:
 
     void cliOperationCompletionRestoresControls();
     void sidebarModelHidesUnsupportedPages();
+    void sidebarGroupsPagesByTask();
+    void taskPagesHoldTheFormerSettings_data();
+    void taskPagesHoldTheFormerSettings();
+    void libraryLimitSliderFollowsTheBackend();
+    void settingsWindowOpensPagesByKey();
     void filesPageShowsRememberLastFolderOnAllPlatforms();
     void recordingModeFollowsTheSetup();
 
@@ -107,6 +112,147 @@ void tst_SettingsWindowFeatureGating::sidebarModelHidesUnsupportedPages()
     QCOMPARE(keys.contains(QStringLiteral("recording")), backend.recordingSupported());
 }
 
+void tst_SettingsWindowFeatureGating::sidebarGroupsPagesByTask()
+{
+    // #227: task pages first, then Updates and About after a divider. The
+    // former Advanced, Files and Watermark pages are gone.
+    QQmlEngine engine;
+    SnapTray::SettingsBackend backend;
+    engine.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsSidebar.qml")));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root != nullptr, qPrintable(component.errorString()));
+
+    QStringList expected = {QStringLiteral("general"), QStringLiteral("capture"), QStringLiteral("pins")};
+    if (backend.recordingSupported()) expected << QStringLiteral("recording");
+    expected << QStringLiteral("saving");
+    if (backend.ocrSettingsVisible()) expected << QStringLiteral("ocr");
+    expected << QStringLiteral("hotkeys") << QStringLiteral("updates") << QStringLiteral("about");
+
+    QStringList keys;
+    QStringList labels;
+    QList<int> groups;
+    for (const QVariant& item : root->property("pages").toList()) {
+        const QVariantMap page = item.toMap();
+        keys << page.value(QStringLiteral("key")).toString();
+        labels << page.value(QStringLiteral("label")).toString();
+        groups << page.value(QStringLiteral("group")).toInt();
+    }
+    QCOMPARE(keys, expected);
+    for (int i = 0; i < keys.size(); ++i) {
+        const bool appGroup = keys.at(i) == QStringLiteral("updates") || keys.at(i) == QStringLiteral("about");
+        QCOMPARE(groups.at(i), appGroup ? 1 : 0);
+    }
+    if (backend.ocrSettingsVisible()) {
+        QCOMPARE(labels.at(keys.indexOf(QStringLiteral("ocr"))), QStringLiteral("Text Recognition"));
+    }
+    QCOMPARE(labels.at(keys.indexOf(QStringLiteral("pins"))), QStringLiteral("Pin Windows"));
+}
+
+void tst_SettingsWindowFeatureGating::taskPagesHoldTheFormerSettings_data()
+{
+    QTest::addColumn<QString>("page");
+    QTest::addColumn<QStringList>("controls");
+    QTest::newRow("capture") << QStringLiteral("CaptureSettings")
+                             << QStringList{QStringLiteral("fullScreenCaptureActionCombo"),
+                                            QStringLiteral("cursorCompanionCombo"),
+                                            QStringLiteral("shortcutHintsToggle"),
+                                            QStringLiteral("blurTypeCombo"),
+                                            QStringLiteral("blurIntensitySlider")};
+    QTest::newRow("pins") << QStringLiteral("PinWindowSettings")
+                          << QStringList{QStringLiteral("pinDefaultOpacitySlider"),
+                                         QStringLiteral("pinHoverControlsToggle"),
+                                         QStringLiteral("pinOpacityStepSlider"),
+                                         QStringLiteral("pinZoomStepSlider")};
+    QTest::newRow("saving") << QStringLiteral("SavingSettings")
+                            << QStringList{QStringLiteral("screenshotPathPicker"),
+                                           QStringLiteral("rememberLastFolderToggle"),
+                                           QStringLiteral("watermarkImagesToggle"),
+                                           QStringLiteral("libraryMaxScreenshotsSlider")};
+}
+
+void tst_SettingsWindowFeatureGating::taskPagesHoldTheFormerSettings()
+{
+    QFETCH(QString, page);
+    QFETCH(QStringList, controls);
+    QQmlEngine engine;
+    SnapTray::SettingsBackend backend;
+    engine.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/%1.qml").arg(page)));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root != nullptr, qPrintable(component.errorString()));
+    auto* title = root->findChild<QObject*>(QStringLiteral("settingsPageTitle"));
+    QVERIFY2(title && !title->property("text").toString().isEmpty(), "every task page starts with a title");
+    for (const QString& name : controls) {
+        auto* control = root->findChild<QQuickItem*>(name);
+        QVERIFY2(control != nullptr, qPrintable(name));
+        QVERIFY2(control->isVisible(), qPrintable(name));
+    }
+}
+
+void tst_SettingsWindowFeatureGating::libraryLimitSliderFollowsTheBackend()
+{
+    // "Max history entries" moved from Advanced to Saving > Library as
+    // "Screenshots kept in Library": the same PinWindowSettingsManager value.
+    QQmlEngine engine;
+    SnapTray::SettingsBackend backend;
+    const int saved = backend.pinMaxCacheFiles();
+    auto restore = qScopeGuard([&backend, saved] { backend.setPinMaxCacheFiles(saved); });
+    engine.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SavingSettings.qml")));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root != nullptr, qPrintable(component.errorString()));
+    auto* row = root->findChild<QObject*>(QStringLiteral("libraryMaxScreenshotsSlider"));
+    QVERIFY(row);
+    QCOMPARE(row->property("label").toString(), QStringLiteral("Screenshots kept in Library"));
+    QCOMPARE(row->property("value").toInt(), saved);
+    auto* slider = row->findChild<QObject*>(QStringLiteral("settingsSliderInput"));
+    QVERIFY(slider);
+    const int moved = saved == 42 ? 43 : 42;
+    slider->setProperty("value", moved);
+    QVERIFY(QMetaObject::invokeMethod(slider, "moved", Qt::DirectConnection));
+    QCOMPARE(backend.pinMaxCacheFiles(), moved);
+}
+
+void tst_SettingsWindowFeatureGating::settingsWindowOpensPagesByKey()
+{
+    QQmlEngine engine;
+    SnapTray::SettingsBackend backend;
+    engine.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsWindow.qml")));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root != nullptr, qPrintable(component.errorString()));
+
+    const auto loader = [&root](const QString& key) {
+        return root->findChild<QObject*>(QStringLiteral("settingsPageLoader_") + key);
+    };
+    QVERIFY(loader(QStringLiteral("general")));
+    QVERIFY(loader(QStringLiteral("general"))->property("active").toBool());
+    QVERIFY(!loader(QStringLiteral("saving"))->property("active").toBool()); // loaded on first selection
+
+    for (const QString& key : {QStringLiteral("capture"), QStringLiteral("pins"), QStringLiteral("saving"),
+                               QStringLiteral("hotkeys")}) {
+        QVariant opened;
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "selectPage", Q_RETURN_ARG(QVariant, opened),
+                                          Q_ARG(QVariant, key)));
+        QVERIFY2(opened.toBool(), qPrintable(key));
+        QTRY_VERIFY2(loader(key)->property("item").value<QObject*>() != nullptr, qPrintable(key));
+    }
+
+    for (const QString& removed : {QStringLiteral("advanced"), QStringLiteral("files"), QStringLiteral("watermark")}) {
+        QVariant opened;
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "selectPage", Q_RETURN_ARG(QVariant, opened),
+                                          Q_ARG(QVariant, removed)));
+        QVERIFY2(!opened.toBool(), qPrintable(removed));
+    }
+
+    QVariant opened;
+    QVERIFY(QMetaObject::invokeMethod(root.get(), "selectPage", Q_RETURN_ARG(QVariant, opened),
+                                      Q_ARG(QVariant, QStringLiteral("recording"))));
+    QCOMPARE(opened.toBool(), backend.recordingSupported());
+    QCOMPARE(loader(QStringLiteral("recording"))->property("active").toBool(), backend.recordingSupported());
+}
+
 void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatforms()
 {
     QQmlEngine engine;
@@ -114,7 +260,7 @@ void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatf
     backend.setUseLastScreenshotSaveLocation(true);
     engine.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
 
-    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/FilesSettings.qml")));
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SavingSettings.qml")));
     std::unique_ptr<QObject> root(component.create());
     QVERIFY2(root != nullptr, qPrintable(component.errorString()));
 

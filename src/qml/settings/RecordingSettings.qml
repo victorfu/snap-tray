@@ -88,6 +88,11 @@ Flickable {
         padding: ComponentTokens.settingsContentPadding
         spacing: ComponentTokens.settingsColumnSpacing
 
+        SettingsPageHeader {
+            title: qsTr("Recording")
+            description: qsTr("How screen recordings start, what they capture, and what happens when you stop.")
+        }
+
         SettingsCombo {
             label: qsTr("Frame rate")
             model: [

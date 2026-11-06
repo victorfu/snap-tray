@@ -40,6 +40,11 @@ private slots:
     void testApplyPreset_UpdatesGradientState();
     void testPreviewDebounce_CoalescesRapidChanges();
     void testRequestClose_EmitsSignal();
+    void testStyles_DefaultIsStandard();
+    void testApplyStyle_SetsInsetOnly();
+    void testCurrentStyle_CustomWhenNoneMatch();
+    void testCurrentPreset_FollowsBackground();
+    void testChosenStateSurvivesSaveAndReload();
 };
 
 void tst_BeautifyPanelBackend::init()
@@ -114,6 +119,99 @@ void tst_BeautifyPanelBackend::testRequestClose_EmitsSignal()
     backend.requestClose();
 
     QCOMPARE(closeSpy.count(), 1);
+}
+
+void tst_BeautifyPanelBackend::testStyles_DefaultIsStandard()
+{
+    // #227: the default look is the "Standard" style, so a fresh panel shows it chosen.
+    SnapTray::BeautifyPanelBackend backend;
+    const QVariantList styles = backend.styleModel();
+    QCOMPARE(styles.size(), 4);
+    QStringList names;
+    for (const QVariant& style : styles) {
+        names << style.toMap().value(QStringLiteral("name")).toString();
+    }
+    QCOMPARE(names, (QStringList{QStringLiteral("Compact"), QStringLiteral("Standard"),
+                                 QStringLiteral("Spacious"), QStringLiteral("Flat")}));
+    QCOMPARE(backend.currentStyle(), 1);
+    QCOMPARE(backend.currentPreset(), 0); // Ocean, the default gradient
+}
+
+void tst_BeautifyPanelBackend::testApplyStyle_SetsInsetOnly()
+{
+    SnapTray::BeautifyPanelBackend backend;
+    backend.applyPreset(4); // Midnight
+    backend.setAspectRatio(static_cast<int>(BeautifyAspectRatio::Wide_16_9));
+    QSignalSpy settingsSpy(&backend, &SnapTray::BeautifyPanelBackend::settingsStateChanged);
+
+    backend.applyStyle(2); // Spacious
+    QCOMPARE(settingsSpy.count(), 1);
+    QCOMPARE(backend.padding(), 128);
+    QCOMPARE(backend.cornerRadius(), 16);
+    QVERIFY(backend.shadowEnabled());
+    QCOMPARE(backend.shadowBlur(), 60);
+    QCOMPARE(backend.currentStyle(), 2);
+    // Background and ratio stay as they were.
+    QCOMPARE(backend.currentPreset(), 4);
+    QCOMPARE(backend.aspectRatio(), static_cast<int>(BeautifyAspectRatio::Wide_16_9));
+
+    backend.applyStyle(3); // Flat: no shadow, square corners
+    QCOMPARE(backend.cornerRadius(), 0);
+    QVERIFY(!backend.shadowEnabled());
+    QCOMPARE(backend.currentStyle(), 3);
+
+    backend.applyStyle(3); // already chosen: no change signal
+    QCOMPARE(settingsSpy.count(), 2);
+    backend.applyStyle(-1);
+    backend.applyStyle(4);
+    QCOMPARE(settingsSpy.count(), 2);
+    QCOMPARE(backend.currentStyle(), 3);
+}
+
+void tst_BeautifyPanelBackend::testCurrentStyle_CustomWhenNoneMatch()
+{
+    SnapTray::BeautifyPanelBackend backend;
+    backend.applyStyle(0);
+    QCOMPARE(backend.currentStyle(), 0);
+    backend.setPadding(33);
+    QCOMPARE(backend.currentStyle(), -1);
+    backend.setPadding(32);
+    QCOMPARE(backend.currentStyle(), 0);
+    backend.setShadowBlur(25);
+    QCOMPARE(backend.currentStyle(), -1);
+
+    // Flat ignores the blur value, which is hidden while the shadow is off.
+    backend.applyStyle(3);
+    backend.setShadowBlur(90);
+    QCOMPARE(backend.currentStyle(), 3);
+}
+
+void tst_BeautifyPanelBackend::testCurrentPreset_FollowsBackground()
+{
+    SnapTray::BeautifyPanelBackend backend;
+    backend.applyPreset(6);
+    QCOMPARE(backend.currentPreset(), 6);
+    backend.setBackgroundType(static_cast<int>(BeautifyBackgroundType::RadialGradient));
+    QCOMPARE(backend.currentPreset(), -1); // same colours, not the linear swatch
+    backend.setBackgroundType(static_cast<int>(BeautifyBackgroundType::Solid));
+    QCOMPARE(backend.currentPreset(), -1);
+    backend.applyPreset(2);
+    QCOMPARE(backend.backgroundType(), static_cast<int>(BeautifyBackgroundType::LinearGradient));
+    QCOMPARE(backend.currentPreset(), 2);
+}
+
+void tst_BeautifyPanelBackend::testChosenStateSurvivesSaveAndReload()
+{
+    // Copy/Save store the look; the next panel must still show it chosen.
+    {
+        SnapTray::BeautifyPanelBackend backend;
+        backend.applyPreset(5);
+        backend.applyStyle(0);
+        backend.requestCopy();
+    }
+    SnapTray::BeautifyPanelBackend reopened;
+    QCOMPARE(reopened.currentPreset(), 5);
+    QCOMPARE(reopened.currentStyle(), 0);
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)

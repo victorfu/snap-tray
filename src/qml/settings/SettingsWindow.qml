@@ -10,14 +10,32 @@ import SnapTrayQml
 Item {
     id: root
 
+    // One Loader per page, in this order (#227). The sidebar decides which
+    // pages are offered; unsupported ones are never loaded.
+    readonly property var pageKeys: ["general", "capture", "pins", "recording", "saving", "ocr", "hotkeys", "updates", "about"]
+
     function stackIndexForKey(key) {
-        var keys = ["general", "hotkeys", "advanced", "watermark", "ocr", "recording", "files", "updates", "about"]
-        for (var i = 0; i < keys.length; i++) {
-            if (keys[i] === key) {
-                return i
+        var index = pageKeys.indexOf(key)
+        return index >= 0 ? index : 0
+    }
+
+    // Opens a page by key, if the sidebar offers it.
+    function selectPage(key) {
+        for (var i = 0; i < sidebar.pages.length; i++) {
+            if (sidebar.pages[i].key === key) {
+                sidebar.currentIndex = i
+                return true
             }
         }
-        return 0
+        return false
+    }
+
+    function pageSupported(key) {
+        if (key === "recording")
+            return settingsBackend.recordingSupported
+        if (key === "ocr")
+            return settingsBackend.ocrSettingsVisible
+        return true
     }
 
     // Background fill
@@ -54,107 +72,37 @@ Item {
             currentIndex: root.stackIndexForKey(sidebar.currentKey)
 
             // Load pages on first selection so opening Settings stays responsive.
-            Loader {
-                id: generalPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: sidebar.currentKey === "general"
-                    || status === Loader.Ready
-                    || status === Loader.Loading
-                sourceComponent: generalSettingsPage
-            }
-
-            Loader {
-                id: hotkeyPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: sidebar.currentKey === "hotkeys"
-                    || status === Loader.Ready
-                    || status === Loader.Loading
-                sourceComponent: hotkeySettingsPage
-            }
-
-            Loader {
-                id: advancedPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: sidebar.currentKey === "advanced"
-                    || status === Loader.Ready
-                    || status === Loader.Loading
-                sourceComponent: advancedSettingsPage
-            }
-
-            Loader {
-                id: watermarkPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: sidebar.currentKey === "watermark"
-                    || status === Loader.Ready
-                    || status === Loader.Loading
-                sourceComponent: watermarkSettingsPage
-            }
-
-            Loader {
-                id: ocrPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: settingsBackend.ocrSettingsVisible
-                    && (sidebar.currentKey === "ocr"
-                    || status === Loader.Ready
-                    || status === Loader.Loading)
-                sourceComponent: ocrSettingsPage
-            }
-
-            Loader {
-                id: recordingPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: settingsBackend.recordingSupported
-                    && (sidebar.currentKey === "recording"
-                    || status === Loader.Ready
-                    || status === Loader.Loading)
-                sourceComponent: recordingSettingsPage
-            }
-
-            Loader {
-                id: filesPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: sidebar.currentKey === "files"
-                    || status === Loader.Ready
-                    || status === Loader.Loading
-                sourceComponent: filesSettingsPage
-            }
-
-            Loader {
-                id: updatesPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: sidebar.currentKey === "updates"
-                    || status === Loader.Ready
-                    || status === Loader.Loading
-                sourceComponent: updatesSettingsPage
-            }
-
-            Loader {
-                id: aboutPageLoader
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                active: sidebar.currentKey === "about"
-                    || status === Loader.Ready
-                    || status === Loader.Loading
-                sourceComponent: aboutSettingsPage
-            }
+            // Order must match pageKeys.
+            PageLoader { pageKey: "general"; sourceComponent: generalSettingsPage }
+            PageLoader { pageKey: "capture"; sourceComponent: captureSettingsPage }
+            PageLoader { pageKey: "pins"; sourceComponent: pinWindowSettingsPage }
+            PageLoader { pageKey: "recording"; sourceComponent: recordingSettingsPage }
+            PageLoader { pageKey: "saving"; sourceComponent: savingSettingsPage }
+            PageLoader { pageKey: "ocr"; sourceComponent: ocrSettingsPage }
+            PageLoader { pageKey: "hotkeys"; sourceComponent: hotkeySettingsPage }
+            PageLoader { pageKey: "updates"; sourceComponent: updatesSettingsPage }
+            PageLoader { pageKey: "about"; sourceComponent: aboutSettingsPage }
         }
     }
 
+    component PageLoader: Loader {
+        property string pageKey
+        objectName: "settingsPageLoader_" + pageKey
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        active: root.pageSupported(pageKey)
+            && (sidebar.currentKey === pageKey
+            || status === Loader.Ready
+            || status === Loader.Loading)
+    }
+
     Component { id: generalSettingsPage; GeneralSettings {} }
-    Component { id: hotkeySettingsPage; HotkeySettings {} }
-    Component { id: advancedSettingsPage; AdvancedSettings {} }
-    Component { id: watermarkSettingsPage; WatermarkSettings {} }
-    Component { id: ocrSettingsPage; OCRSettings {} }
+    Component { id: captureSettingsPage; CaptureSettings {} }
+    Component { id: pinWindowSettingsPage; PinWindowSettings {} }
     Component { id: recordingSettingsPage; RecordingSettings {} }
-    Component { id: filesSettingsPage; FilesSettings {} }
+    Component { id: savingSettingsPage; SavingSettings {} }
+    Component { id: ocrSettingsPage; OCRSettings {} }
+    Component { id: hotkeySettingsPage; HotkeySettings {} }
     Component { id: updatesSettingsPage; UpdatesSettings {} }
     Component { id: aboutSettingsPage; AboutSettings {} }
 }
