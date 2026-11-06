@@ -3319,6 +3319,10 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <source>Follow cursor</source>
+        <translation>تتبّع المؤشر</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>تغطية منطقة حساسة في الملف المُصدَّر</translation>

@@ -47,10 +47,11 @@ bool inside(const QRectF& outer, const QRectF& inner)
         && inner.right() <= outer.right() + kEps && inner.bottom() <= outer.bottom() + kEps;
 }
 
-ZoomTrack trackOf(std::vector<ZoomSegment> segments)
+ZoomTrack trackOf(std::vector<ZoomSegment> segments, const CursorTimeline* cursor = nullptr)
 {
     ZoomTrack track;
     track.setSegments(std::move(segments));
+    if (cursor) track.prepareFollow(*cursor, {}, {}, kBounds);
     return track;
 }
 
@@ -61,6 +62,11 @@ class TestZoomTrack : public QObject
     Q_OBJECT
 
 private slots:
+    void autoZoomKeepsInteractionFocusWithoutFollowing();
+    void followDeadZoneAndSeek();
+    void followClicksEdgesAndCuts();
+    void followCutResetWaitsForHiddenPointer();
+    void followSpeedAndNoOvershoot();
     void repeatedClicksInOneArea();
     void fastMovesAcrossAreas();
     void quickClicksInThreeAreasStayVisible();
@@ -80,6 +86,146 @@ private slots:
     void demoContactSheet();
 };
 
+void TestZoomTrack::autoZoomKeepsInteractionFocusWithoutFollowing()
+{
+    Script script;
+    script.move(0, QPoint(100, 100));
+    script.click(2000, QPoint(1800, 900));
+    auto segments = script.generate(5000);
+    QCOMPARE(segments.size(), size_t(1));
+    auto following = trackOf(segments, &script.timeline);
+    QCOMPARE(following.viewportAt(segments[0].startMs, kBounds).topLeft(), QPointF(0, 0));
+    // Saving and reopening must retain both the lead-in camera and fixed focus.
+    auto reopened = ZoomTrack::fromJson(following.toJson());
+    reopened.prepareFollow(script.timeline, {}, {}, kBounds);
+    QCOMPARE(reopened.viewportAt(segments[0].startMs, kBounds),
+             following.viewportAt(segments[0].startMs, kBounds));
+    for (bool reduced : {false, true}) {
+        auto stationary = reopened;
+        if (reduced) stationary.reduceMotion = true;
+        else {
+            auto fixed = stationary.segments();
+            fixed[0].follow = false;
+            fixed[0].manual = true;
+            stationary.setSegments(fixed);
+        }
+        for (qint64 ms : {2000, 2080})
+            QVERIFY2(stationary.viewportAt(ms, kBounds).contains(QPointF(1800, 900)),
+                     reduced ? "Less motion hides the triggering click" : "Follow off hides the triggering click");
+    }
+}
+
+void TestZoomTrack::followDeadZoneAndSeek()
+{
+    Script script;
+    for (int i = 0; i <= 500; ++i) script.move(i * 8, QPoint(960 + i % 40, 540 + i % 20));
+    ZoomSegment segment{0, 4000, 2.0, kBounds.center(), true};
+    segment.follow = true;
+    auto track = trackOf({segment});
+    track.prepareFollow(script.timeline, {}, {}, kBounds);
+    const QRectF first = track.viewportAt(0, kBounds);
+    for (int t = 4000; t >= 0; t -= 7) QCOMPARE(track.viewportAt(t, kBounds), first);
+    // A legacy recipe has neither follow nor any camera history.
+    QJsonObject json = track.toJson();
+    QJsonArray segments = json.value("segments").toArray();
+    QJsonObject old = segments[0].toObject();
+    old.remove("follow");
+    segments[0] = old;
+    json["segments"] = segments;
+    auto legacy = ZoomTrack::fromJson(json);
+    QVERIFY(!legacy.segments()[0].follow);
+    legacy.prepareFollow(script.timeline, {}, {}, kBounds);
+    for (int t = -600; t <= 4600; t += 7) {
+        segment.follow = false;
+        QCOMPARE(legacy.viewportAt(t, kBounds), trackOf({segment}).viewportAt(t, kBounds));
+    }
+}
+
+void TestZoomTrack::followClicksEdgesAndCuts()
+{
+    Script script;
+    script.move(0, QPoint(200, 200));
+    script.click(1000, QPoint(200, 200));
+    script.click(2000, QPoint(1700, 900));
+    script.move(2200, QPoint(1919, 1079));
+    script.move(6000, QPoint(1919, 1079));
+    script.sort();
+    ZoomSegment segment{0, 6000, 2.0, QPointF(200, 200), true};
+    segment.follow = true;
+    auto track = trackOf({segment});
+    track.prepareFollow(script.timeline, {}, {}, kBounds);
+    for (const auto& event : script.timeline.buttons) {
+        const auto view = track.viewportAt(event.tMs, kBounds);
+        QCOMPARE(view.width(), kBounds.width() / 2);
+        const double margin = 0.08 * kBounds.height();
+        const QRectF required = QRectF(QPointF(event.position), QSizeF(1, 1))
+            .adjusted(-margin, -margin, margin, margin).intersected(kBounds);
+        QVERIFY(inside(view, required));
+        QCOMPARE(track.viewportAt(event.tMs, kBounds), view);
+    }
+    const auto end = track.viewportAt(6000, kBounds);
+    QVERIFY(QLineF(end.bottomRight(), kBounds.bottomRight()).length() < 0.5);
+    for (int i = 1; i <= 10; ++i)
+        QVERIFY(QLineF(track.viewportAt(6000-i*16, kBounds).topLeft(), end.topLeft()).length() < 0.5);
+    track.prepareFollow(script.timeline, {}, TimelineMap({{0, 1200, 1}, {2200, 6000, 2}}), kBounds);
+    QCOMPARE(track.viewportAt(2200, kBounds).bottomRight(), kBounds.bottomRight());
+    track.reduceMotion = true;
+    segment.follow = false;
+    auto fixed = trackOf({segment});
+    fixed.reduceMotion = true;
+    QCOMPARE(track.viewportAt(4000, kBounds), fixed.viewportAt(4000, kBounds));
+}
+
+void TestZoomTrack::followCutResetWaitsForHiddenPointer()
+{
+    // The pointer is hidden across the start of the kept part after a cut;
+    // the camera must still start fresh where the pointer reappears.
+    Script script;
+    script.move(0, QPoint(200, 200));
+    script.move(2200, QPoint(1700, 900));
+    script.move(6000, QPoint(1700, 900));
+    script.sort();
+    ZoomSegment segment{0, 6000, 2.0, QPointF(200, 200), true};
+    segment.follow = true;
+    CursorEffectSettings settings;
+    settings.hiddenRanges = {{2100, 2600}};
+    ZoomTrack track;
+    track.setSegments({segment});
+    track.prepareFollow(script.timeline, settings, TimelineMap({{0, 1200, 1}, {2200, 6000, 1}}), kBounds);
+    const QRectF expected(QPointF(1920 - 960, 1080 - 540), kBounds.size() / 2);
+    QCOMPARE(track.viewportAt(2600, kBounds), expected);
+    QCOMPARE(track.viewportAt(3000, kBounds), expected);
+}
+
+void TestZoomTrack::followSpeedAndNoOvershoot()
+{
+    Script script;
+    script.move(0, QPoint(960, 540));
+    script.move(1000, QPoint(1800, 540));
+    script.move(5000, QPoint(1800, 540));
+    ZoomSegment segment{0, 5000, 2.0, kBounds.center(), true};
+    segment.follow = true;
+    auto track = trackOf({segment});
+    track.prepareFollow(script.timeline, {}, {}, kBounds);
+    auto previous = track.viewportAt(0, kBounds);
+    for (int t = 8; t <= 5000; t += 8) {
+        const auto view = track.viewportAt(t, kBounds);
+        QVERIFY(view.center().x() >= previous.center().x());
+        QVERIFY(QLineF(previous.center(), view.center()).length() <= view.width() * 0.008 + 1e-8);
+        QVERIFY(inside(kBounds, view));
+        previous = view;
+    }
+    const TimelineMap edits({{0, 500, 2.0}, {500, 5000, 0.5}});
+    track.prepareFollow(script.timeline, {}, edits, kBounds);
+    previous = track.viewportAt(0, kBounds);
+    for (int outputMs = 1; outputMs < edits.outputDurationMs(); ++outputMs) {
+        const auto view = track.viewportAt(edits.outputToSource(outputMs), kBounds);
+        // Quantization to integer source milliseconds permits one extra ms.
+        QVERIFY(QLineF(previous.center(), view.center()).length() <= view.width() * 0.002 + 1e-8);
+        previous = view;
+    }
+}
+
 void TestZoomTrack::repeatedClicksInOneArea()
 {
     Script s;
@@ -90,7 +236,7 @@ void TestZoomTrack::repeatedClicksInOneArea()
     QVERIFY(z.startMs < 5000 && z.endMs > 5000 + 4 * 600);
     QCOMPARE(z.scale, 2.0); // the cap: a small area is not blown up further
     QVERIFY(!z.manual);
-    const ZoomTrack track = trackOf(segments);
+    const ZoomTrack track = trackOf(segments, &s.timeline);
     for (int i = 0; i < 5; ++i) {
         // Every click is on screen, fully zoomed, when it happens.
         const QRectF view = track.viewportAt(5000 + i * 600, kBounds);
@@ -105,13 +251,35 @@ void TestZoomTrack::fastMovesAcrossAreas()
     s.click(3000, QPoint(200, 200));
     s.click(3400, QPoint(1700, 900)); // the far corner, right after
     const auto segments = s.generate();
-    QCOMPARE(int(segments.size()), 2);
-    const ZoomTrack track = trackOf(segments);
+    QCOMPARE(int(segments.size()), 1);
+    const ZoomTrack track = trackOf(segments, &s.timeline);
     // Each click visible at its time; the camera pans in between, inside the picture.
     QVERIFY(track.viewportAt(3000, kBounds).contains(QPointF(200, 200)));
-    QVERIFY(segments[1].startMs >= segments[0].endMs);
-    QVERIFY(track.viewportAt(segments[1].startMs, kBounds).contains(QPointF(1700, 900)));
+    QVERIFY(track.viewportAt(3400, kBounds).contains(QPointF(1700, 900)));
     for (qint64 t = 0; t < 10000; t += 7) QVERIFY(inside(kBounds, track.viewportAt(t, kBounds)));
+    // #266 review: holding still (Less motion, Follow off), the merged
+    // segment's fixed view must still show both clicks, also after reopening.
+    QVERIFY(segments[0].stationaryScale.has_value());
+    auto reopened = ZoomTrack::fromJson(track.toJson());
+    QCOMPARE(reopened, track);
+    reopened.prepareFollow(s.timeline, {}, {}, kBounds);
+    for (bool reduced : {false, true}) {
+        auto stationary = reopened;
+        if (reduced) stationary.reduceMotion = true;
+        else {
+            auto fixed = stationary.segments();
+            fixed[0].follow = false;
+            fixed[0].manual = true;
+            stationary.setSegments(fixed);
+        }
+        for (const QPointF click : {QPointF(200, 200), QPointF(1700, 900)}) {
+            for (qint64 ms : {3000, 3400})
+                QVERIFY2(stationary.viewportAt(ms, kBounds).contains(click),
+                         reduced ? "Less motion hides a merged click" : "Follow off hides a merged click");
+        }
+    }
+    // The following camera keeps its full magnification.
+    QCOMPARE(track.viewportAt(3000, kBounds).width(), kBounds.width() / segments[0].scale);
 }
 
 void TestZoomTrack::quickClicksInThreeAreasStayVisible()
@@ -123,7 +291,7 @@ void TestZoomTrack::quickClicksInThreeAreasStayVisible()
     const QPoint clicks[] = {QPoint(100, 100), QPoint(1800, 100), QPoint(100, 900)};
     const qint64 times[] = {3000, 3400, 3800};
     for (int i = 0; i < 3; ++i) s.click(times[i], clicks[i]);
-    const ZoomTrack track = trackOf(s.generate());
+    const ZoomTrack track = trackOf(s.generate(), &s.timeline);
     for (int i = 0; i < 3; ++i) {
         for (const qint64 t : {times[i], times[i] + 80}) {
             QVERIFY2(track.viewportAt(t, kBounds).contains(QPointF(clicks[i])),
@@ -137,7 +305,7 @@ void TestZoomTrack::cornerClicksStayInFrame()
     Script s;
     s.click(2000, QPoint(5, 5));
     s.click(9000, QPoint(1915, 1075));
-    const ZoomTrack track = trackOf(s.generate());
+    const ZoomTrack track = trackOf(s.generate(), &s.timeline);
     QCOMPARE(int(track.segments().size()), 2);
     const QRectF topLeft = track.viewportAt(2000, kBounds);
     QCOMPARE(topLeft.topLeft(), QPointF(0, 0)); // clamped to the corner, not centred off-picture
@@ -153,19 +321,24 @@ void TestZoomTrack::dragKeepsItsPathVisible()
     s.timeline.buttons.push_back({4000, Qt::LeftButton, true, QPoint(300, 300), false});
     for (int i = 0; i <= 60; ++i) s.move(4000 + i * 16, QPoint(300 + i * 400 / 60, 300 + i * 200 / 60));
     s.timeline.buttons.push_back({4000 + 60 * 16, Qt::LeftButton, false, QPoint(700, 500), false});
-    const ZoomTrack track = trackOf(s.generate());
+    const ZoomTrack track = trackOf(s.generate(), &s.timeline);
     QCOMPARE(int(track.segments().size()), 1);
     for (int i = 0; i <= 60; ++i) {
         const qint64 t = 4000 + i * 16;
         QVERIFY(track.viewportAt(t, kBounds).contains(QPointF(300 + i * 400 / 60, 300 + i * 200 / 60)));
     }
-    // A drag across the whole screen is not worth zooming: the view stays wide.
+    // A long drag retains magnification while following the pointer.
     Script wide;
     wide.timeline.buttons.push_back({4000, Qt::LeftButton, true, QPoint(50, 50), false});
     wide.move(4000, QPoint(50, 50));
     wide.move(4500, QPoint(1850, 1000));
     wide.timeline.buttons.push_back({4600, Qt::LeftButton, false, QPoint(1850, 1000), false});
-    QVERIFY(wide.generate().empty());
+    const auto wideSegments = wide.generate();
+    QVERIFY(!wideSegments.empty());
+    QCOMPARE(wideSegments.front().scale, 2.0);
+    auto wideTrack = trackOf(wideSegments, &wide.timeline);
+    QVERIFY(wideTrack.viewportAt(4000, kBounds).contains(QPointF(50, 50)));
+    QVERIFY(wideTrack.viewportAt(4600, kBounds).contains(QPointF(1850, 1000)));
 }
 
 void TestZoomTrack::longReadingStaysWide()
@@ -201,7 +374,7 @@ void TestZoomTrack::nearbyGroupsDoNotPump()
     s.click(6500, QPoint(680, 430));
     const auto segments = s.generate();
     QCOMPARE(int(segments.size()), 1);
-    const ZoomTrack track = trackOf(segments);
+    const ZoomTrack track = trackOf(segments, &s.timeline);
     for (qint64 t = 4000; t <= 6500; t += 50) QCOMPARE(track.viewportAt(t, kBounds).width(), kBounds.width() / 2);
 }
 
@@ -429,7 +602,7 @@ void TestZoomTrack::demoContactSheet()
     s.timeline.buttons.push_back({12720, Qt::LeftButton, false, QPoint(1470, 600), false});
     s.click(13600, QPoint(1790, 1005)); // Save, bottom-right corner
     const auto segments = s.generate(16000);
-    const ZoomTrack track = trackOf(segments);
+    const ZoomTrack track = trackOf(segments, &s.timeline);
     for (const auto& z : segments) {
         qInfo("zoom %lld-%lld ms, %.2fx at (%.0f, %.0f)", z.startMs, z.endMs, z.scale, z.focus.x(), z.focus.y());
     }

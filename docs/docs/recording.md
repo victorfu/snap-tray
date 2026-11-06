@@ -164,11 +164,17 @@ In the preview, **Keys** in Project settings (enabled when the recording has key
 
 Full-screen recordings often make buttons and text small once shared. The preview can zoom in on parts of the recording:
 
-- **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux); actions spread over most of the screen stay at the full view. Running it again replaces the automatic zooms but keeps the ones you added or changed.
+- **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux); the camera follows actions spread across the screen while retaining magnification. Running it again replaces the automatic zooms but keeps the ones you added or changed.
 - **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
 - Zooms appear in the Zoom lane. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less motion** makes all zooms smaller and slower without direct pans, **Zoom effects** turns them all off without deleting them, and **Delete zoom** removes one.
 
 Zooming in and out changes the size evenly from start to finish, and a pan between zooms far apart pulls back a little on the way so you can see where it goes. The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Zooms are available for MP4, GIF and WebP.
+
+### Follow cursor during zoom
+
+New automatic zoom segments follow the recorded cursor while retaining their zoom amount. Select a zoom segment and enable **Follow cursor** to use this for a manual segment. Small movements inside the central area leave the camera still; larger movements pan smoothly, with edge alignment and click visibility taking priority. The camera follows the same smoothed pointer position used by cursor effects.
+
+The option requires cursor sidecar data. **Less motion** disables following and keeps each segment at its initial focus. Existing saved recipes retain their fixed focus until following is enabled. Changing this option marks the segment as manual, so regenerating automatic zooms preserves it. Cuts restart the camera in the next kept part, and seeking uses the same precomputed path as export.
 
 ### Masking sensitive areas
 

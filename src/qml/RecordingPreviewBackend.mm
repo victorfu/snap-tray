@@ -119,6 +119,11 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::timelineChanged);
     connect(this, &RecordingPreviewBackend::trimRangeChanged, this, &RecordingPreviewBackend::timelineChanged);
     connect(this, &RecordingPreviewBackend::durationChanged, this, &RecordingPreviewBackend::timelineChanged);
+    for (const auto signal : {&RecordingPreviewBackend::zoomChanged, &RecordingPreviewBackend::cursorEffectsChanged,
+                              &RecordingPreviewBackend::timelineChanged, &RecordingPreviewBackend::cropRectChanged,
+                              &RecordingPreviewBackend::videoSizeChanged}) {
+        connect(this, signal, this, [this] { m_preparedZoom.reset(); });
+    }
     m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(RecordingSettingsManager::instance().mp4ExportOptions());
     // The estimate follows everything that changes the exported picture or length.
     for (const auto signal : {&RecordingPreviewBackend::mp4OptionsChanged, &RecordingPreviewBackend::cropRectChanged,
@@ -149,8 +154,8 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         : std::shared_ptr<SnapTray::CursorEffectRenderer>();
     // Nothing of the pointer reaches across a cut (#185).
     if (cursor && !timelineMap().isEmpty()) cursor->setTimeline(timelineMap());
-    const auto zoom = zoomAvailable() && m_zoom.isActive() ? std::make_shared<SnapTray::ZoomTrack>(m_zoom)
-                                                            : std::shared_ptr<SnapTray::ZoomTrack>();
+    const auto zoom = zoomAvailable() && m_zoom.isActive() ? preparedZoom()
+                                                            : std::shared_ptr<const SnapTray::ZoomTrack>();
     const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()
                                                   : std::make_shared<SnapTray::RedactionTrack>(m_redaction);
     // The frame around the picture (#184), last; its static parts are drawn once here.
@@ -1042,7 +1047,8 @@ QVariantList RecordingPreviewBackend::zoomSegments() const
         list.append(QVariantMap{{QStringLiteral("start"), s.startMs},
                                 {QStringLiteral("end"), s.endMs},
                                 {QStringLiteral("scale"), s.scale},
-                                {QStringLiteral("manual"), s.manual}});
+                                {QStringLiteral("manual"), s.manual},
+                                {QStringLiteral("follow"), s.follow}});
     }
     return list;
 }
@@ -1164,12 +1170,36 @@ void RecordingPreviewBackend::removeZoom(int index)
     setSelectedZoom(-1);
 }
 
+std::shared_ptr<const SnapTray::ZoomTrack> RecordingPreviewBackend::preparedZoom() const
+{
+    if (!m_preparedZoom) {
+        auto zoom = std::make_shared<SnapTray::ZoomTrack>(m_zoom);
+        if (m_cursorTimeline)
+            zoom->prepareFollow(*m_cursorTimeline, m_cursorEffects, timelineMap(), zoomBounds());
+        m_preparedZoom = std::move(zoom);
+    }
+    return m_preparedZoom;
+}
+
+void RecordingPreviewBackend::setZoomFollow(int index, bool follow)
+{
+    if (!cursorEffectsAvailable()) return;
+    editZoom([index, follow](SnapTray::ZoomTrack& z) {
+        auto segments = z.segments();
+        if (index < 0 || index >= int(segments.size())) return;
+        segments[index].follow = follow;
+        segments[index].manual = true;
+        z.setSegments(std::move(segments));
+    });
+}
+
 void RecordingPreviewBackend::setZoomScale(int index, qreal scale)
 {
     editZoom([index, scale](SnapTray::ZoomTrack& z) {
         auto segments = z.segments();
         if (index < 0 || index >= int(segments.size())) return;
         segments[index].scale = scale;
+        segments[index].stationaryScale.reset(); // the user's scale holds in every mode
         segments[index].manual = true;
         z.setSegments(std::move(segments));
     });
@@ -1203,6 +1233,8 @@ void RecordingPreviewBackend::setZoomFocusFromView(int index, const QPointF& vie
         auto segments = z.segments();
         if (index < 0 || index >= int(segments.size())) return;
         segments[index].focus = videoPoint;
+        segments[index].followStart.reset();
+        segments[index].stationaryScale.reset(); // the area fit no longer applies to a moved focus
         segments[index].manual = true;
         z.setSegments(std::move(segments));
     });
@@ -1212,7 +1244,7 @@ QRectF RecordingPreviewBackend::zoomViewportInView(qint64 positionMs, const QRec
 {
     const QRectF bounds = zoomBounds();
     if (m_videoSize.isEmpty() || contentRect.isEmpty() || bounds.isEmpty()) return contentRect;
-    const QRectF shown = zoomAvailable() ? m_zoom.viewportAt(positionMs, bounds) : bounds;
+    const QRectF shown = zoomAvailable() ? preparedZoom()->viewportAt(positionMs, bounds) : bounds;
     const double sx = contentRect.width() / m_videoSize.width();
     const double sy = contentRect.height() / m_videoSize.height();
     return QRectF(contentRect.x() + shown.x() * sx, contentRect.y() + shown.y() * sy,

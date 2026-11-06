@@ -3314,6 +3314,10 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <source>Follow cursor</source>
+        <translation>跟隨游標</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>在匯出的檔案中遮住敏感區域</translation>

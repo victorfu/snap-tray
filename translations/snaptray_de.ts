@@ -3315,6 +3315,10 @@ Größe: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <source>Follow cursor</source>
+        <translation>Mauszeiger folgen</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>Einen sensiblen Bereich in der exportierten Datei abdecken</translation>

@@ -3101,6 +3101,10 @@ English is always included and cannot be removed.</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <source>Follow cursor</source>
+        <translation>ติดตามเคอร์เซอร์</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>ปิดบังพื้นที่ที่ละเอียดอ่อนในไฟล์ที่ส่งออก</translation>

@@ -3314,6 +3314,10 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <source>Follow cursor</source>
+        <translation>커서 따라가기</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>내보낸 파일에서 민감한 영역 가리기</translation>

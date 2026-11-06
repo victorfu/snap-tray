@@ -3314,6 +3314,10 @@ Kích thước: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <source>Follow cursor</source>
+        <translation>Theo dõi con trỏ</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="1423" />
         <source>Cover a sensitive area in the exported file</source>
         <translation>Che vùng nhạy cảm trong tệp đã xuất</translation>
