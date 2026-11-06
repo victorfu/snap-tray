@@ -35,6 +35,7 @@ class TestSettingsCombo : public QObject
 private slots:
     void initTestCase();
     void everyOptionFitsWhateverIsSelected();
+    void screenReadersHearValuesAndPermissions();
 };
 
 void TestSettingsCombo::initTestCase()
@@ -112,6 +113,66 @@ void TestSettingsCombo::everyOptionFitsWhateverIsSelected()
     }
     names.sort();
     QCOMPARE(names, (QStringList{QStringLiteral("Edit in the preview"), QStringLiteral("Save right away")}));
+}
+
+// #238: VoiceOver heard only "After recording, menu button" (the shown text is
+// a custom contentItem), and every permission row's button was "Open Settings"
+// with the status only in colored text.
+void TestSettingsCombo::screenReadersHearValuesAndPermissions()
+{
+    QQuickView view;
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
+    QQmlComponent component(view.engine());
+    component.setData(
+        "import QtQuick\n"
+        "import SnapTrayQml\n"
+        "Column {\n"
+        "  width: 600; height: 300\n"
+        "  SettingsCombo {\n"
+        "    objectName: 'combo'\n"
+        "    width: parent.width\n"
+        "    label: 'After recording'\n"
+        "    model: [ { text: 'Edit in the preview', value: true },\n"
+        "             { text: 'Save right away', value: false } ]\n"
+        "    currentIndex: 1\n"
+        "  }\n"
+        "  SettingsPermissionRow {\n"
+        "    objectName: 'permission'\n"
+        "    label: 'Screen Recording'\n"
+        "    granted: false\n"
+        "  }\n"
+        "}\n", QUrl("qrc:/SnapTrayQml/controls/SettingsComboAccessibilityHost.qml"));
+    QScopedPointer<QObject> created(component.create());
+    QVERIFY2(created, qPrintable(component.errorString()));
+    auto* root = qobject_cast<QQuickItem*>(created.data());
+    root->setParentItem(view.contentItem());
+    view.resize(600, 300);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+
+    QQuickItem* combo = findByType(root->findChild<QQuickItem*>("combo"), "QQuickComboBox");
+    QVERIFY(combo);
+    QAccessibleInterface* comboAccessible = QAccessible::queryAccessibleInterface(combo);
+    QVERIFY(comboAccessible);
+    QCOMPARE(comboAccessible->text(QAccessible::Name), QStringLiteral("After recording, Save right away"));
+    combo->setProperty("currentIndex", 0);
+    QTRY_COMPARE(comboAccessible->text(QAccessible::Name),
+                 QStringLiteral("After recording, Edit in the preview"));
+
+    QQuickItem* permission = root->findChild<QQuickItem*>("permission");
+    QVERIFY(permission);
+    QAccessibleInterface* button = nullptr;
+    QList<QQuickItem*> pending{permission};
+    while (!pending.isEmpty() && !button) {
+        QQuickItem* node = pending.takeLast();
+        pending.append(node->childItems());
+        QAccessibleInterface* accessible = QAccessible::queryAccessibleInterface(node);
+        if (accessible && accessible->role() == QAccessible::Button) button = accessible;
+    }
+    QVERIFY(button);
+    QCOMPARE(button->text(QAccessible::Name), QStringLiteral("Open Settings, Screen Recording, Not Granted"));
+    permission->setProperty("granted", true);
+    QTRY_COMPARE(button->text(QAccessible::Name), QStringLiteral("Open Settings, Screen Recording, Granted"));
 }
 
 QTEST_MAIN(TestSettingsCombo)

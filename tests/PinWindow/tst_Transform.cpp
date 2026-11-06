@@ -106,6 +106,13 @@ private slots:
         window.setClickThrough(false);
     }
 
+    // #238: a frameless pin has no title, so VoiceOver read an unnamed dialog.
+    void testPinWindowHasAccessibleName() {
+        PinWindow window(createTestPixmap(200, 150), QPoint(), nullptr, false, false);
+        QCOMPARE(window.windowTitle(), QStringLiteral("Pinned image"));
+        QCOMPARE(window.accessibleName(), QStringLiteral("Pinned image"));
+    }
+
     void testClickThroughExitAfterShowAllPins() {
         if (!PlatformFeatures::instance().capabilities().supportsClickThrough) {
             QSKIP("Click-through is not supported on this platform");

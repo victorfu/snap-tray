@@ -207,6 +207,7 @@ Item {
                             isCancel: delegateLoader.buttonData.isCancel || false
                             isActive: root.hasViewModel
                                       && root.viewModel.activeTool === delegateLoader.buttonId
+                            accessibleCheckable: delegateLoader.buttonData.isDrawing || false
                             isDisabled: ButtonState.isDisabled(delegateLoader.buttonData, root.viewModel)
                             iconNormalColor: root.iconNormalColor
                             iconActionColor: root.iconActionColor

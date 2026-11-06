@@ -1873,6 +1873,11 @@ Tamaño: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <location filename="../src/PinWindow.cpp" line="566" />
+        <source>Pinned image</source>
+        <translation>Imagen fijada</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1222" />
         <source>Show Toolbar</source>
         <translation>Mostrar barra de herramientas</translation>

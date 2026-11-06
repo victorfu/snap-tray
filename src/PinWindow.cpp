@@ -560,6 +560,11 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground);
+    // A frameless window has no title, so screen readers announced an
+    // unnamed dialog (#238). macOS takes the window's name from its title;
+    // the title is never drawn on this frameless window.
+    setWindowTitle(tr("Pinned image"));
+    setAccessibleName(windowTitle());
 #ifdef Q_OS_MACOS
     // Ensure the window stays visible even when app is not focused
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);

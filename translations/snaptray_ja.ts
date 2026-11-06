@@ -1872,6 +1872,11 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <location filename="../src/PinWindow.cpp" line="566" />
+        <source>Pinned image</source>
+        <translation>ピン留めされた画像</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1222" />
         <source>Show Toolbar</source>
         <translation>ツールバーを表示</translation>

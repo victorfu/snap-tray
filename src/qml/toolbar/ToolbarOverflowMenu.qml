@@ -49,6 +49,7 @@ Item {
         model: root.buttons
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        Accessible.role: Accessible.PopupMenu
         delegate: Item {
             id: row
             required property var modelData
@@ -57,6 +58,14 @@ Item {
             readonly property bool disabled: ButtonState.isDisabled(modelData, root.viewModel)
             readonly property bool active: root.viewModel && root.viewModel.activeTool === modelData.id
             objectName: "overflowButton_" + modelData.id
+            // Screen readers (#238): each row is a named menu item; the active
+            // drawing tool reads as checked, a disabled row as unavailable.
+            enabled: !disabled
+            Accessible.role: Accessible.MenuItem
+            Accessible.name: modelData.tooltip
+            Accessible.checkable: modelData.isDrawing === true
+            Accessible.checked: modelData.isDrawing === true && active
+            Accessible.onPressAction: if (!disabled) root.actionTriggered(modelData.id)
             width: list.width
             height: root.rowHeight + (separated ? root.separatorHeight : 0)
             Rectangle {

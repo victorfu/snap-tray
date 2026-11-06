@@ -205,18 +205,25 @@ Flickable {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: SemanticTokens.spacing4
 
+                            // Every row has these buttons (#238): name the action
+                            // they apply to; Edit also reads the shortcut and its
+                            // status, which is otherwise only colored text.
                             SettingsButton {
                                 text: qsTr("Edit")
+                                Accessible.name: text + ", " + modelData.name + ", " + keySeq.text
+                                    + (statusText.text !== keySeq.text ? ", " + statusText.text : "")
                                 onClicked: settingsBackend.editHotkey(modelData.action)
                             }
 
                             SettingsButton {
                                 text: qsTr("Clear")
+                                Accessible.name: text + ", " + modelData.name
                                 onClicked: settingsBackend.clearHotkey(modelData.action)
                             }
 
                             SettingsButton {
                                 text: qsTr("Reset")
+                                Accessible.name: text + ", " + modelData.name
                                 onClicked: settingsBackend.resetHotkey(modelData.action)
                             }
                         }
