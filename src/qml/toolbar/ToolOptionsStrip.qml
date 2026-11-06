@@ -196,5 +196,13 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
         }
 
+        // Drawing order of the selected annotation (#268).
+        ArrangeSection {
+            objectName: "toolOptionsArrangeSection"
+            visible: root.hasViewModel && root.viewModel.editingSelection
+            viewModel: root.viewModel
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
     }
 }

@@ -4600,6 +4600,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
         QGuiApplication::clipboard()->setText(colorText);
     }
+    // Drawing order of the selected annotation (#268).
+    else if (!m_inputState.multiRegionMode && m_selectionManager->isComplete()
+             && m_styleEditor && m_styleEditor->handleZOrderKey(event)) {
+        requestCaptureSceneUpdate();
+    }
     else if (event->matches(QKeySequence::Undo)) {
         if (m_inputState.multiRegionMode && m_multiRegionManager) {
             if (m_multiRegionManager->count() > 0) {

@@ -306,6 +306,8 @@ void ScreenCanvasSession::initializeSharedState()
     // Selected-annotation styling (#224): strip edits go to the selection.
     m_styleEditor = new AnnotationStyleEditor(m_annotationLayer, m_toolOptionsViewModel, this);
     m_styleEditor->setInlineEditingPredicate([this] { return editingSurface() != nullptr; });
+    // The session is not a widget; announce drawing-order moves on the surface in use.
+    m_styleEditor->setAnnouncementTarget([this]() -> QObject* { return m_activeSurface.data(); });
     connect(m_styleEditor, &AnnotationStyleEditor::targetShown, this, [this] { updateQmlToolbarState(); });
     connect(m_styleEditor, &AnnotationStyleEditor::targetCleared, this, [this] { updateQmlToolbarState(); });
 
@@ -2061,6 +2063,9 @@ void ScreenCanvasSession::handleSurfaceKeyPress(ScreenCanvas* surface, QKeyEvent
                               : CanvasBackgroundMode::Blackboard);
     } else if (event->matches(QKeySequence::Copy)) {
         handleCopyAction(ToolId::Copy);
+    } else if (m_styleEditor && m_styleEditor->handleZOrderKey(event)) {
+        // Drawing order of the selected annotation (#268).
+        updateAllSurfaces();
     } else if (event->matches(QKeySequence::Undo)) {
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();

@@ -1,7 +1,10 @@
 #include "annotation/AnnotationStyleEditor.h"
 
+#include "annotations/AnnotationZOrderCommands.h"
 #include "annotations/AnnotationStyle.h"
 #include "qml/PinToolOptionsViewModel.h"
+
+#include <QAccessible>
 
 AnnotationStyleEditor::AnnotationStyleEditor(AnnotationLayer* layer,
                                              PinToolOptionsViewModel* viewModel,
@@ -18,6 +21,43 @@ AnnotationStyleEditor::AnnotationStyleEditor(AnnotationLayer* layer,
     connect(m_layer, &AnnotationLayer::changed, this, &AnnotationStyleEditor::syncStripFromTarget);
     connect(m_viewModel, &PinToolOptionsViewModel::selectionStyleEdited,
             this, &AnnotationStyleEditor::onStyleEdited);
+    connect(m_viewModel, &PinToolOptionsViewModel::zOrderRequested, this, [this](int move) {
+        applyZOrder(static_cast<AnnotationLayer::ZOrderMove>(move));
+    });
+}
+
+void AnnotationStyleEditor::setAnnouncementTarget(std::function<QObject*()> target)
+{
+    m_announcementTarget = std::move(target);
+}
+
+bool AnnotationStyleEditor::applyZOrder(AnnotationLayer::ZOrderMove move)
+{
+    // A pending style edit ends here, and its idle timer must not split
+    // repeated moves into several undo steps.
+    m_idle.stop();
+    if (!m_layer->moveSelectedItem(move)) return false;
+    if (QObject* target = m_announcementTarget ? m_announcementTarget() : parent()) {
+        QAccessibleAnnouncementEvent event(target, AnnotationZOrderCommands::announcement(move));
+        QAccessible::updateAccessibility(&event);
+    }
+    emit styleApplied();
+    return true;
+}
+
+bool AnnotationStyleEditor::handleZOrderKey(const QKeyEvent* event)
+{
+    const auto move = AnnotationZOrderCommands::moveForKeyEvent(event);
+    if (!move || m_layer->selectedIndex() < 0) return false;
+    applyZOrder(*move);
+    return true;
+}
+
+void AnnotationStyleEditor::syncZOrderAvailability()
+{
+    using Move = AnnotationLayer::ZOrderMove;
+    m_viewModel->setZOrderAvailability(m_layer->zOrderTargetIndex(Move::ToFront) >= 0,
+                                       m_layer->zOrderTargetIndex(Move::ToBack) >= 0);
 }
 
 void AnnotationStyleEditor::setInlineEditingPredicate(std::function<bool()> isInlineEditing)
@@ -33,6 +73,7 @@ void AnnotationStyleEditor::refreshTarget()
     AnnotationItem* item = id ? m_layer->itemAt(m_layer->indexOfId(id)) : nullptr;
     const bool stylable = item && AnnotationStyle::kindOf(*item) != StyleTargetKind::None
         && !(m_isInlineEditing && m_isInlineEditing());
+    syncZOrderAvailability();
     if (stylable) {
         m_targetId = id;
         m_viewModel->showForSelection(AnnotationStyle::read(*item));
@@ -48,6 +89,7 @@ void AnnotationStyleEditor::refreshTarget()
 
 void AnnotationStyleEditor::syncStripFromTarget()
 {
+    syncZOrderAvailability();
     if (m_targetId == 0) return;
     if (m_layer->selectedId() != m_targetId) {
         refreshTarget();

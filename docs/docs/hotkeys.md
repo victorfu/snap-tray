@@ -37,6 +37,19 @@ Recording actions appear only where recording is available. A recording hotkey p
 
 The hotkeys above work anywhere. Inside Region Capture, a Pin Window, or Screen Canvas, single keys act on that editor and cannot be rebound, for example `I` to pick a color from the screen (see [Annotation Tools](/docs/annotation-tools/#picking-a-color-from-the-screen)). Each page lists its own keys.
 
+## Annotation shortcuts
+
+While you annotate (Region Capture, a pin, or Screen Canvas), these shortcuts change the drawing order of the selected annotation. They are not global and cannot be rebound.
+
+| Action | macOS | Windows / Linux |
+|---|---|---|
+| Bring Forward | `⌘]` | `Ctrl+]` |
+| Send Backward | `⌘[` | `Ctrl+[` |
+| Bring to Front | `⌥⌘]` | `Ctrl+Shift+]` |
+| Send to Back | `⌥⌘[` | `Ctrl+Shift+[` |
+
+On a pin, `Ctrl/Cmd + ]` resets opacity when no annotation is selected. See [Annotation Tools](/docs/annotation-tools/#putting-one-annotation-above-another).
+
 ## Hotkey categories
 
 Hotkeys are managed by category inside Settings:

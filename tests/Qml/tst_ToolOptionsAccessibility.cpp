@@ -8,6 +8,7 @@
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "annotations/AnnotationStyleLabels.h"
+#include "annotations/AnnotationZOrder.h"
 #include "annotations/ArrowAnnotation.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "tools/ToolId.h"
@@ -32,6 +33,7 @@ private slots:
     void widthIsAnAdjustableSlider();
     void styleMenusReadTheCurrentStyle();
     void textAndShapeTogglesAreCheckboxes();
+    void arrangeButtonsAreNamedAndRequestMoves();
 
 private:
     std::unique_ptr<QQuickView> load(PinToolOptionsViewModel& viewModel);
@@ -310,6 +312,47 @@ void tst_ToolOptionsAccessibility::textAndShapeTogglesAreCheckboxes()
     QTRY_VERIFY(filled->state().checked);
     QVERIFY(named(view->rootObject(), QStringLiteral("Rectangle")));
     QVERIFY(named(view->rootObject(), QStringLiteral("Ellipse")));
+}
+
+// #268: a selected annotation gets Arrange buttons named with their shortcut;
+// a move that would change nothing does not fire.
+void tst_ToolOptionsAccessibility::arrangeButtonsAreNamedAndRequestMoves()
+{
+    PinToolOptionsViewModel viewModel;
+    viewModel.showForTool(int(ToolId::Arrow));
+    auto view = load(viewModel);
+    QVERIFY(view);
+    const auto findPrefixed = [&view](const QString& prefix) -> QAccessibleInterface* {
+        for (QAccessibleInterface* accessible : accessibles(view->rootObject())) {
+            if (accessible->text(QAccessible::Name).startsWith(prefix)) return accessible;
+        }
+        return nullptr;
+    };
+    // New objects have no drawing order to change.
+    QVERIFY(!findPrefixed(QStringLiteral("Bring Forward")));
+
+    AnnotationStyleValues values;
+    values.kind = StyleTargetKind::Arrow;
+    values.color = Qt::red;
+    values.width = 3;
+    viewModel.showForSelection(values);
+    viewModel.setZOrderAvailability(true, false);   // at the back
+
+    QAccessibleInterface* forward = nullptr;
+    QTRY_VERIFY((forward = findPrefixed(QStringLiteral("Bring Forward"))) != nullptr);
+    QVERIFY(forward->text(QAccessible::Name).contains(
+        QKeySequence(Qt::CTRL | Qt::Key_BracketRight).toString(QKeySequence::NativeText)));
+    QCOMPARE(forward->role(), QAccessible::Button);
+    QAccessibleInterface* backward = findPrefixed(QStringLiteral("Send Backward"));
+    QVERIFY(backward && findPrefixed(QStringLiteral("Bring to Front"))
+            && findPrefixed(QStringLiteral("Send to Back")));
+
+    QSignalSpy requested(&viewModel, &PinToolOptionsViewModel::zOrderRequested);
+    backward->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(requested.count(), 0);
+    forward->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(requested.count(), 1);
+    QCOMPARE(requested.first().first().toInt(), int(AnnotationZOrderMove::Forward));
 }
 
 QTEST_MAIN(tst_ToolOptionsAccessibility)

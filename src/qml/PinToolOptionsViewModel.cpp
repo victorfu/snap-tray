@@ -1,4 +1,6 @@
 #include "qml/PinToolOptionsViewModel.h"
+
+#include "annotations/AnnotationZOrderCommands.h"
 #include "annotations/AnnotationStyleLabels.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
@@ -328,6 +330,47 @@ QVariantList PinToolOptionsViewModel::shapeFillOptions() const
         QVariantMap{{"value", 0}, {"iconKey", "shape-outline"}},
         QVariantMap{{"value", 1}, {"iconKey", "shape-filled"}},
     };
+}
+
+QVariantList PinToolOptionsViewModel::zOrderOptions() const
+{
+    using Move = AnnotationZOrderCommands::Move;
+    struct Option {
+        Move move;
+        const char* iconKey;
+        bool raises;
+    };
+    static constexpr Option kOptions[] = {
+        {Move::ToBack, "send-to-back", false},
+        {Move::Backward, "send-backward", false},
+        {Move::Forward, "bring-forward", true},
+        {Move::ToFront, "bring-to-front", true},
+    };
+    QVariantList options;
+    for (const auto& option : kOptions) {
+        options.append(QVariantMap{
+            {"value", static_cast<int>(option.move)},
+            {"iconKey", QString::fromLatin1(option.iconKey)},
+            {"raises", option.raises},
+            {"label", AnnotationZOrderCommands::actionText(option.move)},
+            {"shortcut", AnnotationZOrderCommands::shortcut(option.move)
+                             .toString(QKeySequence::NativeText)},
+        });
+    }
+    return options;
+}
+
+void PinToolOptionsViewModel::setZOrderAvailability(bool canRaise, bool canLower)
+{
+    if (m_canRaiseSelection == canRaise && m_canLowerSelection == canLower) return;
+    m_canRaiseSelection = canRaise;
+    m_canLowerSelection = canLower;
+    emit zOrderAvailabilityChanged();
+}
+
+void PinToolOptionsViewModel::handleZOrderRequested(int move)
+{
+    if (m_editingSelection) emit zOrderRequested(move);
 }
 
 QVariantList PinToolOptionsViewModel::stepBadgeSizeOptions() const

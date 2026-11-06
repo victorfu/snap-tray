@@ -65,6 +65,19 @@ With an annotation selected, the color applies to it and `Ctrl/Cmd + Z` undoes i
 
 `I` works whenever the color palette is shown, except while you type in a text box. Before you select a region, `C` still copies the color code under the magnifier.
 
+## Putting one annotation above another
+
+Select an annotation, then change which annotations it covers:
+
+| Command | macOS | Windows / Linux |
+|---|---|---|
+| Bring Forward | `⌘]` | `Ctrl+]` |
+| Send Backward | `⌘[` | `Ctrl+[` |
+| Bring to Front | `⌥⌘]` | `Ctrl+Shift+]` |
+| Send to Back | `⌥⌘[` | `Ctrl+Shift+[` |
+
+The same four commands are buttons at the end of the style bar for a selected text, arrow, line, or shape, and an **Arrange** submenu in a pin's right-click menu. Bring Forward and Send Backward go past the next annotation that overlaps the selected one, so each press makes a visible change; with nothing overlapping in that direction they go all the way. Pressing the same command several times in a row is one undo step. Step numbers never change when you rearrange: they follow the order you placed the badges in. Copy, Save, and Pin use the order you see.
+
 ## When the toolbar does not fit
 
 On a narrow screen, less-used buttons move into **More** (⋯), starting with QR Code and OCR. Copy, Save, Pin, Undo, Redo, and the tool you are using always stay on the toolbar. Use the arrow keys and `Enter` to pick from **More**, and `Esc` to close it.

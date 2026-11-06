@@ -441,6 +441,7 @@ private:
     QMenu* m_contextMenu;
     QMenu* m_moveToScreenMenu = nullptr;
     QMenu* m_infoMenu = nullptr;
+    QMenu* m_arrangeMenu = nullptr;   // drawing order of the selected annotation (#268)
     QAction* m_showToolbarAction = nullptr;
     QAction* m_clickThroughAction = nullptr;
     QAction* m_showBorderAction = nullptr;

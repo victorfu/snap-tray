@@ -303,6 +303,7 @@ add_library(snaptray_core STATIC
     src/annotations/LineAnnotationGeometry.cpp
     src/annotations/ArrowAnnotation.cpp
     src/annotations/AnnotationStyleLabels.cpp
+    src/annotations/AnnotationZOrderCommands.cpp
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
     src/annotations/AnnotationStyle.cpp
@@ -1088,6 +1089,7 @@ set_source_files_properties(src/qml/toolbar/ArrowStyleSection.qml PROPERTIES QT_
 set_source_files_properties(src/qml/toolbar/LineStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/LineStyleSection.qml)
 set_source_files_properties(src/qml/toolbar/SizeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/SizeSection.qml)
 set_source_files_properties(src/qml/toolbar/AutoBlurSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/AutoBlurSection.qml)
+set_source_files_properties(src/qml/toolbar/ArrangeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ArrangeSection.qml)
 
 # Settings controls
 set_source_files_properties(src/qml/controls/SettingsSection.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSection.qml)
@@ -1246,6 +1248,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/toolbar/LineStyleSection.qml
         src/qml/toolbar/SizeSection.qml
         src/qml/toolbar/AutoBlurSection.qml
+        src/qml/toolbar/ArrangeSection.qml
         src/qml/panels/ShortcutHintsPanel.qml
         src/qml/panels/RegionControlPanel.qml
         src/qml/panels/MultiRegionListPanel.qml
