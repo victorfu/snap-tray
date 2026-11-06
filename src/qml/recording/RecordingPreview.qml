@@ -3097,8 +3097,23 @@ Item {
                         GradientStop { position: 0; color: backend.appearanceGradientStart }
                         GradientStop { position: 1; color: backend.appearanceGradientEnd }
                     }
-                    Accessible.role: Accessible.Graphic
+                    // Back to this gradient after another background, without
+                    // reapplying the whole style.
+                    function activate() { backend.appearanceBackground = 0 }
+                    Accessible.role: Accessible.Button
                     Accessible.name: qsTr("Background: Custom gradient")
+                    Accessible.checkable: true
+                    Accessible.checked: chosen
+                    Accessible.onPressAction: activate()
+                    activeFocusOnTab: visible
+                    Keys.onSpacePressed: activate()
+                    Keys.onReturnPressed: activate()
+                    FocusFrame { anchors.fill: parent; showFocus: parent.activeFocus }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: CursorTokens.clickable
+                        onClicked: parent.activate()
+                    }
                 }
                 Repeater {
                     model: backend.appearanceGradients

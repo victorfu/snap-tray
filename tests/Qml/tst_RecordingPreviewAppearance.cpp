@@ -366,6 +366,23 @@ void tst_RecordingPreviewAppearance::savedStylesInThePanel()
     QTRY_COMPARE(SnapTray::FrameStyleLibrary::instance().styles().at(1).name, QStringLiteral("Wide"));
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewAppearanceStyleDelete"), "clicked"));
     QCOMPARE(SnapTray::FrameStyleLibrary::instance().count(), 1);
+
+    // A saved non-preset gradient can be chosen again after another background.
+    SnapTray::FrameStyle custom;
+    custom.gradientStart = QColor(10, 20, 30);
+    custom.gradientEnd = QColor(200, 100, 50);
+    QVERIFY(SnapTray::FrameStyleLibrary::instance().save(QStringLiteral("Own gradient"), custom));
+    backend.applyFrameStyle(1);
+    QQuickItem* customSwatch = item(view, "previewAppearanceGradientCustom");
+    QTRY_VERIFY(customSwatch->isVisible());
+    QVERIFY(customSwatch->property("chosen").toBool());
+    backend.setAppearanceSolidColor(Qt::white);
+    QTRY_VERIFY(!customSwatch->property("chosen").toBool());
+    QVERIFY(customSwatch->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(customSwatch, "activate"));
+    QTRY_VERIFY(customSwatch->property("chosen").toBool());
+    QCOMPARE(backend.appearanceGradientPreset(), int(SnapTray::RecordingAppearance::kCustomGradient));
+    QCOMPARE(backend.appearanceGradientStart(), custom.gradientStart);
     backend.requestDiscard();
 }
 
