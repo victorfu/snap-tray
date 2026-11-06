@@ -1,8 +1,10 @@
 #include "settings/BeautifySettingsManager.h"
 #include "settings/Settings.h"
+#include <QDebug>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonParseError>
 #include <QSettings>
 #include <algorithm>
 
@@ -257,9 +259,23 @@ BeautifySettings legacyStyleFromJson(const QJsonObject& json)
     return s;
 }
 
-QJsonArray readArray(const QSettings& settings, const char* key)
+// The list stored under key. A value that is there but not a JSON array is
+// damaged: it reads as empty, with a warning, and *damaged is set.
+QJsonArray readArray(const QSettings& settings, const char* key, bool* damaged = nullptr)
 {
-    return QJsonDocument::fromJson(settings.value(QLatin1String(key)).toString().toUtf8()).array();
+    if (damaged) *damaged = false;
+    const QString text = settings.value(QLatin1String(key)).toString();
+    if (text.isEmpty()) return {};
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(text.toUtf8(), &error);
+    if (error.error != QJsonParseError::NoError || !document.isArray()) {
+        qWarning() << "BeautifySettingsManager: ignoring damaged" << key << "-"
+                   << (error.error != QJsonParseError::NoError ? error.errorString() : QStringLiteral("not a list"))
+                   << "at offset" << error.offset;
+        if (damaged) *damaged = true;
+        return {};
+    }
+    return document.array();
 }
 
 } // namespace
@@ -277,8 +293,16 @@ QVector<SnapTray::NamedFrameStyle> BeautifySettingsManager::loadFrameStyles() co
     if (settings.contains(QLatin1String(kKeyFrameStyles))) {
         for (const QJsonValue& value : readArray(settings, kKeyFrameStyles)) {
             const QJsonObject json = value.toObject();
-            add(json.value(QStringLiteral("name")).toString(),
-                SnapTray::FrameStyle::fromJson(json.value(QStringLiteral("style")).toObject()));
+            const QString name = json.value(QStringLiteral("name")).toString();
+            if (name.trimmed().isEmpty()) continue;
+            const QJsonValue style = json.value(QStringLiteral("style"));
+            // Without its look, an entry would come back as the default look
+            // under the user's name and be saved that way.
+            if (!style.isObject()) {
+                qWarning() << "BeautifySettingsManager: skipping saved style" << name << "without a look";
+                continue;
+            }
+            add(name, SnapTray::FrameStyle::fromJson(style.toObject()));
         }
         return styles;
     }
@@ -301,6 +325,12 @@ void BeautifySettingsManager::saveFrameStyles(const QVector<SnapTray::NamedFrame
     }
     // Kept even when empty: a missing key would bring the old styles back.
     auto settings = SnapTray::getSettings();
+    // A damaged list read as empty; keep its text before it is overwritten.
+    bool damaged = false;
+    readArray(settings, kKeyFrameStyles, &damaged);
+    if (damaged) {
+        settings.setValue(QLatin1String(kKeyFrameStylesDamaged), settings.value(QLatin1String(kKeyFrameStyles)));
+    }
     settings.setValue(QLatin1String(kKeyFrameStyles),
                       QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact)));
 }

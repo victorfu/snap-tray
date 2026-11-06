@@ -95,6 +95,7 @@ private slots:
     void testFrameStyles_MigrateLegacyStyles();
     void testFrameStyles_MigratedLookUnchangedAt1440();
     void testFrameStyles_EmptyListDoesNotRestoreLegacy();
+    void testFrameStyles_DamagedListKeptBeforeOverwrite();
 
 private:
     void clearAllTestSettings();
@@ -131,6 +132,7 @@ void tst_BeautifySettings::clearAllTestSettings()
     settings.remove("beautify/borderColor");
     settings.remove("beautify/customStyles");
     settings.remove("beautify/frameStyles");
+    settings.remove("beautify/frameStyles.corrupt");
     settings.sync();
 }
 
@@ -707,6 +709,38 @@ void tst_BeautifySettings::testFrameStyles_MigratedLookUnchangedAt1440()
     const QImage after = BeautifyRenderer::applyToPixmap(source, migrated).toImage();
     QCOMPARE(after.size(), before.size());
     QCOMPARE(after, before);
+}
+
+void tst_BeautifySettings::testFrameStyles_DamagedListKeptBeforeOverwrite()
+{
+    auto& manager = BeautifySettingsManager::instance();
+    auto settings = SnapTray::getSettings();
+    const QString damaged = QStringLiteral(R"([{"name":"Blog","style":{"padding":0.1)");
+    for (const QString& text : {damaged, QStringLiteral(R"({"name":"Blog"})")}) {
+        settings.setValue("beautify/frameStyles", text);
+        settings.remove("beautify/frameStyles.corrupt");
+        settings.sync();
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression("ignoring damaged.*beautify/frameStyles"));
+        QVERIFY(manager.loadFrameStyles().isEmpty());
+
+        // Saving after that keeps the damaged text instead of losing it.
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression("ignoring damaged.*beautify/frameStyles"));
+        manager.saveFrameStyles({{QStringLiteral("New"), SnapTray::FrameStyle()}});
+        QCOMPARE(settings.value("beautify/frameStyles.corrupt").toString(), text);
+        QCOMPARE(manager.loadFrameStyles().size(), 1);
+        // A save over a valid list leaves the copy alone.
+        manager.saveFrameStyles({});
+        QCOMPARE(settings.value("beautify/frameStyles.corrupt").toString(), text);
+    }
+
+    // An entry without its look is skipped, not read as the default look.
+    settings.setValue("beautify/frameStyles",
+                      QStringLiteral(R"([{"name":"Lost"},{"name":"Kept","style":{"padding":0.1}}])"));
+    settings.sync();
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("skipping saved style.*Lost"));
+    const auto styles = manager.loadFrameStyles();
+    QCOMPARE(styles.size(), 1);
+    QCOMPARE(styles.at(0).name, QStringLiteral("Kept"));
 }
 
 void tst_BeautifySettings::testFrameStyles_EmptyListDoesNotRestoreLegacy()
