@@ -343,6 +343,8 @@ void RecordingPreviewBackend::editAppearance(const std::function<void(SnapTray::
     if (isProcessing()) return; // a running export keeps what it started with
     SnapTray::RecordingAppearance appearance = m_appearance;
     change(appearance);
+    // A preset chosen after a custom size or gradient leaves nothing behind.
+    appearance.dropInactiveCustomValues();
     if (appearance == m_appearance) return;
     rememberAppearance(appearance);
     setAppearance(appearance);

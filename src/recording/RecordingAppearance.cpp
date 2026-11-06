@@ -124,43 +124,69 @@ void drawCover(QPainter& painter, const QRect& target, const QImage& image)
 
 } // namespace
 
-bool RecordingAppearance::operator==(const RecordingAppearance& o) const
+// amountFor() maps a preset's array index to its Amount.
+static_assert(std::size(RecordingAppearance::kPaddingFractions) == size_t(RecordingAppearance::Amount::Custom));
+static_assert(std::size(RecordingAppearance::kCornerFractions) == size_t(RecordingAppearance::Amount::Custom));
+
+void RecordingAppearance::dropInactiveCustomValues()
 {
-    return enabled == o.enabled && background == o.background && gradientPreset == o.gradientPreset
-        && gradientStart == o.gradientStart && gradientEnd == o.gradientEnd && gradientAngle == o.gradientAngle
-        && gradientRadial == o.gradientRadial && solidColor == o.solidColor && imagePath == o.imagePath
-        && padding == o.padding && corners == o.corners && customPadding == o.customPadding
-        && customCorners == o.customCorners && shadow == o.shadow && shadowBlur == o.shadowBlur
-        && shadowOffsetX == o.shadowOffsetX && shadowOffsetY == o.shadowOffsetY && shadowColor == o.shadowColor
-        && border == o.border && borderFraction == o.borderFraction && borderColor == o.borderColor
-        && aspectRatio == o.aspectRatio;
+    const RecordingAppearance defaults;
+    if (padding != Amount::Custom) customPadding = defaults.customPadding;
+    if (corners != Amount::Custom) customCorners = defaults.customCorners;
+    if (gradientPreset != kCustomGradient) {
+        gradientStart = defaults.gradientStart;
+        gradientEnd = defaults.gradientEnd;
+        gradientAngle = defaults.gradientAngle;
+        gradientRadial = defaults.gradientRadial;
+    }
+}
+
+bool RecordingAppearance::operator==(const RecordingAppearance& other) const
+{
+    RecordingAppearance self = *this;
+    RecordingAppearance o = other;
+    self.dropInactiveCustomValues();
+    o.dropInactiveCustomValues();
+    return self.enabled == o.enabled && self.background == o.background
+        && self.gradientPreset == o.gradientPreset && self.gradientStart == o.gradientStart
+        && self.gradientEnd == o.gradientEnd && self.gradientAngle == o.gradientAngle
+        && self.gradientRadial == o.gradientRadial && self.solidColor == o.solidColor
+        && self.imagePath == o.imagePath && self.padding == o.padding && self.corners == o.corners
+        && self.customPadding == o.customPadding && self.customCorners == o.customCorners
+        && self.shadow == o.shadow && self.shadowBlur == o.shadowBlur
+        && self.shadowOffsetX == o.shadowOffsetX && self.shadowOffsetY == o.shadowOffsetY
+        && self.shadowColor == o.shadowColor && self.border == o.border
+        && self.borderFraction == o.borderFraction && self.borderColor == o.borderColor
+        && self.aspectRatio == o.aspectRatio;
 }
 
 QJsonObject RecordingAppearance::toJson() const
 {
-    return {{QStringLiteral("enabled"), enabled},
-            {QStringLiteral("background"), QLatin1String(nameOf(kBackgrounds, background))},
-            {QStringLiteral("gradientPreset"), gradientPreset},
-            {QStringLiteral("solidColor"), solidColor.name(QColor::HexRgb)},
-            {QStringLiteral("imagePath"), imagePath},
-            {QStringLiteral("padding"), QLatin1String(nameOf(kAmounts, padding))},
-            {QStringLiteral("corners"), QLatin1String(nameOf(kAmounts, corners))},
-            {QStringLiteral("shadow"), shadow},
-            {QStringLiteral("border"), border},
-            {QStringLiteral("aspectRatio"), int(aspectRatio)},
+    RecordingAppearance a = *this;
+    a.dropInactiveCustomValues();
+    return {{QStringLiteral("enabled"), a.enabled},
+            {QStringLiteral("background"), QLatin1String(nameOf(kBackgrounds, a.background))},
+            {QStringLiteral("gradientPreset"), a.gradientPreset},
+            {QStringLiteral("solidColor"), a.solidColor.name(QColor::HexRgb)},
+            {QStringLiteral("imagePath"), a.imagePath},
+            {QStringLiteral("padding"), QLatin1String(nameOf(kAmounts, a.padding))},
+            {QStringLiteral("corners"), QLatin1String(nameOf(kAmounts, a.corners))},
+            {QStringLiteral("shadow"), a.shadow},
+            {QStringLiteral("border"), a.border},
+            {QStringLiteral("aspectRatio"), int(a.aspectRatio)},
             // From a shared style (#269); older versions ignore them.
-            {QStringLiteral("gradientStart"), gradientStart.name(QColor::HexRgb)},
-            {QStringLiteral("gradientEnd"), gradientEnd.name(QColor::HexRgb)},
-            {QStringLiteral("gradientAngle"), gradientAngle},
-            {QStringLiteral("gradientRadial"), gradientRadial},
-            {QStringLiteral("customPadding"), customPadding},
-            {QStringLiteral("customCorners"), customCorners},
-            {QStringLiteral("shadowBlur"), shadowBlur},
-            {QStringLiteral("shadowOffsetX"), shadowOffsetX},
-            {QStringLiteral("shadowOffsetY"), shadowOffsetY},
-            {QStringLiteral("shadowColor"), shadowColor.name(QColor::HexArgb)},
-            {QStringLiteral("borderWidth"), borderFraction},
-            {QStringLiteral("borderColor"), borderColor.name(QColor::HexArgb)}};
+            {QStringLiteral("gradientStart"), a.gradientStart.name(QColor::HexRgb)},
+            {QStringLiteral("gradientEnd"), a.gradientEnd.name(QColor::HexRgb)},
+            {QStringLiteral("gradientAngle"), a.gradientAngle},
+            {QStringLiteral("gradientRadial"), a.gradientRadial},
+            {QStringLiteral("customPadding"), a.customPadding},
+            {QStringLiteral("customCorners"), a.customCorners},
+            {QStringLiteral("shadowBlur"), a.shadowBlur},
+            {QStringLiteral("shadowOffsetX"), a.shadowOffsetX},
+            {QStringLiteral("shadowOffsetY"), a.shadowOffsetY},
+            {QStringLiteral("shadowColor"), a.shadowColor.name(QColor::HexArgb)},
+            {QStringLiteral("borderWidth"), a.borderFraction},
+            {QStringLiteral("borderColor"), a.borderColor.name(QColor::HexArgb)}};
 }
 
 RecordingAppearance RecordingAppearance::fromJson(const QJsonObject& json)

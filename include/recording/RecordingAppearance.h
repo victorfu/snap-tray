@@ -58,6 +58,11 @@ struct RecordingAppearance {
     QColor borderColor{255, 255, 255, 170};
     BeautifyAspectRatio aspectRatio = BeautifyAspectRatio::Auto;
 
+    // Resets the custom sizes and gradient while a preset is in use, so a
+    // value left from an earlier choice is not compared or saved.
+    void dropInactiveCustomValues();
+
+    // Compares the look in use: inactive custom values are ignored.
     bool operator==(const RecordingAppearance& o) const;
     bool operator!=(const RecordingAppearance& o) const { return !(*this == o); }
 

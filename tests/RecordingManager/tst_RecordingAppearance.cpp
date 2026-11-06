@@ -60,6 +60,7 @@ private slots:
     void styleRoundTrip();
     void styleKeepsRecordingBackground();
     void customValuesJsonRoundTrip();
+    void inactiveCustomValuesIgnored();
     void sameStyleMatchesScreenshot();
 };
 
@@ -446,6 +447,44 @@ void TestRecordingAppearance::styleKeepsRecordingBackground()
     QCOMPARE(a.customPadding, 1.0);
     QCOMPARE(a.shadowOffsetY, -1.0);
     QCOMPARE(RecordingAppearance::fromJson(a.toJson()), a);
+}
+
+void TestRecordingAppearance::inactiveCustomValuesIgnored()
+{
+    // A custom size or gradient left behind by choosing a preset neither
+    // makes two identical frames differ nor reaches the saved JSON.
+    RecordingAppearance a;
+    a.applyFrameStyle(customStyle());
+    a.padding = RecordingAppearance::Amount::Large;
+    a.corners = RecordingAppearance::Amount::Small;
+    a.gradientPreset = 3;
+    RecordingAppearance b;
+    b.applyFrameStyle(customStyle());
+    b.padding = RecordingAppearance::Amount::Large;
+    b.corners = RecordingAppearance::Amount::Small;
+    b.gradientPreset = 3;
+    b.customPadding = 0.5;
+    b.gradientStart = QColor(1, 2, 3);
+    b.gradientRadial = true;
+    QCOMPARE(a, b);
+    QCOMPARE(a.toJson(), b.toJson());
+    const QJsonObject json = b.toJson();
+    QCOMPARE(json.value(QStringLiteral("customPadding")).toDouble(), 0.0);
+    QCOMPARE(json.value(QStringLiteral("gradientRadial")).toBool(), false);
+
+    b.dropInactiveCustomValues();
+    QCOMPARE(b.customPadding, 0.0);
+    QCOMPARE(b.gradientRadial, false);
+    QCOMPARE(b.gradientStart, RecordingAppearance().gradientStart);
+
+    // Values in use are kept.
+    RecordingAppearance c;
+    c.applyFrameStyle(customStyle());
+    const RecordingAppearance before = c;
+    c.dropInactiveCustomValues();
+    QCOMPARE(c.customPadding, before.customPadding);
+    QCOMPARE(c.gradientStart, before.gradientStart);
+    QCOMPARE(c.frameStyle(), customStyle());
 }
 
 void TestRecordingAppearance::customValuesJsonRoundTrip()
