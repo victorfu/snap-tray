@@ -19,6 +19,8 @@ private slots:
     void testCompletionAfterSelectorDestructionIsIgnored();
     void testQuickPinCompletesOnce_data();
     void testQuickPinCompletesOnce();
+    void testQuickPinAcceptsAdjustedPresetOnRelease_data();
+    void testQuickPinAcceptsAdjustedPresetOnRelease();
 
 private:
     QTemporaryDir m_historyDirectory;
@@ -81,6 +83,45 @@ void tst_RegionSelectorCopyToClipboard::testQuickPinCompletesOnce()
     QVERIFY(RegionSelectorTestAccess::isClosing(selector));
     RegionSelectorTestAccess::finishSelection(selector);
     QCOMPARE(selected.count(), 1);
+}
+
+void tst_RegionSelectorCopyToClipboard::testQuickPinAcceptsAdjustedPresetOnRelease_data()
+{
+    // Offsets are relative to the preset rect QRect(40, 40, 120, 80).
+    QTest::addColumn<QPoint>("pressPos");
+    QTest::addColumn<QPoint>("releasePos");
+    QTest::newRow("move") << QPoint(100, 80) << QPoint(110, 85);
+    QTest::newRow("resize-handle") << QPoint(159, 119) << QPoint(180, 140);
+    QTest::newRow("outside-edge-click") << QPoint(10, 80) << QPoint(10, 80);
+}
+
+void tst_RegionSelectorCopyToClipboard::testQuickPinAcceptsAdjustedPresetOnRelease()
+{
+    QFETCH(QPoint, pressPos);
+    QFETCH(QPoint, releasePos);
+    // Scripted `gui -s --region/--last-region` starts from an already complete
+    // selection. Adjusting it must still finish on release, without a toolbar.
+    auto* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("Requires a screen");
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.setQuickPinMode(true);
+    QPixmap background(screen->size());
+    background.fill(Qt::red);
+    const QRect localPreset(40, 40, 120, 80);
+    selector.initializeWithRegion(
+        screen, localPreset.translated(screen->geometry().topLeft()), background);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), localPreset);
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+
+    QSignalSpy selected(&selector, &RegionSelector::regionSelected);
+    RegionSelectorTestAccess::dispatchWidgetMousePress(selector, pressPos);
+    RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, releasePos, Qt::LeftButton);
+    RegionSelectorTestAccess::dispatchWidgetMouseRelease(selector, releasePos);
+
+    QCOMPARE(selected.count(), 1);
+    QVERIFY(RegionSelectorTestAccess::isClosing(selector));
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
 }
 
 void tst_RegionSelectorCopyToClipboard::testCopyWaitsForClipboardCompletionBeforeClosingSelector()

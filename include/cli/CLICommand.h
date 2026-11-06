@@ -2,6 +2,7 @@
 #define CLI_COMMAND_H
 
 #include "CLIResult.h"
+#include "IPCProtocol.h"
 
 #include <QCommandLineParser>
 #include <QJsonObject>
@@ -50,7 +51,21 @@ public:
     /**
      * @brief Whether to wait for response from main instance
      */
-    virtual bool requiresResponse() const { return false; }
+    virtual bool requiresResponse(const QCommandLineParser& /*parser*/) const { return false; }
+
+    /**
+     * @brief How long to wait for the response (IPCProtocol::kWaitIndefinitely for no limit)
+     */
+    virtual int responseTimeoutMs(const QCommandLineParser& /*parser*/) const
+    {
+        return IPCProtocol::kResponseTimeout;
+    }
+
+    /**
+     * @brief Turn the main instance's response into the CLI result
+     */
+    virtual CLIResult handleResponse(const QCommandLineParser& parser,
+                                     const IPCResponse& response) const;
 
     /**
      * @brief Build IPC message for GUI commands

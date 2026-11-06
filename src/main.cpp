@@ -130,6 +130,11 @@ int main(int argc, char* argv[])
         QTextStream out(stdout);
         QTextStream err(stderr);
 
+        for (const QString& warning : std::as_const(result.warnings)) {
+            err << "Warning: " << warning << "\n";
+        }
+        err.flush();
+
         if (!result.data.isEmpty()) {
             // Binary data (--raw)
             if (!SnapTray::CLI::writeRawOutputToStdout(result.data)) {

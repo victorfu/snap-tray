@@ -3,6 +3,7 @@
 
 #include <QByteArray>
 #include <QString>
+#include <QStringList>
 
 namespace SnapTray {
 namespace CLI {
@@ -18,22 +19,24 @@ struct CLIResult
         InvalidArguments = 2,
         FileError = 3,
         InstanceError = 4,
+        Cancelled = 5,
     };
 
     Code code = Code::Success;
     QString message;
     QByteArray data; // For --raw output
+    QStringList warnings; // Printed to stderr; never mixed into stdout output
 
     bool isSuccess() const { return code == Code::Success; }
 
     static CLIResult success(const QString& msg = QString())
     {
-        return {Code::Success, msg, {}};
+        return {Code::Success, msg, {}, {}};
     }
 
-    static CLIResult error(Code code, const QString& msg) { return {code, msg, {}}; }
+    static CLIResult error(Code code, const QString& msg) { return {code, msg, {}, {}}; }
 
-    static CLIResult withData(const QByteArray& data) { return {Code::Success, {}, data}; }
+    static CLIResult withData(const QByteArray& data) { return {Code::Success, {}, data, {}}; }
 };
 
 } // namespace CLI

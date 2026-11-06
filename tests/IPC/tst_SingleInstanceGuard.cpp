@@ -4,6 +4,7 @@
 #include <QDataStream>
 #include <QElapsedTimer>
 #include <QLocalSocket>
+#include <QPointer>
 #include <QSignalSpy>
 
 #include "SingleInstanceGuard.h"
@@ -17,6 +18,7 @@ private slots:
     void testLengthPrefixedCommand_BodySplit();
     void testActivateMessage_SplitAcrossWrites();
     void testIncompletePacket_DisconnectDoesNotEmit();
+    void testCommandSocketStaysOpenForReply();
 
 private:
     static QString serverNameForAppId(const QString& appId);
@@ -260,6 +262,45 @@ void tst_SingleInstanceGuard::testIncompletePacket_DisconnectDoesNotEmit()
     QTest::qWait(100);
     QCOMPARE(activateSpy.count(), 0);
     QCOMPARE(commandSpy.count(), 0);
+}
+
+void tst_SingleInstanceGuard::testCommandSocketStaysOpenForReply()
+{
+    const QString appId = testAppId("reply");
+    const QString serverName = serverNameForAppId(appId);
+    SingleInstanceGuard guard(appId);
+    QString skipReason;
+    if (!tryAcquirePrimaryOrSkip(guard, serverName, &skipReason)) {
+        QSKIP(qPrintable(skipReason));
+    }
+
+    QPointer<QLocalSocket> replySocket;
+    connect(&guard, &SingleInstanceGuard::commandReceived, this,
+            [&replySocket](const QByteArray&, QLocalSocket* socket) { replySocket = socket; });
+
+    QLocalSocket client;
+    client.connectToServer(serverName);
+    QTRY_COMPARE(client.state(), QLocalSocket::ConnectedState);
+    const QByteArray payload = R"({"command":"gui","options":{"waitResult":true}})";
+    client.write(buildLengthPrefixedPacket(payload));
+    client.flush();
+
+    // The command is delivered with its connection, which stays usable for a
+    // reply sent later (after the user finishes a selection).
+    QTRY_VERIFY(replySocket);
+    QTest::qWait(50);
+    QVERIFY(replySocket);
+    QCOMPARE(replySocket->state(), QLocalSocket::ConnectedState);
+
+    const QByteArray reply = buildLengthPrefixedPacket(R"({"success":true})");
+    replySocket->write(reply);
+    replySocket->flush();
+    QTRY_COMPARE(client.bytesAvailable(), qint64(reply.size()));
+    QCOMPARE(client.readAll(), reply);
+
+    // Disconnecting the CLI releases the server side socket.
+    client.disconnectFromServer();
+    QTRY_VERIFY(!replySocket);
 }
 
 QTEST_MAIN(tst_SingleInstanceGuard)

@@ -34,11 +34,16 @@ bool readExactWithDeadline(
             continue;
         }
 
-        const int remainingTimeout = timeoutMs - static_cast<int>(timer.elapsed());
-        if (remainingTimeout <= 0) {
-            return false;
+        int remainingTimeout = -1;
+        if (timeoutMs >= 0) {
+            remainingTimeout = timeoutMs - static_cast<int>(timer.elapsed());
+            if (remainingTimeout <= 0) {
+                return false;
+            }
         }
 
+        // Waiting indefinitely still ends when the main instance closes the
+        // connection: waitForReadyRead() then fails right away.
         if (!socket.waitForReadyRead(remainingTimeout)) {
             return false;
         }
@@ -79,6 +84,15 @@ QByteArray IPCResponse::toJson() const
     obj["success"] = success;
     obj["message"] = message;
     obj["error"] = error;
+    if (code != kUnsetCode) {
+        obj["code"] = code;
+    }
+    if (!result.isEmpty()) {
+        obj["result"] = result;
+    }
+    if (!data.isEmpty()) {
+        obj["data"] = QString::fromLatin1(data.toBase64());
+    }
     return QJsonDocument(obj).toJson(QJsonDocument::Compact);
 }
 
@@ -91,6 +105,9 @@ IPCResponse IPCResponse::fromJson(const QByteArray& data)
         resp.success = obj["success"].toBool();
         resp.message = obj["message"].toString();
         resp.error = obj["error"].toString();
+        resp.code = obj["code"].toInt(kUnsetCode);
+        resp.result = obj["result"].toObject();
+        resp.data = QByteArray::fromBase64(obj["data"].toString().toLatin1());
     }
     return resp;
 }
@@ -119,7 +136,31 @@ bool IPCProtocol::isMainInstanceRunning() const
     return connected;
 }
 
-IPCResponse IPCProtocol::sendCommand(const IPCMessage& message, bool waitResponse)
+bool IPCProtocol::writeResponse(QLocalSocket* socket, const IPCResponse& response)
+{
+    if (!socket || socket->state() != QLocalSocket::ConnectedState) {
+        return false;
+    }
+
+    const QByteArray body = response.toJson();
+    if (body.isEmpty() || static_cast<quint64>(body.size()) > kMaxResponseSize) {
+        return false;
+    }
+
+    QByteArray packet;
+    QDataStream stream(&packet, QIODevice::WriteOnly);
+    stream << static_cast<quint32>(body.size());
+    packet.append(body);
+    if (socket->write(packet) != packet.size()) {
+        return false;
+    }
+    socket->flush();
+    return true;
+}
+
+IPCResponse IPCProtocol::sendCommand(const IPCMessage& message,
+                                     bool waitResponse,
+                                     int responseTimeoutMs)
 {
     IPCResponse response;
     QLocalSocket socket;
@@ -156,23 +197,24 @@ IPCResponse IPCProtocol::sendCommand(const IPCMessage& message, bool waitRespons
 
     QByteArray headerData;
     if (!readExactWithDeadline(
-            socket, sizeof(quint32), kResponseTimeout, responseTimer, headerData)) {
-        response.error = "Timeout waiting for response";
+            socket, sizeof(quint32), responseTimeoutMs, responseTimer, headerData)) {
+        response.error = responseTimeoutMs < 0 ? "Lost connection to SnapTray"
+                                               : "Timeout waiting for response";
         return response;
     }
 
     QDataStream readStream(headerData);
     quint32 size = 0;
     readStream >> size;
-    constexpr quint32 kMaxResponseSize = 10 * 1024 * 1024; // 10 MB
     if (readStream.status() != QDataStream::Ok || size == 0 || size > kMaxResponseSize) {
         response.error = "Invalid response header";
         return response;
     }
 
     QByteArray responseData;
-    if (!readExactWithDeadline(socket, size, kResponseTimeout, responseTimer, responseData)) {
-        response.error = "Timeout waiting for response";
+    if (!readExactWithDeadline(socket, size, responseTimeoutMs, responseTimer, responseData)) {
+        response.error = responseTimeoutMs < 0 ? "Lost connection to SnapTray"
+                                               : "Timeout waiting for response";
         return response;
     }
 
