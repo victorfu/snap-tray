@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "annotations/AnnotationItem.h"
+#include "annotations/AnnotationZOrder.h"
 #include "annotations/RemovedAnnotationItem.h"
 
 // Forward declarations
@@ -92,6 +93,21 @@ public:
 
     // Step badge helpers
     int countStepBadges() const;
+
+    // Drawing order changes for the selected annotation (#268). Forward and
+    // Backward step past the next annotation that overlaps the selection;
+    // with none overlapping in that direction they go all the way, as no
+    // other position looks different. Step badges keep their numbers: those
+    // follow creation order, not drawing order.
+    using ZOrderMove = AnnotationZOrderMove;
+    // Target index of the selected annotation, or -1 when the move would
+    // change nothing (no selection, already at that end) or is refused
+    // (erase transaction or gesture in progress).
+    int zOrderTargetIndex(ZOrderMove move) const;
+    // Records one undoable Reorder command. Repeating the same move on the
+    // same annotation extends that command until any other history
+    // operation or endModifyCoalescing(). Returns false when nothing moved.
+    bool moveSelectedItem(ZOrderMove move);
 
     // Eraser support: remove items that intersect with the given path
     // Returns the removed items with their original indices (for undo support)
@@ -212,7 +228,8 @@ private:
     enum class HistoryCommandKind {
         Add,
         Remove,
-        Modify   // items[0] holds the other state of the recorded parts of that id
+        Modify,  // items[0] holds the other state of the recorded parts of that id
+        Reorder  // items[0] {from index, no item, id}; toIndex is where it goes
     };
 
     struct HistoryCommand {
@@ -222,6 +239,7 @@ private:
         HistoryStateToken afterState = 0;
         std::size_t retainedBytes = 0;
         unsigned parts = 0;   // ModifyPart mask, Modify only
+        std::size_t toIndex = 0;   // Reorder only
     };
 
     void addItemNow(std::unique_ptr<AnnotationItem> item);
@@ -232,6 +250,7 @@ private:
     void pushAppliedCommand(HistoryCommand command);
     bool undoCommand(HistoryCommand& command);
     bool swapModifiedParts(HistoryCommand& command);
+    bool moveSceneItem(AnnotationId id, std::size_t toIndex);
     void dropGesture();
     bool gestureIsReEdit() const;
     bool redoCommand(HistoryCommand& command);

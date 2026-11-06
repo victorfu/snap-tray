@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-10-20
+last_modified_at: 2026-11-06
 layout: docs
 title: Hotkeys
 seo_title: "SnapTray Hotkeys: Capture and Platform-Specific Recording Shortcuts"
@@ -32,6 +32,19 @@ doc_order: 3
 - Show Recording Controls: brings the floating control bar back onto the recorded screen (macOS/Windows)
 
 Recording actions appear only where recording is available. A recording hotkey pressed again within a fraction of a second, for example through key repeat, counts as one press.
+
+## Annotation shortcuts
+
+While you annotate (Region Capture, a pin, or Screen Canvas), these shortcuts change the drawing order of the selected annotation. They are not global and cannot be rebound.
+
+| Action | macOS | Windows / Linux |
+|---|---|---|
+| Bring Forward | `⌘]` | `Ctrl+]` |
+| Send Backward | `⌘[` | `Ctrl+[` |
+| Bring to Front | `⌥⌘]` | `Ctrl+Shift+]` |
+| Send to Back | `⌥⌘[` | `Ctrl+Shift+[` |
+
+On a pin, `Ctrl/Cmd + ]` resets opacity when no annotation is selected. See [Annotation Tools](/docs/annotation-tools/#putting-one-annotation-above-another).
 
 ## Hotkey categories
 

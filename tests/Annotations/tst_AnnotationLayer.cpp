@@ -11,6 +11,7 @@
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
+#include "annotations/StepBadgeAnnotation.h"
 
 namespace {
 
@@ -89,6 +90,20 @@ class TestAnnotationLayer : public QObject
     Q_OBJECT
 
 private slots:
+    void zOrderForwardStepsPastNextOverlapping();
+    void zOrderBackwardStepsPastNextOverlapping();
+    void zOrderWithoutOverlapGoesToTheEnd();
+    void zOrderToFrontAndToBack();
+    void zOrderAtTheEndIsNoOp();
+    void zOrderNeedsSelection();
+    void zOrderUndoRedoKeepsSelection();
+    void zOrderRepeatsCoalesceIntoOneStep();
+    void zOrderCoalescingEndsOnOtherMove();
+    void zOrderRefusedDuringGestureAndErase();
+    void zOrderKeepsStepBadgeNumbers();
+    void stepBadgeNumbersStayContinuousAfterRemoveAndUndo();
+    void replaceItemsKeepsReorderedStepBadgeNumbers();
+    void replaceItemsKeepsLegacyStepBadgeNumbers();
     void gestureCommitIsOneStep();
     void unchangedGestureRecordsNothing();
     void cancelGestureRestoresWithoutHistory();
@@ -1846,6 +1861,297 @@ void TestAnnotationLayer::hiddenReEditGestureIsNotTakenOver()
     QCOMPARE(layer.gestureId(), layer.idAt(0));
     layer.itemAt(0)->setVisible(true);
     layer.cancelGesture();
+}
+
+namespace {
+
+std::unique_ptr<AnnotationItem> boxAt(const QRect& bounds)
+{
+    return std::make_unique<CountingAnnotation>(
+        bounds, std::make_shared<CountingAnnotationState>());
+}
+
+std::unique_ptr<AnnotationItem> badgeAt(const QPoint& position, int number)
+{
+    return std::make_unique<StepBadgeAnnotation>(position, Qt::red, number);
+}
+
+// Drawing order as positions in `ids` (the ids in their creation order).
+QList<int> drawingOrder(const AnnotationLayer& layer,
+                        const QList<AnnotationLayer::AnnotationId>& ids)
+{
+    QList<int> order;
+    for (int i = 0; i < static_cast<int>(layer.itemCount()); ++i) {
+        order.append(ids.indexOf(layer.idAt(i)));
+    }
+    return order;
+}
+
+QList<AnnotationLayer::AnnotationId> idsOf(const AnnotationLayer& layer)
+{
+    QList<AnnotationLayer::AnnotationId> ids;
+    for (int i = 0; i < static_cast<int>(layer.itemCount()); ++i) {
+        ids.append(layer.idAt(i));
+    }
+    return ids;
+}
+
+QList<int> badgeNumbersInDrawingOrder(AnnotationLayer& layer)
+{
+    QList<int> numbers;
+    for (int i = 0; i < static_cast<int>(layer.itemCount()); ++i) {
+        if (auto* badge = dynamic_cast<StepBadgeAnnotation*>(layer.itemAt(i))) {
+            numbers.append(badge->number());
+        }
+    }
+    return numbers;
+}
+
+} // namespace
+
+void TestAnnotationLayer::zOrderForwardStepsPastNextOverlapping()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));      // 0: selected
+    layer.addItem(boxAt(QRect(200, 200, 20, 20)));  // 1: elsewhere
+    layer.addItem(boxAt(QRect(300, 0, 20, 20)));    // 2: elsewhere
+    layer.addItem(boxAt(QRect(10, 10, 20, 20)));    // 3: overlaps 0
+    layer.addItem(boxAt(QRect(5, 5, 20, 20)));      // 4: overlaps 0
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+
+    QCOMPARE(layer.zOrderTargetIndex(AnnotationLayer::ZOrderMove::Forward), 3);
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 3, 0, 4}));
+    QCOMPARE(layer.selectedId(), ids[0]);
+}
+
+void TestAnnotationLayer::zOrderBackwardStepsPastNextOverlapping()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(5, 5, 20, 20)));      // 0: overlaps 3
+    layer.addItem(boxAt(QRect(200, 200, 20, 20)));  // 1: elsewhere
+    layer.addItem(boxAt(QRect(300, 0, 20, 20)));    // 2: elsewhere
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));      // 3: selected
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(3);
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({3, 0, 1, 2}));
+}
+
+void TestAnnotationLayer::zOrderWithoutOverlapGoesToTheEnd()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(100, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(200, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 0}));
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1, 2}));
+}
+
+void TestAnnotationLayer::zOrderToFrontAndToBack()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 4; ++i) layer.addItem(boxAt(QRect(i * 100, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(1);
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 2, 3, 1}));
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToBack));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 0, 2, 3}));
+}
+
+void TestAnnotationLayer::zOrderAtTheEndIsNoOp()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    const std::size_t history = layer.historyCommandCount();
+    QSignalSpy changedSpy(&layer, &AnnotationLayer::changed);
+
+    layer.setSelectedIndex(1);
+    QCOMPARE(layer.zOrderTargetIndex(AnnotationLayer::ZOrderMove::Forward), -1);
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    layer.setSelectedIndex(0);
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToBack));
+
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1}));
+    QCOMPARE(layer.historyCommandCount(), history);
+    QCOMPARE(changedSpy.count(), 0);
+}
+
+void TestAnnotationLayer::zOrderNeedsSelection()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const std::size_t history = layer.historyCommandCount();
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    QCOMPARE(layer.historyCommandCount(), history);
+}
+
+void TestAnnotationLayer::zOrderUndoRedoKeepsSelection()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 3; ++i) layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    const std::size_t bytesBefore = layer.historyOwnedBytes();
+    layer.setSelectedIndex(0);
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 0}));
+    // A Reorder owns no annotation copy, only its bookkeeping.
+    QVERIFY(layer.historyOwnedBytes() - bytesBefore < 1024);
+
+    layer.undo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1, 2}));
+    QCOMPARE(layer.selectedId(), ids[0]);
+    layer.redo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 0}));
+    QCOMPARE(layer.selectedId(), ids[0]);
+}
+
+void TestAnnotationLayer::zOrderRepeatsCoalesceIntoOneStep()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 6; ++i) layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+    const std::size_t history = layer.historyCommandCount();
+
+    for (int i = 0; i < 5; ++i) {
+        QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    }
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 3, 4, 5, 0}));
+    QCOMPARE(layer.historyCommandCount(), history + 1);
+
+    layer.undo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1, 2, 3, 4, 5}));
+    layer.redo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 3, 4, 5, 0}));
+}
+
+void TestAnnotationLayer::zOrderCoalescingEndsOnOtherMove()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 4; ++i) layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+    const std::size_t history = layer.historyCommandCount();
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(layer.historyCommandCount(), history + 2);
+    layer.endModifyCoalescing();
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(layer.historyCommandCount(), history + 3);
+
+    layer.undo();
+    layer.undo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 0, 3}));
+    layer.undo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1, 2, 3}));
+}
+
+void TestAnnotationLayer::zOrderRefusedDuringGestureAndErase()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+    const std::size_t history = layer.historyCommandCount();
+
+    QVERIFY(layer.beginGesture(ids[0]));
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    layer.cancelGesture();
+
+    layer.beginEraseTransaction();
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    QVERIFY(layer.endEraseTransaction());
+
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1}));
+    QCOMPARE(layer.historyCommandCount(), history);
+}
+
+void TestAnnotationLayer::zOrderKeepsStepBadgeNumbers()
+{
+    AnnotationLayer layer;
+    for (int i = 1; i <= 3; ++i) layer.addItem(badgeAt(QPoint(10 * i, 10), i));
+    const auto ids = idsOf(layer);
+
+    layer.setSelectedIndex(2);
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToBack));
+    layer.setSelectedIndex(2);
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({2, 1, 0}));
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({3, 2, 1}));
+
+    // Undo, redo and deleting another badge keep numbering by creation.
+    layer.undo();
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({3, 1, 2}));
+    layer.redo();
+    layer.setSelectedIndex(1);   // badge 2
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({2, 1}));
+    layer.undo();
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({3, 2, 1}));
+}
+
+void TestAnnotationLayer::stepBadgeNumbersStayContinuousAfterRemoveAndUndo()
+{
+    AnnotationLayer layer;
+    for (int i = 1; i <= 4; ++i) layer.addItem(badgeAt(QPoint(10 * i, 10), i));
+    layer.setSelectedIndex(1);
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({1, 2, 3}));
+    layer.undo();
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({1, 2, 3, 4}));
+}
+
+void TestAnnotationLayer::replaceItemsKeepsReorderedStepBadgeNumbers()
+{
+    // Saved in drawing order after badge 1 was sent to the front.
+    std::vector<std::unique_ptr<AnnotationItem>> items;
+    items.push_back(badgeAt(QPoint(20, 10), 2));
+    items.push_back(boxAt(QRect(0, 0, 50, 50)));
+    items.push_back(badgeAt(QPoint(30, 10), 3));
+    items.push_back(badgeAt(QPoint(10, 10), 1));
+    AnnotationLayer layer;
+    layer.replaceItems(std::move(items));
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({2, 3, 1}));
+
+    // Removing badge 2 still renumbers by creation order.
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({2, 1}));
+}
+
+void TestAnnotationLayer::replaceItemsKeepsLegacyStepBadgeNumbers()
+{
+    // Older history stored numbers that matched drawing order.
+    std::vector<std::unique_ptr<AnnotationItem>> items;
+    items.push_back(badgeAt(QPoint(10, 10), 1));
+    items.push_back(boxAt(QRect(0, 0, 50, 50)));
+    items.push_back(badgeAt(QPoint(20, 10), 2));
+    AnnotationLayer layer;
+    layer.replaceItems(std::move(items));
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({1}));
+    layer.undo();
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({1, 2}));
 }
 
 QTEST_MAIN(TestAnnotationLayer)

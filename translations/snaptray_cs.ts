@@ -1904,6 +1904,11 @@ Velikost: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <location filename="../src/PinWindow.cpp" line="1224" />
+        <source>Arrange</source>
+        <translation>Uspořádat</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="2160" />
         <source>Pinned image</source>
         <translation>Připnutý obrázek</translation>
@@ -7632,6 +7637,49 @@ Může být používána jinou aplikací.</translation>
         <location filename="../src/annotations/AnnotationStyleLabels.cpp" />
         <source>Dotted</source>
         <translation>Tečkovaná</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotationZOrderCommands</name>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Bring Forward</source>
+        <translation>Přenést dopředu</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Send Backward</source>
+        <translation>Přesunout dozadu</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Bring to Front</source>
+        <translation>Přenést do popředí</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Send to Back</source>
+        <translation>Přesunout do pozadí</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved forward</source>
+        <translation>Přesunuto dopředu</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved backward</source>
+        <translation>Přesunuto dozadu</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved to front</source>
+        <translation>Přesunuto do popředí</translation>
+    </message>
+    <message>
+        <location filename="../src/annotations/AnnotationZOrderCommands.cpp" />
+        <source>Moved to back</source>
+        <translation>Přesunuto do pozadí</translation>
     </message>
 </context>
 <context>

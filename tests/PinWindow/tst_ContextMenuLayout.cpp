@@ -53,7 +53,9 @@ void TestPinContextMenuLayout::testContextMenuGroups()
     QStringList modes = {"pinMenuLive", "pinMenuLivePause", "pinMenuFrameRate", "pinMenuRegionLayout"};
     if (PlatformFeatures::instance().capabilities().supportsClickThrough)
         modes.prepend("pinMenuClickThrough");
+    // Arrange (#268) leads; it is hidden unless an annotation is selected.
     const QList<QStringList> expected = {
+        {"pinMenuArrange"},
         {"pinMenuShowToolbar", "pinMenuShowBorder", "pinMenuZoom", "pinMenuOpacity", "pinMenuImageProcessing"},
         {"pinMenuCopy", "pinMenuSave", "pinMenuWatermark", "pinMenuInfo", "pinMenuHistoryFolder"},
         modes,

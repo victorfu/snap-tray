@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-02-26
+last_modified_at: 2026-11-06
 layout: docs
 title: Pin Window
 seo_title: "SnapTray Pin Window: Keep Image References Always on Top"
@@ -45,7 +45,7 @@ The bar fades out when the pointer leaves the pin, and stays hidden while you dr
 | Zoom in / out | `Ctrl/Cmd` + `=` / `Ctrl/Cmd` + `-` |
 | Reset zoom to 100% | `Ctrl/Cmd` + `0` |
 | Opacity up / down | `]` / `[` |
-| Reset opacity to 100% | `Ctrl/Cmd` + `]` |
+| Reset opacity to 100% | `Ctrl/Cmd` + `]` (Bring Forward while an annotation is selected) |
 | Start / stop Live Update | `L` |
 | Pause / resume Live Update | `P` |
 | Show toolbar | `Space` |
@@ -57,6 +57,7 @@ A short badge names each change, for example "Zoom 150%" or "Opacity 80%".
 
 The right-click menu (also **⋯** on the hover bar) is grouped by task:
 
+- Arrange (only while an annotation is selected): Bring Forward, Send Backward, Bring to Front, Send to Back
 - View: Show Toolbar, Show Border, Zoom (in/out, presets, Reset to 100%, smoothing), Opacity (up/down, Reset to 100%), Image processing (rotate, flip, crop)
 - Output: Copy, Save, Watermark, Info, Open History Folder
 - Modes: Click-through, Live Update (start/stop, pause/resume, frame rate), Adjust Region Layout

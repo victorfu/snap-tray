@@ -88,6 +88,10 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(QString targetLabel READ targetLabel NOTIFY targetChanged)
     Q_PROPERTY(bool editingSelection READ editingSelection NOTIFY targetChanged)
     Q_PROPERTY(bool shapeTypeEditable READ shapeTypeEditable NOTIFY targetChanged)
+    // Drawing order of the selected annotation (#268).
+    Q_PROPERTY(QVariantList zOrderOptions READ zOrderOptions CONSTANT)
+    Q_PROPERTY(bool canRaiseSelection READ canRaiseSelection NOTIFY zOrderAvailabilityChanged)
+    Q_PROPERTY(bool canLowerSelection READ canLowerSelection NOTIFY zOrderAvailabilityChanged)
 
 public:
     explicit PinToolOptionsViewModel(QObject* parent = nullptr);
@@ -190,6 +194,12 @@ public:
     void clearSections();
     void showLaserPointerOptions();
 
+    // Arrange buttons (#268): one entry per move with its icon, name and shortcut.
+    QVariantList zOrderOptions() const;
+    bool canRaiseSelection() const { return m_canRaiseSelection; }
+    bool canLowerSelection() const { return m_canLowerSelection; }
+    void setZOrderAvailability(bool canRaise, bool canLower);
+
 signals:
     void sectionVisibilityChanged();
     void currentColorChanged();
@@ -210,6 +220,8 @@ signals:
     void showingEmojiPickerChanged();
     void targetChanged();
     void selectionStyleEdited(int property, const QVariant& value);
+    void zOrderAvailabilityChanged();
+    void zOrderRequested(int move);   // AnnotationZOrderMove
 
     // Action signals (QML → C++)
     void colorSelected(const QColor& color);
@@ -250,6 +262,7 @@ public slots:
     void handleStepBadgeSizeSelected(int size);
     void handleAutoBlurClicked();
     void handleEmojiPickerRequested();
+    void handleZOrderRequested(int move);
 
     // Returns true if the wheel delta was consumed (width adjusted)
     bool handleWidthWheelDelta(int delta);
@@ -293,6 +306,8 @@ private:
     };
     void applyDisplayedValue(StyleProperty property, const QVariant& value);
     bool m_editingSelection = false;
+    bool m_canRaiseSelection = false;
+    bool m_canLowerSelection = false;
     StyleTargetKind m_targetKind = StyleTargetKind::None;
     int m_targetShapeType = 0;
     SavedDefaults m_savedDefaults;

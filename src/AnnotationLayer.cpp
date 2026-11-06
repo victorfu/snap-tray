@@ -131,8 +131,28 @@ void AnnotationLayer::replaceItems(std::vector<std::unique_ptr<AnnotationItem>> 
     m_items.reserve(items.size());
     for (auto& item : items) {
         if (item) {
-            m_items.push_back({allocateAnnotationId(), std::move(item)});
+            m_items.push_back({0, std::move(item)});
         }
+    }
+    // Step badges are numbered by id (#268), and the items arrive in drawing
+    // order. Give badges their ids last, in the order of their stored
+    // numbers, so a reordered scene keeps its numbering. Older data stored
+    // numbers in drawing order, so it comes back the same.
+    std::vector<std::size_t> badgeIndices;
+    for (std::size_t i = 0; i < m_items.size(); ++i) {
+        if (dynamic_cast<const StepBadgeAnnotation*>(m_items[i].get())) {
+            badgeIndices.push_back(i);
+        } else {
+            m_items[i].id = allocateAnnotationId();
+        }
+    }
+    std::stable_sort(badgeIndices.begin(), badgeIndices.end(),
+        [this](std::size_t lhs, std::size_t rhs) {
+            return static_cast<const StepBadgeAnnotation*>(m_items[lhs].get())->number()
+                < static_cast<const StepBadgeAnnotation*>(m_items[rhs].get())->number();
+        });
+    for (std::size_t index : badgeIndices) {
+        m_items[index].id = allocateAnnotationId();
     }
 
     const size_t undoableStart = m_items.size() > kMaxHistoryCommands
@@ -162,7 +182,8 @@ void AnnotationLayer::undo()
 {
     endModifyCoalescing();
     if (m_eraseTransactionActive || isGestureActive() || m_undoStack.empty()) return;
-    const bool keepSelection = m_undoStack.back().kind == HistoryCommandKind::Modify
+    const bool keepSelection = (m_undoStack.back().kind == HistoryCommandKind::Modify
+                                || m_undoStack.back().kind == HistoryCommandKind::Reorder)
         && !m_undoStack.back().items.empty()
         && selectedId() == m_undoStack.back().items.front().id;
 
@@ -182,7 +203,7 @@ void AnnotationLayer::undo()
 
     renumberStepBadges();
     invalidateCache();
-    // A Modify swaps the selected annotation in place; keep it selected.
+    // A Modify or Reorder keeps the selected annotation; keep it selected.
     if (!keepSelection) clearSelection();
     emit changed();
 }
@@ -191,7 +212,8 @@ void AnnotationLayer::redo()
 {
     endModifyCoalescing();
     if (m_eraseTransactionActive || isGestureActive() || m_redoStack.empty()) return;
-    const bool keepSelection = m_redoStack.back().kind == HistoryCommandKind::Modify
+    const bool keepSelection = (m_redoStack.back().kind == HistoryCommandKind::Modify
+                                || m_redoStack.back().kind == HistoryCommandKind::Reorder)
         && !m_redoStack.back().items.empty()
         && selectedId() == m_redoStack.back().items.front().id;
 
@@ -211,7 +233,7 @@ void AnnotationLayer::redo()
 
     renumberStepBadges();
     invalidateCache();
-    // A Modify swaps the selected annotation in place; keep it selected.
+    // A Modify or Reorder keeps the selected annotation; keep it selected.
     if (!keepSelection) clearSelection();
     emit changed();
 }
@@ -600,10 +622,29 @@ bool AnnotationLayer::swapModifiedParts(HistoryCommand& command)
     return true;
 }
 
+bool AnnotationLayer::moveSceneItem(AnnotationId id, std::size_t toIndex)
+{
+    auto sceneIt = findSceneItem(id);
+    if (sceneIt == m_items.end() || toIndex >= m_items.size()) return false;
+    const auto from = std::distance(m_items.begin(), sceneIt);
+    const auto to = static_cast<std::ptrdiff_t>(toIndex);
+    // Rotating keeps every other annotation in its relative order.
+    if (from < to) {
+        std::rotate(sceneIt, sceneIt + 1, m_items.begin() + to + 1);
+    } else if (to < from) {
+        std::rotate(m_items.begin() + to, sceneIt, sceneIt + 1);
+    }
+    return true;
+}
+
 bool AnnotationLayer::undoCommand(HistoryCommand& command)
 {
     if (command.kind == HistoryCommandKind::Modify) {
         return swapModifiedParts(command);
+    }
+    if (command.kind == HistoryCommandKind::Reorder) {
+        return command.items.size() == 1
+            && moveSceneItem(command.items.front().id, command.items.front().originalIndex);
     }
     if (command.kind == HistoryCommandKind::Add) {
         if (command.items.size() != 1 || command.items.front().item) {
@@ -640,6 +681,10 @@ bool AnnotationLayer::redoCommand(HistoryCommand& command)
 {
     if (command.kind == HistoryCommandKind::Modify) {
         return swapModifiedParts(command);
+    }
+    if (command.kind == HistoryCommandKind::Reorder) {
+        return command.items.size() == 1
+            && moveSceneItem(command.items.front().id, command.toIndex);
     }
     if (command.kind == HistoryCommandKind::Add) {
         if (command.items.size() != 1 || !command.items.front().item) {
@@ -742,12 +787,77 @@ int AnnotationLayer::countStepBadges() const
 
 void AnnotationLayer::renumberStepBadges()
 {
-    int badgeNumber = 1;
+    // Numbers follow creation order (ids are allocated in it), never drawing
+    // order: moving a badge up or down must not renumber it (#268). Removed
+    // badges keep their ids, so undoing a removal restores their numbers.
+    std::vector<std::pair<AnnotationId, StepBadgeAnnotation*>> badges;
     for (auto &item : m_items) {
         if (auto* badge = dynamic_cast<StepBadgeAnnotation*>(item.get())) {
-            badge->setNumber(badgeNumber++);
+            badges.emplace_back(item.id, badge);
         }
     }
+    std::sort(badges.begin(), badges.end(),
+        [](const auto& lhs, const auto& rhs) { return lhs.first < rhs.first; });
+    int badgeNumber = 1;
+    for (auto& entry : badges) {
+        entry.second->setNumber(badgeNumber++);
+    }
+}
+
+int AnnotationLayer::zOrderTargetIndex(ZOrderMove move) const
+{
+    if (m_eraseTransactionActive || isGestureActive()) return -1;
+    const int from = selectedIndex();
+    if (from < 0) return -1;
+    const int last = static_cast<int>(m_items.size()) - 1;
+    const bool up = move == ZOrderMove::Forward || move == ZOrderMove::ToFront;
+    if ((up && from == last) || (!up && from == 0)) return -1;
+    if (move == ZOrderMove::ToFront) return last;
+    if (move == ZOrderMove::ToBack) return 0;
+
+    // Step past the nearest annotation that overlaps the selection, as
+    // passing the ones that do not would change nothing on screen.
+    const QRect bounds = m_items[from]->boundingRect();
+    const int step = up ? 1 : -1;
+    for (int i = from + step; i >= 0 && i <= last; i += step) {
+        const AnnotationItem* other = m_items[i].get();
+        if (other && other->isVisible() && other->boundingRect().intersects(bounds)) {
+            return i;
+        }
+    }
+    return up ? last : 0;
+}
+
+bool AnnotationLayer::moveSelectedItem(ZOrderMove move)
+{
+    const int target = zOrderTargetIndex(move);
+    if (target < 0) return false;
+    const int from = selectedIndex();
+    const AnnotationId id = m_items[from].id;
+    const QString coalesceKey =
+        QStringLiteral("zorder:%1").arg(static_cast<int>(move));
+
+    const bool extend = m_openModifyId == id && m_openModifyKey == coalesceKey
+        && !m_undoStack.empty()
+        && m_undoStack.back().kind == HistoryCommandKind::Reorder
+        && m_undoStack.back().items.size() == 1
+        && m_undoStack.back().items.front().id == id;
+
+    if (!moveSceneItem(id, static_cast<std::size_t>(target))) return false;
+    if (extend) {
+        m_undoStack.back().toIndex = static_cast<std::size_t>(target);
+    } else {
+        HistoryCommand command;
+        command.kind = HistoryCommandKind::Reorder;
+        command.items.push_back({static_cast<std::size_t>(from), nullptr, id});
+        command.toIndex = static_cast<std::size_t>(target);
+        pushAppliedCommand(std::move(command));   // ends any open coalescing
+        m_openModifyId = id;
+        m_openModifyKey = coalesceKey;
+    }
+    invalidateCache();
+    emit changed();
+    return true;
 }
 
 std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecting(

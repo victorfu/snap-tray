@@ -39,6 +39,10 @@
         <file>icons/stop.svg</file>
         <file>icons/shape-filled.svg</file>
         <file>icons/shape-outline.svg</file>
+        <file>icons/bring-forward.svg</file>
+        <file>icons/bring-to-front.svg</file>
+        <file>icons/send-backward.svg</file>
+        <file>icons/send-to-back.svg</file>
         <file>icons/color-wheel.svg</file>
         <file>icons/arrow-none.svg</file>
         <file>icons/arrow-end.svg</file>

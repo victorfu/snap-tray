@@ -636,6 +636,10 @@ void RegionPainter::drawAnnotations(QPainter& painter)
             ? annotationViewport.size()
             : m_parentWidget->size();
         const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+        // Lift the selected annotation above the cached rest only while a
+        // drag or transform gesture is live. An idle selection draws in
+        // layer order, so arranging it (#268) shows at once and matches
+        // the exported image.
         snaptray::annotation::SelectedAnnotationItems selectedItems;
         selectedItems.text = getSelectedTextAnnotation();
         selectedItems.emoji = getSelectedEmojiStickerAnnotation();
@@ -651,7 +655,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
                 canvasSize,
                 dpr,
                 annotationViewport.topLeft(),
-                m_annotationLayer->selectedIndex() >= 0,
+                m_annotationLayer->isGestureActive(),
                 selectedItems);
             painter.restore();
         } else {
@@ -661,7 +665,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
                 canvasSize,
                 dpr,
                 QPoint(0, 0),
-                m_annotationLayer->selectedIndex() >= 0,
+                m_annotationLayer->isGestureActive(),
                 selectedItems);
         }
     } else {

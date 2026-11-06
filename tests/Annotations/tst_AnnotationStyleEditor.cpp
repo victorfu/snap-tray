@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "annotation/AnnotationStyleEditor.h"
+#include "annotations/AnnotationZOrderCommands.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
@@ -18,6 +19,10 @@ private slots:
     void targetFollowsIdAfterIndexShift();
     void inlineTextEditingBypassesSelectionTarget();
     void nonStylableSelectionHasNoTarget();
+    void arrangeButtonsMoveSelection();
+    void zOrderShortcutsMapToMoves();
+    void zOrderKeyNeedsSelection();
+    void zOrderKeyMovesNonStylableSelection();
 };
 
 namespace {
@@ -138,6 +143,100 @@ void tst_AnnotationStyleEditor::nonStylableSelectionHasNoTarget()
     layer.setSelectedIndex(0);
     QVERIFY(!editor.hasTarget());
     QVERIFY(!vm.editingSelection());
+}
+
+void tst_AnnotationStyleEditor::arrangeButtonsMoveSelection()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    QSignalSpy applied(&editor, &AnnotationStyleEditor::styleApplied);
+    layer.addItem(redArrow(0));
+    layer.addItem(redArrow(0));
+    const auto bottomId = layer.idAt(0);
+    layer.setSelectedIndex(0);
+    QVERIFY(vm.canRaiseSelection());
+    QVERIFY(!vm.canLowerSelection());
+    QCOMPARE(vm.zOrderOptions().size(), 4);
+
+    vm.handleZOrderRequested(int(AnnotationLayer::ZOrderMove::ToFront));
+    QCOMPARE(layer.idAt(1), bottomId);
+    QCOMPARE(applied.count(), 1);
+    QVERIFY(!vm.canRaiseSelection());
+    QVERIFY(vm.canLowerSelection());
+
+    // At the front a further request changes nothing.
+    vm.handleZOrderRequested(int(AnnotationLayer::ZOrderMove::Forward));
+    QCOMPARE(applied.count(), 1);
+
+    layer.undo();
+    QCOMPARE(layer.idAt(0), bottomId);
+    QVERIFY(vm.canRaiseSelection());
+}
+
+void tst_AnnotationStyleEditor::zOrderShortcutsMapToMoves()
+{
+    using Move = AnnotationLayer::ZOrderMove;
+#ifdef Q_OS_MACOS
+    const Qt::KeyboardModifiers toEnd = Qt::ControlModifier | Qt::AltModifier;
+#else
+    const Qt::KeyboardModifiers toEnd = Qt::ControlModifier | Qt::ShiftModifier;
+#endif
+    const auto moveFor = [](Qt::Key key, Qt::KeyboardModifiers modifiers) {
+        QKeyEvent event(QEvent::KeyPress, key, modifiers);
+        return AnnotationZOrderCommands::moveForKeyEvent(&event);
+    };
+    QCOMPARE(moveFor(Qt::Key_BracketRight, Qt::ControlModifier), std::optional<Move>(Move::Forward));
+    QCOMPARE(moveFor(Qt::Key_BracketLeft, Qt::ControlModifier), std::optional<Move>(Move::Backward));
+    QCOMPARE(moveFor(Qt::Key_BracketRight, toEnd), std::optional<Move>(Move::ToFront));
+    QCOMPARE(moveFor(Qt::Key_BracketLeft, toEnd), std::optional<Move>(Move::ToBack));
+    // Shift turns the bracket into a brace on most layouts.
+    QCOMPARE(moveFor(Qt::Key_BraceRight, toEnd), std::optional<Move>(Move::ToFront));
+    QCOMPARE(moveFor(Qt::Key_BraceLeft, toEnd), std::optional<Move>(Move::ToBack));
+    QVERIFY(!moveFor(Qt::Key_BracketRight, Qt::NoModifier));
+    QVERIFY(!moveFor(Qt::Key_BracketRight, Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier));
+    QVERIFY(!moveFor(Qt::Key_A, Qt::ControlModifier));
+
+    // Each displayed shortcut triggers its own move.
+    for (const Move move : {Move::Forward, Move::Backward, Move::ToFront, Move::ToBack}) {
+        const QKeyCombination combination = AnnotationZOrderCommands::shortcut(move)[0];
+        QCOMPARE(moveFor(combination.key(), combination.keyboardModifiers()), std::optional<Move>(move));
+        QVERIFY(!AnnotationZOrderCommands::actionText(move).isEmpty());
+        QVERIFY(!AnnotationZOrderCommands::announcement(move).isEmpty());
+    }
+}
+
+void tst_AnnotationStyleEditor::zOrderKeyNeedsSelection()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    layer.addItem(redArrow(0));
+    layer.addItem(redArrow(0));
+    QKeyEvent forward(QEvent::KeyPress, Qt::Key_BracketRight, Qt::ControlModifier);
+    // No selection: the key is left for the host (a pin resets opacity).
+    QVERIFY(!editor.handleZOrderKey(&forward));
+
+    layer.setSelectedIndex(1);
+    const std::size_t history = layer.historyCommandCount();
+    // Already in front: consumed, but records nothing.
+    QVERIFY(editor.handleZOrderKey(&forward));
+    QCOMPARE(layer.historyCommandCount(), history);
+}
+
+void tst_AnnotationStyleEditor::zOrderKeyMovesNonStylableSelection()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    layer.addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(20, 20), QStringLiteral("A")));
+    layer.addItem(redArrow(20));
+    const auto emojiId = layer.idAt(0);
+    layer.setSelectedIndex(0);
+    QVERIFY(!editor.hasTarget());
+    QKeyEvent forward(QEvent::KeyPress, Qt::Key_BracketRight, Qt::ControlModifier);
+    QVERIFY(editor.handleZOrderKey(&forward));
+    QCOMPARE(layer.idAt(1), emojiId);
 }
 
 QTEST_MAIN(tst_AnnotationStyleEditor)
