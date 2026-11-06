@@ -179,7 +179,8 @@ Rectangle {
             var hotkeys = settingsBackend.hotkeysForCategory(categories[c].category)
             for (var h = 0; h < hotkeys.length; h++) {
                 if (matches(needle, [hotkeys[h].name])) {
-                    results.push({ page: "hotkeys", target: "", label: hotkeys[h].name,
+                    results.push({ page: "hotkeys", target: "hotkeyRow_" + hotkeys[h].action,
+                                   label: hotkeys[h].name,
                                    detail: hotkeys[h].keySequence.length > 0
                                        ? hotkeysLabel + " · " + hotkeys[h].keySequence : hotkeysLabel })
                 }

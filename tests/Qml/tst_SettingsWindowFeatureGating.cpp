@@ -418,8 +418,11 @@ void tst_SettingsWindowFeatureGating::searchFindsSettingsSectionsAndHotkeys()
     // unless another suite did; the app always has them).
     const QVariantList captureHotkeys = backend.hotkeysForCategory(0);
     if (!captureHotkeys.isEmpty()) {
-        const QString name = captureHotkeys.first().toMap().value(QStringLiteral("name")).toString();
-        QVERIFY(hasTarget(results(name), QStringLiteral("hotkeys"), QString()));
+        const QVariantMap first = captureHotkeys.first().toMap();
+        const QString name = first.value(QStringLiteral("name")).toString();
+        // The result reveals the hotkey's own row, not the top of the page.
+        QVERIFY(hasTarget(results(name), QStringLiteral("hotkeys"),
+                          QStringLiteral("hotkeyRow_%1").arg(first.value(QStringLiteral("action")).toInt())));
     }
     // Unsupported pages never appear.
     if (!backend.recordingSupported())

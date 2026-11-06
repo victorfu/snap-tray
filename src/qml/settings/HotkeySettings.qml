@@ -87,6 +87,9 @@ Flickable {
                     }
 
                     Rectangle {
+                        id: hotkeyRow
+                        // Search results reveal a hotkey by this name (#227).
+                        objectName: "hotkeyRow_" + modelData.action
                         width: parent.width
                         height: 40
                         radius: SemanticTokens.radiusSmall
@@ -95,6 +98,18 @@ Flickable {
                             : "transparent"
 
                         required property var modelData
+                        property bool searchHighlight: false
+
+                        // Same highlight as SettingsRow.
+                        Rectangle {
+                            objectName: "settingsSearchHighlight"
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: SemanticTokens.accentDefault
+                            opacity: hotkeyRow.searchHighlight ? 0.14 : 0
+                            visible: opacity > 0
+                            Behavior on opacity { NumberAnimation { duration: SemanticTokens.durationNormal } }
+                        }
 
                         MouseArea {
                             id: entryHover
