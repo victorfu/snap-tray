@@ -57,6 +57,7 @@ private slots:
     void inspectorControlsAreNamed();
     void choicesReadTheirStateToScreenReaders();
     void exportPanelKeepsTheEditorOutOfReach();
+    void exportIsolatesAccessibility();
     void outputTimeFollowsCutsAndSpeed();
     void canvasClickSelectsObjects();
     void backgroundImageShowsThumbnail();
@@ -2469,6 +2470,46 @@ void tst_RecordingEditor::dialogButtonPreservesMouseFocus()
     QCOMPARE(clicked.size(), 2);
     fixture.reset();
     backend.requestDiscard();
+}
+
+void tst_RecordingEditor::exportIsolatesAccessibility()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video));
+    RecordingPreviewBackend backend(video);
+    auto* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY(backend.duration() > 0);
+    auto* exportButton = item(view, "previewExportOptions");
+    QVERIFY(exportButton);
+    exportButton->forceActiveFocus();
+    auto exposed = [&](QObject* target) {
+        std::function<bool(QAccessibleInterface*)> visit = [&](QAccessibleInterface* iface) {
+            if (!iface || iface->state().invisible) return false;
+            if (iface->object() == target) return true;
+            for (int i = 0; i < iface->childCount(); ++i)
+                if (visit(iface->child(i))) return true;
+            return false;
+        };
+        return visit(QAccessible::queryAccessibleInterface(view));
+    };
+    QVERIFY(exposed(exportButton));
+    for (int i = 0; i < 2; ++i) {
+        QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openExport"));
+        auto* popup = view->rootObject()->findChild<QObject*>("previewExportPanel");
+        QVERIFY(popup);
+        QTRY_VERIFY(popup->property("opened").toBool());
+        QVERIFY(!exposed(exportButton));
+        QVERIFY(!exportButton->isEnabled());
+        QVERIFY(exposed(item(view, "previewExportBack")));
+        QVERIFY(exposed(item(view, "previewSaveButton")));
+        QVERIFY(QMetaObject::invokeMethod(popup, "close"));
+        QTRY_VERIFY(!popup->property("visible").toBool());
+        QTRY_VERIFY(exposed(exportButton));
+        QVERIFY(exportButton->isEnabled());
+        QTRY_VERIFY(exportButton->hasActiveFocus());
+    }
 }
 
 QTEST_MAIN(tst_RecordingEditor)

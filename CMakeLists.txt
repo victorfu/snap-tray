@@ -110,7 +110,7 @@ if(MSVC)
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickControls2 QuickWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickPrivate QuickControls2 QuickWidgets)
 
 # Generate extra qmldir files for QML subdirectories used by this module.
 qt_policy(SET QTP0004 NEW)
@@ -1250,6 +1250,8 @@ qt_add_qml_module(snaptray_qml
     RESOURCES
         src/qml/toolbar/ToolbarButtonState.js
     SOURCES
+        src/qml/AccessibilityScope.cpp
+        include/qml/AccessibilityScope.h
         src/ui/DesignSystem.cpp
         include/ui/DesignSystem.h
         src/qml/ThemeManager.cpp
@@ -1345,6 +1347,8 @@ target_include_directories(snaptray_qml
 )
 
 target_link_libraries(snaptray_qml
+    PRIVATE
+        Qt6::QuickPrivate
     PUBLIC
         snaptray_core
         snaptray_platform

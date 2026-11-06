@@ -3,8 +3,9 @@ import QtQuick.Controls.Basic
 import SnapTrayQml
 
 // Stable visual slots: the player and inspector are never recreated on navigation.
-Item {
+AccessibilityScope {
     id: root
+    Accessible.role: Accessible.Grouping
     property bool inspectorVisible: true
     property bool inspectorOverlay: false
     property string inspectorTitle: ""
