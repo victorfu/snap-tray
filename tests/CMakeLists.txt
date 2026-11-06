@@ -229,6 +229,7 @@ add_executable(Qml_SettingsWindowFeatureGating
     ${CMAKE_SOURCE_DIR}/include/qml/SettingsBackend.h
 )
 target_link_libraries(Qml_SettingsWindowFeatureGating PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_SettingsWindowFeatureGating PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME Qml_SettingsWindowFeatureGating COMMAND Qml_SettingsWindowFeatureGating)
 set_tests_properties(Qml_SettingsWindowFeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
 
@@ -733,6 +734,16 @@ target_link_libraries(Qml_LibraryEvidence PRIVATE snaptray_ui snaptray_qmlplugin
 target_sources(Qml_LibraryEvidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME Qml_LibraryEvidence COMMAND Qml_LibraryEvidence)
 set_tests_properties(Qml_LibraryEvidence PROPERTIES TIMEOUT 120 LABELS "unit")
+
+add_executable(Qml_SettingsEvidence
+    Qml/tst_SettingsEvidence.cpp
+    ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp
+    ${CMAKE_SOURCE_DIR}/include/qml/SettingsBackend.h
+)
+target_link_libraries(Qml_SettingsEvidence PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_SettingsEvidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_SettingsEvidence COMMAND Qml_SettingsEvidence)
+set_tests_properties(Qml_SettingsEvidence PROPERTIES TIMEOUT 120 LABELS "unit")
 
 add_executable(PinWindow_HistoryRecorder PinWindow/tst_HistoryRecorder.cpp)
 target_link_libraries(PinWindow_HistoryRecorder PRIVATE snaptray_ui Qt6::Test)

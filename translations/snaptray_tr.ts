@@ -19,118 +19,6 @@
     </message>
 </context>
 <context>
-    <name>AdvancedSettings</name>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
-        <source>Cursor companion</source>
-        <translation>İmleç yardımcısı</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26" />
-        <source>Off</source>
-        <translation>Kapalı</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27" />
-        <source>Magnifier</source>
-        <translation>Büyüteç</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28" />
-        <source>Beaver</source>
-        <translation>Kunduz</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
-        <source>Capture</source>
-        <translation>Yakalama</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="35" />
-        <source>Show shortcut hints</source>
-        <translation>Kısayol ipuçlarını göster</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="51" />
-        <source>Blur</source>
-        <translation>Bulanıklaştırma</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="54" />
-        <source>Blur intensity</source>
-        <translation>Bulanıklık yoğunluğu:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="62" />
-        <source>Blur type</source>
-        <translation>Bulanıklık türü:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="64" />
-        <source>Pixelate</source>
-        <translation>Pikselleştirme</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="65" />
-        <source>Gaussian</source>
-        <translation>Gauss</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="71" />
-        <source>Pin Window</source>
-        <translation>Sabitleme Penceresi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="74" />
-        <source>Default opacity</source>
-        <translation>Varsayılan opaklık:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="83" />
-        <source>Opacity step</source>
-        <translation>Opaklık adımı:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="92" />
-        <source>Show controls on hover</source>
-        <translation>Üzerine gelince denetimleri göster</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="98" />
-        <source>Zoom step</source>
-        <translation>Yakınlaştırma adımı:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="107" />
-        <source>Max history entries</source>
-        <translation>En fazla geçmiş kaydı</translation>
-    </message>
-    <message>
-        <source>Max cache files</source>
-        <translation>Maks. önbellek dosyası:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>After full screen capture</source>
-        <translation>Tam ekran yakalamadan sonra</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
-        <source>Copy to clipboard</source>
-        <translation>Panoya kopyala</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
-        <source>Save to file</source>
-        <translation>Dosyaya kaydet</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
-        <source>Open editor</source>
-        <translation>Düzenleyiciyi aç</translation>
-    </message>
-</context>
-<context>
     <name>AppImageUpdateDialog</name>
     <message>
         <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="9" />
@@ -223,11 +111,6 @@
         <translation>Kömür</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="191" />
-        <source>Background:</source>
-        <translation>Arka plan:</translation>
-    </message>
-    <message>
         <source>Solid</source>
         <translation>Düz</translation>
     </message>
@@ -240,62 +123,202 @@
         <translation>Radyal Gradyan</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="202" />
-        <source>Colors:</source>
-        <translation>Renkler:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="244" />
-        <source>Padding:</source>
-        <translation>İç Boşluk:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="258" />
-        <source>Corners:</source>
-        <translation>Köşeler:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="271" />
-        <source>Ratio:</source>
-        <translation>Oran:</translation>
-    </message>
-    <message>
         <source>Auto</source>
         <translation>Otomatik</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="79" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="166" />
         <source>Beautify</source>
         <translation>Güzelleştir</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="282" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="700" />
         <source>Shadow</source>
         <translation>Gölge</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="323" />
-        <source>  Blur:</source>
-        <translation>  Bulanıklık:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="741" />
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="348" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="747" />
         <source>Save</source>
         <translation>Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="355" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="190" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="754" />
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
     <message>
         <source>Select Color</source>
         <translation>Renk Seç</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="256" />
+        <source>Style</source>
+        <translation>Stil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="273" />
+        <source>Custom</source>
+        <translation>Özel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="408" />
+        <source>Style: %1</source>
+        <translation>Stil: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="457" />
+        <source>Background</source>
+        <translation>Arka plan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="497" />
+        <source>Background: %1</source>
+        <translation>Arka plan: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="539" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
+        <source>Customize</source>
+        <translation>Özelleştir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="541" />
+        <source>Hide padding, corners, shadow and other details</source>
+        <translation>Kenar boşluğunu, köşeleri, gölgeyi ve diğer ayrıntıları gizle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="542" />
+        <source>Show padding, corners, shadow and other details</source>
+        <translation>Kenar boşluğunu, köşeleri, gölgeyi ve diğer ayrıntıları göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="605" />
+        <source>Background type</source>
+        <translation>Arka plan türü</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="615" />
+        <source>Colors</source>
+        <translation>Renkler</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="623" />
+        <source>First color</source>
+        <translation>Birinci renk</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="624" />
+        <source>Second color</source>
+        <translation>İkinci renk</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="674" />
+        <source>Padding</source>
+        <translation>Kenar boşluğu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="687" />
+        <source>Corners</source>
+        <translation>Köşeler</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="710" />
+        <source>Shadow blur</source>
+        <translation>Gölge bulanıklığı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="725" />
+        <source>Aspect ratio</source>
+        <translation>En boy oranı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
+        <source>Compact</source>
+        <translation>Kompakt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
+        <source>Standard</source>
+        <translation>Standart</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
+        <source>Spacious</source>
+        <translation>Ferah</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="44" />
+        <source>Flat</source>
+        <translation>Düz</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="287" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="296" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <source>Save style…</source>
+        <translation>Stili kaydet…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="302" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>En fazla %1 kayıtlı stil tutabilirsiniz. Başka birini kaydetmek için birini silin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="357" />
+        <source>Style name</source>
+        <translation>Stil adı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="375" />
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="439" />
+        <source>Saved style: %1</source>
+        <translation>Kayıtlı stil: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="941" />
+        <source>Delete style %1</source>
+        <translation>%1 stilini sil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
+        <source>My style %1</source>
+        <translation>Stilim %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <source>Rename style</source>
+        <translation>Stili yeniden adlandır</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <source>Rename</source>
+        <translation>Yeniden adlandır</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="385" />
+        <source>Another saved style already has this name.</source>
+        <translation>Bu ada sahip başka bir kayıtlı stil zaten var.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="902" />
+        <source>Rename style %1</source>
+        <translation>%1 stilini yeniden adlandır</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="922" />
+        <source>Rename (F2)</source>
+        <translation>Yeniden adlandır (F2)</translation>
     </message>
 </context>
 <context>
@@ -304,6 +327,114 @@
         <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="34" />
         <source>Laser Pointer</source>
         <translation>Lazer İşaretçi</translation>
+    </message>
+</context>
+<context>
+    <name>CaptureSettings</name>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
+        <source>Capture</source>
+        <translation>Yakalama</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="23" />
+        <source>What happens when you take a screenshot, and how the region selector helps you aim.</source>
+        <translation>Ekran görüntüsü aldığınızda ne olacağı ve bölge seçicinin hedeflemenize nasıl yardımcı olduğu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="26" />
+        <source>After Capture</source>
+        <translation>Yakalamadan sonra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="31" />
+        <source>After full screen capture</source>
+        <translation>Tam ekran yakalamadan sonra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
+        <source>Copy to clipboard</source>
+        <translation>Panoya kopyala</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
+        <source>Save to file</source>
+        <translation>Dosyaya kaydet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="35" />
+        <source>Open editor</source>
+        <translation>Düzenleyiciyi aç</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="41" />
+        <source>Region Selector</source>
+        <translation>Bölge seçici</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
+        <source>Cursor companion</source>
+        <translation>İmleç yardımcısı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
+        <source>Off</source>
+        <translation>Kapalı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="49" />
+        <source>Magnifier</source>
+        <translation>Büyüteç</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="50" />
+        <source>Beaver</source>
+        <translation>Kunduz</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="59" />
+        <source>Show shortcut hints</source>
+        <translation>Kısayol ipuçlarını göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="65" />
+        <source>Auto Blur</source>
+        <translation>Otomatik bulanıklaştırma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="66" />
+        <source>How faces and text are hidden when you use Auto Blur.</source>
+        <translation>Otomatik bulanıklaştırma kullanıldığında yüzlerin ve metinlerin nasıl gizlendiği.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="72" />
+        <source>Blur type</source>
+        <translation>Bulanıklık türü</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="74" />
+        <source>Pixelate</source>
+        <translation>Pikselleştirme</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="75" />
+        <source>Gaussian</source>
+        <translation>Gauss</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="84" />
+        <source>Blur intensity</source>
+        <translation>Bulanıklık yoğunluğu</translation>
     </message>
 </context>
 <context>
@@ -408,71 +539,6 @@
     </message>
 </context>
 <context>
-    <name>FilesSettings</name>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
-        <source>Save Locations</source>
-        <translation>Kayıt Konumları</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="24" />
-        <source>Screenshots</source>
-        <translation>Ekran Görüntüleri:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="30" />
-        <source>Recordings</source>
-        <translation>Kayıtlar:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="36" />
-        <source>Filename Format</source>
-        <translation>Dosya Adı Biçimi</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="39" />
-        <source>Template</source>
-        <translation>Şablon:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="74" />
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation>Belirteçler: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="84" />
-        <source>Preview: </source>
-        <translation>Önizleme: </translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="92" />
-        <source>Save Behavior</source>
-        <translation>Kaydetme Davranışı</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="95" />
-        <source>Auto-save screenshots</source>
-        <translation>Ekran görüntülerini otomatik kaydet</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
-        <source>Remember last folder</source>
-        <translation>Son klasörü hatırla</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
-        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
-        <translation>Bir görüntüyü elle kaydederken iletişim kutusu, son başarılı kaydın yapıldığı klasörde açılır. Otomatik kaydetme, yukarıdaki Ekran Görüntüleri klasörünü kullanmaya devam eder.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="109" />
-        <source>Auto-save recordings</source>
-        <translation>Kayıtları otomatik kaydet</translation>
-    </message>
-</context>
-<context>
     <name>FloatingToolbar</name>
     <message>
         <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="241" />
@@ -483,99 +549,120 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
 <context>
     <name>GeneralSettings</name>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="77" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="38" />
         <source>Start on login</source>
         <translation>Oturum açıldığında başlat</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="39" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="46" />
         <source>Language</source>
         <translation>Dil</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="42" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="51" />
         <source>Display language</source>
         <translation>Görüntüleme dili:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="53" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="62" />
         <source>Appearance</source>
         <translation>Görünüm</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="56" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
         <source>App theme</source>
         <translation>Uygulama teması</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="69" />
         <source>Dark</source>
         <translation>Koyu</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="59" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="70" />
         <source>Light</source>
         <translation>Açık</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
         <source>Permissions</source>
         <translation>İzinler</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="84" />
         <source>Screen Recording</source>
         <translation>Ekran Kaydı</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="73" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
         <source>Required for capturing screenshots and recording your screen.</source>
         <translation>Ekran görüntüsü almak ve ekranınızı kaydetmek için gereklidir.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="80" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="93" />
         <source>Accessibility</source>
         <translation>Erişilebilirlik:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="81" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="94" />
         <source>Required for global hotkeys and window detection.</source>
         <translation>Genel kısayollar ve pencere algılama için gereklidir.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="87" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="100" />
         <source>Command Line</source>
         <translation>Komut Satırı Arayüzü</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="105" />
         <source>CLI Status</source>
         <translation>CLI durumu</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="116" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
         <source>Please wait...</source>
         <translation>Lütfen bekleyin...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="118" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="131" />
         <source>'snaptray' command is available</source>
         <translation>'snaptray' komutu terminalde kullanılabilir</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="119" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="132" />
         <source>'snaptray' command is not installed</source>
         <translation>'snaptray' komutu yüklü değil</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Uninstall CLI</source>
         <translation>CLI Kaldır</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Install CLI</source>
         <translation>CLI Yükle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <source>General</source>
+        <translation>Genel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="32" />
+        <source>Startup, language, theme and the permissions SnapTray needs.</source>
+        <translation>Başlangıç, dil, tema ve SnapTray'in ihtiyaç duyduğu izinler.</translation>
     </message>
 </context>
 <context>
@@ -585,7 +672,7 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>Geçmiş</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1278" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1299" />
         <location filename="../src/PinWindow.cpp" line="1430" />
         <source>Open History Folder</source>
         <translation>Geçmiş klasörünü aç</translation>
@@ -599,7 +686,7 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>SnapTray ile aldığınız ekran görüntüleri burada görünecek.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="877" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="895" />
         <source>No results</source>
         <translation>Sonuç yok</translation>
     </message>
@@ -608,11 +695,13 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>Farklı bir akıllı klasör deneyin.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1091" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1109" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1313" />
         <source>Smart Folders</source>
         <translation>Akıllı klasörler</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1310" />
         <source>All Screenshots</source>
         <translation>Tüm ekran görüntüleri</translation>
     </message>
@@ -635,32 +724,32 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>Yeniden oynatılabilir</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="874" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="892" />
         <source>No editable projects</source>
         <translation>Düzenlenebilir proje yok</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="876" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="894" />
         <source>Nothing here yet</source>
         <translation>Burada henüz bir şey yok</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="879" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="897" />
         <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
         <translation>Kaydettikten sonra kayıtları yeniden düzenlemek için Ayarlar &gt; Kayıt bölümünde Düzenlenebilir projeleri sakla seçeneğini açın.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="881" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="899" />
         <source>Screenshots you capture in SnapTray, and recordings you keep as editable projects, will appear here.</source>
         <translation>SnapTray'de aldığınız ekran görüntüleri ve düzenlenebilir proje olarak sakladığınız kayıtlar burada görünür.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="882" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="900" />
         <source>Try a different section or smart folder.</source>
         <translation>Başka bir bölüm veya akıllı klasör deneyin.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1056" />
         <source>SnapTray</source>
         <translation>SnapTray</translation>
     </message>
@@ -684,7 +773,7 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>Farklı kaydet</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1483" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1550" />
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
@@ -752,73 +841,73 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>Projeyi sil...</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="597" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="615" />
         <source>Preview unavailable</source>
         <translation>Önizleme kullanılamıyor</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1051" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1248" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1069" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1256" />
         <source>Library</source>
         <translation>Kitaplık</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1224" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1268" />
         <source>Editable project selected</source>
         <translation>Düzenlenebilir proje seçildi</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1225" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1269" />
         <source>Screenshot selected</source>
         <translation>Ekran görüntüsü seçildi</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1226" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1270" />
         <source>Nothing selected</source>
         <translation>Hiçbir şey seçilmedi</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1289" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1356" />
         <source>Sort</source>
         <translation>Sırala</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1381" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1448" />
         <source>Grid view</source>
         <translation>Izgara görünümü</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1395" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1462" />
         <source>List view</source>
         <translation>Liste görünümü</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1428" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
         <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>Projeler, bulanıklaştırdığınız veya kırptığınız her şey dâhil kaydın tamamını saklar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1430" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1497" />
         <source>Projects not changed for %1 days are removed automatically.</source>
         <translation>%1 gün boyunca değişmeyen projeler otomatik olarak kaldırılır.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1432" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1499" />
         <source>Keeping new projects is off.</source>
         <translation>Yeni projeleri saklama kapalı.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1466" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1533" />
         <source>Delete this editable project? Its full recording and edits are removed. The file you saved from it stays.</source>
         <translation>Bu düzenlenebilir proje silinsin mi? Kaydın tamamı ve düzenlemeler kaldırılır. Ondan kaydettiğiniz dosya kalır.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1467" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1534" />
         <source>Delete this screenshot from the Library? Files you saved from it stay.</source>
         <translation>Bu ekran görüntüsü kitaplıktan silinsin mi? Ondan kaydettiğiniz dosyalar kalır.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1563" />
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
@@ -871,50 +960,55 @@ Dosya boyutu: %3</translation>
     <name>HotkeySettings</name>
     <message>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="53" />
-        <source>Keyboard Shortcuts</source>
-        <translation>Klavye kısayolları</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="65" />
         <source>Restore All Defaults</source>
         <translation>Tüm Varsayılanları Geri Yükle</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="151" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="162" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="186" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="137" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="148" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="172" />
         <source>Not Set</source>
         <translation>Ayarlanmadı</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="181" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="167" />
         <source>Conflict</source>
         <translation>Çakışma</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="183" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="169" />
         <source>Active</source>
         <translation>Etkin</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="185" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="171" />
         <source>Disabled</source>
         <translation>Devre dışı</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="208" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="194" />
         <source>Edit</source>
         <translation>Düzenle</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="213" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="199" />
         <source>Clear</source>
         <translation>Temizle</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="218" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="204" />
         <source>Reset</source>
         <translation>Sıfırla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="48" />
+        <source>Hotkeys</source>
+        <translation>Kısayol Tuşları</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
+        <source>Keyboard shortcuts for every task, grouped by what they do.</source>
+        <translation>Her görev için klavye kısayolları, işlevlerine göre gruplanmış.</translation>
     </message>
 </context>
 <context>
@@ -1459,7 +1553,7 @@ Dosya boyutu: %3</translation>
 <context>
     <name>OCRSettings</name>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="57" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="62" />
         <source>Select and order the languages for OCR recognition.
 English is always included and cannot be removed.</source>
         <translation>OCR tanıma için dilleri seçin ve sıralayın.
@@ -1470,59 +1564,70 @@ English is always included and cannot be removed.</source>
         <translation>Diller yükleniyor...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="92" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="97" />
         <source>Preparing OCR languages...</source>
         <translation>OCR dilleri hazırlanıyor...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="105" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="110" />
         <source>The settings window is ready. OCR languages are loading in the background.</source>
         <translation>Ayarlar penceresi hazır. OCR dilleri arka planda yükleniyor.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="107" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="112" />
         <source>No OCR languages are available on this device right now.</source>
         <translation>Bu cihazda şu anda kullanılabilir OCR dili yok.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="108" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="113" />
         <source>OCR is not available on this device.</source>
         <translation>OCR bu cihazda kullanılamıyor.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="137" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="142" />
         <source>Available Languages</source>
         <translation>Kullanılabilir Diller</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="217" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="222" />
         <source>Add selected language</source>
         <translation>Seçili dili ekle</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="231" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="236" />
         <source>Remove selected language</source>
         <translation>Seçili dili kaldır</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="250" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="255" />
         <source>Selected Languages</source>
         <translation>Seçili Diller</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="372" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="135" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
         <source>After OCR Recognition</source>
         <translation>OCR Tanıma Sonrası</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
         <source>Copy text directly to clipboard</source>
         <translation>Metni doğrudan panoya kopyala</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="378" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="384" />
         <source>Show editor to review and edit text</source>
         <translation>Metni gözden geçirmek ve düzenlemek için düzenleyiciyi göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="55" />
+        <source>Text Recognition</source>
+        <translation>Metin tanıma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="56" />
+        <source>Which languages are recognized in screenshots, and what happens with the text.</source>
+        <translation>Ekran görüntülerinde hangi dillerin tanınacağı ve metne ne olacağı.</translation>
     </message>
 </context>
 <context>
@@ -2246,6 +2351,57 @@ Boyut: %2</translation>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Güzelleştirilmiş Ekran Görüntüsünü Kaydet</translation>
+    </message>
+</context>
+<context>
+    <name>PinWindowSettings</name>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
+        <source>Pin Windows</source>
+        <translation>Sabitlenmiş pencereler</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="23" />
+        <source>How new pins look, and how much each zoom or opacity step changes.</source>
+        <translation>Yeni sabitlemelerin görünümü ve her yakınlaştırma veya opaklık adımının ne kadar değiştirdiği.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="26" />
+        <source>Appearance</source>
+        <translation>Görünüm</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="31" />
+        <source>Default opacity</source>
+        <translation>Varsayılan opaklık</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="42" />
+        <source>Show controls on hover</source>
+        <translation>Üzerine gelince denetimleri göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="47" />
+        <source>Steps</source>
+        <translation>Adımlar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="52" />
+        <source>Opacity step</source>
+        <translation>Opaklık adımı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="63" />
+        <source>Zoom step</source>
+        <translation>Yakınlaştırma adımı</translation>
     </message>
 </context>
 <context>
@@ -5345,37 +5501,39 @@ Boyut: %2</translation>
 <context>
     <name>RecordingSettings</name>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="251" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="264" />
         <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
         <translation>Her kayıttan önce ekranı, mikrofonu ve sistem sesini onaylayın. Kapalıyken kayıt bu ayarlarla hemen başlar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="250" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="113" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
         <source>Show setup before recording</source>
         <translation>Kayıttan önce kurulumu göster</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="98" />
         <source>Frame rate</source>
         <translation>Kare Hızı</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="94" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
         <source>10 FPS</source>
         <translation>10 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="95" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
         <source>15 FPS</source>
         <translation>15 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
         <source>24 FPS</source>
         <translation>24 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="103" />
         <source>30 FPS</source>
         <translation>30 FPS</translation>
     </message>
@@ -5384,17 +5542,17 @@ Boyut: %2</translation>
         <translation>Çıktı Biçimi:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="109" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
         <source>MP4 (H.264)</source>
         <translation>MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="117" />
         <source>GIF</source>
         <translation>GIF</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
         <source>WebP</source>
         <translation>WebP</translation>
     </message>
@@ -5419,42 +5577,49 @@ Kısa klipler ve web'de paylaşım için en uygunudur.
 GIF kayıtlarında ses desteklenmez.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="159" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
         <source>Audio</source>
         <translation>Ses</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="162" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
         <source>Record audio</source>
         <translation>Ses kaydet</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="176" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
         <source>Source</source>
         <translation>Kaynak:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="179" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
         <source>Microphone</source>
         <translation>Mikrofon</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="180" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="190" />
         <source>System Audio</source>
         <translation>Sistem Sesi</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="191" />
         <source>Both (Mixed)</source>
         <translation>Her İkisi (Karışık)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="106" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="113" />
         <source>Default output format</source>
         <translation>Varsayılan dışa aktarma biçimi</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="112" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="126" />
         <source>Recording quality</source>
         <translation>Kayıt kalitesi</translation>
     </message>
@@ -5494,27 +5659,28 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <translation>MP4, H.264 video ve isteğe bağlı sesle doğrudan kayıt yapar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="166" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="175" />
         <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
         <translation>Ses geçici MP4 kaydında yakalanır. Sesi yalnızca MP4 dışa aktarması korur.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="168" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="177" />
         <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
         <translation>Ses yalnızca doğrudan MP4 kaydında veya Önizlemeyi göster etkin olduğunda kullanılabilir.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="213" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="223" />
         <source>Loading audio devices...</source>
         <translation>Ses aygıtları yükleniyor...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="225" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="235" />
         <source>The recording page is ready. Input devices are loading in the background.</source>
         <translation>Kayıt sayfası hazır. Giriş aygıtları arka planda yükleniyor.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="236" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="248" />
         <source>Input device</source>
         <translation>Giriş aygıtı</translation>
     </message>
@@ -5532,77 +5698,82 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <translation>Kayıttan sonra kırpmak veya dışa aktarmak için bunu açık bırakın. Önizleme kayıtları her zaman önce MP4 olarak yakalanır.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="355" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
         <source>Countdown</source>
         <translation>Geri Sayım</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="358" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="376" />
         <source>Show countdown</source>
         <translation>Geri sayımı göster</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="364" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="383" />
         <source>Duration</source>
         <translation>Geri sayım süresi:</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="366" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="385" />
         <source>1 second</source>
         <translation>1 saniye</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="367" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="386" />
         <source>2 seconds</source>
         <translation>2 saniye</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="368" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="387" />
         <source>3 seconds</source>
         <translation>3 saniye</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="388" />
         <source>4 seconds</source>
         <translation>4 saniye</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="370" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="389" />
         <source>5 seconds</source>
         <translation>5 saniye</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="130" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="138" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>Kaydedilen videonun kalitesi. Önizleme açıkken kayıtlar yüksek kalitede alınır ve kaydederken bu kaliteye dönüştürülür.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="276" />
         <source>All keys, including typed text</source>
         <translation>Yazılan metin dahil tüm tuşlar</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="273" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="286" />
         <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
         <translation>Önizlemedeki kısayol ipuçları için. Tuşlar geçici kayıtla kalır ve onunla birlikte silinir; kaydedilen dosyada asla bulunmaz.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
         <source>Not available on this system yet</source>
         <translation>Bu sistemde henüz kullanılamıyor</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="261" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
         <source>Off</source>
         <translation>Kapalı</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="258" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="114" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="271" />
         <source>Record keys</source>
         <translation>Tuşları kaydet</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="262" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="275" />
         <source>Shortcuts only</source>
         <translation>Yalnızca kısayollar</translation>
     </message>
@@ -5627,79 +5798,94 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <translation>90 gün</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="332" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="128" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="348" />
         <source>Keep editable projects</source>
         <translation>Düzenlenebilir projeleri sakla</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="353" />
         <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
         <translation>Kaydettikten sonra kaydı ve düzenlemelerinizi saklayarak Kayıt Kitaplığı'ndan yeniden değiştirip dışa aktarabilirsiniz. Projeler, bulanıklaştırdığınız veya kırptığınız her şey dâhil tam ekran kaydını, işaretçiyi, tuşları ve ses parçalarını saklar ve disk alanı kullanır.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="345" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="129" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="362" />
         <source>Delete projects not changed for</source>
         <translation>Şu süredir değişmeyen projeleri sil</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="284" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="127" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="298" />
         <source>After recording</source>
         <translation>Kayıttan sonra</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="301" />
         <source>Edit in the preview</source>
         <translation>Önizlemede düzenle</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="288" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="302" />
         <source>Save right away</source>
         <translation>Hemen kaydet</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="300" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
         <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
         <translation>Hızlı mod: durdurduğunuz anda dosya son biçiminde kaydedilir; önizleme ve düzenleme izleri yoktur.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="309" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="132" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
         <source>After saving</source>
         <translation>Kaydettikten sonra</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="312" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="326" />
         <source>Do nothing</source>
         <translation>Hiçbir şey yapma</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="327" />
         <source>Copy the file</source>
         <translation>Dosyayı kopyala</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
         <source>Show in folder</source>
         <translation>Klasörde göster</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="299" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>Düzenleme modu: önizlemede kırpın, kesin ve efekt ekleyin, ardından kaydedin. Önizlemeli kayıtlar her zaman önce MP4 olarak alınır.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="115" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
         <source>Choose an area before recording</source>
         <translation>Kayıttan önce bir alan seç</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="324" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="339" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>Neyin kaydedileceğini seçmek için ekranda sürükleyin. Düzenleme modu yine tüm ekranı kaydeder ve önizlemeyi alana kırpılmış açar, böylece değiştirebilirsiniz; hızlı mod yalnızca alanı kaydeder.</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="354" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>Projeler önizlemeden kaydettiğinizde saklanır. Kullanmak için Önizlemeyi göster seçeneğini açın.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <source>Recording</source>
+        <translation>Kayıt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
+        <source>How screen recordings start, what they capture, and what happens when you stop.</source>
+        <translation>Ekran kayıtlarının nasıl başladığı, neleri yakaladığı ve durdurduğunuzda ne olacağı.</translation>
     </message>
 </context>
 <context>
@@ -5850,6 +6036,189 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <location filename="../src/region/RegionSettingsHelper.cpp" line="345" />
         <source>Default</source>
         <translation>Varsayılan</translation>
+    </message>
+</context>
+<context>
+    <name>SavingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="24" />
+        <source>Saving</source>
+        <translation>Kaydetme</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="25" />
+        <source>Where screenshots and recordings are saved, how they are named, and the watermark added to them.</source>
+        <translation>Ekran görüntülerinin ve kayıtların nereye kaydedildiği, nasıl adlandırıldığı ve eklenen filigran.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="28" />
+        <source>Save Locations</source>
+        <translation>Kayıt Konumları</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="33" />
+        <source>Screenshots</source>
+        <translation>Ekran Görüntüleri</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="40" />
+        <source>Recordings</source>
+        <translation>Kayıtlar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="46" />
+        <source>Filename Format</source>
+        <translation>Dosya Adı Biçimi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="50" />
+        <source>Template</source>
+        <translation>Şablon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="85" />
+        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
+        <translation>Belirteçler: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="95" />
+        <source>Preview: </source>
+        <translation>Önizleme: </translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
+        <source>Save Behavior</source>
+        <translation>Kaydetme Davranışı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="107" />
+        <source>Auto-save screenshots</source>
+        <translation>Ekran görüntülerini otomatik kaydet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="115" />
+        <source>Remember last folder</source>
+        <translation>Son klasörü hatırla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="116" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Bir görüntüyü elle kaydederken iletişim kutusu, son başarılı kaydın yapıldığı klasörde açılır. Otomatik kaydetme, yukarıdaki Ekran Görüntüleri klasörünü kullanmaya devam eder.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
+        <source>Auto-save recordings</source>
+        <translation>Kayıtları otomatik kaydet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="129" />
+        <source>Watermark</source>
+        <translation>Filigran</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="134" />
+        <source>Apply to images</source>
+        <translation>Görsellere uygula</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="141" />
+        <source>Apply to recordings</source>
+        <translation>Kayıtlara uygula</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="161" />
+        <source>Image</source>
+        <translation>Görsel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="168" />
+        <source>Scale</source>
+        <translation>Ölçek</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="178" />
+        <source>Opacity</source>
+        <translation>Opaklık</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
+        <source>Margin</source>
+        <translation>Kenar Boşluğu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="198" />
+        <source>Position</source>
+        <translation>Konum</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="200" />
+        <source>Top-Left</source>
+        <translation>Sol Üst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="201" />
+        <source>Top-Right</source>
+        <translation>Sağ Üst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="202" />
+        <source>Bottom-Left</source>
+        <translation>Sol Alt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="203" />
+        <source>Bottom-Right</source>
+        <translation>Sağ Alt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="234" />
+        <source>No image</source>
+        <translation>Görsel yok</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
+        <source>Library</source>
+        <translation>Kitaplık</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="250" />
+        <source>Screenshots kept in Library</source>
+        <translation>Kitaplıkta tutulan ekran görüntüleri</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="259" />
+        <source>When there are more, the oldest are removed from the Library. Files you saved stay where they are.</source>
+        <translation>Daha fazlası olduğunda en eskiler Kitaplıktan kaldırılır. Kaydettiğiniz dosyalar yerinde kalır.</translation>
     </message>
 </context>
 <context>
@@ -6088,63 +6457,94 @@ GIF kayıtlarında ses desteklenmez.</translation>
     </message>
 </context>
 <context>
+    <name>SettingsRow</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="96" />
+        <source>Reset %1 to default</source>
+        <translation>%1 öğesini varsayılana sıfırla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="123" />
+        <source>Reset to default</source>
+        <translation>Varsayılana sıfırla</translation>
+    </message>
+</context>
+<context>
     <name>SettingsSidebar</name>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="23" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
         <source>General</source>
         <translation>Genel</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
         <source>Hotkeys</source>
         <translation>Kısayol Tuşları</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
-        <source>Advanced</source>
-        <translation>Gelişmiş</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
-        <source>Watermark</source>
-        <translation>Filigran</translation>
-    </message>
-    <message>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="29" />
-        <source>OCR</source>
-        <translation>OCR</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="32" />
         <source>Recording</source>
         <translation>Kayıt</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="34" />
-        <source>Files</source>
-        <translation>Dosyalar</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
         <source>Updates</source>
         <translation>Güncellemeler</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="37" />
         <source>About</source>
         <translation>Hakkında</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
+        <source>Capture</source>
+        <translation>Yakalama</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
+        <source>Pin Windows</source>
+        <translation>Sabitlenmiş pencereler</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="31" />
+        <source>Saving</source>
+        <translation>Kaydetme</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
+        <source>Text Recognition</source>
+        <translation>Metin tanıma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="159" />
+        <source>Page</source>
+        <translation>Sayfa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="240" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="260" />
+        <source>Search settings</source>
+        <translation>Ayarlarda ara</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="279" />
+        <source>Clear search</source>
+        <translation>Aramayı temizle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="315" />
+        <source>Search results</source>
+        <translation>Arama sonuçları</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="383" />
+        <source>No settings match “%1”</source>
+        <translation>“%1” ile eşleşen ayar yok</translation>
     </message>
 </context>
 <context>
     <name>SettingsWindow</name>
-    <message>
-        <source>Cancel</source>
-        <translation>İptal</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation>Kaydet</translation>
-    </message>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
@@ -6323,7 +6723,7 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <translation>Geçmiş</translation>
     </message>
     <message>
-        <location filename="../src/qml/QmlHistoryWindow.cpp" line="121" />
+        <location filename="../src/qml/QmlHistoryWindow.cpp" line="124" />
         <source>Library</source>
         <translation>Kitaplık</translation>
     </message>
@@ -6462,133 +6862,133 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
 <context>
     <name>SnapTray::SettingsBackend</name>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1018" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1138" />
         <source>Never</source>
         <translation>Asla</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1106" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1226" />
         <source>Could not install the CLI. Check permissions and try again.</source>
         <translation>CLI yüklenemedi. İzinleri denetleyip yeniden deneyin.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1107" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1227" />
         <source>Could not uninstall the CLI. Check permissions and try again.</source>
         <translation>CLI kaldırılamadı. İzinleri denetleyip yeniden deneyin.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1140" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1260" />
         <source>Select Screenshot Folder</source>
         <translation>Ekran Görüntüsü Klasörünü Seçin</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1148" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1268" />
         <source>Select Recording Folder</source>
         <translation>Kayıt Klasörünü Seçin</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1276" />
         <source>Select Watermark Image</source>
         <translation>Filigran Görseli Seçin</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1157" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1277" />
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>Görseller (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="271" />
         <source>Disable Windows Print Screen Shortcut?</source>
         <translation>Windows Print Screen kısayolu kapatılsın mı?</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="227" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="291" />
         <source>Windows Print Screen Shortcut Disabled</source>
         <translation>Windows Print Screen kısayolu kapatıldı</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="234" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="298" />
         <source>Windows Setting Not Changed</source>
         <translation>Windows ayarı değiştirilmedi</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="235" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="299" />
         <source>SnapTray could not change the Windows Print Screen setting.</source>
         <translation>SnapTray Windows Print Screen ayarını değiştiremedi.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="176" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="240" />
         <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
         <translation>%1 kaydedildi, ancak kısayol başka bir uygulama veya sistem tarafından kullanıldığı için etkinleştirilemedi.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="145" />
-        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="209" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="225" />
         <source>Hotkey Conflict</source>
         <translation>Kısayol Çakışması</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="220" />
         <source>Defaults were restored, but these shortcuts are still inactive: %1</source>
         <translation>Varsayılanlar geri yüklendi ancak şu kısayollar hâlâ etkin değil: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="181" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="245" />
         <source>%1 was saved, but it could not be activated. %2</source>
         <translation>%1 kaydedildi, ancak etkinleştirilemedi. %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="210" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="274" />
         <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
         <translation>Windows, Snipping Tool'u açmak için Print Screen tuşunu kullanıyor; bu da SnapTray'in Print Screen'i kısayol olarak kullanmasını engelliyor. SnapTray'in Print Screen tuşunu kullanabilmesi için bu kapatılsın mı?</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="214" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="278" />
         <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
         <translation>Ardından SnapTray'i yeniden başlatın. Windows hâlâ Snipping Tool'u açıyorsa Windows oturumunuzu kapatın (veya yeniden başlatın) ve tekrar deneyin.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="219" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="283" />
         <source>No, don't ask again</source>
         <translation>Hayır, bir daha sorma</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="228" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="292" />
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Print Screen'i kullanmak için SnapTray'i yeniden başlatın. Hâlâ Snipping Tool'u açıyorsa Windows oturumunuzu kapatıp yeniden açın.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="348" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="468" />
         <source>Checking start on login status...</source>
         <translation>Oturum açıldığında başlatma durumu kontrol ediliyor...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="376" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="496" />
         <source>Updating start on login status...</source>
         <translation>Oturum açıldığında başlatma durumu güncelleniyor...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="427" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="547" />
         <source>Start on login status error: %1</source>
         <translation>Oturum açıldığında başlatma durumu hatası: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="437" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="557" />
         <source>Disabled in system startup settings. Re-enable it there.</source>
         <translation>Sistem başlangıç ayarlarında devre dışı bırakıldı. Oradan yeniden etkinleştirin.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="440" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="560" />
         <source>Disabled by your organization.</source>
         <translation>Kuruluşunuz tarafından devre dışı bırakıldı.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="443" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="563" />
         <source>Enabled by your organization.</source>
         <translation>Kuruluşunuz tarafından etkinleştirildi.</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="446" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="566" />
         <source>Start on login is unavailable for this package.</source>
         <translation>Oturum açıldığında başlatma bu paket için kullanılamıyor.</translation>
     </message>
@@ -6961,127 +7361,78 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
 <context>
     <name>UpdatesSettings</name>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="30" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="35" />
         <source>Version</source>
         <translation>Sürüm</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="33" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="38" />
         <source>Current Version</source>
         <translation>Mevcut Sürüm</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="58" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="63" />
         <source>Automatic Updates</source>
         <translation>Otomatik Güncellemeler</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="61" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="67" />
         <source>Auto-check updates</source>
         <translation>Otomatik denetim</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="68" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
         <source>Check frequency</source>
         <translation>Denetleme sıklığı</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="70" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
         <source>Every day</source>
         <translation>Her gün</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="71" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
         <source>Every 3 days</source>
         <translation>Her 3 günde bir</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="72" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
         <source>Every week</source>
         <translation>Her hafta</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="80" />
         <source>Every 2 weeks</source>
         <translation>Her 2 haftada bir</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="74" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="81" />
         <source>Every month</source>
         <translation>Her ay</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Checking...</source>
         <translation>Denetleniyor...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Check Now</source>
         <translation>Şimdi Denetle</translation>
     </message>
-</context>
-<context>
-    <name>WatermarkSettings</name>
     <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="23" />
-        <source>Apply to images</source>
-        <translation>Görsellere uygula</translation>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="31" />
+        <source>Updates</source>
+        <translation>Güncellemeler</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="29" />
-        <source>Apply to recordings</source>
-        <translation>Kayıtlara uygula</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="48" />
-        <source>Image</source>
-        <translation>Görsel:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="54" />
-        <source>Scale</source>
-        <translation>Ölçek:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="63" />
-        <source>Opacity</source>
-        <translation>Opaklık</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="72" />
-        <source>Margin</source>
-        <translation>Kenar Boşluğu:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="81" />
-        <source>Position</source>
-        <translation>Konum</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="83" />
-        <source>Top-Left</source>
-        <translation>Sol Üst</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="84" />
-        <source>Top-Right</source>
-        <translation>Sağ Üst</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="85" />
-        <source>Bottom-Left</source>
-        <translation>Sol Alt</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="86" />
-        <source>Bottom-Right</source>
-        <translation>Sağ Alt</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="117" />
-        <source>No image</source>
-        <translation>Görsel yok</translation>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="32" />
+        <source>Your version, and how SnapTray checks for new ones.</source>
+        <translation>Sürümünüz ve SnapTray'in yeni sürümleri nasıl denetlediği.</translation>
     </message>
 </context>
 <context>

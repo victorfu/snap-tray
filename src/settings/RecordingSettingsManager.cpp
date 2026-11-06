@@ -157,7 +157,7 @@ void RecordingSettingsManager::setKeyRecordingMode(int value)
 bool RecordingSettingsManager::preselectArea() const
 {
     auto settings = SnapTray::getSettings();
-    return settings.value(kKeyPreselectArea, false).toBool();
+    return settings.value(kKeyPreselectArea, kDefaultPreselectArea).toBool();
 }
 
 void RecordingSettingsManager::setPreselectArea(bool value)
@@ -183,7 +183,7 @@ void RecordingSettingsManager::setQuickSaveAction(int action)
 bool RecordingSettingsManager::keepProjects() const
 {
     auto settings = SnapTray::getSettings();
-    return settings.value(kKeyKeepProjects, false).toBool();
+    return settings.value(kKeyKeepProjects, kDefaultKeepProjects).toBool();
 }
 
 void RecordingSettingsManager::setKeepProjects(bool value)
@@ -195,7 +195,7 @@ void RecordingSettingsManager::setKeepProjects(bool value)
 int RecordingSettingsManager::projectCleanupDays() const
 {
     auto settings = SnapTray::getSettings();
-    return qMax(0, settings.value(kKeyProjectCleanupDays, 0).toInt());
+    return qMax(0, settings.value(kKeyProjectCleanupDays, kDefaultProjectCleanupDays).toInt());
 }
 
 void RecordingSettingsManager::setProjectCleanupDays(int days)

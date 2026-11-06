@@ -44,27 +44,13 @@ Flickable {
         padding: ComponentTokens.settingsContentPadding
         spacing: ComponentTokens.settingsColumnSpacing
 
-        // Header row with "Restore All Defaults" button
-        Item {
-            width: parent.width - 2 * ComponentTokens.settingsContentPadding
-            height: 36
-
-            Text {
-                text: qsTr("Keyboard Shortcuts")
-                color: SemanticTokens.textPrimary
-                font.pixelSize: SemanticTokens.fontSizeH3
-                font.weight: Font.DemiBold
-                font.family: SemanticTokens.fontFamily
-                font.letterSpacing: SemanticTokens.letterSpacingDefault
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-            }
+        SettingsPageHeader {
+            title: qsTr("Hotkeys")
+            description: qsTr("Keyboard shortcuts for every task, grouped by what they do.")
 
             SettingsButton {
                 id: restoreBtn
                 text: qsTr("Restore All Defaults")
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
                 onClicked: settingsBackend.restoreAllHotkeys()
             }
         }
@@ -101,6 +87,9 @@ Flickable {
                     }
 
                     Rectangle {
+                        id: hotkeyRow
+                        // Search results reveal a hotkey by this name (#227).
+                        objectName: "hotkeyRow_" + modelData.action
                         width: parent.width
                         height: 40
                         radius: SemanticTokens.radiusSmall
@@ -109,6 +98,18 @@ Flickable {
                             : "transparent"
 
                         required property var modelData
+                        property bool searchHighlight: false
+
+                        // Same highlight as SettingsRow.
+                        Rectangle {
+                            objectName: "settingsSearchHighlight"
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: SemanticTokens.accentDefault
+                            opacity: hotkeyRow.searchHighlight ? 0.14 : 0
+                            visible: opacity > 0
+                            Behavior on opacity { NumberAnimation { duration: SemanticTokens.durationNormal } }
+                        }
 
                         MouseArea {
                             id: entryHover

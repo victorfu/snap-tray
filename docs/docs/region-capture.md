@@ -19,10 +19,10 @@ Press `F2` (default) to enter Region Capture. The cursor switches to crosshair, 
 
 Use `Full Screen Capture` from the tray menu, or bind it in Settings > Hotkeys, to capture the screen under the cursor without selecting a region. The output keeps the screen's native resolution on every monitor, including fractional scaling such as 125% or 150%. SnapTray's own windows, such as pins and notifications, are left out of the capture.
 
-Choose what happens next in Settings > Advanced > `After full screen capture`:
+Choose what happens next in Settings > Capture > `After full screen capture`:
 
 - `Copy to clipboard` (default)
-- `Save to file`, using your Files settings
+- `Save to file`, using your Saving settings
 - `Open editor`, which opens the capture with the whole screen selected so you can annotate before copying or saving
 
 Captures are added to the [Library](#library).

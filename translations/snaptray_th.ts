@@ -19,114 +19,6 @@
     </message>
 </context>
 <context>
-    <name>AdvancedSettings</name>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
-        <source>Cursor companion</source>
-        <translation>ตัวช่วยเคอร์เซอร์</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26" />
-        <source>Off</source>
-        <translation>ปิด</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27" />
-        <source>Magnifier</source>
-        <translation>แว่นขยาย</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28" />
-        <source>Beaver</source>
-        <translation>บีเวอร์</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
-        <source>Capture</source>
-        <translation>จับภาพ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="35" />
-        <source>Show shortcut hints</source>
-        <translation>แสดงคำแนะนำคีย์ลัด</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="51" />
-        <source>Blur</source>
-        <translation>เบลอ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="54" />
-        <source>Blur intensity</source>
-        <translation>ความเข้มการเบลอ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="62" />
-        <source>Blur type</source>
-        <translation>ประเภทการเบลอ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="64" />
-        <source>Pixelate</source>
-        <translation>ทำเป็นพิกเซล</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="65" />
-        <source>Gaussian</source>
-        <translation>เกาส์เซียน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="71" />
-        <source>Pin Window</source>
-        <translation>หน้าต่างปักหมุด</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="74" />
-        <source>Default opacity</source>
-        <translation>ความทึบเริ่มต้น</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="83" />
-        <source>Opacity step</source>
-        <translation>ช่วงปรับความทึบ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="92" />
-        <source>Show controls on hover</source>
-        <translation>แสดงตัวควบคุมเมื่อวางเมาส์</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="98" />
-        <source>Zoom step</source>
-        <translation>ช่วงปรับการซูม</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="107" />
-        <source>Max history entries</source>
-        <translation>จำนวนรายการประวัติสูงสุด</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>After full screen capture</source>
-        <translation>หลังจับภาพเต็มหน้าจอ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
-        <source>Copy to clipboard</source>
-        <translation>คัดลอกไปยังคลิปบอร์ด</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
-        <source>Save to file</source>
-        <translation>บันทึกเป็นไฟล์</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
-        <source>Open editor</source>
-        <translation>เปิดตัวแก้ไข</translation>
-    </message>
-</context>
-<context>
     <name>AppImageUpdateDialog</name>
     <message>
         <location filename="../src/qml/dialogs/AppImageUpdateDialog.qml" line="9" />
@@ -187,59 +79,194 @@
 <context>
     <name>BeautifyPanel</name>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="79" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="166" />
         <source>Beautify</source>
         <translation>ปรับแต่ง</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="191" />
-        <source>Background:</source>
-        <translation>พื้นหลัง:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="202" />
-        <source>Colors:</source>
-        <translation>สี:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="244" />
-        <source>Padding:</source>
-        <translation>ระยะขอบ:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="258" />
-        <source>Corners:</source>
-        <translation>มุมโค้ง:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="271" />
-        <source>Ratio:</source>
-        <translation>สัดส่วน:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="282" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="700" />
         <source>Shadow</source>
         <translation>เงา</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="323" />
-        <source>  Blur:</source>
-        <translation>  เบลอ:</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="342" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="741" />
         <source>Copy</source>
         <translation>คัดลอก</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="348" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="747" />
         <source>Save</source>
         <translation>บันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="355" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="190" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="754" />
         <source>Close</source>
         <translation>ปิด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="256" />
+        <source>Style</source>
+        <translation>สไตล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="273" />
+        <source>Custom</source>
+        <translation>กำหนดเอง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="408" />
+        <source>Style: %1</source>
+        <translation>สไตล์: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="457" />
+        <source>Background</source>
+        <translation>พื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="497" />
+        <source>Background: %1</source>
+        <translation>พื้นหลัง: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="539" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
+        <source>Customize</source>
+        <translation>ปรับแต่ง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="541" />
+        <source>Hide padding, corners, shadow and other details</source>
+        <translation>ซ่อนระยะขอบ มุม เงา และรายละเอียดอื่นๆ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="542" />
+        <source>Show padding, corners, shadow and other details</source>
+        <translation>แสดงระยะขอบ มุม เงา และรายละเอียดอื่นๆ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="605" />
+        <source>Background type</source>
+        <translation>ประเภทพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="615" />
+        <source>Colors</source>
+        <translation>สี</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="623" />
+        <source>First color</source>
+        <translation>สีแรก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="624" />
+        <source>Second color</source>
+        <translation>สีที่สอง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="674" />
+        <source>Padding</source>
+        <translation>ระยะขอบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="687" />
+        <source>Corners</source>
+        <translation>มุม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="710" />
+        <source>Shadow blur</source>
+        <translation>ความเบลอของเงา</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="725" />
+        <source>Aspect ratio</source>
+        <translation>อัตราส่วนภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="41" />
+        <source>Compact</source>
+        <translation>กะทัดรัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="42" />
+        <source>Standard</source>
+        <translation>มาตรฐาน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="43" />
+        <source>Spacious</source>
+        <translation>กว้างขวาง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="44" />
+        <source>Flat</source>
+        <translation>แบนราบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="287" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="296" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <source>Save style…</source>
+        <translation>บันทึกสไตล์…</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="302" />
+        <source>You can keep up to %1 saved styles. Delete one to save another.</source>
+        <translation>คุณเก็บสไตล์ที่บันทึกไว้ได้สูงสุด %1 รายการ ลบหนึ่งรายการเพื่อบันทึกสไตล์ใหม่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="357" />
+        <source>Style name</source>
+        <translation>ชื่อสไตล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="375" />
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="439" />
+        <source>Saved style: %1</source>
+        <translation>สไตล์ที่บันทึกไว้: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="941" />
+        <source>Delete style %1</source>
+        <translation>ลบสไตล์ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
+        <source>My style %1</source>
+        <translation>สไตล์ของฉัน %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <source>Rename style</source>
+        <translation>เปลี่ยนชื่อสไตล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <source>Rename</source>
+        <translation>เปลี่ยนชื่อ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="385" />
+        <source>Another saved style already has this name.</source>
+        <translation>มีสไตล์ที่บันทึกไว้อื่นใช้ชื่อนี้อยู่แล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="902" />
+        <source>Rename style %1</source>
+        <translation>เปลี่ยนชื่อสไตล์ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="922" />
+        <source>Rename (F2)</source>
+        <translation>เปลี่ยนชื่อ (F2)</translation>
     </message>
 </context>
 <context>
@@ -248,6 +275,114 @@
         <location filename="../src/qml/CanvasToolbarViewModel.cpp" line="34" />
         <source>Laser Pointer</source>
         <translation>เลเซอร์พอยน์เตอร์</translation>
+    </message>
+</context>
+<context>
+    <name>CaptureSettings</name>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
+        <source>Capture</source>
+        <translation>จับภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="23" />
+        <source>What happens when you take a screenshot, and how the region selector helps you aim.</source>
+        <translation>สิ่งที่เกิดขึ้นเมื่อคุณจับภาพหน้าจอ และตัวเลือกพื้นที่ช่วยให้เลือกได้แม่นยำอย่างไร</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="26" />
+        <source>After Capture</source>
+        <translation>หลังจับภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="81" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="31" />
+        <source>After full screen capture</source>
+        <translation>หลังจับภาพเต็มหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="33" />
+        <source>Copy to clipboard</source>
+        <translation>คัดลอกไปยังคลิปบอร์ด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="34" />
+        <source>Save to file</source>
+        <translation>บันทึกเป็นไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="35" />
+        <source>Open editor</source>
+        <translation>เปิดตัวแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="41" />
+        <source>Region Selector</source>
+        <translation>ตัวเลือกพื้นที่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="82" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="46" />
+        <source>Cursor companion</source>
+        <translation>ตัวช่วยเคอร์เซอร์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="48" />
+        <source>Off</source>
+        <translation>ปิด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="49" />
+        <source>Magnifier</source>
+        <translation>แว่นขยาย</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="50" />
+        <source>Beaver</source>
+        <translation>บีเวอร์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="83" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="59" />
+        <source>Show shortcut hints</source>
+        <translation>แสดงคำแนะนำคีย์ลัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="65" />
+        <source>Auto Blur</source>
+        <translation>เบลออัตโนมัติ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="66" />
+        <source>How faces and text are hidden when you use Auto Blur.</source>
+        <translation>วิธีซ่อนใบหน้าและข้อความเมื่อใช้เบลออัตโนมัติ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="84" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="72" />
+        <source>Blur type</source>
+        <translation>ประเภทการเบลอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="74" />
+        <source>Pixelate</source>
+        <translation>ทำเป็นพิกเซล</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="75" />
+        <source>Gaussian</source>
+        <translation>เกาส์เซียน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="85" />
+        <location filename="../src/qml/settings/CaptureSettings.qml" line="84" />
+        <source>Blur intensity</source>
+        <translation>ความเข้มการเบลอ</translation>
     </message>
 </context>
 <context>
@@ -352,71 +487,6 @@
     </message>
 </context>
 <context>
-    <name>FilesSettings</name>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
-        <source>Save Locations</source>
-        <translation>ตำแหน่งบันทึก</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="24" />
-        <source>Screenshots</source>
-        <translation>ภาพหน้าจอ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="30" />
-        <source>Recordings</source>
-        <translation>การบันทึก</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="36" />
-        <source>Filename Format</source>
-        <translation>รูปแบบชื่อไฟล์</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="39" />
-        <source>Template</source>
-        <translation>แม่แบบ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="74" />
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation>โทเค็น: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-โทเค็นวันที่: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} หรือ {date}</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="84" />
-        <source>Preview: </source>
-        <translation>ตัวอย่าง: </translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="92" />
-        <source>Save Behavior</source>
-        <translation>พฤติกรรมการบันทึก</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="95" />
-        <source>Auto-save screenshots</source>
-        <translation>บันทึกภาพหน้าจออัตโนมัติ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
-        <source>Remember last folder</source>
-        <translation>จำโฟลเดอร์ล่าสุด</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
-        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
-        <translation>เมื่อบันทึกรูปภาพด้วยตนเอง กล่องโต้ตอบจะเปิดในโฟลเดอร์ที่บันทึกสำเร็จครั้งล่าสุด การบันทึกอัตโนมัติยังคงใช้โฟลเดอร์ภาพหน้าจอด้านบน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/FilesSettings.qml" line="109" />
-        <source>Auto-save recordings</source>
-        <translation>บันทึกการบันทึกอัตโนมัติ</translation>
-    </message>
-</context>
-<context>
     <name>FloatingToolbar</name>
     <message>
         <location filename="../src/qml/toolbar/FloatingToolbar.qml" line="241" />
@@ -427,99 +497,120 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>GeneralSettings</name>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="77" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="38" />
         <source>Start on login</source>
         <translation>เริ่มเมื่อเข้าสู่ระบบ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="39" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="46" />
         <source>Language</source>
         <translation>ภาษา</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="42" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="78" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="51" />
         <source>Display language</source>
         <translation>ภาษาที่แสดง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="53" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="62" />
         <source>Appearance</source>
         <translation>รูปลักษณ์</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="56" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="79" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
         <source>App theme</source>
         <translation>ธีมแอป</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="58" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="69" />
         <source>Dark</source>
         <translation>มืด</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="59" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="70" />
         <source>Light</source>
         <translation>สว่าง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="67" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
         <source>Permissions</source>
         <translation>สิทธิ์</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="72" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="105" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="84" />
         <source>Screen Recording</source>
         <translation>การบันทึกหน้าจอ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="73" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="85" />
         <source>Required for capturing screenshots and recording your screen.</source>
         <translation>จำเป็นสำหรับการจับภาพหน้าจอและการบันทึกหน้าจอของคุณ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="80" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="106" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="93" />
         <source>Accessibility</source>
         <translation>การช่วยการเข้าถึง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="81" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="94" />
         <source>Required for global hotkeys and window detection.</source>
         <translation>จำเป็นสำหรับคีย์ลัดส่วนกลางและการตรวจจับหน้าต่าง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="87" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="100" />
         <source>Command Line</source>
         <translation>บรรทัดคำสั่ง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="80" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="105" />
         <source>CLI Status</source>
         <translation>สถานะ CLI</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="116" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
         <source>Please wait...</source>
         <translation>โปรดรอสักครู่...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="118" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="131" />
         <source>'snaptray' command is available</source>
         <translation>คำสั่ง 'snaptray' พร้อมใช้งาน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="119" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="132" />
         <source>'snaptray' command is not installed</source>
         <translation>ยังไม่ได้ติดตั้งคำสั่ง 'snaptray'</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Uninstall CLI</source>
         <translation>ถอนการติดตั้ง CLI</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/GeneralSettings.qml" line="129" />
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="142" />
         <source>Install CLI</source>
         <translation>ติดตั้ง CLI</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <source>General</source>
+        <translation>ทั่วไป</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="32" />
+        <source>Startup, language, theme and the permissions SnapTray needs.</source>
+        <translation>การเริ่มต้น ภาษา ธีม และสิทธิ์ที่ SnapTray ต้องการ</translation>
     </message>
 </context>
 <context>
@@ -529,7 +620,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>ประวัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1278" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1299" />
         <location filename="../src/PinWindow.cpp" line="1430" />
         <source>Open History Folder</source>
         <translation>เปิดโฟลเดอร์ประวัติ</translation>
@@ -543,7 +634,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>ภาพหน้าจอที่คุณจับด้วย SnapTray จะแสดงที่นี่</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="877" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="895" />
         <source>No results</source>
         <translation>ไม่พบผลลัพธ์</translation>
     </message>
@@ -552,11 +643,13 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>ลองใช้โฟลเดอร์อัจฉริยะอื่น</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1091" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1109" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1313" />
         <source>Smart Folders</source>
         <translation>โฟลเดอร์อัจฉริยะ</translation>
     </message>
     <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1310" />
         <source>All Screenshots</source>
         <translation>ภาพหน้าจอทั้งหมด</translation>
     </message>
@@ -579,32 +672,32 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>เล่นซ้ำได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="874" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="892" />
         <source>No editable projects</source>
         <translation>ไม่มีโปรเจกต์ที่แก้ไขได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="876" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="894" />
         <source>Nothing here yet</source>
         <translation>ยังไม่มีรายการ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="879" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="897" />
         <source>Turn on Keep editable projects in Settings &gt; Recording to edit recordings again after saving.</source>
         <translation>เปิด เก็บโปรเจกต์ที่แก้ไขได้ ในการตั้งค่า &gt; การบันทึก เพื่อแก้ไขการบันทึกอีกครั้งหลังจากบันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="881" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="899" />
         <source>Screenshots you capture in SnapTray, and recordings you keep as editable projects, will appear here.</source>
         <translation>ภาพหน้าจอที่คุณจับใน SnapTray และการบันทึกที่คุณเก็บเป็นโปรเจกต์ที่แก้ไขได้จะแสดงที่นี่</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="882" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="900" />
         <source>Try a different section or smart folder.</source>
         <translation>ลองส่วนอื่นหรือโฟลเดอร์อัจฉริยะอื่น</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1038" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1056" />
         <source>SnapTray</source>
         <translation>SnapTray</translation>
     </message>
@@ -628,7 +721,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>บันทึกเป็น</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1483" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1550" />
         <source>Delete</source>
         <translation>ลบ</translation>
     </message>
@@ -696,73 +789,73 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>ลบโปรเจกต์...</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="597" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="615" />
         <source>Preview unavailable</source>
         <translation>ไม่สามารถแสดงตัวอย่างได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1051" />
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1248" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1069" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1256" />
         <source>Library</source>
         <translation>คลัง</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1224" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1268" />
         <source>Editable project selected</source>
         <translation>เลือกโปรเจกต์ที่แก้ไขได้แล้ว</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1225" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1269" />
         <source>Screenshot selected</source>
         <translation>เลือกภาพหน้าจอแล้ว</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1226" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1270" />
         <source>Nothing selected</source>
         <translation>ไม่ได้เลือกรายการใด</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1289" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1356" />
         <source>Sort</source>
         <translation>เรียงลำดับ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1381" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1448" />
         <source>Grid view</source>
         <translation>มุมมองตาราง</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1395" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1462" />
         <source>List view</source>
         <translation>มุมมองรายการ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1428" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
         <source>Projects keep the full recording, including anything you blurred or cropped out.</source>
         <translation>โปรเจกต์จะเก็บการบันทึกทั้งหมด รวมถึงส่วนที่คุณเบลอหรือครอปออก</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1430" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1497" />
         <source>Projects not changed for %1 days are removed automatically.</source>
         <translation>โปรเจกต์ที่ไม่มีการเปลี่ยนแปลง %1 วันจะถูกลบโดยอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1432" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1499" />
         <source>Keeping new projects is off.</source>
         <translation>การเก็บโปรเจกต์ใหม่ปิดอยู่</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1466" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1533" />
         <source>Delete this editable project? Its full recording and edits are removed. The file you saved from it stays.</source>
         <translation>ลบโปรเจกต์ที่แก้ไขได้นี้หรือไม่ การบันทึกทั้งหมดและการแก้ไขจะถูกลบ ไฟล์ที่คุณบันทึกจากโปรเจกต์นี้ยังอยู่</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1467" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1534" />
         <source>Delete this screenshot from the Library? Files you saved from it stay.</source>
         <translation>ลบภาพหน้าจอนี้ออกจากคลังหรือไม่ ไฟล์ที่คุณบันทึกจากภาพนี้ยังอยู่</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="1495" />
+        <location filename="../src/qml/panels/HistoryWindow.qml" line="1563" />
         <source>Cancel</source>
         <translation>ยกเลิก</translation>
     </message>
@@ -815,50 +908,55 @@ File size: %3</source>
     <name>HotkeySettings</name>
     <message>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="53" />
-        <source>Keyboard Shortcuts</source>
-        <translation>คีย์ลัดแป้นพิมพ์</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="65" />
         <source>Restore All Defaults</source>
         <translation>คืนค่าเริ่มต้นทั้งหมด</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="151" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="162" />
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="186" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="137" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="148" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="172" />
         <source>Not Set</source>
         <translation>ยังไม่ได้ตั้ง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="181" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="167" />
         <source>Conflict</source>
         <translation>ขัดแย้ง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="183" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="169" />
         <source>Active</source>
         <translation>ใช้งานอยู่</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="185" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="171" />
         <source>Disabled</source>
         <translation>ปิดใช้งาน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="208" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="194" />
         <source>Edit</source>
         <translation>แก้ไข</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="213" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="199" />
         <source>Clear</source>
         <translation>ล้าง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/HotkeySettings.qml" line="218" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="204" />
         <source>Reset</source>
         <translation>รีเซ็ต</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="48" />
+        <source>Hotkeys</source>
+        <translation>คีย์ลัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
+        <source>Keyboard shortcuts for every task, grouped by what they do.</source>
+        <translation>คีย์ลัดสำหรับทุกงาน จัดกลุ่มตามการทำงาน</translation>
     </message>
 </context>
 <context>
@@ -1364,66 +1462,77 @@ File size: %3</source>
 <context>
     <name>OCRSettings</name>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="57" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="62" />
         <source>Select and order the languages for OCR recognition.
 English is always included and cannot be removed.</source>
         <translation>เลือกและจัดลำดับภาษาสำหรับการรู้จำ OCR
 ระบบจะรวมภาษาอังกฤษไว้เสมอและไม่สามารถลบออกได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="92" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="97" />
         <source>Preparing OCR languages...</source>
         <translation>กำลังเตรียมภาษา OCR...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="105" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="110" />
         <source>The settings window is ready. OCR languages are loading in the background.</source>
         <translation>หน้าต่างการตั้งค่าพร้อมใช้งานแล้ว กำลังโหลดภาษา OCR ในพื้นหลัง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="107" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="112" />
         <source>No OCR languages are available on this device right now.</source>
         <translation>ขณะนี้อุปกรณ์นี้ไม่มีภาษา OCR ที่ใช้งานได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="108" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="113" />
         <source>OCR is not available on this device.</source>
         <translation>อุปกรณ์นี้ไม่รองรับ OCR</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="137" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="142" />
         <source>Available Languages</source>
         <translation>ภาษาที่ใช้ได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="217" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="222" />
         <source>Add selected language</source>
         <translation>เพิ่มภาษาที่เลือก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="231" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="236" />
         <source>Remove selected language</source>
         <translation>ลบภาษาที่เลือก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="250" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="255" />
         <source>Selected Languages</source>
         <translation>ภาษาที่เลือก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="372" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="135" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
         <source>After OCR Recognition</source>
         <translation>หลังการรู้จำ OCR</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="377" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="383" />
         <source>Copy text directly to clipboard</source>
         <translation>คัดลอกข้อความไปยังคลิปบอร์ดโดยตรง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/OCRSettings.qml" line="378" />
+        <location filename="../src/qml/settings/OCRSettings.qml" line="384" />
         <source>Show editor to review and edit text</source>
         <translation>แสดงตัวแก้ไขเพื่อตรวจสอบและแก้ไขข้อความ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="55" />
+        <source>Text Recognition</source>
+        <translation>การรู้จำข้อความ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="56" />
+        <source>Which languages are recognized in screenshots, and what happens with the text.</source>
+        <translation>ภาษาที่รู้จำในภาพหน้าจอ และสิ่งที่เกิดขึ้นกับข้อความ</translation>
     </message>
 </context>
 <context>
@@ -2093,6 +2202,57 @@ English is always included and cannot be removed.</source>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>บันทึกภาพหน้าจอที่ปรับแต่งแล้ว</translation>
+    </message>
+</context>
+<context>
+    <name>PinWindowSettings</name>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
+        <source>Pin Windows</source>
+        <translation>หน้าต่างปักหมุด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="23" />
+        <source>How new pins look, and how much each zoom or opacity step changes.</source>
+        <translation>ลักษณะของหมุดใหม่ และการซูมหรือความทึบเปลี่ยนไปเท่าใดในแต่ละช่วง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="26" />
+        <source>Appearance</source>
+        <translation>รูปลักษณ์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="86" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="31" />
+        <source>Default opacity</source>
+        <translation>ความทึบเริ่มต้น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="87" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="42" />
+        <source>Show controls on hover</source>
+        <translation>แสดงตัวควบคุมเมื่อวางเมาส์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="47" />
+        <source>Steps</source>
+        <translation>ช่วงปรับ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="88" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="52" />
+        <source>Opacity step</source>
+        <translation>ช่วงปรับความทึบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="89" />
+        <location filename="../src/qml/settings/PinWindowSettings.qml" line="63" />
+        <source>Zoom step</source>
+        <translation>ช่วงปรับการซูม</translation>
     </message>
 </context>
 <context>
@@ -5081,12 +5241,13 @@ English is always included and cannot be removed.</source>
 <context>
     <name>RecordingSettings</name>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="251" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="264" />
         <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
         <translation>ยืนยันหน้าจอ ไมโครโฟน และเสียงระบบก่อนบันทึกทุกครั้ง หากปิดไว้ จะเริ่มบันทึกทันทีด้วยการตั้งค่านี้</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="250" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="113" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
         <source>Show setup before recording</source>
         <translation>แสดงการตั้งค่าก่อนบันทึก</translation>
     </message>
@@ -5131,107 +5292,116 @@ English is always included and cannot be removed.</source>
         <translation>MP4 บันทึกโดยตรงด้วยวิดีโอ H.264 และเสียงแบบเลือกได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="98" />
         <source>Frame rate</source>
         <translation>อัตราเฟรม</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="94" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="100" />
         <source>10 FPS</source>
         <translation>10 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="95" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
         <source>15 FPS</source>
         <translation>15 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
         <source>24 FPS</source>
         <translation>24 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="97" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="103" />
         <source>30 FPS</source>
         <translation>30 FPS</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="106" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="113" />
         <source>Default output format</source>
         <translation>รูปแบบผลลัพธ์เริ่มต้น</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="109" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="116" />
         <source>MP4 (H.264)</source>
         <translation>MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="110" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="117" />
         <source>GIF</source>
         <translation>GIF</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="111" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
         <source>WebP</source>
         <translation>WebP</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="118" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="112" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="126" />
         <source>Recording quality</source>
         <translation>คุณภาพการบันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="159" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="167" />
         <source>Audio</source>
         <translation>เสียง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="162" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="124" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="171" />
         <source>Record audio</source>
         <translation>บันทึกเสียง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="166" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="175" />
         <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
         <translation>เสียงจะถูกบันทึกในไฟล์ MP4 ชั่วคราว มีเพียงการส่งออก MP4 เท่านั้นที่เก็บเสียงไว้</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="168" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="177" />
         <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
         <translation>เสียงใช้ได้เฉพาะการบันทึก MP4 โดยตรง หรือเมื่อเปิดแสดงตัวอย่าง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="176" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="125" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="186" />
         <source>Source</source>
         <translation>แหล่งที่มา</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="179" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
         <source>Microphone</source>
         <translation>ไมโครโฟน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="180" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="190" />
         <source>System Audio</source>
         <translation>เสียงระบบ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="181" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="191" />
         <source>Both (Mixed)</source>
         <translation>ทั้งสองอย่าง (ผสม)</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="213" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="223" />
         <source>Loading audio devices...</source>
         <translation>กำลังโหลดอุปกรณ์เสียง...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="225" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="235" />
         <source>The recording page is ready. Input devices are loading in the background.</source>
         <translation>หน้าการบันทึกพร้อมใช้งานแล้ว กำลังโหลดอุปกรณ์นำเข้าในพื้นหลัง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="236" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="126" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="248" />
         <source>Input device</source>
         <translation>อุปกรณ์นำเข้า</translation>
     </message>
@@ -5244,77 +5414,82 @@ English is always included and cannot be removed.</source>
         <translation>เปิดตัวเลือกนี้ไว้เพื่อการตัดต่อหรือส่งออกหลังการบันทึก การบันทึกตัวอย่างจะถูกจับเป็น MP4 ก่อนเสมอ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="355" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="372" />
         <source>Countdown</source>
         <translation>นับถอยหลัง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="358" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="116" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="376" />
         <source>Show countdown</source>
         <translation>แสดงการนับถอยหลัง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="364" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="117" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="383" />
         <source>Duration</source>
         <translation>ระยะเวลา</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="366" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="385" />
         <source>1 second</source>
         <translation>1 วินาที</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="367" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="386" />
         <source>2 seconds</source>
         <translation>2 วินาที</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="368" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="387" />
         <source>3 seconds</source>
         <translation>3 วินาที</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="369" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="388" />
         <source>4 seconds</source>
         <translation>4 วินาที</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="370" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="389" />
         <source>5 seconds</source>
         <translation>5 วินาที</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="130" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="138" />
         <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
         <translation>คุณภาพของวิดีโอที่บันทึก เมื่อเปิดตัวอย่าง การบันทึกจะจับภาพด้วยคุณภาพสูงและแปลงเป็นคุณภาพนี้เมื่อบันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="263" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="276" />
         <source>All keys, including typed text</source>
         <translation>ทุกปุ่ม รวมถึงข้อความที่พิมพ์</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="273" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="286" />
         <source>For shortcut hints in the preview. Keys stay with the temporary recording and are deleted with it; they are never in the saved file.</source>
         <translation>สำหรับแสดงปุ่มลัดในตัวอย่าง ปุ่มที่บันทึกจะอยู่กับการบันทึกชั่วคราวและถูกลบไปพร้อมกัน ไม่อยู่ในไฟล์ที่บันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
         <source>Not available on this system yet</source>
         <translation>ยังไม่พร้อมใช้งานบนระบบนี้</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="261" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="274" />
         <source>Off</source>
         <translation>ปิด</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="258" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="114" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="271" />
         <source>Record keys</source>
         <translation>บันทึกปุ่ม</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="262" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="275" />
         <source>Shortcuts only</source>
         <translation>ปุ่มลัดเท่านั้น</translation>
     </message>
@@ -5339,79 +5514,94 @@ English is always included and cannot be removed.</source>
         <translation>90 วัน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="332" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="128" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="348" />
         <source>Keep editable projects</source>
         <translation>เก็บโปรเจกต์ที่แก้ไขได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="337" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="353" />
         <source>After saving, keep the recording and your edits so you can change and export it again from Recording Library. Projects keep the full screen recording, its pointer, keys and audio tracks, including anything you blurred or cropped out, and use disk space.</source>
         <translation>หลังจากบันทึก ให้เก็บการบันทึกและการแก้ไขไว้ เพื่อให้เปลี่ยนแปลงและส่งออกอีกครั้งได้จากคลังการบันทึก โปรเจกต์จะเก็บการบันทึกหน้าจอทั้งหมด ตัวชี้ ปุ่ม และแทร็กเสียง รวมถึงส่วนที่คุณเบลอหรือครอปออก และใช้พื้นที่ดิสก์</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="345" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="129" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="362" />
         <source>Delete projects not changed for</source>
         <translation>ลบโปรเจกต์ที่ไม่ได้เปลี่ยนแปลงเป็นเวลา</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="284" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="127" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="298" />
         <source>After recording</source>
         <translation>หลังการบันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="287" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="301" />
         <source>Edit in the preview</source>
         <translation>แก้ไขในหน้าตัวอย่าง</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="288" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="302" />
         <source>Save right away</source>
         <translation>บันทึกทันที</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="300" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
         <source>Quick mode: the file is saved in its final format as soon as you stop, with no preview and no editing tracks.</source>
         <translation>โหมดด่วน: ไฟล์จะถูกบันทึกในรูปแบบสุดท้ายทันทีที่คุณหยุด โดยไม่มีหน้าตัวอย่างและไม่มีแทร็กสำหรับแก้ไข</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="309" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="132" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
         <source>After saving</source>
         <translation>หลังจากบันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="312" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="326" />
         <source>Do nothing</source>
         <translation>ไม่ต้องทำอะไร</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="327" />
         <source>Copy the file</source>
         <translation>คัดลอกไฟล์</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="314" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="328" />
         <source>Show in folder</source>
         <translation>แสดงในโฟลเดอร์</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="299" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="313" />
         <source>Edit mode: trim, crop and add effects in the preview, then save. Preview recordings are always captured as MP4 first.</source>
         <translation>โหมดแก้ไข: ตัด ครอป และเพิ่มเอฟเฟกต์ในหน้าตัวอย่าง แล้วจึงบันทึก การบันทึกที่มีหน้าตัวอย่างจะถูกบันทึกเป็น MP4 ก่อนเสมอ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="323" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="115" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
         <source>Choose an area before recording</source>
         <translation>เลือกพื้นที่ก่อนบันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="324" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="339" />
         <source>Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.</source>
         <translation>ลากบนหน้าจอเพื่อเลือกสิ่งที่จะบันทึก โหมดแก้ไขยังคงบันทึกทั้งหน้าจอและเปิดหน้าตัวอย่างที่ครอปตามพื้นที่ จึงเปลี่ยนได้ภายหลัง ส่วนโหมดด่วนจะบันทึกเฉพาะพื้นที่</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/RecordingSettings.qml" line="338" />
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="354" />
         <source>Projects are kept when you save from the preview. Turn on Show preview to use them.</source>
         <translation>โปรเจกต์จะถูกเก็บเมื่อคุณบันทึกจากหน้าตัวอย่าง เปิด แสดงตัวอย่าง เพื่อใช้งาน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="92" />
+        <source>Recording</source>
+        <translation>การบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
+        <source>How screen recordings start, what they capture, and what happens when you stop.</source>
+        <translation>วิธีเริ่มบันทึกหน้าจอ สิ่งที่บันทึก และสิ่งที่เกิดขึ้นเมื่อหยุด</translation>
     </message>
 </context>
 <context>
@@ -5562,6 +5752,189 @@ English is always included and cannot be removed.</source>
         <location filename="../src/region/RegionSettingsHelper.cpp" line="345" />
         <source>Default</source>
         <translation>ค่าเริ่มต้น</translation>
+    </message>
+</context>
+<context>
+    <name>SavingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="24" />
+        <source>Saving</source>
+        <translation>การบันทึกไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="25" />
+        <source>Where screenshots and recordings are saved, how they are named, and the watermark added to them.</source>
+        <translation>ตำแหน่งที่บันทึกภาพหน้าจอและวิดีโอ วิธีตั้งชื่อ และลายน้ำที่เพิ่มลงไป</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="28" />
+        <source>Save Locations</source>
+        <translation>ตำแหน่งบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="90" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="33" />
+        <source>Screenshots</source>
+        <translation>ภาพหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="118" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="40" />
+        <source>Recordings</source>
+        <translation>การบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="46" />
+        <source>Filename Format</source>
+        <translation>รูปแบบชื่อไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="91" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="50" />
+        <source>Template</source>
+        <translation>แม่แบบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="85" />
+        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
+        <translation>โทเค็น: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+โทเค็นวันที่: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} หรือ {date}</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="95" />
+        <source>Preview: </source>
+        <translation>ตัวอย่าง: </translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="103" />
+        <source>Save Behavior</source>
+        <translation>พฤติกรรมการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="92" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="107" />
+        <source>Auto-save screenshots</source>
+        <translation>บันทึกภาพหน้าจออัตโนมัติ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="93" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="115" />
+        <source>Remember last folder</source>
+        <translation>จำโฟลเดอร์ล่าสุด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="116" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>เมื่อบันทึกรูปภาพด้วยตนเอง กล่องโต้ตอบจะเปิดในโฟลเดอร์ที่บันทึกสำเร็จครั้งล่าสุด การบันทึกอัตโนมัติยังคงใช้โฟลเดอร์ภาพหน้าจอด้านบน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="119" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="123" />
+        <source>Auto-save recordings</source>
+        <translation>บันทึกการบันทึกอัตโนมัติ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="129" />
+        <source>Watermark</source>
+        <translation>ลายน้ำ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="94" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="134" />
+        <source>Apply to images</source>
+        <translation>ใช้กับรูปภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="120" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="141" />
+        <source>Apply to recordings</source>
+        <translation>ใช้กับการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="95" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="161" />
+        <source>Image</source>
+        <translation>รูปภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="96" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="168" />
+        <source>Scale</source>
+        <translation>สเกล</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="97" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="178" />
+        <source>Opacity</source>
+        <translation>ความทึบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="98" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="188" />
+        <source>Margin</source>
+        <translation>ระยะขอบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="99" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="198" />
+        <source>Position</source>
+        <translation>ตำแหน่ง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="200" />
+        <source>Top-Left</source>
+        <translation>ซ้ายบน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="201" />
+        <source>Top-Right</source>
+        <translation>ขวาบน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="202" />
+        <source>Bottom-Left</source>
+        <translation>ซ้ายล่าง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="203" />
+        <source>Bottom-Right</source>
+        <translation>ขวาล่าง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="234" />
+        <source>No image</source>
+        <translation>ไม่มีรูปภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="245" />
+        <source>Library</source>
+        <translation>คลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="100" />
+        <location filename="../src/qml/settings/SavingSettings.qml" line="250" />
+        <source>Screenshots kept in Library</source>
+        <translation>ภาพหน้าจอที่เก็บในคลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SavingSettings.qml" line="259" />
+        <source>When there are more, the oldest are removed from the Library. Files you saved stay where they are.</source>
+        <translation>เมื่อมีมากกว่านี้ ภาพที่เก่าที่สุดจะถูกลบออกจากคลัง ไฟล์ที่คุณบันทึกไว้ยังคงอยู่ที่เดิม</translation>
     </message>
 </context>
 <context>
@@ -5793,51 +6166,90 @@ English is always included and cannot be removed.</source>
     </message>
 </context>
 <context>
+    <name>SettingsRow</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="96" />
+        <source>Reset %1 to default</source>
+        <translation>รีเซ็ต %1 เป็นค่าเริ่มต้น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsRow.qml" line="123" />
+        <source>Reset to default</source>
+        <translation>รีเซ็ตเป็นค่าเริ่มต้น</translation>
+    </message>
+</context>
+<context>
     <name>SettingsSidebar</name>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="23" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
         <source>General</source>
         <translation>ทั่วไป</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="24" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
         <source>Hotkeys</source>
         <translation>คีย์ลัด</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
-        <source>Advanced</source>
-        <translation>ขั้นสูง</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
-        <source>Watermark</source>
-        <translation>ลายน้ำ</translation>
-    </message>
-    <message>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="29" />
-        <source>OCR</source>
-        <translation>OCR</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="32" />
         <source>Recording</source>
         <translation>การบันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="34" />
-        <source>Files</source>
-        <translation>ไฟล์</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
         <source>Updates</source>
         <translation>อัปเดต</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/SettingsSidebar.qml" line="36" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="37" />
         <source>About</source>
         <translation>เกี่ยวกับ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="25" />
+        <source>Capture</source>
+        <translation>จับภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="26" />
+        <source>Pin Windows</source>
+        <translation>หน้าต่างปักหมุด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="31" />
+        <source>Saving</source>
+        <translation>การบันทึกไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
+        <source>Text Recognition</source>
+        <translation>การรู้จำข้อความ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="159" />
+        <source>Page</source>
+        <translation>หน้า</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="240" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="260" />
+        <source>Search settings</source>
+        <translation>ค้นหาการตั้งค่า</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="279" />
+        <source>Clear search</source>
+        <translation>ล้างการค้นหา</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="315" />
+        <source>Search results</source>
+        <translation>ผลการค้นหา</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="383" />
+        <source>No settings match “%1”</source>
+        <translation>ไม่มีการตั้งค่าที่ตรงกับ “%1”</translation>
     </message>
 </context>
 <context>
@@ -5984,7 +6396,7 @@ English is always included and cannot be removed.</source>
         <translation>ประวัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/QmlHistoryWindow.cpp" line="121" />
+        <location filename="../src/qml/QmlHistoryWindow.cpp" line="124" />
         <source>Library</source>
         <translation>คลัง</translation>
     </message>
@@ -6126,133 +6538,133 @@ English is always included and cannot be removed.</source>
 <context>
     <name>SnapTray::SettingsBackend</name>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1018" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1138" />
         <source>Never</source>
         <translation>ไม่เคย</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1106" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1226" />
         <source>Could not install the CLI. Check permissions and try again.</source>
         <translation>ไม่สามารถติดตั้ง CLI ได้ โปรดตรวจสอบสิทธิ์แล้วลองอีกครั้ง</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1107" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1227" />
         <source>Could not uninstall the CLI. Check permissions and try again.</source>
         <translation>ไม่สามารถถอนการติดตั้ง CLI ได้ โปรดตรวจสอบสิทธิ์แล้วลองอีกครั้ง</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1140" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1260" />
         <source>Select Screenshot Folder</source>
         <translation>เลือกโฟลเดอร์ภาพหน้าจอ</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1148" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1268" />
         <source>Select Recording Folder</source>
         <translation>เลือกโฟลเดอร์บันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1276" />
         <source>Select Watermark Image</source>
         <translation>เลือกรูปภาพลายน้ำ</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="1157" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="1277" />
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>รูปภาพ (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="271" />
         <source>Disable Windows Print Screen Shortcut?</source>
         <translation>ปิดทางลัด Print Screen ของ Windows หรือไม่</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="227" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="291" />
         <source>Windows Print Screen Shortcut Disabled</source>
         <translation>ปิดทางลัด Print Screen ของ Windows แล้ว</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="234" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="298" />
         <source>Windows Setting Not Changed</source>
         <translation>ไม่ได้เปลี่ยนการตั้งค่า Windows</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="235" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="299" />
         <source>SnapTray could not change the Windows Print Screen setting.</source>
         <translation>SnapTray ไม่สามารถเปลี่ยนการตั้งค่า Print Screen ของ Windows ได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="176" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="240" />
         <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
         <translation>บันทึก %1 แล้ว แต่ไม่สามารถเปิดใช้งานได้ เพราะทางลัดนี้ถูกใช้โดยแอปอื่นหรือระบบอยู่แล้ว</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="145" />
-        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="209" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="225" />
         <source>Hotkey Conflict</source>
         <translation>ปุ่มลัดชนกัน</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="156" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="220" />
         <source>Defaults were restored, but these shortcuts are still inactive: %1</source>
         <translation>คืนค่าเริ่มต้นแล้ว แต่ปุ่มลัดเหล่านี้ยังใช้งานไม่ได้: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="181" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="245" />
         <source>%1 was saved, but it could not be activated. %2</source>
         <translation>บันทึก %1 แล้ว แต่ไม่สามารถเปิดใช้งานได้ %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="210" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="274" />
         <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
         <translation>Windows กำลังใช้ปุ่ม Print Screen เพื่อเปิด Snipping Tool ซึ่งทำให้ SnapTray ไม่สามารถใช้ Print Screen เป็นทางลัดได้ ต้องการปิดการทำงานนี้เพื่อให้ SnapTray ใช้ปุ่ม Print Screen ได้หรือไม่</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="214" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="278" />
         <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
         <translation>หลังจากนั้นให้รีสตาร์ต SnapTray หาก Windows ยังคงเปิด Snipping Tool ให้ออกจากระบบ Windows (หรือรีสตาร์ต) แล้วลองอีกครั้ง</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="219" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="283" />
         <source>No, don't ask again</source>
         <translation>ไม่ อย่าถามอีก</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="228" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="292" />
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>รีสตาร์ต SnapTray เพื่อใช้ Print Screen หากยังคงเปิด Snipping Tool ให้ออกจากระบบ Windows แล้วเข้าสู่ระบบใหม่</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="348" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="468" />
         <source>Checking start on login status...</source>
         <translation>กำลังตรวจสอบสถานะการเริ่มต้นเมื่อเข้าสู่ระบบ...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="376" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="496" />
         <source>Updating start on login status...</source>
         <translation>กำลังอัปเดตสถานะการเริ่มต้นเมื่อเข้าสู่ระบบ...</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="427" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="547" />
         <source>Start on login status error: %1</source>
         <translation>ข้อผิดพลาดสถานะการเริ่มต้นเมื่อเข้าสู่ระบบ: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="437" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="557" />
         <source>Disabled in system startup settings. Re-enable it there.</source>
         <translation>ปิดใช้งานในการตั้งค่าการเริ่มต้นของระบบ โปรดเปิดใช้งานอีกครั้งจากที่นั่น</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="440" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="560" />
         <source>Disabled by your organization.</source>
         <translation>ปิดใช้งานโดยองค์กรของคุณ</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="443" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="563" />
         <source>Enabled by your organization.</source>
         <translation>เปิดใช้งานโดยองค์กรของคุณ</translation>
     </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="446" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="566" />
         <source>Start on login is unavailable for this package.</source>
         <translation>แพ็กเกจนี้ไม่รองรับการเริ่มต้นเมื่อเข้าสู่ระบบ</translation>
     </message>
@@ -6626,127 +7038,78 @@ English is always included and cannot be removed.</source>
 <context>
     <name>UpdatesSettings</name>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="30" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="35" />
         <source>Version</source>
         <translation>เวอร์ชัน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="33" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="38" />
         <source>Current Version</source>
         <translation>เวอร์ชันปัจจุบัน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="58" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="63" />
         <source>Automatic Updates</source>
         <translation>การอัปเดตอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="61" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="101" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="67" />
         <source>Auto-check updates</source>
         <translation>ตรวจสอบอัปเดตอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="68" />
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="102" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="75" />
         <source>Check frequency</source>
         <translation>ความถี่ในการตรวจสอบ</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="70" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="77" />
         <source>Every day</source>
         <translation>ทุกวัน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="71" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="78" />
         <source>Every 3 days</source>
         <translation>ทุก 3 วัน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="72" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="79" />
         <source>Every week</source>
         <translation>ทุกสัปดาห์</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="73" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="80" />
         <source>Every 2 weeks</source>
         <translation>ทุก 2 สัปดาห์</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="74" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="81" />
         <source>Every month</source>
         <translation>ทุกเดือน</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Checking...</source>
         <translation>กำลังตรวจสอบ...</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/UpdatesSettings.qml" line="117" />
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="124" />
         <source>Check Now</source>
         <translation>ตรวจสอบตอนนี้</translation>
     </message>
-</context>
-<context>
-    <name>WatermarkSettings</name>
     <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="23" />
-        <source>Apply to images</source>
-        <translation>ใช้กับรูปภาพ</translation>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="31" />
+        <source>Updates</source>
+        <translation>อัปเดต</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="29" />
-        <source>Apply to recordings</source>
-        <translation>ใช้กับการบันทึก</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="48" />
-        <source>Image</source>
-        <translation>รูปภาพ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="54" />
-        <source>Scale</source>
-        <translation>สเกล</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="63" />
-        <source>Opacity</source>
-        <translation>ความทึบ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="72" />
-        <source>Margin</source>
-        <translation>ระยะขอบ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="81" />
-        <source>Position</source>
-        <translation>ตำแหน่ง</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="83" />
-        <source>Top-Left</source>
-        <translation>ซ้ายบน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="84" />
-        <source>Top-Right</source>
-        <translation>ขวาบน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="85" />
-        <source>Bottom-Left</source>
-        <translation>ซ้ายล่าง</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="86" />
-        <source>Bottom-Right</source>
-        <translation>ขวาล่าง</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/WatermarkSettings.qml" line="117" />
-        <source>No image</source>
-        <translation>ไม่มีรูปภาพ</translation>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="32" />
+        <source>Your version, and how SnapTray checks for new ones.</source>
+        <translation>เวอร์ชันของคุณ และวิธีที่ SnapTray ตรวจหาเวอร์ชันใหม่</translation>
     </message>
 </context>
 <context>

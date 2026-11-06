@@ -1088,6 +1088,7 @@ set_source_files_properties(src/qml/toolbar/AutoBlurSection.qml PROPERTIES QT_RE
 # Settings controls
 set_source_files_properties(src/qml/controls/SettingsSection.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSection.qml)
 set_source_files_properties(src/qml/controls/SettingsRow.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsRow.qml)
+set_source_files_properties(src/qml/controls/SettingsPageHeader.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsPageHeader.qml)
 set_source_files_properties(src/qml/controls/SettingsToggle.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsToggle.qml)
 set_source_files_properties(src/qml/controls/SettingsSlider.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSlider.qml)
 set_source_files_properties(src/qml/controls/SettingsCombo.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsCombo.qml)
@@ -1105,11 +1106,11 @@ set_source_files_properties(src/qml/settings/SettingsWindow.qml PROPERTIES QT_RE
 set_source_files_properties(src/qml/settings/SettingsSidebar.qml PROPERTIES QT_RESOURCE_ALIAS settings/SettingsSidebar.qml)
 set_source_files_properties(src/qml/settings/GeneralSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/GeneralSettings.qml)
 set_source_files_properties(src/qml/settings/HotkeySettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/HotkeySettings.qml)
-set_source_files_properties(src/qml/settings/AdvancedSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/AdvancedSettings.qml)
-set_source_files_properties(src/qml/settings/WatermarkSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/WatermarkSettings.qml)
+set_source_files_properties(src/qml/settings/CaptureSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/CaptureSettings.qml)
+set_source_files_properties(src/qml/settings/PinWindowSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/PinWindowSettings.qml)
 set_source_files_properties(src/qml/settings/OCRSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/OCRSettings.qml)
 set_source_files_properties(src/qml/settings/RecordingSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/RecordingSettings.qml)
-set_source_files_properties(src/qml/settings/FilesSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/FilesSettings.qml)
+set_source_files_properties(src/qml/settings/SavingSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/SavingSettings.qml)
 set_source_files_properties(src/qml/settings/UpdatesSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/UpdatesSettings.qml)
 set_source_files_properties(src/qml/settings/AboutSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/AboutSettings.qml)
 
@@ -1188,6 +1189,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/DialogBase.qml
         src/qml/controls/SettingsSection.qml
         src/qml/controls/SettingsRow.qml
+        src/qml/controls/SettingsPageHeader.qml
         src/qml/controls/SettingsToggle.qml
         src/qml/controls/SettingsSlider.qml
         src/qml/controls/SettingsCombo.qml
@@ -1204,11 +1206,11 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/SettingsSidebar.qml
         src/qml/settings/GeneralSettings.qml
         src/qml/settings/HotkeySettings.qml
-        src/qml/settings/AdvancedSettings.qml
-        src/qml/settings/WatermarkSettings.qml
+        src/qml/settings/CaptureSettings.qml
+        src/qml/settings/PinWindowSettings.qml
         src/qml/settings/OCRSettings.qml
         src/qml/settings/RecordingSettings.qml
-        src/qml/settings/FilesSettings.qml
+        src/qml/settings/SavingSettings.qml
         src/qml/settings/UpdatesSettings.qml
         src/qml/settings/AboutSettings.qml
         src/qml/recording/RecordingEditorShell.qml

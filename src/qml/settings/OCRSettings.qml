@@ -51,6 +51,11 @@ Flickable {
         padding: ComponentTokens.settingsContentPadding
         spacing: ComponentTokens.settingsColumnSpacing
 
+        SettingsPageHeader {
+            title: qsTr("Text Recognition")
+            description: qsTr("Which languages are recognized in screenshots, and what happens with the text.")
+        }
+
         // Info label
         Text {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
@@ -372,6 +377,7 @@ Flickable {
         SettingsSection { title: qsTr("After OCR Recognition") }
 
         SettingsRadioGroup {
+            objectName: "ocrBehaviorGroup"
             currentValue: settingsBackend.ocrBehavior
             model: [
                 { text: qsTr("Copy text directly to clipboard"), value: 0 },

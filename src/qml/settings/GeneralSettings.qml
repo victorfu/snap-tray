@@ -27,7 +27,14 @@ Flickable {
         padding: ComponentTokens.settingsContentPadding
         spacing: ComponentTokens.settingsColumnSpacing
 
+        SettingsPageHeader {
+            title: qsTr("General")
+            description: qsTr("Startup, language, theme and the permissions SnapTray needs.")
+        }
+
         SettingsToggle {
+
+            objectName: "startOnLoginToggle"
             label: qsTr("Start on login")
             checked: settingsBackend.startOnLogin
             enabled: !settingsBackend.startOnLoginBusy
@@ -39,6 +46,8 @@ Flickable {
         SettingsSection { title: qsTr("Language") }
 
         SettingsCombo {
+
+            objectName: "languageCombo"
             label: qsTr("Display language")
             model: settingsBackend.availableLanguages
             currentIndex: root.findLanguageIndex()
@@ -53,6 +62,8 @@ Flickable {
         SettingsSection { title: qsTr("Appearance") }
 
         SettingsCombo {
+
+            objectName: "appThemeCombo"
             label: qsTr("App theme")
             model: [
                 { text: qsTr("Dark"), value: 0 },
@@ -69,6 +80,7 @@ Flickable {
         }
 
         SettingsPermissionRow {
+            objectName: "screenRecordingPermissionRow"
             label: qsTr("Screen Recording")
             description: qsTr("Required for capturing screenshots and recording your screen.")
             visible: settingsBackend.isMacOS
@@ -77,6 +89,7 @@ Flickable {
         }
 
         SettingsPermissionRow {
+            objectName: "accessibilityPermissionRow"
             label: qsTr("Accessibility")
             description: qsTr("Required for global hotkeys and window detection.")
             visible: settingsBackend.isMacOS

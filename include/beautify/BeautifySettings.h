@@ -45,6 +45,12 @@ struct BeautifySettings {
     BeautifyAspectRatio aspectRatio = BeautifyAspectRatio::Auto;
 };
 
+// A look the user saved by name (#227): the whole BeautifySettings.
+struct BeautifyCustomStyle {
+    QString name;
+    BeautifySettings look;
+};
+
 struct BeautifyPreset {
     QString name;
     QColor gradientStart;
