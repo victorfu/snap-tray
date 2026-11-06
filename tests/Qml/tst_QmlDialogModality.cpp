@@ -32,6 +32,8 @@ private slots:
     void modalityBlocksAndRestoresInput();
     void screenPickerPreservesParentAndContent();
     void growingDialogStaysOnScreen();
+    void constrainedResizeKeepsCentering();
+    void movedDialogKeepsUserPosition();
 };
 
 void TestQmlDialogModality::initTestCase()
@@ -168,6 +170,61 @@ void TestQmlDialogModality::growingDialogStaysOnScreen()
     QTRY_VERIFY2(available.contains(dialog->m_view->geometry()), qPrintable(describe()));
     QCOMPARE(dialog->m_view->x(), placed.x());
 }
+
+// Reproduce a WM delivering the constrained geometry before the resize signal,
+// even on CI's Xvfb where there is no window manager.
+void TestQmlDialogModality::constrainedResizeKeepsCentering()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    const QRect available = screen->availableGeometry();
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QFile qml(dir.filePath("Dialog.qml"));
+    QVERIFY(qml.open(QIODevice::WriteOnly));
+    qml.write("import QtQuick\nRectangle { property var viewModel; width: 200; height: 100 }");
+    qml.close();
+    QmlDialog dialog(QUrl::fromLocalFile(qml.fileName()), new QObject, "viewModel");
+    dialog.showCenteredOnScreen(screen);
+    QVERIFY(QTest::qWaitForWindowExposed(dialog.m_view));
+    const QSize grown(available.width() - 40, available.height() - 40);
+    const QPoint constrained(available.right() - grown.width() + 1,
+                             available.bottom() - grown.height() + 1);
+    {
+        const QSignalBlocker blocker(dialog.m_view);
+        dialog.m_view->setGeometry(QRect(constrained, grown));
+    }
+    dialog.keepViewOnScreen();
+    QCOMPARE(dialog.m_view->position(), QmlDialog::centeredTopLeftForBounds(available, grown));
+    QCOMPARE(dialog.m_centeredOn.data(), screen);
+}
+
+void TestQmlDialogModality::movedDialogKeepsUserPosition()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    const QRect available = screen->availableGeometry();
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QFile qml(dir.filePath("Dialog.qml"));
+    QVERIFY(qml.open(QIODevice::WriteOnly));
+    qml.write("import QtQuick\nRectangle { property var viewModel; width: 200; height: 100 }");
+    qml.close();
+    QmlDialog dialog(QUrl::fromLocalFile(qml.fileName()), new QObject, "viewModel");
+    dialog.showCenteredOnScreen(screen);
+    QVERIFY(QTest::qWaitForWindowExposed(dialog.m_view));
+    // Keep the same x: after growth both the old centered position and the
+    // user's position would be constrained to the very same bottom edge.
+    const QPoint moved(dialog.m_view->x(), available.top() + 100);
+    dialog.m_view->setPosition(moved);
+    QTRY_COMPARE(dialog.m_view->position(), moved);
+    QTRY_VERIFY(!dialog.m_centeredOn);
+    const int tall = available.height() - 40;
+    dialog.m_view->rootObject()->setHeight(tall);
+    QTRY_COMPARE(dialog.m_view->height(), tall);
+    const QPoint constrained(moved.x(), available.bottom() - tall + 1);
+    QTRY_COMPARE(dialog.m_view->position(), constrained);
+    QVERIFY(!dialog.m_centeredOn);
+}
+
 }
 
 QTEST_MAIN(SnapTray::TestQmlDialogModality)
