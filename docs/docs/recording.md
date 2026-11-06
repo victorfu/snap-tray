@@ -139,7 +139,7 @@ When a recording has this record, open **Pointer** in the inspector's Project se
 
 - **Pointer**: show or hide the mouse pointer in the exported video.
 - **Size** (1×, 1.5×, 2×, 3×): draw the pointer larger.
-- **Smooth** (Off, Low, Medium, High): smooth out a shaky path. Clicks always stay exactly where and when they happened. Off by default.
+- **Smooth** (Off, Low, Medium, High): smooth out a shaky path with a spring that anticipates movement and clicks, with tighter tracking during drags. Clicks stay at their recorded positions and times. Off preserves the recorded path and remains the default. Seeking and exporting use the same precomputed path; smoothing never reaches across a cut. Existing projects with smoothing enabled also use this improved model when reopened and exported, so their pointer paths can differ from earlier exports.
 - **Clicks**: show a brief ring where each click happened. Needs recorded clicks (Linux).
 - **Pointer** also includes these effects, all off by default:
   - **Hide When Idle** (1 s, 2 s, 5 s): fade the pointer out once it has not moved for that long. It fades back in just before it moves or clicks, so it is always visible at a click, and click rings are never hidden.

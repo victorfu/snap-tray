@@ -148,7 +148,7 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         ? std::make_shared<SnapTray::CursorEffectRenderer>(*timeline, m_cursorEffects, effectsClipEnd())
         : std::shared_ptr<SnapTray::CursorEffectRenderer>();
     // Nothing of the pointer reaches across a cut (#185).
-    if (cursor && hasTimelineEdits()) cursor->setTimeline(timelineMap());
+    if (cursor && !timelineMap().isEmpty()) cursor->setTimeline(timelineMap());
     const auto zoom = zoomAvailable() && m_zoom.isActive() ? std::make_shared<SnapTray::ZoomTrack>(m_zoom)
                                                             : std::shared_ptr<SnapTray::ZoomTrack>();
     const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()

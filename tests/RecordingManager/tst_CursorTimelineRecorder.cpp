@@ -7,6 +7,7 @@
 #include <QThread>
 
 #include "recording/CursorTimelineRecorder.h"
+#include "recording/CursorEffects.h"
 
 using namespace SnapTray;
 
@@ -96,6 +97,7 @@ class TestCursorTimelineRecorder : public QObject
 private slots:
     void startRecordsTheInitialPointer();
     void onlyChangesAreWritten();
+    void smoothingPreservesStationaryGaps();
     void shapeChangesInPlaceAndIsDeduplicated();
     void hiddenPointer();
     void clickShorterThanAPollIsKept();
@@ -148,6 +150,32 @@ void TestCursorTimelineRecorder::onlyChangesAreWritten()
     QCOMPARE(timeline.samples[1].tMs, qint64(176));
     // The shape is read only when its serial changes, not every poll.
     QCOMPARE(rig.probeState.shapeReads, 1);
+}
+
+void TestCursorTimelineRecorder::smoothingPreservesStationaryGaps()
+{
+    Rig rig;
+    QVERIFY(rig.recorder->start());
+    for (rig.now = 16; rig.now < 10000; rig.now += 16)
+        rig.recorder->sampleNow();
+    rig.now = 10000;
+    rig.probeState.state.position = QPoint(110, 10);
+    rig.recorder->sampleNow();
+    const auto timeline = rig.finish();
+    QCOMPARE(timeline.samples.size(), size_t(2));
+    for (auto level : {CursorEffectSettings::Smoothing::Low,
+                       CursorEffectSettings::Smoothing::Medium,
+                       CursorEffectSettings::Smoothing::High}) {
+        CursorEffectSettings settings;
+        settings.smoothing = level;
+        CursorEffectRenderer renderer(timeline, settings);
+        // Change-only samples must not imply movement throughout the idle gap.
+        for (qint64 ms : {1000, 5000, 9000})
+            QCOMPARE(*renderer.pointerPosition(ms), QPointF(10, 10));
+        QVERIFY(renderer.pointerPosition(10500)->x() > 109.0);
+        renderer.setTimeline(TimelineMap({{2000, 11000, 1.0}}));
+        QCOMPARE(*renderer.pointerPosition(5000), QPointF(10, 10));
+    }
 }
 
 void TestCursorTimelineRecorder::shapeChangesInPlaceAndIsDeduplicated()

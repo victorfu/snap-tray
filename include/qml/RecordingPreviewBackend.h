@@ -377,6 +377,7 @@ public:
     qint64 effectsClipEnd() const;
     void setClickRipple(bool value);
     const SnapTray::CursorTimeline* cursorTimeline() const { return m_cursorTimeline.get(); }
+    std::shared_ptr<const SnapTray::CursorTimeline> cursorTimelineSnapshot() const { return m_cursorTimeline; }
 
     // Zoom: drawn by the same paths as the pointer effects.
     bool zoomAvailable() const;
