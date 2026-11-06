@@ -183,8 +183,9 @@ void tst_BeautifyPanelQml::testResultsComeFirst_CustomizeCollapsed()
     QVERIFY(content->isVisible());
     QTRY_VERIFY(root->height() > collapsed);
     QTRY_COMPARE(qreal(view->height()), root->height());
+    // The panel moves up after it grows; on macOS the move lands a little later.
     if (QScreen* screen = view->screen()) {
-        QVERIFY(view->geometry().bottom() <= screen->availableGeometry().bottom());
+        QTRY_VERIFY(view->geometry().bottom() <= screen->availableGeometry().bottom());
     }
 
     // Stays as left while the panel is reused.
