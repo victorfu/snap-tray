@@ -29,6 +29,9 @@ constexpr SmoothingLevel kSmoothing[] = {
 constexpr SpringParameters kClickSpring{3600.0, 120.0, 1.0};
 constexpr SpringParameters kDragSpring{6400.0, 160.0, 1.0};
 constexpr double kSpringStepMs = 1000.0 / 120.0;
+// The recorder polls every 16 ms but omits unchanged samples. Interpolate
+// at most one poll before a change; longer gaps represent held positions.
+constexpr double kInputInterpolationMs = 16.0;
 constexpr double kLeadTransitionMs = 50.0;
 constexpr qint64 kSpringSettleMs = 1000;
 constexpr qint64 kJitterWindowMs = 100;
@@ -304,7 +307,15 @@ void CursorEffectRenderer::rebuildSpringPaths()
             if (!unique.empty() && unique.back().ms == knot.ms) unique.back() = knot;
             else unique.push_back(knot);
         }
-        input.knots = std::move(unique);
+        input.knots.clear();
+        input.knots.reserve(unique.size() * 2);
+        for (const auto& knot : unique) {
+            if (!input.knots.empty() && knot.ms - input.knots.back().ms > kInputInterpolationMs) {
+                const QPointF heldPosition = input.knots.back().position;
+                input.knots.push_back({knot.ms - kInputInterpolationMs, heldPosition});
+            }
+            input.knots.push_back(knot);
+        }
         std::vector<const CursorButtonEvent*> presses;
         for (auto e = event; e != eventEnd; ++e) if (e->down) presses.push_back(&*e);
         size_t nextPress = 0;
