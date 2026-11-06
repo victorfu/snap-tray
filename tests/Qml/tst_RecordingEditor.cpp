@@ -1480,9 +1480,10 @@ void tst_RecordingEditor::exportPanelKeepsTheEditorOutOfReach()
     QQuickItem* exportButton = item(view, "previewExportOptions");
     QVERIFY(exportButton);
     exportButton->forceActiveFocus();
-    QTRY_VERIFY(exportButton->hasActiveFocus());
+    QTRY_COMPARE(view->activeFocusItem(), exportButton);
 
-    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "openExport"));
+    // Open export from the Export button itself (Return activates it).
+    QTest::keyClick(view, Qt::Key_Return);
     QObject* popup = view->rootObject()->findChild<QObject*>("previewExportPanel");
     QTRY_VERIFY(popup && popup->property("opened").toBool());
     QVERIFY(!split->isEnabled());
@@ -1495,7 +1496,7 @@ void tst_RecordingEditor::exportPanelKeepsTheEditorOutOfReach()
     QTRY_VERIFY(split->isEnabled());
     // onClosed returns focus only to an enabled item, so this relies on the
     // editor being enabled again (opened turns false) before onClosed runs.
-    QTRY_VERIFY(exportButton->hasActiveFocus());
+    QTRY_COMPARE(view->activeFocusItem(), exportButton);
     backend.requestDiscard();
 }
 
