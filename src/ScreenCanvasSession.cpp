@@ -2005,9 +2005,7 @@ void ScreenCanvasSession::handleSurfaceWheel(ScreenCanvas* surface, QWheelEvent*
     }
 
     if (m_currentToolId == ToolId::StepBadge) {
-        int current = static_cast<int>(m_stepBadgeSize);
-        current = delta > 0 ? (current + 1) % 3 : (current + 2) % 3;
-        m_toolOptionsViewModel->handleStepBadgeSizeSelected(current);
+        m_toolOptionsViewModel->handleStepBadgeSizeWheelDelta(delta);
         event->accept();
         return;
     }

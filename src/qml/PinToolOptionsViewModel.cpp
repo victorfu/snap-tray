@@ -1,5 +1,6 @@
 #include "qml/PinToolOptionsViewModel.h"
 #include "annotations/ShapeAnnotation.h"
+#include "annotations/StepBadgeAnnotation.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolWidthSlot.h"
 #include "ui/DesignSystem.h"
@@ -357,6 +358,18 @@ bool PinToolOptionsViewModel::handleWidthWheelDelta(int delta)
         return false;
     int step = delta > 0 ? 1 : -1;
     handleWidthChanged(m_currentWidth + step);
+    return true;
+}
+
+bool PinToolOptionsViewModel::handleStepBadgeSizeWheelDelta(int delta)
+{
+    if (delta == 0)
+        return false;
+    const int smallest = static_cast<int>(StepBadgeSize::Small);
+    const int largest = static_cast<int>(StepBadgeSize::Large);
+    const int next = qBound(smallest, m_stepBadgeSize + (delta > 0 ? 1 : -1), largest);
+    if (next != m_stepBadgeSize)
+        handleStepBadgeSizeSelected(next);
     return true;
 }
 
