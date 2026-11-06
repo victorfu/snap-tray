@@ -97,7 +97,7 @@ Most runtime permissions are handled by the OS and installer shape. If you recor
 1. Start full-screen recording from the tray menu or configured recording hotkey.
 2. Record 5 to 10 seconds.
 3. Stop and export MP4.
-4. Confirm the output path in Settings > Files.
+4. Confirm the output path in Settings > Saving.
 
 ### Step 5: Resolve hotkey conflicts (2 min)
 
@@ -351,15 +351,18 @@ snaptray config --set files/filenamePrefix SnapTray
 
 ## Settings
 
-### Tabs
+### Pages
+
+Pages are grouped by task; Updates and About sit below a divider. A search field
+at the top of the sidebar (Ctrl+F / Cmd+F) finds pages, settings and hotkeys.
 
 - **General**: Launch at startup, language, theme, CLI install
-- **Hotkeys**: Centralized hotkey editor by category
-- **Advanced**: Magnifier, blur, pin defaults
-- **Watermark**: Image, opacity, scale, margin, position
-- **OCR**: Language order, post-recognition behavior (macOS/Windows)
+- **Capture**: Action after full screen capture, Region Selector (magnifier, cursor companion, shortcut hints), Auto Blur
+- **Pin Windows**: Pin appearance and steps
 - **Recording**: Frame rate, format, preview, audio, countdown (macOS/Windows)
-- **Files**: Screenshot/recording folders, filename templates
+- **Saving**: Screenshot/recording folders, filename templates, save behavior, watermark, screenshots kept in Library
+- **Text Recognition**: Language order, post-recognition behavior (macOS/Windows)
+- **Hotkeys**: Centralized hotkey editor by category
 - **Updates**: Version, auto-check interval, manual check
 - **About**: App info, version, copyright
 
