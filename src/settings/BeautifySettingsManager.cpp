@@ -1,5 +1,8 @@
 #include "settings/BeautifySettingsManager.h"
 #include "settings/Settings.h"
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSettings>
 #include <algorithm>
 
@@ -209,4 +212,91 @@ void BeautifySettingsManager::saveAspectRatio(BeautifyAspectRatio ratio)
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kKeyAspectRatio, static_cast<int>(ratio));
+}
+
+namespace {
+
+QJsonObject customStyleToJson(const BeautifyCustomStyle& style)
+{
+    const BeautifySettings& s = style.look;
+    return QJsonObject{
+        {QStringLiteral("name"), style.name},
+        {QStringLiteral("backgroundType"), static_cast<int>(s.backgroundType)},
+        {QStringLiteral("backgroundColor"), s.backgroundColor.name(QColor::HexArgb)},
+        {QStringLiteral("gradientStartColor"), s.gradientStartColor.name(QColor::HexArgb)},
+        {QStringLiteral("gradientEndColor"), s.gradientEndColor.name(QColor::HexArgb)},
+        {QStringLiteral("gradientAngle"), s.gradientAngle},
+        {QStringLiteral("padding"), s.padding},
+        {QStringLiteral("cornerRadius"), s.cornerRadius},
+        {QStringLiteral("shadowEnabled"), s.shadowEnabled},
+        {QStringLiteral("shadowBlur"), s.shadowBlur},
+        {QStringLiteral("shadowOffsetX"), s.shadowOffsetX},
+        {QStringLiteral("shadowOffsetY"), s.shadowOffsetY},
+        {QStringLiteral("shadowColor"), s.shadowColor.name(QColor::HexArgb)},
+        {QStringLiteral("aspectRatio"), static_cast<int>(s.aspectRatio)},
+    };
+}
+
+QColor colorOr(const QJsonObject& json, const char* key, const QColor& fallback)
+{
+    const QColor color(json.value(QLatin1String(key)).toString());
+    return color.isValid() ? color : fallback;
+}
+
+BeautifyCustomStyle customStyleFromJson(const QJsonObject& json)
+{
+    const BeautifySettings d;
+    BeautifyCustomStyle style;
+    style.name = json.value(QStringLiteral("name")).toString().trimmed();
+    BeautifySettings& s = style.look;
+    s.backgroundType = static_cast<BeautifyBackgroundType>(
+        std::clamp(json.value(QStringLiteral("backgroundType")).toInt(static_cast<int>(d.backgroundType)), 0, 2));
+    s.backgroundColor = colorOr(json, "backgroundColor", d.backgroundColor);
+    s.gradientStartColor = colorOr(json, "gradientStartColor", d.gradientStartColor);
+    s.gradientEndColor = colorOr(json, "gradientEndColor", d.gradientEndColor);
+    s.gradientAngle = std::clamp(json.value(QStringLiteral("gradientAngle")).toInt(d.gradientAngle), 0, 360);
+    s.padding = std::clamp(json.value(QStringLiteral("padding")).toInt(d.padding), 16, 200);
+    s.cornerRadius = std::clamp(json.value(QStringLiteral("cornerRadius")).toInt(d.cornerRadius), 0, 40);
+    s.shadowEnabled = json.value(QStringLiteral("shadowEnabled")).toBool(d.shadowEnabled);
+    s.shadowBlur = std::clamp(json.value(QStringLiteral("shadowBlur")).toInt(d.shadowBlur), 0, 100);
+    s.shadowOffsetX = std::clamp(json.value(QStringLiteral("shadowOffsetX")).toInt(d.shadowOffsetX), -50, 50);
+    s.shadowOffsetY = std::clamp(json.value(QStringLiteral("shadowOffsetY")).toInt(d.shadowOffsetY), -50, 50);
+    s.shadowColor = colorOr(json, "shadowColor", d.shadowColor);
+    s.aspectRatio = static_cast<BeautifyAspectRatio>(
+        std::clamp(json.value(QStringLiteral("aspectRatio")).toInt(static_cast<int>(d.aspectRatio)), 0, 5));
+    return style;
+}
+
+} // namespace
+
+QVector<BeautifyCustomStyle> BeautifySettingsManager::loadCustomStyles() const
+{
+    auto settings = SnapTray::getSettings();
+    const QJsonArray array = QJsonDocument::fromJson(
+        settings.value(kKeyCustomStyles).toString().toUtf8()).array();
+    QVector<BeautifyCustomStyle> styles;
+    for (const QJsonValue& value : array) {
+        BeautifyCustomStyle style = customStyleFromJson(value.toObject());
+        if (!style.name.isEmpty() && styles.size() < kMaxCustomStyles) {
+            styles.append(style);
+        }
+    }
+    return styles;
+}
+
+void BeautifySettingsManager::saveCustomStyles(const QVector<BeautifyCustomStyle>& styles)
+{
+    QJsonArray array;
+    for (const auto& style : styles) {
+        if (!style.name.trimmed().isEmpty() && array.size() < kMaxCustomStyles) {
+            array.append(customStyleToJson(style));
+        }
+    }
+    auto settings = SnapTray::getSettings();
+    if (array.isEmpty()) {
+        settings.remove(kKeyCustomStyles);
+    } else {
+        settings.setValue(kKeyCustomStyles,
+                          QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact)));
+    }
 }

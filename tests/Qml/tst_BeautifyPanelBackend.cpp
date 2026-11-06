@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "qml/BeautifyPanelBackend.h"
+#include "settings/BeautifySettingsManager.h"
 #include "settings/Settings.h"
 
 #include <QSignalSpy>
@@ -23,6 +24,7 @@ void clearBeautifySettings()
     settings.remove(QStringLiteral("beautify/shadowOffsetY"));
     settings.remove(QStringLiteral("beautify/shadowColor"));
     settings.remove(QStringLiteral("beautify/aspectRatio"));
+    settings.remove(QStringLiteral("beautify/customStyles"));
     settings.sync();
 }
 
@@ -45,6 +47,10 @@ private slots:
     void testCurrentStyle_CustomWhenNoneMatch();
     void testCurrentPreset_FollowsBackground();
     void testChosenStateSurvivesSaveAndReload();
+    void testCustomStyle_SaveApplyDelete();
+    void testCustomStyle_SameNameUpdates();
+    void testCustomStyle_LimitAndNames();
+    void testCustomStyle_ManagerClampsBadData();
 };
 
 void tst_BeautifyPanelBackend::init()
@@ -212,6 +218,96 @@ void tst_BeautifyPanelBackend::testChosenStateSurvivesSaveAndReload()
     SnapTray::BeautifyPanelBackend reopened;
     QCOMPARE(reopened.currentPreset(), 5);
     QCOMPARE(reopened.currentStyle(), 0);
+}
+
+void tst_BeautifyPanelBackend::testCustomStyle_SaveApplyDelete()
+{
+    // #227: a saved style keeps the whole look and survives a new panel.
+    {
+        SnapTray::BeautifyPanelBackend backend;
+        QCOMPARE(backend.customStyleModel().size(), 0);
+        QCOMPARE(backend.currentCustomStyle(), -1);
+        backend.setBackgroundType(static_cast<int>(BeautifyBackgroundType::Solid));
+        backend.setPadding(90);
+        backend.setAspectRatio(static_cast<int>(BeautifyAspectRatio::Square_1_1));
+        QSignalSpy changed(&backend, &SnapTray::BeautifyPanelBackend::customStylesChanged);
+        QVERIFY(backend.saveCustomStyle(QStringLiteral("  Docs  ")));
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(backend.currentCustomStyle(), 0);
+        QCOMPARE(backend.customStyleModel().at(0).toMap().value(QStringLiteral("name")).toString(),
+                 QStringLiteral("Docs"));
+        QVERIFY(!backend.saveCustomStyle(QStringLiteral("   ")));
+    }
+
+    SnapTray::BeautifyPanelBackend backend; // loads the last look and the saved style
+    QCOMPARE(backend.customStyleModel().size(), 1);
+    backend.applyStyle(1); // Standard: no longer the saved look
+    backend.setBackgroundType(static_cast<int>(BeautifyBackgroundType::LinearGradient));
+    QCOMPARE(backend.currentCustomStyle(), -1);
+
+    backend.applyCustomStyle(0);
+    QCOMPARE(backend.currentCustomStyle(), 0);
+    QCOMPARE(backend.padding(), 90);
+    QCOMPARE(backend.backgroundType(), static_cast<int>(BeautifyBackgroundType::Solid));
+    QCOMPARE(backend.aspectRatio(), static_cast<int>(BeautifyAspectRatio::Square_1_1));
+
+    backend.deleteCustomStyle(5); // out of range: nothing
+    QCOMPARE(backend.customStyleModel().size(), 1);
+    backend.deleteCustomStyle(0);
+    QCOMPARE(backend.customStyleModel().size(), 0);
+    QCOMPARE(backend.currentCustomStyle(), -1);
+    QVERIFY(BeautifySettingsManager::instance().loadCustomStyles().isEmpty());
+}
+
+void tst_BeautifyPanelBackend::testCustomStyle_SameNameUpdates()
+{
+    SnapTray::BeautifyPanelBackend backend;
+    backend.setPadding(40);
+    QVERIFY(backend.saveCustomStyle(QStringLiteral("Blog")));
+    backend.setPadding(150);
+    QVERIFY(backend.saveCustomStyle(QStringLiteral("blog"))); // same name, any case: update
+    QCOMPARE(backend.customStyleModel().size(), 1);
+    QCOMPARE(backend.customStyleModel().at(0).toMap().value(QStringLiteral("padding")).toInt(), 150);
+    QCOMPARE(backend.currentCustomStyle(), 0);
+}
+
+void tst_BeautifyPanelBackend::testCustomStyle_LimitAndNames()
+{
+    SnapTray::BeautifyPanelBackend backend;
+    QCOMPARE(backend.suggestedCustomStyleName(), QStringLiteral("My style 1"));
+    for (int i = 0; i < backend.maxCustomStyles(); ++i) {
+        backend.setPadding(20 + i);
+        QVERIFY(backend.saveCustomStyle(backend.suggestedCustomStyleName()));
+    }
+    QVERIFY(backend.customStylesFull());
+    QCOMPARE(backend.suggestedCustomStyleName(), QStringLiteral("My style %1").arg(backend.maxCustomStyles() + 1));
+    backend.setPadding(199);
+    QVERIFY(!backend.saveCustomStyle(QStringLiteral("One too many")));
+    QCOMPARE(backend.customStyleModel().size(), backend.maxCustomStyles());
+    backend.deleteCustomStyle(0);
+    QVERIFY(!backend.customStylesFull());
+    QCOMPARE(backend.suggestedCustomStyleName(), QStringLiteral("My style 1")); // the freed name
+}
+
+void tst_BeautifyPanelBackend::testCustomStyle_ManagerClampsBadData()
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(QStringLiteral("beautify/customStyles"),
+                      QStringLiteral(R"([{"name":"Wild","padding":9999,"cornerRadius":-3,"backgroundType":7,)"
+                                     R"("gradientStartColor":"not a colour","aspectRatio":42},{"name":"   "},"junk"])"));
+    settings.sync();
+    const auto styles = BeautifySettingsManager::instance().loadCustomStyles();
+    QCOMPARE(styles.size(), 1);
+    QCOMPARE(styles.at(0).name, QStringLiteral("Wild"));
+    QCOMPARE(styles.at(0).look.padding, 200);
+    QCOMPARE(styles.at(0).look.cornerRadius, 0);
+    QCOMPARE(styles.at(0).look.backgroundType, BeautifyBackgroundType::RadialGradient);
+    QCOMPARE(styles.at(0).look.gradientStartColor, BeautifySettings{}.gradientStartColor);
+    QCOMPARE(styles.at(0).look.aspectRatio, BeautifyAspectRatio::Twitter_2_1);
+
+    settings.setValue(QStringLiteral("beautify/customStyles"), QStringLiteral("{broken"));
+    settings.sync();
+    QVERIFY(BeautifySettingsManager::instance().loadCustomStyles().isEmpty());
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)

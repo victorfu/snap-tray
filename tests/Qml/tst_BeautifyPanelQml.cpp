@@ -3,9 +3,11 @@
 #include "qml/BeautifyPanelBackend.h"
 #include "qml/QmlBeautifyPanel.h"
 #include "qml/QmlOverlayManager.h"
+#include "settings/Settings.h"
 
 #include <QQuickItem>
 #include <QScreen>
+#include <QScopeGuard>
 #include <QQuickView>
 #include <QQmlContext>
 #include <QSignalSpy>
@@ -42,6 +44,7 @@ private slots:
     void testResultsComeFirst_CustomizeCollapsed();
     void testStyleCardAndShadowToggle();
     void testTallPanelScrollsOnShortScreen();
+    void testSaveStyleByName();
 };
 
 void tst_BeautifyPanelQml::testSliderBindingSurvivesReopen_data()
@@ -252,6 +255,66 @@ void tst_BeautifyPanelQml::testTallPanelScrollsOnShortScreen()
     root->setProperty("customizeExpanded", false);
     QTRY_COMPARE(root->height(), collapsed);
     QVERIFY(!scroller->property("interactive").toBool());
+}
+
+void tst_BeautifyPanelQml::testSaveStyleByName()
+{
+    // #227: "Save style…" asks for a name inline; Esc cancels the name without
+    // closing the panel; Return saves; the saved card can be deleted by key.
+    auto settings = SnapTray::getSettings();
+    settings.remove(QStringLiteral("beautify/customStyles"));
+    settings.sync();
+    auto cleanup = qScopeGuard([] {
+        auto s = SnapTray::getSettings();
+        s.remove(QStringLiteral("beautify/customStyles"));
+        s.sync();
+    });
+
+    SnapTray::QmlBeautifyPanel panel;
+    BeautifySettings look;
+    look.padding = 101; // no built-in style: "Custom"
+    panel.setSettings(look);
+    panel.showNear(QRect(100, 100, 400, 300));
+    auto* view = qobject_cast<QQuickView*>(panel.window());
+    QVERIFY(view && view->rootObject());
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    view->requestActivate();
+    QQuickItem* root = view->rootObject();
+    auto* backend = panel.findChild<SnapTray::BeautifyPanelBackend*>();
+    QVERIFY(backend);
+
+    auto* saveButton = findItem(root, QStringLiteral("beautifySaveStyleButton"));
+    QVERIFY(saveButton && saveButton->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(root, "startNamingStyle"));
+    QVERIFY(root->property("namingStyle").toBool());
+    auto* input = findItem(root, QStringLiteral("beautifyStyleNameInput"));
+    QVERIFY(input);
+    QCOMPARE(input->property("text").toString(), QStringLiteral("My style 1"));
+    QTRY_VERIFY(input->hasActiveFocus());
+
+    QTest::keyClick(view, Qt::Key_Escape);
+    QVERIFY(!root->property("namingStyle").toBool());
+    QVERIFY(panel.isVisible()); // Esc cancelled the name, not the panel
+    QCOMPARE(backend->customStyleModel().size(), 0);
+
+    QVERIFY(QMetaObject::invokeMethod(root, "startNamingStyle"));
+    QTRY_VERIFY(input->hasActiveFocus());
+    input->setProperty("text", QStringLiteral("Release notes"));
+    QTest::keyClick(view, Qt::Key_Return);
+    QVERIFY(!root->property("namingStyle").toBool());
+    QCOMPARE(backend->customStyleModel().size(), 1);
+    QCOMPARE(backend->currentCustomStyle(), 0);
+    QVERIFY(!saveButton->isVisible()); // already a saved style
+
+    QQuickItem* card = nullptr;
+    QTRY_VERIFY((card = findItem(root, QStringLiteral("beautifySavedStyle0"))) != nullptr);
+    QVERIFY(card->property("chosen").toBool());
+    card->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_Delete);
+    QCOMPARE(backend->customStyleModel().size(), 0);
+
+    QTest::keyClick(view, Qt::Key_Escape); // now Esc closes the panel again
+    QTRY_VERIFY(!panel.isVisible());
 }
 
 QTEST_MAIN(tst_BeautifyPanelQml)

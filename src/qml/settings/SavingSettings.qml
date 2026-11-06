@@ -28,6 +28,7 @@ Flickable {
         SettingsSection { title: qsTr("Save Locations") }
 
         SettingsPathPicker {
+            resetKey: "screenshotPath"
             objectName: "screenshotPathPicker"
             label: qsTr("Screenshots")
             path: settingsBackend.screenshotPath
@@ -35,6 +36,7 @@ Flickable {
         }
 
         SettingsPathPicker {
+            resetKey: "recordingPath"
             label: qsTr("Recordings")
             visible: settingsBackend.recordingSupported
             path: settingsBackend.recordingPath
@@ -44,6 +46,7 @@ Flickable {
         SettingsSection { title: qsTr("Filename Format") }
 
         SettingsRow {
+            resetKey: "filenameTemplate"
             label: qsTr("Template")
 
             Rectangle {
@@ -100,12 +103,14 @@ Flickable {
         SettingsSection { title: qsTr("Save Behavior") }
 
         SettingsToggle {
+            resetKey: "autoSaveScreenshots"
             label: qsTr("Auto-save screenshots")
             checked: settingsBackend.autoSaveScreenshots
             onToggled: function(checked) { settingsBackend.autoSaveScreenshots = checked }
         }
 
         SettingsToggle {
+            resetKey: "useLastScreenshotSaveLocation"
             objectName: "rememberLastFolderToggle"
             label: qsTr("Remember last folder")
             description: qsTr("When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.")
@@ -114,6 +119,7 @@ Flickable {
         }
 
         SettingsToggle {
+            resetKey: "autoSaveRecordings"
             label: qsTr("Auto-save recordings")
             visible: settingsBackend.recordingSupported
             checked: settingsBackend.autoSaveRecordings
@@ -123,6 +129,7 @@ Flickable {
         SettingsSection { title: qsTr("Watermark") }
 
         SettingsToggle {
+            resetKey: "watermarkEnabled"
             objectName: "watermarkImagesToggle"
             label: qsTr("Apply to images")
             checked: settingsBackend.watermarkEnabled
@@ -130,6 +137,7 @@ Flickable {
         }
 
         SettingsToggle {
+            resetKey: "watermarkApplyToRecording"
             label: qsTr("Apply to recordings")
             visible: settingsBackend.recordingSupported
             checked: settingsBackend.watermarkApplyToRecording
@@ -149,12 +157,14 @@ Flickable {
                 spacing: SemanticTokens.spacing4
 
                 SettingsPathPicker {
+                    objectName: "watermarkImage"
                     label: qsTr("Image")
                     path: settingsBackend.watermarkImagePath
                     onBrowseClicked: settingsBackend.browseWatermarkImage()
                 }
 
                 SettingsSlider {
+                    resetKey: "watermarkScale"
                     label: qsTr("Scale")
                     value: settingsBackend.watermarkScale
                     from: 10
@@ -164,6 +174,7 @@ Flickable {
                 }
 
                 SettingsSlider {
+                    resetKey: "watermarkOpacity"
                     label: qsTr("Opacity")
                     value: settingsBackend.watermarkOpacity
                     from: 10
@@ -173,6 +184,7 @@ Flickable {
                 }
 
                 SettingsSlider {
+                    resetKey: "watermarkMargin"
                     label: qsTr("Margin")
                     value: settingsBackend.watermarkMargin
                     from: 0
@@ -182,6 +194,7 @@ Flickable {
                 }
 
                 SettingsCombo {
+                    resetKey: "watermarkPosition"
                     label: qsTr("Position")
                     model: [
                         { text: qsTr("Top-Left"), value: 0 },
@@ -232,6 +245,7 @@ Flickable {
         SettingsSection { title: qsTr("Library") }
 
         SettingsSlider {
+            resetKey: "pinMaxCacheFiles"
             objectName: "libraryMaxScreenshotsSlider"
             label: qsTr("Screenshots kept in Library")
             value: settingsBackend.pinMaxCacheFiles

@@ -377,6 +377,7 @@ Flickable {
         SettingsSection { title: qsTr("After OCR Recognition") }
 
         SettingsRadioGroup {
+            objectName: "ocrBehaviorGroup"
             currentValue: settingsBackend.ocrBehavior
             model: [
                 { text: qsTr("Copy text directly to clipboard"), value: 0 },

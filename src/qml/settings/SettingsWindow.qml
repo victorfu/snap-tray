@@ -30,6 +30,99 @@ Item {
         return false
     }
 
+    // ── Search results (#227) ────────────────────────────────
+    property var pendingReveal: null
+    property var highlightedRow: null
+
+    function findRow(node, target) {
+        if (!node)
+            return null
+        if (node.objectName === target || (node.resetKey !== undefined && node.resetKey === target))
+            return node
+        var kids = node.children
+        for (var i = 0; kids && i < kids.length; i++) {
+            var found = findRow(kids[i], target)
+            if (found)
+                return found
+        }
+        return null
+    }
+
+    // Opens a page and scrolls so the row named target (objectName or
+    // resetKey) is visible, with a short highlight. Returns false if the page
+    // is not offered.
+    function revealSetting(page, target) {
+        if (!selectPage(page))
+            return false
+        pendingReveal = { page: page, target: target || "" }
+        revealTimer.restart()
+        return true
+    }
+
+    function finishReveal() {
+        if (!pendingReveal)
+            return
+        var loader = pageLoader(pendingReveal.page)
+        var flick = loader ? loader.item : null
+        if (!flick) {
+            revealTimer.restart() // the page is still loading
+            return
+        }
+        var target = pendingReveal.target
+        pendingReveal = null
+        if (target.length === 0) {
+            flick.contentY = 0
+            return
+        }
+        var row = findRow(flick, target)
+        if (!row || !flick.contentItem)
+            return
+        var y = row.mapToItem(flick.contentItem, 0, 0).y
+        var maxY = Math.max(0, flick.contentHeight - flick.height)
+        flick.contentY = Math.max(0, Math.min(maxY, y - ComponentTokens.settingsContentPadding))
+        if (highlightedRow && highlightedRow.searchHighlight !== undefined)
+            highlightedRow.searchHighlight = false
+        highlightedRow = row
+        if (row.searchHighlight !== undefined) {
+            row.searchHighlight = true
+            highlightTimer.restart()
+        }
+    }
+
+    function pageLoader(key) {
+        for (var i = 0; i < contentStack.children.length; i++) {
+            if (contentStack.children[i].pageKey === key)
+                return contentStack.children[i]
+        }
+        return null
+    }
+
+    Timer {
+        id: revealTimer
+        interval: 16
+        onTriggered: root.finishReveal()
+    }
+
+    Timer {
+        id: highlightTimer
+        interval: 1600
+        onTriggered: {
+            if (root.highlightedRow && root.highlightedRow.searchHighlight !== undefined)
+                root.highlightedRow.searchHighlight = false
+            root.highlightedRow = null
+        }
+    }
+
+    Shortcut {
+        sequences: [StandardKey.Find]
+        onActivated: sidebar.focusSearch()
+    }
+
+    Connections {
+        target: sidebar
+        function onSettingRequested(page, target) { root.revealSetting(page, target) }
+    }
+
     function pageSupported(key) {
         if (key === "recording")
             return settingsBackend.recordingSupported

@@ -63,6 +63,7 @@ Flickable {
         SettingsSection { title: qsTr("Automatic Updates") }
 
         SettingsToggle {
+            resetKey: "autoCheckUpdates"
             label: qsTr("Auto-check updates")
             checked: settingsBackend.autoCheckUpdates
             enabled: !settingsBackend.updatesExternallyManaged
@@ -70,6 +71,7 @@ Flickable {
         }
 
         SettingsCombo {
+            resetKey: "checkFrequencyHours"
             label: qsTr("Check frequency")
             model: [
                 { text: qsTr("Every day"), value: 24 },

@@ -31,6 +31,7 @@
 #include "recording/KeyProbe.h"
 #include <QFutureWatcher>
 #include <QLocale>
+#include <QMetaProperty>
 #include <QMessageBox>
 #include <QPointer>
 #include <QPushButton>
@@ -115,6 +116,69 @@ CursorCompanionStyle cursorCompanionStyleFromUiValue(int value)
     default:
         return RegionCaptureSettingsManager::kDefaultCursorCompanionStyle;
     }
+}
+
+// Settings with a per-setting reset (#227). The key is the SettingsBackend
+// property; the default comes from the subsystem manager, in the property's
+// UI units (percent, list index). Resetting writes it through the property's
+// setter, so the manager stores it as usual.
+struct ResettableSetting {
+    const char* property;
+    QVariant (*defaultValue)();
+};
+
+const ResettableSetting kResettableSettings[] = {
+    // Capture
+    {"fullScreenCaptureAction", [] { return QVariant(int(RegionCaptureSettingsManager::kDefaultFullScreenCaptureAction)); }},
+    {"cursorCompanionStyle", [] { return QVariant(cursorCompanionStyleToUiValue(RegionCaptureSettingsManager::kDefaultCursorCompanionStyle)); }},
+    {"shortcutHintsEnabled", [] { return QVariant(RegionCaptureSettingsManager::kDefaultShortcutHintsEnabled); }},
+    {"blurType", [] { return QVariant(blurTypeToUiIndex(AutoBlurSettingsManager::kDefaultBlurType)); }},
+    {"blurIntensity", [] { return QVariant(AutoBlurSettingsManager::kDefaultBlurIntensity); }},
+    // Pin Windows and Library
+    {"pinDefaultOpacity", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultOpacity * 100.0)); }},
+    {"pinShowHoverControls", [] { return QVariant(PinWindowSettingsManager::kDefaultShowHoverControls); }},
+    {"pinOpacityStep", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultOpacityStep * 100.0)); }},
+    {"pinZoomStep", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultZoomStep * 100.0)); }},
+    {"pinMaxCacheFiles", [] { return QVariant(PinWindowSettingsManager::kDefaultMaxCacheFiles); }},
+    // Saving
+    {"screenshotPath", [] { return QVariant(FileSettingsManager::defaultScreenshotPath()); }},
+    {"recordingPath", [] { return QVariant(FileSettingsManager::defaultRecordingPath()); }},
+    {"filenameTemplate", [] { return QVariant(FileSettingsManager::defaultFilenameTemplate()); }},
+    {"autoSaveScreenshots", [] { return QVariant(FileSettingsManager::defaultAutoSaveScreenshots()); }},
+    {"useLastScreenshotSaveLocation", [] { return QVariant(FileSettingsManager::defaultUseLastScreenshotSaveLocation()); }},
+    {"autoSaveRecordings", [] { return QVariant(FileSettingsManager::defaultAutoSaveRecordings()); }},
+    {"watermarkEnabled", [] { return QVariant(WatermarkSettingsManager::kDefaultEnabled); }},
+    {"watermarkApplyToRecording", [] { return QVariant(WatermarkSettingsManager::kDefaultApplyToRecording); }},
+    {"watermarkScale", [] { return QVariant(WatermarkSettingsManager::kDefaultImageScale); }},
+    {"watermarkOpacity", [] { return QVariant(qRound(WatermarkSettingsManager::kDefaultOpacity * 100.0)); }},
+    {"watermarkMargin", [] { return QVariant(WatermarkSettingsManager::kDefaultMargin); }},
+    {"watermarkPosition", [] { return QVariant(int(WatermarkSettingsManager::kDefaultPosition)); }},
+    // Recording
+    {"recordingFrameRate", [] { return QVariant(RecordingSettingsManager::kDefaultFrameRate); }},
+    {"recordingOutputFormat", [] { return QVariant(RecordingSettingsManager::kDefaultOutputFormat); }},
+    {"recordingQuality", [] { return QVariant(RecordingSettingsManager::kDefaultQuality); }},
+    {"recordingAudioEnabled", [] { return QVariant(RecordingSettingsManager::kDefaultAudioEnabled); }},
+    {"recordingAudioSource", [] { return QVariant(RecordingSettingsManager::kDefaultAudioSource); }},
+    {"recordingShowSetup", [] { return QVariant(RecordingSettingsManager::kDefaultShowSetupBeforeRecording); }},
+    {"recordingShowPreview", [] { return QVariant(RecordingSettingsManager::kDefaultShowPreview); }},
+    {"recordingPreselectArea", [] { return QVariant(RecordingSettingsManager::kDefaultPreselectArea); }},
+    {"recordingKeepProjects", [] { return QVariant(RecordingSettingsManager::kDefaultKeepProjects); }},
+    {"recordingProjectCleanupDays", [] { return QVariant(RecordingSettingsManager::kDefaultProjectCleanupDays); }},
+    {"countdownEnabled", [] { return QVariant(RecordingSettingsManager::kDefaultCountdownEnabled); }},
+    {"countdownSeconds", [] { return QVariant(RecordingSettingsManager::kDefaultCountdownSeconds); }},
+    // Updates
+    {"autoCheckUpdates", [] { return QVariant(UpdateSettingsManager::kDefaultAutoCheck); }},
+    {"checkFrequencyHours", [] { return QVariant(UpdateSettingsManager::kDefaultCheckIntervalHours); }},
+};
+
+const ResettableSetting* findResettable(const QString& key)
+{
+    for (const auto& setting : kResettableSettings) {
+        if (key == QLatin1String(setting.property)) {
+            return &setting;
+        }
+    }
+    return nullptr;
 }
 
 bool isWindowsBuild()
@@ -250,9 +314,65 @@ SettingsBackend::SettingsBackend(QObject* parent)
     connect(&UpdateCoordinator::instance(), &UpdateCoordinator::lastCheckTimeChanged,
             this, &SettingsBackend::lastCheckedTextChanged);
     loadAllSettings();
+    watchResettableSettings();
 }
 
 SettingsBackend::~SettingsBackend() = default;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-setting reset (#227)
+// ─────────────────────────────────────────────────────────────────────────────
+
+void SettingsBackend::watchResettableSettings()
+{
+    const QMetaObject* meta = metaObject();
+    const QMetaMethod refresh = meta->method(meta->indexOfSlot("refreshChangedSettings()"));
+    for (const auto& setting : kResettableSettings) {
+        const QMetaProperty property = meta->property(meta->indexOfProperty(setting.property));
+        Q_ASSERT_X(property.isValid() && property.isWritable() && property.hasNotifySignal(),
+                   "SettingsBackend", setting.property);
+        if (property.hasNotifySignal()) {
+            connect(this, property.notifySignal(), this, refresh, Qt::UniqueConnection);
+        }
+    }
+    refreshChangedSettings();
+}
+
+void SettingsBackend::refreshChangedSettings()
+{
+    QStringList changed;
+    const QMetaObject* meta = metaObject();
+    for (const auto& setting : kResettableSettings) {
+        const QMetaProperty property = meta->property(meta->indexOfProperty(setting.property));
+        if (!property.isValid()) {
+            continue;
+        }
+        QVariant defaultValue = setting.defaultValue();
+        defaultValue.convert(property.metaType());
+        if (property.read(this) != defaultValue) {
+            changed.append(QString::fromLatin1(setting.property));
+        }
+    }
+    if (changed != m_changedSettings) {
+        m_changedSettings = changed;
+        emit changedSettingsChanged();
+    }
+}
+
+bool SettingsBackend::canResetSetting(const QString& key) const
+{
+    return findResettable(key) != nullptr;
+}
+
+void SettingsBackend::resetSetting(const QString& key)
+{
+    const ResettableSetting* setting = findResettable(key);
+    if (!setting) {
+        qWarning() << "SettingsBackend: no reset for" << key;
+        return;
+    }
+    setProperty(setting->property, setting->defaultValue());
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Load all settings from managers into the current view model state

@@ -26,6 +26,7 @@ Flickable {
         SettingsSection { title: qsTr("After Capture") }
 
         SettingsCombo {
+            resetKey: "fullScreenCaptureAction"
             objectName: "fullScreenCaptureActionCombo"
             label: qsTr("After full screen capture")
             model: [
@@ -40,6 +41,7 @@ Flickable {
         SettingsSection { title: qsTr("Region Selector") }
 
         SettingsCombo {
+            resetKey: "cursorCompanionStyle"
             objectName: "cursorCompanionCombo"
             label: qsTr("Cursor companion")
             model: [
@@ -52,6 +54,7 @@ Flickable {
         }
 
         SettingsToggle {
+            resetKey: "shortcutHintsEnabled"
             objectName: "shortcutHintsToggle"
             label: qsTr("Show shortcut hints")
             checked: settingsBackend.shortcutHintsEnabled
@@ -64,6 +67,7 @@ Flickable {
         }
 
         SettingsCombo {
+            resetKey: "blurType"
             objectName: "blurTypeCombo"
             label: qsTr("Blur type")
             model: [
@@ -75,6 +79,7 @@ Flickable {
         }
 
         SettingsSlider {
+            resetKey: "blurIntensity"
             objectName: "blurIntensitySlider"
             label: qsTr("Blur intensity")
             value: settingsBackend.blurIntensity

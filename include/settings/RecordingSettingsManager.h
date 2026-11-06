@@ -105,6 +105,9 @@ public:
     static constexpr bool kDefaultCountdownEnabled = true;
     static constexpr int kDefaultCountdownSeconds = 3;
     static constexpr bool kDefaultShowSetupBeforeRecording = false;
+    static constexpr bool kDefaultPreselectArea = false;
+    static constexpr bool kDefaultKeepProjects = false;
+    static constexpr int kDefaultProjectCleanupDays = 0; // 0 = keep forever
     static constexpr bool kDefaultNativeFrameEncoding = true;
     static constexpr bool kDefaultWindowsGraphicsCapture = false;
 

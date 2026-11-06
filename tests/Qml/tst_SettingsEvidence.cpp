@@ -18,6 +18,7 @@
 #include "qml/QmlBeautifyPanel.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/SettingsBackend.h"
+#include "settings/Settings.h"
 #include "ui/DesignSystem.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
@@ -136,6 +137,27 @@ void tst_SettingsEvidence::screenshots()
         page(QStringLiteral("capture"), QSize(1000, 680), QStringLiteral("01-settings-capture"));
         page(QStringLiteral("saving"), QSize(1000, 680), QStringLiteral("02-settings-saving"), true);
         page(QStringLiteral("pins"), QSize(860, 560), QStringLiteral("03-settings-pins-minimum"));
+
+        // Search: "watermark", the Opacity result opened, changed from its default.
+        const int savedOpacity = backend.watermarkOpacity();
+        auto restoreOpacity = qScopeGuard([&backend, savedOpacity] { backend.setWatermarkOpacity(savedOpacity); });
+        backend.setWatermarkOpacity(70);
+        view.resize(1000, 680);
+        QTRY_COMPARE(view.size(), QSize(1000, 680));
+        auto* input = root->findChild<QObject*>(QStringLiteral("settingsSearchInput"));
+        QVERIFY(input);
+        input->setProperty("text", QStringLiteral("watermark"));
+        QVariant revealed;
+        QVERIFY(QMetaObject::invokeMethod(root, "revealSetting", Q_RETURN_ARG(QVariant, revealed),
+                                          Q_ARG(QVariant, QStringLiteral("saving")),
+                                          Q_ARG(QVariant, QStringLiteral("watermarkOpacity"))));
+        QVERIFY(revealed.toBool());
+        QTest::qWait(250); // scrolled, highlight still on
+        auto* viewPtr = &view;
+        QTest::mouseMove(viewPtr, QPoint(view.width() - 4, view.height() - 4));
+        const QImage searchShot = view.grabWindow();
+        QVERIFY(searchShot.save(QDir(out).filePath(QStringLiteral("06-settings-search-") + suffix + QStringLiteral(".png"))));
+        input->setProperty("text", QString());
     }
 
     // Beautify: collapsed, then with Customize open.
@@ -157,6 +179,29 @@ void tst_SettingsEvidence::screenshots()
         QTRY_COMPARE(qreal(view->height()), view->rootObject()->height());
         save(view, QStringLiteral("05-beautify-customize"));
         view->rootObject()->setProperty("customizeExpanded", false);
+
+        // Saved styles (kept only for the screenshot).
+        auto settings = SnapTray::getSettings();
+        const QVariant savedStyles = settings.value(QStringLiteral("beautify/customStyles"));
+        auto restoreStyles = qScopeGuard([savedStyles] {
+            auto s = SnapTray::getSettings();
+            if (savedStyles.isValid())
+                s.setValue(QStringLiteral("beautify/customStyles"), savedStyles);
+            else
+                s.remove(QStringLiteral("beautify/customStyles"));
+        });
+        backend->applyPreset(4);
+        backend->applyStyle(0);
+        QVERIFY(backend->saveCustomStyle(QStringLiteral("Release notes")));
+        backend->applyPreset(1);
+        backend->applyStyle(3);
+        backend->setAspectRatio(static_cast<int>(BeautifyAspectRatio::Wide_16_9));
+        QVERIFY(backend->saveCustomStyle(QStringLiteral("Slides")));
+        backend->applyPreset(0);
+        backend->applyStyle(1);
+        save(view, QStringLiteral("07-beautify-saved"));
+        backend->deleteCustomStyle(1);
+        backend->deleteCustomStyle(0);
     }
 }
 

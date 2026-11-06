@@ -28,6 +28,11 @@ class BeautifyPanelBackend : public QObject
     // Index of the style/background preset matching the current settings, or -1.
     Q_PROPERTY(int currentStyle READ currentStyle NOTIFY settingsStateChanged)
     Q_PROPERTY(int currentPreset READ currentPreset NOTIFY settingsStateChanged)
+    // Saved styles (#227): the whole look, kept by BeautifySettingsManager.
+    Q_PROPERTY(QVariantList customStyleModel READ customStyleModel NOTIFY customStylesChanged)
+    Q_PROPERTY(int currentCustomStyle READ currentCustomStyle NOTIFY customStyleStateChanged)
+    Q_PROPERTY(bool customStylesFull READ customStylesFull NOTIFY customStylesChanged)
+    Q_PROPERTY(int maxCustomStyles READ maxCustomStyles CONSTANT)
     Q_PROPERTY(QVariantList backgroundTypeModel READ backgroundTypeModel CONSTANT)
     Q_PROPERTY(QVariantList aspectRatioModel READ aspectRatioModel CONSTANT)
     Q_PROPERTY(int previewRevision READ previewRevision NOTIFY previewRevisionChanged)
@@ -67,12 +72,22 @@ public:
     QVariantList styleModel() const;
     int currentStyle() const;
     int currentPreset() const;
+    QVariantList customStyleModel() const;
+    int currentCustomStyle() const;
+    bool customStylesFull() const;
+    int maxCustomStyles() const;
     QVariantList backgroundTypeModel() const;
     QVariantList aspectRatioModel() const;
     int previewRevision() const { return m_previewRevision; }
 
     Q_INVOKABLE void applyPreset(int index);
     Q_INVOKABLE void applyStyle(int index);
+    Q_INVOKABLE QString suggestedCustomStyleName() const;
+    // Saves the current look under name (trimmed). An existing name is
+    // updated; otherwise a new style is added while there is room.
+    Q_INVOKABLE bool saveCustomStyle(const QString& name);
+    Q_INVOKABLE void applyCustomStyle(int index);
+    Q_INVOKABLE void deleteCustomStyle(int index);
     Q_INVOKABLE void pickPrimaryColor();
     Q_INVOKABLE void pickSecondaryColor();
     Q_INVOKABLE void requestCopy();
@@ -82,6 +97,8 @@ public:
 signals:
     void settingsStateChanged();
     void presetModelChanged();
+    void customStylesChanged();
+    void customStyleStateChanged();
     void previewRevisionChanged();
     void copyRequested(const BeautifySettings& settings);
     void saveRequested(const BeautifySettings& settings);
@@ -92,7 +109,10 @@ private:
     void schedulePreviewUpdate();
     void commitSettingsChange();
 
+    void setCustomStyles(const QVector<BeautifyCustomStyle>& styles);
+
     BeautifySettings m_settings;
+    QVector<BeautifyCustomStyle> m_customStyles;
     QPixmap m_sourcePixmap;
     QVariantList m_presetModel;
     QTimer* m_previewTimer = nullptr;

@@ -255,6 +255,12 @@ void tst_QmlTranslations::testTaskSettingsAndBeautifyTranslatedForAllLocales()
         {"BeautifyPanel", "Standard"},
         {"BeautifyPanel", "Style: %1"},
         {"BeautifyPanel", "Shadow blur"},
+        {"BeautifyPanel", "Save style…"},
+        {"BeautifyPanel", "My style %1"},
+        {"SettingsSidebar", "Search settings"},
+        {"SettingsSidebar", "No settings match “%1”"},
+        {"SettingsRow", "Reset to default"},
+        {"SettingsRow", "Reset %1 to default"},
     };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));

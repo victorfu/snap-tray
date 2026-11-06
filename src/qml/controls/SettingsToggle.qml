@@ -13,6 +13,8 @@ Column {
     property string label: ""
     property string description: ""
     property bool checked: false
+    property string resetKey: ""
+    property bool searchHighlight: false
 
     signal toggled(bool checked)
 
@@ -30,6 +32,8 @@ Column {
     SettingsRow {
         label: root.label
         width: root.width
+        resetKey: root.resetKey
+        searchHighlight: root.searchHighlight
 
         Item {
             width: parent.width

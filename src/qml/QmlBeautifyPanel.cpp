@@ -247,7 +247,9 @@ bool QmlBeautifyPanel::eventFilter(QObject* watched, QEvent* event)
 
     if (event->type() == QEvent::KeyPress && m_view->isVisible()) {
         auto* keyEvent = static_cast<QKeyEvent*>(event);
-        if (keyEvent->key() == Qt::Key_Escape) {
+        // While a style name is being typed, Esc cancels the name instead.
+        if (keyEvent->key() == Qt::Key_Escape
+            && !(m_rootItem && m_rootItem->property("namingStyle").toBool())) {
             hide();
             emit closeRequested();
             return true;

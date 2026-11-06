@@ -25,6 +25,8 @@ class SettingsBackend : public QObject
     Q_OBJECT
 
     // ──── General ────
+    // Per-setting reset (#227): keys are property names; see kResettableSettings.
+    Q_PROPERTY(QStringList changedSettings READ changedSettings NOTIFY changedSettingsChanged)
     Q_PROPERTY(bool startOnLogin READ startOnLogin WRITE setStartOnLogin NOTIFY startOnLoginChanged)
     Q_PROPERTY(bool startOnLoginBusy READ startOnLoginBusy NOTIFY startOnLoginStateChanged)
     Q_PROPERTY(bool startOnLoginCanChange READ startOnLoginCanChange NOTIFY startOnLoginStateChanged)
@@ -300,6 +302,11 @@ public:
     Q_INVOKABLE void clearHotkey(int action);
     Q_INVOKABLE void resetHotkey(int action);
     Q_INVOKABLE void restoreAllHotkeys();
+
+    // Settings that differ from their manager default, and resetting one of them.
+    QStringList changedSettings() const { return m_changedSettings; }
+    Q_INVOKABLE bool canResetSetting(const QString& key) const;
+    Q_INVOKABLE void resetSetting(const QString& key);
     // Proactively offers to disable the Windows "Print Screen opens Snipping
     // Tool" shortcut so Print Screen can be bound as a global hotkey.
     Q_INVOKABLE void checkWindowsPrintScreenSnippingConflict();
@@ -307,6 +314,7 @@ public:
     Q_INVOKABLE QVariantList audioDevices() const;
 
 signals:
+    void changedSettingsChanged();
     // General
     void startOnLoginChanged();
     void startOnLoginStateChanged();
@@ -389,7 +397,12 @@ signals:
     void ocrBehaviorChanged();
     void ocrLanguagesChanged(const QStringList& languages);
 
+private slots:
+    void refreshChangedSettings();
+
 private:
+    void watchResettableSettings();
+    QStringList m_changedSettings;
     friend class ::tst_SettingsBackend;
 
     using StartOnLoginCompletion = std::function<void(AutoLaunchStatus)>;

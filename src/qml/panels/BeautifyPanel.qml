@@ -18,9 +18,27 @@ Item {
     property int rightPadding: 0
     // Stays as left while the panel is reused in a session.
     property bool customizeExpanded: false
+    // Naming a style to save (#227); Esc then cancels naming instead of closing.
+    property bool namingStyle: false
+
+    function startNamingStyle() {
+        if (!root.backend || root.backend.customStylesFull)
+            return
+        styleNameInput.text = root.backend.suggestedCustomStyleName()
+        root.namingStyle = true
+        styleNameInput.forceActiveFocus()
+        styleNameInput.selectAll()
+    }
+
+    function finishNamingStyle(save) {
+        if (save && root.backend && styleNameInput.text.trim().length > 0)
+            root.backend.saveCustomStyle(styleNameInput.text)
+        root.namingStyle = false
+    }
 
     readonly property int contentMargin: 16
     readonly property int styleCardHeight: 64
+    readonly property int styleCardWidth: Math.floor((width - 2 * contentMargin - 3 * 8) / 4)
     readonly property int swatchSize: 28
     // How much of a style's padding and corners the small card drawing shows.
     readonly property real cardPaddingScale: 0.09
@@ -210,16 +228,114 @@ Item {
 
             Text {
                 objectName: "beautifyCustomStyleCaption"
-                anchors.right: parent.right
                 anchors.left: styleCaption.right
                 anchors.leftMargin: SemanticTokens.spacing8
-                horizontalAlignment: Text.AlignRight
+                anchors.right: saveStyleButton.left
+                anchors.rightMargin: SemanticTokens.spacing8
+                anchors.verticalCenter: styleCaption.verticalCenter
                 elide: Text.ElideRight
-                visible: root.backend ? root.backend.currentStyle < 0 : false
+                visible: root.backend ? root.backend.currentStyle < 0 && root.backend.currentCustomStyle < 0 : false
                 text: qsTr("Custom")
                 color: SemanticTokens.textSecondary
                 font.pixelSize: SemanticTokens.fontSizeCaption
                 font.family: SemanticTokens.fontFamily
+            }
+
+            // Saves the current look by name; hidden once it is a saved style.
+            Text {
+                id: saveStyleButton
+                objectName: "beautifySaveStyleButton"
+                anchors.right: parent.right
+                anchors.verticalCenter: styleCaption.verticalCenter
+                visible: root.backend ? root.backend.currentCustomStyle < 0 && !root.namingStyle : false
+                readonly property bool full: root.backend ? root.backend.customStylesFull : false
+                text: qsTr("Save style…")
+                color: full ? SemanticTokens.textTertiary : SemanticTokens.accentDefault
+                font.pixelSize: SemanticTokens.fontSizeCaption
+                font.weight: Font.Medium
+                font.family: SemanticTokens.fontFamily
+                font.underline: saveStyleMouse.containsMouse && !full
+
+                activeFocusOnTab: visible
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Save style…")
+                Accessible.description: full ? saveStyleButton.fullText : ""
+                Accessible.onPressAction: root.startNamingStyle()
+                Keys.onSpacePressed: root.startNamingStyle()
+                Keys.onReturnPressed: root.startNamingStyle()
+                readonly property string fullText: root.backend
+                    ? qsTr("You can keep up to %1 saved styles. Delete one to save another.").arg(root.backend.maxCustomStyles)
+                    : ""
+
+                FocusFrame { showFocus: saveStyleButton.activeFocus }
+
+                MouseArea {
+                    id: saveStyleMouse
+                    anchors.fill: parent
+                    anchors.margins: -4
+                    hoverEnabled: true
+                    cursorShape: saveStyleButton.full ? Qt.ArrowCursor : CursorTokens.clickable
+                    onClicked: root.startNamingStyle()
+                }
+
+                ToolTip.visible: saveStyleMouse.containsMouse && full
+                ToolTip.text: fullText
+                ToolTip.delay: 300
+            }
+        }
+
+        // Name for the style being saved.
+        Row {
+            objectName: "beautifyStyleNameRow"
+            width: parent.width
+            spacing: 8
+            visible: root.namingStyle
+            height: visible ? 30 : 0
+
+            Rectangle {
+                width: parent.width - saveNameButton.width - cancelNameButton.width - 2 * parent.spacing
+                height: 30
+                radius: ComponentTokens.inputRadius
+                color: ComponentTokens.inputBackground
+                border.width: 1
+                border.color: styleNameInput.activeFocus ? ComponentTokens.inputBorderFocus : ComponentTokens.inputBorder
+
+                TextInput {
+                    id: styleNameInput
+                    objectName: "beautifyStyleNameInput"
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    verticalAlignment: TextInput.AlignVCenter
+                    maximumLength: 40
+                    color: SemanticTokens.textPrimary
+                    selectionColor: ComponentTokens.inputSelectionBackground
+                    selectedTextColor: ComponentTokens.inputSelectionText
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    clip: true
+                    selectByMouse: true
+                    Accessible.role: Accessible.EditableText
+                    Accessible.name: qsTr("Style name")
+                    Keys.onReturnPressed: root.finishNamingStyle(true)
+                    Keys.onEnterPressed: root.finishNamingStyle(true)
+                    Keys.onEscapePressed: root.finishNamingStyle(false)
+                }
+            }
+
+            SettingsButton {
+                id: saveNameButton
+                objectName: "beautifyStyleNameSave"
+                text: qsTr("Save")
+                primary: true
+                enabled: styleNameInput.text.trim().length > 0
+                onClicked: root.finishNamingStyle(true)
+            }
+
+            SettingsButton {
+                id: cancelNameButton
+                text: qsTr("Cancel")
+                onClicked: root.finishNamingStyle(false)
             }
         }
 
@@ -231,124 +347,54 @@ Item {
             Repeater {
                 model: root.backend ? root.backend.styleModel : []
 
-                delegate: Item {
-                    id: styleCard
+                delegate: StyleCard {
                     required property int index
                     required property var modelData
-                    readonly property bool chosen: root.backend ? root.backend.currentStyle === index : false
-                    readonly property real drawWidth: width - 8
-
                     objectName: "beautifyStyle" + index
-                    width: Math.floor((styleRow.width - 3 * styleRow.spacing) / 4)
-                    height: root.styleCardHeight
+                    width: root.styleCardWidth
+                    name: modelData.name
+                    accessibleName: qsTr("Style: %1").arg(modelData.name)
+                    padding: modelData.padding
+                    cornerRadius: modelData.cornerRadius
+                    shadowEnabled: modelData.shadowEnabled
+                    shadowBlur: modelData.shadowBlur
+                    startColor: root.backgroundStart
+                    endColor: root.backgroundEnd
+                    chosen: root.backend ? root.backend.currentStyle === index : false
+                    onActivated: if (root.backend) root.backend.applyStyle(index)
+                }
+            }
+        }
 
-                    activeFocusOnTab: true
-                    Accessible.role: Accessible.Button
-                    Accessible.name: qsTr("Style: %1").arg(modelData.name)
-                    Accessible.checkable: true
-                    Accessible.checked: chosen
-                    Accessible.onPressAction: if (root.backend) root.backend.applyStyle(index)
-                    Keys.onSpacePressed: if (root.backend) root.backend.applyStyle(index)
-                    Keys.onReturnPressed: if (root.backend) root.backend.applyStyle(index)
+        // Saved styles: the whole look, drawn on their own background.
+        Flow {
+            id: savedStyles
+            objectName: "beautifySavedStyles"
+            width: parent.width
+            spacing: 8
+            visible: savedRepeater.count > 0
 
-                    Rectangle {
-                        id: cardFrame
-                        anchors.top: parent.top
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: parent.width
-                        height: parent.height - cardLabel.implicitHeight - 4
-                        radius: SemanticTokens.radiusSmall
-                        color: "transparent"
-                        border.width: styleCard.chosen ? 2 : 1
-                        border.color: styleCard.chosen
-                            ? SemanticTokens.accentDefault
-                            : styleMouse.containsMouse
-                                ? ComponentTokens.beautifyPresetHoverRing
-                                : ComponentTokens.beautifyPreviewFrame
+            Repeater {
+                id: savedRepeater
+                model: root.backend ? root.backend.customStyleModel : []
 
-                        // A small drawing of the style on the current background.
-                        Rectangle {
-                            id: cardBackground
-                            anchors.fill: parent
-                            anchors.margins: 3
-                            radius: SemanticTokens.radiusSmall - 2
-                            clip: true
-                            gradient: Gradient {
-                                orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: root.backgroundStart }
-                                GradientStop { position: 1.0; color: root.backgroundEnd }
-                            }
-
-                            readonly property real inset: Math.max(2, styleCard.modelData.padding * root.cardPaddingScale)
-
-                            Rectangle {
-                                visible: styleCard.modelData.shadowEnabled
-                                x: inner.x + 1
-                                y: inner.y + 2
-                                width: inner.width
-                                height: inner.height
-                                radius: inner.radius
-                                color: "#000000"
-                                opacity: Math.min(0.45, 0.12 + styleCard.modelData.shadowBlur / 200)
-                            }
-
-                            Rectangle {
-                                id: inner
-                                x: cardBackground.inset
-                                y: cardBackground.inset
-                                width: cardBackground.width - 2 * cardBackground.inset
-                                height: cardBackground.height - 2 * cardBackground.inset
-                                radius: styleCard.modelData.cornerRadius * root.cardCornerScale
-                                color: "#ffffff"
-
-                                Column {
-                                    x: 4
-                                    y: 4
-                                    spacing: 2
-                                    Repeater {
-                                        model: 3
-                                        Rectangle {
-                                            required property int index
-                                            width: Math.max(0, inner.width * (0.7 - 0.15 * index) - 8)
-                                            height: 2
-                                            radius: 1
-                                            color: "#c8ccd4"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        FocusFrame {
-                            showFocus: styleCard.activeFocus
-                            extraRadius: cardFrame.radius
-                        }
-                    }
-
-                    Text {
-                        id: cardLabel
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
-                        text: styleCard.modelData.name
-                        color: styleCard.chosen ? SemanticTokens.textPrimary : SemanticTokens.textSecondary
-                        font.pixelSize: SemanticTokens.fontSizeCaption
-                        font.weight: styleCard.chosen ? Font.Medium : Font.Normal
-                        font.family: SemanticTokens.fontFamily
-                    }
-
-                    MouseArea {
-                        id: styleMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: CursorTokens.clickable
-                        onClicked: if (root.backend) root.backend.applyStyle(styleCard.index)
-                    }
-
-                    ToolTip.visible: styleMouse.containsMouse && cardLabel.truncated
-                    ToolTip.text: modelData.name
-                    ToolTip.delay: 500
+                delegate: StyleCard {
+                    required property int index
+                    required property var modelData
+                    objectName: "beautifySavedStyle" + index
+                    width: root.styleCardWidth
+                    name: modelData.name
+                    accessibleName: qsTr("Saved style: %1").arg(modelData.name)
+                    padding: modelData.padding
+                    cornerRadius: modelData.cornerRadius
+                    shadowEnabled: modelData.shadowEnabled
+                    shadowBlur: modelData.shadowBlur
+                    startColor: modelData.startColor
+                    endColor: modelData.endColor
+                    chosen: root.backend ? root.backend.currentCustomStyle === index : false
+                    deletable: true
+                    onActivated: if (root.backend) root.backend.applyCustomStyle(index)
+                    onDeleteRequested: if (root.backend) root.backend.deleteCustomStyle(index)
                 }
             }
         }
@@ -657,5 +703,164 @@ Item {
             }
         }
     }
+    }
+
+    // A style preview card: a small drawing of padding, corners and shadow on
+    // a background, its name below, a chosen ring, and for saved styles a
+    // delete button (also the Delete key).
+    component StyleCard: Item {
+        id: card
+        property string name
+        property string accessibleName
+        property int padding
+        property int cornerRadius
+        property bool shadowEnabled
+        property int shadowBlur
+        property color startColor
+        property color endColor
+        property bool chosen: false
+        property bool deletable: false
+        signal activated()
+        signal deleteRequested()
+
+        height: root.styleCardHeight
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Button
+        Accessible.name: accessibleName
+        Accessible.checkable: true
+        Accessible.checked: chosen
+        Accessible.onPressAction: card.activated()
+        Keys.onSpacePressed: card.activated()
+        Keys.onReturnPressed: card.activated()
+        Keys.onDeletePressed: if (card.deletable) card.deleteRequested()
+
+        Rectangle {
+            id: cardFrame
+            anchors.top: parent.top
+            width: parent.width
+            height: parent.height - cardLabel.implicitHeight - 4
+            radius: SemanticTokens.radiusSmall
+            color: "transparent"
+            border.width: card.chosen ? 2 : 1
+            border.color: card.chosen
+                ? SemanticTokens.accentDefault
+                : cardMouse.containsMouse ? ComponentTokens.beautifyPresetHoverRing : ComponentTokens.beautifyPreviewFrame
+
+            Rectangle {
+                id: cardBackground
+                anchors.fill: parent
+                anchors.margins: 3
+                radius: SemanticTokens.radiusSmall - 2
+                clip: true
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: card.startColor }
+                    GradientStop { position: 1.0; color: card.endColor }
+                }
+
+                readonly property real inset: Math.max(2, card.padding * root.cardPaddingScale)
+
+                Rectangle {
+                    visible: card.shadowEnabled
+                    x: inner.x + 1
+                    y: inner.y + 2
+                    width: inner.width
+                    height: inner.height
+                    radius: inner.radius
+                    color: "#000000"
+                    opacity: Math.min(0.45, 0.12 + card.shadowBlur / 200)
+                }
+
+                Rectangle {
+                    id: inner
+                    x: cardBackground.inset
+                    y: cardBackground.inset
+                    width: cardBackground.width - 2 * cardBackground.inset
+                    height: cardBackground.height - 2 * cardBackground.inset
+                    radius: card.cornerRadius * root.cardCornerScale
+                    color: "#ffffff"
+
+                    Column {
+                        x: 4
+                        y: 4
+                        spacing: 2
+                        Repeater {
+                            model: 3
+                            Rectangle {
+                                required property int index
+                                width: Math.max(0, inner.width * (0.7 - 0.15 * index) - 8)
+                                height: 2
+                                radius: 1
+                                color: "#c8ccd4"
+                            }
+                        }
+                    }
+                }
+            }
+
+            FocusFrame {
+                showFocus: card.activeFocus
+                extraRadius: cardFrame.radius
+            }
+        }
+
+        Text {
+            id: cardLabel
+            anchors.bottom: parent.bottom
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            text: card.name
+            color: card.chosen ? SemanticTokens.textPrimary : SemanticTokens.textSecondary
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.weight: card.chosen ? Font.Medium : Font.Normal
+            font.family: SemanticTokens.fontFamily
+        }
+
+        MouseArea {
+            id: cardMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: CursorTokens.clickable
+            onClicked: card.activated()
+        }
+
+        Rectangle {
+            id: deleteButton
+            objectName: "beautifyStyleDelete"
+            visible: card.deletable && (cardMouse.containsMouse || deleteMouse.containsMouse || card.activeFocus)
+            anchors.right: cardFrame.right
+            anchors.top: cardFrame.top
+            anchors.margins: -5
+            width: 18
+            height: 18
+            radius: 9
+            color: deleteMouse.containsMouse ? SemanticTokens.statusError : ComponentTokens.beautifyPreviewPlaceholder
+            border.width: 1
+            border.color: ComponentTokens.beautifyPreviewFrame
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Delete style %1").arg(card.name)
+            Accessible.onPressAction: card.deleteRequested()
+
+            SvgIcon {
+                anchors.centerIn: parent
+                source: "qrc:/icons/icons/close.svg"
+                iconSize: 10
+                color: deleteMouse.containsMouse ? "#ffffff" : SemanticTokens.iconColor
+            }
+
+            MouseArea {
+                id: deleteMouse
+                anchors.fill: parent
+                anchors.margins: -3
+                hoverEnabled: true
+                cursorShape: CursorTokens.clickable
+                onClicked: card.deleteRequested()
+            }
+        }
+
+        ToolTip.visible: cardMouse.containsMouse && cardLabel.truncated
+        ToolTip.text: name
+        ToolTip.delay: 500
     }
 }

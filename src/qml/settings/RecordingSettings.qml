@@ -94,6 +94,7 @@ Flickable {
         }
 
         SettingsCombo {
+            resetKey: "recordingFrameRate"
             label: qsTr("Frame rate")
             model: [
                 { text: qsTr("10 FPS"), value: 10 },
@@ -108,6 +109,7 @@ Flickable {
         }
 
         SettingsCombo {
+            resetKey: "recordingOutputFormat"
             label: qsTr("Default output format")
             enabled: !settingsBackend.recordingDirectMp4Only
             model: [
@@ -120,6 +122,7 @@ Flickable {
         }
 
         SettingsSlider {
+            resetKey: "recordingQuality"
             label: qsTr("Recording quality")
             value: settingsBackend.recordingQuality
             from: 0
@@ -164,6 +167,7 @@ Flickable {
         SettingsSection { title: qsTr("Audio"); visible: !settingsBackend.recordingDirectMp4Only }
 
         SettingsToggle {
+            resetKey: "recordingAudioEnabled"
             label: qsTr("Record audio")
             visible: !settingsBackend.recordingDirectMp4Only
             description: root.audioCaptureSupported
@@ -178,6 +182,7 @@ Flickable {
         }
 
         SettingsCombo {
+            resetKey: "recordingAudioSource"
             label: qsTr("Source")
             visible: !settingsBackend.recordingDirectMp4Only
             model: [
@@ -238,6 +243,8 @@ Flickable {
         }
 
         SettingsCombo {
+
+            objectName: "settingsInputDevice"
             label: qsTr("Input device")
             model: root.audioDeviceOptions
             currentIndex: root.audioDeviceToIndex(settingsBackend.recordingAudioDevice)
@@ -252,6 +259,7 @@ Flickable {
         Spacer {}
 
         SettingsToggle {
+            resetKey: "recordingShowSetup"
             label: qsTr("Show setup before recording")
             description: qsTr("Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.")
             checked: settingsBackend.recordingShowSetup
@@ -285,6 +293,7 @@ Flickable {
 
         // Quick or edit mode (#193), also chosen in the recording setup.
         SettingsCombo {
+            resetKey: "recordingShowPreview"
             objectName: "settingsRecordingMode"
             label: qsTr("After recording")
             visible: !settingsBackend.recordingDirectMp4Only
@@ -324,6 +333,7 @@ Flickable {
 
         // An area chosen before recording (#194); off by default.
         SettingsToggle {
+            resetKey: "recordingPreselectArea"
             objectName: "settingsPreselectArea"
             label: qsTr("Choose an area before recording")
             description: qsTr("Drag over the screen to pick what to record. Edit mode still records the whole screen and opens the preview cropped to the area, so you can change it; quick mode records only the area.")
@@ -333,6 +343,7 @@ Flickable {
 
         // Editable projects (#191): off by default, the recording is private.
         SettingsToggle {
+            resetKey: "recordingKeepProjects"
             objectName: "settingsKeepProjects"
             label: qsTr("Keep editable projects")
             visible: !settingsBackend.recordingDirectMp4Only
@@ -346,6 +357,7 @@ Flickable {
         }
 
         SettingsCombo {
+            resetKey: "recordingProjectCleanupDays"
             objectName: "settingsProjectCleanup"
             label: qsTr("Delete projects not changed for")
             visible: !settingsBackend.recordingDirectMp4Only
@@ -360,12 +372,14 @@ Flickable {
         SettingsSection { title: qsTr("Countdown") }
 
         SettingsToggle {
+            resetKey: "countdownEnabled"
             label: qsTr("Show countdown")
             checked: settingsBackend.countdownEnabled
             onToggled: function(checked) { settingsBackend.countdownEnabled = checked }
         }
 
         SettingsCombo {
+            resetKey: "countdownSeconds"
             label: qsTr("Duration")
             model: [
                 { text: qsTr("1 second"), value: 1 },

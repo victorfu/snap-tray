@@ -26,6 +26,7 @@ Flickable {
         SettingsSection { title: qsTr("Appearance") }
 
         SettingsSlider {
+            resetKey: "pinDefaultOpacity"
             objectName: "pinDefaultOpacitySlider"
             label: qsTr("Default opacity")
             value: settingsBackend.pinDefaultOpacity
@@ -36,6 +37,7 @@ Flickable {
         }
 
         SettingsToggle {
+            resetKey: "pinShowHoverControls"
             objectName: "pinHoverControlsToggle"
             label: qsTr("Show controls on hover")
             checked: settingsBackend.pinShowHoverControls
@@ -45,6 +47,7 @@ Flickable {
         SettingsSection { title: qsTr("Steps") }
 
         SettingsSlider {
+            resetKey: "pinOpacityStep"
             objectName: "pinOpacityStepSlider"
             label: qsTr("Opacity step")
             value: settingsBackend.pinOpacityStep
@@ -55,6 +58,7 @@ Flickable {
         }
 
         SettingsSlider {
+            resetKey: "pinZoomStep"
             objectName: "pinZoomStepSlider"
             label: qsTr("Zoom step")
             value: settingsBackend.pinZoomStep

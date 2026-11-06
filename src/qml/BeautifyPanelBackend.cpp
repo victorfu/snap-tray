@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QVariantMap>
 
+#include <algorithm>
 #include <iterator>
 
 namespace SnapTray {
@@ -44,6 +45,23 @@ constexpr BeautifyStylePreset kStylePresets[] = {
 };
 constexpr int kStyleCount = int(std::size(kStylePresets));
 
+// The parts of a look the panel shows; a saved style matches when they agree.
+bool sameLook(const BeautifySettings& a, const BeautifySettings& b)
+{
+    if (a.backgroundType != b.backgroundType || a.padding != b.padding
+        || a.cornerRadius != b.cornerRadius || a.shadowEnabled != b.shadowEnabled
+        || a.aspectRatio != b.aspectRatio) {
+        return false;
+    }
+    if (a.shadowEnabled && a.shadowBlur != b.shadowBlur) {
+        return false;
+    }
+    if (a.backgroundType == BeautifyBackgroundType::Solid) {
+        return a.backgroundColor == b.backgroundColor;
+    }
+    return a.gradientStartColor == b.gradientStartColor && a.gradientEndColor == b.gradientEndColor;
+}
+
 } // namespace
 
 BeautifyPanelBackend::BeautifyPanelBackend(QObject* parent)
@@ -58,6 +76,11 @@ BeautifyPanelBackend::BeautifyPanelBackend(QObject* parent)
     });
 
     rebuildPresetModel();
+    connect(this, &BeautifyPanelBackend::settingsStateChanged,
+            this, &BeautifyPanelBackend::customStyleStateChanged);
+    connect(this, &BeautifyPanelBackend::customStylesChanged,
+            this, &BeautifyPanelBackend::customStyleStateChanged);
+    m_customStyles = BeautifySettingsManager::instance().loadCustomStyles();
     setSettings(BeautifySettingsManager::instance().loadSettings());
 }
 
@@ -260,6 +283,106 @@ void BeautifyPanelBackend::applyStyle(int index)
     m_settings.shadowEnabled = style.shadowEnabled;
     m_settings.shadowBlur = style.shadowBlur;
     commitSettingsChange();
+}
+
+QVariantList BeautifyPanelBackend::customStyleModel() const
+{
+    QVariantList model;
+    for (const auto& style : m_customStyles) {
+        const BeautifySettings& look = style.look;
+        const bool solid = look.backgroundType == BeautifyBackgroundType::Solid;
+        model.append(QVariantMap{
+            {QStringLiteral("name"), style.name},
+            {QStringLiteral("padding"), look.padding},
+            {QStringLiteral("cornerRadius"), look.cornerRadius},
+            {QStringLiteral("shadowEnabled"), look.shadowEnabled},
+            {QStringLiteral("shadowBlur"), look.shadowBlur},
+            {QStringLiteral("startColor"), solid ? look.backgroundColor : look.gradientStartColor},
+            {QStringLiteral("endColor"), solid ? look.backgroundColor : look.gradientEndColor},
+        });
+    }
+    return model;
+}
+
+int BeautifyPanelBackend::currentCustomStyle() const
+{
+    for (int i = 0; i < m_customStyles.size(); ++i) {
+        if (sameLook(m_customStyles.at(i).look, m_settings)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool BeautifyPanelBackend::customStylesFull() const
+{
+    return m_customStyles.size() >= BeautifySettingsManager::kMaxCustomStyles;
+}
+
+int BeautifyPanelBackend::maxCustomStyles() const
+{
+    return BeautifySettingsManager::kMaxCustomStyles;
+}
+
+QString BeautifyPanelBackend::suggestedCustomStyleName() const
+{
+    for (int n = 1;; ++n) {
+        const QString name = QCoreApplication::translate("BeautifyPanel", "My style %1").arg(n);
+        const bool taken = std::any_of(m_customStyles.cbegin(), m_customStyles.cend(),
+                                       [&name](const BeautifyCustomStyle& s) {
+                                           return s.name.compare(name, Qt::CaseInsensitive) == 0;
+                                       });
+        if (!taken) {
+            return name;
+        }
+    }
+}
+
+bool BeautifyPanelBackend::saveCustomStyle(const QString& name)
+{
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty()) {
+        return false;
+    }
+    QVector<BeautifyCustomStyle> styles = m_customStyles;
+    auto existing = std::find_if(styles.begin(), styles.end(), [&trimmed](const BeautifyCustomStyle& s) {
+        return s.name.compare(trimmed, Qt::CaseInsensitive) == 0;
+    });
+    if (existing != styles.end()) {
+        existing->name = trimmed;
+        existing->look = m_settings;
+    } else if (styles.size() < BeautifySettingsManager::kMaxCustomStyles) {
+        styles.append({trimmed, m_settings});
+    } else {
+        return false;
+    }
+    setCustomStyles(styles);
+    return true;
+}
+
+void BeautifyPanelBackend::applyCustomStyle(int index)
+{
+    if (index < 0 || index >= m_customStyles.size()) {
+        return;
+    }
+    setSettings(m_customStyles.at(index).look);
+}
+
+void BeautifyPanelBackend::deleteCustomStyle(int index)
+{
+    if (index < 0 || index >= m_customStyles.size()) {
+        return;
+    }
+    QVector<BeautifyCustomStyle> styles = m_customStyles;
+    styles.removeAt(index);
+    setCustomStyles(styles);
+}
+
+void BeautifyPanelBackend::setCustomStyles(const QVector<BeautifyCustomStyle>& styles)
+{
+    m_customStyles = styles;
+    BeautifySettingsManager::instance().saveCustomStyles(m_customStyles);
+    emit customStylesChanged();
 }
 
 void BeautifyPanelBackend::pickPrimaryColor()

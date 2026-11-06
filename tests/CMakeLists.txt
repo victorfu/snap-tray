@@ -229,6 +229,7 @@ add_executable(Qml_SettingsWindowFeatureGating
     ${CMAKE_SOURCE_DIR}/include/qml/SettingsBackend.h
 )
 target_link_libraries(Qml_SettingsWindowFeatureGating PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_SettingsWindowFeatureGating PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME Qml_SettingsWindowFeatureGating COMMAND Qml_SettingsWindowFeatureGating)
 set_tests_properties(Qml_SettingsWindowFeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
 

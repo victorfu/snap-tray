@@ -49,6 +49,13 @@ public:
     BeautifyAspectRatio loadAspectRatio() const;
     void saveAspectRatio(BeautifyAspectRatio ratio);
 
+    // Saved styles (#227), oldest first. Values are clamped like the single
+    // settings; entries without a name are dropped; at most kMaxCustomStyles.
+    QVector<BeautifyCustomStyle> loadCustomStyles() const;
+    void saveCustomStyles(const QVector<BeautifyCustomStyle>& styles);
+
+    static constexpr int kMaxCustomStyles = 8;
+
 private:
     BeautifySettingsManager() = default;
     BeautifySettingsManager(const BeautifySettingsManager&) = delete;
@@ -67,6 +74,7 @@ private:
     static constexpr const char* kKeyShadowOffsetY      = "beautify/shadowOffsetY";
     static constexpr const char* kKeyShadowColor        = "beautify/shadowColor";
     static constexpr const char* kKeyAspectRatio        = "beautify/aspectRatio";
+    static constexpr const char* kKeyCustomStyles       = "beautify/customStyles";
 };
 
 #endif // BEAUTIFYSETTINGSMANAGER_H
