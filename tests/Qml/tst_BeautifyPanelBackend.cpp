@@ -64,7 +64,7 @@ private slots:
     void testCustomStyle_ManagerClampsBadData();
     void testCustomStyle_Rename();
     void testCustomStyle_PanelsStayInSync();
-    void testCustomStyle_RelativeToScreenshotSize();
+    void testCustomStyle_FixedPixelsOnScreenshots();
     void testCustomStyle_SavedInRecordingEditorApplies();
     void testCustomStyle_BorderWidthAndColorMatch();
     void testBorder_SavedWithTheLook();
@@ -405,9 +405,11 @@ void tst_BeautifyPanelBackend::testCustomStyle_PanelsStayInSync()
     QCOMPARE(stored.at(0).name, QStringLiteral("Talks"));
 }
 
-void tst_BeautifyPanelBackend::testCustomStyle_RelativeToScreenshotSize()
+void tst_BeautifyPanelBackend::testCustomStyle_FixedPixelsOnScreenshots()
 {
-    // #269: a style keeps sizes relative to the picture's shorter side.
+    // #269: on screenshots a saved style keeps its pixels whatever the
+    // screenshot's size, like the built-in styles; only the recording frame
+    // scales it with the video.
     SnapTray::BeautifyPanelBackend smallPanel;
     QPixmap smallShot(1280, 720);
     smallShot.fill(Qt::white);
@@ -417,19 +419,22 @@ void tst_BeautifyPanelBackend::testCustomStyle_RelativeToScreenshotSize()
     QVERIFY(smallPanel.saveCustomStyle(QStringLiteral("Docs")));
     QCOMPARE(smallPanel.currentCustomStyle(), 0);
     QCOMPARE(smallPanel.customStyleModel().at(0).toMap().value(QStringLiteral("padding")).toInt(), 64);
-    // Stored at the reference size (1440): twice as large as on a 720 px picture.
-    QCOMPARE(storedPadding(SnapTray::FrameStyleLibrary::instance().styles().at(0)), 128);
+    // Kept as a fraction of the reference size, for the recording frame.
+    QCOMPARE(SnapTray::FrameStyleLibrary::instance().styles().at(0).style.padding,
+             64.0 / SnapTray::FrameStyle::kReferenceShortSide);
+    QCOMPARE(storedPadding(SnapTray::FrameStyleLibrary::instance().styles().at(0)), 64);
 
-    SnapTray::BeautifyPanelBackend large;
-    QPixmap largeShot(1440, 1440);
-    largeShot.fill(Qt::white);
-    large.setSourcePixmap(largeShot);
-    large.applyCustomStyle(0);
-    QCOMPARE(large.padding(), 128);
-    QCOMPARE(large.cornerRadius(), 20);
-    QCOMPARE(large.currentCustomStyle(), 0);
+    for (const QSize size : {QSize(400, 300), QSize(1440, 1440), QSize(3840, 2160)}) {
+        SnapTray::BeautifyPanelBackend other;
+        QPixmap shot(size);
+        shot.fill(Qt::white);
+        other.setSourcePixmap(shot);
+        other.applyCustomStyle(0);
+        QCOMPARE(other.padding(), 64);
+        QCOMPARE(other.cornerRadius(), 10);
+        QCOMPARE(other.currentCustomStyle(), 0);
+    }
 
-    // A 2x screenshot is measured in logical pixels.
     SnapTray::BeautifyPanelBackend retina;
     QPixmap retinaShot(2560, 1440);
     retinaShot.setDevicePixelRatio(2.0);
@@ -460,8 +465,9 @@ void tst_BeautifyPanelBackend::testCustomStyle_SavedInRecordingEditorApplies()
     backend.applyCustomStyle(0);
     QCOMPARE(backend.backgroundType(), static_cast<int>(BeautifyBackgroundType::Solid));
     QCOMPARE(backend.primaryColor(), QColor(20, 30, 40));
-    QCOMPARE(backend.padding(), 40);
-    QCOMPARE(backend.cornerRadius(), 16);
+    // The recording's fractions at the reference size: 0.05 and 0.02 of 1440.
+    QCOMPARE(backend.padding(), 72);
+    QCOMPARE(backend.cornerRadius(), 29);
     QVERIFY(backend.borderEnabled());
     QCOMPARE(backend.currentCustomStyle(), 0);
 }

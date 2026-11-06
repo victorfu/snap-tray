@@ -9,7 +9,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 ### Added
 
 - Added Delayed Capture to the tray menu, with 3, 5, and 10 second countdowns and an optional hotkey. A click-through countdown pill lets you open menus or hover controls first; when it ends, SnapTray hides the pill, freezes the screen, and opens Region Capture on it. The countdown can be cancelled from the tray or by pressing the hotkey again.
-- Saved Beautify styles are now shared with the recording editor's Canvas: a style saved in either place can be applied in both, with the same proportions on a screenshot and a recording. Sizes are kept relative to the picture, so a style fits both a small screenshot and a 4K recording. Beautify can also draw a border, and the recording frame can use custom gradients and the full shadow settings of a style. Existing saved styles carry over: they keep their look on a picture whose shorter side is 1440 logical pixels, and scale with the picture on other sizes.
+- Saved Beautify styles are now shared with the recording editor's Canvas: a style saved in either place can be applied in both. On screenshots a style keeps its pixel sizes as before; on recordings its sizes scale with the video, so it fits a 720p and a 4K recording alike. Beautify can also draw a border, and the recording frame can use custom gradients and the full shadow settings of a style. Existing saved styles carry over unchanged.
 
 ### Improved
 

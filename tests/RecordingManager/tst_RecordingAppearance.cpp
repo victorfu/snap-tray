@@ -534,18 +534,21 @@ void TestRecordingAppearance::customValuesJsonRoundTrip()
 
 void TestRecordingAppearance::sameStyleMatchesScreenshot()
 {
-    // Acceptance (#269): one style on a screenshot and on a recording frame of
-    // the same size gives the same background, padding, corners, shadow and
-    // border. Allowed: kChannelTolerance per channel on at most
-    // kMaxDifferingShare of the pixels (anti-aliased edges are drawn through
-    // different image formats), and the same size exactly.
+    // Acceptance (#269): one style on a screenshot and on a recording frame
+    // gives the same background, padding, corners, shadow and border where
+    // both use the same pixels. Screenshot Beautify uses a style's pixels at
+    // FrameStyle::kReferenceShortSide; the recording frame scales with the
+    // video, so the two meet on a picture with that shorter side.
+    // Allowed: kChannelTolerance per channel on at most kMaxDifferingShare of
+    // the pixels (anti-aliased edges are drawn through different image
+    // formats), and the same size exactly.
     constexpr int kChannelTolerance = 2;
     constexpr double kMaxDifferingShare = 0.001;
-    const QSize size(640, 360);
+    const QSize size(1600, FrameStyle::kReferenceShortSide);
     QImage picture(size, QImage::Format_RGB32);
     picture.fill(QColor(30, 160, 220));
     QPainter painter(&picture);
-    painter.fillRect(QRect(40, 30, 200, 120), QColor(240, 200, 40));
+    painter.fillRect(QRect(160, 120, 800, 480), QColor(240, 200, 40));
     painter.end();
 
     for (const auto background : {FrameStyle::Background::LinearGradient, FrameStyle::Background::RadialGradient,
@@ -555,7 +558,7 @@ void TestRecordingAppearance::sameStyleMatchesScreenshot()
         style.solidColor = QColor(70, 80, 90);
 
         const QImage screenshot = BeautifyRenderer::applyToPixmap(QPixmap::fromImage(picture),
-                                                                  style.toBeautify(360))
+                                                                  style.toBeautify(FrameStyle::kReferenceShortSide))
                                       .toImage()
                                       .convertToFormat(QImage::Format_RGB32);
         RecordingAppearance a;

@@ -30,8 +30,8 @@ class BeautifyPanelBackend : public QObject
     // Index of the style/background preset matching the current settings, or -1.
     Q_PROPERTY(int currentStyle READ currentStyle NOTIFY settingsStateChanged)
     Q_PROPERTY(int currentPreset READ currentPreset NOTIFY settingsStateChanged)
-    // Saved styles (#227), shared with the recording frame (#269): sizes are
-    // kept relative to the picture and shown in pixels for this screenshot.
+    // Saved styles (#227), shared with the recording frame (#269). Here they
+    // keep fixed pixel sizes; the recording frame scales them with the video.
     Q_PROPERTY(QVariantList customStyleModel READ customStyleModel NOTIFY customStylesChanged)
     Q_PROPERTY(int currentCustomStyle READ currentCustomStyle NOTIFY customStyleStateChanged)
     Q_PROPERTY(bool customStylesFull READ customStylesFull NOTIFY customStylesChanged)
@@ -120,10 +120,7 @@ private:
     void schedulePreviewUpdate();
     void commitSettingsChange();
 
-    // The screenshot's shorter side in logical pixels, which saved styles are
-    // measured against; the reference size while there is no screenshot.
-    int styleShortSide() const;
-    // A saved style in this screenshot's pixels, within the panel's ranges.
+    // A saved style in the panel's fixed pixels, within its ranges.
     BeautifySettings settingsFor(const SnapTray::FrameStyle& style) const;
 
     BeautifySettings m_settings;

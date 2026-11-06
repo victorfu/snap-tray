@@ -11,9 +11,10 @@ namespace SnapTray {
 
 // A saved look shared by screenshot Beautify and the recording frame (#269):
 // background, space around the picture, corners, shadow and border. Sizes are
-// fractions of the picture's shorter side, so one style means the same on a
-// small screenshot and on a 4K recording; each side turns them into pixels
-// for the picture at hand.
+// fractions of a shorter side. Screenshot Beautify works in fixed pixels and
+// turns them into pixels at kReferenceShortSide; the recording frame turns
+// them into pixels for the video at hand, so a style fits a 720p and a 4K
+// recording alike.
 //
 // Recording-only choices (a blurred-video or image background) are not part
 // of a style: applying one to a recording keeps them.
@@ -44,17 +45,18 @@ struct FrameStyle {
     BeautifyAspectRatio aspectRatio = BeautifyAspectRatio::Auto;
 
     // Reserved for a window or device frame (title bar, browser, laptop);
-    // empty means none. FrameStyle's JSON and FrameStyleLibrary keep it, but
-    // the screenshot and recording panels do not carry it yet, so saving over
-    // a style from a panel clears it.
+    // empty means none. Kept by toJson()/fromJson() and FrameStyleLibrary
+    // only: neither panel carries it yet, so saving over a style from a panel
+    // clears it.
     QString deviceFrame;
 
-    // The picture size pixel styles from before #269 are converted at: their
-    // look on a picture with this shorter side is unchanged.
+    // The shorter side screenshot Beautify's pixels are measured against. Pixel
+    // styles from before #269 are converted at it, so on screenshots they keep
+    // exactly the pixels they had.
     static constexpr int kReferenceShortSide = 1440;
-    // The largest size fraction a saved style keeps: Beautify's biggest slider
-    // value (200 px padding) over a 1 px short side. Larger values are damaged
-    // data. Each side clamps to its own range when it applies a style.
+    // The largest size fraction a saved style keeps; anything larger is
+    // damaged data. Each side clamps to its own range when it applies a style
+    // (screenshots to their slider ranges, recordings to 1.0).
     static constexpr double kMaxSizeFraction = 200.0;
 
     bool operator==(const FrameStyle& o) const;

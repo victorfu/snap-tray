@@ -2,7 +2,6 @@
 
 #include "beautify/FrameStyleLibrary.h"
 #include "settings/BeautifySettingsManager.h"
-#include "utils/CoordinateHelper.h"
 
 #include <QCoreApplication>
 #include <QList>
@@ -105,24 +104,16 @@ BeautifyPanelBackend::~BeautifyPanelBackend() = default;
 void BeautifyPanelBackend::setSourcePixmap(const QPixmap& pixmap)
 {
     m_sourcePixmap = pixmap;
-    // Saved styles are measured against the screenshot's size.
-    emit customStylesChanged();
     schedulePreviewUpdate();
-}
-
-int BeautifyPanelBackend::styleShortSide() const
-{
-    if (m_sourcePixmap.isNull()) {
-        return FrameStyle::kReferenceShortSide;
-    }
-    const qreal dpr = m_sourcePixmap.devicePixelRatio() > 0.0 ? m_sourcePixmap.devicePixelRatio() : 1.0;
-    const QSize logical = CoordinateHelper::toLogical(m_sourcePixmap.size(), dpr);
-    return (std::max)(1, (std::min)(logical.width(), logical.height()));
 }
 
 BeautifySettings BeautifyPanelBackend::settingsFor(const FrameStyle& style) const
 {
-    BeautifySettings s = style.toBeautify(styleShortSide());
+    // Screenshot Beautify works in fixed pixels, like its built-in styles and
+    // sliders, so a saved style always means the same pixels here whatever
+    // the screenshot's size. Only the recording frame scales a style with the
+    // picture (#269). The reference size keeps styles saved before #269 exact.
+    BeautifySettings s = style.toBeautify(FrameStyle::kReferenceShortSide);
     s.padding = std::clamp(s.padding, kMinPadding, kMaxPadding);
     s.cornerRadius = std::clamp(s.cornerRadius, 0, kMaxCornerRadius);
     s.shadowBlur = std::clamp(s.shadowBlur, 0, kMaxShadowBlur);
@@ -385,7 +376,7 @@ QString BeautifyPanelBackend::suggestedCustomStyleName() const
 
 bool BeautifyPanelBackend::saveCustomStyle(const QString& name)
 {
-    return FrameStyleLibrary::instance().save(name, FrameStyle::fromBeautify(m_settings, styleShortSide()));
+    return FrameStyleLibrary::instance().save(name, FrameStyle::fromBeautify(m_settings, FrameStyle::kReferenceShortSide));
 }
 
 void BeautifyPanelBackend::applyCustomStyle(int index)

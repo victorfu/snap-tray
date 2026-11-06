@@ -337,9 +337,10 @@ void RecordingAppearance::applyFrameStyle(const FrameStyle& style)
 
 BeautifySettings RecordingAppearance::beautifyFor(const QSize& contentSize) const
 {
-    // The same fraction-to-pixel conversion screenshot Beautify uses for a
-    // saved style (Beautify then clamps to its control ranges, and recording
-    // colors are opaque).
+    // The same fractions-to-pixels conversion screenshot Beautify uses, at
+    // this picture's size. Screenshots use FrameStyle::kReferenceShortSide
+    // (and clamp to their control ranges; recording colors are opaque), so
+    // the two meet on a picture with that shorter side.
     return frameStyle().toBeautify(shortSide(contentSize));
 }
 
