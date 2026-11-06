@@ -164,11 +164,17 @@ In the preview, **Keys** in Project settings (enabled when the recording has key
 
 Full-screen recordings often make buttons and text small once shared. The preview can zoom in on parts of the recording:
 
-- **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux); actions spread over most of the screen stay at the full view. Running it again replaces the automatic zooms but keeps the ones you added or changed.
+- **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux); the camera follows actions spread across the screen while retaining magnification. Running it again replaces the automatic zooms but keeps the ones you added or changed.
 - **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
 - Zooms appear in the Zoom lane. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less motion** makes all zooms smaller and slower without direct pans, **Zoom effects** turns them all off without deleting them, and **Delete zoom** removes one.
 
 Zooming in and out changes the size evenly from start to finish, and a pan between zooms far apart pulls back a little on the way so you can see where it goes. The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Zooms are available for MP4, GIF and WebP.
+
+### Follow cursor during zoom
+
+New automatic zoom segments follow the recorded cursor while retaining their zoom amount. Select a zoom segment and enable **Follow cursor** to use this for a manual segment. Small movements inside the central area leave the camera still; larger movements pan smoothly, with edge alignment and click visibility taking priority. The camera follows the same smoothed pointer position used by cursor effects.
+
+The option requires cursor sidecar data. **Less motion** disables following and keeps each segment at its initial focus. Existing saved recipes retain their fixed focus until following is enabled. Changing this option marks the segment as manual, so regenerating automatic zooms preserves it. Cuts restart the camera in the next kept part, and seeking uses the same precomputed path as export.
 
 ### Masking sensitive areas
 
@@ -197,7 +203,8 @@ Overlays sit on the exported picture: they keep their place through a crop and d
 **Canvas** in the preview puts the exported video on a background, like Beautify does for screenshots. The first time it starts from your screenshot Beautify look (switched off); after that, your last frame for recordings is remembered. It can be undone like other edits, and **Reset Crop and Trim** keeps it.
 
 - **Background**: one of the gradient presets, white, black, **Blurred Video** (the video itself, blurred, behind it) or **Image…** (a picture file).
-- **Padding**, **Corners** (None, Small, Medium, Large), **Shadow** and **Border**. Sizes follow the video, so a frame looks the same on a small or a 4K recording.
+- **Saved styles**: the styles you saved in screenshot Beautify, and any saved here with **Save style…**, are one list. Click one to use it; **Rename** and **Delete** act on the style the frame matches, and are shown only then. Applying a style keeps a **Blurred Video** or **Image…** background, which belong to recordings only; the style's color or gradient is kept beneath it. A style's sizes follow the video: a style from Beautify has the pixel sizes it has on screenshots on a video 1440 px on its shorter side, and grows or shrinks with larger or smaller videos.
+- **Padding**, **Corners** (None, Small, Medium, Large), **Shadow** and **Border**. Sizes follow the video, so a frame looks the same on a small or a 4K recording. A saved style with other sizes shows **Custom**.
 - **Ratio**: Auto, or 1:1, 16:9, 4:3, 9:16, 2:1. The background fills the extra space.
 
 The frame makes the exported file larger than the cropped picture by the padding (and the ratio); MP4 export options then scale the framed video. It is drawn last, around a picture that already has its masks, zoom and pointer, and a blurred background is made from the masked picture, so nothing a mask hides shows around it. The preview shows the frame except while you edit the crop or compare with the original. The frame is available for MP4, GIF and WebP.

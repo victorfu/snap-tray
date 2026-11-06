@@ -1,7 +1,11 @@
 #ifndef REGIONCAPTURESETTINGSMANAGER_H
 #define REGIONCAPTURESETTINGSMANAGER_H
 
+#include <QRect>
+#include <QString>
+
 #include <array>
+#include <optional>
 
 class RegionCaptureSettingsManager
 {
@@ -38,6 +42,16 @@ public:
     void setDelayedCaptureSeconds(int seconds);
     static bool isValidDelayedCaptureSeconds(int seconds);
 
+    // The selection of the last completed region capture, in global logical
+    // coordinates, plus the name of the screen it was taken on. `snaptray gui
+    // --last-region` starts from it.
+    struct LastCaptureRegion {
+        QRect globalRect;
+        QString screenName;
+    };
+    std::optional<LastCaptureRegion> lastCaptureRegion() const;
+    void setLastCaptureRegion(const QRect& globalRect, const QString& screenName);
+
     static constexpr bool kDefaultShortcutHintsEnabled = true;
     static constexpr CursorCompanionStyle kDefaultCursorCompanionStyle =
         CursorCompanionStyle::Beaver;
@@ -62,6 +76,10 @@ private:
         "regionCapture/fullScreenCaptureAction";
     static constexpr const char* kSettingsKeyDelayedCaptureSeconds =
         "regionCapture/delayedCaptureSeconds";
+    static constexpr const char* kSettingsKeyLastCaptureRegion =
+        "regionCapture/lastRegion";
+    static constexpr const char* kSettingsKeyLastCaptureScreen =
+        "regionCapture/lastRegionScreen";
 };
 
 #endif // REGIONCAPTURESETTINGSMANAGER_H

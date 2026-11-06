@@ -13,6 +13,7 @@
 #include <QObject>
 #include <QPixmap>
 #include <QPointer>
+#include <QRect>
 #include <QSize>
 #include <QStringList>
 #include <functional>
@@ -27,6 +28,8 @@ class ScreenCanvasManager;
 class RecordingManager;
 class RecordingPreviewBackend;
 class QScreen;
+class QLocalSocket;
+class QJsonObject;
 
 namespace SnapTray {
 class QmlSettingsWindow;
@@ -48,7 +51,8 @@ public:
 
 public slots:
     void activate();
-    void handleCLICommand(const QByteArray& commandData);
+    // replySocket is the CLI connection, for commands that wait for a result.
+    void handleCLICommand(const QByteArray& commandData, QLocalSocket* replySocket = nullptr);
 
 private slots:
     void onRegionCapture();
@@ -171,7 +175,19 @@ private:
     QElapsedTimer m_recordingHotkeyClock;
     SnapTray::HotkeyHoldFilter m_recordingHotkeyHolds;
     // CLI commands received while a full screen capture was still exporting.
-    QList<QByteArray> m_deferredCLICommands;
+    struct DeferredCLICommand {
+        QByteArray data;
+        QPointer<QLocalSocket> replySocket;
+    };
+    QList<DeferredCLICommand> m_deferredCLICommands;
+    // `snaptray gui` with script options (#272).
+    void handleGuiCLICommand(const QJsonObject& options, QLocalSocket* replySocket);
+    void startScriptedGuiCapture(const QJsonObject& options, QLocalSocket* replySocket);
+    void replyToScriptedGui(int code, const QString& error);
+    void onScriptedCaptureFinished(const QPixmap& screenshot, const QRect& globalRect);
+    // The CLI waiting for the running scripted capture; null when none waits.
+    QPointer<QLocalSocket> m_scriptedGuiReply;
+    bool m_scriptedGuiWantsImage = false;
 };
 
 #endif // MAINAPPLICATION_H

@@ -195,6 +195,15 @@ class RecordingPreviewBackend : public QObject
                    NOTIFY appearanceChanged)
     // [{start, end}] colours of the gradient presets, for swatches.
     Q_PROPERTY(QVariantList appearanceGradients READ appearanceGradients CONSTANT)
+    // A gradient from a saved style that is not a preset (gradientPreset -1).
+    Q_PROPERTY(QColor appearanceGradientStart READ appearanceGradientStart NOTIFY appearanceChanged)
+    Q_PROPERTY(QColor appearanceGradientEnd READ appearanceGradientEnd NOTIFY appearanceChanged)
+    // Saved styles shared with screenshot Beautify (#269): [{name, startColor, endColor}].
+    Q_PROPERTY(QVariantList frameStyleModel READ frameStyleModel NOTIFY frameStylesChanged)
+    // The saved style the frame matches, or -1.
+    Q_PROPERTY(int currentFrameStyle READ currentFrameStyle NOTIFY frameStyleStateChanged)
+    Q_PROPERTY(bool frameStylesFull READ frameStylesFull NOTIFY frameStylesChanged)
+    Q_PROPERTY(int maxFrameStyles READ maxFrameStyles CONSTANT)
 
     // MP4 export options (#190): enum values in Mp4ExportOptions order.
     Q_PROPERTY(int mp4Resolution READ mp4Resolution WRITE setMp4Resolution NOTIFY mp4OptionsChanged)
@@ -398,6 +407,7 @@ public:
     // known; returns its index (or -1).
     Q_INVOKABLE int addZoomAt(qint64 positionMs);
     Q_INVOKABLE void removeZoom(int index);
+    Q_INVOKABLE void setZoomFollow(int index, bool follow);
     Q_INVOKABLE void setZoomScale(int index, qreal scale);
     Q_INVOKABLE bool setZoomRange(int index, qint64 startMs, qint64 endMs);
     Q_INVOKABLE void setZoomFocusFromView(int index, const QPointF& viewPoint, const QRectF& contentRect);
@@ -571,6 +581,21 @@ public:
     int appearanceAspectRatio() const { return int(m_appearance.aspectRatio); }
     void setAppearanceAspectRatio(int value);
     QVariantList appearanceGradients() const;
+    QColor appearanceGradientStart() const { return m_appearance.frameStyle().gradientStart; }
+    QColor appearanceGradientEnd() const { return m_appearance.frameStyle().gradientEnd; }
+    QVariantList frameStyleModel() const;
+    int currentFrameStyle() const;
+    bool frameStylesFull() const;
+    int maxFrameStyles() const;
+    // Applies a saved style; the blurred-video or image background stays.
+    Q_INVOKABLE void applyFrameStyle(int index);
+    // Saves the frame's look under name (trimmed): an existing name (any
+    // case) is updated, otherwise a new style is added while there is room.
+    Q_INVOKABLE bool saveFrameStyle(const QString& name);
+    Q_INVOKABLE bool renameFrameStyle(int index, const QString& name);
+    Q_INVOKABLE void deleteFrameStyle(int index);
+    Q_INVOKABLE bool frameStyleNameTaken(const QString& name, int exceptIndex = -1) const;
+    Q_INVOKABLE QString suggestedFrameStyleName() const;
     // The picture the export starts from (the crop, or the whole video).
     QSize exportContentSize() const;
     // The framed canvas in view coordinates, for a picture shown at contentInView.
@@ -628,6 +653,8 @@ signals:
     void selectedPointerHideChanged();
     void mp4OptionsChanged();
     void appearanceChanged();
+    void frameStylesChanged();
+    void frameStyleStateChanged();
     void timelineChanged();
     void keyOverlayChanged();
     void overlaysChanged();
@@ -794,6 +821,8 @@ private:
     // (already cropped); a snapshot of the settings.
     std::function<void(QImage&, qint64)> effectsFrameFilter() const;
     SnapTray::ZoomTrack m_zoom;
+    mutable std::shared_ptr<const SnapTray::ZoomTrack> m_preparedZoom;
+    std::shared_ptr<const SnapTray::ZoomTrack> preparedZoom() const;
     int m_selectedZoom = -1;
     SnapTray::RedactionTrack m_redaction;
     int m_selectedMask = -1;

@@ -180,6 +180,9 @@ void SingleInstanceGuard::onNewConnection()
     struct ClientMessageState {
         QByteArray buffer;
         bool processed = false;
+        // A command was delivered; the socket waits for an optional reply and
+        // is deleted when the CLI disconnects.
+        bool keepForReply = false;
     };
 
     enum class ParseResult {
@@ -192,7 +195,7 @@ void SingleInstanceGuard::onNewConnection()
     const QByteArray kActivateMessage = "activate";
     auto state = std::make_shared<ClientMessageState>();
 
-    auto parseBuffer = [this, state, kActivateMessage]() -> ParseResult {
+    auto parseBuffer = [this, client, state, kActivateMessage]() -> ParseResult {
         if (state->processed) {
             return ParseResult::Processed;
         }
@@ -232,7 +235,8 @@ void SingleInstanceGuard::onNewConnection()
 
         QByteArray jsonData = state->buffer.mid(sizeof(quint32), messageSize);
         state->processed = true;
-        emit commandReceived(jsonData);
+        state->keepForReply = true;
+        emit commandReceived(jsonData, client);
         return ParseResult::Processed;
     };
 
@@ -242,14 +246,20 @@ void SingleInstanceGuard::onNewConnection()
 
     auto processPendingData = [client, state, parseBuffer, cleanupClient]() {
         if (state->processed) {
-            cleanupClient();
+            // A command connection stays open for its reply; ignore extra bytes.
+            if (state->keepForReply) {
+                client->readAll();
+            } else {
+                cleanupClient();
+            }
             return;
         }
 
         state->buffer.append(client->readAll());
 
         ParseResult result = parseBuffer();
-        if (result == ParseResult::Processed || result == ParseResult::Invalid) {
+        if (result == ParseResult::Invalid
+            || (result == ParseResult::Processed && !state->keepForReply)) {
             cleanupClient();
         }
     };

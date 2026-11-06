@@ -52,6 +52,19 @@ public:
     int delayedCaptureRemainingSeconds() const;
     void cancelDelayedCapture();
 
+    // A region capture started by `snaptray gui` with script options. When
+    // reportResult is set the capture ends with scriptedCaptureFinished or
+    // scriptedCaptureCancelled instead of the usual pin, and only pins when
+    // pinResult asks for it.
+    struct ScriptedCaptureOptions {
+        QRect initialGlobalRegion;   // empty: no initial selection
+        bool acceptOnSelect = false; // finish on mouse release, no toolbar
+        bool reportResult = false;
+        bool pinResult = false;
+    };
+    bool startScriptedRegionCapture(const ScriptedCaptureOptions& options);
+    bool isScriptedCapturePending() const { return m_scriptedCapturePending; }
+
 public slots:
     void startRegionCapture(bool showShortcutHintsOnEntry = false);
     void startDelayedRegionCapture(int delaySeconds, bool showShortcutHintsOnEntry = true);
@@ -75,6 +88,9 @@ signals:
     void delayedCaptureStateChanged(bool pending);
     // Seconds left in the delayed capture countdown; emitted on every tick.
     void delayedCaptureCountdownChanged(int remainingSeconds);
+    // End of a scripted capture that asked for its result.
+    void scriptedCaptureFinished(const QPixmap& screenshot, const QRect& globalRect);
+    void scriptedCaptureCancelled();
 
 private slots:
     void prewarmWindowDetector();
@@ -96,7 +112,9 @@ private:
     void refreshWindowDetectorForCapture(QScreen *screen);
     void refreshWindowDetectorAsync(QScreen *screen);
     RegionSelector *createRegionSelector(bool showShortcutHintsOnEntry);
-    void startPresetRegionCapture(QScreen *screen, const QRect &region, const QPixmap &preCapture);
+    void startPresetRegionCapture(QScreen *screen, const QRect &region, const QPixmap &preCapture,
+                                  bool quickPinMode = false);
+    void cancelPendingScriptedCapture();
     void startFullScreenCaptureOnScreen(QScreen *screen);
     void scheduleFullScreenGrab(QScreen *screen, quint64 generation, int settleRound);
     void captureFullScreenAfterHidingOwnWindows(QScreen *screen);
@@ -126,6 +144,8 @@ private:
     // Test hooks: replace the platform screen grab and clipboard write.
     std::function<QPixmap(QScreen*)> m_snapshotOverride;
     std::function<void(const QImage&, std::function<void(bool)>)> m_clipboardWriterOverride;
+    ScriptedCaptureOptions m_scriptedCapture;
+    bool m_scriptedCapturePending = false;
     PinWindowManager *m_pinManager;
     WindowDetector *m_windowDetector;
 };

@@ -18,6 +18,8 @@
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
 #include "cli/IPCProtocol.h"
+#include "cli/CLIResult.h"
+#include "cli/commands/GuiCommand.h"
 #include "hotkey/HotkeyManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "qml/QmlToast.h"
@@ -39,7 +41,9 @@
 #include "platform/MacTrayAccessibility.h"
 #endif
 
+#include <QBuffer>
 #include <QFile>
+#include <QLocalSocket>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointer>
@@ -189,7 +193,25 @@ void MainApplication::activate()
     }
 }
 
-void MainApplication::handleCLICommand(const QByteArray& commandData)
+namespace {
+
+// Answer a waiting CLI. If the answer cannot be sent (too large, socket
+// error), drop the connection so the CLI exits with an error instead of
+// waiting forever.
+void sendCLIResponse(QLocalSocket* socket, const SnapTray::CLI::IPCResponse& response)
+{
+    if (!socket) {
+        return;
+    }
+    if (!SnapTray::CLI::IPCProtocol::writeResponse(socket, response)) {
+        qWarning() << "CLI: Failed to send the command result";
+        socket->disconnectFromServer();
+    }
+}
+
+} // namespace
+
+void MainApplication::handleCLICommand(const QByteArray& commandData, QLocalSocket* replySocket)
 {
     using namespace SnapTray::CLI;
 
@@ -211,18 +233,12 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
     // saving and cannot be cancelled. Run the command once it finishes.
     if (m_captureManager->isFullScreenCaptureInProgress()) {
         qDebug() << "CLI: Deferring command until full screen capture finishes";
-        m_deferredCLICommands.append(commandData);
+        m_deferredCLICommands.append({commandData, replySocket});
         return;
     }
 
     if (msg.command == "gui") {
-        int delay = msg.options["delay"].toInt();
-        if (delay > 0) {
-            QTimer::singleShot(delay, this, &MainApplication::onRegionCapture);
-        }
-        else {
-            onRegionCapture();
-        }
+        handleGuiCLICommand(msg.options, replySocket);
     }
     else if (msg.command == "canvas") {
         onScreenCanvas();
@@ -249,10 +265,137 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
 
 void MainApplication::runDeferredCLICommands()
 {
-    const QList<QByteArray> commands = std::exchange(m_deferredCLICommands, {});
-    for (const QByteArray& command : commands) {
-        handleCLICommand(command);
+    const QList<DeferredCLICommand> commands = std::exchange(m_deferredCLICommands, {});
+    for (const DeferredCLICommand& command : commands) {
+        handleCLICommand(command.data, command.replySocket);
     }
+}
+
+void MainApplication::handleGuiCLICommand(const QJsonObject& options, QLocalSocket* replySocket)
+{
+    using SnapTray::CLI::GuiCommand;
+
+    const int delay = options[GuiCommand::kOptionDelay].toInt();
+    const bool scripted = options.contains(GuiCommand::kOptionWaitResult)
+        || options.contains(GuiCommand::kOptionInitialRegion)
+        || options.contains(GuiCommand::kOptionAcceptOnSelect);
+
+    if (!scripted) {
+        // Plain `snaptray gui`: unchanged fire-and-forget behavior.
+        if (delay > 0) {
+            QTimer::singleShot(delay, this, &MainApplication::onRegionCapture);
+        }
+        else {
+            onRegionCapture();
+        }
+        return;
+    }
+
+    const bool waitResult = options[GuiCommand::kOptionWaitResult].toBool();
+    const QPointer<QLocalSocket> reply(waitResult ? replySocket : nullptr);
+    if (waitResult && !reply) {
+        return; // The CLI already went away; nobody wants this capture.
+    }
+
+    if (delay > 0) {
+        QTimer::singleShot(delay, this, [this, options, reply, waitResult]() {
+            if (waitResult && !reply) {
+                return; // The CLI exited during the delay.
+            }
+            startScriptedGuiCapture(options, reply);
+        });
+    }
+    else {
+        startScriptedGuiCapture(options, reply);
+    }
+}
+
+void MainApplication::startScriptedGuiCapture(const QJsonObject& options, QLocalSocket* replySocket)
+{
+    using SnapTray::CLI::GuiCommand;
+    using SnapTray::CLI::IPCResponse;
+
+    auto fail = [replySocket](const QString& reason) {
+        qDebug() << "CLI gui:" << reason;
+        IPCResponse response;
+        response.code = static_cast<int>(SnapTray::CLI::CLIResult::Code::GeneralError);
+        response.error = reason;
+        sendCLIResponse(replySocket, response);
+    };
+
+    if (m_scriptedGuiReply) {
+        fail(QStringLiteral("Another scripted capture is already waiting"));
+        return;
+    }
+    if (m_captureManager->isActive()) {
+        fail(QStringLiteral("A capture is already in progress"));
+        return;
+    }
+    if (!canStartRegionCapture()) {
+        fail(QStringLiteral("Capture is unavailable while recording or Screen Canvas is active"));
+        return;
+    }
+
+    const QJsonObject region = options[GuiCommand::kOptionInitialRegion].toObject();
+    CaptureManager::ScriptedCaptureOptions captureOptions;
+    captureOptions.initialGlobalRegion = QRect(region[GuiCommand::kResultX].toInt(),
+                                               region[GuiCommand::kResultY].toInt(),
+                                               region[GuiCommand::kResultWidth].toInt(),
+                                               region[GuiCommand::kResultHeight].toInt());
+    captureOptions.acceptOnSelect = options[GuiCommand::kOptionAcceptOnSelect].toBool();
+    captureOptions.reportResult = replySocket != nullptr;
+    captureOptions.pinResult =
+        !captureOptions.reportResult || options[GuiCommand::kOptionPin].toBool();
+
+    if (!m_captureManager->startScriptedRegionCapture(captureOptions)) {
+        fail(QStringLiteral("Failed to start region capture"));
+        return;
+    }
+
+    m_scriptedGuiReply = replySocket;
+    m_scriptedGuiWantsImage = options[GuiCommand::kOptionWantImage].toBool();
+}
+
+void MainApplication::replyToScriptedGui(int code, const QString& error)
+{
+    SnapTray::CLI::IPCResponse response;
+    response.code = code;
+    response.error = error;
+    sendCLIResponse(std::exchange(m_scriptedGuiReply, nullptr), response);
+}
+
+void MainApplication::onScriptedCaptureFinished(const QPixmap& screenshot, const QRect& globalRect)
+{
+    using SnapTray::CLI::GuiCommand;
+
+    QLocalSocket* reply = std::exchange(m_scriptedGuiReply, nullptr);
+    if (!reply) {
+        return;
+    }
+
+    SnapTray::CLI::IPCResponse response;
+    response.success = true;
+    response.code = static_cast<int>(SnapTray::CLI::CLIResult::Code::Success);
+    QScreen* screen = QGuiApplication::screenAt(globalRect.center());
+    response.result = {
+        {GuiCommand::kResultX, globalRect.x()},
+        {GuiCommand::kResultY, globalRect.y()},
+        {GuiCommand::kResultWidth, globalRect.width()},
+        {GuiCommand::kResultHeight, globalRect.height()},
+        {GuiCommand::kResultScreen, static_cast<int>(QGuiApplication::screens().indexOf(screen))},
+        {GuiCommand::kResultDevicePixelRatio, screenshot.devicePixelRatio()},
+    };
+
+    if (m_scriptedGuiWantsImage) {
+        QBuffer buffer(&response.data);
+        if (!buffer.open(QIODevice::WriteOnly) || !screenshot.toImage().save(&buffer, "PNG")) {
+            response = {};
+            response.code = static_cast<int>(SnapTray::CLI::CLIResult::Code::GeneralError);
+            response.error = QStringLiteral("Failed to encode the capture");
+        }
+    }
+
+    sendCLIResponse(reply, response);
 }
 
 void MainApplication::initialize()
@@ -265,6 +408,12 @@ void MainApplication::initialize()
 
     connect(m_captureManager, &CaptureManager::fullScreenCaptureFinished,
             this, &MainApplication::runDeferredCLICommands, Qt::QueuedConnection);
+    connect(m_captureManager, &CaptureManager::scriptedCaptureFinished,
+            this, &MainApplication::onScriptedCaptureFinished);
+    connect(m_captureManager, &CaptureManager::scriptedCaptureCancelled, this, [this]() {
+        replyToScriptedGui(static_cast<int>(SnapTray::CLI::CLIResult::Code::Cancelled),
+                           QStringLiteral("Capture cancelled"));
+    });
 
     // Create screen canvas manager
     m_screenCanvasManager = new ScreenCanvasManager(this);

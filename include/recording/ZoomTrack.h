@@ -1,11 +1,13 @@
 #pragma once
 
 #include "recording/CursorTimeline.h"
+#include "recording/CursorEffects.h"
 
 #include <QJsonArray>
 #include <QPointF>
 #include <QRectF>
 
+#include <optional>
 #include <vector>
 
 // Zoom and pan after recording (#161): segments that frame part of the
@@ -20,6 +22,12 @@ struct ZoomSegment {
     double scale = 2.0; // 1 = the whole picture
     QPointF focus;      // centre, in source video pixels
     bool manual = false; // added or changed by the user: regenerating keeps it
+    bool follow = false; // legacy and manual segments keep their fixed focus
+    std::optional<QPointF> followStart; // optional lead-in camera; focus remains the stationary fallback
+    // Optional cap on scale while the camera holds still (Less motion, Follow
+    // off), so a fixed view at focus still fits every interaction the
+    // following camera tracks at the full scale.
+    std::optional<double> stationaryScale;
 
     bool operator==(const ZoomSegment& o) const;
     bool operator!=(const ZoomSegment& o) const { return !(*this == o); }
@@ -55,12 +63,21 @@ public:
     // shown at sourceMs. Always inside bounds, with bounds' aspect ratio.
     QRectF viewportAt(qint64 sourceMs, const QRectF& bounds) const;
 
+    // Derived data only: rebuilt when geometry, cursor settings or edits change.
+    void prepareFollow(const CursorTimeline& cursor, const CursorEffectSettings& settings,
+                       const TimelineMap& timeline, const QRectF& bounds);
+
     QJsonObject toJson() const;
     static ZoomTrack fromJson(const QJsonObject& json);
     bool operator==(const ZoomTrack& o) const;
     bool operator!=(const ZoomTrack& o) const { return !(*this == o); }
 
 private:
+    struct FollowPoint { qint64 ms; QPointF center; };
+    std::vector<std::vector<FollowPoint>> m_follow;
+    QRectF m_followBounds;
+    std::vector<CursorButtonEvent> m_followButtons;
+    QPointF focusAt(const ZoomSegment& segment, qint64 ms) const;
     std::vector<ZoomSegment> m_segments;
 };
 
@@ -71,8 +88,8 @@ struct AutoZoomOptions {
 };
 
 // Zoom segments from clicks and drags in the pointer timeline: nearby
-// interactions are grouped, each group framed with a margin, and short gaps
-// merged so the view does not pump in and out. Hidden or off-frame activity
+// interactions are grouped into following segments, and short gaps merged
+// so the view does not pump in and out. Hidden or off-frame activity
 // is ignored. Empty without clicks.
 std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const AutoZoomOptions& options);
 

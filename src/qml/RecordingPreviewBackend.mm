@@ -11,6 +11,7 @@
 #include "encoding/IntermediateQuality.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/BeautifySettingsManager.h"
+#include "beautify/FrameStyleLibrary.h"
 #include "recording/RecordingAppearance.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
@@ -107,6 +108,11 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
         ? SnapTray::RecordingAppearance::fromBeautify(BeautifySettingsManager::instance().loadSettings())
         : SnapTray::RecordingAppearance::fromJson(appearance);
     m_editHistory.reset(currentEditState());
+    // Saved styles are one list with screenshot Beautify (#269).
+    connect(&SnapTray::FrameStyleLibrary::instance(), &SnapTray::FrameStyleLibrary::stylesChanged, this,
+            &RecordingPreviewBackend::frameStylesChanged);
+    connect(this, &RecordingPreviewBackend::frameStylesChanged, this, &RecordingPreviewBackend::frameStyleStateChanged);
+    connect(this, &RecordingPreviewBackend::appearanceChanged, this, &RecordingPreviewBackend::frameStyleStateChanged);
     // Availability depends on the format (MP4 needs a capable transcoder).
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::cursorEffectsChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
@@ -119,6 +125,11 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::timelineChanged);
     connect(this, &RecordingPreviewBackend::trimRangeChanged, this, &RecordingPreviewBackend::timelineChanged);
     connect(this, &RecordingPreviewBackend::durationChanged, this, &RecordingPreviewBackend::timelineChanged);
+    for (const auto signal : {&RecordingPreviewBackend::zoomChanged, &RecordingPreviewBackend::cursorEffectsChanged,
+                              &RecordingPreviewBackend::timelineChanged, &RecordingPreviewBackend::cropRectChanged,
+                              &RecordingPreviewBackend::videoSizeChanged}) {
+        connect(this, signal, this, [this] { m_preparedZoom.reset(); });
+    }
     m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(RecordingSettingsManager::instance().mp4ExportOptions());
     // The estimate follows everything that changes the exported picture or length.
     for (const auto signal : {&RecordingPreviewBackend::mp4OptionsChanged, &RecordingPreviewBackend::cropRectChanged,
@@ -149,8 +160,8 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         : std::shared_ptr<SnapTray::CursorEffectRenderer>();
     // Nothing of the pointer reaches across a cut (#185).
     if (cursor && !timelineMap().isEmpty()) cursor->setTimeline(timelineMap());
-    const auto zoom = zoomAvailable() && m_zoom.isActive() ? std::make_shared<SnapTray::ZoomTrack>(m_zoom)
-                                                            : std::shared_ptr<SnapTray::ZoomTrack>();
+    const auto zoom = zoomAvailable() && m_zoom.isActive() ? preparedZoom()
+                                                            : std::shared_ptr<const SnapTray::ZoomTrack>();
     const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()
                                                   : std::make_shared<SnapTray::RedactionTrack>(m_redaction);
     // The frame around the picture (#184), last; its static parts are drawn once here.
@@ -254,6 +265,77 @@ QVariantList RecordingPreviewBackend::appearanceGradients() const
     return list;
 }
 
+QVariantList RecordingPreviewBackend::frameStyleModel() const
+{
+    QVariantList model;
+    for (const auto& style : SnapTray::FrameStyleLibrary::instance().styles()) {
+        const bool solid = style.style.background == SnapTray::FrameStyle::Background::Solid;
+        model.append(QVariantMap{{QStringLiteral("name"), style.name},
+                                 {QStringLiteral("startColor"), solid ? style.style.solidColor : style.style.gradientStart},
+                                 {QStringLiteral("endColor"), solid ? style.style.solidColor : style.style.gradientEnd}});
+    }
+    return model;
+}
+
+int RecordingPreviewBackend::currentFrameStyle() const
+{
+    if (!m_appearance.enabled) return -1;
+    const auto& styles = SnapTray::FrameStyleLibrary::instance().styles();
+    // Compared the way it would be applied, so a translucent screenshot
+    // color still matches its opaque recording counterpart.
+    for (int i = 0; i < styles.size(); ++i) {
+        SnapTray::RecordingAppearance applied = m_appearance;
+        applied.applyFrameStyle(styles.at(i).style);
+        if (applied.background == m_appearance.background && applied.frameStyle() == m_appearance.frameStyle()) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool RecordingPreviewBackend::frameStylesFull() const
+{
+    return SnapTray::FrameStyleLibrary::instance().isFull();
+}
+
+int RecordingPreviewBackend::maxFrameStyles() const
+{
+    return SnapTray::FrameStyleLibrary::maxStyles();
+}
+
+void RecordingPreviewBackend::applyFrameStyle(int index)
+{
+    const auto& styles = SnapTray::FrameStyleLibrary::instance().styles();
+    if (index < 0 || index >= styles.size()) return;
+    const SnapTray::FrameStyle style = styles.at(index).style;
+    editAppearance([&style](SnapTray::RecordingAppearance& a) { a.applyFrameStyle(style); });
+}
+
+bool RecordingPreviewBackend::saveFrameStyle(const QString& name)
+{
+    return SnapTray::FrameStyleLibrary::instance().save(name, m_appearance.frameStyle());
+}
+
+bool RecordingPreviewBackend::renameFrameStyle(int index, const QString& name)
+{
+    return SnapTray::FrameStyleLibrary::instance().rename(index, name);
+}
+
+void RecordingPreviewBackend::deleteFrameStyle(int index)
+{
+    SnapTray::FrameStyleLibrary::instance().remove(index);
+}
+
+bool RecordingPreviewBackend::frameStyleNameTaken(const QString& name, int exceptIndex) const
+{
+    return SnapTray::FrameStyleLibrary::instance().nameTaken(name, exceptIndex);
+}
+
+QString RecordingPreviewBackend::suggestedFrameStyleName() const
+{
+    return SnapTray::FrameStyleLibrary::instance().suggestedName();
+}
+
 void RecordingPreviewBackend::setAppearance(const SnapTray::RecordingAppearance& appearance)
 {
     if (m_appearance == appearance) return;
@@ -266,6 +348,17 @@ void RecordingPreviewBackend::editAppearance(const std::function<void(SnapTray::
     if (isProcessing()) return; // a running export keeps what it started with
     SnapTray::RecordingAppearance appearance = m_appearance;
     change(appearance);
+    // Switching from a solid color to a blurred-video or image background
+    // keeps the solid color as the style beneath it.
+    const auto drawnOver = [](SnapTray::RecordingAppearance::Background b) {
+        return b == SnapTray::RecordingAppearance::Background::BlurredVideo
+            || b == SnapTray::RecordingAppearance::Background::Image;
+    };
+    if (drawnOver(appearance.background) && !drawnOver(m_appearance.background)) {
+        appearance.solidUnderneath = m_appearance.background == SnapTray::RecordingAppearance::Background::Solid;
+    }
+    // A preset chosen after a custom size or gradient leaves nothing behind.
+    appearance.dropInactiveCustomValues();
     if (appearance == m_appearance) return;
     rememberAppearance(appearance);
     setAppearance(appearance);
@@ -1042,7 +1135,8 @@ QVariantList RecordingPreviewBackend::zoomSegments() const
         list.append(QVariantMap{{QStringLiteral("start"), s.startMs},
                                 {QStringLiteral("end"), s.endMs},
                                 {QStringLiteral("scale"), s.scale},
-                                {QStringLiteral("manual"), s.manual}});
+                                {QStringLiteral("manual"), s.manual},
+                                {QStringLiteral("follow"), s.follow}});
     }
     return list;
 }
@@ -1164,12 +1258,36 @@ void RecordingPreviewBackend::removeZoom(int index)
     setSelectedZoom(-1);
 }
 
+std::shared_ptr<const SnapTray::ZoomTrack> RecordingPreviewBackend::preparedZoom() const
+{
+    if (!m_preparedZoom) {
+        auto zoom = std::make_shared<SnapTray::ZoomTrack>(m_zoom);
+        if (m_cursorTimeline)
+            zoom->prepareFollow(*m_cursorTimeline, m_cursorEffects, timelineMap(), zoomBounds());
+        m_preparedZoom = std::move(zoom);
+    }
+    return m_preparedZoom;
+}
+
+void RecordingPreviewBackend::setZoomFollow(int index, bool follow)
+{
+    if (!cursorEffectsAvailable()) return;
+    editZoom([index, follow](SnapTray::ZoomTrack& z) {
+        auto segments = z.segments();
+        if (index < 0 || index >= int(segments.size())) return;
+        segments[index].follow = follow;
+        segments[index].manual = true;
+        z.setSegments(std::move(segments));
+    });
+}
+
 void RecordingPreviewBackend::setZoomScale(int index, qreal scale)
 {
     editZoom([index, scale](SnapTray::ZoomTrack& z) {
         auto segments = z.segments();
         if (index < 0 || index >= int(segments.size())) return;
         segments[index].scale = scale;
+        segments[index].stationaryScale.reset(); // the user's scale holds in every mode
         segments[index].manual = true;
         z.setSegments(std::move(segments));
     });
@@ -1203,6 +1321,8 @@ void RecordingPreviewBackend::setZoomFocusFromView(int index, const QPointF& vie
         auto segments = z.segments();
         if (index < 0 || index >= int(segments.size())) return;
         segments[index].focus = videoPoint;
+        segments[index].followStart.reset();
+        segments[index].stationaryScale.reset(); // the area fit no longer applies to a moved focus
         segments[index].manual = true;
         z.setSegments(std::move(segments));
     });
@@ -1212,7 +1332,7 @@ QRectF RecordingPreviewBackend::zoomViewportInView(qint64 positionMs, const QRec
 {
     const QRectF bounds = zoomBounds();
     if (m_videoSize.isEmpty() || contentRect.isEmpty() || bounds.isEmpty()) return contentRect;
-    const QRectF shown = zoomAvailable() ? m_zoom.viewportAt(positionMs, bounds) : bounds;
+    const QRectF shown = zoomAvailable() ? preparedZoom()->viewportAt(positionMs, bounds) : bounds;
     const double sx = contentRect.width() / m_videoSize.width();
     const double sy = contentRect.height() / m_videoSize.height();
     return QRectF(contentRect.x() + shown.x() * sx, contentRect.y() + shown.y() * sy,

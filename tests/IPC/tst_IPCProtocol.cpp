@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include <QDataStream>
+#include <QJsonObject>
 #include <QLocalServer>
 #include <QLocalSocket>
 
@@ -26,13 +27,13 @@ QByteArray buildLengthPrefixedPacket(const QByteArray& payload)
     return packet;
 }
 
-std::future<IPCResponse> sendCommandAsync()
+std::future<IPCResponse> sendCommandAsync(int responseTimeoutMs = IPCProtocol::kResponseTimeout)
 {
-    return std::async(std::launch::async, []() {
+    return std::async(std::launch::async, [responseTimeoutMs]() {
         IPCProtocol protocol;
         IPCMessage message;
         message.command = "gui";
-        return protocol.sendCommand(message, true);
+        return protocol.sendCommand(message, true, responseTimeoutMs);
     });
 }
 
@@ -124,6 +125,8 @@ private slots:
     void testResponseBodySplit_MultiChunks();
     void testResponseHeaderIncomplete_Disconnect();
     void testResponseBodyIncomplete_Disconnect();
+    void testWaitIndefinitely_ReturnsLateResponseWithPayload();
+    void testWaitIndefinitely_DisconnectEndsWait();
 
 private:
     bool tryPrepareServer(QLocalServer& server, QString& skipReason);
@@ -281,6 +284,62 @@ void tst_IPCProtocol::testResponseBodyIncomplete_Disconnect()
     const IPCResponse actual = future.get();
     QVERIFY(!actual.success);
     QCOMPARE(actual.error, QString("Timeout waiting for response"));
+}
+
+void tst_IPCProtocol::testWaitIndefinitely_ReturnsLateResponseWithPayload()
+{
+    QLocalServer server;
+    QString skipReason;
+    if (!tryPrepareServer(server, skipReason)) {
+        QSKIP(qPrintable(skipReason));
+    }
+
+    auto future = sendCommandAsync(IPCProtocol::kWaitIndefinitely);
+    std::unique_ptr<QLocalSocket> client(waitForClient(server));
+    QVERIFY(client != nullptr);
+    QVERIFY(waitForClientCommand(client.get()));
+
+    // An interactive selection answers whenever the user is done.
+    QTest::qWait(200);
+    QVERIFY(future.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout);
+
+    IPCResponse expected;
+    expected.success = true;
+    expected.code = 0;
+    expected.result = QJsonObject{{"width", 640}};
+    expected.data = QByteArray(256 * 1024, '\x7f');
+    QVERIFY(IPCProtocol::writeResponse(client.get(), expected));
+    QVERIFY(client->waitForBytesWritten(kSocketTimeoutMs) || client->bytesToWrite() == 0);
+
+    QVERIFY(future.wait_for(std::chrono::milliseconds(kFutureTimeoutMs)) == std::future_status::ready);
+    const IPCResponse actual = future.get();
+    QVERIFY(actual.success);
+    QCOMPARE(actual.code, 0);
+    QCOMPARE(actual.result, expected.result);
+    QCOMPARE(actual.data, expected.data);
+    disconnectClient(client.get());
+}
+
+void tst_IPCProtocol::testWaitIndefinitely_DisconnectEndsWait()
+{
+    QLocalServer server;
+    QString skipReason;
+    if (!tryPrepareServer(server, skipReason)) {
+        QSKIP(qPrintable(skipReason));
+    }
+
+    auto future = sendCommandAsync(IPCProtocol::kWaitIndefinitely);
+    std::unique_ptr<QLocalSocket> client(waitForClient(server));
+    QVERIFY(client != nullptr);
+    QVERIFY(waitForClientCommand(client.get()));
+
+    // The main instance quits while the CLI waits: the CLI must not hang.
+    disconnectClient(client.get());
+
+    QVERIFY(future.wait_for(std::chrono::milliseconds(kFutureTimeoutMs)) == std::future_status::ready);
+    const IPCResponse actual = future.get();
+    QVERIFY(!actual.success);
+    QCOMPARE(actual.error, QString("Lost connection to SnapTray"));
 }
 
 QTEST_MAIN(tst_IPCProtocol)

@@ -1,6 +1,7 @@
 #include "beautify/BeautifyRenderer.h"
 #include "utils/CoordinateHelper.h"
 #include <QPainterPath>
+#include <QPen>
 #include <QLinearGradient>
 #include <QRadialGradient>
 #include <QDebug>
@@ -31,6 +32,7 @@ QPixmap BeautifyRenderer::applyToPixmap(const QPixmap& source, const BeautifySet
     QRect insetRect = calculateInsetRect(logicalOutput, logicalSource, settings);
     drawShadow(painter, insetRect, settings);
     drawScreenshot(painter, insetRect, source, settings);
+    drawBorder(painter, insetRect, settings);
 
     painter.end();
     return result;
@@ -77,6 +79,7 @@ void BeautifyRenderer::render(QPainter& painter, const QRect& targetRect,
     QRect insetRect = calculateInsetRect(outputSize, logicalSource, settings);
     drawShadow(painter, insetRect, settings);
     drawScreenshot(painter, insetRect, source, settings);
+    drawBorder(painter, insetRect, settings);
 
     painter.restore();
 }
@@ -164,6 +167,22 @@ void BeautifyRenderer::drawShadow(QPainter& painter, const QRect& insetRect,
         painter.drawRoundedRect(shadowRect, cornerExpand, cornerExpand);
     }
 
+    painter.restore();
+}
+
+void BeautifyRenderer::drawBorder(QPainter& painter, const QRect& insetRect,
+                                   const BeautifySettings& settings)
+{
+    if (!settings.borderEnabled || settings.borderWidth <= 0) return;
+    const double width = settings.borderWidth;
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    // Inside the picture's edge, so the output size does not change.
+    const QRectF edge = QRectF(insetRect).adjusted(width / 2.0, width / 2.0, -width / 2.0, -width / 2.0);
+    const double radius = qMax(0.0, settings.cornerRadius - width / 2.0);
+    painter.setPen(QPen(settings.borderColor, width));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(edge, radius, radius);
     painter.restore();
 }
 

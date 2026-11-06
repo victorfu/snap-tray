@@ -27,6 +27,7 @@ private slots:
     void testApplyToPixmap_WithShadow();
     void testApplyToPixmap_ZeroCornerRadius();
     void testApplyToPixmap_HiDPI_CorrectLogicalSize();
+    void testApplyToPixmap_BorderInsideThePicture();
 
     // render tests
     void testRender_NullSource_NoOp();
@@ -286,6 +287,30 @@ void tst_BeautifyRenderer::testRender_FitsTargetRect()
     QImage img = canvas.toImage();
     QColor center = img.pixelColor(200, 150);
     QVERIFY(center != QColor(Qt::white));
+}
+
+void tst_BeautifyRenderer::testApplyToPixmap_BorderInsideThePicture()
+{
+    // #269: the border is drawn just inside the screenshot; the size stays.
+    BeautifySettings settings;
+    settings.backgroundType = BeautifyBackgroundType::Solid;
+    settings.backgroundColor = Qt::black;
+    settings.shadowEnabled = false;
+    settings.cornerRadius = 0;
+    settings.padding = 20;
+    settings.borderEnabled = true;
+    settings.borderWidth = 4;
+    settings.borderColor = Qt::green;
+    const QPixmap source = createTestPixmap(100, 80, Qt::red);
+    const QImage out = BeautifyRenderer::applyToPixmap(source, settings).toImage();
+    QCOMPARE(out.size(), QSize(140, 120));
+    QCOMPARE(QColor(out.pixel(21, 60)), QColor(Qt::green));  // on the edge, inside
+    QCOMPARE(QColor(out.pixel(19, 60)), QColor(Qt::black));  // the background stays
+    QCOMPARE(QColor(out.pixel(70, 60)), QColor(Qt::red));    // the picture stays
+
+    settings.borderEnabled = false;
+    const QImage plain = BeautifyRenderer::applyToPixmap(source, settings).toImage();
+    QCOMPARE(QColor(plain.pixel(21, 60)), QColor(Qt::red));
 }
 
 QTEST_MAIN(tst_BeautifyRenderer)

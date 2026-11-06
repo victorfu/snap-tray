@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 
+#include "beautify/FrameStyleLibrary.h"
 #include "qml/BeautifyPanelBackend.h"
 #include "qml/QmlBeautifyPanel.h"
 #include "qml/QmlOverlayManager.h"
@@ -52,6 +53,7 @@ private slots:
     void testCustomizeNearScreenBottomStaysOnScreen();
     void testSaveStyleByName();
     void testRenameFollowsTheStyleWhenAnotherIsDeleted();
+    void testSaveExplainsAFullList();
 };
 
 void tst_BeautifyPanelQml::testSliderBindingSurvivesReopen_data()
@@ -341,11 +343,15 @@ void tst_BeautifyPanelQml::testSaveStyleByName()
     // closing the panel; Return saves; the saved card can be deleted by key.
     auto settings = SnapTray::getSettings();
     settings.remove(QStringLiteral("beautify/customStyles"));
+    settings.remove(QStringLiteral("beautify/frameStyles"));
     settings.sync();
+    SnapTray::FrameStyleLibrary::instance().reload();
     auto cleanup = qScopeGuard([] {
         auto s = SnapTray::getSettings();
         s.remove(QStringLiteral("beautify/customStyles"));
+        s.remove(QStringLiteral("beautify/frameStyles"));
         s.sync();
+        SnapTray::FrameStyleLibrary::instance().reload();
     });
 
     SnapTray::QmlBeautifyPanel panel;
@@ -452,11 +458,15 @@ void tst_BeautifyPanelQml::testRenameFollowsTheStyleWhenAnotherIsDeleted()
     // moved into B's place; deleting B itself ends the rename.
     auto settings = SnapTray::getSettings();
     settings.remove(QStringLiteral("beautify/customStyles"));
+    settings.remove(QStringLiteral("beautify/frameStyles"));
     settings.sync();
+    SnapTray::FrameStyleLibrary::instance().reload();
     auto cleanup = qScopeGuard([] {
         auto s = SnapTray::getSettings();
         s.remove(QStringLiteral("beautify/customStyles"));
+        s.remove(QStringLiteral("beautify/frameStyles"));
         s.sync();
+        SnapTray::FrameStyleLibrary::instance().reload();
     });
 
     SnapTray::QmlBeautifyPanel panel;
@@ -482,7 +492,7 @@ void tst_BeautifyPanelQml::testRenameFollowsTheStyleWhenAnotherIsDeleted()
     QVERIFY(QMetaObject::invokeMethod(root, "finishNamingStyle", Q_RETURN_ARG(QVariant, ok),
                                       Q_ARG(QVariant, true)));
     QVERIFY(ok.toBool());
-    auto stored = BeautifySettingsManager::instance().loadCustomStyles();
+    auto stored = BeautifySettingsManager::instance().loadFrameStyles();
     QCOMPARE(stored.size(), 2);
     QCOMPARE(stored.at(0).name, QStringLiteral("B2"));
     QCOMPARE(stored.at(1).name, QStringLiteral("C"));
@@ -492,6 +502,61 @@ void tst_BeautifyPanelQml::testRenameFollowsTheStyleWhenAnotherIsDeleted()
     backend->deleteCustomStyle(1);
     QVERIFY(!root->property("namingStyle").toBool());
     QCOMPARE(root->property("renamingIndex").toInt(), -1);
+}
+
+void tst_BeautifyPanelQml::testSaveExplainsAFullList()
+{
+    // The shared list can fill up from another panel or the recording editor
+    // while a name is typed here: Save is refused with the reason shown.
+    auto settings = SnapTray::getSettings();
+    settings.remove(QStringLiteral("beautify/customStyles"));
+    settings.remove(QStringLiteral("beautify/frameStyles"));
+    settings.sync();
+    SnapTray::FrameStyleLibrary::instance().reload();
+    auto cleanup = qScopeGuard([] {
+        auto s = SnapTray::getSettings();
+        s.remove(QStringLiteral("beautify/customStyles"));
+        s.remove(QStringLiteral("beautify/frameStyles"));
+        s.sync();
+        SnapTray::FrameStyleLibrary::instance().reload();
+    });
+
+    SnapTray::QmlBeautifyPanel panel;
+    panel.setSettings(BeautifySettings{});
+    panel.showNear(QRect(100, 100, 400, 300));
+    auto* view = qobject_cast<QQuickView*>(panel.window());
+    QVERIFY(view && view->rootObject());
+    QQuickItem* root = view->rootObject();
+    auto* input = findItem(root, QStringLiteral("beautifyStyleNameInput"));
+    auto* save = findItem(root, QStringLiteral("beautifyStyleNameSave"));
+    auto* full = findItem(root, QStringLiteral("beautifyStyleNameFull"));
+    QVERIFY(input && save && full);
+
+    QVERIFY(QMetaObject::invokeMethod(root, "startNamingStyle"));
+    QVERIFY(root->property("namingStyle").toBool());
+    QVERIFY(!full->isVisible());
+    auto& library = SnapTray::FrameStyleLibrary::instance();
+    for (int i = 0; i < BeautifySettingsManager::kMaxCustomStyles; ++i) {
+        QVERIFY(library.save(QStringLiteral("Elsewhere %1").arg(i), SnapTray::FrameStyle()));
+    }
+    input->setProperty("text", QStringLiteral("Mine"));
+    QTRY_VERIFY(full->isVisible());
+    QVERIFY(!save->isEnabled());
+    QVariant ok;
+    QVERIFY(QMetaObject::invokeMethod(root, "finishNamingStyle", Q_RETURN_ARG(QVariant, ok),
+                                      Q_ARG(QVariant, true)));
+    QVERIFY(!ok.toBool());
+    QVERIFY(root->property("namingStyle").toBool()); // still open, with the reason
+    QCOMPARE(library.count(), BeautifySettingsManager::kMaxCustomStyles);
+
+    // A saved name updates that style, which still fits.
+    input->setProperty("text", QStringLiteral("elsewhere 3"));
+    QTRY_VERIFY(!full->isVisible());
+    QVERIFY(save->isEnabled());
+    QVERIFY(QMetaObject::invokeMethod(root, "finishNamingStyle", Q_RETURN_ARG(QVariant, ok),
+                                      Q_ARG(QVariant, true)));
+    QVERIFY(ok.toBool());
+    QVERIFY(!root->property("namingStyle").toBool());
 }
 
 QTEST_MAIN(tst_BeautifyPanelQml)
