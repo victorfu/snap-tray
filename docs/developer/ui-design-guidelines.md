@@ -151,7 +151,7 @@ Fixed (each with a regression test that fails before the fix):
 - Exclusive editor choices built from buttons (codec, Blurred Video/Image background, zoom scale, crop aspect) are radio buttons with a selected state (`choicesReadTheirStateToScreenReaders`).
 - Pin windows were unnamed dialogs; they are named "Pinned image".
 
-Remaining gaps (not fixed here):
+Remaining gaps, tracked in [#248](https://github.com/victorfu/snap-tray/issues/248):
 
 - The style strip below the capture toolbar (sizes, colors, width, arrow and line styles, shape fill, text formatting, Auto Blur) has no accessible names or states.
 - A toolbar button that is only drawn as disabled (for example Undo with nothing to undo) is not reported as unavailable.
