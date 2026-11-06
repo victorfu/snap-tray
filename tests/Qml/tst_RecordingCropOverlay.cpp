@@ -884,6 +884,12 @@ tst_RecordingCropOverlay::PreviewOpen tst_RecordingCropOverlay::openPreview(cons
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->setMinimumSize(QSize(kPreviewMinWidth, kPreviewMinHeight));
     m_view->resize(kPreviewWidth, kPreviewHeight);
+    // Keep the window manager out of window activation. On a desktop session
+    // (GNOME X11) it briefly hands focus elsewhere while test windows are created
+    // and destroyed, and a deactivation cancels the mouse grab of a synthetic drag
+    // in progress (#264). Keys still reach the window's focus item through
+    // QTest::keyClick; activation itself is not under test here.
+    m_view->setFlag(Qt::WindowDoesNotAcceptFocus);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingPreview.qml")));
     if (m_view->status() != QQuickView::Ready || !m_view->rootObject()) {
         QStringList errors;
@@ -898,10 +904,6 @@ tst_RecordingCropOverlay::PreviewOpen tst_RecordingCropOverlay::openPreview(cons
     if (!QTest::qWaitForWindowExposed(m_view.get())) {
         *reason = QStringLiteral("RecordingPreview interaction tests need a real, exposable window");
         return PreviewOpen::Unavailable;
-    }
-    m_view->requestActivate();
-    if (!QTest::qWaitForWindowActive(m_view.get(), 1000)) {
-        qDebug() << "Preview window not active; keys go straight to the root item";
     }
 
     // Stand in for a decoded frame: the item derives contentRect from it, and the
@@ -1006,7 +1008,7 @@ void tst_RecordingCropOverlay::sendKey(Qt::Key key, Qt::KeyboardModifiers modifi
         QTest::keyClick(m_view.get(), key, modifiers);
         return;
     }
-    // Headless sessions may never activate the window; deliver to the focused root item instead.
+    // The window is never activated, so it may have no focus item yet; deliver to the root item instead.
     QKeyEvent press(QEvent::KeyPress, key, modifiers);
     QCoreApplication::sendEvent(m_view->rootObject(), &press);
     QKeyEvent release(QEvent::KeyRelease, key, modifiers);
