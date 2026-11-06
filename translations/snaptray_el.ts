@@ -127,29 +127,29 @@
         <translation>Αυτόματο</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="131" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="166" />
         <source>Beautify</source>
         <translation>Ομορφοποίηση</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="647" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="700" />
         <source>Shadow</source>
         <translation>Σκιά</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="688" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="741" />
         <source>Copy</source>
         <translation>Αντιγραφή</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="694" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="747" />
         <source>Save</source>
         <translation>Αποθήκευση</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="155" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="701" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="190" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="754" />
         <source>Close</source>
         <translation>Κλείσιμο</translation>
     </message>
@@ -158,83 +158,83 @@
         <translation>Επιλογή χρώματος</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="221" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="256" />
         <source>Style</source>
         <translation>Στυλ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="238" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="273" />
         <source>Custom</source>
         <translation>Προσαρμοσμένο</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="356" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="408" />
         <source>Style: %1</source>
         <translation>Στυλ: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="404" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="457" />
         <source>Background</source>
         <translation>Φόντο</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="444" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="497" />
         <source>Background: %1</source>
         <translation>Φόντο: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="486" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="518" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="539" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
         <source>Customize</source>
         <translation>Προσαρμογή</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="488" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="541" />
         <source>Hide padding, corners, shadow and other details</source>
         <translation>Απόκρυψη περιθωρίου, γωνιών, σκιάς και άλλων λεπτομερειών</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="489" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="542" />
         <source>Show padding, corners, shadow and other details</source>
         <translation>Εμφάνιση περιθωρίου, γωνιών, σκιάς και άλλων λεπτομερειών</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="552" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="605" />
         <source>Background type</source>
         <translation>Τύπος φόντου</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="562" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="615" />
         <source>Colors</source>
         <translation>Χρώματα</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="570" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="623" />
         <source>First color</source>
         <translation>Πρώτο χρώμα</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="624" />
         <source>Second color</source>
         <translation>Δεύτερο χρώμα</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="621" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="674" />
         <source>Padding</source>
         <translation>Περιθώριο</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="634" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="687" />
         <source>Corners</source>
         <translation>Γωνίες</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="657" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="710" />
         <source>Shadow blur</source>
         <translation>Θόλωση σκιάς</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="672" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="725" />
         <source>Aspect ratio</source>
         <translation>Αναλογία διαστάσεων</translation>
     </message>
@@ -259,33 +259,34 @@
         <translation>Επίπεδο</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="252" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="261" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="287" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="296" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
         <source>Save style…</source>
         <translation>Αποθήκευση στυλ…</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="267" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="302" />
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Μπορείτε να διατηρήσετε έως %1 αποθηκευμένα στυλ. Διαγράψτε ένα για να αποθηκεύσετε άλλο.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="319" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="357" />
         <source>Style name</source>
         <translation>Όνομα στυλ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="337" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="375" />
         <source>Cancel</source>
         <translation>Ακύρωση</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="387" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="439" />
         <source>Saved style: %1</source>
         <translation>Αποθηκευμένο στυλ: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="842" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="941" />
         <source>Delete style %1</source>
         <translation>Διαγραφή στυλ %1</translation>
     </message>
@@ -293,6 +294,31 @@
         <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
         <source>My style %1</source>
         <translation>Το στυλ μου %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <source>Rename style</source>
+        <translation>Μετονομασία στυλ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <source>Rename</source>
+        <translation>Μετονομασία</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="385" />
+        <source>Another saved style already has this name.</source>
+        <translation>Ένα άλλο αποθηκευμένο στυλ έχει ήδη αυτό το όνομα.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="902" />
+        <source>Rename style %1</source>
+        <translation>Μετονομασία στυλ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="922" />
+        <source>Rename (F2)</source>
+        <translation>Μετονομασία (F2)</translation>
     </message>
 </context>
 <context>

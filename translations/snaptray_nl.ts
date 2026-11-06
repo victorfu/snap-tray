@@ -127,29 +127,29 @@
         <translation>Automatisch</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="131" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="166" />
         <source>Beautify</source>
         <translation>Verfraaien</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="647" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="700" />
         <source>Shadow</source>
         <translation>Schaduw</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="688" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="741" />
         <source>Copy</source>
         <translation>Kopiëren</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="694" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="747" />
         <source>Save</source>
         <translation>Opslaan</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="155" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="701" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="190" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="754" />
         <source>Close</source>
         <translation>Sluiten</translation>
     </message>
@@ -158,83 +158,83 @@
         <translation>Kleur selecteren</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="221" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="256" />
         <source>Style</source>
         <translation>Stijl</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="238" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="273" />
         <source>Custom</source>
         <translation>Aangepast</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="356" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="408" />
         <source>Style: %1</source>
         <translation>Stijl: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="404" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="457" />
         <source>Background</source>
         <translation>Achtergrond</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="444" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="497" />
         <source>Background: %1</source>
         <translation>Achtergrond: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="486" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="518" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="539" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
         <source>Customize</source>
         <translation>Aanpassen</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="488" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="541" />
         <source>Hide padding, corners, shadow and other details</source>
         <translation>Marge, hoeken, schaduw en andere details verbergen</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="489" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="542" />
         <source>Show padding, corners, shadow and other details</source>
         <translation>Marge, hoeken, schaduw en andere details tonen</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="552" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="605" />
         <source>Background type</source>
         <translation>Achtergrondtype</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="562" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="615" />
         <source>Colors</source>
         <translation>Kleuren</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="570" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="623" />
         <source>First color</source>
         <translation>Eerste kleur</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="624" />
         <source>Second color</source>
         <translation>Tweede kleur</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="621" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="674" />
         <source>Padding</source>
         <translation>Marge</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="634" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="687" />
         <source>Corners</source>
         <translation>Hoeken</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="657" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="710" />
         <source>Shadow blur</source>
         <translation>Schaduwvervaging</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="672" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="725" />
         <source>Aspect ratio</source>
         <translation>Beeldverhouding</translation>
     </message>
@@ -259,33 +259,34 @@
         <translation>Plat</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="252" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="261" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="287" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="296" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
         <source>Save style…</source>
         <translation>Stijl opslaan…</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="267" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="302" />
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Je kunt maximaal %1 opgeslagen stijlen bewaren. Verwijder er een om een andere op te slaan.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="319" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="357" />
         <source>Style name</source>
         <translation>Stijlnaam</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="337" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="375" />
         <source>Cancel</source>
         <translation>Annuleren</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="387" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="439" />
         <source>Saved style: %1</source>
         <translation>Opgeslagen stijl: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="842" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="941" />
         <source>Delete style %1</source>
         <translation>Stijl %1 verwijderen</translation>
     </message>
@@ -293,6 +294,31 @@
         <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
         <source>My style %1</source>
         <translation>Mijn stijl %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <source>Rename style</source>
+        <translation>Stijl hernoemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <source>Rename</source>
+        <translation>Hernoemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="385" />
+        <source>Another saved style already has this name.</source>
+        <translation>Een andere opgeslagen stijl heeft deze naam al.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="902" />
+        <source>Rename style %1</source>
+        <translation>Stijl %1 hernoemen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="922" />
+        <source>Rename (F2)</source>
+        <translation>Hernoemen (F2)</translation>
     </message>
 </context>
 <context>

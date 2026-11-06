@@ -5,6 +5,7 @@
 #include "qml/QmlOverlayManager.h"
 #include "settings/Settings.h"
 
+#include <QAccessible>
 #include <QQuickItem>
 #include <QScreen>
 #include <QScopeGuard>
@@ -309,6 +310,57 @@ void tst_BeautifyPanelQml::testSaveStyleByName()
     QQuickItem* card = nullptr;
     QTRY_VERIFY((card = findItem(root, QStringLiteral("beautifySavedStyle0"))) != nullptr);
     QVERIFY(card->property("chosen").toBool());
+
+    // Rename: F2 on the focused card opens the name field with its name.
+    backend->setPadding(150);
+    QVERIFY(backend->saveCustomStyle(QStringLiteral("Slides")));
+    // A new model rebuilds the cards.
+    QTRY_VERIFY(findItem(root, QStringLiteral("beautifySavedStyle1")) != nullptr);
+    card = findItem(root, QStringLiteral("beautifySavedStyle0"));
+    QVERIFY(card);
+    card->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_F2);
+    QVERIFY(root->property("namingStyle").toBool());
+    QCOMPARE(root->property("renamingIndex").toInt(), 0);
+    QCOMPARE(input->property("text").toString(), QStringLiteral("Release notes"));
+    auto* save = findItem(root, QStringLiteral("beautifyStyleNameSave"));
+    auto* taken = findItem(root, QStringLiteral("beautifyStyleNameTaken"));
+    QVERIFY(save && taken);
+    // Another style's name: refused, with a message, and Return keeps the field open.
+    input->setProperty("text", QStringLiteral("slides"));
+    QTRY_VERIFY(taken->isVisible());
+    QVERIFY(!save->isEnabled());
+    QTRY_VERIFY(input->hasActiveFocus());
+    QTest::keyClick(view, Qt::Key_Return);
+    QVERIFY(root->property("namingStyle").toBool());
+    QCOMPARE(backend->customStyleModel().at(0).toMap().value(QStringLiteral("name")).toString(),
+             QStringLiteral("Release notes"));
+    // Esc cancels the rename only.
+    QTest::keyClick(view, Qt::Key_Escape);
+    QVERIFY(!root->property("namingStyle").toBool());
+    QVERIFY(panel.isVisible());
+    // The pencil button opens it too; Return renames.
+    auto* pencil = findItem(card, QStringLiteral("beautifyStyleRename"));
+    QVERIFY(pencil);
+    QAccessibleInterface* pencilIface = QAccessible::queryAccessibleInterface(pencil);
+    QVERIFY(pencilIface && pencilIface->actionInterface());
+    pencilIface->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QVERIFY(root->property("namingStyle").toBool());
+    QTRY_VERIFY(input->hasActiveFocus());
+    input->setProperty("text", QStringLiteral("Changelog"));
+    QVERIFY(!taken->isVisible());
+    QTest::keyClick(view, Qt::Key_Return);
+    QVERIFY(!root->property("namingStyle").toBool());
+    QCOMPARE(backend->customStyleModel().at(0).toMap().value(QStringLiteral("name")).toString(),
+             QStringLiteral("Changelog"));
+    // Focus returns to the renamed card.
+    QTRY_VERIFY(findItem(root, QStringLiteral("beautifySavedStyle0"))
+                && findItem(root, QStringLiteral("beautifySavedStyle0"))->hasActiveFocus());
+    backend->deleteCustomStyle(1);
+
+    QTRY_VERIFY(findItem(root, QStringLiteral("beautifySavedStyle1")) == nullptr);
+    card = findItem(root, QStringLiteral("beautifySavedStyle0"));
+    QVERIFY(card);
     card->forceActiveFocus();
     QTest::keyClick(view, Qt::Key_Delete);
     QCOMPARE(backend->customStyleModel().size(), 0);

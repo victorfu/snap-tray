@@ -412,7 +412,7 @@ Applies to the Settings window and the Beautify panel (#227). Design: `docs/supe
   - The four styles are Compact, Standard (the defaults), Spacious and Flat. A style sets padding, corners and shadow, and leaves the background and ratio alone. The card matching the current values is chosen; otherwise the caption reads **Custom**.
   - The background swatches are the eight named gradients, the same as the recording Canvas.
   - Customize lists Background type, Colors, Padding, Corners, Shadow (the shared `SettingsToggle`), Shadow blur and Aspect ratio, with no colons. It stays open or closed while the panel is reused. When opening it grows the panel, the panel stays on the screen.
-  - **Save style…** saves the whole look under a name (inline field; `Esc` cancels the name, not the panel). Up to 8 saved styles sit below the built-in ones, each with a × (or `Delete`). Saving under an existing name updates it.
+  - **Save style…** saves the whole look under a name (inline field; `Esc` cancels the name, not the panel). Up to 8 saved styles sit below the built-in ones, each with a ✎ to rename (or `F2`) and a × to delete (or `Delete`). Two saved styles cannot share a name; a taken name is shown in red and Rename stays disabled. Saving under an existing name updates it.
 - **Keyboard and names:**
   - Style cards, swatches, color chips and Customize are Tab stops. Space and Return activate them.
   - Each has a button role and a name ("Style: Standard", "Background: Ocean"). Cards and swatches also report checked.

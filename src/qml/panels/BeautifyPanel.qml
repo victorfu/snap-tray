@@ -21,19 +21,54 @@ Item {
     // Naming a style to save (#227); Esc then cancels naming instead of closing.
     property bool namingStyle: false
 
+    // The saved style being renamed, or -1 while naming a new one.
+    property int renamingIndex: -1
+    readonly property bool nameTaken: root.namingStyle && root.renamingIndex >= 0 && root.backend
+        ? root.backend.customStyleNameTaken(styleNameInput.text, root.renamingIndex)
+        : false
+
     function startNamingStyle() {
         if (!root.backend || root.backend.customStylesFull)
             return
-        styleNameInput.text = root.backend.suggestedCustomStyleName()
+        root.renamingIndex = -1
+        openNameField(root.backend.suggestedCustomStyleName())
+    }
+
+    function startRenamingStyle(index) {
+        if (!root.backend || index < 0 || index >= root.backend.customStyleModel.length)
+            return
+        root.renamingIndex = index
+        openNameField(root.backend.customStyleModel[index].name)
+    }
+
+    function openNameField(text) {
+        styleNameInput.text = text
         root.namingStyle = true
         styleNameInput.forceActiveFocus()
         styleNameInput.selectAll()
     }
 
+    // Returns false (field stays open) when a rename is refused.
     function finishNamingStyle(save) {
-        if (save && root.backend && styleNameInput.text.trim().length > 0)
-            root.backend.saveCustomStyle(styleNameInput.text)
+        if (save && root.backend && styleNameInput.text.trim().length > 0) {
+            if (root.renamingIndex >= 0) {
+                if (!root.backend.renameCustomStyle(root.renamingIndex, styleNameInput.text))
+                    return false
+            } else {
+                root.backend.saveCustomStyle(styleNameInput.text)
+            }
+        }
+        var renamed = root.renamingIndex
         root.namingStyle = false
+        root.renamingIndex = -1
+        // Renaming rebuilds the cards; give focus back to the renamed one.
+        if (renamed >= 0)
+            Qt.callLater(function() {
+                var card = savedRepeater.itemAt(renamed)
+                if (card)
+                    card.forceActiveFocus()
+            })
+        return true
     }
 
     readonly property int contentMargin: 16
@@ -291,6 +326,7 @@ Item {
             spacing: 8
             visible: root.namingStyle
             height: visible ? 30 : 0
+            Accessible.name: root.renamingIndex >= 0 ? qsTr("Rename style") : qsTr("Save style…")
 
             Rectangle {
                 width: parent.width - saveNameButton.width - cancelNameButton.width - 2 * parent.spacing
@@ -298,7 +334,9 @@ Item {
                 radius: ComponentTokens.inputRadius
                 color: ComponentTokens.inputBackground
                 border.width: 1
-                border.color: styleNameInput.activeFocus ? ComponentTokens.inputBorderFocus : ComponentTokens.inputBorder
+                border.color: root.nameTaken
+                    ? SemanticTokens.statusError
+                    : styleNameInput.activeFocus ? ComponentTokens.inputBorderFocus : ComponentTokens.inputBorder
 
                 TextInput {
                     id: styleNameInput
@@ -326,9 +364,9 @@ Item {
             SettingsButton {
                 id: saveNameButton
                 objectName: "beautifyStyleNameSave"
-                text: qsTr("Save")
+                text: root.renamingIndex >= 0 ? qsTr("Rename") : qsTr("Save")
                 primary: true
-                enabled: styleNameInput.text.trim().length > 0
+                enabled: styleNameInput.text.trim().length > 0 && !root.nameTaken
                 onClicked: root.finishNamingStyle(true)
             }
 
@@ -337,6 +375,20 @@ Item {
                 text: qsTr("Cancel")
                 onClicked: root.finishNamingStyle(false)
             }
+        }
+
+        Text {
+            objectName: "beautifyStyleNameTaken"
+            width: parent.width
+            visible: root.nameTaken
+            height: visible ? implicitHeight : 0
+            text: qsTr("Another saved style already has this name.")
+            color: SemanticTokens.statusError
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            wrapMode: Text.Wrap
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: text
         }
 
         Row {
@@ -395,6 +447,7 @@ Item {
                     deletable: true
                     onActivated: if (root.backend) root.backend.applyCustomStyle(index)
                     onDeleteRequested: if (root.backend) root.backend.deleteCustomStyle(index)
+                    onRenameRequested: root.startRenamingStyle(index)
                 }
             }
         }
@@ -722,6 +775,7 @@ Item {
         property bool deletable: false
         signal activated()
         signal deleteRequested()
+        signal renameRequested()
 
         height: root.styleCardHeight
         activeFocusOnTab: true
@@ -733,6 +787,12 @@ Item {
         Keys.onSpacePressed: card.activated()
         Keys.onReturnPressed: card.activated()
         Keys.onDeletePressed: if (card.deletable) card.deleteRequested()
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_F2 && card.deletable) {
+                card.renameRequested()
+                event.accepted = true
+            }
+        }
 
         Rectangle {
             id: cardFrame
@@ -826,9 +886,48 @@ Item {
         }
 
         Rectangle {
+            id: renameButton
+            objectName: "beautifyStyleRename"
+            visible: deleteButton.visible
+            anchors.left: cardFrame.left
+            anchors.top: cardFrame.top
+            anchors.margins: -5
+            width: 18
+            height: 18
+            radius: 9
+            color: renameMouse.containsMouse ? SemanticTokens.accentDefault : ComponentTokens.beautifyPreviewPlaceholder
+            border.width: 1
+            border.color: ComponentTokens.beautifyPreviewFrame
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Rename style %1").arg(card.name)
+            Accessible.onPressAction: card.renameRequested()
+
+            SvgIcon {
+                anchors.centerIn: parent
+                source: "qrc:/icons/icons/pencil.svg"
+                iconSize: 10
+                color: renameMouse.containsMouse ? "#ffffff" : SemanticTokens.iconColor
+            }
+
+            MouseArea {
+                id: renameMouse
+                anchors.fill: parent
+                anchors.margins: -3
+                hoverEnabled: true
+                cursorShape: CursorTokens.clickable
+                onClicked: card.renameRequested()
+            }
+
+            ToolTip.visible: renameMouse.containsMouse
+            ToolTip.text: qsTr("Rename (F2)")
+            ToolTip.delay: 400
+        }
+
+        Rectangle {
             id: deleteButton
             objectName: "beautifyStyleDelete"
-            visible: card.deletable && (cardMouse.containsMouse || deleteMouse.containsMouse || card.activeFocus)
+            visible: card.deletable && (cardMouse.containsMouse || deleteMouse.containsMouse
+                                        || renameMouse.containsMouse || card.activeFocus)
             anchors.right: cardFrame.right
             anchors.top: cardFrame.top
             anchors.margins: -5

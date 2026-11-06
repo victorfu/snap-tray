@@ -88,6 +88,10 @@ public:
     Q_INVOKABLE bool saveCustomStyle(const QString& name);
     Q_INVOKABLE void applyCustomStyle(int index);
     Q_INVOKABLE void deleteCustomStyle(int index);
+    // Renames a saved style; refused for an empty name or one another saved
+    // style already uses (any case).
+    Q_INVOKABLE bool renameCustomStyle(int index, const QString& name);
+    Q_INVOKABLE bool customStyleNameTaken(const QString& name, int exceptIndex = -1) const;
     Q_INVOKABLE void pickPrimaryColor();
     Q_INVOKABLE void pickSecondaryColor();
     Q_INVOKABLE void requestCopy();

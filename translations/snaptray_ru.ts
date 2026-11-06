@@ -127,29 +127,29 @@
         <translation>Авто</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="131" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="166" />
         <source>Beautify</source>
         <translation>Украсить</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="647" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="700" />
         <source>Shadow</source>
         <translation>Тень</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="688" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="741" />
         <source>Copy</source>
         <translation>Копировать</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="694" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="747" />
         <source>Save</source>
         <translation>Сохранить</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="155" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="701" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="190" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="754" />
         <source>Close</source>
         <translation>Закрыть</translation>
     </message>
@@ -158,83 +158,83 @@
         <translation>Выбор цвета</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="221" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="256" />
         <source>Style</source>
         <translation>Стиль</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="238" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="273" />
         <source>Custom</source>
         <translation>Свой</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="356" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="408" />
         <source>Style: %1</source>
         <translation>Стиль: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="404" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="457" />
         <source>Background</source>
         <translation>Фон</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="444" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="497" />
         <source>Background: %1</source>
         <translation>Фон: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="486" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="518" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="539" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
         <source>Customize</source>
         <translation>Настроить</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="488" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="541" />
         <source>Hide padding, corners, shadow and other details</source>
         <translation>Скрыть поля, углы, тень и другие параметры</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="489" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="542" />
         <source>Show padding, corners, shadow and other details</source>
         <translation>Показать поля, углы, тень и другие параметры</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="552" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="605" />
         <source>Background type</source>
         <translation>Тип фона</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="562" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="615" />
         <source>Colors</source>
         <translation>Цвета</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="570" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="623" />
         <source>First color</source>
         <translation>Первый цвет</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="624" />
         <source>Second color</source>
         <translation>Второй цвет</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="621" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="674" />
         <source>Padding</source>
         <translation>Поля</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="634" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="687" />
         <source>Corners</source>
         <translation>Углы</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="657" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="710" />
         <source>Shadow blur</source>
         <translation>Размытие тени</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="672" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="725" />
         <source>Aspect ratio</source>
         <translation>Соотношение сторон</translation>
     </message>
@@ -259,33 +259,34 @@
         <translation>Плоский</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="252" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="261" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="287" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="296" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
         <source>Save style…</source>
         <translation>Сохранить стиль…</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="267" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="302" />
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Можно хранить не более %1 сохранённых стилей. Удалите один, чтобы сохранить новый.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="319" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="357" />
         <source>Style name</source>
         <translation>Название стиля</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="337" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="375" />
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="387" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="439" />
         <source>Saved style: %1</source>
         <translation>Сохранённый стиль: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="842" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="941" />
         <source>Delete style %1</source>
         <translation>Удалить стиль %1</translation>
     </message>
@@ -293,6 +294,31 @@
         <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
         <source>My style %1</source>
         <translation>Мой стиль %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <source>Rename style</source>
+        <translation>Переименовать стиль</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <source>Rename</source>
+        <translation>Переименовать</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="385" />
+        <source>Another saved style already has this name.</source>
+        <translation>Другой сохранённый стиль уже называется так.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="902" />
+        <source>Rename style %1</source>
+        <translation>Переименовать стиль %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="922" />
+        <source>Rename (F2)</source>
+        <translation>Переименовать (F2)</translation>
     </message>
 </context>
 <context>

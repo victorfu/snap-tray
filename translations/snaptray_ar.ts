@@ -127,29 +127,29 @@
         <translation>تلقائي</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="131" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="166" />
         <source>Beautify</source>
         <translation>تجميل</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="647" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="700" />
         <source>Shadow</source>
         <translation>الظل</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="688" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="741" />
         <source>Copy</source>
         <translation>نسخ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="694" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="747" />
         <source>Save</source>
         <translation>حفظ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="155" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="701" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="190" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="754" />
         <source>Close</source>
         <translation>إغلاق</translation>
     </message>
@@ -158,83 +158,83 @@
         <translation>اختر لونًا</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="221" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="256" />
         <source>Style</source>
         <translation>النمط</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="238" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="273" />
         <source>Custom</source>
         <translation>مخصص</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="356" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="408" />
         <source>Style: %1</source>
         <translation>النمط: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="404" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="457" />
         <source>Background</source>
         <translation>الخلفية</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="444" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="497" />
         <source>Background: %1</source>
         <translation>الخلفية: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="486" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="518" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="539" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
         <source>Customize</source>
         <translation>تخصيص</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="488" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="541" />
         <source>Hide padding, corners, shadow and other details</source>
         <translation>إخفاء الهوامش والزوايا والظل والتفاصيل الأخرى</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="489" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="542" />
         <source>Show padding, corners, shadow and other details</source>
         <translation>إظهار الهوامش والزوايا والظل والتفاصيل الأخرى</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="552" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="605" />
         <source>Background type</source>
         <translation>نوع الخلفية</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="562" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="615" />
         <source>Colors</source>
         <translation>الألوان</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="570" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="623" />
         <source>First color</source>
         <translation>اللون الأول</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="571" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="624" />
         <source>Second color</source>
         <translation>اللون الثاني</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="621" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="674" />
         <source>Padding</source>
         <translation>الهوامش</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="634" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="687" />
         <source>Corners</source>
         <translation>الزوايا</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="657" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="710" />
         <source>Shadow blur</source>
         <translation>تمويه الظل</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="672" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="725" />
         <source>Aspect ratio</source>
         <translation>نسبة العرض إلى الارتفاع</translation>
     </message>
@@ -259,33 +259,34 @@
         <translation>مسطّح</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="252" />
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="261" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="287" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="296" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
         <source>Save style…</source>
         <translation>حفظ النمط…</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="267" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="302" />
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>يمكنك الاحتفاظ بما يصل إلى %1 من الأنماط المحفوظة. احذف واحدًا لحفظ نمط آخر.</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="319" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="357" />
         <source>Style name</source>
         <translation>اسم النمط</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="337" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="375" />
         <source>Cancel</source>
         <translation>إلغاء</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="387" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="439" />
         <source>Saved style: %1</source>
         <translation>نمط محفوظ: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/BeautifyPanel.qml" line="842" />
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="941" />
         <source>Delete style %1</source>
         <translation>حذف النمط %1</translation>
     </message>
@@ -293,6 +294,31 @@
         <location filename="../src/qml/BeautifyPanelBackend.cpp" line="330" />
         <source>My style %1</source>
         <translation>نمطي %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="329" />
+        <source>Rename style</source>
+        <translation>إعادة تسمية النمط</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="367" />
+        <source>Rename</source>
+        <translation>إعادة تسمية</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="385" />
+        <source>Another saved style already has this name.</source>
+        <translation>يوجد نمط محفوظ آخر بهذا الاسم بالفعل.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="902" />
+        <source>Rename style %1</source>
+        <translation>إعادة تسمية النمط %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" line="922" />
+        <source>Rename (F2)</source>
+        <translation>إعادة تسمية (F2)</translation>
     </message>
 </context>
 <context>

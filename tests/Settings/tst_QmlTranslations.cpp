@@ -257,6 +257,8 @@ void tst_QmlTranslations::testTaskSettingsAndBeautifyTranslatedForAllLocales()
         {"BeautifyPanel", "Shadow blur"},
         {"BeautifyPanel", "Save style…"},
         {"BeautifyPanel", "My style %1"},
+        {"BeautifyPanel", "Rename style %1"},
+        {"BeautifyPanel", "Another saved style already has this name."},
         {"SettingsSidebar", "Search settings"},
         {"SettingsSidebar", "No settings match “%1”"},
         {"SettingsRow", "Reset to default"},

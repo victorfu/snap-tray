@@ -34,7 +34,6 @@ Issue: [#227](https://github.com/victorfu/snap-tray/issues/227). Tracking: #221.
 
 Out of scope:
 - style presets in the recording Frame (it keeps its own Small/Medium/Large amounts);
-- renaming saved styles in place (saving under the same name updates one);
 - any change to existing setting keys or stored values. New: `beautify/customStyles` and three named recording defaults.
 
 ## 1. Settings pages
@@ -136,6 +135,7 @@ Each page except About (which already centres the app name) starts with `Setting
 - **Save style…** next to the Style heading (hidden while the look already is a saved style) opens an inline name field, prefilled "My style N". `Return` saves, `Esc` cancels the name without closing the panel.
 - A saved style is the whole look: background, padding, corners, shadow and ratio. Saving under an existing name (any case) updates it. At most 8; at the limit the button is greyed out and its tooltip says to delete one.
 - Saved cards sit below the built-in styles, drawn on their own background, with a × on hover or focus (`Delete` also works). A saved card is chosen when background, padding, corners, shadow and ratio all match.
+- **Rename:** a ✎ on hover or focus (`F2` also works) opens the same inline field in rename mode, prefilled with the name; the button reads "Rename". `renameCustomStyle(index, name)` refuses an empty name or one another saved style uses (any case; changing only the case of its own name is allowed). While the typed name is taken, the field border turns red, a message says so, and Rename is disabled. The look is not changed. Renaming rebuilds the cards, so focus returns to the renamed card afterwards.
 - Stored by `BeautifySettingsManager` as JSON under `beautify/customStyles`; values are clamped on load and unnamed or broken entries are dropped.
 
 ### Shared language with the recording Frame

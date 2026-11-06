@@ -378,6 +378,33 @@ void BeautifyPanelBackend::deleteCustomStyle(int index)
     setCustomStyles(styles);
 }
 
+bool BeautifyPanelBackend::customStyleNameTaken(const QString& name, int exceptIndex) const
+{
+    const QString trimmed = name.trimmed();
+    for (int i = 0; i < m_customStyles.size(); ++i) {
+        if (i != exceptIndex && m_customStyles.at(i).name.compare(trimmed, Qt::CaseInsensitive) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool BeautifyPanelBackend::renameCustomStyle(int index, const QString& name)
+{
+    const QString trimmed = name.trimmed();
+    if (index < 0 || index >= m_customStyles.size() || trimmed.isEmpty()
+        || customStyleNameTaken(trimmed, index)) {
+        return false;
+    }
+    if (m_customStyles.at(index).name == trimmed) {
+        return true;
+    }
+    QVector<BeautifyCustomStyle> styles = m_customStyles;
+    styles[index].name = trimmed;
+    setCustomStyles(styles);
+    return true;
+}
+
 void BeautifyPanelBackend::setCustomStyles(const QVector<BeautifyCustomStyle>& styles)
 {
     m_customStyles = styles;

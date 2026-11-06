@@ -51,6 +51,7 @@ private slots:
     void testCustomStyle_SameNameUpdates();
     void testCustomStyle_LimitAndNames();
     void testCustomStyle_ManagerClampsBadData();
+    void testCustomStyle_Rename();
 };
 
 void tst_BeautifyPanelBackend::init()
@@ -308,6 +309,39 @@ void tst_BeautifyPanelBackend::testCustomStyle_ManagerClampsBadData()
     settings.setValue(QStringLiteral("beautify/customStyles"), QStringLiteral("{broken"));
     settings.sync();
     QVERIFY(BeautifySettingsManager::instance().loadCustomStyles().isEmpty());
+}
+
+void tst_BeautifyPanelBackend::testCustomStyle_Rename()
+{
+    {
+        SnapTray::BeautifyPanelBackend backend;
+        backend.setPadding(40);
+        QVERIFY(backend.saveCustomStyle(QStringLiteral("Blog")));
+        backend.setPadding(150);
+        QVERIFY(backend.saveCustomStyle(QStringLiteral("Slides")));
+        QSignalSpy changed(&backend, &SnapTray::BeautifyPanelBackend::customStylesChanged);
+
+        QVERIFY(backend.renameCustomStyle(0, QStringLiteral("  Blog posts ")));
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(backend.customStyleModel().at(0).toMap().value(QStringLiteral("name")).toString(),
+                 QStringLiteral("Blog posts"));
+        // The look is untouched: still Blog's padding.
+        QCOMPARE(backend.customStyleModel().at(0).toMap().value(QStringLiteral("padding")).toInt(), 40);
+
+        QVERIFY(!backend.renameCustomStyle(0, QStringLiteral("slides"))); // another style's name, any case
+        QVERIFY(backend.customStyleNameTaken(QStringLiteral("SLIDES"), 0));
+        QVERIFY(!backend.customStyleNameTaken(QStringLiteral("slides"), 1)); // its own name
+        QVERIFY(!backend.renameCustomStyle(0, QStringLiteral("   ")));
+        QVERIFY(!backend.renameCustomStyle(7, QStringLiteral("Nope")));
+        QVERIFY(backend.renameCustomStyle(1, QStringLiteral("SLIDES"))); // only the case changes
+        QCOMPARE(changed.count(), 2);
+        QVERIFY(backend.renameCustomStyle(1, QStringLiteral("SLIDES"))); // unchanged: no write
+        QCOMPARE(changed.count(), 2);
+    }
+    const auto stored = BeautifySettingsManager::instance().loadCustomStyles();
+    QCOMPARE(stored.size(), 2);
+    QCOMPARE(stored.at(0).name, QStringLiteral("Blog posts"));
+    QCOMPARE(stored.at(1).name, QStringLiteral("SLIDES"));
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)
