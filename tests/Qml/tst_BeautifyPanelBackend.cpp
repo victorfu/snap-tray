@@ -408,15 +408,15 @@ void tst_BeautifyPanelBackend::testCustomStyle_PanelsStayInSync()
 void tst_BeautifyPanelBackend::testCustomStyle_RelativeToScreenshotSize()
 {
     // #269: a style keeps sizes relative to the picture's shorter side.
-    SnapTray::BeautifyPanelBackend small;
+    SnapTray::BeautifyPanelBackend smallPanel;
     QPixmap smallShot(1280, 720);
     smallShot.fill(Qt::white);
-    small.setSourcePixmap(smallShot);
-    small.setPadding(64);
-    small.setCornerRadius(10);
-    QVERIFY(small.saveCustomStyle(QStringLiteral("Docs")));
-    QCOMPARE(small.currentCustomStyle(), 0);
-    QCOMPARE(small.customStyleModel().at(0).toMap().value(QStringLiteral("padding")).toInt(), 64);
+    smallPanel.setSourcePixmap(smallShot);
+    smallPanel.setPadding(64);
+    smallPanel.setCornerRadius(10);
+    QVERIFY(smallPanel.saveCustomStyle(QStringLiteral("Docs")));
+    QCOMPARE(smallPanel.currentCustomStyle(), 0);
+    QCOMPARE(smallPanel.customStyleModel().at(0).toMap().value(QStringLiteral("padding")).toInt(), 64);
     // Stored at the reference size (1440): twice as large as on a 720 px picture.
     QCOMPARE(storedPadding(SnapTray::FrameStyleLibrary::instance().styles().at(0)), 128);
 

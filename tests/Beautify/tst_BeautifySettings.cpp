@@ -651,9 +651,9 @@ void tst_BeautifySettings::testFrameStyle_JsonRoundTrip()
     // (100x40 with 64 px padding is 1.6) and still reads back exactly.
     BeautifySettings tiny;
     tiny.padding = 64;
-    const SnapTray::FrameStyle small = SnapTray::FrameStyle::fromBeautify(tiny, 40);
-    QCOMPARE(SnapTray::FrameStyle::fromJson(small.toJson()), small);
-    QCOMPARE(SnapTray::FrameStyle::fromJson(small.toJson()).toBeautify(40).padding, 64);
+    const SnapTray::FrameStyle fromTiny = SnapTray::FrameStyle::fromBeautify(tiny, 40);
+    QCOMPARE(SnapTray::FrameStyle::fromJson(fromTiny.toJson()), fromTiny);
+    QCOMPARE(SnapTray::FrameStyle::fromJson(fromTiny.toJson()).toBeautify(40).padding, 64);
     // Damaged values are still kept within bounds.
     const auto damaged = SnapTray::FrameStyle::fromJson({{QStringLiteral("padding"), 1e9}});
     QCOMPARE(damaged.padding, SnapTray::FrameStyle::kMaxSizeFraction);
