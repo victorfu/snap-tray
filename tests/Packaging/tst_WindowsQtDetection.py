@@ -175,12 +175,21 @@ class QtDetectionTests(unittest.TestCase):
                 test_runtime.write_bytes(b"selected Qt Test runtime")
                 deployed_test_runtime = binary_dir / "Qt6Test.dll"
                 deployed_test_runtime.write_bytes(b"old Qt Test runtime")
+                offscreen = fixture.new_qt / "plugins/platforms/qoffscreen.dll"
+                offscreen.parent.mkdir(parents=True, exist_ok=True)
+                offscreen.write_bytes(b"selected offscreen plugin")
+                deployed_offscreen = binary_dir / "platforms/qoffscreen.dll"
+                deployed_offscreen.write_bytes(b"old offscreen plugin")
                 args = ["cmake", f"-DSNAPTRAY_BUILD_DIR={fixture.build}", "-DSNAPTRAY_BUILD_TYPE=Release",
                         "-P", str(fixture.scripts / "deploy-windows-qt.cmake")]
                 env = dict(os.environ, QT_PATH=str(fixture.new_qt))
                 # No deployment is needed when the matching runtime is already present.
                 subprocess.run(args, env=env, check=True, capture_output=True, timeout=15)
                 self.assertEqual(deployed_test_runtime.read_bytes(), test_runtime.read_bytes())
+                self.assertEqual(deployed_offscreen.read_bytes(), offscreen.read_bytes())
+                deployed_offscreen.unlink()
+                subprocess.run(args, env=env, check=True, capture_output=True, timeout=15)
+                self.assertEqual(deployed_offscreen.read_bytes(), offscreen.read_bytes())
                 missing_dll = binary_dir / missing
                 missing_dll.unlink()
                 # The SDK deliberately has no deployment tool. A missing runtime

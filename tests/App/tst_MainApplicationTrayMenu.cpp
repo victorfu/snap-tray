@@ -842,6 +842,10 @@ void tst_MainApplicationTrayMenu::scriptedGui_finishRepliesWithSelectionAndImage
     // Nothing is answered until the user finishes.
     QTest::qWait(50);
     QCOMPARE(pair.client.bytesAvailable(), qint64(0));
+    // Processing events may close the selector (for example, when the desktop
+    // is locked). Report a failed precondition instead of aborting the suite
+    // inside QTest::keyClick with a null widget.
+    QVERIFY2(selector, "Region selector closed while waiting for user input; check desktop availability");
 
     QTest::keyClick(selector.data(), Qt::Key_Return);
 

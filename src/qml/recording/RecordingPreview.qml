@@ -2063,10 +2063,8 @@ Item {
                               .arg(modelData.end < 0 ? qsTr("the end") : backend.formatPreciseTime(modelData.end))
                     prepareSelection: function() { return root.prepareEffectInteraction("overlay", index) }
                     onActivated: {
-                        if (root.selectEffect("overlay", index)) {
-                            videoPlayer.pause()
-                            videoPlayer.seek(Math.min(endMs - 1, startMs + 100))
-                        }
+                        if (root.selectEffect("overlay", index))
+                            root.showOverlay(index)
                     }
                     onRangeEdited: function(start, end) { root.editEffectRange("overlay", index, start, end) }
                 }
