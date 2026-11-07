@@ -32,6 +32,7 @@ void MosaicToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
+    if (m_currentPath.size() >= 2 && m_currentPath.constLast() == pos) return;
     m_currentPath.append(pos);
     m_currentStroke->addPoint(pos);
 
@@ -70,10 +71,23 @@ void MosaicToolHandler::drawPreview(QPainter& painter) const {
     }
 }
 
+QRect MosaicToolHandler::previewBounds() const
+{
+    return m_isDrawing && m_currentStroke
+        ? m_currentStroke->previewAffectedBoundingRect() : QRect();
+}
+
 void MosaicToolHandler::cancelDrawing() {
     m_isDrawing = false;
     m_currentPath.clear();
     m_currentStroke.reset();
+}
+
+void MosaicToolHandler::onDeactivate(ToolContext* ctx)
+{
+    if (!m_isDrawing) return;
+    cancelDrawing();
+    ctx->repaint(); // Empty previewBounds asks the hosts to clear the old preview.
 }
 
 QCursor MosaicToolHandler::cursor() const {

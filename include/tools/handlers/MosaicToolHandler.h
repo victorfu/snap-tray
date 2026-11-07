@@ -29,8 +29,10 @@ public:
     void onMouseRelease(ToolContext* ctx, const QPoint& pos) override;
 
     void drawPreview(QPainter& painter) const override;
+    QRect previewBounds() const override;
     bool isDrawing() const override { return m_isDrawing; }
     void cancelDrawing() override;
+    void onDeactivate(ToolContext* ctx) override;
 
     bool supportsColor() const override { return false; }
     bool supportsWidth() const override { return true; }

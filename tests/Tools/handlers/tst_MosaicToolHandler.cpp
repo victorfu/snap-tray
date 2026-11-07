@@ -5,12 +5,17 @@
 #include "annotations/AnnotationLayer.h"
 
 #include <memory>
+#include "tools/ToolManager.h"
+#include "tools/ToolRepaintHelper.h"
+#include "history/AnnotationSerializer.h"
 
 class TestMosaicToolHandler : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void incrementalRepaintAndLifecycle_data();
+    void incrementalRepaintAndLifecycle();
     void testToolIdAndCapabilities();
     void testCursor_UsesCenteredPixmapHotspot();
     void testCursor_DrawsSingleSquareOutline();
@@ -162,6 +167,89 @@ void TestMosaicToolHandler::testStrokeUsesMosaicWidthSlot()
     const auto* stroke = dynamic_cast<MosaicStroke*>(captured.get());
     QVERIFY(stroke);
     QCOMPARE(stroke->width(), ToolWidthDefaults::kMosaicBrushLarge);
+}
+
+
+void TestMosaicToolHandler::incrementalRepaintAndLifecycle_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<qreal>("targetDpr");
+    for (qreal dpr : {1., 1.25, 1.5, 2.})
+        for (qreal target : {1., 1.25, 1.5, 2.})
+            QTest::newRow(qPrintable(QString("%1-%2").arg(dpr).arg(target))) << dpr << target;
+}
+
+void TestMosaicToolHandler::incrementalRepaintAndLifecycle()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(qreal, targetDpr);
+    ToolManager manager;
+    AnnotationLayer layer;
+    manager.setAnnotationLayer(&layer);
+    manager.registerHandler(std::make_unique<MosaicToolHandler>());
+    manager.setCurrentTool(ToolId::Mosaic);
+    QPixmap source(QSize(qRound(320*dpr), qRound(240*dpr)));
+    source.fill(QColor(10, 80, 170)); source.setDevicePixelRatio(dpr);
+    auto shared = std::make_shared<const QPixmap>(source);
+    manager.setSourcePixmap(shared);
+    QImage partial(QSize(qRound(320*targetDpr), qRound(240*targetDpr)), QImage::Format_ARGB32_Premultiplied);
+    partial.setDevicePixelRatio(targetDpr); partial.fill(Qt::transparent);
+    auto* handler = manager.currentHandler();
+    manager.handleMousePress(QPoint(200, 150));
+    const QVector<QPoint> path{{100, 100}, {99, 99}, {250, 170}, {40, 60}, {10, 10}};
+    for (const QPoint& point : path) {
+        // Coalesced moves must retain all damage until the actual paint.
+        manager.handleMouseMove(point);
+        manager.handleMouseMove(point + QPoint(1, 1));
+        const QRect dirty = snaptray::tools::previewRepaintRect(&manager, 3);
+        QVERIFY(!dirty.isEmpty());
+        QImage full(partial.size(), partial.format());
+        full.setDevicePixelRatio(targetDpr); full.fill(Qt::transparent);
+        {
+            QPainter p(&partial);
+            p.setClipRect(dirty);
+            p.setCompositionMode(QPainter::CompositionMode_Source);
+            p.fillRect(dirty, Qt::transparent);
+            p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            handler->drawPreview(p);
+        }
+        { QPainter p(&full); handler->drawPreview(p); }
+        QCOMPARE(partial, full);
+    }
+    manager.handleMouseRelease(path.last() + QPoint(1, 1));
+    QVERIFY(handler->previewBounds().isEmpty());
+    QCOMPARE(layer.itemCount(), size_t(1));
+    auto renderLayer = [&](const AnnotationLayer& input) {
+        QImage output(partial.size(), partial.format());
+        output.setDevicePixelRatio(targetDpr); output.fill(Qt::transparent);
+        QPainter p(&output); input.draw(p); p.end(); return output;
+    };
+    const auto committed = renderLayer(layer);
+    QCOMPARE(committed, partial);
+    layer.undo(); QCOMPARE(layer.itemCount(), size_t(0));
+    layer.redo(); QCOMPARE(renderLayer(layer), committed);
+    AnnotationLayer restored;
+    QString error;
+    QVERIFY2(SnapTray::deserializeAnnotationLayer(SnapTray::serializeAnnotationLayer(layer),
+             &restored, shared, &error), qPrintable(error));
+    QCOMPARE(renderLayer(restored), committed);
+
+    manager.handleMousePress(QPoint(80, 80));
+    manager.handleMouseMove(QPoint(120, 120));
+    { QPainter p(&partial); handler->drawPreview(p); }
+    QSignalSpy repaint(&manager, &ToolManager::needsRepaint);
+    manager.setCurrentTool(ToolId::Pencil);
+    QVERIFY(!handler->isDrawing());
+    QVERIFY(handler->previewBounds().isEmpty());
+    QCOMPARE(repaint.count(), 1); // old preview is cleared, even on tool switch
+    manager.setCurrentTool(ToolId::Mosaic);
+    QVERIFY(!handler->isDrawing());
+    manager.handleMousePress(QPoint(10, 10));
+    manager.handleMouseMove(QPoint(20, 20));
+    manager.cancelDrawing(); // host cancellation / close path
+    QVERIFY(handler->previewBounds().isEmpty());
+    QVERIFY(!handler->isDrawing());
+    QCOMPARE(layer.itemCount(), size_t(1));
 }
 
 QTEST_MAIN(TestMosaicToolHandler)
