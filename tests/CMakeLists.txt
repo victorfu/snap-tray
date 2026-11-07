@@ -1213,6 +1213,11 @@ target_link_libraries(Utils_FilenameTemplateEngine PRIVATE snaptray_core Qt6::Te
 add_test(NAME Utils_FilenameTemplateEngine COMMAND Utils_FilenameTemplateEngine)
 set_tests_properties(Utils_FilenameTemplateEngine PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_TextLayoutUtils Utils/tst_TextLayoutUtils.cpp)
+target_link_libraries(Utils_TextLayoutUtils PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_TextLayoutUtils COMMAND Utils_TextLayoutUtils)
+set_tests_properties(Utils_TextLayoutUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Utils_ImageSaveUtils Utils/tst_ImageSaveUtils.cpp)
 target_link_libraries(Utils_ImageSaveUtils PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Utils_ImageSaveUtils COMMAND Utils_ImageSaveUtils)
