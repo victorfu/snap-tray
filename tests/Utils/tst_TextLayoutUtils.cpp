@@ -30,9 +30,9 @@ int referenceWidth(const QStringList& lines, int cap, int advance)
 {
     int maxWidth = 0;
     for (const QString& line : lines) {
-        maxWidth = std::max(maxWidth, static_cast<int>(line.size()) * advance);
+        maxWidth = (std::max)(maxWidth, static_cast<int>(line.size()) * advance);
     }
-    return std::min(maxWidth, cap);
+    return (std::min)(maxWidth, cap);
 }
 
 } // namespace

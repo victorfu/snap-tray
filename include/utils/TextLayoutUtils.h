@@ -2,7 +2,6 @@
 #include <QFont>
 #include <QSizeF>
 #include <QString>
-#include <algorithm>
 class QTextDocument;
 
 namespace TextLayoutUtils {
@@ -19,7 +18,11 @@ int boundedMaxLineWidth(const Lines& lines, int widthLimit, Measure&& measure)
 {
     int maxWidth = 0;
     for (const auto& line : lines) {
-        maxWidth = std::max(maxWidth, static_cast<int>(measure(line)));
+        // Plain comparison: <windows.h> may define a max() macro.
+        const int width = static_cast<int>(measure(line));
+        if (width > maxWidth) {
+            maxWidth = width;
+        }
         if (maxWidth >= widthLimit) {
             return widthLimit;
         }
