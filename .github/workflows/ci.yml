@@ -95,6 +95,7 @@ jobs:
           name: test-evidence-${{ runner.os }}
           path: |
             build/test-results.xml
+            build/boundary-snap-metrics.json
             build/Testing/Temporary/LastTest.log
             build/Testing/Temporary/LastTestsFailed.log
 
@@ -149,6 +150,7 @@ jobs:
           name: test-evidence-${{ runner.os }}
           path: |
             build/test-results.xml
+            build/boundary-snap-metrics.json
             build/Testing/Temporary/LastTest.log
             build/Testing/Temporary/LastTestsFailed.log
 
@@ -243,5 +245,6 @@ jobs:
           name: test-evidence-${{ runner.os }}
           path: |
             build/test-results.xml
+            build/boundary-snap-metrics.json
             build/Testing/Temporary/LastTest.log
             build/Testing/Temporary/LastTestsFailed.log

@@ -175,7 +175,38 @@ private slots:
     void testFractionalDprSelectionTransitionNeedsFullRepaint();
     void testPencilPreviewExtendsBeyondDetachedAnnotationViewport();
     void testIdleSelectionDrawsInLayerOrder();
+    void testSnapGuidesAreLocalAndTransient();
 };
+
+void tst_RegionPainterChrome::testSnapGuidesAreLocalAndTransient()
+{
+    QWidget host;host.resize(kHostRect.size());
+    SelectionStateManager manager;manager.setSelectionRect(kSelectionRect);
+    manager.startResize(kSelectionRect.bottomRight(),SelectionStateManager::ResizeHandle::BottomRight);
+    RegionPainter renderer;
+    QPixmap background(host.size());background.fill(Qt::white);
+    const auto paint=[&]() { return paintFractionalDprImage(renderer,manager,host,background); };
+    const QImage plain=paint();
+    manager.updateResize(kSelectionRect.bottomRight(),[](const QRect& raw,Qt::Edges edges) {
+        return SelectionStateManager::ResizePreview{raw,edges};
+    });
+    const QImage guided=paint();
+    const QRect right(kSelectionRect.right()-2,kSelectionRect.center().y()-19,7,39);
+    const QRect bottom(kSelectionRect.center().x()-19,kSelectionRect.bottom()-2,39,7);
+    bool rightChanged = false;
+    bool bottomChanged = false;
+    for (int y=0;y<plain.height();++y) for (int x=0;x<plain.width();++x) {
+        if (plain.pixel(x,y)!=guided.pixel(x,y)) {
+            QVERIFY(right.contains(x,y)||bottom.contains(x,y));
+            rightChanged |= right.contains(x,y);
+            bottomChanged |= bottom.contains(x,y);
+        }
+    }
+    QVERIFY(rightChanged);
+    QVERIFY(bottomChanged);
+    manager.clearSnapGuides();QCOMPARE(paint(),plain);
+    manager.finishResize();QCOMPARE(paint(),plain);
+}
 
 void tst_RegionPainterChrome::testDirectDimmingMatchesCached_data()
 {

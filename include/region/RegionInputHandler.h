@@ -10,6 +10,7 @@
 #include <functional>
 #include "TransformationGizmo.h"
 #include "region/RegionInputState.h"
+#include "region/BoundarySnapController.h"
 #include "region/SelectionStateManager.h"
 #include "region/SelectionDirtyRegionPlanner.h"
 #include "tools/ToolId.h"
@@ -64,6 +65,11 @@ public:
 
     // Reset dirty tracking state (call when starting a new capture)
     void resetDirtyTracking();
+    void setBoundarySnapSource(const QImage& image, qreal dpr);
+    void setBoundarySnapAllowed(bool allowed);
+    bool handleBoundarySnapKey(int key, bool pressed, bool autoRepeat = false,
+                               Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool cancelSelectionResize();
 
     // Event handlers (called from RegionSelector)
     void handleMousePress(QMouseEvent* event);
@@ -119,6 +125,7 @@ private:
     void handleWindowDetectionMove(const QPoint& pos);
     void clearDetectionAndNotify(bool selectionTransition = false);
     bool updateSelectionGesture(const QPoint& pos);
+    bool boundarySnapEligible() const;
     void clearPendingWindowClick();
     void handleAnnotationMove(const QPoint& pos);
     void handleAnnotationMove(const QPointF& pos);
@@ -172,6 +179,10 @@ private:
     std::function<bool()> m_isSelectionPreviewOverlayActive;
     std::function<bool()> m_isFloatingUiHovered;
     std::function<bool(const QPoint&)> m_isSelectionMoveExtensionAt;
+
+    BoundarySnapController m_boundarySnap;
+    bool m_boundarySnapAllowed = true;
+    bool m_snapKeyHeld = false;
 
     // State
     QPoint m_startPoint;

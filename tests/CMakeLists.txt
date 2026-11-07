@@ -1824,6 +1824,31 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set_tests_properties(Update_AppImageUpdateService PROPERTIES TIMEOUT 60 LABELS "unit")
 endif()
 
+add_executable(Detection_BoundarySnapIndex Detection/tst_BoundarySnapIndex.cpp)
+target_link_libraries(Detection_BoundarySnapIndex PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Detection_BoundarySnapIndex COMMAND Detection_BoundarySnapIndex)
+set_tests_properties(Detection_BoundarySnapIndex PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_BoundarySnap RegionSelector/tst_BoundarySnap.cpp)
+target_link_libraries(RegionSelector_BoundarySnap PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_BoundarySnap COMMAND RegionSelector_BoundarySnap)
+set_tests_properties(RegionSelector_BoundarySnap PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# Synthetic performance evidence: correctness gates CI; timing is reported.
+add_executable(RegionSelector_BoundarySnapBenchmark RegionSelector/benchmark_boundary_snap.cpp)
+target_link_libraries(RegionSelector_BoundarySnapBenchmark PRIVATE snaptray_ui)
+add_test(NAME RegionSelector_BoundarySnapMetrics
+    COMMAND RegionSelector_BoundarySnapBenchmark --report
+        "${CMAKE_BINARY_DIR}/boundary-snap-metrics.json")
+set_tests_properties(RegionSelector_BoundarySnapMetrics PROPERTIES
+    TIMEOUT 30 LABELS "boundary-snap-acceptance;performance"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_property(TEST Detection_BoundarySnapIndex RegionSelector_BoundarySnap
+    RegionSelector_RegionInputHandler RegionSelector_RegionPainterChrome
+    RegionSelector_HistoryReplay RegionSelector_SelectionStateManager
+    APPEND PROPERTY LABELS "boundary-snap-acceptance")
+
+
 # Keep this after all test executable declarations so newly added test targets
 # are isolated automatically as well.
 get_property(snaptray_test_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)

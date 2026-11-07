@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QCoreApplication>
+#include <QCloseEvent>
+#include <QKeyEvent>
 #include <QEnterEvent>
 #include <QImage>
 #include <QPainter>
@@ -319,6 +321,30 @@ public:
         const SnapTray::HistoryEntry& entry)
     {
         return selector.applyHistoryReplayEntry(entry);
+    }
+
+    static bool loadSingleReplayEntry(RegionSelector& selector, const SnapTray::HistoryEntry& entry)
+    {
+        selector.m_historyReplayEntries = {entry};
+        return selector.loadHistoryReplayIndex(0);
+    }
+
+    static Qt::Edges snappedEdges(const RegionSelector& selector)
+    {
+        return selector.m_selectionManager->snappedEdges();
+    }
+
+    static void dispatchClose(RegionSelector& selector)
+    {
+        QCloseEvent event;
+        selector.closeEvent(&event);
+    }
+
+    static void dispatchEscapePress(RegionSelector& selector, bool viaFilter)
+    {
+        QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+        if (viaFilter) selector.eventFilter(&selector, &event);
+        else selector.keyPressEvent(&event);
     }
 
     static AnnotationLayer* annotationLayer(RegionSelector& selector)

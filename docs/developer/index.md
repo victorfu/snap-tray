@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-04
+last_modified_at: 2026-11-07
 layout: docs
 title: Developer Docs
 seo_title: "SnapTray Developer Docs: Build, Package and Contribute"
@@ -20,6 +20,7 @@ This section is the canonical home for SnapTray's technical documentation. The r
 - [Architecture Overview](architecture.md): repository structure, library boundaries, architecture patterns, platform-specific code, and development conventions
 - [UI Design Guidelines](ui-design-guidelines.md): shared visual direction, interaction rules, and the recording editor rollout
 - [Recording Sync Matrix](recording-sync-matrix.md): end-to-end recording verification with fault injection, reports and A/B comparison, and the real-device procedure
+- [Selection Boundary Snap](boundary-snap.md): pixel scoring, crop geometry, interaction limits and performance verification
 
 ## Audience split
 

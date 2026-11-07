@@ -178,3 +178,9 @@ not_found:
 
 developer_ui_design:
   en: /developer/ui-design-guidelines/
+
+developer_boundary_snap:
+  en: /developer/boundary-snap/
+
+developer_boundary_snap_acceptance:
+  en: /developer/boundary-snap-acceptance/

@@ -90,6 +90,7 @@ SelectionStateManager::SelectionStateManager(QObject* parent)
 void SelectionStateManager::setState(State state)
 {
     if (m_state != state) {
+        clearSnapGuides();
         m_state = state;
         emit stateChanged(m_state);
     }
@@ -219,17 +220,47 @@ void SelectionStateManager::startResize(const QPoint& pos, ResizeHandle handle)
     setState(State::ResizingHandle);
 }
 
-void SelectionStateManager::updateResize(const QPoint& pos)
+void SelectionStateManager::clearSnapGuides()
+{
+    if (!m_snappedEdges) return;
+    m_snappedEdges = {};
+    emit snapGuidesChanged();
+}
+
+void SelectionStateManager::updateResize(const QPoint& pos, const ResizeTransform& transform)
 {
     if (m_state != State::ResizingHandle) return;
-
-    const QRect newRect = resizedRect(m_originalRect, m_activeHandle, pos - m_startPoint);
-    const QRect normalized = newRect.normalized();
-    if (normalized.width() >= kMinimumResizeSize && normalized.height() >= kMinimumResizeSize) {
-        m_selectionRect = newRect;
-        m_handleCacheValid = false;
-        emit selectionChanged(normalized);
+    const QRect raw = resizedRect(m_originalRect, m_activeHandle, pos - m_startPoint);
+    QRect finalRect = raw;
+    Qt::Edges guides;
+    const auto edges = kResizeEdges[static_cast<std::size_t>(m_activeHandle)];
+    // Crossing the opposite side still uses the existing normalization behavior,
+    // but is intentionally ineligible for snapping until the raw rect is valid.
+    if (transform && m_aspectRatio <= 0 && raw.isValid()) {
+        const auto candidate = transform(raw, edges);
+        const QRect& r = candidate.rect;
+        const bool fixedEdgesPreserved =
+            (edges.testFlag(Qt::LeftEdge) || r.left() == raw.left())
+            && (edges.testFlag(Qt::RightEdge) || r.right() == raw.right())
+            && (edges.testFlag(Qt::TopEdge) || r.top() == raw.top())
+            && (edges.testFlag(Qt::BottomEdge) || r.bottom() == raw.bottom());
+        if (r.width() >= kMinimumResizeSize && r.height() >= kMinimumResizeSize
+            && (m_bounds.isEmpty() || m_bounds.contains(r)) && fixedEdgesPreserved) {
+            finalRect = r;
+            guides = candidate.snappedEdges & edges;
+        }
     }
+    const QRect normalized = finalRect.normalized();
+    if (normalized.width() < kMinimumResizeSize || normalized.height() < kMinimumResizeSize) {
+        clearSnapGuides();
+        return;
+    }
+    const bool guidesChanged = guides != m_snappedEdges;
+    m_snappedEdges = guides;
+    m_selectionRect = finalRect;
+    m_handleCacheValid = false;
+    emit selectionChanged(normalized);
+    if (guidesChanged) emit snapGuidesChanged();
 }
 
 QRect SelectionStateManager::resizedRect(
