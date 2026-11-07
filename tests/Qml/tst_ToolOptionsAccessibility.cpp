@@ -24,6 +24,7 @@ class tst_ToolOptionsAccessibility : public QObject
     Q_OBJECT
 
 private slots:
+    void markerTextSnapIsHostGated();
     void initTestCase();
     void everyStyleControlIsNamed_data();
     void everyStyleControlIsNamed();
@@ -40,6 +41,30 @@ private:
     static QList<QAccessibleInterface*> accessibles(QQuickItem* root);
     static QAccessibleInterface* named(QQuickItem* root, const QString& name);
 };
+
+void tst_ToolOptionsAccessibility::markerTextSnapIsHostGated()
+{
+    PinToolOptionsViewModel vm;
+    vm.showForTool(static_cast<int>(ToolId::Marker));
+    auto view = load(vm);
+    QVERIFY(view);
+    auto* toggle = view->rootObject()->findChild<QQuickItem*>("markerTextSnapToggle");
+    QVERIFY(toggle);
+    QVERIFY(!toggle->isVisible()); // PinWindow/ScreenCanvas/Linux default
+    vm.setMarkerTextSnapAvailable(true);
+    QTRY_VERIFY(toggle->isVisible());
+    auto* accessible = named(view->rootObject(),QStringLiteral("Snap to text"));
+    QVERIFY(accessible);
+    QVERIFY(!accessible->state().checked);
+    accessible->actionInterface()->doAction(QAccessibleActionInterface::toggleAction());
+    QTRY_VERIFY(vm.markerTextSnapEnabled());
+    QVERIFY(accessible->state().checked);
+    vm.showForTool(static_cast<int>(ToolId::Pencil));
+    QTRY_VERIFY(!toggle->isVisible());
+    vm.showForTool(static_cast<int>(ToolId::Marker));
+    vm.setMarkerTextSnapAvailable(false);
+    QTRY_VERIFY(!toggle->isVisible());
+}
 
 void tst_ToolOptionsAccessibility::initTestCase()
 {

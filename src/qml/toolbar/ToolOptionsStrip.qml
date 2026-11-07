@@ -162,6 +162,35 @@ Item {
             }
         }
 
+        Rectangle {
+            objectName: "markerTextSnapToggle"
+            visible: root.hasViewModel && root.viewModel.markerTextSnapAvailable
+                     && root.viewModel.markerActive && !root.viewModel.editingSelection
+            width: snapLabel.implicitWidth + 16
+            height: 26
+            radius: 4
+            color: root.hasViewModel && root.viewModel.markerTextSnapEnabled
+                   ? DesignSystem.accentDefault : "transparent"
+            Accessible.role: Accessible.CheckBox
+            Accessible.name: qsTr("Snap to text")
+            Accessible.checkable: true
+            Accessible.checked: root.hasViewModel && root.viewModel.markerTextSnapEnabled
+            Accessible.onToggleAction: if (root.hasViewModel)
+                root.viewModel.markerTextSnapEnabled = !root.viewModel.markerTextSnapEnabled
+            Text {
+                id: snapLabel
+                anchors.centerIn: parent
+                text: qsTr("Snap to text")
+                color: ComponentTokens.toolbarIcon
+                font.pixelSize: 12
+            }
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: CursorTokens.toolbarControl
+                onClicked: root.viewModel.markerTextSnapEnabled = !root.viewModel.markerTextSnapEnabled
+            }
+        }
+
         ArrowStyleSection {
             id: arrowStyleSection
             visible: root.hasViewModel && root.viewModel.showArrowStyleSection

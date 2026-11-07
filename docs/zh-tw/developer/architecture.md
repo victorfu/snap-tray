@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-09-25
+last_modified_at: 2026-11-07
 layout: docs
 title: 架構總覽
 seo_title: "SnapTray 架構總覽：儲存庫結構、函式庫邊界、子系統職責與平台抽象"
@@ -40,6 +40,7 @@ snap-tray/
 │   ├── platform/               # 平台抽象層
 │   ├── qml/                    # QML bridges 與 view models
 │   ├── region/                 # Region selector 元件
+│   ├── scrollcapture/          # 捲動區偵測、程式化捲動、畫面對齊（#265）
 │   ├── settings/               # Settings managers
 │   ├── tools/                  # Tool registry 與 handlers
 │   ├── ui/                     # 共用 UI helper 與 theme
@@ -119,6 +120,7 @@ SnapTray 以模組化 static-library 風格組織：
 | 音訊擷取 | `WASAPIAudioCaptureEngine_win.cpp` | `CoreAudioCaptureEngine_mac.mm` | 不支援 |
 | 影片播放 | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` | 不支援 |
 | 視窗偵測 | `WindowDetector_win.cpp` | `WindowDetector.mm` | 不支援 |
+| 捲動區偵測（#265，僅開發探測工具） | `ScrollCapturePlatform_win.cpp`（UI Automation） | `ScrollCapturePlatform_mac.mm`（Accessibility） | `ScrollCapturePlatform_stub.cpp`（不支援） |
 | OCR | `OCRManager_win.cpp` | `OCRManager.mm` | 不支援 |
 | Window level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` | `WindowLevel_linux.cpp` |
 | Platform features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` | `PlatformFeatures_linux.cpp` |

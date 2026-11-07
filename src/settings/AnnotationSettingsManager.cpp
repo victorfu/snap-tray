@@ -197,3 +197,12 @@ void AnnotationSettingsManager::saveMosaicBlurType(MosaicBlurType type)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyMosaicBlurType, static_cast<int>(type));
 }
+
+bool AnnotationSettingsManager::loadMarkerTextSnap() const
+{
+    return SnapTray::getSettings().value("annotation/markerTextSnap", false).toBool();
+}
+void AnnotationSettingsManager::saveMarkerTextSnap(bool enabled)
+{
+    SnapTray::getSettings().setValue("annotation/markerTextSnap", enabled);
+}
