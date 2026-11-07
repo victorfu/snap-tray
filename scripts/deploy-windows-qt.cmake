@@ -70,3 +70,12 @@ set(qt_test_runtime "${qt_prefix}/bin/Qt6Test${suffix}.dll")
 if(EXISTS "${qt_test_runtime}")
     configure_file("${qt_test_runtime}" "${build_dir}/bin/Qt6Test${suffix}.dll" COPYONLY)
 endif()
+
+# Several GUI tests explicitly select offscreen. windeployqt only deploys the
+# application's windows platform plugin, and its relocated Qt Core searches
+# beside the executable rather than the SDK. Refresh this test plugin as well.
+set(qt_offscreen_plugin "${qt_prefix}/plugins/platforms/qoffscreen${suffix}.dll")
+if(EXISTS "${qt_offscreen_plugin}")
+    configure_file("${qt_offscreen_plugin}"
+        "${build_dir}/bin/platforms/qoffscreen${suffix}.dll" COPYONLY)
+endif()
