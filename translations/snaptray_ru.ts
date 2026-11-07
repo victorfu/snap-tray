@@ -7887,4 +7887,17 @@ It may be in use by another application.</source>
         <translation>Толщина</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Привязка к тексту</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Привязка к тексту: штрихи маркера выравниваются по распознанным строкам текста</translation>
+    </message>
+</context>
 </TS>

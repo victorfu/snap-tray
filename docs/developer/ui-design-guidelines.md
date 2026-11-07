@@ -327,6 +327,11 @@ Applies to the Region Capture toolbar, the Pin Window annotation toolbar, and th
 - **More** names each item, works with Up/Down/Enter/Esc, closes on a click outside or a re-layout, and returns focus to the More button.
 - With a text, arrow, line, or shape annotation selected, the style strip edits **that annotation**, says `Selected: <type>`, and each change is one undo step (dragging the width slider or clicking through colours coalesces until 500 ms idle). With nothing selected it says `New object` and sets the defaults for the next annotation. Editing a selection never changes the saved defaults. A selected shape keeps its type; emoji, pencil, marker, mosaic, and step badges are not restyled.
 - Selection follows the annotation, not its position in the list: erasing other annotations keeps it.
+- Marker's **Snap to text** (#304) is a 22×22 icon toggle styled like Shape's Filled toggle, so its width does not depend on the locale.
+  - Off: transparent with the toolbar icon color. Hover: the strip's hover background. On: a solid accent block with the active icon color, also while hovered.
+  - Its explanation is in the sub-toolbar tooltip (`ToolOptionsStrip.controlTooltipRequested` → `QmlFloatingSubToolbar` → `ToolbarTooltipController`, as for Auto Blur) and in `Accessible.description`.
+  - Screen readers get a checkbox that toggles on both the toggle and press actions.
+  - The button shows only the preference, never OCR progress.
 
 ### Acceptance
 
@@ -364,6 +369,22 @@ Geometry undo (#237): drag a rectangle, rotate it, change its colour, undo three
 
 ![Geometry undo](/assets/images/developer/toolbar/videos/annotation-geometry-undo.gif)
 
+#### Marker Snap to text (#304)
+
+Rendered on Windows 10 / Qt 6.12.0 from the real toolbar and style strip QML, with the tooltip drawn inline where `ToolbarTooltipController` places it.
+
+States at 2×, light and dark (rows): off, off hovered with the tooltip, on, and on hovered (columns).
+
+![Snap to text states, light and dark](/assets/images/developer/toolbar/marker-snap-text-states.png)
+
+The icon at 14 px on 1×, 1.25×, 1.5× and 2× (rows), off / hovered / on, light and dark (columns). Its strokes sit on 14 px pixel centers, so it is pixel-sharp at 1× and stays crisp at 1.5× and 2×. At 1.25× it is anti-aliased, but each stroke stays separate: three strokes 3 px apart at 14 px cannot also line up with the 18 px raster.
+
+![Snap to text icon at four device pixel ratios](/assets/images/developer/toolbar/marker-snap-text-dpr.png)
+
+The tooltip in English, Traditional Chinese and Greek (the longest translation) at 2×. The toggle stays 22 px in every language (only the existing "New object" label changes the strip's width), and the tooltip is not cut off:
+
+![Snap to text tooltip in three languages](/assets/images/developer/toolbar/marker-snap-text-locales.png)
+
 ### Regenerating the toolbar evidence
 
 ```bash
@@ -374,7 +395,11 @@ SNAPTRAY_TOOLBAR_VIDEO_DIR=/tmp/toolbar-video ./bin/Qml_ToolbarEvidence operatio
 ffmpeg -framerate 10 -i /tmp/toolbar-video/frame-%05d.png -pix_fmt yuv420p toolbar-selected-style.mp4
 SNAPTRAY_TOOLBAR_VIDEO_DIR=/tmp/toolbar-video ./bin/Qml_ToolbarEvidence geometryUndoVideo
 ffmpeg -framerate 10 -i /tmp/toolbar-video/geometry-undo/frame-%05d.png -pix_fmt yuv420p annotation-geometry-undo.mp4
+SNAPTRAY_TOOLBAR_DESIGN_DIR=/tmp/marker-snap ./bin/Qml_ToolbarEvidence markerTextSnapStates
+SNAPTRAY_TOOLBAR_DESIGN_DIR=/tmp/marker-snap SNAPTRAY_TOOLBAR_TRANSLATION=$PWD/snaptray_zh_TW.qm ./bin/Qml_ToolbarEvidence markerTextSnapStates:light
 ```
+
+On Windows with `QT_QPA_PLATFORM=offscreen`, also set `QT_QPA_FONTDIR=C:\Windows\Fonts`, or text renders as boxes. Use `QT_SCALE_FACTOR` (1, 1.25, 1.5, 2) to render other device pixel ratios. The three Snap to text sheets are crops of those renders.
 
 ## Pin window
 

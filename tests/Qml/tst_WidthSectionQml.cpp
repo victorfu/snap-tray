@@ -1,6 +1,7 @@
 #include "annotations/AnnotationStyle.h"
 #include <QtTest/QtTest>
 
+#include <QColor>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QWheelEvent>
@@ -105,7 +106,8 @@ private slots:
     void testMosaicPresetClickUpdatesWidth();
     void testMosaicPresetConsumesWheelWithoutChangingWidth();
     void testNonMosaicWidthPreviewAllowsStripWideWheelAdjustment();
-    void testToolOptionsStripForwardsAutoBlurHoverAnchor();
+    void testToolOptionsStripForwardsAutoBlurHover();
+    void testMarkerTextSnapToggleHoverAndStates();
 };
 
 void tst_WidthSectionQml::testPreviewDotCenterStaysFixedAcrossWidthChanges()
@@ -491,7 +493,7 @@ void tst_WidthSectionQml::testNonMosaicWidthPreviewAllowsStripWideWheelAdjustmen
     QVERIFY(wheelEvent.isAccepted());
 }
 
-void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
+void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHover()
 {
     if (QGuiApplication::screens().isEmpty())
         QSKIP("Auto-blur hover test requires a screen");
@@ -527,9 +529,8 @@ void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
     QVERIFY(autoBlurButton);
     QVERIFY(presetRow);
 
-    QSignalSpy hoverSpy(
-        rootItem, SIGNAL(autoBlurButtonHovered(double,double,double,double)));
-    QSignalSpy exitSpy(rootItem, SIGNAL(autoBlurButtonHoverExited()));
+    QSignalSpy hoverSpy(rootItem, SIGNAL(controlTooltipRequested(QString,QString)));
+    QSignalSpy exitSpy(rootItem, SIGNAL(controlTooltipDismissed(QString)));
     QVERIFY(hoverSpy.isValid());
     QVERIFY(exitSpy.isValid());
 
@@ -548,20 +549,96 @@ void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
     hoverSpy.clear();
     exitSpy.clear();
 
+    // The sub-toolbar anchors the tooltip to the control it names.
     QTest::mouseMove(&view, autoBlurRect.center().toPoint());
     QTRY_COMPARE(hoverSpy.count(), 1);
-
     const auto arguments = hoverSpy.takeFirst();
-    const QPointF expectedAnchor = autoBlurButton->mapToGlobal(QPointF(0.0, 0.0));
-    QVERIFY(qAbs(arguments.at(0).toDouble() - expectedAnchor.x()) < 1.0);
-    QVERIFY(qAbs(arguments.at(1).toDouble() - expectedAnchor.y()) < 1.0);
-    QCOMPARE(arguments.at(2).toDouble(), 22.0);
-    QCOMPARE(arguments.at(3).toDouble(), 22.0);
+    QCOMPARE(arguments.at(0).toString(), QStringLiteral("autoBlurButton"));
+    QCOMPARE(arguments.at(1).toString(), viewModel.autoBlurHintText());
 
     QTest::mouseMove(&view, presetRect.center().toPoint());
     QTRY_COMPARE(exitSpy.count(), 1);
+    QCOMPARE(exitSpy.takeFirst().at(0).toString(), QStringLiteral("autoBlurButton"));
 }
 
+// #304: Snap to text is a 22x22 icon toggle styled like Shape's Filled toggle,
+// with its explanation in the sub-toolbar tooltip.
+void tst_WidthSectionQml::testMarkerTextSnapToggleHoverAndStates()
+{
+    if (QGuiApplication::screens().isEmpty())
+        QSKIP("Snap to text hover test requires a screen");
+
+    PinToolOptionsViewModel viewModel;
+    viewModel.setMarkerTextSnapAvailable(true);
+    viewModel.showForTool(static_cast<int>(ToolId::Marker));
+
+    QQuickView view;
+    view.rootContext()->setContextProperty(
+        QStringLiteral("pinToolOptionsViewModel"), &viewModel);
+    view.setResizeMode(QQuickView::SizeViewToRootObject);
+    view.setSource(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/toolbar/ToolOptionsStrip.qml")));
+    QCOMPARE(view.status(), QQuickView::Ready);
+
+    view.show();
+    if (!QTest::qWaitForWindowExposed(&view))
+        QSKIP("Snap to text hover test window could not be exposed");
+
+    auto* rootItem = view.rootObject();
+    QVERIFY(rootItem);
+    auto* toggle = rootItem->findChild<QQuickItem*>(QStringLiteral("markerTextSnapToggle"));
+    QVERIFY(toggle);
+    QVERIFY(toggle->isVisible());
+    QCOMPARE(toggle->width(), 22.0);
+    QCOMPARE(toggle->height(), 22.0);
+
+    // Same 28px content row and 36px glass as before: the toggle adds no height.
+    QCOMPARE(rootItem->height(), 36.0);
+
+    const QRectF toggleRect = toggle->mapRectToScene(
+        QRectF(0.0, 0.0, toggle->width(), toggle->height()));
+    QCOMPARE(toggleRect.center().y(), rootItem->height() / 2.0);
+
+    QSignalSpy hoverSpy(rootItem, SIGNAL(controlTooltipRequested(QString,QString)));
+    QSignalSpy exitSpy(rootItem, SIGNAL(controlTooltipDismissed(QString)));
+    QVERIFY(hoverSpy.isValid());
+    QVERIFY(exitSpy.isValid());
+
+    const QPoint away(2, 2);
+    QTest::mouseMove(&view, away);
+    QCoreApplication::processEvents();
+    hoverSpy.clear();
+    exitSpy.clear();
+
+    // Off: transparent, then the hover background under the pointer.
+    QCOMPARE(toggle->property("color").value<QColor>().alpha(), 0);
+    QTest::mouseMove(&view, toggleRect.center().toPoint());
+    QTRY_COMPARE(hoverSpy.count(), 1);
+    const auto arguments = hoverSpy.takeFirst();
+    QCOMPARE(arguments.at(0).toString(), QStringLiteral("markerTextSnapToggle"));
+    QCOMPARE(arguments.at(1).toString(),
+             QStringLiteral("Snap to text: marker strokes align to detected text lines"));
+    QCOMPARE(toggle->property("color").value<QColor>(),
+             rootItem->property("controlHoverBg").value<QColor>());
+
+    // On: a solid accent block, also while hovered.
+    QTest::mouseClick(&view, Qt::LeftButton, Qt::NoModifier, toggleRect.center().toPoint());
+    QTRY_VERIFY(viewModel.markerTextSnapEnabled());
+    const QColor onColor = toggle->property("color").value<QColor>();
+    QCOMPARE(onColor.alpha(), 255);
+    QVERIFY(onColor != rootItem->property("controlHoverBg").value<QColor>());
+
+    QTest::mouseMove(&view, away);
+    QTRY_COMPARE(exitSpy.count(), 1);
+    QCOMPARE(exitSpy.takeFirst().at(0).toString(), QStringLiteral("markerTextSnapToggle"));
+    QCOMPARE(toggle->property("color").value<QColor>(), onColor);
+
+    // The strip's width does not depend on the toggle's state.
+    const qreal widthOn = rootItem->width();
+    viewModel.setMarkerTextSnapEnabled(false);
+    QTRY_COMPARE(toggle->property("color").value<QColor>().alpha(), 0);
+    QCOMPARE(rootItem->width(), widthOn);
+}
 
 void tst_WidthSectionQml::testStripLabelNamesTarget()
 {

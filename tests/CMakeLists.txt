@@ -235,10 +235,10 @@ if(TARGET Qt6::QOffscreenIntegrationPlugin)
         "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
 endif()
 
-add_executable(Qml_FloatingSubToolbarAutoBlurHint Qml/tst_FloatingSubToolbarAutoBlurHint.cpp)
-target_link_libraries(Qml_FloatingSubToolbarAutoBlurHint PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
-add_test(NAME Qml_FloatingSubToolbarAutoBlurHint COMMAND Qml_FloatingSubToolbarAutoBlurHint)
-set_tests_properties(Qml_FloatingSubToolbarAutoBlurHint PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+add_executable(Qml_FloatingSubToolbarTooltip Qml/tst_FloatingSubToolbarTooltip.cpp)
+target_link_libraries(Qml_FloatingSubToolbarTooltip PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_FloatingSubToolbarTooltip COMMAND Qml_FloatingSubToolbarTooltip)
+set_tests_properties(Qml_FloatingSubToolbarTooltip PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(Qml_SettingsWindowFeatureGating
     Qml/tst_SettingsWindowFeatureGating.cpp

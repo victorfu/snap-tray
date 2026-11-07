@@ -7879,4 +7879,17 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <translation>Độ dày</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Căn theo văn bản</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Căn theo văn bản: nét bút đánh dấu tự căn theo các dòng văn bản được phát hiện</translation>
+    </message>
+</context>
 </TS>

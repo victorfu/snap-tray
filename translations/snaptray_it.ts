@@ -7883,4 +7883,17 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
         <translation>Spessore</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Allinea al testo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Allinea al testo: i tratti dell'evidenziatore si allineano alle righe di testo rilevate</translation>
+    </message>
+</context>
 </TS>

@@ -7883,4 +7883,17 @@ Il est peut-être utilisé par une autre application.</translation>
         <translation>Épaisseur</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Aligner sur le texte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Aligner sur le texte : les traits du surligneur s’alignent sur les lignes de texte détectées</translation>
+    </message>
+</context>
 </TS>

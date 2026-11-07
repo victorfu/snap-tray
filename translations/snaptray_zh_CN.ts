@@ -7879,4 +7879,17 @@ It may be in use by another application.</source>
         <translation>粗细</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>吸附到文字</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>吸附到文字：记号笔会自动对齐检测到的文字行</translation>
+    </message>
+</context>
 </TS>

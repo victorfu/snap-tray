@@ -26,6 +26,8 @@ namespace SnapTray {
 namespace {
 constexpr int kParentCursorRestoreRetryDelayMs = 16;
 constexpr int kParentCursorRestoreMaxAttempts = 6;
+// The auto-blur button is also emphasized while its tooltip shows.
+const QLatin1String kAutoBlurButtonName("autoBlurButton");
 
 QSize resolvedViewSize(QQuickView* view, QQuickItem* rootItem)
 {
@@ -73,8 +75,6 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(PinToolOptionsViewModel* viewModel,
 {
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
             this, &QmlFloatingSubToolbar::emojiPickerRequested);
-    connect(m_viewModel, &PinToolOptionsViewModel::activeToolChanged,
-            this, &QmlFloatingSubToolbar::onActiveToolChanged);
 }
 
 QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
@@ -83,13 +83,11 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
 {
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
             this, &QmlFloatingSubToolbar::emojiPickerRequested);
-    connect(m_viewModel, &PinToolOptionsViewModel::activeToolChanged,
-            this, &QmlFloatingSubToolbar::onActiveToolChanged);
 }
 
 QmlFloatingSubToolbar::~QmlFloatingSubToolbar()
 {
-    hideAutoBlurHint();
+    hideControlTooltip();
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
@@ -121,13 +119,13 @@ void QmlFloatingSubToolbar::ensureView()
             QVariant::fromValue(static_cast<QObject*>(m_viewModel)));
         m_rootItem->setProperty("autoBlurHintActive", false);
         connect(m_rootItem,
-                SIGNAL(autoBlurButtonHovered(double,double,double,double)),
+                SIGNAL(controlTooltipRequested(QString,QString)),
                 this,
-                SLOT(onAutoBlurButtonHovered(double,double,double,double)));
+                SLOT(onControlTooltipRequested(QString,QString)));
         connect(m_rootItem,
-                SIGNAL(autoBlurButtonHoverExited()),
+                SIGNAL(controlTooltipDismissed(QString)),
                 this,
-                SLOT(onAutoBlurButtonHoverExited()));
+                SLOT(onControlTooltipDismissed(QString)));
     }
 
     m_view->installEventFilter(this);
@@ -196,7 +194,7 @@ void QmlFloatingSubToolbar::show()
 
 void QmlFloatingSubToolbar::hide()
 {
-    hideAutoBlurHint();
+    hideControlTooltip();
     if (m_view) {
         m_view->hide();
         m_view->unsetCursor();
@@ -211,7 +209,7 @@ void QmlFloatingSubToolbar::hide()
 
 void QmlFloatingSubToolbar::close()
 {
-    hideAutoBlurHint();
+    hideControlTooltip();
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
@@ -351,19 +349,19 @@ bool QmlFloatingSubToolbar::eventFilter(QObject* obj, QEvent* event)
             syncCursorSurface();
             break;
         case QEvent::Leave:
-            hideAutoBlurHint();
+            hideControlTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             m_view->unsetCursor();
             scheduleParentCursorRestore();
             break;
         case QEvent::Hide:
-            hideAutoBlurHint();
+            hideControlTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             m_view->unsetCursor();
             scheduleParentCursorRestore();
             break;
         case QEvent::Close:
-            hideAutoBlurHint();
+            hideControlTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             m_view->unsetCursor();
             scheduleParentCursorRestore();
@@ -382,10 +380,6 @@ void QmlFloatingSubToolbar::showForTool(int toolId)
 {
     m_viewModel->showForTool(toolId);
 
-    if (!m_viewModel->showAutoBlurSection()) {
-        hideAutoBlurHint();
-    }
-
     if (m_viewModel->hasContent()) {
         show();
     } else {
@@ -393,60 +387,66 @@ void QmlFloatingSubToolbar::showForTool(int toolId)
     }
 }
 
-void QmlFloatingSubToolbar::onActiveToolChanged()
+void QmlFloatingSubToolbar::onControlTooltipRequested(const QString& controlName,
+                                                      const QString& text)
 {
-    if (!m_viewModel->isMosaicActive()) {
-        hideAutoBlurHint();
-    }
-}
-
-void QmlFloatingSubToolbar::onAutoBlurButtonHovered(double globalX,
-                                                    double globalY,
-                                                    double width,
-                                                    double height)
-{
-    if (!m_viewModel->showAutoBlurSection()) {
+    QQuickItem* control = visibleControl(controlName);
+    if (!control || text.isEmpty()) {
         return;
     }
 
-    const QRect anchor(QPoint(qRound(globalX), qRound(globalY)),
-                       QSize(qMax(1, qRound(width)), qMax(1, qRound(height))));
-    showAutoBlurHint(anchor);
+    if (control != m_tooltipControl) {
+        hideControlTooltip();
+        m_tooltipControl = control;
+        // A tool or selection change can hide the control under a still
+        // pointer, which sends no hover exit.
+        m_tooltipControlVisibility = connect(
+            control, &QQuickItem::visibleChanged, this, [this]() {
+                if (!m_tooltipControl || !m_tooltipControl->isVisible()) {
+                    hideControlTooltip();
+                }
+            });
+    }
+    m_tooltipText = text;
+    showControlTooltip();
 }
 
-void QmlFloatingSubToolbar::onAutoBlurButtonHoverExited()
+void QmlFloatingSubToolbar::onControlTooltipDismissed(const QString& controlName)
 {
-    hideAutoBlurHint();
+    if (m_tooltipControl && m_tooltipControl->objectName() == controlName) {
+        hideControlTooltip();
+    }
 }
 
-void QmlFloatingSubToolbar::showAutoBlurHint(const QRect& anchorGlobalRect)
+void QmlFloatingSubToolbar::showControlTooltip()
 {
+    if (!m_tooltipControl) {
+        return;
+    }
+
+    const QRect anchorGlobalRect = controlGlobalRect(m_tooltipControl->objectName());
     if (!m_view || !m_view->isVisible() || anchorGlobalRect.isEmpty()) {
+        hideControlTooltip();
         return;
     }
 
-    const QString text = m_viewModel->autoBlurHintText();
-    if (text.isEmpty()) {
-        hideAutoBlurHint();
-        return;
-    }
-
-    // Keep the tooltip outside the whole strip while preserving the button's
+    // Keep the tooltip outside the whole strip while preserving the control's
     // horizontal center as its visual anchor.
     QRect placementAnchor = anchorGlobalRect;
     placementAnchor.setTop(qMin(placementAnchor.top(), m_view->y()));
     placementAnchor.setBottom(qMax(placementAnchor.bottom(),
                                    m_view->y() + m_view->height() - 1));
 
-    m_autoBlurHintVisible = true;
-    setAutoBlurHintEmphasis(true);
-    m_tooltip.showFor(text, placementAnchor, m_view, m_tooltipPlacement);
+    setAutoBlurHintEmphasis(m_tooltipControl->objectName() == kAutoBlurButtonName);
+    m_tooltip.showFor(m_tooltipText, placementAnchor, m_view, m_tooltipPlacement);
 }
 
-void QmlFloatingSubToolbar::hideAutoBlurHint()
+void QmlFloatingSubToolbar::hideControlTooltip()
 {
     m_tooltip.hide();
-    m_autoBlurHintVisible = false;
+    disconnect(m_tooltipControlVisibility);
+    m_tooltipControl.clear();
+    m_tooltipText.clear();
     setAutoBlurHintEmphasis(false);
 }
 
@@ -457,23 +457,28 @@ void QmlFloatingSubToolbar::setAutoBlurHintEmphasis(bool active)
     }
 }
 
-QRect QmlFloatingSubToolbar::autoBlurButtonGlobalRect() const
+QQuickItem* QmlFloatingSubToolbar::visibleControl(const QString& controlName) const
 {
-    if (!m_rootItem) {
+    if (!m_rootItem || controlName.isEmpty()) {
+        return nullptr;
+    }
+
+    auto* control = m_rootItem->findChild<QQuickItem*>(controlName);
+    return control && control->isVisible() ? control : nullptr;
+}
+
+QRect QmlFloatingSubToolbar::controlGlobalRect(const QString& controlName) const
+{
+    const QQuickItem* control = visibleControl(controlName);
+    if (!control) {
         return {};
     }
 
-    auto* button = m_rootItem->findChild<QQuickItem*>(
-        QStringLiteral("autoBlurButton"));
-    if (!button || !button->isVisible()) {
-        return {};
-    }
-
-    const QPointF topLeft = button->mapToGlobal(QPointF(0.0, 0.0));
+    const QPointF topLeft = control->mapToGlobal(QPointF(0.0, 0.0));
     return QRect(qRound(topLeft.x()),
                  qRound(topLeft.y()),
-                 qMax(1, qRound(button->width())),
-                 qMax(1, qRound(button->height())));
+                 qMax(1, qRound(control->width())),
+                 qMax(1, qRound(control->height())));
 }
 
 // ── Positioning ──
@@ -519,12 +524,8 @@ void QmlFloatingSubToolbar::positionBelow(const QRect& toolbarRect)
         : TooltipPlacement::Above;
     syncCursorSurface();
 
-    if (m_autoBlurHintVisible) {
-        const QRect anchor = autoBlurButtonGlobalRect();
-        if (!anchor.isEmpty()) {
-            showAutoBlurHint(anchor);
-        }
-    }
+    // Re-anchor a showing tooltip to the moved strip.
+    showControlTooltip();
 }
 
 } // namespace SnapTray

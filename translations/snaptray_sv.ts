@@ -7883,4 +7883,17 @@ Den kan användas av ett annat program.</translation>
         <translation>Bredd</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Fäst mot text</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Fäst mot text: markörens streck justeras efter identifierade textrader</translation>
+    </message>
+</context>
 </TS>

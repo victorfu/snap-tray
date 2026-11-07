@@ -55,10 +55,19 @@ void tst_ToolOptionsAccessibility::markerTextSnapIsHostGated()
     QTRY_VERIFY(toggle->isVisible());
     auto* accessible = named(view->rootObject(),QStringLiteral("Snap to text"));
     QVERIFY(accessible);
+    QCOMPARE(accessible->role(), QAccessible::CheckBox);
+    // #304: the icon toggle carries its explanation, as the tooltip does.
+    QCOMPARE(accessible->text(QAccessible::Description),
+             QStringLiteral("Snap to text: marker strokes align to detected text lines"));
     QVERIFY(!accessible->state().checked);
     accessible->actionInterface()->doAction(QAccessibleActionInterface::toggleAction());
     QTRY_VERIFY(vm.markerTextSnapEnabled());
     QVERIFY(accessible->state().checked);
+    accessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QTRY_VERIFY(!vm.markerTextSnapEnabled());
+    QVERIFY(!accessible->state().checked);
+    accessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QTRY_VERIFY(vm.markerTextSnapEnabled());
     vm.showForTool(static_cast<int>(ToolId::Pencil));
     QTRY_VERIFY(!toggle->isVisible());
     vm.showForTool(static_cast<int>(ToolId::Marker));
