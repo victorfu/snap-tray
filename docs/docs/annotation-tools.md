@@ -55,7 +55,7 @@ Moving, rotating, or resizing an annotation, dragging an arrow's ends or curve, 
 
 ## Picking a color from the screen
 
-Click the eyedropper next to the custom color swatch, or press `I`, to take a color from the image you are annotating, for example to match a brand color or a button. A magnifier shows the pixels under the pointer and the color code.
+Click the eyedropper at the end of the color swatches, or press `I`, to take a color from the image you are annotating, for example to match a brand color or a button. A magnifier shows the pixels under the pointer and the color code.
 
 - Click to use the color. You can also hold the button, move to fine-tune, and release.
 - The arrow keys move one physical pixel at a time, even on a 2x display. Press `Enter` to use the color.

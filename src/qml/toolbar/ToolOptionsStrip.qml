@@ -21,6 +21,9 @@ Item {
     signal autoBlurButtonHovered(real anchorX, real anchorY,
                                  real anchorW, real anchorH)
     signal autoBlurButtonHoverExited()
+    // A control asks the host for a tooltip anchored on the item named itemName (#305).
+    signal controlTooltipRequested(string itemName, string text)
+    signal controlTooltipDismissed()
 
     // Content sizing: expand to fit the row of sections
     implicitWidth: glassBg.width
@@ -148,6 +151,10 @@ Item {
                 visible: root.hasViewModel && root.viewModel.showColorSection
                 viewModel: root.viewModel
                 anchors.verticalCenter: parent.verticalCenter
+                onTooltipRequested: function(itemName, text) {
+                    root.controlTooltipRequested(itemName, text)
+                }
+                onTooltipDismissed: root.controlTooltipDismissed()
             }
 
             AutoBlurSection {
