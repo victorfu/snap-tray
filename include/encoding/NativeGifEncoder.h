@@ -4,10 +4,13 @@
 #include <QObject>
 
 #include <atomic>
+#include <cstddef>
 #include <memory>
 #include <QImage>
 #include <QSize>
 #include <QString>
+
+class QSaveFile;
 
 /**
  * @brief Native GIF encoder using msf_gif library
@@ -60,10 +63,11 @@ public:
     QString lastError() const { return m_lastError; }
     qint64 framesWritten() const { return m_framesWritten; }
 
-    // Bytes of encoded GIF held in memory: the file is only written by
-    // finish(), so the disk guard counts these (shared, readable from any thread).
+    // Pending compressed bytes still needing disk space, and bytes already
+    // written to the atomic staging file (readable from any thread).
     using ByteCounter = std::shared_ptr<std::atomic<qint64>>;
     ByteCounter bufferedBytesCounter() const { return m_bufferedBytes; }
+    ByteCounter writtenBytesCounter() const { return m_writtenBytes; }
     QString outputPath() const { return m_outputPath; }
 
     /**
@@ -79,6 +83,9 @@ signals:
     void progress(qint64 framesWritten);
 
 private:
+    friend class TestNativeGifEncoder;
+    static size_t writeToFile(const void *buffer, size_t size, size_t count, void *context);
+    void fail(const QString &message);
     void cleanup();
     bool encodePendingFrame(int centiSeconds);
     int calculateCentiseconds(qint64 durationMs);
@@ -89,14 +96,15 @@ private:
     int m_frameRate;
     int m_maxBitDepth;
     qint64 m_framesWritten;
-    int m_consecutiveFailures;  // Track consecutive frame encoding failures
-    int m_maxConsecutiveFailures;  // Configurable threshold
     QImage m_pendingFrame;
     qint64 m_pendingTimestampMs;
     qint64 m_delayRemainderUnits;
     QString m_lastError;
     bool m_running;
     bool m_aborted;
+    bool m_finishEmitted = false;
+    std::unique_ptr<QSaveFile> m_file;
+    ByteCounter m_writtenBytes = std::make_shared<std::atomic<qint64>>(0);
     ByteCounter m_bufferedBytes = std::make_shared<std::atomic<qint64>>(0);
 };
 

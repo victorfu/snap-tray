@@ -513,6 +513,10 @@ void EncodingWorker::doProcessFrame(const FrameData& frameData)
                 m_videoEncoder->writeFrame(frame, frameData.timestampMs);
             } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
                 m_gifEncoder->writeFrame(frame, frameData.timestampMs);
+                if (!m_gifEncoder->isRunning()) {
+                    handleProcessingFailure(QStringLiteral("GIF encoding"), m_gifEncoder->lastError());
+                    return;
+                }
             } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
                 m_webpEncoder->writeFrame(frame, frameData.timestampMs);
             }

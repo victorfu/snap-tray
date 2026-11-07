@@ -1,3 +1,4 @@
+#include "encoding/NativeGifEncoder.h"
 #include <QtTest/QtTest>
 #include <QSignalSpy>
 #include <QtConcurrent>
@@ -346,6 +347,7 @@ class TestEncodingWorker : public QObject
 
 private slots:
     void testFrameExceptionStopsWorker();
+    void testStoppedGifStopsWorker();
     void testAudioExceptionStopsWorker();
     void testAudioFrameTimestampPreservesPrecision();
     void testRequestFinishAfterFailureDoesNotEmitFinished();
@@ -367,6 +369,34 @@ private slots:
     void testNativeFramesAreRejectedUnderAWatermark();
     void testNativeFramesCountTheirPixelsAgainstTheByteBudget();
 };
+
+void TestEncodingWorker::testStoppedGifStopsWorker()
+{
+    QTemporaryDir dir;
+    EncodingWorker worker;
+    auto *gif = new NativeGifEncoder;
+    QVERIFY(gif->start(dir.filePath("failed.gif"), QSize(64, 48), 10));
+    worker.setEncoderType(EncodingWorker::EncoderType::Gif);
+    worker.setGifEncoder(gif);
+    QVERIFY(worker.start());
+    // A fatal stream error leaves the encoder stopped with no staging file.
+    // The encoder suite injects short writes and disk errors; here verify the
+    // worker propagates that stopped state rather than accepting frames forever.
+    gif->abort();
+    QSignalSpy errors(&worker, &EncodingWorker::error);
+    QSignalSpy finished(&worker, &EncodingWorker::finished);
+    EncodingWorker::FrameData frame;
+    frame.frame = createTestFrame();
+    QVERIFY(worker.enqueueFrame(frame));
+    QTRY_COMPARE_WITH_TIMEOUT(errors.count(), 1, 3000);
+    QVERIFY(!worker.isRunning());
+    QVERIFY(!worker.enqueueFrame(frame));
+    worker.requestFinish();
+    QCoreApplication::processEvents();
+    QCOMPARE(errors.count(), 1);
+    QCOMPARE(finished.count(), 0);
+    QVERIFY(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden).isEmpty());
+}
 
 void TestEncodingWorker::testFrameExceptionStopsWorker()
 {
