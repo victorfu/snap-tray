@@ -63,6 +63,16 @@ public:
     qint64 nextShownSourceMs(qint64 sourceMs) const;
     double speedAt(qint64 sourceMs) const;
 
+    struct SourceInterval {
+        qint64 startUs;
+        qint64 endUs; // exclusive, rounded outward and bounded by the kept part
+        qint64 endMs() const { return endUs / 1000 + (endUs % 1000 != 0); }
+    };
+    // Coverage of a held output frame, anchored at its sampled source time.
+    // Never maps the hold across a cut or into the next speed segment.
+    std::optional<SourceInterval> sourceIntervalForHoldMicroseconds(
+        qint64 sourceUs, qint64 outputHoldUs) const;
+
 private:
     qint64 mapOutputTime(qint64 output, qint64 unitsPerMs) const;
     std::vector<TimelineSegment> m_segments;

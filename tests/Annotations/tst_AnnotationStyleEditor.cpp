@@ -1,6 +1,9 @@
 #include <QtTest/QtTest>
 
 #include "annotation/AnnotationStyleEditor.h"
+#include "InlineTextEditor.h"
+#include "TextFormattingState.h"
+#include <QWidget>
 #include "annotations/AnnotationZOrderCommands.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
@@ -255,6 +258,14 @@ void tst_AnnotationStyleEditor::defaultFontIsUndoable()
     layer.setSelectedIndex(0);
     auto* text = static_cast<TextBoxAnnotation*>(layer.selectedItem());
     QVERIFY(vm.routeToSelection(StyleProperty::FontFamily, QString()));
+    QWidget host;
+    InlineTextEditor inlineEditor(&host);
+    inlineEditor.setFont(font);
+    inlineEditor.setFontFamily(QString());
+    QCOMPARE(text->font(), inlineEditor.font());
+    auto defaults = TextFormattingState::fromQFont(font);
+    defaults.fontFamily.clear();
+    QCOMPARE(text->font(), defaults.toQFont());
     QCOMPARE(text->font().families(), QFont().families());
     QCOMPARE(text->font().pointSize(), 24);
     QVERIFY(text->font().bold());

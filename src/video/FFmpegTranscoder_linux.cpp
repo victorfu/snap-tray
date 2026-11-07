@@ -42,6 +42,7 @@ public:
         const auto source = probe(request.inputPath);
         const qint64 start = request.startMs, end = request.endMs < 0 ? source.durationMs : qMin(request.endMs, source.durationMs);
         if (!source.valid || start < 0 || start >= end) return fail(QStringLiteral("Invalid input or trim range."));
+        const SnapTray::TimelineMap timeline({{start, end, 1.0}});
         const QRect bounds(QPoint(), source.videoSize);
         QRect crop = request.cropRect.isEmpty() ? bounds : request.cropRect.intersected(bounds);
         crop.setWidth(crop.width() & ~1); crop.setHeight(crop.height() & ~1);
@@ -84,15 +85,18 @@ public:
         // like 24 -> 15 keeps 5 of every 8 frames instead of every other one.
         const double exactInterval = 1000.0 / fps;
         double nextDue = 0.0;
-        QImage lastImage;
         QImage lastSource;
         QImage pendingSource;
         qint64 pendingTime = -1, pendingSourceTime = 0;
         auto flush = [&](qint64 until) {
             if (pendingTime < 0) return true;
-            QImage frame = pendingSource.copy();
-            if (request.frameFilter)
-                request.frameFilter(frame, pendingSourceTime, qMin(end, pendingSourceTime + until - pendingTime));
+            QImage frame = request.frameFilter ? pendingSource.copy() : pendingSource;
+            if (request.frameFilter) {
+                const auto coverage = timeline.sourceIntervalForHoldMicroseconds(
+                    pendingSourceTime * 1000, (until - pendingTime) * 1000);
+                if (!coverage) return false;
+                request.frameFilter(frame, pendingSourceTime, coverage->endMs());
+            }
             toOutputSize(frame);
             encoder.writeFrame(frame, pendingTime);
             return encoder.isRunning();
@@ -127,8 +131,7 @@ public:
                 nextDue = onSchedule ? nextDue + exactInterval : time + exactInterval;
             }
             if (keep) {
-                lastImage = crop == bounds ? image : image.copy(crop);
-                lastSource = lastImage;
+                lastSource = crop == bounds ? image : image.copy(crop);
                 if (!queue(lastSource, time, sourceTime)) return fail(encoder.lastError());
             }
             if (request.frameFilter && keep) {
@@ -288,6 +291,7 @@ private:
         if (segments.empty()) return fail(QStringLiteral("Invalid input or trim range."));
         std::vector<qint64> outStarts{0};
         for (const auto& segment : segments) outStarts.push_back(outStarts.back() + segment.outputLengthMs());
+        const SnapTray::TimelineMap timeline(segments);
         const qint64 outDuration = outStarts.back();
         if (outDuration <= 0) return fail(QStringLiteral("Invalid input or trim range."));
 
@@ -380,16 +384,19 @@ private:
         // exact interval after the previous one was due, so a 1.5x part of a
         // 30 fps recording keeps 30 fps, not every other frame (PR #199 review).
         double nextDueOut = 0.0;
-        QImage lastImage, lastSource;
+        QImage lastSource;
         QImage pendingSource;
-        qint64 pendingOut = -1, pendingSourceMs = 0, pendingSourceEnd = 0;
-        double pendingSpeed = 1.0;
+        qint64 pendingOut = -1, pendingSourceMs = 0;
+        SnapTray::TimelineSegment pendingSegment;
         auto flush = [&](qint64 outEndMs) {
             if (pendingOut < 0) return true;
-            QImage frame = pendingSource.copy();
-            const qint64 sourceEndMs = qMin(pendingSourceEnd, pendingSourceMs
-                + qint64(std::ceil((outEndMs - pendingOut) * pendingSpeed)));
-            if (request.frameFilter) request.frameFilter(frame, pendingSourceMs, sourceEndMs);
+            QImage frame = request.frameFilter ? pendingSource.copy() : pendingSource;
+            if (request.frameFilter) {
+                const auto coverage = timeline.sourceIntervalForHoldMicroseconds(
+                    pendingSourceMs * 1000, (outEndMs - pendingOut) * 1000);
+                if (!coverage) return false;
+                request.frameFilter(frame, pendingSourceMs, coverage->endMs());
+            }
             toOutputSize(frame);
             encoder.writeFrame(frame, pendingOut);
             return encoder.isRunning() && writeAudioUntil(outEndMs);
@@ -400,8 +407,7 @@ private:
             pendingSource = frame;
             pendingOut = writtenOut = outMs;
             pendingSourceMs = sourceMs;
-            pendingSourceEnd = segment.endMs;
-            pendingSpeed = segment.speed;
+            pendingSegment = segment;
             return true;
         };
         for (size_t index = 0; index < segments.size(); ++index) {
@@ -414,6 +420,7 @@ private:
             qint64 sourceTime = segment.startMs;
             while (sourceTime < segment.endMs) {
                 const qint64 outTime = toOut(sourceTime);
+                if (outTime >= outEnd) break;
                 if (progress && !progress(int(outTime * 85 / outDuration))) return fail(QStringLiteral("Export cancelled."));
                 const QImage image = reader.frameAt(sourceTime);
                 if (image.isNull()) return fail(reader.lastError());
@@ -431,8 +438,7 @@ private:
                     // pause) or fallen behind: the clock restarts from this frame.
                     const bool onSchedule = outTime + 1 >= nextDueOut && outTime - nextDueOut <= exactOutInterval;
                     nextDueOut = onSchedule ? nextDueOut + exactOutInterval : outTime + exactOutInterval;
-                    lastImage = crop == bounds ? image : image.copy(crop);
-                    lastSource = lastImage;
+                    lastSource = crop == bounds ? image : image.copy(crop);
                     if (!queue(lastSource, outTime, sourceTime, segment))
                         return fail(encoder.lastError().isEmpty() ? audio.error() : encoder.lastError());
                     // Effects move on over a still or slowed picture.
@@ -452,10 +458,9 @@ private:
         }
         const qint64 finalTime = qMax<qint64>(0, outDuration - interval);
         if (writtenOut < finalTime && pendingOut >= 0) {
-            const auto& segment = segments.back();
-            const qint64 sourceMs = pendingSourceMs
-                + qint64(std::llround((finalTime - pendingOut) * pendingSpeed));
-            if (!queue(pendingSource, finalTime, sourceMs, segment)) return fail(encoder.lastError());
+            const qint64 sourceMs = qMin(pendingSegment.endMs - 1, pendingSourceMs
+                + qint64(std::llround((finalTime - pendingOut) * pendingSegment.speed)));
+            if (!queue(pendingSource, finalTime, sourceMs, pendingSegment)) return fail(encoder.lastError());
         }
         // The pending frame covers the final hold, including its mask interval.
         if (!flush(outDuration)) return fail(encoder.lastError().isEmpty() ? audio.error() : encoder.lastError());

@@ -1,4 +1,5 @@
 #include "annotations/AnnotationStyle.h"
+#include "TextFormattingState.h"
 
 #include <array>
 
@@ -92,7 +93,7 @@ bool applyText(TextBoxAnnotation& text, StyleProperty property, const QVariant& 
     QFont font = text.font();
     switch (property) {
     case StyleProperty::FontFamily:
-        font.setFamilies(value.toString().isEmpty() ? QFont().families() : QStringList{value.toString()});
+        TextFormattingState::applyFontFamily(font, value.toString());
         break;
     case StyleProperty::FontSize:
         if (value.toInt() < 1) return false;

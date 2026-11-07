@@ -9,6 +9,7 @@ class TestTimelineEdit : public QObject
     Q_OBJECT
 
 private slots:
+    void heldFramesStayInsideTheirSourceSegment();
     void emptyEditIsThePlainTrim();
     void splitDeleteAndSpeed();
     void mapsBothWays();
@@ -183,3 +184,25 @@ void TestTimelineEdit::neverMapsIntoTheCutAtAPartsEnd()
 
 QTEST_MAIN(TestTimelineEdit)
 #include "tst_TimelineEdit.moc"
+
+void TestTimelineEdit::heldFramesStayInsideTheirSourceSegment()
+{
+    const TimelineMap map({{0, 950, 1.0}, {1500, 2000, 4.0}, {2500, 3000, 1.5}});
+    const auto crossing = map.sourceIntervalForHoldMicroseconds(800000, 200000);
+    QVERIFY(crossing);
+    QCOMPARE(crossing->startUs, qint64(800000));
+    QCOMPARE(crossing->endUs, qint64(950000));
+    const auto finalHold = map.sourceIntervalForHoldMicroseconds(800000, 5000000);
+    QVERIFY(finalHold);
+    QCOMPARE(finalHold->endUs, qint64(950000)); // never borrows the last segment's range/speed
+    const auto accelerated = map.sourceIntervalForHoldMicroseconds(1500000, 66667);
+    QVERIFY(accelerated);
+    QCOMPARE(accelerated->endUs, qint64(1766668));
+    QCOMPARE(accelerated->endMs(), qint64(1767));
+    const auto fractional = map.sourceIntervalForHoldMicroseconds(2500001, 1);
+    QVERIFY(fractional);
+    QCOMPARE(fractional->endUs, qint64(2500003));
+    QVERIFY(!map.sourceIntervalForHoldMicroseconds(1000000, 200000)); // deleted source
+    QVERIFY(!map.sourceIntervalForHoldMicroseconds(0, 0));
+    QVERIFY(!map.sourceIntervalForHoldMicroseconds(-1, 200000));
+}

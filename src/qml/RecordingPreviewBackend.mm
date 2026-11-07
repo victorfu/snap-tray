@@ -3182,6 +3182,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         bool frameExtractionFailed = false;
 
         const qint64 outputDurationMs = timeline.isEmpty() ? endMs - startMs : timeline.outputDurationMs();
+        const SnapTray::TimelineMap exportTimeline = timeline.isEmpty()
+            ? SnapTray::TimelineMap({{startMs, endMs, 1.0}}) : timeline;
         for (qint64 frameIndex = 0; ; ++frameIndex) {
             // The frame shown at this output time, from the source time the
             // edit maps it to (a plain trim: start + output time).
@@ -3239,13 +3241,13 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                 }
                 if (cursorFilter) {
                     const qint64 outputEndMs = qMin(outputDurationMs, (frameIndex + 1) * 1000 / frameRateInt);
-                    // The last covered output microsecond avoids including the next frame at a cut.
-                    qint64 sourceEndMs = timeline.isEmpty() ? startMs + outputEndMs
-                        : (timeline.outputToSourceMicroseconds(outputEndMs * 1000 - 1) + 1000) / 1000;
-                    const int part = timeline.segmentAt(timeMs);
-                    if (part >= 0)
-                        sourceEndMs = qMin(sourceEndMs, timeline.segments()[size_t(part)].endMs);
-                    cursorFilter(capturedFrame, timeMs, sourceEndMs);
+                    const auto coverage = exportTimeline.sourceIntervalForHoldMicroseconds(
+                        timeMs * 1000, (outputEndMs - outputMs) * 1000);
+                    if (!coverage) {
+                        frameExtractionFailed = true;
+                        break;
+                    }
+                    cursorFilter(capturedFrame, timeMs, coverage->endMs());
                 }
                 const qint64 framesBefore = gifEncoder
                     ? gifEncoder->framesWritten()

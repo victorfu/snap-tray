@@ -170,29 +170,32 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
     double nextDueUs = 0.0;
     QImage pendingFrame;
     qint64 pendingTime = -1;
-    qint64 pendingSourceUs = 0, pendingSourceEndUs = 0;
-    double pendingSpeed = 1.0;
+    qint64 pendingSourceUs = 0;
+    QString frameError;
     auto flushFrame = [&](qint64 outEndUs) {
         if (pendingTime < 0) return true;
-        const qint64 sourceEndUs = qMin(pendingSourceEndUs, pendingSourceUs
-            + qint64(std::ceil((outEndUs - pendingTime) * pendingSpeed)));
-        QImage frame = pendingFrame.copy();
+        const auto coverage = map.sourceIntervalForHoldMicroseconds(pendingSourceUs, outEndUs - pendingTime);
+        if (!coverage) {
+            frameError = QStringLiteral("Invalid frame source interval.");
+            return false;
+        }
+        QImage frame = request.frameFilter ? pendingFrame.copy() : pendingFrame;
         if (request.frameFilter)
-            request.frameFilter(frame, pendingSourceUs / 1000, (sourceEndUs + 999) / 1000);
-        if (frame.isNull() || frame.size() != filtered) return false;
+            request.frameFilter(frame, pendingSourceUs / 1000, coverage->endMs());
+        if (frame.isNull() || frame.size() != filtered) {
+            frameError = QStringLiteral("Frame filter returned an unexpected size.");
+            return false;
+        }
         if (frame.size() != format.size)
             frame = frame.scaled(format.size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         return media.writeVideo(frame, pendingTime, outEndUs - pendingTime)
             && (concurrentAudio || writeAudioUntil(outEndUs));
     };
-    auto queueFrame = [&](const QImage& frame, qint64 outUs, qint64 sourceUs,
-                          const TimelineSegment& part) {
+    auto queueFrame = [&](const QImage& frame, qint64 outUs, qint64 sourceUs) {
         if (pendingTime >= 0 && (outUs <= pendingTime || !flushFrame(outUs))) return false;
         pendingFrame = frame;
         pendingTime = outUs;
         pendingSourceUs = sourceUs;
-        pendingSourceEndUs = part.endMs * 1000;
-        pendingSpeed = part.speed;
         return true;
     };
     for (size_t index = 0; index < segments.size(); ++index) {
@@ -224,12 +227,12 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
                     && outUs - nextDueUs <= exactIntervalUs;
                 nextDueUs = onSchedule ? nextDueUs + exactIntervalUs : outUs + exactIntervalUs;
                 const QImage cropped = sourceFrame.copy(crop).convertToFormat(QImage::Format_RGB32);
-                if (!queueFrame(cropped, outUs, sourceUs, part)) return fail(media.error());
+                if (!queueFrame(cropped, outUs, sourceUs)) return fail(frameError.isEmpty() ? media.error() : frameError);
                 if (request.frameFilter) {
                     for (qint64 at = outUs + intervalUs; nextOut - at >= intervalUs / 2; at += intervalUs) {
                         if (progress && !progress(int(at * 90 / durationUs))) return fail(QStringLiteral("Export cancelled."));
-                        if (!queueFrame(cropped, at, map.outputToSourceMicroseconds(at), part))
-                            return fail(media.error());
+                        if (!queueFrame(cropped, at, map.outputToSourceMicroseconds(at)))
+                            return fail(frameError.isEmpty() ? media.error() : frameError);
                     }
                 }
             }
@@ -238,7 +241,7 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
             sourceUs = nextSourceUs;
         }
     }
-    if (pendingTime < 0 || !flushFrame(durationUs)) return fail(media.error());
+    if (pendingTime < 0 || !flushFrame(durationUs)) return fail(frameError.isEmpty() ? media.error() : frameError);
     if (audioWorker) {
         audioWorker->wait();
         audioWorker.reset();
