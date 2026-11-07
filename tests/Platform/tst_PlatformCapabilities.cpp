@@ -17,6 +17,7 @@ private slots:
     void linuxSessionBackendMatrix();
     void windowsCaptureExclusionVersionGate_data();
     void windowsCaptureExclusionVersionGate();
+    void scrollCaptureStaysOffUntilValidated();
 };
 
 void tst_PlatformCapabilities::linuxX11BetaCapabilities()
@@ -212,6 +213,24 @@ void tst_PlatformCapabilities::windowsCaptureExclusionVersionGate()
     QVERIFY(caps.isRuntimeSupported);
     QVERIFY(caps.supportsRecording);
     QVERIFY(!SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion(QOperatingSystemVersion::MacOS, 14, 0, 0)));
+}
+
+void tst_PlatformCapabilities::scrollCaptureStaysOffUntilValidated()
+{
+    struct Target {
+        SnapTray::PlatformKind platform;
+        SnapTray::DisplayServerKind displayServer;
+    };
+    const Target targets[] = {
+        {SnapTray::PlatformKind::MacOS, SnapTray::DisplayServerKind::Unknown},
+        {SnapTray::PlatformKind::Windows, SnapTray::DisplayServerKind::Unknown},
+        {SnapTray::PlatformKind::Linux, SnapTray::DisplayServerKind::X11},
+        {SnapTray::PlatformKind::Linux, SnapTray::DisplayServerKind::Wayland},
+        {SnapTray::PlatformKind::Other, SnapTray::DisplayServerKind::Unknown},
+    };
+    for (const Target& target : targets) {
+        QVERIFY(!SnapTray::capabilitiesForPlatform(target.platform, target.displayServer).supportsScrollCapture);
+    }
 }
 
 QTEST_MAIN(tst_PlatformCapabilities)

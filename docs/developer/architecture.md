@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-06
+last_modified_at: 2026-11-07
 layout: docs
 title: Architecture Overview
 seo_title: "SnapTray Architecture: Subsystems, Boundaries and Layers"
@@ -40,6 +40,7 @@ snap-tray/
 │   ├── platform/               # Platform abstraction layer
 │   ├── qml/                    # QML bridges and view models
 │   ├── region/                 # Region selector components
+│   ├── scrollcapture/          # Scroll area detection, scroll injection, frame alignment (#265)
 │   ├── settings/               # Settings managers
 │   ├── tools/                  # Tool registry and handlers
 │   ├── ui/                     # Cross-cutting UI helpers and theme
@@ -121,6 +122,7 @@ Use `GlassRenderer` and the existing toolbar style configuration rather than loc
 | Audio capture | `WASAPIAudioCaptureEngine_win.cpp` | `CoreAudioCaptureEngine_mac.mm` | Not supported |
 | Video playback | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` | Not supported |
 | Window detection | `WindowDetector_win.cpp` | `WindowDetector.mm` | Not supported |
+| Scroll area detection (#265, developer probe only) | `ScrollCapturePlatform_win.cpp` (UI Automation) | `ScrollCapturePlatform_mac.mm` (Accessibility) | `ScrollCapturePlatform_stub.cpp` (not supported) |
 | OCR | `OCRManager_win.cpp` | `OCRManager.mm` | Not supported |
 | Window level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` | `WindowLevel_linux.cpp` |
 | Platform features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` | `PlatformFeatures_linux.cpp` |

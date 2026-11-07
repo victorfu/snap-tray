@@ -330,6 +330,10 @@ add_library(snaptray_core STATIC
     src/beautify/FrameStyleLibrary.cpp
     src/update/UpdateSettingsManager.cpp
     src/platform/PlatformCapabilities.cpp
+    # Scroll capture core (#265): frame alignment and settle detection
+    src/scrollcapture/FrameRowHashes.cpp
+    src/scrollcapture/RowHashShiftEstimator.cpp
+    src/scrollcapture/FrameSettleDetector.cpp
     src/platform/MacCLIInstaller.cpp
     src/platform/CaptureExclusionPolicy.cpp
     src/platform/AtomicFilePublish.cpp
@@ -565,6 +569,11 @@ add_library(snaptray_platform STATIC
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
     src/platform/QtQuickBackendPolicy.cpp
+    # Scroll area detection and scroll injection (#265)
+    src/scrollcapture/ScrollCaptureCommon.cpp
+    $<$<NOT:$<PLATFORM_ID:Darwin,Windows>>:
+        src/scrollcapture/ScrollCapturePlatform_stub.cpp
+    >
     $<$<NOT:$<PLATFORM_ID:Darwin>>:
         src/ImageColorSpaceHelper.cpp
     >
@@ -598,6 +607,8 @@ add_library(snaptray_platform STATIC
         src/platform/MacTrayActivationGuard_mac.mm
         src/platform/MacTrayAccessibility_mac.mm
         src/platform/PlatformFeatures_mac.mm
+        src/platform/MacAXElement_mac.mm
+        src/scrollcapture/ScrollCapturePlatform_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
@@ -628,6 +639,7 @@ add_library(snaptray_platform STATIC
         src/platform/WindowLevel_win.cpp
         src/platform/PathEnvUtils_win.cpp
         src/platform/PlatformFeatures_win.cpp
+        src/scrollcapture/ScrollCapturePlatform_win.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
@@ -692,6 +704,7 @@ set_source_files_properties(
     src/video/NativeEditMedia_mac.mm
     src/video/PreviewPcmOutput_mac.mm
     src/recording/KeyProbe_mac.mm
+    src/scrollcapture/ScrollCapturePlatform_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"
 )
 
@@ -752,6 +765,7 @@ elseif(WIN32)
             mfuuid
             ole32
             propsys
+            version
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_package(X11 REQUIRED)
@@ -1526,5 +1540,10 @@ if(BUILD_TESTING)
     # Developer tool: prints a recording's pointer sidecar.
     add_executable(SnapTrayCursorInspector tools/cursor-inspector/main.cpp)
     target_link_libraries(SnapTrayCursorInspector PRIVATE snaptray_core)
+    # Developer tool: probes system-reported scroll areas and programmatic
+    # scrolling, writing JSON lines for the #265 measurements.
+    add_executable(SnapTrayScrollProbe tools/scroll-probe/main.cpp)
+    target_include_directories(SnapTrayScrollProbe PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(SnapTrayScrollProbe PRIVATE snaptray_platform Qt6::Widgets)
     add_subdirectory(tests)
 endif()

@@ -36,6 +36,11 @@ struct PlatformCapabilities {
     // window itself from the captured desktop.
     bool supportsLiveCapture = false;
     bool supportsInAppUpdates = false;
+    // Long screenshots of system-reported scroll areas (#265). Stays off on
+    // every platform until real-application measurements validate the
+    // ScrollAreaLocator/ScrollInjector platform layer; the developer probe
+    // (tools/scroll-probe) does not depend on it.
+    bool supportsScrollCapture = false;
     bool isRuntimeSupported = false;
     DisplayServerKind displayServer = DisplayServerKind::Unknown;
     QString unsupportedRuntimeMessage;
