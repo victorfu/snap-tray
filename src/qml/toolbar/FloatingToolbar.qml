@@ -55,10 +55,35 @@ Item {
     readonly property int separatorWidth: 8
     readonly property int groupGap: 4
     readonly property int finishTintRadius: 6
+    readonly property int finishTintPadding: 1
     readonly property int margin: 8
     readonly property int separatorLineHeight: 16
     readonly property int dragHandleWidth: 16
     readonly property int contentSpacing: 6
+
+    // Paint each contiguous visible Finish run once. Per-button translucent
+    // rectangles overlap at the seams and make the accent almost twice as dark.
+    readonly property var finishTintWidths: {
+        var widths = []
+        var start = -1
+        for (var i = 0; i < root.displayButtons.length; ++i) {
+            widths[i] = 0
+            var button = root.displayButtons[i]
+            if (!root.hasViewModel || (button.isOCR && !root.viewModel.ocrAvailable))
+                continue
+            if (button.group !== 2) {
+                start = -1
+                continue
+            }
+            if (start < 0 || button.separatorBefore) {
+                start = i
+                widths[start] = root.buttonWidth + root.finishTintPadding * 2
+            } else {
+                widths[start] += root.buttonWidth + root.buttonSpacing
+            }
+        }
+        return widths
+    }
 
     width: constrainedWidth > 0 ? constrainedWidth : contentRow.width + margin * 2
     height: barHeight
@@ -155,7 +180,7 @@ Item {
                     readonly property bool isSeparatorBefore: buttonData.separatorBefore
                     readonly property bool isOCR: buttonData.isOCR
                     readonly property bool isGroupStart: buttonData.groupStart === true
-                    readonly property bool isFinish: buttonData.group === 2
+                    readonly property real finishTintWidth: root.finishTintWidths[index] || 0
 
                     // Skip OCR button if not available
                     active: root.hasViewModel && !(isOCR && !root.viewModel.ocrAvailable)
@@ -187,9 +212,9 @@ Item {
 
                         Rectangle {
                             objectName: "toolbarFinishTint_" + delegateLoader.buttonId
-                            visible: delegateLoader.isFinish
-                            x: separatorItem.width - 1
-                            width: root.buttonWidth + 2 + root.buttonSpacing
+                            visible: delegateLoader.finishTintWidth > 0
+                            x: separatorItem.width - root.finishTintPadding
+                            width: delegateLoader.finishTintWidth
                             height: root.buttonHeight + 4
                             anchors.verticalCenter: parent.verticalCenter
                             radius: root.finishTintRadius
