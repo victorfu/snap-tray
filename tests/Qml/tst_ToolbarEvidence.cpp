@@ -68,6 +68,9 @@ Item {
     property bool menuOpen: false
     property int toolbarX: 0
     property int toolbarY: 0
+    property string tooltipText: ""
+    property int tooltipX: 0
+    property int tooltipY: 0
 
     Image { anchors.fill: parent; source: scene.background; cache: false }
 
@@ -97,6 +100,16 @@ Item {
         Component.onCompleted: setSource("qrc:/SnapTrayQml/toolbar/ToolbarOverflowMenu.qml",
                                          { viewModel: scene.toolbarModel, maximumWidth: 240 })
         Binding { target: menu.item; property: "buttons"; value: scene.overflowButtons; when: menu.item !== null }
+    }
+    // A style strip tooltip as the app shows it (its own window there; inline here).
+    Loader {
+        id: tip
+        objectName: "evidenceTooltip"
+        active: scene.tooltipText !== ""
+        x: scene.tooltipX
+        y: scene.tooltipY
+        source: "qrc:/SnapTrayQml/components/RecordingTooltip.qml"
+        Binding { target: tip.item; property: "tooltipText"; value: scene.tooltipText; when: tip.item !== null }
     }
 }
 )";
@@ -297,6 +310,8 @@ private slots:
     void toolbarStates();
     void operationVideo();
     void geometryUndoVideo();
+    void markerTextSnapStates_data();
+    void markerTextSnapStates();
 };
 
 void tst_ToolbarEvidence::toolbarStates_data()
@@ -589,6 +604,83 @@ void tst_ToolbarEvidence::geometryUndoVideo()
     drag(shape->center().toPoint() + QPoint(200, -40), true);
     QCOMPARE(shape->rectF(), startRect.translated(-150, 120));
     QVERIFY(count > 80);
+}
+
+void tst_ToolbarEvidence::markerTextSnapStates_data()
+{
+    toolbarStates_data();
+}
+
+// #304: the Marker strip's Snap to text toggle off and on, each also hovered
+// with its tooltip. Uses SNAPTRAY_TOOLBAR_DESIGN_DIR and
+// SNAPTRAY_TOOLBAR_TRANSLATION like toolbarStates.
+void tst_ToolbarEvidence::markerTextSnapStates()
+{
+    const QString out = qEnvironmentVariable("SNAPTRAY_TOOLBAR_DESIGN_DIR");
+    if (out.isEmpty()) QSKIP("Set SNAPTRAY_TOOLBAR_DESIGN_DIR to capture toolbar screenshots");
+    QFETCH(bool, dark);
+    QString suffix = dark ? QStringLiteral("dark") : QStringLiteral("light");
+    QTranslator translator;
+    const QString qm = qEnvironmentVariable("SNAPTRAY_TOOLBAR_TRANSLATION");
+    if (!qm.isEmpty()) {
+        QVERIFY2(translator.load(qm), qPrintable(qm));
+        QCoreApplication::installTranslator(&translator);
+        suffix += QLatin1Char('-') + QFileInfo(qm).completeBaseName().section(QLatin1Char('_'), 1);
+    }
+    auto removeTranslator = qScopeGuard([&translator] { QCoreApplication::removeTranslator(&translator); });
+    const auto originalStyle = ToolbarStyleConfig::loadStyle();
+    auto restoreTheme = qScopeGuard([originalStyle] {
+        ToolbarStyleConfig::saveStyle(originalStyle);
+        DesignSystem::instance().refreshTheme();
+    });
+    setTheme(dark);
+    QDir().mkpath(out);
+    QTemporaryDir tmp;
+
+    Scene scene(tmp.path(), kNormalSize);
+    scene.m_options.setMarkerTextSnapAvailable(true);
+    scene.m_options.showForTool(static_cast<int>(ToolId::Marker));
+    scene.m_toolbar.setActiveTool(static_cast<int>(ToolId::Marker));
+    QVERIFY(scene.open());
+    QQuickItem* root = scene.m_view.rootObject();
+    QQuickItem* strip = scene.find(QStringLiteral("evidenceStrip"));
+    QQuickItem* toggle = scene.find(QStringLiteral("markerTextSnapToggle"));
+    QQuickItem* tooltip = scene.find(QStringLiteral("evidenceTooltip"));
+    QVERIFY(strip && toggle && tooltip);
+    QVERIFY(toggle->isVisible());
+    const QRectF toggleRect = toggle->mapRectToScene(QRectF(QPointF(), toggle->size()));
+    const QRectF stripRect = strip->mapRectToScene(QRectF(QPointF(), strip->size()));
+
+    const auto save = [&](const QString& name) {
+        const QImage image = scene.grab();
+        const QString file = QDir(out).filePath(QStringLiteral("%1-%2.png").arg(name, suffix));
+        QVERIFY2(image.save(file), qPrintable(file));
+    };
+    const auto hover = [&](bool over) {
+        QTest::mouseMove(&scene.m_view, over ? toggleRect.center().toPoint() : QPoint(4, 4));
+        root->setProperty("tooltipText", over ? toggle->property("tooltipText").toString() : QString());
+        if (!over) return;
+        QTRY_VERIFY(tooltip->width() > 0);
+        // Centered under the toggle, below the strip, kept 5 px inside the screen,
+        // as ToolbarTooltipController places it.
+        const int tipWidth = qCeil(tooltip->width());
+        root->setProperty("tooltipX", qBound(5, qRound(toggleRect.center().x()) - tipWidth / 2,
+                                             qMax(5, kNormalSize.width() - tipWidth - 5)));
+        root->setProperty("tooltipY", qRound(stripRect.bottom()) + 6);
+    };
+
+    scene.m_options.setMarkerTextSnapEnabled(false);
+    const qreal stripWidthOff = strip->width();
+    save(QStringLiteral("marker-01-off"));
+    hover(true);
+    save(QStringLiteral("marker-02-off-hover"));
+    hover(false);
+    scene.m_options.setMarkerTextSnapEnabled(true);
+    QCOMPARE(strip->width(), stripWidthOff);
+    save(QStringLiteral("marker-03-on"));
+    hover(true);
+    save(QStringLiteral("marker-04-on-hover"));
+    hover(false);
 }
 
 QTEST_MAIN(tst_ToolbarEvidence)

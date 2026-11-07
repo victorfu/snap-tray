@@ -3,6 +3,7 @@
 #include "qml/ToolbarTooltipController.h"
 
 #include <QObject>
+#include <QPointer>
 #include <QRect>
 #include <QString>
 
@@ -11,7 +12,7 @@ class QQuickItem;
 class PinToolOptionsViewModel;
 class QWidget;
 class QWindow;
-class TestQmlFloatingSubToolbarAutoBlurHint;
+class TestQmlFloatingSubToolbarTooltip;
 
 namespace SnapTray {
 
@@ -70,19 +71,13 @@ signals:
     void emojiPickerRequested();
 
 private slots:
-    void onActiveToolChanged();
-    void onAutoBlurButtonHovered(double globalX,
-                                 double globalY,
-                                 double width,
-                                 double height);
-    void onAutoBlurButtonHoverExited();
-    // A strip control (the eyedropper, #305) asks for a tooltip anchored on
-    // the QML item named itemName, or withdraws it.
-    void onControlTooltipRequested(const QString& itemName, const QString& text);
-    void onControlTooltipDismissed();
+    // ToolOptionsStrip.qml asks for a tooltip on hover; controlName is the
+    // hovered control's objectName.
+    void onControlTooltipRequested(const QString& controlName, const QString& text);
+    void onControlTooltipDismissed(const QString& controlName);
 
 private:
-    friend class ::TestQmlFloatingSubToolbarAutoBlurHint;
+    friend class ::TestQmlFloatingSubToolbarTooltip;
 
     void ensureView();
     void applyPlatformWindowFlags();
@@ -92,17 +87,11 @@ private:
     void scheduleParentCursorRestore();
     void attemptParentCursorRestore(quint64 token, int remainingAttempts);
     bool eventFilter(QObject* obj, QEvent* event) override;
-    void showAutoBlurHint(const QRect& anchorGlobalRect);
-    void hideAutoBlurHint();
-    void setAutoBlurHintEmphasis(bool active);
-    QRect autoBlurButtonGlobalRect() const;
+    QQuickItem* visibleControl(const QString& controlName) const;
+    QRect controlGlobalRect(const QString& controlName) const;
     void showControlTooltip();
     void hideControlTooltip();
-    // Re-anchors a shown control tooltip, or hides it once its item is gone.
-    void refreshControlTooltip();
-    void hideTooltips();
-    QRect itemGlobalRect(const QString& objectName) const;
-    QRect stripTooltipAnchor(const QRect& itemGlobalRect) const;
+    void setAutoBlurHintEmphasis(bool active);
 
     PinToolOptionsViewModel* m_viewModel = nullptr;
     QQuickView* m_view = nullptr;
@@ -113,11 +102,10 @@ private:
     QString m_cursorOwnerId;
     ToolbarTooltipController m_tooltip;
     TooltipPlacement m_tooltipPlacement = TooltipPlacement::Below;
-    bool m_autoBlurHintVisible = false;
-    // Non-empty while a control tooltip is shown; the tooltip shares m_tooltip
-    // with the Auto Blur hint, and only one of them is shown at a time.
-    QString m_controlTooltipItemName;
-    QString m_controlTooltipText;
+    // The control whose tooltip is showing; null when none is.
+    QPointer<QQuickItem> m_tooltipControl;
+    QString m_tooltipText;
+    QMetaObject::Connection m_tooltipControlVisibility;
 };
 
 } // namespace SnapTray

@@ -7887,4 +7887,17 @@ It may be in use by another application.</source>
         <translation>Дебљина</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Поравнај са текстом</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Поравнај са текстом: потези маркера се поравнавају са препознатим редовима текста</translation>
+    </message>
+</context>
 </TS>

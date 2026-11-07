@@ -7879,4 +7879,17 @@ It may be in use by another application.</source>
         <translation>두께</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>텍스트에 맞추기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>텍스트에 맞추기: 마커 획이 감지된 텍스트 줄에 맞춰집니다</translation>
+    </message>
+</context>
 </TS>

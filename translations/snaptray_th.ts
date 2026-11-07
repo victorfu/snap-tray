@@ -7564,4 +7564,17 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>ความหนา</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>จัดแนวกับข้อความ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>จัดแนวกับข้อความ: เส้นปากกาเน้นข้อความจะจัดแนวตามบรรทัดข้อความที่ตรวจพบ</translation>
+    </message>
+</context>
 </TS>

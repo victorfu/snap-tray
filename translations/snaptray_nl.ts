@@ -7883,4 +7883,17 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
         <translation>Dikte</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Uitlijnen op tekst</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Uitlijnen op tekst: markeerstiftstreken worden uitgelijnd op gedetecteerde tekstregels</translation>
+    </message>
+</context>
 </TS>

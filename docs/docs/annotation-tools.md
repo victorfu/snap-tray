@@ -39,7 +39,7 @@ The Shift state at the start determines the mode for the entire stroke. Pressing
 
 ## Snap marker strokes to text
 
-In a single Region Capture selection on macOS or Windows with OCR available, select Marker and enable **Snap to text** in its options bar. This preference starts off. Recognition runs on the original screenshot in the background. Hover over a detected horizontal line to preview its height; drag in either direction to highlight part of it. The stroke keeps your horizontal endpoints and aligns its center and width to one line. Round caps can extend visually beyond the endpoints.
+In a single Region Capture selection on macOS or Windows with OCR available, select Marker and turn on **Snap to text** in its options bar: the icon button showing a line of text above a framed one. Hover it to see what it does; it is filled with the accent color while on. This preference starts off. Recognition runs on the original screenshot in the background. Hover over a detected horizontal line to preview its height; drag in either direction to highlight part of it. The stroke keeps your horizontal endpoints and aligns its center and width to one line. Round caps can extend visually beyond the endpoints.
 
 The line locks during the drag, so moving toward another row does not switch lines. Ambiguous rows or columns, unavailable OCR, and strokes started before recognition finishes use the normal marker behavior, including Shift. A late OCR result only affects later strokes. Each stroke remains one Undo/Redo step, and history restores its saved geometry without OCR.
 

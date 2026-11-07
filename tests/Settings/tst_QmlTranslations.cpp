@@ -347,6 +347,8 @@ void tst_QmlTranslations::testStyleStripNamesTranslatedForAllLocales()
         {"ArrowStyleSection", "Arrow style"},
         {"LineStyleSection", "Line style"},
         {"ShapeSection", "Filled"},
+        {"ToolOptionsStrip", "Snap to text"},
+        {"ToolOptionsStrip", "Snap to text: marker strokes align to detected text lines"},
         {"TextFormattingSection", "Bold"},
         {"TextFormattingSection", "Font size"},
         {"AnnotationStyleLabels", "Both Ends Outline"},

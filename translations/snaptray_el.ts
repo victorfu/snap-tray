@@ -7883,4 +7883,17 @@ It may be in use by another application.</source>
         <translation>Πάχος</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Προσκόλληση σε κείμενο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Προσκόλληση σε κείμενο: οι πινελιές του μαρκαδόρου ευθυγραμμίζονται με τις γραμμές κειμένου που εντοπίστηκαν</translation>
+    </message>
+</context>
 </TS>
