@@ -22,7 +22,7 @@ class tst_ColorPaletteSectionQml : public QObject
 private slots:
     void initTestCase();
     void swatchesRunUnbrokenAndTheEyedropperEndsTheRow();
-    void eyedropperStaysCloserToTheSwatchesThanToTheNextControl();
+    void snapToTextSitsRightAfterTheEyedropper();
     void eyedropperIsNotDimmedAtRest();
     void hoveringTheEyedropperRequestsItsNameAndShortcut();
     void leavingOrPressingTheEyedropperDismissesItsTooltip();
@@ -113,10 +113,12 @@ void tst_ColorPaletteSectionQml::swatchesRunUnbrokenAndTheEyedropperEndsTheRow()
     QVERIFY(pickRect.left() > rectIn(custom, root).right());
 }
 
-void tst_ColorPaletteSectionQml::eyedropperStaysCloserToTheSwatchesThanToTheNextControl()
+void tst_ColorPaletteSectionQml::snapToTextSitsRightAfterTheEyedropper()
 {
-    // Marker shows the colors followed by the "Snap to text" toggle: the
-    // eyedropper must read as part of the color row, not of that next control.
+    // Marker shows the colors followed by the "Snap to text" toggle. The two
+    // icon buttons sit together, 2px apart like Shape's buttons, rather than a
+    // full section gap apart (#304 review), so the icons themselves are as far
+    // apart as the last swatch is from the eyedropper icon.
     PinToolOptionsViewModel viewModel;
     viewModel.showForTool(static_cast<int>(ToolId::Marker));
     viewModel.setMarkerTextSnapAvailable(true);
@@ -132,14 +134,21 @@ void tst_ColorPaletteSectionQml::eyedropperStaysCloserToTheSwatchesThanToTheNext
     QTRY_VERIFY(next->isVisible());
 
     const QRectF pickRect = rectIn(pick, root);
+    const QRectF nextRect = rectIn(next, root);
     const qreal gapToSwatches = pickRect.left() - rectIn(lastSwatch, root).right();
-    const qreal gapToNext = rectIn(next, root).left() - pickRect.right();
+    const qreal gapToNext = nextRect.left() - pickRect.right();
     QVERIFY2(gapToSwatches > 0,
              qPrintable(QStringLiteral("eyedropper is not after the swatches (gap %1)")
                             .arg(gapToSwatches)));
-    QVERIFY2(gapToNext >= 2 * gapToSwatches,
-             qPrintable(QStringLiteral("swatch gap %1, next-control gap %2")
-                            .arg(gapToSwatches).arg(gapToNext)));
+    QCOMPARE(gapToNext, root->property("markerTextSnapGap").toReal());
+    QCOMPARE(gapToNext, 2.0);
+    // Both 14px icons are centered in their buttons (20px and 22px).
+    constexpr qreal kIconSize = 14.0;
+    const qreal iconGap = (gapToNext + (pickRect.width() - kIconSize) / 2.0
+                           + (nextRect.width() - kIconSize) / 2.0);
+    const qreal swatchToIcon = gapToSwatches + (pickRect.width() - kIconSize) / 2.0;
+    QCOMPARE(iconGap, swatchToIcon);
+    QCOMPARE(pickRect.center().y(), nextRect.center().y());
 }
 
 void tst_ColorPaletteSectionQml::eyedropperIsNotDimmedAtRest()

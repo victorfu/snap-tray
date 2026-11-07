@@ -328,6 +328,7 @@ Applies to the Region Capture toolbar, the Pin Window annotation toolbar, and th
 - With a text, arrow, line, or shape annotation selected, the style strip edits **that annotation**, says `Selected: <type>`, and each change is one undo step (dragging the width slider or clicking through colours coalesces until 500 ms idle). With nothing selected it says `New object` and sets the defaults for the next annotation. Editing a selection never changes the saved defaults. A selected shape keeps its type; emoji, pencil, marker, mosaic, and step badges are not restyled.
 - Selection follows the annotation, not its position in the list: erasing other annotations keeps it.
 - Marker's **Snap to text** (#304) is a 22×22 icon toggle styled like Shape's Filled toggle, so its width does not depend on the locale.
+  - It sits 2 px after the eyedropper, the spacing of adjacent icon buttons such as Shape's, so the two icon buttons read as one group. The icons are then as far apart as the last swatch is from the eyedropper icon. This replaces #305's 12 px gap before the next section.
   - Off: transparent with the toolbar icon color. Hover: the strip's hover background. On: a solid accent block with the active icon color, also while hovered.
   - Its explanation is in the sub-toolbar tooltip (`ToolOptionsStrip.controlTooltipRequested` → `QmlFloatingSubToolbar` → `ToolbarTooltipController`, shared with Auto Blur and the eyedropper; dismissals name their control, so a late one never closes another control's tooltip) and in `Accessible.description`.
   - Screen readers get a checkbox that toggles on both the toggle and press actions.
@@ -377,7 +378,7 @@ States at 2×, light and dark (rows): off, off hovered with the tooltip, on, and
 
 ![Snap to text states, light and dark](/assets/images/developer/toolbar/marker-snap-text-states.png)
 
-The icon at 14 px on 1×, 1.25×, 1.5× and 2× (rows), off / hovered / on, light and dark (columns). Its strokes sit on 14 px pixel centers, so it is pixel-sharp at 1× and stays crisp at 1.5× and 2×. At 1.25× it is anti-aliased, but each stroke stays separate: three strokes 3 px apart at 14 px cannot also line up with the 18 px raster.
+The icon at 14 px next to the eyedropper, on 1×, 1.25×, 1.5× and 2× (rows), off / hovered / on, light and dark (columns). Its strokes sit on 14 px pixel centers, so it is pixel-sharp at 1× and stays crisp at 1.5× and 2×. At 1.25× it is anti-aliased, but each stroke stays separate: three strokes 3 px apart at 14 px cannot also line up with the 18 px raster.
 
 ![Snap to text icon at four device pixel ratios](/assets/images/developer/toolbar/marker-snap-text-dpr.png)
 
