@@ -63,6 +63,7 @@ private slots:
     void exportPanelKeepsTheEditorOutOfReach();
     void outputTimeFollowsCutsAndSpeed();
     void canvasClickSelectsObjects();
+    void timelineSelectionRevealsFadedOverlay();
     void backgroundImageShowsThumbnail();
     void splitMarkerKeepsKeyboard();
     void exportProgressSitsOnPanel();
@@ -1656,6 +1657,41 @@ void tst_RecordingEditor::outputTimeFollowsCutsAndSpeed()
     backend.setPartDeleted(1, false);
     QTRY_VERIFY(hidden->property("exported").toBool());
     backend.requestDiscard();
+}
+
+// Selecting a low-frame-rate overlay must show its content, not just the
+// selection rectangle at the fully transparent start of its fade-in.
+void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video, 5));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() >= 3600);
+    const int overlay = backend.addTextOverlay(0);
+    QVERIFY(overlay >= 0);
+    backend.setOverlayText(overlay, QStringLiteral("Visible title"));
+    QVERIFY(backend.setOverlayRange(overlay, 600, 3600));
+    backend.setSelectedOverlay(-1);
+    QVERIFY(seek(view, 0));
+    QQuickItem* segment = nullptr;
+    QTRY_VERIFY((segment = delegate(view, QStringLiteral("previewOverlaySegment%1").arg(overlay)))
+                && segment->isVisible() && segment->width() > 0);
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                     segment->mapToScene(QPointF(segment->width() / 2, segment->height() / 2)).toPoint());
+    QTRY_COMPARE(backend.selectedOverlay(), overlay);
+    QQuickItem* player = item(view, "previewVideoPlayer");
+    QVERIFY(player);
+    SnapTray::OverlaySegment expected;
+    expected.startMs = 600;
+    expected.endMs = 3600;
+    QTRY_COMPARE_WITH_TIMEOUT(expected.opacityAt(player->property("framePosition").toLongLong()), 1.0, 5000);
+    QVERIFY(!player->property("playing").toBool());
+    backend.discard();
 }
 
 // #218: clicking a text or mask on the picture selects it, like its block
