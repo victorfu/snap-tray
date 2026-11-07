@@ -9,13 +9,19 @@ off (`PlatformCapabilities::supportsScrollCapture`).
 
 ## Build
 
-The probe is built with the tests (`BUILD_TESTING`, on by default):
+The probe is a separate target, defined when `BUILD_TESTING` is on (the default). The build scripts
+only build the `SnapTray` target, so configure with them once and then build the probe:
 
 ```bash
 ./scripts/build.sh
+cmake --build build --target SnapTrayScrollProbe
 ```
 
-The binary is `build/SnapTrayScrollProbe` (`build\SnapTrayScrollProbe.exe` on Windows).
+On Windows, run `scripts\build.bat` first, then the same `cmake --build` line.
+
+The binary is `build/bin/SnapTrayScrollProbe` (`build\bin\SnapTrayScrollProbe.exe` on Windows), next to
+`SnapTray-Debug`. If `cmake --build` reports an unknown target, reconfigure with
+`cmake -S . -B build -DBUILD_TESTING=ON`.
 
 Permissions:
 
@@ -30,7 +36,7 @@ Permissions:
 ## Inspect
 
 ```bash
-build/SnapTrayScrollProbe inspect [--level N]
+build/bin/SnapTrayScrollProbe inspect [--level N]
 ```
 
 Draws a border around the scroll area under the cursor with its role, nesting level, and position, and
@@ -40,10 +46,10 @@ prints a line whenever it changes. `--level 1` selects the next scroll area outw
 
 ```bash
 # Phase 1: detection and position only
-build/SnapTrayScrollProbe measure --app-label "Safari article" --output results.jsonl
+build/bin/SnapTrayScrollProbe measure --app-label "Safari article" --output results.jsonl
 
 # Phase 2: also scroll 10 times by 120 px and measure each scroll
-build/SnapTrayScrollProbe measure --scroll wheel-pixels --amount 120 --repeats 10 \
+build/bin/SnapTrayScrollProbe measure --scroll wheel-pixels --amount 120 --repeats 10 \
     --app-label "Safari article" --output results.jsonl
 ```
 
