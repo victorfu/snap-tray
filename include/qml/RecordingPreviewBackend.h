@@ -819,7 +819,7 @@ private:
     void setCursorEffects(const SnapTray::CursorEffectSettings& settings);
     // Draws the current zoom and pointer effects on an output frame
     // (already cropped); a snapshot of the settings.
-    std::function<void(QImage&, qint64)> effectsFrameFilter() const;
+    std::function<void(QImage&, qint64, qint64)> effectsFrameFilter() const;
     SnapTray::ZoomTrack m_zoom;
     mutable std::shared_ptr<const SnapTray::ZoomTrack> m_preparedZoom;
     std::shared_ptr<const SnapTray::ZoomTrack> preparedZoom() const;

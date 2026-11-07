@@ -37,6 +37,7 @@ private slots:
     void chosenAreaIsTheInitialCrop();
     void resetIsUndoable();
     void exportNeedsRoomForASecondFile();
+    void exportRoomFollowsTheTrimmedLength_data();
     void exportRoomFollowsTheTrimmedLength();
 };
 
@@ -444,8 +445,16 @@ void tst_RecordingPreviewCrop::exportNeedsRoomForASecondFile()
     QVERIFY(backend.isProcessing());
 }
 
+void tst_RecordingPreviewCrop::exportRoomFollowsTheTrimmedLength_data()
+{
+    QTest::addColumn<bool>("timelineCut");
+    QTest::newRow("trim") << false;
+    QTest::newRow("timeline-cut") << true;
+}
+
 void tst_RecordingPreviewCrop::exportRoomFollowsTheTrimmedLength()
 {
+    QFETCH(bool, timelineCut);
     // PR #171 review: a few seconds trimmed from a long recording still
     // needed room for the whole recording, so a recording stopped for low
     // space could not even be cut down to a small clip.
@@ -473,7 +482,14 @@ void tst_RecordingPreviewCrop::exportRoomFollowsTheTrimmedLength()
     backend.clearCrop();
 
     // ...ten seconds of it do.
-    QVERIFY(backend.setTrimFromInput(20000, 30000));
+    if (timelineCut) {
+        backend.splitAt(90000);
+        backend.setPartDeleted(0, true);
+        QVERIFY(!backend.hasTrim());
+        QCOMPARE(backend.outputDuration(), qint64(10000));
+    } else {
+        QVERIFY(backend.setTrimFromInput(90000, 100000));
+    }
     backend.clearError();
     backend.save();
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));

@@ -342,6 +342,10 @@ class tst_VideoTranscoder : public QObject
 
 private slots:
     void init();
+    void heldFrameIntervalsStayInsideParts_data();
+    void heldFrameIntervalsStayInsideParts();
+    void invalidFrameFilterReportsItsError_data();
+    void invalidFrameFilterReportsItsError();
     void probeReportsFixture();
     void cancelStopsInsideAGapFill();
     void fixtureHasTimedPulses();
@@ -848,7 +852,7 @@ void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource()
     request.inputPath = input;
     request.outputPath = m_dir.filePath(QStringLiteral("cancelled-av.mp4"));
     request.startMs = 200;
-    if (edited) request.frameFilter = [](QImage&, qint64) {};
+    if (edited) request.frameFilter = [](QImage&, qint64, qint64) {};
     std::atomic<int> maxPercent{-1};
     const VideoTranscodeResult result = m_transcoder->transcode(request, [&](int percent) {
         maxPercent = qMax(maxPercent.load(), percent);
@@ -1025,7 +1029,7 @@ void tst_VideoTranscoder::cancelStopsInsideAGapFill()
     request.inputPath = input;
     request.outputPath = dir.filePath(QStringLiteral("out.mp4"));
     int filtered = 0;
-    request.frameFilter = [&filtered](QImage&, qint64) { ++filtered; };
+    request.frameFilter = [&filtered](QImage&, qint64, qint64) { ++filtered; };
     // Cancel once progress passes 20 %: only reachable inside the gap.
     const auto result = transcoder->transcode(request, [](int percent) { return percent < 20; });
     QVERIFY(!result.success);
@@ -1098,7 +1102,7 @@ void tst_VideoTranscoder::lowerFrameRateKeepsTheCadence()
     request.outputPath = m_dir.filePath(QStringLiteral("15fps.mp4"));
     request.frameRate = 15;
     int kept = 0;
-    request.frameFilter = [&kept](QImage&, qint64) { ++kept; };
+    request.frameFilter = [&kept](QImage&, qint64, qint64) { ++kept; };
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     // 15 fps over 2 s is 30 frames; the old threshold kept about 24.
@@ -1138,7 +1142,7 @@ void tst_VideoTranscoder::fasterPartKeepsTheFrameRate()
     request.outputPath = m_dir.filePath(QStringLiteral("faster.mp4"));
     request.segments = {{0, kSeconds * 1000, 1.5}};
     int kept = 0;
-    request.frameFilter = [&kept](QImage&, qint64) { ++kept; };
+    request.frameFilter = [&kept](QImage&, qint64, qint64) { ++kept; };
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     QVERIFY2(qAbs(kept - 40) <= 2, qPrintable(QString::number(kept)));
@@ -1486,3 +1490,60 @@ void tst_VideoTranscoder::separateTracksAreRemixed()
 
 QTEST_MAIN(tst_VideoTranscoder)
 #include "tst_VideoTranscoder.moc"
+
+void tst_VideoTranscoder::invalidFrameFilterReportsItsError_data()
+{
+    QTest::addColumn<QSize>("badSize");
+    QTest::newRow("wrong-size") << QSize(32, 32);
+    QTest::newRow("null-frame") << QSize();
+}
+
+void tst_VideoTranscoder::invalidFrameFilterReportsItsError()
+{
+#if !defined(Q_OS_MACOS) && !defined(Q_OS_WIN)
+    QSKIP("Native export error propagation");
+#endif
+    QFETCH(QSize, badSize);
+    VideoTranscodeRequest request;
+    request.inputPath = QFINDTESTDATA("fixtures/redaction-30fps.mp4");
+    QVERIFY(!request.inputPath.isEmpty());
+    request.outputPath = m_dir.filePath(QStringLiteral("invalid-filter.mp4"));
+    request.frameFilter = [badSize](QImage& frame, qint64, qint64) {
+        frame = QImage(badSize, QImage::Format_RGB32);
+    };
+    const auto result = m_transcoder->transcode(request, {});
+    QVERIFY(!result.success);
+    QCOMPARE(result.errorMessage, QStringLiteral("Frame filter returned an unexpected size."));
+    QVERIFY(!QFileInfo::exists(request.outputPath));
+}
+
+void tst_VideoTranscoder::heldFrameIntervalsStayInsideParts_data()
+{
+    QTest::addColumn<bool>("segmented");
+    QTest::newRow("plain") << false;
+    QTest::newRow("cut-with-short-fast-tail") << true;
+}
+
+void tst_VideoTranscoder::heldFrameIntervalsStayInsideParts()
+{
+    QFETCH(bool, segmented);
+    VideoTranscodeRequest request;
+    request.inputPath = QFINDTESTDATA("fixtures/redaction-30fps.mp4");
+    QVERIFY(!request.inputPath.isEmpty());
+    request.outputPath = m_dir.filePath(QStringLiteral("held-interval.mp4"));
+    request.frameRate = 5;
+    if (segmented) request.segments = {{0, 950, 1.0}, {1500, 2000, 4.0}};
+    const SnapTray::TimelineMap timeline(segmented ? request.segments
+        : std::vector<SnapTray::TimelineSegment>{{0, 2000, 1.0}});
+    int filtered = 0;
+    request.frameFilter = [&](QImage&, qint64 start, qint64 end) {
+        ++filtered;
+        const int part = timeline.segmentAt(start);
+        QVERIFY(part >= 0);
+        QVERIFY(end > start);
+        QVERIFY(end <= timeline.segments()[size_t(part)].endMs);
+    };
+    const auto result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    QVERIFY(filtered > 1);
+}

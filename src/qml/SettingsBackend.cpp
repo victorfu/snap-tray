@@ -923,6 +923,17 @@ void SettingsBackend::refreshRecordingMode()
         m_recordingShowPreview = showPreview;
         emit recordingShowPreviewChanged();
     }
+    const auto& settings = RecordingSettingsManager::instance();
+    const auto refresh = [](auto& cached, const auto& current, auto notify) {
+        if (cached != current) {
+            cached = current;
+            notify();
+        }
+    };
+    refresh(m_recordingAudioEnabled, settings.audioEnabled(), [this] { emit recordingAudioEnabledChanged(); });
+    refresh(m_recordingAudioSource, settings.audioSource(), [this] { emit recordingAudioSourceChanged(); });
+    refresh(m_recordingAudioDevice, settings.audioDevice(), [this] { emit recordingAudioDeviceChanged(); });
+    refresh(m_recordingShowSetup, settings.showSetupBeforeRecording(), [this] { emit recordingShowSetupChanged(); });
     emit recordingQuickSaveActionChanged();
     emit recordingPreselectAreaChanged();
     emit recordingKeyModeChanged();

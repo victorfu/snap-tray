@@ -2,6 +2,7 @@
 #include <QSignalSpy>
 
 #include "RecordingManager.h"
+#include "recording/CapturedFrame.h"
 #include "capture/IAudioCaptureEngine.h"
 #include "recording/AudioTracks.h"
 #include "AudioTrackWriterTestAccess.h"
@@ -39,6 +40,7 @@ private slots:
 
     // Constructor/Destructor tests
     void testConstructorInitializesState();
+    void testStoppedDurationExcludesPauseAndEncoding();
     void testMultipleInstances();
 
     // Bug #2 prevention: Null pointer checks
@@ -891,3 +893,21 @@ void TestRecordingManagerLifecycle::previewOffNeverQueriesDiskSpace()
 }
 
 #include "tst_Lifecycle.moc"
+
+void TestRecordingManagerLifecycle::testStoppedDurationExcludesPauseAndEncoding()
+{
+    RecordingManager manager;
+    manager.m_elapsedTimer.start();
+    manager.m_sessionClock.start(SnapTray::captureClockNowNs());
+    manager.m_state = RecordingManager::State::Recording;
+    QTest::qWait(20);
+    manager.pauseRecording();
+    const qint64 activeMs = manager.mediaTimeMs();
+    QTest::qWait(40);
+    manager.stopRecording();
+    QCOMPARE(manager.m_session.recordedMs, activeMs);
+    QTest::qWait(40);
+    manager.teardownEncodingWorker(false);
+    manager.stopFrameCapture(); // repeated cleanup must not extend the frozen length
+    QCOMPARE(manager.m_session.recordedMs, activeMs);
+}

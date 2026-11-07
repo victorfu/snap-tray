@@ -106,7 +106,7 @@ void tst_RecordingPreviewZoom::followPreviewAndExportAgree()
         painter.drawImage(QRectF(expected.rect()), source, view);
         painter.end();
         QImage exported = source;
-        filter(exported, ms);
+        filter(exported, ms, ms + 33);
         QCOMPARE(exported, expected);
     }
     backend.setZoomFollow(0, false);
@@ -155,7 +155,7 @@ void tst_RecordingPreviewZoom::followComposesWithEdits()
         painter.end();
         backend.m_overlays.paint(expected, ms);
         QImage exported = source.copy(backend.m_cropRect);
-        filter(exported, ms);
+        filter(exported, ms, ms + 33);
         QCOMPARE(exported, expected);
     }
 }

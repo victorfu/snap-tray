@@ -12,12 +12,14 @@
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
+#include "settings/AnnotationSettingsManager.h"
 
 #include <QFont>
 #include <QImage>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QScopeGuard>
 
 namespace {
 
@@ -116,6 +118,8 @@ class tst_AnnotationSerializer : public QObject
     Q_OBJECT
 
 private slots:
+    void testSnappedShapeHistoryRoundtrip_data();
+    void testSnappedShapeHistoryRoundtrip();
     void testFractionalEmojiHistory() {
         AnnotationLayer layer;
         auto emoji = std::make_unique<EmojiStickerAnnotation>(QPoint(40,50),QString::fromUtf8("🙂"));
@@ -136,6 +140,66 @@ private slots:
     void testArrowControlPointPrecision_data();
     void testArrowControlPointPrecision();
 };
+
+void tst_AnnotationSerializer::testSnappedShapeHistoryRoundtrip_data()
+{
+    QTest::addColumn<bool>("vertical");
+    QTest::addColumn<bool>("ellipse");
+    QTest::newRow("rectangle-horizontal") << false << false;
+    QTest::newRow("rectangle-vertical") << true << false;
+    QTest::newRow("ellipse-horizontal") << false << true;
+    QTest::newRow("ellipse-vertical") << true << true;
+}
+
+void tst_AnnotationSerializer::testSnappedShapeHistoryRoundtrip()
+{
+    QFETCH(bool, vertical);
+    QFETCH(bool, ellipse);
+    auto& settings = AnnotationSettingsManager::instance();
+    const bool previousAssist = settings.loadAlignmentAssist();
+    const auto restoreSettings = qScopeGuard([&] { settings.saveAlignmentAssist(previousAssist); });
+    settings.saveAlignmentAssist(true);
+
+    const auto orient = [vertical](const QRect& rect) {
+        return vertical ? QRect(rect.y(), rect.x(), rect.height(), rect.width()) : rect;
+    };
+    const ShapeType type = ellipse ? ShapeType::Ellipse : ShapeType::Rectangle;
+    AnnotationLayer original;
+    for (const QRect& rect : {QRect(100, 100, 20, 20), QRect(161, 100, 30, 20),
+                              QRect(130, 100, 10, 20)}) {
+        original.addItem(std::make_unique<ShapeAnnotation>(orient(rect), type, Qt::red, 2, true));
+    }
+    original.setSelectedIndex(2);
+    auto* shape = static_cast<ShapeAnnotation*>(original.selectedItem());
+    const QRectF initial = shape->rectF();
+    auto& snap = original.snapController();
+    snap.setEnabled(true);
+    snap.begin(&original, initial.center());
+    QVERIFY(snap.move(initial.center() + (vertical ? QPointF(0, 7) : QPointF(7, 0)), false));
+    snap.end();
+    QVERIFY(original.commitGesture(AnnotationLayer::ModifyGeometry));
+    const QRectF expected = vertical ? QRectF(100, 135.5, 20, 10) : QRectF(135.5, 100, 10, 20);
+    QCOMPARE(shape->rectF(), expected);
+    original.undo();
+    QCOMPARE(shape->rectF(), initial);
+    original.redo();
+    QCOMPARE(shape->rectF(), expected);
+
+    // History replay restores this serialized scene, including fractional placement.
+    const QByteArray serialized = SnapTray::serializeAnnotationLayer(original);
+    AnnotationLayer restored;
+    QString error;
+    QVERIFY2(SnapTray::deserializeAnnotationLayer(serialized, &restored, {}, &error), qPrintable(error));
+    QCOMPARE(restored.itemCount(), original.itemCount());
+    for (int i = 0; i < static_cast<int>(original.itemCount()); ++i) {
+        auto* restoredShape = dynamic_cast<ShapeAnnotation*>(restored.itemAt(i));
+        QVERIFY(restoredShape);
+        QCOMPARE(restoredShape->rectF(), static_cast<ShapeAnnotation*>(original.itemAt(i))->rectF());
+        QCOMPARE(restoredShape->shapeType(), type);
+    }
+    QCOMPARE(QJsonDocument::fromJson(SnapTray::serializeAnnotationLayer(restored)),
+             QJsonDocument::fromJson(serialized));
+}
 
 void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
 {

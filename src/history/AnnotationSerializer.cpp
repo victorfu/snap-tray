@@ -281,12 +281,14 @@ std::unique_ptr<AnnotationItem> deserializeAnnotationItem(const QJsonObject& obj
     }
 
     if (type == QStringLiteral("shape")) {
+        const QRectF rect = deserializeRectF(object.value(QStringLiteral("rect")));
         auto item = std::make_unique<ShapeAnnotation>(
-            deserializeRectF(object.value(QStringLiteral("rect"))).toAlignedRect(),
+            rect.toAlignedRect(),
             static_cast<ShapeType>(object.value(QStringLiteral("shapeType")).toInt()),
             deserializeColor(object.value(QStringLiteral("color"))),
             object.value(QStringLiteral("width")).toInt(),
             object.value(QStringLiteral("filled")).toBool());
+        item->setRectF(rect);
         item->setRotation(object.value(QStringLiteral("rotation")).toDouble());
         item->setScale(object.value(QStringLiteral("scaleX")).toDouble(1.0),
                        object.value(QStringLiteral("scaleY")).toDouble(1.0));

@@ -111,6 +111,19 @@ double TimelineMap::speedAt(qint64 sourceMs) const
     return index >= 0 ? m_segments[size_t(index)].speed : 1.0;
 }
 
+std::optional<TimelineMap::SourceInterval> TimelineMap::sourceIntervalForHoldMicroseconds(
+    qint64 sourceUs, qint64 outputHoldUs) const
+{
+    if (sourceUs < 0 || outputHoldUs <= 0) return std::nullopt;
+    const int index = segmentAt(sourceUs / 1000);
+    if (index < 0) return std::nullopt;
+    const auto& segment = m_segments[size_t(index)];
+    if (!std::isfinite(segment.speed)) return std::nullopt;
+    const qint64 remainingUs = segment.endMs * 1000 - sourceUs;
+    const long double coveredUs = std::ceil(static_cast<long double>(outputHoldUs) * segment.speed);
+    return SourceInterval{sourceUs, sourceUs + qint64(std::min(coveredUs, static_cast<long double>(remainingUs)))};
+}
+
 bool TimelineEdit::isEmpty() const
 {
     return splits.empty() && parts.size() == 1 && parts.front() == Part();

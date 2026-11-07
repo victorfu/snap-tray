@@ -1,4 +1,5 @@
 #include "InlineTextEditor.h"
+#include "TextFormattingState.h"
 #include "utils/TextLayoutUtils.h"
 #include "cursor/CursorManager.h"
 #include "ui/DesignSystem.h"
@@ -288,13 +289,7 @@ void InlineTextEditor::setFontSize(int size)
 
 void InlineTextEditor::setFontFamily(const QString& family)
 {
-    if (family.isEmpty()) {
-        // Reset to default system font
-        QFont defaultFont;
-        m_font.setFamily(defaultFont.family());
-    } else {
-        m_font.setFamily(family);
-    }
+    TextFormattingState::applyFontFamily(m_font, family);
     if (m_isEditing && m_textEdit) {
         m_textEdit->setFont(m_font);
         updateStyle();

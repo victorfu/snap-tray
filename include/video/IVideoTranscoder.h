@@ -52,9 +52,10 @@ struct VideoTranscodeRequest {
     QString audioTracksVideoPath;
     SnapTray::AudioMixSettings audioMix;
     // Draws on each output frame (already cropped, RGB32) before it is
-    // encoded; sourceMs is the frame's time in the input. Empty = none.
+    // encoded; [sourceMs, sourceEndMs) is its covered input-time interval.
+    // The end is exclusive and must include the entire output frame hold. Empty = none.
     // Only for transcoders whose supportsFrameFilter() is true.
-    std::function<void(QImage& frame, qint64 sourceMs)> frameFilter;
+    std::function<void(QImage& frame, qint64 sourceMs, qint64 sourceEndMs)> frameFilter;
     // The size of the frames frameFilter returns when it changes it (the
     // frame around an export, #184); empty = the crop size. Every transcoder
     // that supports frameFilter must accept it.

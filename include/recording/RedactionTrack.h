@@ -22,18 +22,18 @@ struct RedactionMask {
     qint64 endMs = -1;   // ...to here; -1 = to the end of the recording
     Style style = Style::Solid;
 
-    // Conservative timing: a frame is masked when any part of the time it
-    // stays on screen (up to kFrameHoldMs after its timestamp) overlaps the
-    // mask, so no frame shows the content at the moment the mask begins.
-    bool isActiveAt(qint64 frameMs) const;
+    // Conservative timing: mask the whole covered source-time interval.
+    // frameEndMs is exclusive and authoritative when supplied, so callers
+    // can bound coverage at cuts. Without it, use kFrameHoldMs for preview.
+    bool isActiveAt(qint64 frameMs, qint64 frameEndMs = -1) const;
     bool operator==(const RedactionMask& o) const;
     bool operator!=(const RedactionMask& o) const { return !(*this == o); }
 };
 
 class RedactionTrack {
 public:
-    // The longest a frame is assumed to stay on screen (a 5 fps GIF frame,
-    // or a held frame across a capture gap that the exports re-time).
+    // Minimum conservative source-time coverage (a 5 fps frame at 1x).
+    // Exports supply the actual interval when speed or cadence makes it longer.
     static constexpr qint64 kFrameHoldMs = 200;
     static constexpr int kMinMaskSide = 4;
     // Pixel block for Pixelate, and the reduction for Blur, in source pixels.
@@ -46,7 +46,7 @@ public:
     // Burns the masks active at frameMs into `frame`, which shows the source
     // area `frameSourceRect` (the crop) at frame.size(). Edges are rounded
     // outward: a mask never covers less than its rect.
-    void apply(QImage& frame, qint64 frameMs, const QRectF& frameSourceRect) const;
+    void apply(QImage& frame, qint64 frameMs, const QRectF& frameSourceRect, qint64 frameEndMs = -1) const;
 
     QJsonObject toJson() const;
     static RedactionTrack fromJson(const QJsonObject& json);
