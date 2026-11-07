@@ -281,7 +281,8 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
                     for (VNRecognizedTextObservation *observation in observations) {
                         VNRecognizedText *topCandidate = [[observation topCandidates:1] firstObject];
                         if (topCandidate) {
-                            const QString candidateText = QString::fromNSString(topCandidate.string).trimmed();
+                            const QString rawText = QString::fromNSString(topCandidate.string);
+                            const QString candidateText = rawText.trimmed();
                             if (candidateText.isEmpty()) {
                                 continue;
                             }
@@ -295,6 +296,35 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
                             block.text = candidateText;
                             block.boundingRect = convertVisionBoundingBox(observation.boundingBox);
                             block.confidence = topCandidate.confidence;
+                            int trimOffset = 0;
+                            while (trimOffset < rawText.size() && rawText[trimOffset].isSpace()) {
+                                ++trimOffset;
+                            }
+                            // Accurate Vision recognition has word-level geometry. Query
+                            // non-whitespace runs, expanding to composed-character boundaries
+                            // in the original NSString (NSRange and QString both use UTF-16).
+                            // Copy only values while the native candidate is still alive.
+                            for (int start = 0; start < candidateText.size();) {
+                                if (candidateText[start].isSpace()) {
+                                    ++start;
+                                    continue;
+                                }
+                                int end = start + 1;
+                                while (end < candidateText.size() && !candidateText[end].isSpace()) {
+                                    ++end;
+                                }
+                                const NSRange nativeRange = [topCandidate.string
+                                    rangeOfComposedCharacterSequencesForRange:
+                                        NSMakeRange(trimOffset + start, end - start)];
+                                NSError *rangeError = nil;
+                                VNRectangleObservation *geometry = [topCandidate
+                                    boundingBoxForRange:nativeRange error:&rangeError];
+                                if (geometry && !rangeError) {
+                                    block.textRanges.push_back({start, end - start,
+                                        convertVisionBoundingBox(geometry.boundingBox)});
+                                }
+                                start = end;
+                            }
                             blocks.push_back(block);
                         }
                     }

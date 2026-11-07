@@ -13,6 +13,9 @@ namespace {
 
 struct PreparedBlock {
     QString text;
+    QVector<OCRTextRange> textRanges;
+    int textOffset = 0;
+    QSize imageSize;
     QRectF normalizedRect;
     QRect pixelRect;
     qreal centerY = 0.0;
@@ -393,37 +396,39 @@ QRect subRectByTextSpan(const PreparedBlock& block, int spanStart, int spanLengt
         return QRect();
     }
 
-    const int tokenLength = block.text.size();
-    if (tokenLength <= 0) {
-        return QRect();
+    // The matcher uses trimmed text; producer ranges refer to the original text.
+    const int start = spanStart + block.textOffset;
+    const int end = start + spanLength;
+    QVector<bool> covered(spanLength, false);
+    QRect result;
+    for (const auto& range : block.textRanges) {
+        if (range.start < 0 || range.length <= 0
+            || range.start > block.textOffset + block.text.size()
+            || range.length > block.textOffset + block.text.size() - range.start) {
+            continue;
+        }
+        const int overlapStart = qMax(start, range.start);
+        const int overlapEnd = qMin(end, range.start + range.length);
+        if (overlapStart >= overlapEnd) {
+            continue;
+        }
+        const QRectF rect = range.boundingRect;
+        if (!qIsFinite(rect.x()) || !qIsFinite(rect.y())
+            || !qIsFinite(rect.width()) || !qIsFinite(rect.height())
+            || !rect.isValid() || !QRectF(0, 0, 1, 1).contains(rect)) {
+            continue;
+        }
+        result = result.united(normalizedToPixelRect(rect, block.imageSize));
+        for (int i = overlapStart; i < overlapEnd; ++i) {
+            covered[i - start] = true;
+        }
     }
-
-    const qreal leftRatio = qBound<qreal>(0.0,
-        static_cast<qreal>(spanStart) / static_cast<qreal>(tokenLength), 1.0);
-    const qreal rightRatio = qBound<qreal>(0.0,
-        static_cast<qreal>(spanStart + spanLength) / static_cast<qreal>(tokenLength), 1.0);
-    if (rightRatio <= leftRatio) {
-        return QRect();
+    // Never infer glyph positions from character counts. Incomplete native
+    // geometry (including a missing whitespace range) conservatively blurs the block.
+    if (result.isEmpty() || std::find(covered.cbegin(), covered.cend(), false) != covered.cend()) {
+        return block.pixelRect.united(result);
     }
-
-    const int blockLeft = block.pixelRect.left();
-    const int blockTop = block.pixelRect.top();
-    const int blockHeight = block.pixelRect.height();
-    const int blockRightEdge = block.pixelRect.right() + 1;
-    constexpr int kValueRectLeftPaddingPx = 8;
-    constexpr int kValueRectRightPaddingPx = 2;
-
-    const int left = qBound(blockLeft,
-        blockLeft + qFloor(leftRatio * block.pixelRect.width()),
-        blockRightEdge - 1);
-    const int rightEdge = qBound(left + 1,
-        blockLeft + qCeil(rightRatio * block.pixelRect.width()),
-        blockRightEdge);
-    const int paddedLeft = qMax(blockLeft, left - kValueRectLeftPaddingPx);
-    const int paddedRightEdge = qMin(blockRightEdge, rightEdge + kValueRectRightPaddingPx);
-    const int finalRightEdge = qMax(paddedLeft + 1, paddedRightEdge);
-
-    return QRect(paddedLeft, blockTop, qMax(1, finalRightEdge - paddedLeft), blockHeight);
+    return result;
 }
 
 QVector<RowBucket> clusterRows(QVector<PreparedBlock> blocks, qreal tolerance)
@@ -645,6 +650,12 @@ QVector<QRect> CredentialDetector::detect(const QVector<OCRTextBlock>& blocks, c
 
         PreparedBlock prepared;
         prepared.text = text;
+        prepared.textRanges = block.textRanges;
+        while (prepared.textOffset < block.text.size()
+               && block.text[prepared.textOffset].isSpace()) {
+            ++prepared.textOffset;
+        }
+        prepared.imageSize = imageSize;
         prepared.normalizedRect = normalizedRect;
         prepared.pixelRect = normalizedToPixelRect(normalizedRect, imageSize);
         if (prepared.pixelRect.isEmpty()) {
