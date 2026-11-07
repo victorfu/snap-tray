@@ -102,10 +102,8 @@ void HistoryBackend::pin(int index)
     const PinWindowPlacement placement = computeInitialPinWindowPlacement(
         pixmap,
         screen ? screen->availableGeometry() : QRect());
-    PinWindow* pinWindow = m_pinWindowManager->createPinWindow(pixmap, placement.position);
-    if (pinWindow && placement.zoomLevel < 1.0) {
-        pinWindow->setZoomLevel(placement.zoomLevel);
-    }
+    // Zoom before the first show so an oversized pin is created on the right screen's DPI.
+    m_pinWindowManager->createPinWindow(pixmap, placement.position, true, placement.zoomLevel);
 
     emit closeRequested();
 }

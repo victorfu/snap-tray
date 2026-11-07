@@ -1084,11 +1084,10 @@ void MainApplication::onImageLoaded(const QString& filePath, const QImage& image
         pixmap,
         screen->availableGeometry());
 
-    // Create pin window and apply zoom if needed
-    PinWindow *pinWindow = m_pinWindowManager->createPinWindow(pixmap, position.value_or(placement.position));
-    if (pinWindow && placement.zoomLevel < 1.0) {
-        pinWindow->setZoomLevel(placement.zoomLevel);
-    }
+    // Zoom before the first show: a pin shown at its full size can reach a
+    // neighbouring monitor, and Qt would then create it at that monitor's DPI.
+    m_pinWindowManager->createPinWindow(
+        pixmap, position.value_or(placement.position), true, placement.zoomLevel);
 }
 
 void MainApplication::onSettings()
