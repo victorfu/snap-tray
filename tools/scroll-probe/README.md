@@ -36,11 +36,35 @@ Permissions:
 ## Inspect
 
 ```bash
-build/bin/SnapTrayScrollProbe inspect [--level N]
+build/bin/SnapTrayScrollProbe inspect [--level N] [--ax-boost manual|enhanced|both]
 ```
 
-Draws a border around the scroll area under the cursor with its role, nesting level, and position, and
-prints a line whenever it changes. `--level 1` selects the next scroll area outward.
+Draws a border around the scroll area under the cursor with its role, nesting level, and position. The
+overlay label follows position changes; the terminal gets a line only when the area itself (process,
+role, level or bounds) changes, so inspecting the terminal that runs the probe does not loop. `--level 1`
+selects the next scroll area outward.
+
+### Chromium and Electron (macOS)
+
+Chrome and Electron apps build the accessibility tree of their web content only for assistive clients,
+so by default they may report just an outer `AXScrollArea` with no position. `--ax-boost` asks the
+target to build it, once per process, the way macshot's element snapping does:
+
+| Mode | Sets |
+|---|---|
+| `manual` | `AXManualAccessibility` (Electron's switch) |
+| `enhanced` | `AXEnhancedUserInterface` (what VoiceOver sets) |
+| `both` | both |
+| `all` (measure only) | each of the above in turn, restoring in between |
+
+The previous values are restored when the probe exits, including on Ctrl+C. If `AXEnhancedUserInterface`
+was already on (VoiceOver), it is left alone. Chromium can return an error and still build the tree, so
+the AXError codes are only logged; whether a mode works is decided by locating again. `--ax-wait`
+(default 1000 ms) is the pause after each request. `AXEnhancedUserInterface` can make some apps animate
+window changes oddly while it is on.
+
+Without the probe, `chrome://accessibility` ("Native accessibility API support") or launching Chrome with
+`--force-renderer-accessibility` gives the same comparison.
 
 ## Measure
 
@@ -71,8 +95,7 @@ Scroll methods:
 | `pattern-set-percent` | Windows | uses `--percent` instead |
 
 Other options: `--level`, `--attempts` (accessibility queries before giving up, default 3),
-`--enable-ax` (macOS: set `AXManualAccessibility` on the target and locate again, for Chromium and
-Electron), `--post-to-process` (macOS: `CGEventPostToPid` without moving the cursor), `--timeout`
+`--ax-boost` (see above; `--enable-ax` is `--ax-boost all`), `--ax-wait`, `--post-to-process` (macOS: `CGEventPostToPid` without moving the cursor), `--timeout`
 (settle timeout, default 1500 ms), `--strict-pairs`, `--search-radius`, `--interval`, `--note`.
 
 ## Record fields
@@ -86,7 +109,10 @@ Electron), `--post-to-process` (macOS: `CGEventPostToPid` without moving the cur
   `contentHeight`, `offset`, `atTop`, `atBottom`, and the `sources` they came from) and raw
   `diagnostics` (AX role path, scroll bar value, AXContents frame; UIA class name, framework ID,
   scroll percent and view size).
-- `enhancedAccessibility`: the same after `--enable-ax`.
+- `accessibilityBoost.attempts[]`: per `--ax-boost` mode, what was set (`AXManualAccessibility` /
+  `AXEnhancedUserInterface` with their AXError, or `already_on`, and `enhancedUserInterfaceWasOn`) and
+  the `locate` result after it. With `--scroll`, `scrollAccessibilityBoost` is the mode kept on while
+  scrolling (`both` for `all`).
 - `scroll.repeats[]`: for each scroll, `inject` (`ok`, `detail`, and `preparationMs`, the time spent
   finding a target point before dispatch; settle times count from dispatch), the position before and after, `apiShiftPx` (the shift the
   platform reports, in device pixels), `settle` (`strictSettleMs`, `relaxedSettleMs`,

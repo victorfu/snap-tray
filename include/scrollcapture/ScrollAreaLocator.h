@@ -77,6 +77,14 @@ struct LocateOptions {
     int retryDelayMs = 150;
 };
 
+// Ways to ask a Chromium/Electron application to build the accessibility
+// tree of its web content, which it otherwise does only for assistive clients.
+enum class AccessibilityBoost {
+    ManualAccessibility,     // AXManualAccessibility (Electron's switch)
+    EnhancedUserInterface,   // AXEnhancedUserInterface (what VoiceOver sets)
+    Both,
+};
+
 struct LocateResult {
     LocateStatus status = LocateStatus::Failed;
     QString detail;
@@ -98,14 +106,22 @@ public:
     virtual bool isAvailable() const = 0;
     // `globalPos` is in Qt global logical coordinates.
     virtual LocateResult locateAt(const QPoint& globalPos, const LocateOptions& options) = 0;
-    // macOS: asks a Chromium/Electron application to build its full
-    // accessibility tree (AXManualAccessibility). Other platforms: false.
-    virtual bool enableEnhancedAccessibility(qint64 processId, QString* detail);
+    // macOS: asks an application to build its full accessibility tree. The
+    // previous values are remembered per process and put back by
+    // restoreAccessibility() or the destructor; an EnhancedUserInterface that
+    // was already on (VoiceOver) is left alone. The result lists each
+    // attribute with its AXError for the log. Chromium can report an error
+    // and still build the tree, so judge success by locating again.
+    // Other platforms: {"supported": false}.
+    virtual QJsonObject requestFullAccessibilityTree(qint64 processId, AccessibilityBoost boost);
+    virtual void restoreAccessibility();
     // System settings that change scrolling behaviour, for the measurement log.
     virtual QJsonObject environment() const = 0;
 };
 
 const char* locateStatusName(LocateStatus status);
+const char* accessibilityBoostName(AccessibilityBoost boost);
+std::optional<AccessibilityBoost> accessibilityBoostFromName(const QString& name);
 QJsonObject toJson(const ScrollPosition& position);
 QJsonObject toJson(const ScrollAreaSnapshot& snapshot);
 
