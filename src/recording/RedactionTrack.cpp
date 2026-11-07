@@ -32,10 +32,10 @@ QImage reduced(const QImage& area, int factor, Qt::TransformationMode mode)
 
 } // namespace
 
-bool RedactionMask::isActiveAt(qint64 frameMs) const
+bool RedactionMask::isActiveAt(qint64 frameMs, qint64 frameEndMs) const
 {
     const bool beforeEnd = endMs < 0 || frameMs <= endMs;
-    return beforeEnd && frameMs + RedactionTrack::kFrameHoldMs > startMs;
+    return beforeEnd && qMax(frameEndMs, frameMs + RedactionTrack::kFrameHoldMs) > startMs;
 }
 
 bool RedactionMask::operator==(const RedactionMask& o) const
@@ -43,14 +43,14 @@ bool RedactionMask::operator==(const RedactionMask& o) const
     return rect == o.rect && startMs == o.startMs && endMs == o.endMs && style == o.style;
 }
 
-void RedactionTrack::apply(QImage& frame, qint64 frameMs, const QRectF& frameSourceRect) const
+void RedactionTrack::apply(QImage& frame, qint64 frameMs, const QRectF& frameSourceRect, qint64 frameEndMs) const
 {
     if (masks.empty() || frame.isNull() || frameSourceRect.isEmpty()) return;
     const double sx = frame.width() / frameSourceRect.width();
     const double sy = frame.height() / frameSourceRect.height();
     QPainter painter;
     for (const auto& mask : masks) {
-        if (!mask.isActiveAt(frameMs)) continue;
+        if (!mask.isActiveAt(frameMs, frameEndMs)) continue;
         // Into frame pixels, rounded outward so a fractional edge is covered.
         const QRectF mapped((mask.rect.x() - frameSourceRect.x()) * sx, (mask.rect.y() - frameSourceRect.y()) * sy,
                             mask.rect.width() * sx, mask.rect.height() * sy);

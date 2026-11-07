@@ -111,6 +111,8 @@ class tst_RecordingPreviewMasks : public QObject
     Q_OBJECT
 
 private slots:
+    void acceleratedFramesKeepMasks_data();
+    void acceleratedFramesKeepMasks();
     void masksAreBurnedIntoEveryOutput_data();
     void masksAreBurnedIntoEveryOutput();
     void exportThatCannotMaskIsRefused();
@@ -501,3 +503,54 @@ void tst_RecordingPreviewMasks::maskDoneAndSwitchingKeepTypedTimesRight()
 
 QTEST_MAIN(tst_RecordingPreviewMasks)
 #include "tst_RecordingPreviewMasks.moc"
+
+void tst_RecordingPreviewMasks::acceleratedFramesKeepMasks_data()
+{
+    QTest::addColumn<int>("format");
+    QTest::addColumn<int>("sourceFps");
+    QTest::newRow("mp4-4x-15fps") << int(RecordingPreviewBackend::MP4) << 30;
+    QTest::newRow("gif-4x-5fps") << int(RecordingPreviewBackend::GIF) << 5;
+    QTest::newRow("webp-4x-5fps") << int(RecordingPreviewBackend::WebP) << 5;
+}
+
+void tst_RecordingPreviewMasks::acceleratedFramesKeepMasks()
+{
+    QFETCH(int, format);
+    QFETCH(int, sourceFps);
+    QTemporaryDir dir;
+    const QString input = dir.filePath(QStringLiteral("recording.mp4"));
+    // Deterministic checked-in media keeps this export test independent of
+    // capture-encoder availability/backpressure on the host.
+    const QString fixture = sourceFps == 30
+        ? QFINDTESTDATA("../Video/fixtures/redaction-30fps.mp4")
+        : QFINDTESTDATA("../Video/fixtures/redaction-5fps.mp4");
+    QVERIFY(!fixture.isEmpty());
+    QVERIFY(QFile::copy(fixture, input));
+    RecordingPreviewBackend backend(input);
+    backend.setSelectedFormat(format);
+    const QSize fixtureSize(64, 64);
+    backend.updateVideoSize(fixtureSize);
+    backend.updateDuration(2000);
+    if (!backend.masksAvailable()) QSKIP("Mask export unavailable");
+    backend.setPartSpeed(0, 4.0);
+    backend.setMp4FrameRate(15);
+    QCOMPARE(backend.addMask(), 0);
+    backend.setMaskRectFromView(0, QRectF(QPointF(0, 0), QSizeF(fixtureSize)), QRectF(QPointF(0, 0), QSizeF(fixtureSize)));
+    QVERIFY(backend.setMaskRange(0, 220, 600));
+    QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(saved.count() || !backend.isProcessing(), 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(saved.count(), 1);
+    const QString output = saved.first().at(0).toString();
+    // Source 220..264ms is inside the mask but between output samples.
+    for (qint64 time : {55, 60, 66}) {
+        const QImage frame = outputFrame(format, output, time);
+        QVERIFY(!frame.isNull());
+        QCOMPARE(edges(frame), 0);
+    }
+    const QImage after = outputFrame(format, output, 400);
+    QVERIFY(!after.isNull());
+    QVERIFY(edges(after) > 50);
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}

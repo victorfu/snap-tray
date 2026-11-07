@@ -848,7 +848,7 @@ void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource()
     request.inputPath = input;
     request.outputPath = m_dir.filePath(QStringLiteral("cancelled-av.mp4"));
     request.startMs = 200;
-    if (edited) request.frameFilter = [](QImage&, qint64) {};
+    if (edited) request.frameFilter = [](QImage&, qint64, qint64) {};
     std::atomic<int> maxPercent{-1};
     const VideoTranscodeResult result = m_transcoder->transcode(request, [&](int percent) {
         maxPercent = qMax(maxPercent.load(), percent);
@@ -1025,7 +1025,7 @@ void tst_VideoTranscoder::cancelStopsInsideAGapFill()
     request.inputPath = input;
     request.outputPath = dir.filePath(QStringLiteral("out.mp4"));
     int filtered = 0;
-    request.frameFilter = [&filtered](QImage&, qint64) { ++filtered; };
+    request.frameFilter = [&filtered](QImage&, qint64, qint64) { ++filtered; };
     // Cancel once progress passes 20 %: only reachable inside the gap.
     const auto result = transcoder->transcode(request, [](int percent) { return percent < 20; });
     QVERIFY(!result.success);
@@ -1098,7 +1098,7 @@ void tst_VideoTranscoder::lowerFrameRateKeepsTheCadence()
     request.outputPath = m_dir.filePath(QStringLiteral("15fps.mp4"));
     request.frameRate = 15;
     int kept = 0;
-    request.frameFilter = [&kept](QImage&, qint64) { ++kept; };
+    request.frameFilter = [&kept](QImage&, qint64, qint64) { ++kept; };
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     // 15 fps over 2 s is 30 frames; the old threshold kept about 24.
@@ -1138,7 +1138,7 @@ void tst_VideoTranscoder::fasterPartKeepsTheFrameRate()
     request.outputPath = m_dir.filePath(QStringLiteral("faster.mp4"));
     request.segments = {{0, kSeconds * 1000, 1.5}};
     int kept = 0;
-    request.frameFilter = [&kept](QImage&, qint64) { ++kept; };
+    request.frameFilter = [&kept](QImage&, qint64, qint64) { ++kept; };
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     QVERIFY2(qAbs(kept - 40) <= 2, qPrintable(QString::number(kept)));

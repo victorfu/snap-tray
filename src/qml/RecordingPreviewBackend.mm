@@ -148,7 +148,7 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::exportSizeChanged);
 }
 
-std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
+std::function<void(QImage&, qint64, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
 {
     // A snapshot: shares the immutable timeline, copies settings and geometry.
     const QSize videoSize = effectsVideoSize();
@@ -188,7 +188,7 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         ? std::shared_ptr<const SnapTray::OverlayTrack>()
         : std::make_shared<const SnapTray::OverlayTrack>(m_overlays);
     return [timeline, cursor, zoom, redaction, appearance, blurredBackground, keys, overlays, bounds, videoSize](
-               QImage& frame, qint64 sourceMs) {
+               QImage& frame, qint64 sourceMs, qint64 sourceEndMs) {
         if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
             frame = frame.convertToFormat(QImage::Format_RGB32);
         }
@@ -198,7 +198,7 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
         // frame itself is the source area.
         if (redaction) {
             redaction->apply(frame, sourceMs,
-                             bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds);
+                             bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds, sourceEndMs);
         }
         // A blurred background comes from the masked picture, before zoom and
         // pointer: nothing a mask covers can show through it.
@@ -2316,7 +2316,7 @@ void RecordingPreviewBackend::save()
         // Only the kept part is exported: a short clip from a long recording
         // needs room for that clip, not the whole recording (#171 review).
         // A crop is not counted down; the estimate stays on the safe side.
-        const qint64 keptBytes = m_duration > 0 && hasTrim()
+        const qint64 keptBytes = m_duration > 0 && (hasTrim() || hasTimelineEdits())
             ? qint64(std::ceil(double(sourceBytes) * double(trimmedDuration()) / double(m_duration)))
             : sourceBytes;
         // MP4 edits are at most about the source's size; GIF and WebP can be
@@ -2988,7 +2988,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     const qint64 requestedEndMs = m_trimEnd;
     const QRect cropRect = m_cropRect;
     const auto cursorFilter = effectsActive() ? effectsFrameFilter()
-                                              : std::function<void(QImage&, qint64)>();
+                                              : std::function<void(QImage&, qint64, qint64)>();
     // The filter frames the picture (#184): frames come out at this size.
     const QSize framedSize = cursorFilter ? framedExportSize() : QSize();
     // Cuts and speed changes (#185): frames are taken at output times.
@@ -3231,7 +3231,11 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                     capturedFrame = capturedFrame.copy(cropRect);
                 }
                 if (cursorFilter) {
-                    cursorFilter(capturedFrame, timeMs);
+                    const qint64 outputEndMs = qMin(outputDurationMs, (frameIndex + 1) * 1000 / frameRateInt);
+                    // The last covered output microsecond avoids including the next frame at a cut.
+                    const qint64 sourceEndMs = timeline.isEmpty() ? startMs + outputEndMs
+                        : (timeline.outputToSourceMicroseconds(outputEndMs * 1000 - 1) + 1000) / 1000;
+                    cursorFilter(capturedFrame, timeMs, sourceEndMs);
                 }
                 const qint64 framesBefore = gifEncoder
                     ? gifEncoder->framesWritten()

@@ -494,13 +494,6 @@ void RecordingManager::teardownEncodingWorker(bool abortEncoding)
     {
         QMutexLocker lock(&m_durationMutex);
         m_acceptAsyncFrames = false;
-        // The recorded length, for the recovery manifest (a finished
-        // animation's duration comes from it, #172 review).
-        if (m_elapsedTimer.isValid()) {
-            const qint64 raw = m_elapsedTimer.elapsed();
-            const qint64 currentPause = m_state == State::Paused ? raw - m_pauseStartTime : 0;
-            m_session.recordedMs = qMax<qint64>(0, raw - m_pausedDuration - currentPause);
-        }
     }
     // Invalidate any queued callbacks from previous encoding workers.
     ++m_encodingGeneration;
@@ -2189,6 +2182,13 @@ void RecordingManager::stopFrameCapture()
 {
     {
         QMutexLocker lock(&m_durationMutex);
+        // Freeze media duration before stopRecording changes Paused to Encoding.
+        // Repeated cleanup must not add encoder finalization time.
+        if (m_elapsedTimer.isValid() && m_sessionClock.isStarted()) {
+            const qint64 raw = m_elapsedTimer.elapsed();
+            const qint64 currentPause = m_state == State::Paused ? raw - m_pauseStartTime : 0;
+            m_session.recordedMs = qMax<qint64>(0, raw - m_pausedDuration - currentPause);
+        }
         m_acceptAsyncFrames = false;
         if (m_health && m_sessionClock.isStarted()) {
             m_health->setClockCounters(clockCountersLocked());

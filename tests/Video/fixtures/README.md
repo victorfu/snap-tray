@@ -55,3 +55,14 @@ ffmpeg -f lavfi -i 'color=c=green:s=64x64:r=5' -frames:v 2 -an \
   -x265-params 'log-level=error:pools=1:frame-threads=1' \
   -pix_fmt yuv420p -tag:v hvc1 -map_metadata -1 hevc-main.mp4
 ```
+
+## Redaction interval fixtures
+
+`redaction-30fps.mp4` and `redaction-5fps.mp4` contain two seconds of synthetic
+white 64x64 video, without audio. They test masks at accelerated output frame
+boundaries without relying on a live capture encoder. Generate with:
+
+```sh
+ffmpeg -f lavfi -i 'color=c=white:s=64x64:r=30:d=2' -c:v libx264 -pix_fmt yuv420p -an redaction-30fps.mp4
+ffmpeg -f lavfi -i 'color=c=white:s=64x64:r=5:d=2' -c:v libx264 -pix_fmt yuv420p -an redaction-5fps.mp4
+```

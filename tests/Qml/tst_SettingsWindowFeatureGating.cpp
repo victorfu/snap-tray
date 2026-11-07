@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "qml/SettingsBackend.h"
+#include "qml/ScreenPickerViewModel.h"
 #include "settings/Settings.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
@@ -58,6 +59,7 @@ private slots:
     void longLabelWordWidensTheLabelColumn();
     void filesPageShowsRememberLastFolderOnAllPlatforms();
     void recordingModeFollowsTheSetup();
+    void recordingAudioFollowsTheSetup();
 
 private:
     QHash<QString, SettingSnapshot> m_settingSnapshots;
@@ -791,4 +793,35 @@ void tst_SettingsWindowFeatureGating::cliOperationCompletionRestoresControls()
     emit backend.cliOperationFinished(true, QString());
     QVERIFY(!row->property("busy").toBool());
     QVERIFY(error->property("text").toString().isEmpty());
+}
+
+void tst_SettingsWindowFeatureGating::recordingAudioFollowsTheSetup()
+{
+    auto& recording = RecordingSettingsManager::instance();
+    recording.setAudioEnabled(false);
+    recording.setAudioSource(1);
+    recording.setAudioDevice(QString());
+    recording.setShowSetupBeforeRecording(true);
+    SnapTray::SettingsBackend backend;
+    if (backend.recordingDirectMp4Only()) QSKIP("No audio setup on this platform");
+    SnapTray::ScreenPickerViewModel setup;
+    setup.setMicrophoneEnabled(true);
+    setup.setSelectedDevice(QStringLiteral("test-device"));
+    setup.setShowSetupBeforeRecording(false);
+    QSignalSpy enabled(&backend, &SnapTray::SettingsBackend::recordingAudioEnabledChanged);
+    QSignalSpy source(&backend, &SnapTray::SettingsBackend::recordingAudioSourceChanged);
+    QSignalSpy device(&backend, &SnapTray::SettingsBackend::recordingAudioDeviceChanged);
+    QSignalSpy showSetup(&backend, &SnapTray::SettingsBackend::recordingShowSetupChanged);
+    backend.refreshRecordingMode();
+    QVERIFY(backend.recordingAudioEnabled());
+    QCOMPARE(backend.recordingAudioSource(), 0);
+    QCOMPARE(backend.recordingAudioDevice(), QStringLiteral("test-device"));
+    QVERIFY(!backend.recordingShowSetup());
+    backend.refreshRecordingMode();
+    QCOMPARE(enabled.count(), 1);
+    QCOMPARE(source.count(), 1);
+    QCOMPARE(device.count(), 1);
+    QCOMPARE(showSetup.count(), 1);
+    backend.setRecordingAudioEnabled(false);
+    QVERIFY(!recording.audioEnabled());
 }

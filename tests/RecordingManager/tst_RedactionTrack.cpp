@@ -47,6 +47,7 @@ private slots:
     void weakeningStylesRemoveDetail_data();
     void weakeningStylesRemoveDetail();
     void timingIsConservative();
+    void coversTheWholeAcceleratedFrame();
     void throughCropAndScaleRoundsOutward();
     void outsideTheFrameIsIgnored();
     void roundTrip();
@@ -146,3 +147,17 @@ void TestRedactionTrack::roundTrip()
 
 QTEST_MAIN(TestRedactionTrack)
 #include "tst_RedactionTrack.moc"
+
+void TestRedactionTrack::coversTheWholeAcceleratedFrame()
+{
+    const auto track = trackWith({QRect(0, 0, 10, 10), 220, 600, RedactionMask::Style::Solid});
+    QImage frame(10, 10, QImage::Format_RGB32);
+    frame.fill(Qt::white);
+    track.apply(frame, 0, QRectF(0, 0, 10, 10), 267); // 4x at 15fps
+    QCOMPARE(frame.pixelColor(5, 5), QColor(Qt::black));
+    frame.fill(Qt::white);
+    track.apply(frame, 0, QRectF(0, 0, 10, 10), 220); // end is exclusive
+    QCOMPARE(frame.pixelColor(5, 5), QColor(Qt::white));
+    track.apply(frame, 601, QRectF(0, 0, 10, 10), 868);
+    QCOMPARE(frame.pixelColor(5, 5), QColor(Qt::white));
+}

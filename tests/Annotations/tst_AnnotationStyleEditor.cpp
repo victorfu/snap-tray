@@ -14,6 +14,7 @@ class tst_AnnotationStyleEditor : public QObject
     Q_OBJECT
 private slots:
     void editsSelectedArrowWithUndo();
+    void defaultFontIsUndoable();
     void idleEndsCoalescing();
     void deselectRestoresDefaults();
     void targetFollowsIdAfterIndexShift();
@@ -241,3 +242,25 @@ void tst_AnnotationStyleEditor::zOrderKeyMovesNonStylableSelection()
 
 QTEST_MAIN(tst_AnnotationStyleEditor)
 #include "tst_AnnotationStyleEditor.moc"
+
+void tst_AnnotationStyleEditor::defaultFontIsUndoable()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    QFont font(QStringLiteral("Courier"), 24);
+    font.setBold(true);
+    font.setItalic(true);
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 20), QStringLiteral("sample"), font, Qt::red));
+    layer.setSelectedIndex(0);
+    auto* text = static_cast<TextBoxAnnotation*>(layer.selectedItem());
+    QVERIFY(vm.routeToSelection(StyleProperty::FontFamily, QString()));
+    QCOMPARE(text->font().families(), QFont().families());
+    QCOMPARE(text->font().pointSize(), 24);
+    QVERIFY(text->font().bold());
+    QVERIFY(text->font().italic());
+    layer.undo();
+    QCOMPARE(text->font(), font);
+    layer.redo();
+    QCOMPARE(text->font().families(), QFont().families());
+}

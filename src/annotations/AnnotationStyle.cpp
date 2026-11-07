@@ -92,8 +92,7 @@ bool applyText(TextBoxAnnotation& text, StyleProperty property, const QVariant& 
     QFont font = text.font();
     switch (property) {
     case StyleProperty::FontFamily:
-        if (value.toString().isEmpty()) return false;
-        font.setFamily(value.toString());
+        font.setFamilies(value.toString().isEmpty() ? QFont().families() : QStringList{value.toString()});
         break;
     case StyleProperty::FontSize:
         if (value.toInt() < 1) return false;
