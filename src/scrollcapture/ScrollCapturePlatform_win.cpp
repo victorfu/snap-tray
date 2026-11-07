@@ -2,6 +2,7 @@
 // Automation (ScrollPattern) and SendInput.
 #include "scrollcapture/ScrollAreaLocator.h"
 #include "scrollcapture/ScrollInjector.h"
+#include "scrollcapture/ScrollTargetPoints.h"
 
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -208,10 +209,13 @@ ProcessInfo readProcessInfo(DWORD processId)
 class WinScrollArea final : public ScrollArea
 {
 public:
-    WinScrollArea(ComPtr<IUIAutomationElement> element, ComPtr<IUIAutomationScrollPattern> pattern,
+    WinScrollArea(ComPtr<IUIAutomation> automation, ComPtr<IUIAutomationTreeWalker> walker,
+                  ComPtr<IUIAutomationElement> element, ComPtr<IUIAutomationScrollPattern> pattern,
                   DWORD processId, int level, int availableLevels, ProcessInfo process,
                   QJsonObject hitDiagnostics)
-        : m_element(std::move(element))
+        : m_automation(std::move(automation))
+        , m_walker(std::move(walker))
+        , m_element(std::move(element))
         , m_pattern(std::move(pattern))
         , m_processId(processId)
         , m_level(level)
@@ -222,6 +226,31 @@ public:
     }
 
     IUIAutomationScrollPattern* pattern() const { return m_pattern.Get(); }
+
+    // Whether this area is the innermost vertically scrollable element at a
+    // physical point, i.e. the one wheel input there would scroll.
+    bool isInnermostScrollAreaAt(const POINT& point) const
+    {
+        ComPtr<IUIAutomationElement> current;
+        if (FAILED(m_automation->ElementFromPoint(point, &current))) {
+            return false;
+        }
+        for (int depth = 0; depth < kMaxAncestorWalk && current; ++depth) {
+            ComPtr<IUIAutomationScrollPattern> pattern;
+            BOOL vertical = FALSE;
+            if (SUCCEEDED(current->GetCurrentPatternAs(UIA_ScrollPatternId, IID_PPV_ARGS(&pattern))) && pattern &&
+                SUCCEEDED(pattern->get_CurrentVerticallyScrollable(&vertical)) && vertical) {
+                BOOL same = FALSE;
+                return SUCCEEDED(m_automation->CompareElements(current.Get(), m_element.Get(), &same)) && same;
+            }
+            ComPtr<IUIAutomationElement> parent;
+            if (FAILED(m_walker->GetParentElement(current.Get(), &parent))) {
+                return false;
+            }
+            current = parent;
+        }
+        return false;
+    }
 
     ScrollAreaSnapshot snapshot() const override
     {
@@ -299,6 +328,8 @@ private:
         }
     }
 
+    ComPtr<IUIAutomation> m_automation;
+    ComPtr<IUIAutomationTreeWalker> m_walker;
     ComPtr<IUIAutomationElement> m_element;
     ComPtr<IUIAutomationScrollPattern> m_pattern;
     DWORD m_processId = 0;
@@ -480,7 +511,7 @@ private:
         Candidate& chosen = candidates[static_cast<size_t>(level)];
         result.status = LocateStatus::Found;
         result.area = std::make_unique<WinScrollArea>(
-            chosen.element, chosen.pattern, processId, level, available, std::move(process),
+            m_automation, m_walker, chosen.element, chosen.pattern, processId, level, available, std::move(process),
             std::move(hitDiagnostics));
         return result;
     }
@@ -526,7 +557,21 @@ private:
         if (bounds.isEmpty()) {
             return {false, QStringLiteral("scroll area bounds are not readable")};
         }
-        const QPoint centre = logicalToPhysical(bounds.center());
+        // Wheel input goes to the innermost scroll area under the cursor, so
+        // use a point where that is the selected area itself.
+        std::optional<QPoint> chosen;
+        for (const QPoint& point : scrollTargetPoints(bounds)) {
+            const QPoint physical = logicalToPhysical(point);
+            if (area.isInnermostScrollAreaAt(POINT{physical.x(), physical.y()})) {
+                chosen = physical;
+                break;
+            }
+        }
+        if (!chosen) {
+            return {false, QStringLiteral("no point inside the selected scroll area reaches it: "
+                                          "nested scroll areas or other windows cover every probe point")};
+        }
+        const QPoint centre = *chosen;
         if (!SetCursorPos(centre.x(), centre.y())) {
             return {false, QStringLiteral("SetCursorPos failed")};
         }

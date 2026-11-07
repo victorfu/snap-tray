@@ -47,7 +47,10 @@ build/SnapTrayScrollProbe measure --scroll wheel-pixels --amount 120 --repeats 1
 
 After `--delay` seconds (default 3), the probe measures the scroll area under the cursor and appends one
 JSON line to `--output` (and stdout). Keep the mouse still during a measurement; wheel methods move the
-cursor to the centre of the area and put it back afterwards.
+cursor into the area and put it back afterwards. They use the centre, or the first of a few other points
+inside the area where the accessibility API reports the selected area as the innermost scroll area, so
+`--level 1` does not scroll a nested pane that covers the centre. When no point qualifies, the repeat
+records `inject.ok = false` with the reason.
 
 Scroll methods:
 

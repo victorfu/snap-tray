@@ -4,6 +4,7 @@
 #include "scrollcapture/ScrollInjector.h"
 
 #include "platform/MacAXElement.h"
+#include "scrollcapture/ScrollTargetPoints.h"
 
 #include <QJsonArray>
 #include <QThread>
@@ -176,6 +177,40 @@ std::optional<WindowHit> windowUnderPoint(const QPoint& point)
     return std::nullopt;
 }
 
+bool isScrollAreaCandidate(AXUIElementRef element, const QString& role)
+{
+    if (role == kScrollAreaRole) {
+        return true;
+    }
+    ScopedCF<AXUIElementRef> scrollBar(copyAXElementAttribute(element, kAXVerticalScrollBarAttribute));
+    return static_cast<bool>(scrollBar);
+}
+
+// Innermost scroll area of an application at a point, retained, or null.
+AXUIElementRef copyInnermostScrollAreaAt(pid_t processId, const QPoint& point)
+{
+    ScopedCF<AXUIElementRef> application(AXUIElementCreateApplication(processId));
+    AXUIElementSetMessagingTimeout(application.get(), kAXMessagingTimeoutSeconds);
+    AXUIElementRef hitElement = nullptr;
+    if (AXUIElementCopyElementAtPosition(application.get(), static_cast<float>(point.x()),
+                                         static_cast<float>(point.y()), &hitElement) != kAXErrorSuccess) {
+        return nullptr;
+    }
+    ScopedCF<AXUIElementRef> current(hitElement);
+    for (int depth = 0; depth < kMaxAncestorWalk && current; ++depth) {
+        AXUIElementSetMessagingTimeout(current.get(), kAXMessagingTimeoutSeconds);
+        const QString role = getAXElementRole(current.get());
+        if (kWalkStopRoles.contains(role)) {
+            break;
+        }
+        if (isScrollAreaCandidate(current.get(), role)) {
+            return current.release();
+        }
+        current.reset(copyAXElementAttribute(current.get(), kAXParentAttribute));
+    }
+    return nullptr;
+}
+
 class MacScrollArea final : public ScrollArea
 {
 public:
@@ -190,6 +225,9 @@ public:
         , m_hitDiagnostics(std::move(hitDiagnostics))
     {
     }
+
+    AXUIElementRef element() const { return m_element.get(); }
+    pid_t processId() const { return m_processId; }
 
     ScrollAreaSnapshot snapshot() const override
     {
@@ -426,8 +464,7 @@ private:
             if (kWalkStopRoles.contains(role)) {
                 break;
             }
-            ScopedCF<AXUIElementRef> scrollBar(copyAXElementAttribute(current.get(), kAXVerticalScrollBarAttribute));
-            if (role == kScrollAreaRole || scrollBar) {
+            if (isScrollAreaCandidate(current.get(), role)) {
                 CFRetain(current.get());
                 candidates.push_back(current.get());
             }
@@ -479,11 +516,33 @@ public:
             return {false, QStringLiteral("posting events requires Accessibility permission")};
         }
 
+        const auto* macArea = dynamic_cast<const MacScrollArea*>(&area);
+        if (!macArea) {
+            return {false, QStringLiteral("not a macOS scroll area")};
+        }
         const ScrollAreaSnapshot snapshot = area.snapshot();
         if (snapshot.bounds.isEmpty()) {
             return {false, QStringLiteral("scroll area bounds are not readable")};
         }
-        const QPoint centre = snapshot.bounds.center();
+        // Wheel input goes to the innermost scroll view under the point, so
+        // use a point where that is the selected area itself.
+        std::optional<QPoint> chosen;
+        for (const QPoint& point : scrollTargetPoints(snapshot.bounds)) {
+            const std::optional<WindowHit> window = windowUnderPoint(point);
+            if (!window || window->processId != macArea->processId()) {
+                continue;
+            }
+            ScopedCF<AXUIElementRef> innermost(copyInnermostScrollAreaAt(macArea->processId(), point));
+            if (innermost && CFEqual(innermost.get(), macArea->element())) {
+                chosen = point;
+                break;
+            }
+        }
+        if (!chosen) {
+            return {false, QStringLiteral("no point inside the selected scroll area reaches it: "
+                                          "nested scroll areas or other windows cover every probe point")};
+        }
+        const QPoint centre = *chosen;
         const CGPoint target = CGPointMake(centre.x(), centre.y());
 
         // Positive wheel deltas scroll toward the top, so negate.
