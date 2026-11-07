@@ -16,6 +16,7 @@
 #include "qml/PinToolbarViewModel.h"
 #include "qml/QmlFloatingToolbar.h"
 #include "qml/RegionToolbarViewModel.h"
+#include "qml/CanvasToolbarViewModel.h"
 #include "tools/ToolId.h"
 #include "tools/ToolbarTraits.h"
 
@@ -38,6 +39,7 @@ private slots:
     void keepToolStaysVisibleBesideActiveTool();
     void groupGapCountsInWidth();
     void finishGroupIsTinted();
+    void finishGroupFollowsVisibleButtons();
     void captureToolbarOverflows();
     void selectionPlacementStaysOnScreen_data();
     void selectionPlacementStaysOnScreen();
@@ -262,6 +264,93 @@ void TestToolbarOverflow::finishGroupIsTinted()
     QVERIFY(find(int(ToolId::Save))->isVisible());
     QVERIFY(find(int(ToolId::Arrow)));
     QVERIFY(!find(int(ToolId::Arrow))->isVisible());
+    const auto* saveTint = find(int(ToolId::Save));
+    const auto* copyTint = find(int(ToolId::Copy));
+    QVERIFY(copyTint);
+    if (copyTint->isVisible()) {
+        const QRectF saveRect(saveTint->mapToItem(toolbar.m_rootItem, QPointF()), saveTint->size());
+        const QRectF copyRect(copyTint->mapToItem(toolbar.m_rootItem, QPointF()), copyTint->size());
+        QVERIFY2(!saveRect.intersects(copyRect), "Finish backgrounds must not composite twice at button seams");
+    }
+}
+
+
+void TestToolbarOverflow::finishGroupFollowsVisibleButtons()
+{
+    RegionToolbarViewModel vm;
+    QmlFloatingToolbar toolbar(&vm);
+    toolbar.applyOverflowLayout(QRect(0, 0, 1900, 1000));
+    auto* root = toolbar.m_rootItem;
+    QVERIFY(root);
+    auto check = [&](int expectedBands) {
+        QCoreApplication::processEvents();
+        // These windows stay hidden; explicitly settle Row positioning after
+        // replacing delegates, before inspecting their scene coordinates.
+        QList<QQuickItem*> layoutPending{root};
+        while (!layoutPending.isEmpty()) {
+            auto* item = layoutPending.takeLast();
+            item->ensurePolished();
+            layoutPending.append(item->childItems());
+        }
+        QList<QRectF> bands;
+        QList<QQuickItem*> buttons;
+        QList<QQuickItem*> pending{root};
+        while (!pending.isEmpty()) {
+            auto* item = pending.takeLast();
+            pending.append(item->childItems());
+            if (!item->isVisible()) continue;
+            if (item->objectName().startsWith(QStringLiteral("toolbarFinishTint_")))
+                bands.append(QRectF(item->mapToItem(root, QPointF()), item->size()));
+            if (item->property("buttonId").isValid() && item->property("iconSource").isValid())
+                buttons.append(item);
+        }
+        QCOMPARE(bands.size(), expectedBands);
+        for (int i = 0; i < bands.size(); ++i) {
+            for (int j = i + 1; j < bands.size(); ++j)
+                QVERIFY(!bands[i].intersects(bands[j]));
+        }
+        const auto displayed = root->property("displayButtons").toList();
+        for (auto* button : buttons) {
+            const int id = button->property("buttonId").toInt();
+            if (id < 0) continue; // More has no finish-group membership.
+            bool finish = false;
+            for (const auto& value : displayed) {
+                const auto entry = value.toMap();
+                if (entry.value("id").toInt() == id)
+                    finish = entry.value("group").toInt() == int(ToolbarGroup::Finish);
+            }
+            const QRectF rect(button->mapToItem(root, QPointF()), button->size());
+            int coveringBands = 0;
+            for (const auto& band : bands) {
+                if (band.contains(rect)) ++coveringBands;
+                if (!finish) QVERIFY(!band.intersects(rect));
+            }
+            QCOMPARE(coveringBands, finish ? 1 : 0);
+        }
+    };
+    check(1);
+    toolbar.applyOverflowLayout(QRect(0, 0, 300, 400));
+    check(1);
+    vm.setMultiRegionMode(true);
+    toolbar.applyOverflowLayout(QRect(0, 0, 300, 400));
+    check(1); // Done / Cancel, after replacing the model.
+
+    CanvasToolbarViewModel canvas;
+    root->setProperty("displayButtons", canvas.buttons());
+    check(1);
+    PinToolbarViewModel pin;
+    root->setProperty("displayButtons", pin.buttons());
+    check(1);
+
+    // A separator within Finish must split the band rather than tint the gap.
+    auto split = vm.buttons();
+    auto last = split.last().toMap();
+    last["separatorBefore"] = true;
+    split.last() = last;
+    root->setProperty("displayButtons", split);
+    check(2);
+    root->setProperty("displayButtons", QVariantList{});
+    check(0);
 }
 
 
