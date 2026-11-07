@@ -146,6 +146,7 @@ private slots:
     void testReleaseOverFloatingUiCancelsSingleClickAnnotation_data();
     void testReleaseOverFloatingUiCancelsSingleClickAnnotation();
     void testAutoBlurRequestGuardRejectsStaleContext();
+    void testAutoBlurGaussianCoversDetectedRegion_data();
     void testAutoBlurGaussianCoversDetectedRegion();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
@@ -1330,29 +1331,38 @@ void TestRegionSelectorStyleSync::testReleaseOverFloatingUiCancelsSingleClickAnn
     QVERIFY(!selector.m_inputState.isDrawing);
 }
 
+void TestRegionSelectorStyleSync::testAutoBlurGaussianCoversDetectedRegion_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    for (qreal dpr : {1.0, 1.25, 1.5, 2.0}) {
+        QTest::addRow("dpr-%g", dpr) << dpr;
+    }
+}
+
 void TestRegionSelectorStyleSync::testAutoBlurGaussianCoversDetectedRegion()
 {
+    QFETCH(qreal, dpr);
     RegionSelector selector;
     AnnotationLayer layer;
     QPixmap capture(240, 200);
     capture.fill(Qt::red);
-    capture.setDevicePixelRatio(2.0);
+    capture.setDevicePixelRatio(dpr);
     RegionSelector::AutoBlurRequestSnapshot request;
-    request.selectionRect = QRect(10, 10, 80, 60);
-    request.clampedPhysicalRect = QRect(20, 20, 160, 120);
-    request.devicePixelRatio = 2.0;
+    request.selectionRect = QRect(16, 16, 80, 60);
+    request.clampedPhysicalRect = QRect(16 * dpr, 16 * dpr, 80 * dpr, 60 * dpr);
+    request.devicePixelRatio = dpr;
     request.sourcePixmap = std::make_shared<const QPixmap>(capture);
     request.annotationLayer = &layer;
     request.blockSize = 12;
     request.blurType = MosaicBlurType::Gaussian;
-    selector.addAutoBlurRegions(request, {QRect(20, 20, 80, 60)});
+    selector.addAutoBlurRegions(request, {QRect(16 * dpr, 16 * dpr, 32 * dpr, 24 * dpr)});
     QCOMPARE(layer.itemCount(), size_t(1));
     QImage output(240, 200, QImage::Format_ARGB32);
-    output.setDevicePixelRatio(2.0);
+    output.setDevicePixelRatio(dpr);
     output.fill(Qt::transparent);
     { QPainter painter(&output); layer.itemAt(0)->draw(painter); }
-    for (int y = 40; y < 100; ++y)
-        for (int x = 40; x < 120; ++x)
+    for (int y = 32 * dpr; y < 56 * dpr; ++y)
+        for (int x = 32 * dpr; x < 64 * dpr; ++x)
             QCOMPARE(output.pixelColor(x, y), QColor(Qt::red));
 }
 

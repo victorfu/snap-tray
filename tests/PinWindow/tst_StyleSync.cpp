@@ -183,6 +183,7 @@ private slots:
     void testAutomaticSavesPreserveEarlierImage_data();
     void testAutomaticSavesPreserveEarlierImage();
     void testAutoBlurMapsFlippedDisplayRectToAnnotationSpace();
+    void testAutoBlurMapsCombinedRotationAndFlips_data();
     void testAutoBlurMapsCombinedRotationAndFlips();
     void testAutoBlurAnnotationSourceRestoresCombinedOrientation();
     void testAutoBlurGenerationInvalidatesOnTransformChange();
@@ -539,20 +540,29 @@ void TestPinWindowStyleSync::testAutoBlurMapsFlippedDisplayRectToAnnotationSpace
     QCOMPARE(mapped, QRect(160, 20, 30, 40));
 }
 
+void TestPinWindowStyleSync::testAutoBlurMapsCombinedRotationAndFlips_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    for (qreal dpr : {1.0, 1.25, 1.5, 2.0}) {
+        QTest::addRow("dpr-%g", dpr) << dpr;
+    }
+}
+
 void TestPinWindowStyleSync::testAutoBlurMapsCombinedRotationAndFlips()
 {
+    QFETCH(qreal, dpr);
     const QSize displaySize(100, 200);
     const QSize annotationSize(200, 100);
-    const QRect detectionRect(10, 20, 30, 40);
+    const QRect detectionRect(12 * dpr, 20 * dpr, 32 * dpr, 40 * dpr);
 
     QCOMPARE(PinWindow::mapAutoBlurDetectionRect(
-                 detectionRect, 1.0, displaySize, annotationSize,
+                 detectionRect, dpr, displaySize, annotationSize,
                  90, true, false),
-             QRect(140, 60, 40, 30));
+             QRect(140, 56, 40, 32));
     QCOMPARE(PinWindow::mapAutoBlurDetectionRect(
-                 detectionRect, 1.0, displaySize, annotationSize,
+                 detectionRect, dpr, displaySize, annotationSize,
                  90, false, true),
-             QRect(20, 10, 40, 30));
+             QRect(20, 12, 40, 32));
 }
 
 void TestPinWindowStyleSync::testAutoBlurAnnotationSourceRestoresCombinedOrientation()

@@ -1153,6 +1153,13 @@ target_link_libraries(Detection_OCRImageUtils PRIVATE snaptray_algorithms Qt6::W
 add_test(NAME Detection_OCRImageUtils COMMAND Detection_OCRImageUtils)
 set_tests_properties(Detection_OCRImageUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(APPLE OR WIN32)
+    add_executable(Detection_OCRCredentialGeometry Detection/tst_OCRCredentialGeometry.cpp)
+    target_link_libraries(Detection_OCRCredentialGeometry PRIVATE snaptray_platform snaptray_algorithms Qt6::Test)
+    add_test(NAME Detection_OCRCredentialGeometry COMMAND Detection_OCRCredentialGeometry)
+    set_tests_properties(Detection_OCRCredentialGeometry PROPERTIES TIMEOUT 120 LABELS "integration")
+endif()
+
 add_executable(Detection_CredentialDetector Detection/tst_CredentialDetector.cpp)
 target_link_libraries(Detection_CredentialDetector PRIVATE snaptray_algorithms Qt6::Test)
 add_test(NAME Detection_CredentialDetector COMMAND Detection_CredentialDetector)
