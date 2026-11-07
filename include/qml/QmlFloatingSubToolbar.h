@@ -76,6 +76,10 @@ private slots:
                                  double width,
                                  double height);
     void onAutoBlurButtonHoverExited();
+    // A strip control (the eyedropper, #305) asks for a tooltip anchored on
+    // the QML item named itemName, or withdraws it.
+    void onControlTooltipRequested(const QString& itemName, const QString& text);
+    void onControlTooltipDismissed();
 
 private:
     friend class ::TestQmlFloatingSubToolbarAutoBlurHint;
@@ -92,6 +96,13 @@ private:
     void hideAutoBlurHint();
     void setAutoBlurHintEmphasis(bool active);
     QRect autoBlurButtonGlobalRect() const;
+    void showControlTooltip();
+    void hideControlTooltip();
+    // Re-anchors a shown control tooltip, or hides it once its item is gone.
+    void refreshControlTooltip();
+    void hideTooltips();
+    QRect itemGlobalRect(const QString& objectName) const;
+    QRect stripTooltipAnchor(const QRect& itemGlobalRect) const;
 
     PinToolOptionsViewModel* m_viewModel = nullptr;
     QQuickView* m_view = nullptr;
@@ -103,6 +114,10 @@ private:
     ToolbarTooltipController m_tooltip;
     TooltipPlacement m_tooltipPlacement = TooltipPlacement::Below;
     bool m_autoBlurHintVisible = false;
+    // Non-empty while a control tooltip is shown; the tooltip shares m_tooltip
+    // with the Auto Blur hint, and only one of them is shown at a time.
+    QString m_controlTooltipItemName;
+    QString m_controlTooltipText;
 };
 
 } // namespace SnapTray
