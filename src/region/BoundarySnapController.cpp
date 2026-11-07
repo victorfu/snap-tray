@@ -6,7 +6,6 @@
 namespace {
 constexpr int kEnterRadius = 6;
 constexpr int kExitRadius = 9;
-constexpr qint64 kQueryBudgetNs = 4000000;
 int edgePosition(const QRect& r, Qt::Edge edge)
 {
     if (edge == Qt::LeftEdge) return r.x();
@@ -31,7 +30,7 @@ void BoundarySnapController::reset()
 }
 
 std::optional<BoundarySnapController::Lock> BoundarySnapController::query(
-    const QRect& raw, Qt::Edge edge, std::optional<Lock> previous, const QElapsedTimer& timer) const
+    const QRect& raw, Qt::Edge edge, std::optional<Lock> previous, const QElapsedTimer& timer, qint64 budgetNanoseconds) const
 {
     using Axis = BoundarySnapIndex::Axis;
     const bool vertical = edge == Qt::LeftEdge || edge == Qt::RightEdge;
@@ -50,13 +49,13 @@ std::optional<BoundarySnapController::Lock> BoundarySnapController::query(
         if (!hit) return std::nullopt;
         return Lock{logical, *hit};
     };
-    if (timer.nsecsElapsed() > kQueryBudgetNs) return std::nullopt;
+    if (timer.nsecsElapsed() >= budgetNanoseconds) return std::nullopt;
     if (previous && std::abs(previous->logical - target) <= kExitRadius) {
         if (auto retained = evaluate(previous->logical)) return retained;
     }
     std::optional<Lock> best;
     for (int pos = qMax(0, target - kEnterRadius); pos <= target + kEnterRadius; ++pos) {
-        if (timer.nsecsElapsed() > kQueryBudgetNs) return std::nullopt;
+        if (timer.nsecsElapsed() >= budgetNanoseconds) return std::nullopt;
         auto candidate = evaluate(pos);
         if (!candidate) continue;
         const int distance = std::abs(pos - target);
@@ -70,8 +69,9 @@ std::optional<BoundarySnapController::Lock> BoundarySnapController::query(
     return best;
 }
 
-BoundarySnapController::Result BoundarySnapController::snap(const QRect& raw, Qt::Edges movingEdges)
+BoundarySnapController::Result BoundarySnapController::snap(const QRect& raw, Qt::Edges movingEdges, QueryOptions options)
 {
+    const qint64 budgetNanoseconds = options.budgetNanoseconds;
     Result result{raw, {}};
     if (!raw.isValid() || m_index.size().isEmpty()) { reset(); return result; }
     // Reject out-of-image coordinates before any floating-to-integer conversion.
@@ -89,11 +89,11 @@ BoundarySnapController::Result BoundarySnapController::snap(const QRect& raw, Qt
     const Qt::Edge xEdge = movingEdges.testFlag(Qt::LeftEdge) ? Qt::LeftEdge : Qt::RightEdge;
     const Qt::Edge yEdge = movingEdges.testFlag(Qt::TopEdge) ? Qt::TopEdge : Qt::BottomEdge;
     m_vertical = (movingEdges & (Qt::LeftEdge | Qt::RightEdge))
-        ? query(raw, xEdge, m_vertical, timer) : std::nullopt;
+        ? query(raw, xEdge, m_vertical, timer, budgetNanoseconds) : std::nullopt;
     m_horizontal = (movingEdges & (Qt::TopEdge | Qt::BottomEdge))
-        ? query(raw, yEdge, m_horizontal, timer) : std::nullopt;
+        ? query(raw, yEdge, m_horizontal, timer, budgetNanoseconds) : std::nullopt;
     // Both axes query the same raw span. Discard the entire update on timeout.
-    if (timer.nsecsElapsed() > kQueryBudgetNs) { reset(); return result; }
+    if (timer.nsecsElapsed() >= budgetNanoseconds) { reset(); return result; }
     if (m_vertical) {
         if (xEdge == Qt::LeftEdge) result.rect.setLeft(m_vertical->logical);
         else result.rect.setRight(m_vertical->logical - 1);

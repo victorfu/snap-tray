@@ -92,6 +92,85 @@ private slots:
         controller.setSource({},1);
         QVERIFY(!controller.snap(QRect(20,0,77,20),Qt::RightEdge).edges);
     }
+    void lightAndDarkCards_data() {
+        QTest::addColumn<bool>("dark");QTest::addColumn<qreal>("dpr");
+        for(bool dark : {false,true}) for(qreal dpr : {1.,1.25,1.5,2.})
+            QTest::newRow(qPrintable(QString("%1-%2").arg(dark).arg(dpr))) << dark << dpr;
+    }
+    void lightAndDarkCards() {
+        QFETCH(bool,dark);QFETCH(qreal,dpr);
+        const QRect target(41,43,78,76);
+        const QRect physical=CoordinateHelper::toPhysicalCoveringRect(target,dpr);
+        QImage image(400,400,QImage::Format_RGB32);image.fill(dark ? QColor(20,20,20) : QColor(220,220,220));
+        {QPainter p(&image);p.fillRect(physical,dark ? QColor(60,60,60) : Qt::white);}
+        BoundarySnapController controller;controller.setSource(image,dpr);
+        QRect raw=target;raw.setRight(raw.right()-3);raw.setBottom(raw.bottom()-3);
+        const auto result=controller.snap(raw,Qt::RightEdge|Qt::BottomEdge);
+        QCOMPARE(result.rect,target);QCOMPARE(result.edges,Qt::Edges(Qt::RightEdge|Qt::BottomEdge));
+    }
+    void rankingAndJitter() {
+        QImage image(300,200,QImage::Format_RGB32); image.fill(Qt::black);
+        {QPainter p(&image);p.fillRect(100,0,4,200,QColor(80,80,80));
+         p.fillRect(104,0,196,200,Qt::white);}
+        BoundarySnapController controller;controller.setSource(image,1);
+        // Equidistant candidates choose stronger 104, nearer 100 wins otherwise.
+        QCOMPARE(controller.snap(QRect(20,20,82,80),Qt::RightEdge).rect.right()+1,104);
+        controller.reset();
+        QCOMPARE(controller.snap(QRect(20,20,79,80),Qt::RightEdge).rect.right()+1,100);
+        int switches=0;int previous=100;
+        for (int boundary : {101,102,103,102,101,104,103,102,101}) {
+            const auto result=controller.snap(QRect(20,20,boundary-20,80),Qt::RightEdge);
+            QVERIFY(result.edges.testFlag(Qt::RightEdge));
+            const int snapped=result.rect.right()+1;
+            switches+=snapped!=previous;previous=snapped;
+        }
+        QCOMPARE(switches,0); // synthetic jitter metric, not a real pointer study
+        // Leave lock 100: 104 remains within entry distance and takes over.
+        QCOMPARE(controller.snap(QRect(20,20,90,80),Qt::RightEdge).rect.right()+1,104);
+        // Same distance and exact mean (red-only distances): broader support wins.
+        QImage supportImage(300,100,QImage::Format_RGB32);supportImage.fill(Qt::black);
+        for(int y=0;y<100;++y) for(int x=100;x<300;++x) {
+            const int red=(y<60 ? 100 : 0)+(x>=104 ? 60 : 0);
+            supportImage.setPixel(x,y,qRgb(red,0,0));
+        }
+        controller.setSource(supportImage,1);
+        QCOMPARE(controller.snap(QRect(20,0,82,100),Qt::RightEdge).rect.right()+1,104);
+    }
+    void cornerQueriesUseRawSpans() {
+        QImage image(200,200,QImage::Format_RGB32);image.fill(Qt::black);
+        {QPainter p(&image);
+         p.fillRect(100,20,100,80,Qt::white);
+         // At y=100, contrast covers 43/77 raw pixels (passes 55%), but
+         // only 43/80 if X is snapped first (fails). Both axes must hit.
+         p.fillRect(20,100,43,100,Qt::white);}
+        BoundarySnapController controller;controller.setSource(image,1);
+        const auto result=controller.snap(QRect(20,20,77,77),Qt::RightEdge|Qt::BottomEdge);
+        QCOMPARE(result.edges,Qt::Edges(Qt::RightEdge|Qt::BottomEdge));
+        QCOMPARE(result.rect,QRect(20,20,80,80));
+    }
+    void sourceReplacementChangesScaleAndLock() {
+        BoundarySnapController controller;
+        controller.setSource(rectangleImage(QRect(100,0,100,400)),1);
+        QCOMPARE(controller.snap(QRect(20,20,77,80),Qt::RightEdge).rect.right()+1,100);
+        controller.setSource(rectangleImage(QRect(200,0,8,400)),2);
+        // The old logical lock at 100 still qualifies in the new image. It
+        // must be discarded so nearer 104 wins instead of hysteresis keeping it.
+        const auto result=controller.snap(QRect(20,20,83,80),Qt::RightEdge);
+        QCOMPARE(result.rect.right()+1,104);
+        QCOMPARE(CoordinateHelper::toPhysicalCoveringRect(result.rect,2).right()+1,208);
+    }
+    void timeoutFallsBackAndDropsLocks() {
+        BoundarySnapController controller;
+        controller.setSource(rectangleImage(QRect(100,0,100,400)),1);
+        const QRect raw(20,20,77,80);
+        QVERIFY(controller.snap(raw,Qt::RightEdge).edges);
+        const auto expired=controller.snap(raw,Qt::RightEdge,{0});
+        QCOMPARE(expired.rect,raw);QVERIFY(!expired.edges);
+        // Distance 8 would keep the old lock, but cannot enter a fresh one.
+        const QRect outsideEntry(20,20,88,80);
+        const auto next=controller.snap(outsideEntry,Qt::RightEdge);
+        QCOMPARE(next.rect,outsideEntry);QVERIFY(!next.edges);
+    }
     void invalidSourcesAndBudgetGuard() {
         BoundarySnapController controller;
         const QRect raw(10,10,80,80);

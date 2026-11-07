@@ -21,6 +21,7 @@ class tst_RegionSelectorHistoryReplay : public QObject
 private slots:
     void initTestCase();
     void testBoundarySnapCaptureRoundTrip();
+    void testBoundarySnapHistoryAndCloseLifecycle();
     void testBuildCaptureSessionWriteRequestPreservesFields();
     void testRestoreLiveReplaySlotRecordsCaptureContext();
     void testApplyHistoryReplayEntryRecordsCaptureContext();
@@ -73,6 +74,44 @@ void tst_RegionSelectorHistoryReplay::testBoundarySnapCaptureRoundTrip()
         QCOMPARE(RegionSelectorTestAccess::selectionRect(selector),QRect(20,20,77,80));
         QTest::keyRelease(&selector,Qt::Key_S);
     }
+}
+
+void tst_RegionSelectorHistoryReplay::testBoundarySnapHistoryAndCloseLifecycle()
+{
+    QTemporaryDir directory;QVERIFY(directory.isValid());
+    QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
+    {QPainter painter(&image);painter.fillRect(100,0,300,400,Qt::white);}
+    const QPixmap source=QPixmap::fromImage(image);
+    RegionSelector selector;selector.setAttribute(Qt::WA_DeleteOnClose,false);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(),source);
+    RegionSelectorTestAccess::replaceCanvasAfterPreservingSelection(selector,source);
+    const QRect raw(20,20,77,80), snapped(20,20,80,80);
+    RegionSelectorTestAccess::setSelectionRect(selector,raw);
+    RegionSelectorTestAccess::setHistoryLiveSlot(selector,source,1,{400,400},raw,0);
+    SnapTray::HistoryEntry entry;
+    entry.id="boundary-snap-lifecycle";entry.replayAvailable=true;
+    entry.canvasPath=directory.filePath("canvas.png");
+    entry.canvasLogicalSize={400,400};entry.devicePixelRatio=1;entry.selectionRect=raw;
+    QVERIFY(image.save(entry.canvasPath));
+    QVERIFY(RegionSelectorTestAccess::loadSingleReplayEntry(selector,entry));
+    RegionSelectorTestAccess::dispatchMousePress(selector,{98,60});
+    QTest::keyPress(&selector,Qt::Key_S);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector),raw);
+    QVERIFY(!RegionSelectorTestAccess::snappedEdges(selector));
+    QTest::keyRelease(&selector,Qt::Key_S);
+    RegionSelectorTestAccess::dispatchMouseRelease(selector,{98,60});
+    RegionSelectorTestAccess::invokeRestoreLiveReplaySlot(selector);
+    RegionSelectorTestAccess::dispatchMousePress(selector,{98,60});
+    QTest::keyPress(&selector,Qt::Key_S);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector),snapped);
+    QVERIFY(RegionSelectorTestAccess::snappedEdges(selector));
+    RegionSelectorTestAccess::dispatchClose(selector);
+    QVERIFY(!RegionSelectorTestAccess::snappedEdges(selector));
+    // Even direct late key delivery cannot reuse the closed capture's pixels.
+    QTest::keyRelease(&selector,Qt::Key_S);
+    QTest::keyPress(&selector,Qt::Key_S);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector),raw);
+    QVERIFY(!RegionSelectorTestAccess::snappedEdges(selector));
 }
 
 void tst_RegionSelectorHistoryReplay::testBuildCaptureSessionWriteRequestPreservesFields()

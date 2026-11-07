@@ -56,6 +56,52 @@ private slots:
         index.setImage(texture);
         QVERIFY(!index.evaluate(Axis::Vertical, 40, 0, 80, {})); // sparse text-like texture
     }
+    void antialiasedEdgesAndGrid() {
+        using Axis = BoundarySnapIndex::Axis;
+        // A three-column antialiased transition: each known boundary must
+        // qualify with full support, rather than finding an unspecified edge.
+        QImage image(100,100,QImage::Format_RGB32); image.fill(Qt::black);
+        { QPainter p(&image);
+          p.fillRect(48,0,52,100,QColor(32,32,32));
+          p.fillRect(49,0,51,100,QColor(128,128,128));
+          p.fillRect(50,0,50,100,Qt::white); }
+        BoundarySnapIndex index; index.setImage(image);
+        for (int boundary : {48,49,50}) {
+            const auto hit=index.evaluate(Axis::Vertical,boundary,0,100,{});
+            QVERIFY(hit); QCOMPARE(hit->supportFraction,1.0);
+        }
+        image.fill(Qt::white);
+        { QPainter p(&image); p.setPen(Qt::black);
+          for (int c=20;c<100;c+=20) { p.drawLine(c,0,c,99);p.drawLine(0,c,99,c); } }
+        index.setImage(image);
+        for (int boundary : {20,21,40,41,60,61,80,81}) {
+            QVERIFY(index.evaluate(Axis::Vertical,boundary,0,100,{}));
+            QVERIFY(index.evaluate(Axis::Horizontal,boundary,0,100,{}));
+        }
+        QVERIFY(!index.evaluate(Axis::Vertical,30,0,100,{}));
+    }
+    void meanDistanceIsNotMeanSquaredDistance() {
+        QImage image(2,100,QImage::Format_RGB32); image.fill(Qt::black);
+        // 60% weak edges and 40% stronger ones: mean sqrt = 26, while
+        // sqrt(mean squared) > 28. Support clears the independent threshold.
+        for (int y=0;y<100;++y) image.setPixel(1,y,qRgb(y<60 ? 10 : 50,0,0));
+        BoundarySnapIndex index;index.setImage(image);
+        BoundarySnapIndex::Options options;options.supportThreshold=10;
+        QVERIFY(!index.evaluate(BoundarySnapIndex::Axis::Vertical,1,0,100,options));
+        options.minimumMean=26;
+        const auto hit=index.evaluate(BoundarySnapIndex::Axis::Vertical,1,0,100,options);
+        QVERIFY(hit);QCOMPARE(hit->meanStrength,26.0);QCOMPARE(hit->supportFraction,1.0);
+    }
+    void supportThresholdBoundary() {
+        QImage image(2,100,QImage::Format_RGB32);
+        BoundarySnapIndex index;
+        for (int count : {54,55,56}) {
+            image.fill(Qt::black);
+            for(int y=0;y<count;++y) image.setPixel(1,y,qRgb(255,255,255));
+            index.setImage(image);
+            QCOMPARE(bool(index.evaluate(BoundarySnapIndex::Axis::Vertical,1,0,100,{})),count>=55);
+        }
+    }
     void invalidAndAlpha() {
         using Axis = BoundarySnapIndex::Axis;
         BoundarySnapIndex index;

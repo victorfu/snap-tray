@@ -71,6 +71,8 @@ private slots:
     void cleanup();
 
     void testBoundarySnapInteraction();
+    void testBoundarySnapToggleDoesNotAccumulate();
+    void testBoundarySnapLeavesCreationAndMoveAlone();
     void testBoundarySnapExcludedModes();
     void testOutsideClickAtRoundedBound_data();
     void testOutsideClickAtRoundedBound();
@@ -176,6 +178,65 @@ void tst_RegionInputHandler::testBoundarySnapInteraction()
     QVERIFY(!m_selectionManager->snappedEdges());
     m_handler->handleBoundarySnapKey(Qt::Key_S,true);
     QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,77,80));
+}
+
+void tst_RegionInputHandler::testBoundarySnapToggleDoesNotAccumulate()
+{
+    QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
+    {QPainter p(&image);p.fillRect(100,0,300,400,Qt::white);}
+    m_handler->setBoundarySnapSource(image,1);
+    m_selectionManager->setSelectionRect(QRect(20,20,77,80));
+    auto down=makeMouseEvent(QEvent::MouseButtonPress,{98,60},Qt::LeftButton,Qt::LeftButton);
+    m_handler->handleMousePress(&down);
+    auto move=makeMouseEvent(QEvent::MouseMove,{99,60},Qt::NoButton,Qt::LeftButton);
+    m_handler->handleMouseMove(&move);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,78,80)); // offset preserved
+    QSignalSpy changes(m_selectionManager,&SelectionStateManager::selectionChanged);
+    for (int i=0;i<20;++i) {
+        changes.clear();
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,true);
+        QCOMPARE(changes.count(),1);
+        QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,80,80));
+        changes.clear();
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,false,true); // autorepeat release
+        QCOMPARE(changes.count(),0);
+        QVERIFY(m_selectionManager->snappedEdges());
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,false);
+        QCOMPARE(changes.count(),1);
+        QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,78,80));
+        QVERIFY(!m_selectionManager->snappedEdges());
+    }
+    // Mouse-event modifiers activate snapping without a separate key event.
+    QMouseEvent altMove(QEvent::MouseMove,QPointF(99,60),QPointF(99,60),
+                        Qt::NoButton,Qt::LeftButton,Qt::AltModifier);
+    m_handler->handleMouseMove(&altMove);
+    QVERIFY(m_selectionManager->snappedEdges());
+    QMouseEvent release(QEvent::MouseButtonRelease,QPointF(100,60),QPointF(100,60),
+                        Qt::LeftButton,Qt::NoButton,Qt::AltModifier);
+    m_handler->handleMouseRelease(&release);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,80,80));
+    QVERIFY(!m_selectionManager->snappedEdges());
+}
+
+void tst_RegionInputHandler::testBoundarySnapLeavesCreationAndMoveAlone()
+{
+    QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
+    {QPainter p(&image);p.fillRect(100,0,300,400,Qt::white);}
+    m_handler->setBoundarySnapSource(image,1);
+    m_selectionManager->startSelection({20,20});
+    QMouseEvent move(QEvent::MouseMove,QPointF(97,99),QPointF(97,99),
+                     Qt::NoButton,Qt::LeftButton,Qt::AltModifier);
+    m_handler->handleMouseMove(&move);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(QPoint(20,20),QPoint(97,99)));
+    QVERIFY(!m_selectionManager->snappedEdges());
+    m_selectionManager->finishSelection();
+    const QRect original=m_selectionManager->selectionRect();
+    m_selectionManager->startMove({50,50});
+    QMouseEvent drag(QEvent::MouseMove,QPointF(53,52),QPointF(53,52),
+                     Qt::NoButton,Qt::LeftButton,Qt::AltModifier);
+    m_handler->handleMouseMove(&drag);
+    QCOMPARE(m_selectionManager->selectionRect(),original.translated(3,2));
+    QVERIFY(!m_selectionManager->snappedEdges());
 }
 
 void tst_RegionInputHandler::testBoundarySnapExcludedModes()
