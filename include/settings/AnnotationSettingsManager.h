@@ -24,6 +24,9 @@ public:
     QColor loadColor() const;
     void saveColor(const QColor& color);
 
+    bool loadAlignmentAssist() const;
+    void saveAlignmentAssist(bool enabled);
+
     bool loadMarkerTextSnap() const;
     void saveMarkerTextSnap(bool enabled);
 

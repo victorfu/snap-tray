@@ -116,6 +116,7 @@ void AnnotationLayer::addItemNow(std::unique_ptr<AnnotationItem> item)
 
 void AnnotationLayer::replaceItems(std::vector<std::unique_ptr<AnnotationItem>> items)
 {
+    m_snapController.invalidate();
     endModifyCoalescing();
     dropGesture();
     m_eraseTransactionActive = false;
@@ -240,6 +241,7 @@ void AnnotationLayer::redo()
 
 void AnnotationLayer::clear()
 {
+    m_snapController.invalidate();
     endModifyCoalescing();
     dropGesture();
     // A clear is authoritative. Any items temporarily owned by an active
@@ -1282,6 +1284,7 @@ bool AnnotationLayer::commitGesture(unsigned parts)
 
 void AnnotationLayer::cancelGesture()
 {
+    m_snapController.end();
     if (!isGestureActive()) return;
     auto sceneIt = findSceneItem(m_gestureId);
     if (sceneIt != m_items.end() && sceneIt->item && m_gestureSnapshot) {

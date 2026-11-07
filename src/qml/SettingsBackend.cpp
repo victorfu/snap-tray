@@ -1,3 +1,4 @@
+#include "settings/AnnotationSettingsManager.h"
 #include "qml/SettingsBackend.h"
 
 #include "AutoLaunchManager.h"
@@ -1638,4 +1639,14 @@ QString SettingsBackend::ocrDisplayNameForCode(const QString& code) const
     return code;
 }
 
+bool SettingsBackend::alignmentAssist() const
+{
+    return AnnotationSettingsManager::instance().loadAlignmentAssist();
+}
+void SettingsBackend::setAlignmentAssist(bool enabled)
+{
+    if (alignmentAssist() == enabled) return;
+    AnnotationSettingsManager::instance().saveAlignmentAssist(enabled);
+    emit alignmentAssistChanged();
+}
 } // namespace SnapTray

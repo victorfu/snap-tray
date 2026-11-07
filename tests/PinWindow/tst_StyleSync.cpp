@@ -169,6 +169,8 @@ private slots:
     void colorPickSamplesPinnedPixelsNotAnnotations();
     void pickedColorEditsSelectionUndoably();
     void arrowEndpointDragIsUndoable();
+    void annotationSnapRelease_data();
+    void annotationSnapRelease();
     void emojiMoveIsUndoable();
     void escapeMidDragRestores();
     void toolbarUndoDisabledWhileDragging();
@@ -1220,6 +1222,38 @@ void TestPinWindowStyleSync::arrowEndpointDragIsUndoable()
     QCOMPARE(arrow()->end(), QPoint(120, 20));
     window->handleToolbarRedo();
     QCOMPARE(arrow()->end(), QPoint(140, 50));
+}
+
+void TestPinWindowStyleSync::annotationSnapRelease_data()
+{
+    QTest::addColumn<qreal>("dpr"); QTest::addColumn<qreal>("zoom");
+    for (qreal dpr : {1.0, 1.25, 1.5, 2.0}) for (qreal zoom : {0.5, 1.0, 2.0})
+        QTest::newRow(qPrintable(QString("%1/%2").arg(dpr).arg(zoom))) << dpr << zoom;
+}
+void TestPinWindowStyleSync::annotationSnapRelease()
+{
+    QFETCH(qreal, dpr); QFETCH(qreal, zoom);
+    auto pixmap = createTestPixmap(1600,1200); pixmap.setDevicePixelRatio(dpr);
+    auto window = arrowPin(pixmap); window->setZoomLevel(zoom);
+    AnnotationSettingsManager::instance().saveAlignmentAssist(true);
+    auto* layer = window->m_annotationLayer;
+    layer->addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(200,100),QStringLiteral("🙂")));
+    layer->addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(140,220),QStringLiteral("🙂")));
+    layer->setSelectedIndex(1);
+    auto emoji = [&] { return static_cast<EmojiStickerAnnotation*>(layer->itemAt(1)); };
+    QVERIFY(window->handleEmojiStickerAnnotationPress({140,220}));
+    QVERIFY(window->handleEmojiStickerAnnotationMove({197,220}));
+    QCOMPARE(emoji()->precisePosition(),QPointF(200,220));
+    QKeyEvent altDown(QEvent::KeyPress,Qt::Key_Alt,Qt::AltModifier);
+    window->keyPressEvent(&altDown); QCOMPARE(emoji()->precisePosition(),QPointF(197,220));
+    QKeyEvent altUp(QEvent::KeyRelease,Qt::Key_Alt,Qt::NoModifier);
+    window->keyReleaseEvent(&altUp); QCOMPARE(emoji()->precisePosition(),QPointF(200,220));
+    QVERIFY(window->handleEmojiStickerAnnotationRelease({240,220}));
+    QCOMPARE(emoji()->precisePosition(),QPointF(240,220));
+    QVERIFY(layer->snapController().guideBounds().isEmpty());
+    layer->undo(); QCOMPARE(emoji()->precisePosition(),QPointF(140,220));
+    layer->redo(); QCOMPARE(emoji()->precisePosition(),QPointF(240,220));
+    QCOMPARE(static_cast<EmojiStickerAnnotation*>(layer->itemAt(0))->position(),QPoint(200,100));
 }
 
 void TestPinWindowStyleSync::emojiMoveIsUndoable()

@@ -1,3 +1,4 @@
+#include <QGuiApplication>
 #include "region/RegionInputHandler.h"
 #include "region/SelectionStateManager.h"
 #include "region/SelectionResizeHelper.h"
@@ -216,6 +217,7 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
@@ -314,6 +316,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     m_lastToolEventPos = event->position();
     const bool shouldPreferLiveCursor =
         event->buttons() == Qt::NoButton &&
@@ -427,6 +430,7 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event, ReleaseTarget ta
     }
 
     m_currentModifiers = event->modifiers();
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
@@ -552,6 +556,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
                 // Start dragging
                 m_isEmojiDragging = true;
                 m_emojiDragStart = pos;
+            m_annotationLayer->snapController().begin(m_annotationLayer, pos);
                 CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Moving);
             }
             else if (handle == GizmoHandle::Rotation) {
@@ -600,6 +605,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiDragStart = pos;
+            m_annotationLayer->snapController().begin(m_annotationLayer, pos);
             CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Moving);
         }
         else if (handle == GizmoHandle::Rotation) {
@@ -881,7 +887,8 @@ bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
         if (emojiItem) {
             QPoint delta = pos - m_emojiDragStart;
             m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
-            emojiItem->moveBy(delta);
+            if (!m_annotationLayer->snapController().move(pos, QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier)))
+                emojiItem->moveBy(delta);
             m_emojiDragStart = pos;
             emit updateRequested();
             return true;
@@ -1315,6 +1322,8 @@ bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
 bool RegionInputHandler::handleEmojiStickerRelease(const QPoint& pos)
 {
     if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
+        if (m_isEmojiDragging) handleEmojiStickerMove(pos);
+        m_annotationLayer->snapController().end();
         m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isEmojiDragging = false;
         m_isEmojiScaling = false;

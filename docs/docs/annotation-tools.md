@@ -125,3 +125,19 @@ The recording editor's **Canvas** uses the same gradients, the same names (Backg
 ## Next step
 
 If you want annotations directly on the desktop, open [Screen Canvas](/docs/screen-canvas/).
+
+## Aligning and spacing annotations
+
+In Region Selector and PinWindow, dragging an unrotated rectangle, ellipse, text
+box, or emoji can snap matching edges/centers or form equal gaps with nearby
+objects. Pink guides show the active alignment; paired gap lines indicate equal
+spacing. Release creates one Undo step, and Escape restores the starting position.
+
+Hold **Alt/Option** to pause snapping. You can also turn off **General → Annotation
+alignment assistance**, including when a Linux window manager reserves Alt-drag.
+The setting is on by default. Guides are not saved or copied with the image.
+
+This feature moves one object at a time. It excludes rotation, resizing, text
+editing, arrows, freehand/mosaic strokes, step badges, and ScreenCanvas. It does
+not align to screenshot pixels or selection edges; selection boundary snapping
+is a separate capture interaction.

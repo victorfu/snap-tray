@@ -35,7 +35,9 @@ public:
     bool containsPoint(const QPoint &point) const;
 
     // Getters
-    QPoint position() const { return m_position; }
+    QPoint position() const { return m_position.toPoint(); }
+    QPointF precisePosition() const { return m_position; }
+    void setPrecisePosition(const QPointF& position) { m_position = position; }
     QString emoji() const { return m_emoji; }
     qreal scale() const { return m_scale; }
     qreal rotation() const { return m_rotation; }
@@ -54,7 +56,7 @@ public:
     QPolygonF transformedBoundingPolygon() const;
 
 private:
-    QPoint m_position;
+    QPointF m_position;
     QString m_emoji;
     qreal m_scale = 1.0;
     qreal m_rotation = 0.0;

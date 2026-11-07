@@ -23,6 +23,13 @@ class tst_AnnotationSettingsManager : public QObject
     Q_OBJECT
 
 private slots:
+    void testAlignmentAssistDefaultAndRoundtrip() {
+        SnapTray::getSettings().remove("annotation/alignmentAssist");
+        auto& manager = AnnotationSettingsManager::instance();
+        QVERIFY(manager.loadAlignmentAssist());
+        manager.saveAlignmentAssist(false); QVERIFY(!manager.loadAlignmentAssist());
+        manager.saveAlignmentAssist(true); QVERIFY(manager.loadAlignmentAssist());
+    }
     void testMarkerTextSnapDefaultAndRoundtrip();
     void init();
     void cleanup();

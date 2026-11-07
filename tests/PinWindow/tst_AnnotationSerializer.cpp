@@ -116,6 +116,18 @@ class tst_AnnotationSerializer : public QObject
     Q_OBJECT
 
 private slots:
+    void testFractionalEmojiHistory() {
+        AnnotationLayer layer;
+        auto emoji = std::make_unique<EmojiStickerAnnotation>(QPoint(40,50),QString::fromUtf8("🙂"));
+        layer.addItem(std::move(emoji)); layer.setSelectedIndex(0);
+        layer.ensureGesture(); layer.selectedItem()->translate(QPointF(0.25,0.5));
+        layer.commitGesture(AnnotationLayer::ModifyGeometry);
+        layer.undo(); QCOMPARE(static_cast<EmojiStickerAnnotation*>(layer.itemAt(0))->precisePosition(),QPointF(40,50));
+        layer.redo(); QCOMPARE(static_cast<EmojiStickerAnnotation*>(layer.itemAt(0))->precisePosition(),QPointF(40.25,50.5));
+        AnnotationLayer restored; QString error;
+        QVERIFY(SnapTray::deserializeAnnotationLayer(SnapTray::serializeAnnotationLayer(layer),&restored,makeSharedPixmap(),&error));
+        QCOMPARE(static_cast<EmojiStickerAnnotation*>(restored.itemAt(0))->precisePosition(),QPointF(40.25,50.5));
+    }
     void testRoundtripPreservesSupportedAnnotations();
     void testRoundtripKeepsDrawingOrderAndStepNumbers();
     void testBulkRoundtripPreservesVisibleSceneAndBoundedUndo();

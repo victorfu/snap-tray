@@ -245,7 +245,7 @@ QJsonObject serializeAnnotationItem(const AnnotationItem* item)
     if (const auto* emoji = dynamic_cast<const EmojiStickerAnnotation*>(item)) {
         return QJsonObject{
             {"type", QStringLiteral("emoji")},
-            {"position", serializePoint(emoji->position())},
+            {"position", serializePointF(emoji->precisePosition())},
             {"emoji", emoji->emoji()},
             {"scale", emoji->scale()},
             {"rotation", emoji->rotation()},
@@ -375,6 +375,7 @@ std::unique_ptr<AnnotationItem> deserializeAnnotationItem(const QJsonObject& obj
             deserializePoint(object.value(QStringLiteral("position"))),
             object.value(QStringLiteral("emoji")).toString(),
             object.value(QStringLiteral("scale")).toDouble(1.0));
+        item->setPrecisePosition(deserializePointF(object.value(QStringLiteral("position"))));
         item->setRotation(object.value(QStringLiteral("rotation")).toDouble());
         item->setMirror(object.value(QStringLiteral("mirrorX")).toBool(),
                         object.value(QStringLiteral("mirrorY")).toBool());

@@ -308,6 +308,7 @@ add_library(snaptray_core STATIC
     src/annotations/ShapeAnnotation.cpp
     src/annotations/AnnotationStyle.cpp
     src/annotations/AnnotationGeometry.cpp
+    src/annotation/AnnotationSnapEngine.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/EmojiStickerAnnotation.cpp
     src/annotations/TextBoxAnnotation.cpp
@@ -859,6 +860,7 @@ add_library(snaptray_ui STATIC
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp
+    src/annotation/AnnotationSnapController.cpp
     src/annotation/AnnotationStyleEditor.cpp
     src/annotation/ColorPickOverlay.cpp
     src/annotation/AnnotationRenderHelper.cpp

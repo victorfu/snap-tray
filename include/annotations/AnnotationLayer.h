@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "annotations/AnnotationItem.h"
+#include "annotation/AnnotationSnapController.h"
 #include "annotations/AnnotationZOrder.h"
 #include "annotations/RemovedAnnotationItem.h"
 
@@ -29,6 +30,7 @@ class AnnotationLayer : public QObject
     Q_OBJECT
 
 public:
+    AnnotationSnapController& snapController() { return m_snapController; }
     using AnnotationId = std::uint64_t;
     using HistoryStateToken = std::uint64_t;
     using RemovedItem = RemovedAnnotationItem;
@@ -215,6 +217,7 @@ signals:
     void selectionChanged();
 
 private:
+    AnnotationSnapController m_snapController;
     struct SceneItem {
         AnnotationId id = 0;
         std::unique_ptr<AnnotationItem> item;

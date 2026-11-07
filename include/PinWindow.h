@@ -177,6 +177,7 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     void moveEvent(QMoveEvent* event) override;

@@ -694,6 +694,7 @@ void PinWindow::setPinWindowManager(PinWindowManager* manager)
 
 void PinWindow::setZoomLevel(qreal zoom)
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
     // Annotation geometry uses the zoom that was active when layout mode
     // began. Without a general annotation scale transform, changing zoom in
     // the middle of the session would reinterpret every item at a new scale.
@@ -779,6 +780,7 @@ void PinWindow::adjustOpacityByStep(int direction)
 
 void PinWindow::rotateRight()
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
     if (isRegionLayoutMode()) {
         return;
     }
@@ -790,6 +792,7 @@ void PinWindow::rotateRight()
 
 void PinWindow::rotateLeft()
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
     if (isRegionLayoutMode()) {
         return;
     }
@@ -801,6 +804,7 @@ void PinWindow::rotateLeft()
 
 void PinWindow::flipHorizontal()
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
     if (isRegionLayoutMode()) {
         return;
     }
@@ -812,6 +816,7 @@ void PinWindow::flipHorizontal()
 
 void PinWindow::flipVertical()
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
     if (isRegionLayoutMode()) {
         return;
     }
@@ -923,7 +928,7 @@ QRect PinWindow::selectedAnnotationInteractionVisualRect() const
     return mappedAnnotationRect(
         snaptray::tools::selectedAnnotationRepaintRect(
             m_annotationLayer,
-            kAnnotationInteractionVisualMargin));
+            kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds() : QRect()));
 }
 
 bool PinWindow::requestLocalizedToolRepaint()
@@ -2479,6 +2484,7 @@ void PinWindow::paintEvent(QPaintEvent* event)
         }
 
         m_annotationLayer->draw(painter);
+        m_annotationLayer->snapController().draw(painter);
 
         // Draw transformation gizmo for selected text annotation
         if (auto* textItem = getSelectedTextAnnotation()) {
@@ -2947,6 +2953,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
 
 void PinWindow::mouseMoveEvent(QMouseEvent* event)
 {
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
         syncFloatingUiCursor();
         return;
@@ -3119,6 +3126,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
 void PinWindow::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     // Qt keeps an implicit mouse grab for a press that started on this widget.
     // A release over a floating toolbar must still finish that interaction;
     // only suppress new single-click tool actions over the floating UI.
@@ -3148,12 +3156,15 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         // Handle TextAnnotationEditor transformation/dragging end
         if (m_textAnnotationEditor) {
             if (m_textAnnotationEditor->isTransforming()) {
+                if (m_textAnnotationEditor->activeHandle() == GizmoHandle::Body)
+                    m_textAnnotationEditor->updateTransformation(mapToOriginalCoords(event->pos()));
                 m_textAnnotationEditor->finishTransformation();
                 updateUndoRedoState();
                 update();
                 return;
             }
             if (m_textAnnotationEditor->isDragging()) {
+                m_textAnnotationEditor->updateDragging(mapToOriginalCoords(event->pos()));
                 m_textAnnotationEditor->finishDragging();
                 updateUndoRedoState();
                 update();
@@ -3374,6 +3385,13 @@ void PinWindow::refreshContextMenuState()
 
 void PinWindow::keyPressEvent(QKeyEvent* event)
 {
+    if (event->key() == Qt::Key_Alt && m_annotationLayer && m_annotationLayer->snapController().active()) {
+        m_annotationLayer->snapController().setSuspended(true);
+        update();
+        event->accept();
+        return;
+    }
+
     // Handle text editor state first (like RegionSelector)
     if (m_textEditor && m_textEditor->isEditing()) {
         if (event->key() == Qt::Key_Escape) {
@@ -3740,6 +3758,7 @@ void PinWindow::initializeAnnotationComponents()
     m_textAnnotationEditor = new TextAnnotationEditor(this);
     m_shapeAnnotationEditor = std::make_unique<ShapeAnnotationEditor>();
     m_shapeAnnotationEditor->setAnnotationLayer(m_annotationLayer);
+    m_annotationLayer->snapController().setEnabled(true);
     m_textAnnotationEditor->setCoordinateMappers(
         [this](const QPointF& displayPos) { return mapToOriginalCoords(displayPos); },
         [this](const QPointF& originalPos) { return mapFromOriginalCoords(originalPos); });
@@ -4305,6 +4324,7 @@ void PinWindow::syncCropHandlerImageSize()
 
 void PinWindow::applyCrop(const QRect& cropRect)
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
     if (cropRect.isEmpty()) return;
 
     qreal dpr = m_originalPixmap.devicePixelRatio();
@@ -5643,6 +5663,7 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
             if (handle == GizmoHandle::Body) {
                 m_isEmojiDragging = true;
                 m_emojiStartPos = mappedPos;
+            m_annotationLayer->snapController().begin(m_annotationLayer, mappedPos);
                 cursorManager.setInputStateForWidget(this, InputState::Moving);
             } else if (handle == GizmoHandle::Rotation) {
                 m_isEmojiRotating = true;
@@ -5686,6 +5707,7 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiStartPos = mappedPos;
+            m_annotationLayer->snapController().begin(m_annotationLayer, mappedPos);
             cursorManager.setInputStateForWidget(this, InputState::Moving);
         } else if (handle == GizmoHandle::Rotation) {
             m_isEmojiRotating = true;
@@ -5732,7 +5754,8 @@ bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
     m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
     if (m_isEmojiDragging) {
         QPoint delta = mappedPos - m_emojiStartPos;
-        emojiItem->moveBy(delta);
+        if (!m_annotationLayer->snapController().move(mappedPos, QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier)))
+            emojiItem->moveBy(delta);
         m_emojiStartPos = mappedPos;
     } else if (m_isEmojiRotating) {
         QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
@@ -5758,6 +5781,8 @@ bool PinWindow::handleEmojiStickerAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    if (m_isEmojiDragging) handleEmojiStickerAnnotationMove(pos);
+    m_annotationLayer->snapController().end();
     m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isEmojiDragging = false;
     m_isEmojiScaling = false;
@@ -6461,6 +6486,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         invalidateAutoBlurRequest();
         m_storedRegions = std::move(committedRegions);
 
+        if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
         m_originalPixmap = newPixmap;
         setContentLogicalSize(logicalSizeFromPixmap(newPixmap));
         resetSourceSampleRect();
@@ -6680,4 +6706,15 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             }
         }
     }
+}
+
+void PinWindow::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt && m_annotationLayer && m_annotationLayer->snapController().active()) {
+        m_annotationLayer->snapController().setSuspended(false);
+        update();
+        event->accept();
+        return;
+    }
+    QWidget::keyReleaseEvent(event);
 }
