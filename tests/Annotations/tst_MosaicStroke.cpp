@@ -7,6 +7,9 @@
 
 #include "annotations/MosaicStroke.h"
 
+#include "reference/LegacyMosaicStroke.h"
+#include <QElapsedTimer>
+#include <algorithm>
 #include <cmath>
 #include <memory>
 
@@ -104,7 +107,8 @@ QImage gaussianReference(const QPixmap& source, const QRect& bounds, qreal targe
     return output;
 }
 
-QImage renderStroke(const MosaicStroke& stroke, const QSize& logicalSize, qreal targetDpr)
+template <typename Stroke>
+QImage renderStroke(const Stroke& stroke, const QSize& logicalSize, qreal targetDpr)
 {
     const QSize physicalSize(
         qCeil(logicalSize.width() * targetDpr),
@@ -146,6 +150,12 @@ class TestMosaicStroke : public QObject
     Q_OBJECT
 
 private slots:
+    void transformedParity();
+    void incrementalParity_data();
+    void incrementalParity();
+    void incrementalWorkAndDuplicates();
+    void boundedCache();
+    void benchmark();
     void coverageSurvivesTargetDprChange_data();
     void coverageSurvivesTargetDprChange();
     void uniformColorSurvivesRendering_data();
@@ -265,6 +275,183 @@ void TestMosaicStroke::gaussianMatchesReference()
     const QRect samples = physicalRect(sampleRect, targetDpr);
     const QImage expected = gaussianReference(*source, stroke.boundingRect(), targetDpr);
     QCOMPARE(renderStroke(stroke, kLogicalSize, targetDpr).copy(samples), expected.copy(samples));
+}
+
+
+
+void TestMosaicStroke::transformedParity()
+{
+    auto source = std::make_shared<const QPixmap>(patternedSource(2.));
+    for (const QVector<QPoint>& path : {QVector<QPoint>{{40, 20}, {95, 80}, {-3, 5}},
+                                       QVector<QPoint>{{200, 200}, {220, 230}}}) {
+        MosaicStroke actual(path, source, 12, 12);
+        LegacyMosaicStroke expected(path, source, 12, 12);
+        for (bool smooth : {false, true}) {
+            for (auto mode : {QPainter::CompositionMode_SourceOver, QPainter::CompositionMode_Source}) {
+                auto render = [&](const AnnotationItem& item) {
+                    QImage image(600, 600, QImage::Format_ARGB32_Premultiplied);
+                    image.setDevicePixelRatio(2.); image.fill(QColor(30, 40, 50));
+                    QPainter painter(&image);
+                    painter.setRenderHint(QPainter::SmoothPixmapTransform, smooth);
+                    painter.setCompositionMode(mode);
+                    painter.setOpacity(.6);
+                    painter.translate(30.25, 12.5); painter.scale(1.3, .9); painter.rotate(17);
+                    item.draw(painter); painter.end(); return image;
+                };
+                QCOMPARE(render(actual), render(expected));
+            }
+        }
+    }
+}
+
+void TestMosaicStroke::incrementalParity_data()
+{
+    QTest::addColumn<qreal>("sourceDpr");
+    QTest::addColumn<qreal>("targetDpr");
+    QTest::addColumn<int>("type");
+    for (qreal source : {1., 1.25, 1.5, 2.}) {
+        for (qreal target : {1., 1.25, 1.5, 2.}) {
+            for (int type : {int(MosaicBlurType::Pixelate), int(MosaicBlurType::Gaussian)}) {
+                QTest::newRow(qPrintable(QString("%1-%2-%3").arg(source).arg(target).arg(type)))
+                    << source << target << type;
+            }
+        }
+    }
+}
+
+void TestMosaicStroke::incrementalParity()
+{
+    QFETCH(qreal, sourceDpr);
+    QFETCH(qreal, targetDpr);
+    QFETCH(int, type);
+    auto source = std::make_shared<const QPixmap>(patternedSource(sourceDpr));
+    // Negative coordinates, image edges, tile boundaries, reversals, crossings,
+    // duplicate endpoints and both growing and shrinking origins.
+    const QVector<QPoint> path{{80, 65}, {20, 20}, {19, 19}, {19, 19},
+        {90, 20}, {20, 80}, {90, 80}, {3, 2}, {-9, -11}, {119, 99},
+        {121, 102}, {40, 60}, {80, 65}, {300, 200}};
+    MosaicStroke actual({}, source, 12, 12, MosaicBlurType(type));
+    LegacyMosaicStroke expected({}, source, 12, 12, MosaicBlurType(type));
+    for (const auto& point : path) {
+        actual.addPoint(point);
+        expected.addPoint(point);
+        QCOMPARE(actual.boundingRect(), expected.boundingRect());
+        QCOMPARE(renderStroke(actual, QSize(340, 240), targetDpr),
+                 renderStroke(expected, QSize(340, 240), targetDpr));
+    }
+    for (const QPointF delta : {QPointF(-11.5, 3.5), QPointF(50, -20)}) {
+        actual.translate(delta);
+        expected.translate(delta);
+        QCOMPARE(renderStroke(actual, QSize(340, 240), targetDpr),
+                 renderStroke(expected, QSize(340, 240), targetDpr));
+    }
+    // Growing only the maximum coordinates must reuse mask stamps, including
+    // fractional source DPR, even when the final resampling needs full damage.
+    if (MosaicBlurType(type) == MosaicBlurType::Pixelate) {
+        const auto before = actual.renderWork();
+        actual.addPoint({400, 250}); expected.addPoint({400, 250});
+        QCOMPARE(renderStroke(actual, QSize(440, 280), targetDpr),
+                 renderStroke(expected, QSize(440, 280), targetDpr));
+        QCOMPARE(actual.renderWork().maskRebuilds, before.maskRebuilds);
+    }
+    const qreal replacementDpr = sourceDpr == 1.25 ? 2. : 1.25;
+    source = std::make_shared<const QPixmap>(patternedSource(replacementDpr, true));
+    actual.setSourcePixmap(source);
+    expected.setSourcePixmap(source);
+    QCOMPARE(renderStroke(actual, QSize(340, 240), targetDpr),
+             renderStroke(expected, QSize(340, 240), targetDpr));
+    auto copy = actual.clone();
+    QCOMPARE(renderStroke(*copy, QSize(340, 240), targetDpr),
+             renderStroke(expected, QSize(340, 240), targetDpr));
+
+    // Alpha is deliberately replaced by the old binary mask, not multiplied.
+    QPixmap translucent(150, 150);
+    translucent.fill(QColor(80, 140, 210, 100));
+    source = std::make_shared<const QPixmap>(translucent);
+    actual.setSourcePixmap(source);
+    expected.setSourcePixmap(source);
+    QCOMPARE(renderStroke(actual, QSize(340, 240), targetDpr),
+             renderStroke(expected, QSize(340, 240), targetDpr));
+    actual.setSourcePixmap(nullptr);
+    expected.setSourcePixmap(nullptr);
+    QCOMPARE(renderStroke(actual, QSize(340, 240), targetDpr),
+             renderStroke(expected, QSize(340, 240), targetDpr));
+}
+
+void TestMosaicStroke::incrementalWorkAndDuplicates()
+{
+    auto source = std::make_shared<const QPixmap>(patternedSource(2.));
+    MosaicStroke stroke({{20, 20}}, source, 12, 12);
+    stroke.addPoint({20, 20});
+    QCOMPARE(stroke.points().size(), 2); // Preserve the first duplicate's dot.
+    const auto first = renderStroke(stroke, kLogicalSize, 2.);
+    const auto work = stroke.renderWork();
+    stroke.addPoint({20, 20});
+    QCOMPARE(stroke.points().size(), 2);
+    QCOMPARE(renderStroke(stroke, kLogicalSize, 2.), first);
+    QCOMPARE(stroke.renderWork().stamps, work.stamps);
+    for (int i = 21; i < 90; ++i) {
+        stroke.addPoint({i, i});
+        renderStroke(stroke, kLogicalSize, 2.);
+    }
+    const auto before = stroke.renderWork();
+    stroke.addPoint({90, 90});
+    QVERIFY(stroke.previewAffectedBoundingRect().width() < stroke.boundingRect().width());
+    renderStroke(stroke, kLogicalSize, 2.);
+    QCOMPARE(stroke.renderWork().maskRebuilds, before.maskRebuilds);
+    QCOMPARE(stroke.renderWork().stamps - before.stamps, quint64(2));
+    QVERIFY(stroke.renderWork().sampledBlocks - before.sampledBlocks <= 9);
+}
+
+void TestMosaicStroke::boundedCache()
+{
+    auto source = std::make_shared<const QPixmap>(patternedSource(1.));
+    MosaicStroke stroke({{0, 0}, {1, 1}}, source, 1100, 12);
+    LegacyMosaicStroke reference({{0, 0}, {1, 1}}, source, 1100, 12);
+    QCOMPARE(renderStroke(stroke, kLogicalSize, 1.), renderStroke(reference, kLogicalSize, 1.));
+    QVERIFY(stroke.pixelateCacheBytes() <= MosaicStroke::kTileBudgetBytes + MosaicStroke::kBlockBudgetBytes);
+    // Overflow must not retain a full bounding rectangle image.
+    QVERIFY(stroke.estimatedRetainedBytes() < 4 * 1024 * 1024);
+    stroke.setSourcePixmap(nullptr);
+    QCOMPARE(stroke.pixelateCacheBytes(), std::size_t(0));
+}
+
+void TestMosaicStroke::benchmark()
+{
+    if (!qEnvironmentVariableIsSet("SNAPTRAY_MOSAIC_BENCHMARK"))
+        QSKIP("Set SNAPTRAY_MOSAIC_BENCHMARK=1 for median/p95 comparison");
+    QPixmap pixels(2600, 1600);
+    pixels.fill(QColor(37, 123, 219));
+    pixels.setDevicePixelRatio(2.);
+    auto source = std::make_shared<const QPixmap>(pixels);
+    for (int count : {25, 100, 200}) {
+        QVector<QPoint> path;
+        for (int i = 0; i < count; ++i) path.append(QPoint(40 + i * 5, 40 + i * 3));
+        QVector<qint64> oldTimes, newTimes;
+        MosaicStroke::RenderWork work;
+        for (int iteration = 0; iteration < 21; ++iteration) {
+            MosaicStroke current(path, source, 24, 12);
+            LegacyMosaicStroke legacy(path, source, 24, 12);
+            QImage output(2600, 1600, QImage::Format_ARGB32_Premultiplied);
+            output.setDevicePixelRatio(2.); output.fill(Qt::transparent);
+            QPainter painter(&output);
+            current.draw(painter); legacy.draw(painter);
+            const auto before = current.renderWork();
+            const QPoint next = path.last() + QPoint(1, 1);
+            current.addPoint(next); legacy.addPoint(next);
+            QElapsedTimer timer;
+            timer.start(); current.draw(painter); const auto currentNs = timer.nsecsElapsed();
+            timer.restart(); legacy.draw(painter); const auto legacyNs = timer.nsecsElapsed();
+            if (iteration) { newTimes.append(currentNs); oldTimes.append(legacyNs); }
+            work = current.renderWork();
+            work.stamps -= before.stamps; work.sampledBlocks -= before.sampledBlocks;
+            work.tileWrites -= before.tileWrites;
+        }
+        std::sort(oldTimes.begin(), oldTimes.end()); std::sort(newTimes.begin(), newTimes.end());
+        qInfo() << "points" << count << "legacy median/p95 ms" << oldTimes[10]/1e6 << oldTimes[18]/1e6
+                << "tiled median/p95 ms" << newTimes[10]/1e6 << newTimes[18]/1e6
+                << "new blocks/stamps/tile writes" << work.sampledBlocks << work.stamps << work.tileWrites;
+    }
 }
 
 QTEST_MAIN(TestMosaicStroke)

@@ -21,6 +21,9 @@ MosaicStroke::MosaicStroke(const QVector<QPoint> &points, SharedPixmap sourcePix
     , m_blurType(blurType)
     , m_devicePixelRatio(m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0)
 {
+    for (const QPoint& point : m_points) {
+        m_pointBounds |= QRect(point, QSize(1, 1));
+    }
     if (m_devicePixelRatio <= 0.0) {
         m_devicePixelRatio = 1.0;
     }
@@ -232,6 +235,11 @@ void MosaicStroke::draw(QPainter &painter) const
     QRect bounds = boundingRect();
     if (bounds.isEmpty()) return;
 
+    if (m_blurType == BlurType::Pixelate && updatePixelateTiles()) {
+        drawPixelateTiles(painter, bounds);
+        return;
+    }
+
     // The stroke points and source sampling both live in the source pixmap's
     // logical coordinate system. Build the effect and mask at that same DPR;
     // QPainter will scale the resulting pixmap to the destination device DPR.
@@ -349,28 +357,20 @@ void MosaicStroke::draw(QPainter &painter) const
 
     // Draw cached result
     painter.drawPixmap(bounds, m_renderedCache);
+    if (m_blurType == BlurType::Pixelate) {
+        // Budget overflow is a compatibility fallback, not an unbounded cache.
+        m_renderedCache = QPixmap();
+    }
 }
 
 QRect MosaicStroke::boundingRect() const
 {
     if (m_points.isEmpty()) return QRect();
 
-    int minX = m_points[0].x();
-    int maxX = m_points[0].x();
-    int minY = m_points[0].y();
-    int maxY = m_points[0].y();
-
-    for (const QPoint &p : m_points) {
-        minX = qMin(minX, p.x());
-        maxX = qMax(maxX, p.x());
-        minY = qMin(minY, p.y());
-        maxY = qMax(maxY, p.y());
-    }
-
-    // Use 2x width for mosaic brush (UI shows half the actual drawing size)
-    int margin = m_width + m_blockSize;
-    return QRect(minX - margin, minY - margin,
-                 maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+    const int margin = m_width + m_blockSize;
+    return QRect(m_pointBounds.left() - margin, m_pointBounds.top() - margin,
+                 m_pointBounds.width() - 1 + 2 * margin,
+                 m_pointBounds.height() - 1 + 2 * margin);
 }
 
 std::unique_ptr<AnnotationItem> MosaicStroke::clone() const
@@ -381,12 +381,20 @@ std::unique_ptr<AnnotationItem> MosaicStroke::clone() const
 
 void MosaicStroke::addPoint(const QPoint &point)
 {
+    // Keep the first duplicate: a single point does not draw, whereas a
+    // press/move at the same integer position historically does.
+    if (m_points.size() >= 2 && m_points.constLast() == point) return;
     m_points.append(point);
+    m_pointBounds |= QRect(point, QSize(1, 1));
 }
 
 void MosaicStroke::translate(const QPointF& delta)
 {
     QPoint d = delta.toPoint();
+    if (d.isNull()) return;
+    m_pointBounds.translate(d);
+    resetPixelateMask();
+    m_tileBudgetExceeded = false;
     for (QPoint& point : m_points) {
         point += d;
     }
@@ -394,6 +402,9 @@ void MosaicStroke::translate(const QPointF& delta)
 
 void MosaicStroke::setSourcePixmap(SharedPixmap pixmap)
 {
+    resetPixelateMask();
+    m_blockColors.clear();
+    m_tileBudgetExceeded = false;
     m_sourcePixmap = std::move(pixmap);
     m_devicePixelRatio = m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0;
     if (m_devicePixelRatio <= 0.0) {
@@ -435,4 +446,212 @@ bool MosaicStroke::intersectsCircle(const QPoint &center, int radius) const
     QPainterPath eraserPath;
     eraserPath.addEllipse(center, radius, radius);
     return strokePath().intersects(eraserPath);
+}
+
+namespace {
+int floorToGrid(int value, int grid)
+{
+    const int remainder = value % grid;
+    return value - (remainder < 0 ? remainder + grid : remainder);
+}
+quint64 tileKey(int x, int y)
+{
+    return (quint64(quint32(x)) << 32) | quint32(y);
+}
+QPoint tileOrigin(quint64 key)
+{
+    return QPoint(qint32(key >> 32), qint32(key & 0xffffffff));
+}
+}
+
+std::size_t MosaicStroke::pixelateCacheBytes() const
+{
+    return std::size_t(m_tiles.size()) * kTileCost
+        + std::size_t(m_blockColors.totalCost());
+}
+
+std::size_t MosaicStroke::estimatedRetainedBytes() const
+{
+    return sizeof(MosaicStroke) + std::size_t(m_points.capacity()) * sizeof(QPoint)
+        + estimatedPixmapBytes(m_renderedCache) + pixelateCacheBytes();
+}
+
+void MosaicStroke::resetPixelateMask() const
+{
+    m_tiles.clear();
+    m_tilePointCount = 0;
+    m_tileBounds = {};
+    m_requiresFullPreview = true;
+}
+
+bool MosaicStroke::pixelMappingChanged(const QRect& before, const QRect& after) const
+{
+    if (before.isEmpty()) return true;
+    if (before == after) return false;
+    // At integral source DPR all origin translations and dimensions are exact.
+    // Fractional DPR can change old mask rounding AND the final image scale.
+    // Keep the legacy contract by conservatively rebuilding on bounds changes.
+    return m_devicePixelRatio != qFloor(m_devicePixelRatio);
+}
+
+QRect MosaicStroke::previewAffectedBoundingRect() const
+{
+    const QRect bounds = boundingRect();
+    if (m_blurType != BlurType::Pixelate || m_requiresFullPreview || m_tilePointCount == 0
+        || m_tileBudgetExceeded || pixelMappingChanged(m_tileBounds, bounds)) {
+        return bounds.united(m_tileBounds);
+    }
+    QRect affected;
+    for (int i = qMax(0, m_tilePointCount - 1); i < m_points.size(); ++i) {
+        affected |= QRect(m_points[i], QSize(1, 1));
+    }
+    // Includes stamp rounding and resampling at a different destination DPR.
+    return affected.adjusted(-m_width - 2, -m_width - 2, m_width + 2, m_width + 2);
+}
+
+QRgb MosaicStroke::pixelateBlockColor(int x, int y, int blockSize) const
+{
+    const quint64 key = tileKey(x, y);
+    if (auto* cached = m_blockColors.object(key)) return *cached;
+    QRgb color = qRgb(0, 0, 0);
+    const QRect sample = QRect(x, y, blockSize, blockSize).intersected(m_sourcePixmap->rect());
+    if (!sample.isEmpty()) {
+        const QImage patch = m_sourcePixmap->copy(sample).toImage().convertToFormat(QImage::Format_ARGB32);
+        color = calculateBlockAverageColor(patch, 0, 0, patch.width(), patch.height());
+        // Legacy composition replaces alpha with the binary square mask,
+        // including transparent source pixels and blocks outside the source.
+        color = qRgb(qRed(color), qGreen(color), qBlue(color));
+        ++m_renderWork.sampledBlocks;
+    }
+    m_blockColors.insert(key, new QRgb(color), sizeof(QRgb) + kEntryOverhead);
+    return color;
+}
+
+bool MosaicStroke::stampPixelate(const QPointF& point, const QRect& bounds) const
+{
+    const qreal dpr = m_devicePixelRatio;
+    const QRect physicalBounds = CoordinateHelper::toPhysical(bounds, dpr);
+    const QPoint center = CoordinateHelper::toPhysical(point - bounds.topLeft(), dpr)
+        + physicalBounds.topLeft();
+    const int size = CoordinateHelper::toPhysical(QSize(m_width * 2, m_width * 2), dpr).width();
+    const QRect stamp = QRect(center - QPoint(size / 2, size / 2), QSize(size, size))
+        .intersected(physicalBounds);
+    ++m_renderWork.stamps;
+    if (stamp.isEmpty()) return true;
+    const int blockSize = qMax(8, CoordinateHelper::toPhysical(QSize(m_blockSize, m_blockSize), dpr).width());
+    for (int ty = floorToGrid(stamp.top(), kTileSize); ty <= stamp.bottom(); ty += kTileSize) {
+        for (int tx = floorToGrid(stamp.left(), kTileSize); tx <= stamp.right(); tx += kTileSize) {
+            const quint64 key = tileKey(tx, ty);
+            auto it = m_tiles.find(key);
+            if (it == m_tiles.end()) {
+                if (m_tiles.size() >= kTileBudgetBytes / kTileCost) return false;
+                QImage tile(kTileSize, kTileSize, QImage::Format_ARGB32_Premultiplied);
+                tile.fill(Qt::transparent);
+                it = m_tiles.insert(key, tile);
+            }
+            const QRect area = stamp.intersected(QRect(tx, ty, kTileSize, kTileSize));
+            for (int by = floorToGrid(area.top(), blockSize); by <= area.bottom(); by += blockSize) {
+                for (int bx = floorToGrid(area.left(), blockSize); bx <= area.right(); bx += blockSize) {
+                    const QRgb color = pixelateBlockColor(bx, by, blockSize);
+                    const QRect fill = area.intersected(QRect(bx, by, blockSize, blockSize));
+                    for (int y = fill.top(); y <= fill.bottom(); ++y) {
+                        auto* row = reinterpret_cast<QRgb*>(it.value().scanLine(y - ty));
+                        std::fill(row + fill.left() - tx, row + fill.right() - tx + 1, color);
+                    }
+                }
+            }
+            ++m_renderWork.tileWrites;
+        }
+    }
+    return true;
+}
+
+bool MosaicStroke::updatePixelateTiles() const
+{
+    if (m_tileBudgetExceeded) return false;
+    const QRect bounds = boundingRect();
+    // A size change affects the final resampling phase (and dirty bounds),
+    // but only an origin change can move already-stamped mask pixels.
+    const bool fractionalOriginChanged = m_devicePixelRatio != qFloor(m_devicePixelRatio)
+        && m_tileBounds.topLeft() != bounds.topLeft();
+    if (m_tileBounds.isEmpty() || fractionalOriginChanged) {
+        resetPixelateMask();
+        ++m_renderWork.maskRebuilds;
+    }
+    if (!m_sourcePixmap || m_sourcePixmap->isNull()) return true;
+    const int step = qMax(1, m_width / 2);
+    // Revisit only the previous endpoint to interpolate its new outgoing edge.
+    for (int i = qMax(0, m_tilePointCount - 1); i < m_points.size(); ++i) {
+        if (m_tilePointCount == m_points.size()) break;
+        if (!stampPixelate(m_points[i], bounds)) {
+            m_tileBudgetExceeded = true;
+            resetPixelateMask();
+            return false;
+        }
+        if (i + 1 == m_points.size()) continue;
+        const QPoint delta = m_points[i + 1] - m_points[i];
+        const double distanceSquared = double(delta.x()) * delta.x() + double(delta.y()) * delta.y();
+        if (distanceSquared <= double(step) * step) continue;
+        const int steps = int(qSqrt(distanceSquared) / step);
+        for (int j = 1; j < steps; ++j) {
+            const double t = double(j) / steps;
+            if (!stampPixelate(QPointF(m_points[i].x() + delta.x() * t,
+                                      m_points[i].y() + delta.y() * t), bounds)) {
+                m_tileBudgetExceeded = true;
+                resetPixelateMask();
+                return false;
+            }
+        }
+    }
+    m_tilePointCount = m_points.size();
+    m_tileBounds = bounds;
+    return true;
+}
+
+void MosaicStroke::drawPixelateTiles(QPainter& painter, const QRect& bounds) const
+{
+    if (!m_sourcePixmap || m_sourcePixmap->isNull() || m_tiles.isEmpty()) return;
+    const QRect physical = CoordinateHelper::toPhysical(bounds, m_devicePixelRatio);
+    const int blockSize = qMax(8, CoordinateHelper::toPhysical(QSize(m_blockSize, m_blockSize), m_devicePixelRatio).width());
+    // The legacy effect is entirely empty when its aligned fetch misses source.
+    const int left = floorToGrid(physical.left(), blockSize);
+    const int top = floorToGrid(physical.top(), blockSize);
+    const QRect fetch(left, top, physical.right() - left + blockSize,
+                      physical.bottom() - top + blockSize);
+    if (!fetch.intersects(m_sourcePixmap->rect())) return;
+
+    const QTransform transform = painter.deviceTransform();
+    const bool nativePixels = painter.compositionMode() == QPainter::CompositionMode_SourceOver
+        && qFuzzyCompare(transform.m11(), m_devicePixelRatio)
+        && qFuzzyCompare(transform.m22(), m_devicePixelRatio)
+        && transform.m12() == 0 && transform.m21() == 0
+        && transform.dx() == qRound(transform.dx()) && transform.dy() == qRound(transform.dy())
+        && m_devicePixelRatio == qFloor(m_devicePixelRatio)
+        && !painter.testRenderHint(QPainter::SmoothPixmapTransform);
+    // The single-image mixed-DPR resampling can change pixels far from a new
+    // segment even at integral source DPR. The next event must repaint them.
+    m_requiresFullPreview = !nativePixels;
+    if (nativePixels) {
+        for (auto it = m_tiles.cbegin(); it != m_tiles.cend(); ++it) {
+            const QPoint origin = tileOrigin(it.key());
+            const QRectF target(QPointF(origin) / m_devicePixelRatio,
+                                QSizeF(kTileSize / m_devicePixelRatio, kTileSize / m_devicePixelRatio));
+            painter.drawImage(target, it.value());
+        }
+        return;
+    }
+    // Preserve the exact single-image resampling phase and filtering across
+    // tile boundaries for mixed DPR, fractional bounds, zoom and rotation.
+    // This temporary assembly does not resample source blocks or replay masks.
+    QImage image(physical.size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter assembly(&image);
+        for (auto it = m_tiles.cbegin(); it != m_tiles.cend(); ++it) {
+            assembly.drawImage(tileOrigin(it.key()) - physical.topLeft(), it.value());
+        }
+    }
+    QPixmap pixmap = QPixmap::fromImage(image);
+    pixmap.setDevicePixelRatio(m_devicePixelRatio);
+    painter.drawPixmap(bounds, pixmap);
 }

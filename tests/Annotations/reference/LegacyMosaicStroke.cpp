@@ -1,0 +1,440 @@
+// Frozen renderer from bc6f6818333a58d0e30a6139416d7495a2e547ea for pixel parity.
+// Keep independent of the production incremental implementation.
+#include "LegacyMosaicStroke.h"
+#include "utils/CoordinateHelper.h"
+#include "utils/MatConverter.h"
+#include <QPainter>
+#include <QPainterPath>
+#include <QPainterPathStroker>
+#include <QtMath>
+#include <algorithm>
+#include <opencv2/imgproc.hpp>
+
+// ============================================================================
+// LegacyMosaicStroke Implementation (classic pixelation)
+// ============================================================================
+
+LegacyMosaicStroke::LegacyMosaicStroke(const QVector<QPoint> &points, SharedPixmap sourcePixmap,
+                           int width, int blockSize, BlurType blurType)
+    : m_points(points)
+    , m_sourcePixmap(std::move(sourcePixmap))
+    , m_width(width)
+    , m_blockSize(blockSize)
+    , m_blurType(blurType)
+    , m_devicePixelRatio(m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0)
+{
+    if (m_devicePixelRatio <= 0.0) {
+        m_devicePixelRatio = 1.0;
+    }
+}
+
+QRgb LegacyMosaicStroke::calculateBlockAverageColor(const QImage &image, int x, int y,
+                                               int blockW, int blockH) const
+{
+    // Calculate sampling bounds
+    int startX = qBound(0, x, image.width() - 1);
+    int startY = qBound(0, y, image.height() - 1);
+    int endX = qBound(0, x + blockW, image.width());
+    int endY = qBound(0, y + blockH, image.height());
+
+    if (startX >= endX || startY >= endY) {
+        return qRgba(128, 128, 128, 255);  // Fallback gray
+    }
+
+    // Calculate average color using scanLine for performance
+    qint64 totalR = 0, totalG = 0, totalB = 0, totalA = 0;
+    int pixelCount = 0;
+
+    for (int py = startY; py < endY; ++py) {
+        const QRgb *scanLine = reinterpret_cast<const QRgb*>(image.constScanLine(py));
+        for (int px = startX; px < endX; ++px) {
+            QRgb pixel = scanLine[px];
+            totalR += qRed(pixel);
+            totalG += qGreen(pixel);
+            totalB += qBlue(pixel);
+            totalA += qAlpha(pixel);
+            ++pixelCount;
+        }
+    }
+
+    if (pixelCount == 0) {
+        return qRgba(128, 128, 128, 255);
+    }
+
+    return qRgba(
+        static_cast<int>(totalR / pixelCount),
+        static_cast<int>(totalG / pixelCount),
+        static_cast<int>(totalB / pixelCount),
+        static_cast<int>(totalA / pixelCount)
+    );
+}
+
+QImage LegacyMosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
+{
+    // Calculate effective block size with DPI scaling
+    const int effectiveBlockSize = qMax(
+        8, CoordinateHelper::toPhysical(QSize(m_blockSize, m_blockSize), m_devicePixelRatio).width());
+
+    // Convert stroke bounds to device pixels for sampling
+    const QRect deviceStrokeBounds = CoordinateHelper::toPhysical(strokeBounds, m_devicePixelRatio);
+
+    if (deviceStrokeBounds.isEmpty()) {
+        return QImage();
+    }
+
+    auto floorToBlock = [](int value, int block) {
+        int rem = value % block;
+        if (rem < 0) {
+            rem += block;
+        }
+        return value - rem;
+    };
+
+    int startBlockX = floorToBlock(deviceStrokeBounds.left(), effectiveBlockSize);
+    int startBlockY = floorToBlock(deviceStrokeBounds.top(), effectiveBlockSize);
+    int endBlockX = deviceStrokeBounds.right();
+    int endBlockY = deviceStrokeBounds.bottom();
+
+    // Determine fetch area (aligned blocks)
+    QRect blockAlignedRect(
+        startBlockX,
+        startBlockY,
+        endBlockX - startBlockX + effectiveBlockSize,
+        endBlockY - startBlockY + effectiveBlockSize
+    );
+
+    // Intersect with source image bounds
+    if (!m_sourcePixmap) {
+        return QImage();
+    }
+    QRect sourceBounds(0, 0, m_sourcePixmap->width(), m_sourcePixmap->height());
+    QRect fetchRect = blockAlignedRect.intersected(sourceBounds);
+
+    if (fetchRect.isEmpty()) {
+        return QImage();
+    }
+
+    // Fetch ONLY the required patch
+    QImage sourcePatch = m_sourcePixmap->copy(fetchRect).toImage().convertToFormat(QImage::Format_ARGB32);
+
+    // Create result image for the stroke bounds region
+    QImage resultImage(deviceStrokeBounds.size(), QImage::Format_ARGB32);
+    resultImage.fill(Qt::transparent);
+
+    // Process blocks aligned to the full image grid for stable pixelation
+    for (int blockY = startBlockY; blockY <= endBlockY; blockY += effectiveBlockSize) {
+        for (int blockX = startBlockX; blockX <= endBlockX; blockX += effectiveBlockSize) {
+            QRect blockRectGlobal(blockX, blockY, effectiveBlockSize, effectiveBlockSize);
+
+            // Check intersection with deviceStrokeBounds (target)
+            QRect targetRect = blockRectGlobal.intersected(deviceStrokeBounds);
+            if (targetRect.isEmpty()) {
+                continue;
+            }
+
+            // Check intersection with fetchRect (source data)
+            QRect sampleRectGlobal = blockRectGlobal.intersected(fetchRect);
+            if (sampleRectGlobal.isEmpty()) {
+                continue;
+            }
+
+            // Calculate local coordinates for sampling from sourcePatch
+            int localSampleX = sampleRectGlobal.x() - fetchRect.x();
+            int localSampleY = sampleRectGlobal.y() - fetchRect.y();
+
+            QRgb blockColor = calculateBlockAverageColor(
+                sourcePatch,
+                localSampleX,
+                localSampleY,
+                sampleRectGlobal.width(),
+                sampleRectGlobal.height()
+            );
+
+            int destX = targetRect.x() - deviceStrokeBounds.x();
+            int destY = targetRect.y() - deviceStrokeBounds.y();
+
+            for (int py = 0; py < targetRect.height(); ++py) {
+                if (destY + py >= resultImage.height()) break;
+                QRgb *destLine = reinterpret_cast<QRgb*>(resultImage.scanLine(destY + py));
+                int fillWidth = qMin(targetRect.width(), resultImage.width() - destX);
+                if (fillWidth > 0 && destX >= 0) {
+                    std::fill(destLine + destX, destLine + destX + fillWidth, blockColor);
+                }
+            }
+        }
+    }
+
+    return resultImage;
+}
+
+QImage LegacyMosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
+{
+    // Convert stroke bounds to device pixels
+    const QRect deviceStrokeBounds = CoordinateHelper::toPhysical(strokeBounds, m_devicePixelRatio);
+
+    if (deviceStrokeBounds.isEmpty()) {
+        return QImage();
+    }
+
+    // Clamp to image bounds
+    if (!m_sourcePixmap) {
+        return QImage();
+    }
+    QRect sourceBounds(0, 0, m_sourcePixmap->width(), m_sourcePixmap->height());
+    QRect clampedBounds = deviceStrokeBounds.intersected(sourceBounds);
+
+    if (clampedBounds.isEmpty()) {
+        return QImage();
+    }
+
+    // Extract region from source (Just the needed part)
+    QImage regionImage = m_sourcePixmap->copy(clampedBounds).toImage();
+    QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
+    // The patch and result canvas use physical pixels. Copied pixmaps retain
+    // their DPR, which would shrink the patch during drawImage below. Restore
+    // the source DPR only on the final rendered cache in draw().
+    rgb.setDevicePixelRatio(1.0);
+
+    // Calculate sigma based on physical block size (larger block = more blur)
+    const int physicalBlockSize = CoordinateHelper::toPhysical(
+        QSize(m_blockSize, m_blockSize), m_devicePixelRatio).width();
+    double sigma = static_cast<double>(physicalBlockSize) / 2.0;
+    if (sigma < 1.0) {
+        sigma = 1.0;
+    }
+
+    cv::Mat mat = MatConverter::toMat(rgb);
+    if (mat.empty()) {
+        return {};
+    }
+    cv::GaussianBlur(mat, mat, cv::Size(0, 0), sigma);
+
+    // Copy blurred result (detaches from original buffer)
+    QImage blurred = rgb.copy();
+
+    // Create result image with proper offset
+    QImage resultImage(deviceStrokeBounds.size(), QImage::Format_ARGB32);
+    resultImage.fill(Qt::transparent);
+
+    // Paint blurred region into result at correct offset
+    int offsetX = clampedBounds.x() - deviceStrokeBounds.x();
+    int offsetY = clampedBounds.y() - deviceStrokeBounds.y();
+
+    QPainter p(&resultImage);
+    p.drawImage(offsetX, offsetY, blurred);
+    p.end();
+
+    return resultImage;
+}
+
+void LegacyMosaicStroke::draw(QPainter &painter) const
+{
+    if (m_points.size() < 2) return;
+
+    QRect bounds = boundingRect();
+    if (bounds.isEmpty()) return;
+
+    // The stroke points and source sampling both live in the source pixmap's
+    // logical coordinate system. Build the effect and mask at that same DPR;
+    // QPainter will scale the resulting pixmap to the destination device DPR.
+    // Mixing the painter DPR with the source DPR clips or shrinks the mask when
+    // a pin moves between screens with different scale factors.
+    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+
+    // Check if cache is valid
+    bool cacheValid = !m_renderedCache.isNull()
+        && m_cachedPointCount == m_points.size()
+        && m_cachedBounds == bounds
+        && m_cachedDpr == dpr;
+
+    if (!cacheValid) {
+        // Use 2x width for mosaic brush (UI shows half the actual drawing size)
+        int effectiveWidth = m_width * 2;
+        int halfWidth = effectiveWidth / 2;
+
+        // === Step 1: Create blurred/pixelated effect ===
+        QImage mosaicImage;
+        switch (m_blurType) {
+        case BlurType::Gaussian:
+            mosaicImage = applyGaussianBlur(bounds);
+            break;
+        case BlurType::Pixelate:
+        default:
+            mosaicImage = applyPixelatedMosaic(bounds);
+            break;
+        }
+        if (mosaicImage.isNull()) {
+            m_renderedCache = QPixmap();
+            return;
+        }
+
+        // === Step 2: Create mask from stroke path (square brush) ===
+        QImage maskImage(mosaicImage.size(), QImage::Format_Grayscale8);
+        maskImage.fill(0);  // Start fully transparent
+
+        QPainter maskPainter(&maskImage);
+        maskPainter.setRenderHint(QPainter::Antialiasing, false);
+        maskPainter.setPen(Qt::NoPen);
+        maskPainter.setBrush(Qt::white);
+
+        // Interpolation step for gap-free coverage
+        int interpolationStep = qMax(1, halfWidth / 2);
+
+        // Draw squares along the stroke path with interpolation
+        for (int i = 0; i < m_points.size(); ++i) {
+            QPoint pt = m_points[i];
+            // Convert to mask coordinates (relative to bounds)
+            const QPoint maskPos = CoordinateHelper::toPhysical(pt - bounds.topLeft(), dpr);
+            const int mx = maskPos.x();
+            const int my = maskPos.y();
+            const int size = CoordinateHelper::toPhysical(QSize(effectiveWidth, effectiveWidth), dpr).width();
+
+            maskPainter.fillRect(mx - size / 2, my - size / 2, size, size, Qt::white);
+
+            // Interpolate to next point
+            if (i < m_points.size() - 1) {
+                QPoint nextPt = m_points[i + 1];
+                int dx = nextPt.x() - pt.x();
+                int dy = nextPt.y() - pt.y();
+                int distSq = dx * dx + dy * dy;
+
+                if (distSq > interpolationStep * interpolationStep) {
+                    double dist = qSqrt(static_cast<double>(distSq));
+                    int steps = static_cast<int>(dist / interpolationStep);
+
+                    for (int s = 1; s < steps; ++s) {
+                        double t = static_cast<double>(s) / steps;
+                        const QPointF interpPoint(
+                            pt.x() + dx * t - bounds.left(),
+                            pt.y() + dy * t - bounds.top());
+                        const QPoint interpPos = CoordinateHelper::toPhysical(interpPoint, dpr);
+                        const int interpX = interpPos.x();
+                        const int interpY = interpPos.y();
+                        maskPainter.fillRect(interpX - size / 2, interpY - size / 2, size, size, Qt::white);
+                    }
+                }
+            }
+        }
+        maskPainter.end();
+
+        // === Step 3: Composite mosaic image using mask ===
+        // Apply mask to mosaic image
+        Q_ASSERT(mosaicImage.size() == maskImage.size());
+        if (mosaicImage.size() != maskImage.size()) {
+            m_renderedCache = QPixmap();
+            return;
+        }
+
+        for (int y = 0; y < mosaicImage.height(); ++y) {
+            QRgb *pixelRow = reinterpret_cast<QRgb*>(mosaicImage.scanLine(y));
+            const uchar *maskRow = maskImage.constScanLine(y);
+
+            for (int x = 0; x < mosaicImage.width(); ++x) {
+                int alpha = maskRow[x];  // 0-255 from grayscale mask
+                if (alpha == 0) {
+                    pixelRow[x] = qRgba(0, 0, 0, 0);  // Fully transparent
+                } else {
+                    // Keep original color, set alpha from mask
+                    QRgb orig = pixelRow[x];
+                    pixelRow[x] = qRgba(qRed(orig), qGreen(orig), qBlue(orig), alpha);
+                }
+            }
+        }
+
+        m_renderedCache = QPixmap::fromImage(mosaicImage);
+        m_renderedCache.setDevicePixelRatio(dpr);
+
+        m_cachedPointCount = m_points.size();
+        m_cachedBounds = bounds;
+        m_cachedDpr = dpr;
+    }
+
+    // Draw cached result
+    painter.drawPixmap(bounds, m_renderedCache);
+}
+
+QRect LegacyMosaicStroke::boundingRect() const
+{
+    if (m_points.isEmpty()) return QRect();
+
+    int minX = m_points[0].x();
+    int maxX = m_points[0].x();
+    int minY = m_points[0].y();
+    int maxY = m_points[0].y();
+
+    for (const QPoint &p : m_points) {
+        minX = qMin(minX, p.x());
+        maxX = qMax(maxX, p.x());
+        minY = qMin(minY, p.y());
+        maxY = qMax(maxY, p.y());
+    }
+
+    // Use 2x width for mosaic brush (UI shows half the actual drawing size)
+    int margin = m_width + m_blockSize;
+    return QRect(minX - margin, minY - margin,
+                 maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+}
+
+std::unique_ptr<AnnotationItem> LegacyMosaicStroke::clone() const
+{
+    // SharedPixmap copy is cheap - just increments reference count
+    return std::make_unique<LegacyMosaicStroke>(m_points, m_sourcePixmap, m_width, m_blockSize, m_blurType);
+}
+
+void LegacyMosaicStroke::addPoint(const QPoint &point)
+{
+    m_points.append(point);
+}
+
+void LegacyMosaicStroke::translate(const QPointF& delta)
+{
+    QPoint d = delta.toPoint();
+    for (QPoint& point : m_points) {
+        point += d;
+    }
+}
+
+void LegacyMosaicStroke::setSourcePixmap(SharedPixmap pixmap)
+{
+    m_sourcePixmap = std::move(pixmap);
+    m_devicePixelRatio = m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0;
+    if (m_devicePixelRatio <= 0.0) {
+        m_devicePixelRatio = 1.0;
+    }
+
+    m_renderedCache = QPixmap();
+    m_cachedPointCount = 0;
+    m_cachedBounds = QRect();
+    m_cachedDpr = 0.0;
+}
+
+QPainterPath LegacyMosaicStroke::strokePath() const
+{
+    if (m_points.size() < 2) {
+        return {};
+    }
+
+    QPainterPath linePath;
+    linePath.moveTo(m_points[0]);
+    for (int i = 1; i < m_points.size(); ++i) {
+        linePath.lineTo(m_points[i]);
+    }
+
+    QPainterPathStroker stroker;
+    stroker.setWidth(m_width * 2);  // 2x width for mosaic brush
+    stroker.setCapStyle(Qt::RoundCap);
+    stroker.setJoinStyle(Qt::RoundJoin);
+    return stroker.createStroke(linePath);
+}
+
+bool LegacyMosaicStroke::intersectsCircle(const QPoint &center, int radius) const
+{
+    QRect eraserRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+    if (!boundingRect().intersects(eraserRect)) {
+        return false;
+    }
+
+    QPainterPath eraserPath;
+    eraserPath.addEllipse(center, radius, radius);
+    return strokePath().intersects(eraserPath);
+}
