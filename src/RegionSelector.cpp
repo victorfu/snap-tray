@@ -37,6 +37,8 @@
 using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "qml/QmlEmojiPickerPopup.h"
 #include "OCRManager.h"
+#include "detection/TextLineGeometryCache.h"
+#include "tools/handlers/MarkerToolHandler.h"
 #include "QRCodeManager.h"
 #include "PlatformFeatures.h"
 #include "detection/AutoBlurManager.h"
@@ -233,6 +235,10 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this](const QRect& rect) {
             if (!m_adjustingSelectionWithKeyboard && !m_selectionManager->isManipulating()) {
                 setSelectionWindowMetadata({}, {});
+            }
+            if (m_markerTextCache) {
+                m_markerTextCache->clear();
+                static_cast<MarkerToolHandler*>(m_toolManager->handler(ToolId::Marker))->clearHover();
             }
             ++m_autoBlurGeneration;
             if (m_inputState.multiRegionMode && m_multiRegionManager &&
@@ -450,6 +456,27 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolbarViewModel = new RegionToolbarViewModel(this);
     m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
     m_toolOptionsViewModel = new PinToolOptionsViewModel(this);
+    m_markerTextSnapSupported = PlatformFeatures::instance().isOCRAvailable() && OCRManager::isAvailable();
+    m_toolOptionsViewModel->setMarkerTextSnapEnabled(AnnotationSettingsManager::instance().loadMarkerTextSnap());
+    m_markerTextCache = new TextLineGeometryCache(
+        [this](const QPixmap& image, const QStringList& languages, const OCRCallback& callback) {
+            if (auto* manager = ensureOCRManager()) {
+                manager->setRecognitionLanguages(languages);
+                manager->recognizeText(image, callback);
+            } else {
+                callback(OCRResult{});
+            }
+        }, this);
+    m_toolManager->context()->markerTextLines = [this]() {
+        syncMarkerTextSnap();
+        return m_markerTextCache->snapshot();
+    };
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::markerTextSnapEnabledChanged, this, [this]() {
+        AnnotationSettingsManager::instance().saveMarkerTextSnap(m_toolOptionsViewModel->markerTextSnapEnabled());
+        syncMarkerTextSnap();
+        static_cast<MarkerToolHandler*>(m_toolManager->handler(ToolId::Marker))->clearHover();
+        update();
+    });
 
     // Create QML floating toolbar windows
     m_qmlToolbar = std::make_unique<SnapTray::QmlFloatingToolbar>(
@@ -1313,6 +1340,27 @@ void RegionSelector::showEmojiPickerPopup()
     m_emojiPickerPopup->showAt(anchor);
 }
 
+void RegionSelector::syncMarkerTextSnap()
+{
+    if (!m_markerTextCache || !m_toolOptionsViewModel) return;
+    const bool available = !m_isClosing && m_markerTextSnapSupported && !m_inputState.multiRegionMode &&
+        m_inputState.replaceTargetIndex < 0 && m_selectionManager->isComplete();
+    m_toolOptionsViewModel->setMarkerTextSnapAvailable(available);
+    if (!available || !m_toolOptionsViewModel->markerTextSnapEnabled()) {
+        m_markerTextCache->clear();
+        return;
+    }
+    const QRect crop = CoordinateHelper::toPhysical(m_selectionManager->selectionRect(), m_devicePixelRatio)
+        .intersected(m_backgroundPixmap.rect());
+    TextLineGeometryCache::Key key;
+    key.source = m_backgroundPixmap.cacheKey();
+    key.crop = crop;
+    key.imageSize = m_backgroundPixmap.size();
+    key.dpr = m_devicePixelRatio;
+    key.languages = OCRSettingsManager::instance().languages();
+    m_markerTextCache->request(key, m_backgroundPixmap);
+}
+
 OCRManager* RegionSelector::ensureOCRManager()
 {
     if (!m_ocrManager) {
@@ -1395,6 +1443,10 @@ void RegionSelector::applyCaptureContext(const SelectorCaptureContext& context)
 {
     ++m_autoBlurGeneration;
     const qreal normalizedDpr = context.devicePixelRatio > 0.0 ? context.devicePixelRatio : 1.0;
+    if (m_markerTextCache) {
+        m_markerTextCache->clear();
+        static_cast<MarkerToolHandler*>(m_toolManager->handler(ToolId::Marker))->clearHover();
+    }
     m_backgroundPixmap = context.backgroundPixmap;
     m_devicePixelRatio = normalizedDpr;
     m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
@@ -4016,6 +4068,7 @@ void RegionSelector::updateToolbarAutoBlurState()
 
 void RegionSelector::syncRegionSubToolbar(bool refreshContent)
 {
+    syncMarkerTextSnap();
     if (!m_toolOptionsViewModel) {
         return;
     }
@@ -4394,6 +4447,9 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
+    if (m_inputState.currentTool == ToolId::Marker && !m_toolManager->isDrawing()) {
+        m_toolManager->handleMouseMove(event->position(), event->modifiers());
+    }
     m_inputHandler->handleMouseMove(event);
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
@@ -4727,6 +4783,8 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     }
 
     m_isClosing = true;
+    if (m_markerTextCache) m_markerTextCache->clear();
+    if (auto* marker = m_toolManager->handler(ToolId::Marker)) marker->cancelDrawing();
     if (m_colorPickOverlay) {
         m_colorPickOverlay->cancel();
     }

@@ -5,6 +5,9 @@
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "RegionSelector.h"
+#include "detection/TextLineGeometryCache.h"
+#include "region/SelectionStateManager.h"
+#include "tools/ToolManager.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "qml/QmlFloatingSubToolbar.h"
@@ -18,6 +21,7 @@ class tst_RegionSelectorMultiRegionSubToolbar : public QObject
     Q_OBJECT
 
 private slots:
+    void testMarkerTextCacheIsSingleRegionOnly();
     void initTestCase();
     void testToolbarToggleHidesSubToolbarInMultiRegionMode();
     void testBeginReplaceHidesStaleSubToolbar();
@@ -26,6 +30,41 @@ private slots:
     void testMosaicWheelDoesNotAdjustWidthWithCompletedSelection();
     void testStepBadgeSizeStartsSavedAndWheelStopsAtEnds();
 };
+
+void tst_RegionSelectorMultiRegionSubToolbar::testMarkerTextCacheIsSingleRegionOnly()
+{
+    AnnotationSettingsManager::instance().saveMarkerTextSnap(false);
+    const auto cleanup = qScopeGuard([] { AnnotationSettingsManager::instance().saveMarkerTextSnap(false); });
+    RegionSelector selector;
+    delete selector.m_markerTextCache;
+    int requests = 0;
+    OCRCallback callback;
+    selector.m_markerTextCache = new TextLineGeometryCache(
+        [&](const QPixmap&, const QStringList&, const OCRCallback& cb) { ++requests; callback = cb; }, &selector);
+    selector.m_markerTextSnapSupported = true;
+    selector.m_backgroundPixmap = QPixmap(400,200);
+    selector.m_backgroundPixmap.fill(Qt::white);
+    selector.m_devicePixelRatio = 1;
+    selector.m_selectionManager->setSelectionRect({0,0,400,200});
+    selector.syncMarkerTextSnap();
+    QVERIFY(selector.m_toolOptionsViewModel->markerTextSnapAvailable());
+    QCOMPARE(requests,0);
+    selector.m_toolOptionsViewModel->setMarkerTextSnapEnabled(true);
+    QCOMPARE(requests,1);
+    selector.syncMarkerTextSnap(); QCOMPARE(requests,1);
+    OCRResult result; result.success = true; result.blocks = {{"text",{.1,.2,.5,.1},-1}};
+    callback(result);
+    QVERIFY(selector.m_toolManager->context()->markerTextLines());
+    selector.m_inputState.multiRegionMode = true;
+    selector.syncMarkerTextSnap();
+    QVERIFY(!selector.m_toolOptionsViewModel->markerTextSnapAvailable());
+    QVERIFY(!selector.m_toolManager->context()->markerTextLines());
+    selector.m_inputState.multiRegionMode = false;
+    selector.m_markerTextSnapSupported = false; // Linux / unavailable native OCR
+    selector.syncMarkerTextSnap();
+    QVERIFY(!selector.m_toolOptionsViewModel->markerTextSnapAvailable());
+    QCOMPARE(requests,1);
+}
 
 void tst_RegionSelectorMultiRegionSubToolbar::initTestCase()
 {

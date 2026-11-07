@@ -3,6 +3,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "tools/ToolContext.h"
 #include "tools/handlers/MarkerToolHandler.h"
+#include "history/AnnotationSerializer.h"
 #include <QImage>
 #include <QPainter>
 
@@ -11,6 +12,9 @@ class TestMarkerToolHandler : public QObject
     Q_OBJECT
 
 private slots:
+    void testTextSnapLifecycle();
+    void testPartialOverlapLocksOneLine();
+    void testLateOcrUsesNextStroke();
     void init();
     void cleanup();
     void testPreviewBounds_DuringAndAfterDrawing();
@@ -190,6 +194,80 @@ void TestMarkerToolHandler::testLiveTailReachesCursorBeforePointCommits()
     // The committed points trail the cursor, but the preview reaches it.
     QVERIFY(qAlpha(image.pixel(cursor.toPoint())) > 0);
     QCOMPARE(qAlpha(image.pixel(QPoint(100, 30))), 0);
+}
+
+void TestMarkerToolHandler::testPartialOverlapLocksOneLine()
+{
+    auto snapshot = TextLineSnapshot::fromOCR({{"first",{.1,.2,.6,.1},-1},
+                                              {"second",{.1,.4,.6,.1},-1}}, {0,0,400,200});
+    m_context->markerTextLines = [snapshot]() { return snapshot; };
+    m_handler->onMousePressF(m_context,{10.5,53}); // starts outside text
+    m_handler->onMouseMoveF(m_context,{100.5,55});
+    m_handler->onMouseMoveF(m_context,{200.5,90}); // must not switch to next row
+    m_handler->onMouseReleaseF(m_context,{220.5,90});
+    auto* stroke = dynamic_cast<MarkerStroke*>(m_layer->itemAt(0));
+    QVERIFY(stroke);
+    QCOMPARE(stroke->points(),QVector<QPointF>({{10.5,50},{220.5,50}}));
+    QCOMPARE(stroke->width(),23);
+}
+
+void TestMarkerToolHandler::testTextSnapLifecycle()
+{
+    auto snapshot = TextLineSnapshot::fromOCR({{"text",{.1,.2,.6,.1},-1}}, {0,0,400,200});
+    m_context->markerTextLines = [snapshot]() { return snapshot; };
+    m_context->shiftPressed = true;
+    m_handler->onMouseMoveF(m_context,{200,52});
+    QVERIFY(!m_handler->previewBounds().isEmpty());
+    m_handler->onMousePressF(m_context,{200.5,52});
+    m_context->markerTextLines = {}; // disabling/source update cannot reshape this stroke
+    m_handler->onMouseMoveF(m_context,{80.25,150});
+    m_handler->onMouseReleaseF(m_context,{60.25,170});
+    QCOMPARE(m_layer->itemCount(),size_t(1));
+    auto* stroke = dynamic_cast<MarkerStroke*>(m_layer->itemAt(0));
+    QVERIFY(stroke);
+    QCOMPARE(stroke->points(),QVector<QPointF>({{200.5,50},{60.25,50}}));
+    QCOMPARE(stroke->width(),23);
+    QVERIFY(stroke->intersectsCircle({100,50},2));
+    QVERIFY(!stroke->intersectsCircle({100,100},2));
+    const auto bytes = SnapTray::serializeAnnotationLayer(*m_layer);
+    m_layer->undo(); QCOMPARE(m_layer->itemCount(),size_t(0));
+    m_layer->redo(); QCOMPARE(SnapTray::serializeAnnotationLayer(*m_layer),bytes);
+    AnnotationLayer restored;
+    QVERIFY(SnapTray::deserializeAnnotationLayer(bytes,&restored,{}));
+    QCOMPARE(SnapTray::serializeAnnotationLayer(restored),bytes);
+    auto render = [](AnnotationItem* item) {
+        QImage image(400,200,QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        item->draw(painter);
+        return image;
+    };
+    QCOMPARE(render(m_layer->itemAt(0)),render(restored.itemAt(0)));
+    m_handler->onMousePressF(m_context,{100,50});
+    m_handler->cancelDrawing();
+    m_handler->onMouseReleaseF(m_context,{200,50});
+    QCOMPARE(m_layer->itemCount(),size_t(1));
+    m_handler->onMousePressF(m_context,{100,50});
+    m_handler->onDeactivate(m_context);
+    m_handler->onMouseReleaseF(m_context,{200,50});
+    QCOMPARE(m_layer->itemCount(),size_t(1));
+}
+
+void TestMarkerToolHandler::testLateOcrUsesNextStroke()
+{
+    std::shared_ptr<const TextLineSnapshot> snapshot;
+    m_context->markerTextLines = [&snapshot]() { return snapshot; };
+    m_handler->onMousePressF(m_context,{100,55});
+    snapshot = TextLineSnapshot::fromOCR({{"text",{.1,.2,.6,.1},-1}}, {0,0,400,200});
+    m_handler->onMouseReleaseF(m_context,{200,65});
+    auto* ordinary = dynamic_cast<MarkerStroke*>(m_layer->itemAt(0));
+    QCOMPARE(ordinary->width(),20);
+    QCOMPARE(ordinary->points().last(),QPointF(200,65));
+    m_handler->onMousePressF(m_context,{100,55});
+    m_handler->onMouseReleaseF(m_context,{200,65});
+    auto* snapped = dynamic_cast<MarkerStroke*>(m_layer->itemAt(1));
+    QCOMPARE(snapped->width(),23);
+    QCOMPARE(snapped->points().last(),QPointF(200,50));
 }
 
 QTEST_MAIN(TestMarkerToolHandler)

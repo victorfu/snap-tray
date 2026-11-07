@@ -23,6 +23,7 @@ class tst_AnnotationSettingsManager : public QObject
     Q_OBJECT
 
 private slots:
+    void testMarkerTextSnapDefaultAndRoundtrip();
     void init();
     void cleanup();
 
@@ -87,6 +88,16 @@ private:
     void clearSetting(const char* key);
 };
 
+void tst_AnnotationSettingsManager::testMarkerTextSnapDefaultAndRoundtrip()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    QVERIFY(!settings.loadMarkerTextSnap());
+    settings.saveMarkerTextSnap(true);
+    QVERIFY(settings.loadMarkerTextSnap());
+    settings.saveMarkerTextSnap(false);
+    QVERIFY(!settings.loadMarkerTextSnap());
+}
+
 void tst_AnnotationSettingsManager::init()
 {
     clearAllTestSettings();
@@ -100,6 +111,7 @@ void tst_AnnotationSettingsManager::cleanup()
 void tst_AnnotationSettingsManager::clearAllTestSettings()
 {
     auto settings = SnapTray::getSettings();
+    settings.remove("annotation/markerTextSnap");
     settings.remove("annotationColor");
     settings.remove("annotationWidth");
     settings.remove("mosaicBrushSize");

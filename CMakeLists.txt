@@ -479,6 +479,8 @@ add_library(snaptray_algorithms STATIC
     # Detection
     src/detection/FaceDetector.cpp
     src/detection/AutoBlurManager.cpp
+    src/detection/TextLineSnapper.cpp
+    src/detection/TextLineGeometryCache.cpp
     src/detection/CredentialDetector.cpp
     src/detection/TableDetector.cpp
     # Headers with Q_OBJECT for MOC processing

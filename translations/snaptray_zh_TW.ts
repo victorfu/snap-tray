@@ -7879,4 +7879,11 @@ It may be in use by another application.</source>
         <translation>粗細</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <source>Snap to text</source>
+        <translation>貼齊文字</translation>
+    </message>
+</context>
 </TS>

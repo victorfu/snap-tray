@@ -51,6 +51,9 @@ public:
     // Source pixmap (for mosaic tool) - shared to avoid memory duplication
     SharedPixmap sourcePixmap;
 
+    // Region Selector supplies a current immutable OCR snapshot; other hosts leave empty.
+    std::function<std::shared_ptr<const class TextLineSnapshot>()> markerTextLines;
+
     // Device pixel ratio for high-DPI support
     qreal devicePixelRatio = 1.0;
 
