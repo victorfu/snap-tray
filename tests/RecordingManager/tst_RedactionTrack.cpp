@@ -93,6 +93,10 @@ void TestRedactionTrack::timingIsConservative()
     QVERIFY(mask.isActiveAt(1500));
     QVERIFY(mask.isActiveAt(2000)); // the end is inclusive
     QVERIFY(!mask.isActiveAt(2001));
+    // An explicit end at a cut must not be extended by the fallback guard.
+    QVERIFY(!mask.isActiveAt(900, 950));
+    QVERIFY(!mask.isActiveAt(900, 1000));
+    QVERIFY(mask.isActiveAt(900, 1001));
     // Open-ended: to the end of the recording.
     const RedactionMask always{QRect(0, 0, 10, 10), 0, -1, RedactionMask::Style::Solid};
     QVERIFY(always.isActiveAt(0));

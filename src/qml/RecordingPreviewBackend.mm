@@ -154,6 +154,7 @@ std::function<void(QImage&, qint64, qint64)> RecordingPreviewBackend::effectsFra
     const QSize videoSize = effectsVideoSize();
     const QRectF bounds = m_cropRect.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(videoSize)) : QRectF(m_cropRect);
     const auto timeline = m_cursorTimeline;
+    const auto editTimeline = timelineMap();
     const bool drawCursor = cursorEffectsActive();
     const auto cursor = drawCursor
         ? std::make_shared<SnapTray::CursorEffectRenderer>(*timeline, m_cursorEffects, effectsClipEnd())
@@ -187,7 +188,7 @@ std::function<void(QImage&, qint64, qint64)> RecordingPreviewBackend::effectsFra
     const auto overlays = m_overlays.isEmpty() || !overlaysAvailable()
         ? std::shared_ptr<const SnapTray::OverlayTrack>()
         : std::make_shared<const SnapTray::OverlayTrack>(m_overlays);
-    return [timeline, cursor, zoom, redaction, appearance, blurredBackground, keys, overlays, bounds, videoSize](
+    return [timeline, editTimeline, cursor, zoom, redaction, appearance, blurredBackground, keys, overlays, bounds, videoSize](
                QImage& frame, qint64 sourceMs, qint64 sourceEndMs) {
         if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
             frame = frame.convertToFormat(QImage::Format_RGB32);
@@ -197,8 +198,14 @@ std::function<void(QImage&, qint64, qint64)> RecordingPreviewBackend::effectsFra
         // Never skip masks for lack of geometry: without a known size the
         // frame itself is the source area.
         if (redaction) {
+            // Preserve conservative lookahead within the current kept part only.
+            // Neither a held frame nor the legacy guard may include a deleted gap.
+            qint64 maskEndMs = qMax(sourceEndMs, sourceMs + SnapTray::RedactionTrack::kFrameHoldMs);
+            const int part = editTimeline.segmentAt(sourceMs);
+            if (part >= 0)
+                maskEndMs = qMin(maskEndMs, editTimeline.segments()[size_t(part)].endMs);
             redaction->apply(frame, sourceMs,
-                             bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds, sourceEndMs);
+                             bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds, maskEndMs);
         }
         // A blurred background comes from the masked picture, before zoom and
         // pointer: nothing a mask covers can show through it.
@@ -3233,8 +3240,11 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                 if (cursorFilter) {
                     const qint64 outputEndMs = qMin(outputDurationMs, (frameIndex + 1) * 1000 / frameRateInt);
                     // The last covered output microsecond avoids including the next frame at a cut.
-                    const qint64 sourceEndMs = timeline.isEmpty() ? startMs + outputEndMs
+                    qint64 sourceEndMs = timeline.isEmpty() ? startMs + outputEndMs
                         : (timeline.outputToSourceMicroseconds(outputEndMs * 1000 - 1) + 1000) / 1000;
+                    const int part = timeline.segmentAt(timeMs);
+                    if (part >= 0)
+                        sourceEndMs = qMin(sourceEndMs, timeline.segments()[size_t(part)].endMs);
                     cursorFilter(capturedFrame, timeMs, sourceEndMs);
                 }
                 const qint64 framesBefore = gifEncoder

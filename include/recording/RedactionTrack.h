@@ -23,8 +23,8 @@ struct RedactionMask {
     Style style = Style::Solid;
 
     // Conservative timing: mask the whole covered source-time interval.
-    // frameEndMs is exclusive; keep at least kFrameHoldMs of coverage for
-    // preview callers without exact timing and legacy conservative behavior.
+    // frameEndMs is exclusive and authoritative when supplied, so callers
+    // can bound coverage at cuts. Without it, use kFrameHoldMs for preview.
     bool isActiveAt(qint64 frameMs, qint64 frameEndMs = -1) const;
     bool operator==(const RedactionMask& o) const;
     bool operator!=(const RedactionMask& o) const { return !(*this == o); }

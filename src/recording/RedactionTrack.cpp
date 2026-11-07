@@ -35,7 +35,8 @@ QImage reduced(const QImage& area, int factor, Qt::TransformationMode mode)
 bool RedactionMask::isActiveAt(qint64 frameMs, qint64 frameEndMs) const
 {
     const bool beforeEnd = endMs < 0 || frameMs <= endMs;
-    return beforeEnd && qMax(frameEndMs, frameMs + RedactionTrack::kFrameHoldMs) > startMs;
+    const qint64 coveredEndMs = frameEndMs >= 0 ? frameEndMs : frameMs + RedactionTrack::kFrameHoldMs;
+    return beforeEnd && coveredEndMs > startMs;
 }
 
 bool RedactionMask::operator==(const RedactionMask& o) const
