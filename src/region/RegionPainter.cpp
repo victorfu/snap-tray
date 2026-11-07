@@ -392,6 +392,26 @@ void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectio
     drawHandle(sel.center().x(), sel.bottom());
     drawHandle(sel.left(), sel.center().y());
     drawHandle(sel.right(), sel.center().y());
+
+    // Interaction-only guides share the host and detached chrome renderer;
+    // exports and history render the untouched source/annotation layers.
+    if (m_selectionManager && m_selectionManager->isResizing() && !m_multiRegionMode) {
+        const auto edges = m_selectionManager->snappedEdges();
+        constexpr int kGuideHalfLength = 16;
+        painter.setPen(QPen(selectionAccent, 3.0));
+        const int halfY = qMin(kGuideHalfLength, sel.height() / 2);
+        const int halfX = qMin(kGuideHalfLength, sel.width() / 2);
+        for (Qt::Edge edge : {Qt::LeftEdge, Qt::RightEdge}) {
+            if (!edges.testFlag(edge)) continue;
+            const int x = edge == Qt::LeftEdge ? sel.x() : sel.x() + sel.width();
+            painter.drawLine(x, sel.center().y() - halfY, x, sel.center().y() + halfY);
+        }
+        for (Qt::Edge edge : {Qt::TopEdge, Qt::BottomEdge}) {
+            if (!edges.testFlag(edge)) continue;
+            const int y = edge == Qt::TopEdge ? sel.y() : sel.y() + sel.height();
+            painter.drawLine(sel.center().x() - halfX, y, sel.center().x() + halfX, y);
+        }
+    }
 }
 
 void RegionPainter::drawDimensionInfo(QPainter& painter)

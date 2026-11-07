@@ -66,7 +66,55 @@ bool RegionInputHandler::isManipulatingAnnotation() const
 
 void RegionInputHandler::setSelectionManager(SelectionStateManager* manager)
 {
+    if (m_selectionManager) disconnect(m_selectionManager, nullptr, this, nullptr);
     m_selectionManager = manager;
+    if (manager) connect(manager, &SelectionStateManager::stateChanged, this,
+        [this](SelectionStateManager::State state) {
+            m_boundarySnap.reset();
+            if (state != SelectionStateManager::State::ResizingHandle) m_snapKeyHeld = false;
+        });
+}
+
+void RegionInputHandler::setBoundarySnapSource(const QImage& image, qreal dpr)
+{
+    m_boundarySnap.setSource(image, dpr);
+    m_snapKeyHeld = false;
+    if (m_selectionManager) m_selectionManager->clearSnapGuides();
+}
+
+void RegionInputHandler::setBoundarySnapAllowed(bool allowed)
+{
+    m_boundarySnapAllowed = allowed;
+    if (!allowed) {
+        m_boundarySnap.reset();
+        if (m_selectionManager) m_selectionManager->clearSnapGuides();
+    }
+}
+
+bool RegionInputHandler::handleBoundarySnapKey(int key, bool pressed, bool autoRepeat)
+{
+    if (key != Qt::Key_Alt && key != Qt::Key_S) return false;
+    const bool resizing = boundarySnapEligible();
+    if (key == Qt::Key_S && !resizing && pressed) return false;
+    if (autoRepeat) return resizing;
+    if (key == Qt::Key_Alt) m_currentModifiers.setFlag(Qt::AltModifier, pressed);
+    else m_snapKeyHeld = pressed;
+    if (resizing && m_state) {
+        updateSelectionGesture(state().currentPoint);
+        emit updateRequested();
+    }
+    return resizing;
+}
+
+bool RegionInputHandler::cancelSelectionResize()
+{
+    if (!m_selectionManager || !m_selectionManager->isResizing() || !m_state
+        || state().multiRegionMode || !m_boundarySnapAllowed) return false;
+    m_boundarySnap.reset();
+    m_selectionManager->cancelResizeOrMove();
+    clearSelectionDrag();
+    emit updateRequested();
+    return true;
 }
 
 void RegionInputHandler::setAnnotationLayer(AnnotationLayer* layer)
@@ -616,6 +664,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             if (handle != SelectionStateManager::ResizeHandle::None) {
                 m_lastSelectionRect = m_selectionManager->selectionRect();
                 clearSelectionDrag();
+                state().currentPoint = pos;
                 m_selectionManager->startResize(pos, handle);
                 emit updateRequested();
                 return true;
@@ -644,6 +693,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             if (handle != SelectionStateManager::ResizeHandle::None) {
                 m_lastSelectionRect = m_selectionManager->selectionRect();
                 clearSelectionDrag();
+                state().currentPoint = pos;
                 m_selectionManager->startResize(pos, handle);
                 emit updateRequested();
                 return true;
@@ -661,6 +711,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
     if (handle != SelectionStateManager::ResizeHandle::None) {
         m_lastSelectionRect = m_selectionManager->selectionRect();
         clearSelectionDrag();
+        state().currentPoint = pos;
         m_selectionManager->startResize(pos, handle);
         emit updateRequested();
         return true;
@@ -1283,6 +1334,13 @@ void RegionInputHandler::clearPendingWindowClick()
     m_pendingWindowClickStartPos = QPoint();
 }
 
+bool RegionInputHandler::boundarySnapEligible() const
+{
+    return m_selectionManager && m_state && m_selectionManager->isResizing()
+        && m_boundarySnapAllowed && !state().multiRegionMode && state().replaceTargetIndex < 0
+        && m_selectionManager->aspectRatio() <= 0;
+}
+
 bool RegionInputHandler::updateSelectionGesture(const QPoint& pos)
 {
     if (!m_selectionManager || !m_state) return false;
@@ -1307,7 +1365,20 @@ bool RegionInputHandler::updateSelectionGesture(const QPoint& pos)
         clearDetectionAndNotify();
         m_selectionManager->updateSelection(pos);
     }
-    else if (m_selectionManager->isResizing()) m_selectionManager->updateResize(pos);
+    else if (m_selectionManager->isResizing()) {
+        const bool enabled = boundarySnapEligible()
+            && (m_snapKeyHeld || m_currentModifiers.testFlag(Qt::AltModifier));
+        if (enabled) {
+            m_selectionManager->updateResize(pos, [this](const QRect& raw, Qt::Edges edges) {
+                const auto result = m_boundarySnap.snap(raw, edges);
+                return SelectionStateManager::ResizePreview{result.rect, result.edges};
+            });
+            if (!m_selectionManager->snappedEdges()) m_boundarySnap.reset();
+        } else {
+            m_boundarySnap.reset();
+            m_selectionManager->updateResize(pos);
+        }
+    }
     else if (m_selectionManager->isMoving()) m_selectionManager->updateMove(pos);
     return true;
 }

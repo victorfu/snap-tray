@@ -473,6 +473,7 @@ add_library(snaptray_algorithms STATIC
     src/annotations/MosaicStroke.cpp
     src/annotations/MosaicRectAnnotation.cpp
     # Detection
+    src/detection/BoundarySnapIndex.cpp
     src/detection/FaceDetector.cpp
     src/detection/AutoBlurManager.cpp
     src/detection/CredentialDetector.cpp
@@ -871,6 +872,7 @@ add_library(snaptray_ui STATIC
 
     # Region selection
     src/RegionSelector.cpp
+    src/region/BoundarySnapController.cpp
     src/region/SelectionStateManager.cpp
     src/region/MagnifierPanel.cpp
     src/region/MagnifierOverlay.cpp

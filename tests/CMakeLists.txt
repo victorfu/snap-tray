@@ -1809,6 +1809,20 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set_tests_properties(Update_AppImageUpdateService PROPERTIES TIMEOUT 60 LABELS "unit")
 endif()
 
+add_executable(Detection_BoundarySnapIndex Detection/tst_BoundarySnapIndex.cpp)
+target_link_libraries(Detection_BoundarySnapIndex PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Detection_BoundarySnapIndex COMMAND Detection_BoundarySnapIndex)
+set_tests_properties(Detection_BoundarySnapIndex PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_BoundarySnap RegionSelector/tst_BoundarySnap.cpp)
+target_link_libraries(RegionSelector_BoundarySnap PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_BoundarySnap COMMAND RegionSelector_BoundarySnap)
+set_tests_properties(RegionSelector_BoundarySnap PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# Explicit performance probe, not a timing assertion in CI.
+add_executable(RegionSelector_BoundarySnapBenchmark RegionSelector/benchmark_boundary_snap.cpp)
+target_link_libraries(RegionSelector_BoundarySnapBenchmark PRIVATE snaptray_ui)
+
 # Keep this after all test executable declarations so newly added test targets
 # are isolated automatically as well.
 get_property(snaptray_test_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)

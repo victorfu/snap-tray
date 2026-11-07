@@ -249,6 +249,8 @@ RegionSelector::RegionSelector(QWidget* parent)
             syncCaptureChromeWindow();
             // Removed update() - repaints now handled by RegionInputHandler's throttled path
         });
+    connect(m_selectionManager, &SelectionStateManager::snapGuidesChanged,
+        this, [this]() { requestCaptureSceneUpdate(); });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
             if (newState == SelectionStateManager::State::None
@@ -1396,6 +1398,8 @@ void RegionSelector::applyCaptureContext(const SelectorCaptureContext& context)
     ++m_autoBlurGeneration;
     const qreal normalizedDpr = context.devicePixelRatio > 0.0 ? context.devicePixelRatio : 1.0;
     m_backgroundPixmap = context.backgroundPixmap;
+    m_inputHandler->setBoundarySnapSource(m_backgroundPixmap.toImage(), normalizedDpr);
+    m_inputHandler->setBoundarySnapAllowed(!m_historyReplayActive);
     m_devicePixelRatio = normalizedDpr;
     m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
     m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
@@ -1730,6 +1734,7 @@ void RegionSelector::restoreLiveReplaySlot()
 
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
+    m_inputHandler->setBoundarySnapAllowed(true);
     setSelectionWindowMetadata(m_historyLiveSlot.windowTitle, m_historyLiveSlot.ownerApp);
     update();
 }
@@ -1746,6 +1751,7 @@ bool RegionSelector::loadHistoryReplayIndex(int index)
 
     m_historyReplayIndex = index;
     m_historyReplayActive = true;
+    m_inputHandler->setBoundarySnapAllowed(false);
     return true;
 }
 
@@ -4500,6 +4506,15 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
     event->ignore();
 }
 
+void RegionSelector::keyReleaseEvent(QKeyEvent* event)
+{
+    if (m_inputHandler->handleBoundarySnapKey(event->key(), false, event->isAutoRepeat())) {
+        event->accept();
+        return;
+    }
+    QWidget::keyReleaseEvent(event);
+}
+
 void RegionSelector::keyPressEvent(QKeyEvent* event)
 {
     if (m_exportInProgress) {
@@ -4538,6 +4553,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    if (m_inputHandler->handleBoundarySnapKey(event->key(), true, event->isAutoRepeat())) {
+        event->accept();
+        return;
+    }
+
     if (!event->modifiers() && event->key() == Qt::Key_Comma) {
         navigateHistoryReplay(-1);
         event->accept();
@@ -4559,6 +4579,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         // Escape during a drag puts the annotation back (#237).
         if (m_inputHandler && m_inputHandler->cancelAnnotationManipulation()) {
             update();
+            event->accept();
+            return;
+        }
+
+        if (m_inputHandler->cancelSelectionResize()) {
             event->accept();
             return;
         }
@@ -4727,6 +4752,7 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     }
 
     m_isClosing = true;
+    m_inputHandler->setBoundarySnapSource({}, 1.0);
     if (m_colorPickOverlay) {
         m_colorPickOverlay->cancel();
     }
@@ -4868,6 +4894,8 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
                 update();
                 return true;
             }
+
+            if (m_inputHandler->cancelSelectionResize()) return true;
 
             // Try to handle escape in tool first (e.g. finish polyline)
             // Note: eventFilter sees keys before keyPressEvent

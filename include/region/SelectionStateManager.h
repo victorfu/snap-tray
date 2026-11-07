@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QRect>
 #include <QPoint>
+#include <functional>
 
 /**
  * @brief Selection state and operation management
@@ -78,7 +79,11 @@ public:
     ResizeHandle hitTestHandle(const QPoint& pos, int handleSize = 16) const;
     ResizeHandle activeResizeHandle() const { return m_activeHandle; }
     void startResize(const QPoint& pos, ResizeHandle handle);
-    void updateResize(const QPoint& pos);
+    struct ResizePreview { QRect rect; Qt::Edges snappedEdges; };
+    using ResizeTransform = std::function<ResizePreview(const QRect&, Qt::Edges)>;
+    void updateResize(const QPoint& pos, const ResizeTransform& transform = {});
+    Qt::Edges snappedEdges() const { return m_snappedEdges; }
+    void clearSnapGuides();
     void finishResize();
     // Apply an outside click with the same constraints as a handle drag.
     void resizeToPosition(const QPoint& pos, ResizeHandle handle);
@@ -103,6 +108,7 @@ public:
     QRect originalRect() const { return m_originalRect; }
 
 signals:
+    void snapGuidesChanged();
     void stateChanged(State newState);
     void selectionChanged(const QRect& rect);
 
@@ -116,6 +122,7 @@ private:
     bool isCornerHandle(ResizeHandle handle) const;
     void updateHandleRectsCache(int handleSize) const;
 
+    Qt::Edges m_snappedEdges;
     State m_state = State::None;
     QRect m_selectionRect;
     QRect m_bounds;

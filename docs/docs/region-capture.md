@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-06
+last_modified_at: 2026-11-07
 layout: docs
 title: Region Capture
 seo_title: "SnapTray Region Capture: Precise Screenshots and Magnifier"
@@ -43,6 +43,14 @@ When the countdown ends, SnapTray hides the pill, freezes the screen under the c
 - Magnifier mode provides pixel-level feedback
 - Width and height are shown near the selection
 - Hold `Shift` to constrain aspect ratio
+
+### Snap a resized edge to image content
+
+After making a single selection, drag an edge or corner handle and hold `Alt` (`Option` on macOS) to align it with a nearby horizontal or vertical image boundary. You can instead hold `S` **after starting the handle drag**, including when a Linux window manager reserves Alt-drag. A short accent line marks each successful snap. Releasing the key restores the raw drag position immediately, even without moving the pointer; releasing the mouse commits the current position. `Esc` during a live single-selection resize restores the selection from before the drag.
+
+Snapping looks for sustained contrast along the selected side. It does not recognize whole objects, and short lines, low-contrast borders or photo textures may not give the intended result. It is disabled for initial selection, whole-selection moves, multi-region/replacement, history editing and locked aspect ratios. Arrow-key adjustments keep their existing behavior.
+
+Only boundaries that the final screenshot crop can represent are eligible. At fractional scaling or Retina resolution, some physical pixel boundaries cannot be represented by the integer selection rectangle and are skipped. If analysis exceeds its budget, that update uses ordinary dragging. Guides are never included in saved, copied or history images.
 
 ### Window-aware selection
 

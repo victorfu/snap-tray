@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include <QGuiApplication>
+#include "utils/CoordinateHelper.h"
 #include <QTemporaryDir>
 
 #include "RegionSelector.h"
@@ -19,6 +20,7 @@ class tst_RegionSelectorHistoryReplay : public QObject
 
 private slots:
     void initTestCase();
+    void testBoundarySnapCaptureRoundTrip();
     void testBuildCaptureSessionWriteRequestPreservesFields();
     void testRestoreLiveReplaySlotRecordsCaptureContext();
     void testApplyHistoryReplayEntryRecordsCaptureContext();
@@ -33,6 +35,43 @@ void tst_RegionSelectorHistoryReplay::initTestCase()
 {
     if (QGuiApplication::screens().isEmpty()) {
         QSKIP("No screens available for RegionSelector history replay tests.");
+    }
+}
+
+void tst_RegionSelectorHistoryReplay::testBoundarySnapCaptureRoundTrip()
+{
+    RegionSelector selector;
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    QPixmap initial(400,400); initial.fill(Qt::black);
+    selector.initializeForScreen(screen, initial);
+    selector.move(-1200,-600); // local source coordinates must ignore global origin
+    for (qreal dpr : {1.0,1.25,1.5,2.0}) {
+        QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
+        {QPainter p(&image);p.fillRect(qCeil(100*dpr),0,200,400,Qt::white);}
+        QPixmap source=QPixmap::fromImage(image);source.setDevicePixelRatio(dpr);
+        RegionSelectorTestAccess::replaceCanvasAfterPreservingSelection(selector,source);
+        RegionSelectorTestAccess::setSelectionRect(selector,QRect(20,20,77,80));
+        RegionSelectorTestAccess::dispatchMousePress(selector,QPoint(98,60));
+        QTest::keyPress(&selector,Qt::Key_S);
+        const QRect snapped(20,20,80,80);
+        QCOMPARE(RegionSelectorTestAccess::selectionRect(selector),snapped);
+        const QRect physical=CoordinateHelper::toPhysicalCoveringRect(snapped,dpr);
+        const auto exported=RegionSelectorTestAccess::exportSelection(selector);
+        QCOMPARE(exported.size(),physical.size());
+        auto expected=image.copy(physical);expected.setDevicePixelRatio(dpr);
+        QCOMPARE(exported.toImage().convertToFormat(QImage::Format_RGB32),expected);
+        auto history=RegionSelectorTestAccess::currentHistoryRequest(selector);
+        QVERIFY(history);
+        QCOMPARE(history->selectionRect,snapped);
+        QCOMPARE(history->canvasImage.convertToFormat(QImage::Format_RGB32),
+                 source.toImage().convertToFormat(QImage::Format_RGB32));
+        QTest::keyRelease(&selector,Qt::Key_S);
+        QCOMPARE(RegionSelectorTestAccess::selectionRect(selector),QRect(20,20,77,80));
+        QTest::keyPress(&selector,Qt::Key_S);
+        QTest::keyClick(&selector,Qt::Key_Escape);
+        QCOMPARE(RegionSelectorTestAccess::selectionRect(selector),QRect(20,20,77,80));
+        QTest::keyRelease(&selector,Qt::Key_S);
     }
 }
 

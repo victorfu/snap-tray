@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include <QCursor>
+#include <QPainter>
 #include <QMouseEvent>
 #include <QSignalSpy>
 #include <QWidget>
@@ -69,6 +70,8 @@ private slots:
     void init();
     void cleanup();
 
+    void testBoundarySnapInteraction();
+    void testBoundarySnapExcludedModes();
     void testOutsideClickAtRoundedBound_data();
     void testOutsideClickAtRoundedBound();
     void testOutsideClickHonorsAspectRatio_data();
@@ -131,6 +134,74 @@ void tst_RegionInputHandler::cleanup()
 
     delete m_handler;
     m_handler = nullptr;
+}
+
+void tst_RegionInputHandler::testBoundarySnapInteraction()
+{
+    QImage image(400,400,QImage::Format_RGB32); image.fill(Qt::black);
+    { QPainter p(&image); p.fillRect(100,0,300,400,Qt::white); }
+    m_handler->setBoundarySnapSource(image,1);
+    m_selectionManager->setSelectionRect(QRect(20,20,77,80));
+    const QPoint press(98,60); // two pixels away from the inclusive right edge
+    auto down=makeMouseEvent(QEvent::MouseButtonPress,press,Qt::LeftButton,Qt::LeftButton);
+    m_handler->handleMousePress(&down);
+    QVERIFY(m_selectionManager->isResizing());
+    QSignalSpy changes(m_selectionManager,&SelectionStateManager::selectionChanged);
+    QVERIFY(m_handler->handleBoundarySnapKey(Qt::Key_Alt,true));
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,80,80));
+    QCOMPARE(changes.count(),1);
+    QVERIFY(m_selectionManager->snappedEdges().testFlag(Qt::RightEdge));
+    QVERIFY(m_handler->handleBoundarySnapKey(Qt::Key_Alt,false));
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,77,80));
+    QVERIFY(!m_selectionManager->snappedEdges());
+    QVERIFY(m_handler->handleBoundarySnapKey(Qt::Key_S,true));
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,80,80));
+    QVERIFY(m_handler->cancelSelectionResize());
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,77,80));
+    QVERIFY(!m_selectionManager->snappedEdges());
+    m_handler->handleBoundarySnapKey(Qt::Key_S,false);
+    m_handler->handleMousePress(&down);
+    m_handler->handleBoundarySnapKey(Qt::Key_S,true);
+    // Release at a new position must query the final raw geometry, even with no move event.
+    auto up=makeMouseEvent(QEvent::MouseButtonRelease,QPoint(111,60),Qt::LeftButton,Qt::NoButton);
+    m_handler->handleMouseRelease(&up);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,90,80));
+    QVERIFY(m_selectionManager->isComplete()); QVERIFY(!m_selectionManager->snappedEdges());
+    m_handler->handleBoundarySnapKey(Qt::Key_S,false);
+
+    m_selectionManager->setSelectionRect(QRect(20,20,77,80));
+    m_handler->handleMousePress(&down); m_handler->handleBoundarySnapKey(Qt::Key_S,true);
+    QVERIFY(m_selectionManager->snappedEdges());
+    m_handler->setBoundarySnapSource(QImage(),1);
+    QVERIFY(!m_selectionManager->snappedEdges());
+    m_handler->handleBoundarySnapKey(Qt::Key_S,true);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,77,80));
+}
+
+void tst_RegionInputHandler::testBoundarySnapExcludedModes()
+{
+    QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
+    {QPainter p(&image);p.fillRect(100,0,300,400,Qt::white);}
+    m_handler->setBoundarySnapSource(image,1);
+    for (int mode=0;mode<4;++mode) {
+        m_state.multiRegionMode=mode==0;
+        m_state.replaceTargetIndex=mode==1 ? 0 : -1;
+        m_handler->setBoundarySnapAllowed(mode!=2); // history
+        m_selectionManager->setAspectRatio(mode==3 ? 1.0 : 0);
+        const QRect original(20,20,77,80);
+        m_selectionManager->setSelectionRect(original);
+        m_selectionManager->startResize(QPoint(96,60),SelectionStateManager::ResizeHandle::Right);
+        m_state.currentPoint=QPoint(96,60);
+        QSignalSpy changes(m_selectionManager,&SelectionStateManager::selectionChanged);
+        m_handler->handleBoundarySnapKey(Qt::Key_S,true);
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,true);
+        QVERIFY(!m_selectionManager->snappedEdges());
+        QCOMPARE(m_selectionManager->selectionRect(),original);
+        QCOMPARE(changes.count(),0);
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,false);
+        m_handler->handleBoundarySnapKey(Qt::Key_S,false);
+        m_selectionManager->cancelResizeOrMove();
+    }
 }
 
 void tst_RegionInputHandler::testReleaseAppliesFinalSelectionPoint_data()
