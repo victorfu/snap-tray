@@ -53,8 +53,11 @@ FrameSettleDetector::Result FrameSettleDetector::addFrame(const QImage& frame, q
     const QVector<quint64> hashes = computeRowHashes(current);
     ++m_result.frames;
 
-    const bool sameSizeAsStart = current.size() == m_start.size();
-    if (!sameSizeAsStart || hashes != m_startHashes) {
+    // Only a change beyond a few small tiles counts as the application
+    // reacting; a caret or spinner must not cut the grace period short.
+    if (!m_result.motionObserved &&
+        (current.size() != m_start.size() || hashes != m_startHashes) &&
+        !isMinorChange(m_start, current)) {
         m_result.motionObserved = true;
     }
 
@@ -63,10 +66,7 @@ FrameSettleDetector::Result FrameSettleDetector::addFrame(const QImage& frame, q
     const int changedTiles = identical ? 0 : countChangedTiles(m_previous, current, m_config.tileSize, &totalTiles);
     m_result.lastChangedTiles = changedTiles;
 
-    const bool relaxedStable = identical ||
-        (changedTiles <= m_config.relaxedMaxChangedTiles &&
-         totalTiles > 0 &&
-         changedTiles <= m_config.relaxedMaxChangedFraction * totalTiles);
+    const bool relaxedStable = identical || withinRelaxedLimits(changedTiles, totalTiles);
     if (relaxedStable) {
         if (!m_relaxedSinceMs.has_value()) {
             m_relaxedSinceMs = m_previousMs;
@@ -89,8 +89,12 @@ FrameSettleDetector::Result FrameSettleDetector::addFrame(const QImage& frame, q
     m_previousHashes = hashes;
     m_previousMs = elapsedMs;
 
+    // Identical captures taken faster than the application presents frames
+    // can repeat one intermediate frame, so the run must also last a while.
     const bool mayConcludeStill = m_result.motionObserved || elapsedMs >= m_config.noMotionGraceMs;
-    if (m_identicalPairs >= m_config.strictPairs && mayConcludeStill) {
+    const bool stableLongEnough = m_identicalRunStartMs.has_value() &&
+        elapsedMs - *m_identicalRunStartMs >= m_config.minStableMs;
+    if (m_identicalPairs >= m_config.strictPairs && stableLongEnough && mayConcludeStill) {
         m_result.outcome = Outcome::Settled;
         m_result.strictSettleMs = m_identicalRunStartMs;
         m_result.strictConfirmedMs = elapsedMs;
@@ -100,6 +104,20 @@ FrameSettleDetector::Result FrameSettleDetector::addFrame(const QImage& frame, q
         m_result.relaxedSettleMs = m_relaxedSinceMs;
     }
     return m_result;
+}
+
+bool FrameSettleDetector::withinRelaxedLimits(int changedTiles, int totalTiles) const
+{
+    return totalTiles > 0 &&
+        changedTiles <= m_config.relaxedMaxChangedTiles &&
+        changedTiles <= m_config.relaxedMaxChangedFraction * totalTiles;
+}
+
+bool FrameSettleDetector::isMinorChange(const QImage& a, const QImage& b) const
+{
+    int totalTiles = 0;
+    const int changedTiles = countChangedTiles(a, b, m_config.tileSize, &totalTiles);
+    return a.size() == b.size() && withinRelaxedLimits(changedTiles, totalTiles);
 }
 
 int FrameSettleDetector::countChangedTiles(const QImage& a, const QImage& b, int tileSize, int* totalTiles)

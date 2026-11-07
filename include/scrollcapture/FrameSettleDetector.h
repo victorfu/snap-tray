@@ -16,16 +16,22 @@ namespace snaptray::scrollcapture {
 // - strict: two consecutive frames are bit-identical;
 // - relaxed: consecutive frames differ only in a few small tiles (a blinking
 //   caret, a spinner), so the content itself has stopped.
-// Detection ends on a strict settle or when the timeout passes. Frames that
-// still equal the start frame do not count as settled until the application
-// has had `noMotionGraceMs` to react, so a slow application is not mistaken
-// for one that did not move.
+// Detection ends on a strict settle or when the timeout passes. A strict
+// settle also needs the identical run to last `minStableMs`, because captures
+// faster than the application's frame rate can repeat one intermediate frame.
+// Until the frame differs from the start frame by more than a few small tiles,
+// nothing counts as settled before the application has had `noMotionGraceMs`
+// to react, so a slow application (or one whose caret blinked first) is not
+// mistaken for one that did not move.
 class FrameSettleDetector
 {
 public:
     struct Config {
         qint64 timeoutMs = 1500;
         qint64 noMotionGraceMs = 300;
+        // An identical run must span at least this long (about three frames
+        // at 60 Hz) before it counts as a strict settle.
+        qint64 minStableMs = 50;
         // Consecutive identical pairs needed for a strict settle.
         int strictPairs = 1;
         int tileSize = 32;
@@ -49,7 +55,8 @@ public:
         std::optional<qint64> strictConfirmedMs;
         // Time from which every following pair stayed relaxed-stable.
         std::optional<qint64> relaxedSettleMs;
-        // Whether any frame differed from the start frame.
+        // Whether any frame differed from the start frame by more than a few
+        // small tiles.
         bool motionObserved = false;
         int frames = 0;
         // Tiles that changed in the last pair.
@@ -71,6 +78,9 @@ public:
     static int countChangedTiles(const QImage& a, const QImage& b, int tileSize, int* totalTiles = nullptr);
 
 private:
+    bool withinRelaxedLimits(int changedTiles, int totalTiles) const;
+    bool isMinorChange(const QImage& a, const QImage& b) const;
+
     Config m_config;
     Result m_result;
     QImage m_start;

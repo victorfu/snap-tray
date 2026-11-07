@@ -371,6 +371,7 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
         {QStringLiteral("postToProcess"), options.postToProcess},
         {QStringLiteral("timeoutMs"), options.timeoutMs},
         {QStringLiteral("strictPairs"), options.strictPairs},
+        {QStringLiteral("minStableMs"), FrameSettleDetector::Config{}.minStableMs},
         {QStringLiteral("searchRadius"), options.searchRadius},
     };
     QJsonArray repeats;

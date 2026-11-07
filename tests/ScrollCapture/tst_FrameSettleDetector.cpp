@@ -49,6 +49,9 @@ private slots:
     void blinkingCaretTimesOutButRelaxedSettles();
     void continuousMotionTimesOutWithoutRelaxedSettle();
     void ignoresFramesAfterFinalResult();
+    void repeatedCaptureOfOneFrameIsNotSettled();
+    void caretBeforeScrollKeepsGracePeriod();
+    void caretOnlyIsNotMotion();
     void countsChangedTilesIncludingPartialEdges();
 };
 
@@ -58,19 +61,21 @@ void tst_FrameSettleDetector::settlesAfterMotionStops()
     detector.start(frameWithShade(0));
     QCOMPARE(detector.addFrame(frameWithShade(10), 16).outcome, Outcome::Pending);
     QCOMPARE(detector.addFrame(frameWithShade(20), 33).outcome, Outcome::Pending);
-    const auto result = detector.addFrame(frameWithShade(20), 50);
+    QCOMPARE(detector.addFrame(frameWithShade(20), 60).outcome, Outcome::Pending);
+    const auto result = detector.addFrame(frameWithShade(20), 90);
     QCOMPARE(result.outcome, Outcome::Settled);
     QCOMPARE(result.strictSettleMs.value(), 33);
-    QCOMPARE(result.strictConfirmedMs.value(), 50);
+    QCOMPARE(result.strictConfirmedMs.value(), 90);
     QCOMPARE(result.relaxedSettleMs.value(), 33);
     QVERIFY(result.motionObserved);
-    QCOMPARE(result.frames, 3);
+    QCOMPARE(result.frames, 4);
 }
 
 void tst_FrameSettleDetector::strictPairsRequireLongerRuns()
 {
     FrameSettleDetector::Config config;
     config.strictPairs = 2;
+    config.minStableMs = 0;
     FrameSettleDetector detector(config);
     detector.start(frameWithShade(0));
     detector.addFrame(frameWithShade(10), 10);
@@ -90,7 +95,7 @@ void tst_FrameSettleDetector::appThatHasNotReactedIsNotSettledEarly()
     QCOMPARE(detector.addFrame(start, 20).outcome, Outcome::Pending);
     QCOMPARE(detector.addFrame(start, 40).outcome, Outcome::Pending);
     QCOMPARE(detector.addFrame(frameWithShade(30), 60).outcome, Outcome::Pending);
-    const auto result = detector.addFrame(frameWithShade(30), 80);
+    const auto result = detector.addFrame(frameWithShade(30), 120);
     QCOMPARE(result.outcome, Outcome::Settled);
     QCOMPARE(result.strictSettleMs.value(), 60);
     QVERIFY(result.motionObserved);
@@ -148,10 +153,53 @@ void tst_FrameSettleDetector::ignoresFramesAfterFinalResult()
     FrameSettleDetector detector;
     detector.start(frameWithShade(0));
     detector.addFrame(frameWithShade(5), 10);
-    detector.addFrame(frameWithShade(5), 20);
-    const auto after = detector.addFrame(frameWithShade(99), 30);
+    detector.addFrame(frameWithShade(5), 70);
+    const auto after = detector.addFrame(frameWithShade(99), 80);
     QCOMPARE(after.outcome, Outcome::Settled);
     QCOMPARE(after.frames, 2);
+}
+
+void tst_FrameSettleDetector::repeatedCaptureOfOneFrameIsNotSettled()
+{
+    // Two captures 5 ms apart can both show one intermediate animation frame;
+    // that must not end detection before the next frame appears.
+    FrameSettleDetector detector;
+    detector.start(frameWithShade(0));
+    QCOMPARE(detector.addFrame(frameWithShade(10), 10).outcome, Outcome::Pending);
+    QCOMPARE(detector.addFrame(frameWithShade(10), 15).outcome, Outcome::Pending);
+    QCOMPARE(detector.addFrame(frameWithShade(20), 27).outcome, Outcome::Pending);
+    const auto result = detector.addFrame(frameWithShade(20), 80);
+    QCOMPARE(result.outcome, Outcome::Settled);
+    QCOMPARE(result.strictSettleMs.value(), 27);
+}
+
+void tst_FrameSettleDetector::caretBeforeScrollKeepsGracePeriod()
+{
+    // A caret blink before the application reacts is not the scroll starting.
+    FrameSettleDetector detector;
+    const QImage start = frameWithShade(0);
+    detector.start(start);
+    QCOMPARE(detector.addFrame(withCaret(start, true), 20).outcome, Outcome::Pending);
+    QCOMPARE(detector.addFrame(withCaret(start, true), 100).outcome, Outcome::Pending);
+    QVERIFY(!detector.result().motionObserved);
+    QCOMPARE(detector.addFrame(frameWithShade(30), 150).outcome, Outcome::Pending);
+    const auto result = detector.addFrame(frameWithShade(30), 210);
+    QCOMPARE(result.outcome, Outcome::Settled);
+    QCOMPARE(result.strictSettleMs.value(), 150);
+    QVERIFY(result.motionObserved);
+}
+
+void tst_FrameSettleDetector::caretOnlyIsNotMotion()
+{
+    FrameSettleDetector::Config config;
+    config.noMotionGraceMs = 100;
+    FrameSettleDetector detector(config);
+    const QImage start = frameWithShade(0);
+    detector.start(start);
+    detector.addFrame(withCaret(start, true), 20);
+    const auto result = detector.addFrame(withCaret(start, true), 150);
+    QCOMPARE(result.outcome, Outcome::Settled);
+    QVERIFY(!result.motionObserved);
 }
 
 void tst_FrameSettleDetector::countsChangedTilesIncludingPartialEdges()
