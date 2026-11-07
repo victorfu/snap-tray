@@ -76,7 +76,7 @@ const std::array<Ops, 5> kOps = {{
      [](const AnnotationItem& f, AnnotationItem& t) {
          const auto& a = as<EmojiStickerAnnotation>(f);
          auto& b = as<EmojiStickerAnnotation>(t);
-         b.setPosition(a.position());
+         b.setPrecisePosition(a.precisePosition());
          b.setScale(a.scale());
          b.setRotation(a.rotation());
          b.setMirror(a.mirrorX(), a.mirrorY());
@@ -84,7 +84,7 @@ const std::array<Ops, 5> kOps = {{
      [](const AnnotationItem& x, const AnnotationItem& y) {
          const auto& a = as<EmojiStickerAnnotation>(x);
          const auto& b = as<EmojiStickerAnnotation>(y);
-         return a.position() == b.position() && a.scale() == b.scale() && a.rotation() == b.rotation()
+         return a.precisePosition() == b.precisePosition() && a.scale() == b.scale() && a.rotation() == b.rotation()
              && a.mirrorX() == b.mirrorX() && a.mirrorY() == b.mirrorY();
      }},
 }};

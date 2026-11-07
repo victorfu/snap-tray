@@ -43,6 +43,15 @@ Flickable {
             onToggled: function(checked) { settingsBackend.startOnLogin = checked }
         }
 
+        SettingsSection { title: qsTr("Annotations") }
+        SettingsToggle {
+            objectName: "alignmentAssistToggle"
+            label: qsTr("Annotation alignment assistance")
+            description: qsTr("Align and equally space objects while dragging. Hold Alt/Option to pause, or turn this off if your window manager uses Alt.")
+            checked: settingsBackend.alignmentAssist
+            onToggled: function(checked) { settingsBackend.alignmentAssist = checked }
+        }
+
         SettingsSection { title: qsTr("Language") }
 
         SettingsCombo {

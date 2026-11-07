@@ -6,6 +6,7 @@
 #include <QWidget>
 #include <QSettings>
 #include <QtMath>
+#include <QGuiApplication>
 #include <QFontMetrics>
 
 namespace {
@@ -37,6 +38,7 @@ TextAnnotationEditor::TextAnnotationEditor(QObject* parent)
 
 void TextAnnotationEditor::setAnnotationLayer(AnnotationLayer* layer)
 {
+    cancelInteraction();
     m_annotationLayer = layer;
 }
 
@@ -237,6 +239,10 @@ void TextAnnotationEditor::startTransformation(const QPoint& pos, GizmoHandle ha
     m_transformStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
 
     m_dragStart = pos;
+    if (handle == GizmoHandle::Body)
+        m_annotationLayer->snapController().begin(m_annotationLayer, pos);
+    else
+        m_annotationLayer->snapController().end();
 }
 
 void TextAnnotationEditor::updateTransformation(const QPoint& pos)
@@ -278,6 +284,7 @@ void TextAnnotationEditor::updateTransformation(const QPoint& pos)
     }
 
     case GizmoHandle::Body: {
+        if (m_annotationLayer->snapController().move(pos, QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier))) break;
         // Move the annotation
         QPoint moveD = pos - m_dragStart;
         textItem->moveBy(moveD);
@@ -295,6 +302,7 @@ void TextAnnotationEditor::updateTransformation(const QPoint& pos)
 
 void TextAnnotationEditor::finishTransformation()
 {
+    if (m_isTransforming && m_annotationLayer) m_annotationLayer->snapController().end();
     if (!m_isTransforming) {
         return;
     }
@@ -311,6 +319,8 @@ void TextAnnotationEditor::startDragging(const QPoint& pos)
 {
     m_isDragging = true;
     m_dragStart = pos;
+    if (m_annotationLayer)
+        m_annotationLayer->snapController().begin(m_annotationLayer, pos);
 }
 
 void TextAnnotationEditor::updateDragging(const QPoint& pos)
@@ -320,6 +330,10 @@ void TextAnnotationEditor::updateDragging(const QPoint& pos)
     auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->selectedItem());
     if (!textItem) return;
 
+    if (m_annotationLayer->snapController().move(pos, QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier))) {
+        emit updateRequested();
+        return;
+    }
     QPoint delta = pos - m_dragStart;
     m_annotationLayer->ensureGesture();
     textItem->moveBy(delta);
@@ -329,6 +343,7 @@ void TextAnnotationEditor::updateDragging(const QPoint& pos)
 
 void TextAnnotationEditor::finishDragging()
 {
+    if (m_isDragging && m_annotationLayer) m_annotationLayer->snapController().end();
     if (!m_isDragging) {
         return;
     }
@@ -343,6 +358,7 @@ void TextAnnotationEditor::finishDragging()
 void TextAnnotationEditor::cancelInteraction()
 {
     if (!m_isTransforming && !m_isDragging) return;
+    if (m_annotationLayer) m_annotationLayer->snapController().end();
     if (m_annotationLayer) m_annotationLayer->cancelGesture();
     m_isTransforming = false;
     m_isDragging = false;

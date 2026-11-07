@@ -27,6 +27,7 @@ class SettingsBackend : public QObject
     // ──── General ────
     // Per-setting reset (#227): keys are property names; see kResettableSettings.
     Q_PROPERTY(QStringList changedSettings READ changedSettings NOTIFY changedSettingsChanged)
+    Q_PROPERTY(bool alignmentAssist READ alignmentAssist WRITE setAlignmentAssist NOTIFY alignmentAssistChanged)
     Q_PROPERTY(bool startOnLogin READ startOnLogin WRITE setStartOnLogin NOTIFY startOnLoginChanged)
     Q_PROPERTY(bool startOnLoginBusy READ startOnLoginBusy NOTIFY startOnLoginStateChanged)
     Q_PROPERTY(bool startOnLoginCanChange READ startOnLoginCanChange NOTIFY startOnLoginStateChanged)
@@ -133,6 +134,8 @@ public:
         bool userDismissed);
 
     // ──── General ────
+    bool alignmentAssist() const;
+    void setAlignmentAssist(bool enabled);
     bool startOnLogin() const;
     void setStartOnLogin(bool v);
     bool startOnLoginBusy() const;
@@ -316,6 +319,7 @@ public:
 signals:
     void changedSettingsChanged();
     // General
+    void alignmentAssistChanged();
     void startOnLoginChanged();
     void startOnLoginStateChanged();
     void languageChanged();

@@ -206,3 +206,12 @@ void AnnotationSettingsManager::saveMarkerTextSnap(bool enabled)
 {
     SnapTray::getSettings().setValue("annotation/markerTextSnap", enabled);
 }
+
+bool AnnotationSettingsManager::loadAlignmentAssist() const
+{
+    return SnapTray::getSettings().value("annotation/alignmentAssist", true).toBool();
+}
+void AnnotationSettingsManager::saveAlignmentAssist(bool enabled)
+{
+    SnapTray::getSettings().setValue("annotation/alignmentAssist", enabled);
+}

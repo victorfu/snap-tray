@@ -1851,6 +1851,11 @@ set_property(TEST Detection_BoundarySnapIndex RegionSelector_BoundarySnap
 
 # Keep this after all test executable declarations so newly added test targets
 # are isolated automatically as well.
+add_executable(Tools_AnnotationSnapEngine Tools/tst_AnnotationSnapEngine.cpp)
+target_link_libraries(Tools_AnnotationSnapEngine PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_AnnotationSnapEngine COMMAND Tools_AnnotationSnapEngine)
+set_tests_properties(Tools_AnnotationSnapEngine PROPERTIES TIMEOUT 60 LABELS "unit")
+
 get_property(snaptray_test_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
 foreach(snaptray_test_target IN LISTS snaptray_test_targets)
     get_target_property(snaptray_test_target_type ${snaptray_test_target} TYPE)

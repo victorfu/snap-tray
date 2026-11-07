@@ -518,6 +518,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_textAnnotationEditor = new TextAnnotationEditor(this);
     m_shapeAnnotationEditor = std::make_unique<ShapeAnnotationEditor>();
     m_shapeAnnotationEditor->setAnnotationLayer(m_annotationLayer);
+    m_annotationLayer->snapController().setEnabled(true);
 
     // Provide text dependencies to ToolManager (TextToolHandler).
     m_toolManager->setInlineTextEditor(m_textEditor);
@@ -3867,7 +3868,7 @@ QRect RegionSelector::selectedAnnotationInteractionVisualRect() const
 {
     return snaptray::tools::selectedAnnotationRepaintRect(
         m_annotationLayer,
-        kAnnotationInteractionVisualMargin);
+        kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds() : QRect());
 }
 
 bool RegionSelector::requestLocalizedAnnotationInteractionUpdate()
@@ -4571,6 +4572,13 @@ bool RegionSelector::cancelSelectionResizeGesture()
 
 void RegionSelector::keyReleaseEvent(QKeyEvent* event)
 {
+    if (event->key() == Qt::Key_Alt && m_annotationLayer && m_annotationLayer->snapController().active()) {
+        m_annotationLayer->snapController().setSuspended(false);
+        if (!requestLocalizedAnnotationInteractionUpdate()) update();
+        event->accept();
+        return;
+    }
+
     if (m_inputHandler->handleBoundarySnapKey(
             event->key(), false, event->isAutoRepeat(), event->modifiers())) {
         event->accept();
@@ -4581,6 +4589,13 @@ void RegionSelector::keyReleaseEvent(QKeyEvent* event)
 
 void RegionSelector::keyPressEvent(QKeyEvent* event)
 {
+    if (event->key() == Qt::Key_Alt && m_annotationLayer && m_annotationLayer->snapController().active()) {
+        m_annotationLayer->snapController().setSuspended(true);
+        if (!requestLocalizedAnnotationInteractionUpdate()) update();
+        event->accept();
+        return;
+    }
+
     if (m_exportInProgress) {
         event->ignore();
         return;

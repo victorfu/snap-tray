@@ -169,11 +169,13 @@ bool TextToolHandler::handleInteractionRelease(ToolContext* ctx, const QPoint& p
 
     auto* textEditor = ctx->textAnnotationEditor;
     if (textEditor->isTransforming()) {
+        if (textEditor->activeHandle() == GizmoHandle::Body) textEditor->updateTransformation(pos);
         textEditor->finishTransformation();
         return true;
     }
 
     if (textEditor->isDragging()) {
+        textEditor->updateDragging(pos);
         textEditor->finishDragging();
         return true;
     }

@@ -82,6 +82,7 @@ void ToolManager::handleMousePress(const QPoint& pos, Qt::KeyboardModifiers modi
 
 void ToolManager::handleMousePress(const QPointF& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     if (auto* h = currentHandler()) {
         m_wasDrawing = h->isDrawing();
         h->onMousePressF(m_context.get(), pos);
@@ -97,6 +98,7 @@ void ToolManager::handleMouseMove(const QPoint& pos, Qt::KeyboardModifiers modif
 
 void ToolManager::handleMouseMove(const QPointF& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     if (auto* h = currentHandler()) {
         h->onMouseMoveF(m_context.get(), pos);
     }
@@ -108,6 +110,7 @@ void ToolManager::handleMouseRelease(const QPoint& pos, Qt::KeyboardModifiers mo
 
 void ToolManager::handleMouseRelease(const QPointF& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     if (auto* h = currentHandler()) {
         bool wasDrawing = h->isDrawing();
         h->onMouseReleaseF(m_context.get(), pos);
@@ -130,6 +133,7 @@ void ToolManager::handleDoubleClick(const QPoint& pos) {
 bool ToolManager::handleTextInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     auto it = m_handlers.find(ToolId::Text);
     if (it == m_handlers.end()) {
         return false;
@@ -146,6 +150,7 @@ bool ToolManager::handleTextInteractionPress(const QPoint& pos, Qt::KeyboardModi
 bool ToolManager::handleTextInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     auto it = m_handlers.find(ToolId::Text);
     if (it == m_handlers.end()) {
         return false;
@@ -162,6 +167,7 @@ bool ToolManager::handleTextInteractionMove(const QPoint& pos, Qt::KeyboardModif
 bool ToolManager::handleTextInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     auto it = m_handlers.find(ToolId::Text);
     if (it == m_handlers.end()) {
         return false;
@@ -193,6 +199,7 @@ bool ToolManager::handleTextInteractionDoubleClick(const QPoint& pos)
 bool ToolManager::handleShapeInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     auto it = m_handlers.find(ToolId::Shape);
     if (it == m_handlers.end()) {
         return false;
@@ -209,6 +216,7 @@ bool ToolManager::handleShapeInteractionPress(const QPoint& pos, Qt::KeyboardMod
 bool ToolManager::handleShapeInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     auto it = m_handlers.find(ToolId::Shape);
     if (it == m_handlers.end()) {
         return false;
@@ -225,6 +233,7 @@ bool ToolManager::handleShapeInteractionMove(const QPoint& pos, Qt::KeyboardModi
 bool ToolManager::handleShapeInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     auto it = m_handlers.find(ToolId::Shape);
     if (it == m_handlers.end()) {
         return false;

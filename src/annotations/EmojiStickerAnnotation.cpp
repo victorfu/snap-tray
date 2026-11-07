@@ -179,7 +179,8 @@ QRect EmojiStickerAnnotation::boundingRect() const
 
 std::unique_ptr<AnnotationItem> EmojiStickerAnnotation::clone() const
 {
-    auto cloned = std::make_unique<EmojiStickerAnnotation>(m_position, m_emoji, m_scale);
+    auto cloned = std::make_unique<EmojiStickerAnnotation>(m_position.toPoint(), m_emoji, m_scale);
+    cloned->setPrecisePosition(m_position);
     cloned->setRotation(m_rotation);
     cloned->setMirror(m_mirrorX, m_mirrorY);
     return cloned;
@@ -187,7 +188,7 @@ std::unique_ptr<AnnotationItem> EmojiStickerAnnotation::clone() const
 
 void EmojiStickerAnnotation::translate(const QPointF& delta)
 {
-    moveBy(delta.toPoint());
+    m_position += delta;
 }
 
 bool EmojiStickerAnnotation::isCacheValid(qreal dpr) const

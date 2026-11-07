@@ -694,6 +694,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
                       "falling back to uncached draw";
         m_annotationLayer->draw(painter);
     }
+    if (m_annotationLayer) m_annotationLayer->snapController().draw(painter);
 }
 
 void RegionPainter::drawCurrentAnnotation(QPainter& painter)

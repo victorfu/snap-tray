@@ -191,11 +191,13 @@ bool ShapeToolHandler::handleInteractionRelease(ToolContext* ctx, const QPoint& 
 
     auto* shapeEditor = ctx->shapeAnnotationEditor;
     if (shapeEditor->isTransforming()) {
+        if (shapeEditor->activeHandle() == GizmoHandle::Body) shapeEditor->updateTransformation(pos);
         shapeEditor->finishTransformation();
         return true;
     }
 
     if (shapeEditor->isDragging()) {
+        shapeEditor->updateDragging(pos);
         shapeEditor->finishDragging();
         return true;
     }

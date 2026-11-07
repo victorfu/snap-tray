@@ -9,6 +9,8 @@
 #include <QGuiApplication>
 
 #include "annotations/AnnotationLayer.h"
+#include "annotations/EmojiStickerAnnotation.h"
+#include "settings/AnnotationSettingsManager.h"
 #include "cursor/CursorManager.h"
 #include "region/RegionInputHandler.h"
 #include "region/RegionInputState.h"
@@ -70,6 +72,27 @@ private slots:
     void init();
     void cleanup();
 
+    void testAnnotationSnapRelease() {
+        AnnotationSettingsManager::instance().saveAlignmentAssist(true);
+        m_annotationLayer->snapController().setEnabled(true);
+        m_annotationLayer->addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(200,100),QStringLiteral("🙂")));
+        m_annotationLayer->addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(140,220),QStringLiteral("🙂")));
+        m_annotationLayer->setSelectedIndex(1);
+        auto emoji = [&] { return static_cast<EmojiStickerAnnotation*>(m_annotationLayer->itemAt(1)); };
+        m_selectionManager->startSelection({0,0});
+        m_selectionManager->updateSelection({600,400});
+        m_selectionManager->finishSelection();
+        auto press=makeMouseEvent(QEvent::MouseButtonPress,{140,220},Qt::LeftButton,Qt::LeftButton);
+        auto move=makeMouseEvent(QEvent::MouseMove,{197,220},Qt::NoButton,Qt::LeftButton);
+        m_handler->handleMousePress(&press);m_handler->handleMouseMove(&move);
+        QCOMPARE(emoji()->precisePosition(),QPointF(200,220));
+        auto release=makeMouseEvent(QEvent::MouseButtonRelease,{240,220},Qt::LeftButton,Qt::NoButton);
+        m_handler->handleMouseRelease(&release);
+        QCOMPARE(emoji()->precisePosition(),QPointF(240,220));
+        QVERIFY(m_annotationLayer->snapController().guideBounds().isEmpty());
+        m_annotationLayer->undo(); QCOMPARE(emoji()->precisePosition(),QPointF(140,220));
+        m_annotationLayer->redo(); QCOMPARE(emoji()->precisePosition(),QPointF(240,220));
+    }
     void testBoundarySnapInteraction();
     void testBoundarySnapToggleDoesNotAccumulate();
     void testBoundarySnapLeavesCreationAndMoveAlone();
