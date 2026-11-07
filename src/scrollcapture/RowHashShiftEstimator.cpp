@@ -1,0 +1,172 @@
+#include "scrollcapture/RowHashShiftEstimator.h"
+
+#include <QHash>
+
+#include <algorithm>
+
+namespace snaptray::scrollcapture {
+
+namespace {
+
+constexpr int kNoIndex = -1;
+
+ShiftEstimate makeResult(ShiftEstimate::Status status, int staticRows)
+{
+    ShiftEstimate result;
+    result.status = status;
+    result.staticRows = staticRows;
+    return result;
+}
+
+} // namespace
+
+ShiftEstimate estimateVerticalShift(const QVector<quint64>& before,
+                                    const QVector<quint64>& after,
+                                    const ShiftEstimatorOptions& options)
+{
+    const int height = static_cast<int>(before.size());
+    if (height == 0 || after.size() != before.size()) {
+        return makeResult(ShiftEstimate::Status::InvalidInput, 0);
+    }
+
+    QVector<bool> isStatic(height, false);
+    int staticRows = 0;
+    for (int i = 0; i < height; ++i) {
+        isStatic[i] = before[i] == after[i];
+        staticRows += isStatic[i] ? 1 : 0;
+    }
+
+    if (staticRows == height) {
+        ShiftEstimate result = makeResult(ShiftEstimate::Status::Found, staticRows);
+        result.matchedRows = height;
+        result.overlapRows = height;
+        return result;
+    }
+
+    const int maxShift = height - std::max(1, options.minOverlapRows);
+    int low = -maxShift;
+    int high = maxShift;
+    if (options.expectedShift.has_value()) {
+        const int radius = std::max(0, options.searchRadius);
+        low = std::max(low, *options.expectedShift - radius);
+        high = std::min(high, *options.expectedShift + radius);
+    }
+    if (maxShift < 1 || low > high) {
+        ShiftEstimate result = makeResult(ShiftEstimate::Status::NotFound, staticRows);
+        result.searchLow = low;
+        result.searchHigh = high;
+        return result;
+    }
+
+    // Index of each moving row whose content occurs exactly once in `before`.
+    QHash<quint64, int> uniqueIndex;
+    uniqueIndex.reserve(height);
+    for (int j = 0; j < height; ++j) {
+        auto it = uniqueIndex.find(before[j]);
+        if (it == uniqueIndex.end()) {
+            uniqueIndex.insert(before[j], isStatic[j] ? kNoIndex : j);
+        } else {
+            it.value() = kNoIndex;
+        }
+    }
+    int movingUniqueRows = 0;
+    for (auto it = uniqueIndex.cbegin(); it != uniqueIndex.cend(); ++it) {
+        movingUniqueRows += it.value() != kNoIndex ? 1 : 0;
+    }
+
+    // Each moving row of `after` votes for the shift that brings its unique
+    // twin in `before` to its position. Shift 0 never gets a vote: a row equal
+    // at the same position is static.
+    QVector<int> votes(high - low + 1, 0);
+    for (int i = 0; i < height; ++i) {
+        if (isStatic[i]) {
+            continue;
+        }
+        const auto it = uniqueIndex.constFind(after[i]);
+        if (it == uniqueIndex.cend() || it.value() == kNoIndex) {
+            continue;
+        }
+        const int shift = it.value() - i;
+        if (shift >= low && shift <= high) {
+            ++votes[shift - low];
+        }
+    }
+
+    const auto bestIt = std::max_element(votes.cbegin(), votes.cend());
+    const int bestVotes = *bestIt;
+    const int bestShift = low + static_cast<int>(bestIt - votes.cbegin());
+    const auto annotate = [&](ShiftEstimate& result) {
+        result.shift = bestShift;
+        result.distinctMatches = bestVotes;
+        result.searchLow = low;
+        result.searchHigh = high;
+        for (int index = 0; index < votes.size(); ++index) {
+            if (low + index != bestShift && votes[index] > 0 && votes[index] > result.runnerUpVotes) {
+                result.runnerUpShift = low + index;
+                result.runnerUpVotes = votes[index];
+            }
+        }
+    };
+    if (bestVotes < std::max(1, options.minDistinctMatches)) {
+        const bool lacksDetail = movingUniqueRows < std::max(1, options.minDistinctMatches) || bestVotes > 0;
+        ShiftEstimate result = makeResult(lacksDetail ? ShiftEstimate::Status::InsufficientDetail
+                                                      : ShiftEstimate::Status::NotFound,
+                                          staticRows);
+        annotate(result);
+        return result;
+    }
+
+    ShiftEstimate result = makeResult(ShiftEstimate::Status::Found, staticRows);
+    annotate(result);
+    for (int i = 0; i < height; ++i) {
+        const int source = i + bestShift;
+        if (isStatic[i] || source < 0 || source >= height) {
+            continue;
+        }
+        ++result.overlapRows;
+        result.matchedRows += after[i] == before[source] ? 1 : 0;
+    }
+    if (result.overlapRows == 0 ||
+        result.matchedRows < options.minMatchRatio * result.overlapRows) {
+        result.status = ShiftEstimate::Status::NotFound;
+        return result;
+    }
+
+    const double ambiguityThreshold = options.ambiguityRatio * bestVotes;
+    for (int index = 0; index < votes.size(); ++index) {
+        if (votes[index] > 0 && votes[index] >= ambiguityThreshold) {
+            result.candidates.append(low + index);
+        }
+    }
+    std::stable_sort(result.candidates.begin(), result.candidates.end(),
+                     [&votes, low](int a, int b) { return votes[a - low] > votes[b - low]; });
+    if (result.candidates.size() > 1) {
+        result.status = ShiftEstimate::Status::Ambiguous;
+    } else {
+        result.candidates.clear();
+    }
+    return result;
+}
+
+const char* shiftEstimateStatusName(ShiftEstimate::Status status)
+{
+    struct Entry {
+        ShiftEstimate::Status status;
+        const char* name;
+    };
+    static constexpr Entry kNames[] = {
+        {ShiftEstimate::Status::Found, "found"},
+        {ShiftEstimate::Status::Ambiguous, "ambiguous"},
+        {ShiftEstimate::Status::InsufficientDetail, "insufficient_detail"},
+        {ShiftEstimate::Status::NotFound, "not_found"},
+        {ShiftEstimate::Status::InvalidInput, "invalid_input"},
+    };
+    for (const Entry& entry : kNames) {
+        if (entry.status == status) {
+            return entry.name;
+        }
+    }
+    return "unknown";
+}
+
+} // namespace snaptray::scrollcapture

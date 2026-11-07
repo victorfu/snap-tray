@@ -1,5 +1,6 @@
 #include "WindowDetector.h"
 #include "WindowDetectorMacFilters.h"
+#include "platform/MacAXElement.h"
 
 #include <QCoreApplication>
 #include <QImage>
@@ -26,6 +27,10 @@
 #endif
 
 namespace {
+
+using snaptray::platform::mac::copyAXBooleanAttribute;
+using snaptray::platform::mac::getAXElementFrame;
+using snaptray::platform::mac::getAXElementRole;
 
 const CFStringRef kAXVisibleAttributeCompat = CFSTR("AXVisible");
 
@@ -441,62 +446,6 @@ QRect refineVisibleBoundsFromWindowImage(const PopupWindowCaptureSession &captur
     return QRect(refinedX, refinedY, refinedWidth, refinedHeight);
 }
 
-// Get element frame (position + size) from an AXUIElement
-bool getAXElementFrame(AXUIElementRef element, CGRect &outFrame)
-{
-    CFTypeRef posRef = nullptr;
-    CFTypeRef sizeRef = nullptr;
-
-    AXError err = AXUIElementCopyAttributeValue(element, kAXPositionAttribute, &posRef);
-    if (err != kAXErrorSuccess || !posRef) return false;
-
-    if (CFGetTypeID(posRef) != AXValueGetTypeID()) {
-        CFRelease(posRef);
-        return false;
-    }
-
-    err = AXUIElementCopyAttributeValue(element, kAXSizeAttribute, &sizeRef);
-    if (err != kAXErrorSuccess || !sizeRef) {
-        CFRelease(posRef);
-        return false;
-    }
-
-    if (CFGetTypeID(sizeRef) != AXValueGetTypeID()) {
-        CFRelease(posRef);
-        CFRelease(sizeRef);
-        return false;
-    }
-
-    CGPoint origin;
-    CGSize size;
-    Boolean gotPos = AXValueGetValue((AXValueRef)posRef, (AXValueType)kAXValueCGPointType, &origin);
-    Boolean gotSize = AXValueGetValue((AXValueRef)sizeRef, (AXValueType)kAXValueCGSizeType, &size);
-
-    CFRelease(posRef);
-    CFRelease(sizeRef);
-
-    if (!gotPos || !gotSize) return false;
-
-    outFrame = CGRectMake(origin.x, origin.y, size.width, size.height);
-    return true;
-}
-
-// Get the accessibility role string from an AXUIElement
-QString getAXElementRole(AXUIElementRef element)
-{
-    CFTypeRef roleRef = nullptr;
-    AXError err = AXUIElementCopyAttributeValue(element, kAXRoleAttribute, &roleRef);
-    if (err != kAXErrorSuccess || !roleRef) return QString();
-
-    if (CFGetTypeID(roleRef) != CFStringGetTypeID()) {
-        CFRelease(roleRef);
-        return QString();
-    }
-
-    QString role = QString::fromCFString((CFStringRef)roleRef);
-    CFRelease(roleRef);
-    return role;
-}
 
 template <typename T>
 bool readCFNumberValue(CFDictionaryRef dictionary, const void *key, CFNumberType numberType, T &value)
@@ -550,31 +499,6 @@ QString readWindowString(CFDictionaryRef windowInfo, const void *key)
     return QString::fromCFString(strRef);
 }
 
-std::optional<bool> copyAXBooleanAttribute(AXUIElementRef element, CFStringRef attribute)
-{
-    if (!element || !attribute) {
-        return std::nullopt;
-    }
-
-    CFTypeRef valueRef = nullptr;
-    AXError err = AXUIElementCopyAttributeValue(element, attribute, &valueRef);
-    if (err != kAXErrorSuccess || !valueRef) {
-        return std::nullopt;
-    }
-
-    std::optional<bool> result;
-    if (CFGetTypeID(valueRef) == CFBooleanGetTypeID()) {
-        result = CFBooleanGetValue(static_cast<CFBooleanRef>(valueRef));
-    } else if (CFGetTypeID(valueRef) == CFNumberGetTypeID()) {
-        int intValue = 0;
-        if (CFNumberGetValue(static_cast<CFNumberRef>(valueRef), kCFNumberIntType, &intValue)) {
-            result = intValue != 0;
-        }
-    }
-
-    CFRelease(valueRef);
-    return result;
-}
 
 std::optional<DetectedElement> buildDetectedTopLevelElement(
     CFDictionaryRef windowInfo, pid_t ownPid, DetectionFlags detectionFlags)
