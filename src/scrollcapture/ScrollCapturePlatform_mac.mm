@@ -510,19 +510,19 @@ public:
     InjectResult scroll(const ScrollArea& area, const ScrollRequest& request) override
     {
         if (!supportedMethods().contains(request.method)) {
-            return {false, QStringLiteral("%1 is not available on macOS").arg(QLatin1String(scrollMethodName(request.method)))};
+            return InjectResult::failed(QStringLiteral("%1 is not available on macOS").arg(QLatin1String(scrollMethodName(request.method))));
         }
         if (!CGPreflightPostEventAccess()) {
-            return {false, QStringLiteral("posting events requires Accessibility permission")};
+            return InjectResult::failed(QStringLiteral("posting events requires Accessibility permission"));
         }
 
         const auto* macArea = dynamic_cast<const MacScrollArea*>(&area);
         if (!macArea) {
-            return {false, QStringLiteral("not a macOS scroll area")};
+            return InjectResult::failed(QStringLiteral("not a macOS scroll area"));
         }
         const ScrollAreaSnapshot snapshot = area.snapshot();
         if (snapshot.bounds.isEmpty()) {
-            return {false, QStringLiteral("scroll area bounds are not readable")};
+            return InjectResult::failed(QStringLiteral("scroll area bounds are not readable"));
         }
         // Wheel input goes to the innermost scroll view under the point, so
         // use a point where that is the selected area itself.
@@ -539,8 +539,8 @@ public:
             }
         }
         if (!chosen) {
-            return {false, QStringLiteral("no point inside the selected scroll area reaches it: "
-                                          "nested scroll areas or other windows cover every probe point")};
+            return InjectResult::failed(QStringLiteral("no point inside the selected scroll area reaches it: "
+                                                       "nested scroll areas or other windows cover every probe point"));
         }
         const QPoint centre = *chosen;
         const CGPoint target = CGPointMake(centre.x(), centre.y());
@@ -551,7 +551,7 @@ public:
             std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max()));
         ScopedCF<CGEventRef> event(CGEventCreateScrollWheelEvent2(nullptr, kCGScrollEventUnitPixel, 1, delta, 0, 0));
         if (!event) {
-            return {false, QStringLiteral("CGEventCreateScrollWheelEvent2 failed")};
+            return InjectResult::failed(QStringLiteral("CGEventCreateScrollWheelEvent2 failed"));
         }
         CGEventSetLocation(event.get(), target);
         if (request.method == ScrollMethod::WheelPixelsContinuous) {
@@ -559,13 +559,15 @@ public:
         }
 
         if (request.postToProcess) {
+            const auto dispatchedAt = std::chrono::steady_clock::now();
             CGEventPostToPid(static_cast<pid_t>(snapshot.processId), event.get());
-            return {true, QStringLiteral("posted to pid %1").arg(snapshot.processId)};
+            return {true, QStringLiteral("posted to pid %1").arg(snapshot.processId), dispatchedAt};
         }
         CGWarpMouseCursorPosition(target);
         CGAssociateMouseAndMouseCursorPosition(true);
+        const auto dispatchedAt = std::chrono::steady_clock::now();
         CGEventPost(kCGHIDEventTap, event.get());
-        return {true, QStringLiteral("posted at (%1, %2)").arg(centre.x()).arg(centre.y())};
+        return {true, QStringLiteral("posted at (%1, %2)").arg(centre.x()).arg(centre.y()), dispatchedAt};
     }
 };
 

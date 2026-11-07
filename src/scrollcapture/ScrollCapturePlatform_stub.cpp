@@ -32,7 +32,7 @@ public:
 
     InjectResult scroll(const ScrollArea& /*area*/, const ScrollRequest& /*request*/) override
     {
-        return {false, kUnsupportedDetail};
+        return InjectResult::failed(kUnsupportedDetail);
     }
 };
 

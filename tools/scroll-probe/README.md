@@ -23,6 +23,8 @@ Permissions:
   and Screen Recording (captures). The `environment` field of each record shows
   `accessibilityTrusted`, `postEventAccess` and `screenCaptureAccess`.
 - Windows: none. Windows of elevated applications report `blocked` unless the probe is elevated too.
+  `wheel-delta` needs "Scroll inactive windows when I hover over them" (the default) or the target
+  focused; otherwise the repeat fails with that reason instead of scrolling the focused terminal.
 - Linux: not implemented; every query reports `unsupported`.
 
 ## Inspect
@@ -79,7 +81,8 @@ Electron), `--post-to-process` (macOS: `CGEventPostToPid` without moving the cur
   `diagnostics` (AX role path, scroll bar value, AXContents frame; UIA class name, framework ID,
   scroll percent and view size).
 - `enhancedAccessibility`: the same after `--enable-ax`.
-- `scroll.repeats[]`: for each scroll, the position before and after, `apiShiftPx` (the shift the
+- `scroll.repeats[]`: for each scroll, `inject` (`ok`, `detail`, and `preparationMs`, the time spent
+  finding a target point before dispatch; settle times count from dispatch), the position before and after, `apiShiftPx` (the shift the
   platform reports, in device pixels), `settle` (`strictSettleMs`, `relaxedSettleMs`,
   `motionObserved`, frames and capture time), `shift` (the measured shift around `apiShiftPx`) and
   `shiftWithoutPrior` (the same frames searched without it).

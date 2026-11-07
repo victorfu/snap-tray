@@ -33,6 +33,7 @@
 #include <QWidget>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <optional>
 #include <vector>
@@ -263,11 +264,22 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     request.percent = options.percent;
     request.postToProcess = options.postToProcess;
 
-    QElapsedTimer clock;
-    clock.start();
+    using Clock = std::chrono::steady_clock;
+    const Clock::time_point called = Clock::now();
     const InjectResult inject = injector.scroll(area, request);
-    json.insert(QStringLiteral("inject"), QJsonObject{{QStringLiteral("ok"), inject.ok},
-                                                      {QStringLiteral("detail"), inject.detail}});
+    // Settle timing starts when the input was dispatched: finding a target
+    // point beforehand must not use up the grace period or the timeout.
+    const Clock::time_point dispatched = inject.dispatchedAt.value_or(Clock::now());
+    const auto sinceDispatchMs = [dispatched]() {
+        return static_cast<qint64>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - dispatched).count());
+    };
+    json.insert(QStringLiteral("inject"), QJsonObject{
+        {QStringLiteral("ok"), inject.ok},
+        {QStringLiteral("detail"), inject.detail},
+        {QStringLiteral("preparationMs"), static_cast<qint64>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(dispatched - called).count())},
+    });
     if (!inject.ok) {
         return outcome;
     }
@@ -282,7 +294,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
             json.insert(QStringLiteral("error"), QStringLiteral("screen capture failed while settling"));
             return outcome;
         }
-        detector.addFrame(frame.image, clock.elapsed());
+        detector.addFrame(frame.image, sinceDispatchMs());
     }
     const FrameSettleDetector::Result& settle = detector.result();
     outcome.strictSettleMs = settle.strictSettleMs;

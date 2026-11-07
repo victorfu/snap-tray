@@ -36,6 +36,27 @@ constexpr double kEdgePercentEpsilon = 0.01;
 constexpr double kPercentScale = 100.0;
 constexpr int kVersionStringLength = 64;
 
+#ifndef SPI_GETMOUSEWHEELROUTING
+#define SPI_GETMOUSEWHEELROUTING 0x201C
+#endif
+#ifndef MOUSEWHEEL_ROUTING_FOCUS
+#define MOUSEWHEEL_ROUTING_FOCUS 0
+#define MOUSEWHEEL_ROUTING_HYBRID 1
+#define MOUSEWHEEL_ROUTING_MOUSE_POS 2
+#endif
+
+// SPI_GETMOUSEWHEELROUTING: whether wheel input goes to the window under the
+// cursor or to the focused application ("Scroll inactive windows when I hover
+// over them"). Unknown on systems without the setting, which route by cursor.
+std::optional<DWORD> mouseWheelRouting()
+{
+    DWORD routing = 0;
+    if (!SystemParametersInfoW(SPI_GETMOUSEWHEELROUTING, 0, &routing, 0)) {
+        return std::nullopt;
+    }
+    return routing;
+}
+
 struct ControlTypeName {
     CONTROLTYPEID id;
     const char* name;
@@ -211,12 +232,13 @@ class WinScrollArea final : public ScrollArea
 public:
     WinScrollArea(ComPtr<IUIAutomation> automation, ComPtr<IUIAutomationTreeWalker> walker,
                   ComPtr<IUIAutomationElement> element, ComPtr<IUIAutomationScrollPattern> pattern,
-                  DWORD processId, int level, int availableLevels, ProcessInfo process,
+                  HWND rootWindow, DWORD processId, int level, int availableLevels, ProcessInfo process,
                   QJsonObject hitDiagnostics)
         : m_automation(std::move(automation))
         , m_walker(std::move(walker))
         , m_element(std::move(element))
         , m_pattern(std::move(pattern))
+        , m_rootWindow(rootWindow)
         , m_processId(processId)
         , m_level(level)
         , m_availableLevels(availableLevels)
@@ -226,6 +248,7 @@ public:
     }
 
     IUIAutomationScrollPattern* pattern() const { return m_pattern.Get(); }
+    HWND rootWindow() const { return m_rootWindow; }
 
     // Whether this area is the innermost vertically scrollable element at a
     // physical point, i.e. the one wheel input there would scroll.
@@ -332,6 +355,7 @@ private:
     ComPtr<IUIAutomationTreeWalker> m_walker;
     ComPtr<IUIAutomationElement> m_element;
     ComPtr<IUIAutomationScrollPattern> m_pattern;
+    HWND m_rootWindow = nullptr;
     DWORD m_processId = 0;
     int m_level = 0;
     int m_availableLevels = 0;
@@ -405,11 +429,8 @@ public:
         if (SystemParametersInfoW(SPI_GETLISTBOXSMOOTHSCROLLING, 0, &smoothListBoxes, 0)) {
             environment.insert(QStringLiteral("listBoxSmoothScrolling"), smoothListBoxes != FALSE);
         }
-        DWORD routing = 0;
-        DWORD size = sizeof(routing);
-        if (RegGetValueW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", L"MouseWheelRouting",
-                         RRF_RT_REG_DWORD, nullptr, &routing, &size) == ERROR_SUCCESS) {
-            environment.insert(QStringLiteral("mouseWheelRouting"), static_cast<int>(routing));
+        if (const auto routing = mouseWheelRouting()) {
+            environment.insert(QStringLiteral("mouseWheelRouting"), static_cast<int>(*routing));
         }
         if (m_ownIntegrity) {
             environment.insert(QStringLiteral("probeIntegrityLevel"), static_cast<qint64>(*m_ownIntegrity));
@@ -511,7 +532,7 @@ private:
         Candidate& chosen = candidates[static_cast<size_t>(level)];
         result.status = LocateStatus::Found;
         result.area = std::make_unique<WinScrollArea>(
-            m_automation, m_walker, chosen.element, chosen.pattern, processId, level, available, std::move(process),
+            m_automation, m_walker, chosen.element, chosen.pattern, root, processId, level, available, std::move(process),
             std::move(hitDiagnostics));
         return result;
     }
@@ -534,7 +555,7 @@ public:
     {
         const auto* windowsArea = dynamic_cast<const WinScrollArea*>(&area);
         if (!windowsArea) {
-            return {false, QStringLiteral("not a Windows scroll area")};
+            return InjectResult::failed(QStringLiteral("not a Windows scroll area"));
         }
         if (request.method == ScrollMethod::WheelDelta) {
             return sendWheel(*windowsArea, request.amount);
@@ -544,18 +565,31 @@ public:
         }
         if (request.method == ScrollMethod::PatternSetPercent) {
             const double percent = std::clamp(request.percent, 0.0, kPercentScale);
+            const auto dispatchedAt = std::chrono::steady_clock::now();
             const HRESULT hr = windowsArea->pattern()->SetScrollPercent(UIA_ScrollPatternNoScroll, percent);
-            return {SUCCEEDED(hr), QStringLiteral("SetScrollPercent(%1) %2").arg(percent).arg(hresultText(hr))};
+            return {SUCCEEDED(hr), QStringLiteral("SetScrollPercent(%1) %2").arg(percent).arg(hresultText(hr)),
+                    dispatchedAt};
         }
-        return {false, QStringLiteral("%1 is not available on Windows").arg(QLatin1String(scrollMethodName(request.method)))};
+        return InjectResult::failed(QStringLiteral("%1 is not available on Windows").arg(QLatin1String(scrollMethodName(request.method))));
     }
 
 private:
     static InjectResult sendWheel(const WinScrollArea& area, int amount)
     {
+        // With focus routing (desktop apps under hybrid routing too), wheel
+        // input goes to the focused application, not the one under the
+        // cursor. Do not steal focus; say what to change instead.
+        const std::optional<DWORD> routing = mouseWheelRouting();
+        if (routing && *routing != MOUSEWHEEL_ROUTING_MOUSE_POS &&
+            GetAncestor(GetForegroundWindow(), GA_ROOT) != area.rootWindow()) {
+            return InjectResult::failed(
+                QStringLiteral("wheel input goes to the focused window (routing %1): turn on "
+                               "\"Scroll inactive windows when I hover over them\" or focus the target window")
+                    .arg(*routing));
+        }
         const QRect bounds = area.snapshot().bounds;
         if (bounds.isEmpty()) {
-            return {false, QStringLiteral("scroll area bounds are not readable")};
+            return InjectResult::failed(QStringLiteral("scroll area bounds are not readable"));
         }
         // Wheel input goes to the innermost scroll area under the cursor, so
         // use a point where that is the selected area itself.
@@ -568,33 +602,37 @@ private:
             }
         }
         if (!chosen) {
-            return {false, QStringLiteral("no point inside the selected scroll area reaches it: "
-                                          "nested scroll areas or other windows cover every probe point")};
+            return InjectResult::failed(QStringLiteral("no point inside the selected scroll area reaches it: "
+                                                       "nested scroll areas or other windows cover every probe point"));
         }
         const QPoint centre = *chosen;
         if (!SetCursorPos(centre.x(), centre.y())) {
-            return {false, QStringLiteral("SetCursorPos failed")};
+            return InjectResult::failed(QStringLiteral("SetCursorPos failed"));
         }
         INPUT input{};
         input.type = INPUT_MOUSE;
         input.mi.dwFlags = MOUSEEVENTF_WHEEL;
         // Positive wheel data scrolls toward the top, so negate.
         input.mi.mouseData = static_cast<DWORD>(-amount);
+        const auto dispatchedAt = std::chrono::steady_clock::now();
         const UINT sent = SendInput(1, &input, sizeof(INPUT));
-        return {sent == 1, QStringLiteral("SendInput wheel %1 at (%2, %3)").arg(-amount).arg(centre.x()).arg(centre.y())};
+        return {sent == 1, QStringLiteral("SendInput wheel %1 at (%2, %3)").arg(-amount).arg(centre.x()).arg(centre.y()),
+                dispatchedAt};
     }
 
     static InjectResult scrollIncrements(const WinScrollArea& area, int amount)
     {
         const ScrollAmount step = amount >= 0 ? ScrollAmount_SmallIncrement : ScrollAmount_SmallDecrement;
         const int count = std::abs(amount);
+        const auto dispatchedAt = std::chrono::steady_clock::now();
         for (int i = 0; i < count; ++i) {
             const HRESULT hr = area.pattern()->Scroll(ScrollAmount_NoAmount, step);
             if (FAILED(hr)) {
-                return {false, QStringLiteral("Scroll failed at step %1 (%2)").arg(i + 1).arg(hresultText(hr))};
+                return InjectResult::failed(QStringLiteral("Scroll failed at step %1 (%2)").arg(i + 1).arg(hresultText(hr)));
             }
         }
-        return {true, QStringLiteral("%1 small %2(s)").arg(count).arg(QLatin1String(amount >= 0 ? "increment" : "decrement"))};
+        return {true, QStringLiteral("%1 small %2(s)").arg(count).arg(QLatin1String(amount >= 0 ? "increment" : "decrement")),
+                dispatchedAt};
     }
 };
 
