@@ -1226,10 +1226,16 @@ void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
     command.options = {{"file", path}};
     if (positioned) { command.options["x"] = position.x(); command.options["y"] = position.y(); }
     QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+    // A pin first shown at its unzoomed size can reach a neighbouring monitor;
+    // Qt then creates it at that monitor's DPI and misplaces it on mixed-DPI desktops.
+    QSize sizeWhenShown;
+    connect(application.m_pinWindowManager, &PinWindowManager::windowCreated, application.m_pinWindowManager,
+            [&sizeWhenShown](PinWindow* window) { if (window->isVisible()) sizeWhenShown = window->size(); });
     application.handleCLICommand(command.toJson());
     QTRY_COMPARE(created.count(), 1);
     PinWindow* pin = application.m_pinWindowManager->windows().first();
     const auto placement = computeInitialPinWindowPlacement(QPixmap::fromImage(expected), screen->availableGeometry());
+    QCOMPARE(sizeWhenShown, placement.displaySize);
     QCOMPARE(pin->zoomLevel(), placement.zoomLevel);
     QCOMPARE(pin->size(), placement.displaySize);
     QCOMPARE(pin->pos(), positioned ? position : placement.position);
