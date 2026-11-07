@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <optional>
 #include <unistd.h>
 #include <utility>
@@ -23,6 +24,7 @@ namespace snaptray::scrollcapture {
 
 namespace {
 
+using snaptray::platform::mac::copyAXBooleanAttribute;
 using snaptray::platform::mac::copyAXElementAttribute;
 using snaptray::platform::mac::copyAXNumberAttribute;
 using snaptray::platform::mac::getAXElementFrame;
@@ -34,6 +36,7 @@ constexpr double kEdgeFractionEpsilon = 0.001;
 constexpr double kEdgePixelEpsilon = 0.5;
 
 const CFStringRef kManualAccessibilityAttribute = CFSTR("AXManualAccessibility");
+const CFStringRef kEnhancedUserInterfaceAttribute = CFSTR("AXEnhancedUserInterface");
 const QString kScrollAreaRole = QStringLiteral("AXScrollArea");
 const QString kValueIndicatorRole = QStringLiteral("AXValueIndicator");
 const QStringList kWalkStopRoles = {
@@ -51,6 +54,14 @@ public:
     ~ScopedCF() { reset(); }
     ScopedCF(const ScopedCF&) = delete;
     ScopedCF& operator=(const ScopedCF&) = delete;
+    ScopedCF(ScopedCF&& other) noexcept : m_ref(other.release()) {}
+    ScopedCF& operator=(ScopedCF&& other) noexcept
+    {
+        if (this != &other) {
+            reset(other.release());
+        }
+        return *this;
+    }
 
     T get() const { return m_ref; }
     explicit operator bool() const { return m_ref != nullptr; }
@@ -333,6 +344,8 @@ private:
 class MacScrollAreaLocator final : public ScrollAreaLocator
 {
 public:
+    ~MacScrollAreaLocator() override { restoreAccessibility(); }
+
     bool isAvailable() const override { return true; }
 
     LocateResult locateAt(const QPoint& globalPos, const LocateOptions& options) override
@@ -358,16 +371,69 @@ public:
         return result;
     }
 
-    bool enableEnhancedAccessibility(qint64 processId, QString* detail) override
+    QJsonObject requestFullAccessibilityTree(qint64 processId, AccessibilityBoost boost) override
     {
-        ScopedCF<AXUIElementRef> application(AXUIElementCreateApplication(static_cast<pid_t>(processId)));
-        AXUIElementSetMessagingTimeout(application.get(), kAXMessagingTimeoutSeconds);
-        const AXError error = AXUIElementSetAttributeValue(
-            application.get(), kManualAccessibilityAttribute, kCFBooleanTrue);
-        if (detail) {
-            *detail = QStringLiteral("AXManualAccessibility AXError %1").arg(static_cast<int>(error));
+        const auto pid = static_cast<pid_t>(processId);
+        auto it = m_boosted.find(pid);
+        if (it == m_boosted.end()) {
+            // Remember what was there before touching anything.
+            BoostedApplication state;
+            state.application.reset(AXUIElementCreateApplication(pid));
+            AXUIElementSetMessagingTimeout(state.application.get(), kAXMessagingTimeoutSeconds);
+            CFTypeRef previousManual = nullptr;
+            if (AXUIElementCopyAttributeValue(state.application.get(), kManualAccessibilityAttribute,
+                                              &previousManual) == kAXErrorSuccess) {
+                state.previousManual.reset(previousManual);
+            } else if (previousManual) {
+                CFRelease(previousManual);
+            }
+            state.enhancedWasOn = copyAXBooleanAttribute(state.application.get(),
+                                                         kEnhancedUserInterfaceAttribute).value_or(false);
+            it = m_boosted.emplace(pid, std::move(state)).first;
         }
-        return error == kAXErrorSuccess;
+        BoostedApplication& state = it->second;
+
+        QJsonObject result{
+            {QStringLiteral("supported"), true},
+            {QStringLiteral("mode"), QLatin1String(accessibilityBoostName(boost))},
+            {QStringLiteral("enhancedUserInterfaceWasOn"), state.enhancedWasOn},
+        };
+        if (boost != AccessibilityBoost::EnhancedUserInterface) {
+            const AXError error = AXUIElementSetAttributeValue(
+                state.application.get(), kManualAccessibilityAttribute, kCFBooleanTrue);
+            state.didSetManual = true;
+            result.insert(QStringLiteral("AXManualAccessibility"), static_cast<int>(error));
+        }
+        if (boost != AccessibilityBoost::ManualAccessibility) {
+            if (state.enhancedWasOn) {
+                // VoiceOver or another client turned it on; turning it off
+                // later would break that client, so do not take ownership.
+                result.insert(QStringLiteral("AXEnhancedUserInterface"), QStringLiteral("already_on"));
+            } else {
+                const AXError error = AXUIElementSetAttributeValue(
+                    state.application.get(), kEnhancedUserInterfaceAttribute, kCFBooleanTrue);
+                state.didEnableEnhanced = true;
+                result.insert(QStringLiteral("AXEnhancedUserInterface"), static_cast<int>(error));
+            }
+        }
+        return result;
+    }
+
+    void restoreAccessibility() override
+    {
+        for (auto& entry : m_boosted) {
+            BoostedApplication& state = entry.second;
+            if (state.didSetManual) {
+                AXUIElementSetAttributeValue(state.application.get(), kManualAccessibilityAttribute,
+                                             state.previousManual ? state.previousManual.get() : kCFBooleanFalse);
+            }
+            // Chromium counts enhanced-UI requests: withdraw only our own.
+            if (state.didEnableEnhanced) {
+                AXUIElementSetAttributeValue(state.application.get(), kEnhancedUserInterfaceAttribute,
+                                             kCFBooleanFalse);
+            }
+        }
+        m_boosted.clear();
     }
 
     QJsonObject environment() const override
@@ -395,6 +461,16 @@ public:
     }
 
 private:
+    struct BoostedApplication {
+        ScopedCF<AXUIElementRef> application;
+        ScopedCF<CFTypeRef> previousManual;
+        bool enhancedWasOn = false;
+        bool didSetManual = false;
+        bool didEnableEnhanced = false;
+    };
+
+    std::map<pid_t, BoostedApplication> m_boosted;
+
     static void readApplicationInfo(pid_t processId, QString* name, QString* version)
     {
         @autoreleasepool {

@@ -3,8 +3,8 @@
 // lossless captures. Writes one JSON line per measurement. Not part of the
 // product; it only drives the scrollcapture modules the product will use.
 //
-//   snaptray-scroll-probe inspect [--level N]
-//   snaptray-scroll-probe measure [--level N] [--enable-ax]
+//   snaptray-scroll-probe inspect [--level N] [--ax-boost MODE]
+//   snaptray-scroll-probe measure [--level N] [--ax-boost MODE]
 //                                 [--scroll METHOD --amount N --repeats N]
 //                                 [--output FILE] [--app-label TEXT] [--note TEXT]
 #include "capture/ScreenSnapshot.h"
@@ -29,12 +29,15 @@
 #include <QSysInfo>
 #include <QTextStream>
 #include <QThread>
+#include <QSet>
 #include <QTimer>
 #include <QWidget>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
+#include <csignal>
 #include <optional>
 #include <vector>
 
@@ -53,7 +56,8 @@ constexpr int kDefaultAmount = 120;
 constexpr int kDefaultSearchRadius = 64;
 constexpr int kDefaultTimeoutMs = 1500;
 constexpr int kDefaultRepeatIntervalMs = 300;
-constexpr int kEnhancedAccessibilityWaitMs = 500;
+constexpr int kDefaultAxWaitMs = 1000;
+const QString kAxBoostAll = QStringLiteral("all");
 constexpr int kOverlayHideSettleMs = 150;
 constexpr int kOverlayBorder = 3;
 constexpr int kOverlayLabelPadding = 4;
@@ -65,7 +69,9 @@ struct ProbeOptions {
     int level = 0;
     int delaySeconds = kDefaultDelaySeconds;
     int attempts = kDefaultAttempts;
-    bool enableAx = false;
+    // "", "manual", "enhanced", "both", or "all" (measure each in turn).
+    QString axBoost;
+    int axWaitMs = kDefaultAxWaitMs;
     std::optional<ScrollMethod> method;
     int amount = kDefaultAmount;
     double percent = 0.0;
@@ -79,6 +85,33 @@ struct ProbeOptions {
     QString appLabel;
     QString note;
 };
+
+// Ctrl+C must not leave a target application with the accessibility
+// attributes this probe turned on, so it only sets a flag; the event loop and
+// the measurement loops check it and exit through the normal cleanup path.
+std::atomic<bool> g_stopRequested{false};
+
+extern "C" void requestStop(int)
+{
+    g_stopRequested.store(true);
+}
+
+bool stopRequested()
+{
+    return g_stopRequested.load();
+}
+
+QList<AccessibilityBoost> boostsFor(const QString& mode)
+{
+    if (mode == kAxBoostAll) {
+        return {AccessibilityBoost::ManualAccessibility, AccessibilityBoost::EnhancedUserInterface,
+                AccessibilityBoost::Both};
+    }
+    if (const auto boost = accessibilityBoostFromName(mode)) {
+        return {*boost};
+    }
+    return {};
+}
 
 QTextStream& out()
 {
@@ -418,7 +451,7 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
     std::vector<int> shifts;
     std::vector<qint64> settleTimes;
     const bool towardBottom = options.method == ScrollMethod::PatternSetPercent || options.amount >= 0;
-    for (int index = 0; index < options.repeats; ++index) {
+    for (int index = 0; index < options.repeats && !stopRequested(); ++index) {
         const ScrollAreaSnapshot before = area.snapshot();
         const std::optional<bool> atEnd = towardBottom ? before.position.atBottom : before.position.atTop;
         if (atEnd.value_or(false) && options.method != ScrollMethod::PatternSetPercent) {
@@ -481,7 +514,7 @@ void countdown(ScrollAreaLocator& locator, HighlightOverlay& overlay, const Prob
     qint64 lastLocate = -kCountdownLocateMs;
     int lastAnnounced = -1;
     const qint64 totalMs = static_cast<qint64>(options.delaySeconds) * 1000;
-    while (clock.elapsed() < totalMs) {
+    while (clock.elapsed() < totalMs && !stopRequested()) {
         const int remaining = static_cast<int>((totalMs - clock.elapsed() + 999) / 1000);
         if (remaining != lastAnnounced) {
             err() << "measuring in " << remaining << "s...\n";
@@ -537,19 +570,39 @@ int runMeasure(const ProbeOptions& options)
     LocateResult located = locator->locateAt(cursor, locateOptions);
     record.insert(QStringLiteral("locate"), locateToJson(located));
 
-    if (options.enableAx && located.processId != 0) {
-        QString detail;
-        const bool enabled = locator->enableEnhancedAccessibility(located.processId, &detail);
-        QThread::msleep(kEnhancedAccessibilityWaitMs);
-        located = locator->locateAt(cursor, locateOptions);
-        record.insert(QStringLiteral("enhancedAccessibility"), QJsonObject{
-            {QStringLiteral("ok"), enabled},
-            {QStringLiteral("detail"), detail},
-            {QStringLiteral("locate"), locateToJson(located)},
+    const QList<AccessibilityBoost> boosts = boostsFor(options.axBoost);
+    const qint64 targetProcessId = located.processId;
+    if (!boosts.isEmpty() && targetProcessId != 0) {
+        // Each mode starts from the application's own state, so the results
+        // show which request actually builds the tree.
+        QJsonArray attempts;
+        for (const AccessibilityBoost boost : boosts) {
+            if (stopRequested()) {
+                break;
+            }
+            QJsonObject attempt = locator->requestFullAccessibilityTree(targetProcessId, boost);
+            QThread::msleep(static_cast<unsigned long>(options.axWaitMs));
+            attempt.insert(QStringLiteral("locate"), locateToJson(locator->locateAt(cursor, locateOptions)));
+            locator->restoreAccessibility();
+            attempts.append(attempt);
+            QThread::msleep(static_cast<unsigned long>(options.axWaitMs));
+        }
+        record.insert(QStringLiteral("accessibilityBoost"), QJsonObject{
+            {QStringLiteral("waitMs"), options.axWaitMs},
+            {QStringLiteral("attempts"), attempts},
         });
+        if (options.method) {
+            // Scroll with the tree built; `all` uses both attributes.
+            const AccessibilityBoost scrollBoost =
+                boosts.size() == 1 ? boosts.first() : AccessibilityBoost::Both;
+            record.insert(QStringLiteral("scrollAccessibilityBoost"),
+                          locator->requestFullAccessibilityTree(targetProcessId, scrollBoost));
+            QThread::msleep(static_cast<unsigned long>(options.axWaitMs));
+            located = locator->locateAt(cursor, locateOptions);
+        }
     }
 
-    if (options.method) {
+    if (options.method && !stopRequested()) {
         if (located.area) {
             record.insert(QStringLiteral("scroll"), runScrollPhase(*located.area, *injector, options));
         } else {
@@ -558,7 +611,12 @@ int runMeasure(const ProbeOptions& options)
         }
         QCursor::setPos(cursor);
     }
+    locator->restoreAccessibility();
 
+    if (stopRequested()) {
+        err() << "stopped; accessibility attributes restored, nothing written\n";
+        return 1;
+    }
     writeRecord(record, options.output);
     return 0;
 }
@@ -573,31 +631,61 @@ int runInspect(const ProbeOptions& options)
     err() << "Hover over a scroll area. Ctrl+C to quit.\n";
     err().flush();
 
+    // `all` is a measurement mode; inspect applies both attributes.
+    const QList<AccessibilityBoost> boosts = boostsFor(options.axBoost);
+    const std::optional<AccessibilityBoost> boost = boosts.isEmpty()
+        ? std::nullopt
+        : std::optional<AccessibilityBoost>(boosts.size() == 1 ? boosts.first() : AccessibilityBoost::Both);
+
     auto* overlay = new HighlightOverlay;
     auto* timer = new QTimer(overlay);
-    QObject::connect(timer, &QTimer::timeout, overlay, [&locator, overlay, options, lastLine = QString()]() mutable {
+    QObject::connect(timer, &QTimer::timeout, overlay,
+                     [&locator, overlay, options, boost, boostedProcesses = QSet<qint64>(),
+                      lastKey = QString()]() mutable {
+        if (stopRequested()) {
+            QApplication::quit();
+            return;
+        }
         LocateOptions locateOptions;
         locateOptions.level = options.level;
-        const LocateResult result = locator->locateAt(QCursor::pos(), locateOptions);
+        LocateResult result = locator->locateAt(QCursor::pos(), locateOptions);
+        if (boost && result.processId != 0 && !boostedProcesses.contains(result.processId)) {
+            boostedProcesses.insert(result.processId);
+            const QJsonObject request = locator->requestFullAccessibilityTree(result.processId, *boost);
+            out() << "accessibility boost for pid " << result.processId << ": "
+                  << QJsonDocument(request).toJson(QJsonDocument::Compact) << '\n';
+            out().flush();
+            QThread::msleep(static_cast<unsigned long>(options.axWaitMs));
+            result = locator->locateAt(QCursor::pos(), locateOptions);
+        }
+        // Print only when the area itself changes. Position changes go to
+        // the overlay label: printing them into the terminal under the
+        // cursor would scroll it and loop forever.
+        QString key;
         QString line;
         if (result.area) {
             const ScrollAreaSnapshot snapshot = result.area->snapshot();
-            const QString description = describe(snapshot);
-            overlay->showFor(snapshot.bounds, description);
-            line = description;
+            line = describe(snapshot);
+            overlay->showFor(snapshot.bounds, line);
+            const QRect& b = snapshot.bounds;
+            key = QStringLiteral("%1|%2|%3|%4,%5,%6,%7")
+                      .arg(snapshot.processId).arg(snapshot.role).arg(snapshot.level)
+                      .arg(b.x()).arg(b.y()).arg(b.width()).arg(b.height());
         } else {
             overlay->hide();
             line = QStringLiteral("%1: %2").arg(QLatin1String(locateStatusName(result.status)), result.detail);
+            key = line;
         }
-        if (line != lastLine) {
+        if (key != lastKey) {
             out() << line << '\n';
             out().flush();
-            lastLine = line;
+            lastKey = key;
         }
     });
     timer->start(kInspectIntervalMs);
     const int code = QApplication::exec();
     delete overlay;
+    locator->restoreAccessibility();
     return code;
 }
 
@@ -613,8 +701,15 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
                                    QStringLiteral("seconds"), QString::number(kDefaultDelaySeconds));
     const QCommandLineOption attempts(QStringLiteral("attempts"), QStringLiteral("Accessibility queries before giving up."),
                                       QStringLiteral("n"), QString::number(kDefaultAttempts));
-    const QCommandLineOption enableAx(QStringLiteral("enable-ax"),
-                                      QStringLiteral("macOS: set AXManualAccessibility on the target and locate again."));
+    const QCommandLineOption axBoost(QStringLiteral("ax-boost"),
+                                     QStringLiteral("macOS: ask the target to build its full accessibility tree "
+                                                    "(manual, enhanced, both; measure also takes all) and locate "
+                                                    "again. Restored on exit."),
+                                     QStringLiteral("mode"));
+    const QCommandLineOption enableAx(QStringLiteral("enable-ax"), QStringLiteral("Same as --ax-boost all."));
+    const QCommandLineOption axWait(QStringLiteral("ax-wait"),
+                                    QStringLiteral("Milliseconds to wait after an accessibility boost."),
+                                    QStringLiteral("ms"), QString::number(kDefaultAxWaitMs));
     const QCommandLineOption scroll(QStringLiteral("scroll"),
                                     QStringLiteral("Also measure scrolling with this method: %1.").arg(methodNames.join(QStringLiteral(", "))),
                                     QStringLiteral("method"));
@@ -644,7 +739,7 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
     parser.setApplicationDescription(QStringLiteral("Probe system-reported scroll areas and programmatic scrolling (#265)."));
     parser.addHelpOption();
     parser.addPositionalArgument(QStringLiteral("command"), QStringLiteral("inspect (default) or measure"));
-    parser.addOptions({level, delay, attempts, enableAx, scroll, amount, percent, repeats, postToProcess, timeout,
+    parser.addOptions({level, delay, attempts, axBoost, enableAx, axWait, scroll, amount, percent, repeats, postToProcess, timeout,
                        strictPairs, searchRadius, interval, output, appLabel, note});
     parser.process(app);
 
@@ -658,7 +753,13 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
     options.level = std::max(0, parser.value(level).toInt());
     options.delaySeconds = std::max(0, parser.value(delay).toInt());
     options.attempts = std::max(1, parser.value(attempts).toInt());
-    options.enableAx = parser.isSet(enableAx);
+    options.axBoost = parser.isSet(axBoost) ? parser.value(axBoost)
+                    : parser.isSet(enableAx) ? kAxBoostAll : QString();
+    if (!options.axBoost.isEmpty() && boostsFor(options.axBoost).isEmpty()) {
+        err() << "unsupported --ax-boost mode; use manual, enhanced, both or all\n";
+        return std::nullopt;
+    }
+    options.axWaitMs = std::max(0, parser.value(axWait).toInt());
     options.amount = parser.value(amount).toInt();
     options.percent = parser.value(percent).toDouble();
     options.repeats = std::max(1, parser.value(repeats).toInt());
@@ -686,6 +787,8 @@ int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
+    std::signal(SIGINT, requestStop);
+    std::signal(SIGTERM, requestStop);
     QCommandLineParser parser;
     const std::optional<ProbeOptions> options = parseOptions(app, parser);
     if (!options) {

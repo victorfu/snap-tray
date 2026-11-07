@@ -22,6 +22,17 @@ constexpr LocateStatusName kLocateStatusNames[] = {
     {LocateStatus::Failed, "failed"},
 };
 
+struct AccessibilityBoostName {
+    AccessibilityBoost boost;
+    const char* name;
+};
+
+constexpr AccessibilityBoostName kAccessibilityBoostNames[] = {
+    {AccessibilityBoost::ManualAccessibility, "manual"},
+    {AccessibilityBoost::EnhancedUserInterface, "enhanced"},
+    {AccessibilityBoost::Both, "both"},
+};
+
 struct ScrollMethodName {
     ScrollMethod method;
     const char* name;
@@ -55,12 +66,13 @@ QJsonObject rectToJson(const QRect& rect)
 
 } // namespace
 
-bool ScrollAreaLocator::enableEnhancedAccessibility(qint64 /*processId*/, QString* detail)
+QJsonObject ScrollAreaLocator::requestFullAccessibilityTree(qint64 /*processId*/, AccessibilityBoost /*boost*/)
 {
-    if (detail) {
-        *detail = QStringLiteral("not available on this platform");
-    }
-    return false;
+    return QJsonObject{{QStringLiteral("supported"), false}};
+}
+
+void ScrollAreaLocator::restoreAccessibility()
+{
 }
 
 const char* locateStatusName(LocateStatus status)
@@ -71,6 +83,26 @@ const char* locateStatusName(LocateStatus status)
         }
     }
     return "unknown";
+}
+
+const char* accessibilityBoostName(AccessibilityBoost boost)
+{
+    for (const auto& entry : kAccessibilityBoostNames) {
+        if (entry.boost == boost) {
+            return entry.name;
+        }
+    }
+    return "unknown";
+}
+
+std::optional<AccessibilityBoost> accessibilityBoostFromName(const QString& name)
+{
+    for (const auto& entry : kAccessibilityBoostNames) {
+        if (name == QLatin1String(entry.name)) {
+            return entry.boost;
+        }
+    }
+    return std::nullopt;
 }
 
 const char* scrollMethodName(ScrollMethod method)
