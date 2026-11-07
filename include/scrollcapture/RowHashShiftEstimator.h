@@ -61,6 +61,13 @@ struct ShiftEstimate {
     int staticRows = 0;
     // For Ambiguous: every shift close to the best, best first.
     QVector<int> candidates;
+    // Shifts that were searched (inclusive); both 0 when no search ran.
+    int searchLow = 0;
+    int searchHigh = 0;
+    // The best-supported shift other than `shift`, and its votes, so a log
+    // can show how close the second choice was.
+    std::optional<int> runnerUpShift;
+    int runnerUpVotes = 0;
 };
 
 ShiftEstimate estimateVerticalShift(const QVector<quint64>& before,

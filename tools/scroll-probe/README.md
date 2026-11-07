@@ -86,7 +86,14 @@ Electron), `--post-to-process` (macOS: `CGEventPostToPid` without moving the cur
   platform reports, in device pixels), `settle` (`strictSettleMs`, `relaxedSettleMs`,
   `motionObserved`, frames and capture time), `shift` (the measured shift around `apiShiftPx`) and
   `shiftWithoutPrior` (the same frames searched without it).
+  Each shift result also has the searched range (`searchLowPx`..`searchHighPx`) and the runner-up shift
+  with its votes. `expectedShiftSource` is `platform_offset` or `none` (with `expectedShiftMissing`);
+  the prior never comes from earlier repeats. A timed-out settle has a `timeoutReason`:
+  `no_scroll_motion_minor_changes_only`, `minor_changes_persisted_after_motion` or
+  `content_kept_changing`. An unchanged area alone does not mean the end was reached; read it together
+  with `inject` and the `atBottom` positions.
 - `scroll.stats`: mean and standard deviation of the measured shift, p50/p95 strict settle time.
+  No confidence percentage is reported: the estimator has no calibrated one.
 
 Shift statuses: `found`, `ambiguous` (two shifts equally likely, e.g. two panes moved),
 `insufficient_detail` (blank or repeating content), `not_found` (no exact row match, e.g. fractional

@@ -98,6 +98,10 @@ void tst_RowHashShiftEstimator::findsScrollTowardBottom()
     QCOMPARE(result.shift, 37);
     QCOMPARE(result.matchedRows, result.overlapRows);
     QCOMPARE(result.overlapRows, kViewportHeight - 37);
+    // Unique rows agree on one shift only, and the whole range was searched.
+    QVERIFY(!result.runnerUpShift.has_value());
+    QCOMPARE(result.searchLow, -(kViewportHeight - 16));
+    QCOMPARE(result.searchHigh, kViewportHeight - 16);
 }
 
 void tst_RowHashShiftEstimator::findsScrollTowardTop()
@@ -128,6 +132,8 @@ void tst_RowHashShiftEstimator::expectedShiftLimitsSearch()
                                               computeRowHashes(viewportAt(document, 37)), options);
     QCOMPARE(result.status, ShiftEstimate::Status::Found);
     QCOMPARE(result.shift, 37);
+    QCOMPARE(result.searchLow, 32);
+    QCOMPARE(result.searchHigh, 48);
 }
 
 void tst_RowHashShiftEstimator::expectedShiftOutsideWindowIsNotFound()
@@ -139,6 +145,9 @@ void tst_RowHashShiftEstimator::expectedShiftOutsideWindowIsNotFound()
     const auto result = estimateVerticalShift(computeRowHashes(viewportAt(document, 0)),
                                               computeRowHashes(viewportAt(document, 37)), options);
     QCOMPARE(result.status, ShiftEstimate::Status::NotFound);
+    QCOMPARE(result.searchLow, 92);
+    QCOMPARE(result.searchHigh, 108);
+    QCOMPARE(result.distinctMatches, 0);
 }
 
 void tst_RowHashShiftEstimator::stickyHeaderDoesNotPinShiftToZero()
@@ -201,6 +210,10 @@ void tst_RowHashShiftEstimator::twoPanesMovingDifferentlyAreAmbiguous()
     QCOMPARE(result.status, ShiftEstimate::Status::Ambiguous);
     QVERIFY(result.candidates.contains(10));
     QVERIFY(result.candidates.contains(-40));
+    // The runner-up is the other pane, with as many votes as the winner.
+    QVERIFY(result.runnerUpShift.has_value());
+    QCOMPARE(QSet<int>({result.shift, *result.runnerUpShift}), QSet<int>({10, -40}));
+    QCOMPARE(result.runnerUpVotes, result.distinctMatches);
 }
 
 void tst_RowHashShiftEstimator::unrelatedFramesAreNotFound()

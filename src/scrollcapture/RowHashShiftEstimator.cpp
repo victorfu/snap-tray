@@ -52,7 +52,10 @@ ShiftEstimate estimateVerticalShift(const QVector<quint64>& before,
         high = std::min(high, *options.expectedShift + radius);
     }
     if (maxShift < 1 || low > high) {
-        return makeResult(ShiftEstimate::Status::NotFound, staticRows);
+        ShiftEstimate result = makeResult(ShiftEstimate::Status::NotFound, staticRows);
+        result.searchLow = low;
+        result.searchHigh = high;
+        return result;
     }
 
     // Index of each moving row whose content occurs exactly once in `before`.
@@ -92,19 +95,29 @@ ShiftEstimate estimateVerticalShift(const QVector<quint64>& before,
     const auto bestIt = std::max_element(votes.cbegin(), votes.cend());
     const int bestVotes = *bestIt;
     const int bestShift = low + static_cast<int>(bestIt - votes.cbegin());
+    const auto annotate = [&](ShiftEstimate& result) {
+        result.shift = bestShift;
+        result.distinctMatches = bestVotes;
+        result.searchLow = low;
+        result.searchHigh = high;
+        for (int index = 0; index < votes.size(); ++index) {
+            if (low + index != bestShift && votes[index] > 0 && votes[index] > result.runnerUpVotes) {
+                result.runnerUpShift = low + index;
+                result.runnerUpVotes = votes[index];
+            }
+        }
+    };
     if (bestVotes < std::max(1, options.minDistinctMatches)) {
         const bool lacksDetail = movingUniqueRows < std::max(1, options.minDistinctMatches) || bestVotes > 0;
         ShiftEstimate result = makeResult(lacksDetail ? ShiftEstimate::Status::InsufficientDetail
                                                       : ShiftEstimate::Status::NotFound,
                                           staticRows);
-        result.shift = bestShift;
-        result.distinctMatches = bestVotes;
+        annotate(result);
         return result;
     }
 
     ShiftEstimate result = makeResult(ShiftEstimate::Status::Found, staticRows);
-    result.shift = bestShift;
-    result.distinctMatches = bestVotes;
+    annotate(result);
     for (int i = 0; i < height; ++i) {
         const int source = i + bestShift;
         if (isStatic[i] || source < 0 || source >= height) {

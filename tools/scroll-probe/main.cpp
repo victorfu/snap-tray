@@ -222,12 +222,31 @@ QJsonObject shiftToJson(const ShiftEstimate& estimate)
         {QStringLiteral("overlapRows"), estimate.overlapRows},
         {QStringLiteral("staticRows"), estimate.staticRows},
         {QStringLiteral("candidates"), candidates},
+        {QStringLiteral("searchLowPx"), estimate.searchLow},
+        {QStringLiteral("searchHighPx"), estimate.searchHigh},
+        {QStringLiteral("runnerUpShiftPx"),
+         estimate.runnerUpShift ? QJsonValue(*estimate.runnerUpShift) : QJsonValue()},
+        {QStringLiteral("runnerUpVotes"), estimate.runnerUpVotes},
     };
 }
 
 QJsonValue optionalJson(const std::optional<qint64>& value)
 {
     return value ? QJsonValue(*value) : QJsonValue();
+}
+
+// Why a settle timed out, from what the detector saw. An unchanged area is
+// not proof of the end of the content: the input may not have taken effect.
+QJsonValue timeoutReason(const FrameSettleDetector::Result& settle)
+{
+    if (settle.outcome != FrameSettleDetector::Outcome::TimedOut) {
+        return QJsonValue();
+    }
+    if (!settle.motionObserved) {
+        return QStringLiteral("no_scroll_motion_minor_changes_only");
+    }
+    return settle.relaxedSettleMs ? QStringLiteral("minor_changes_persisted_after_motion")
+                                  : QStringLiteral("content_kept_changing");
 }
 
 struct RepeatOutcome {
@@ -307,6 +326,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         {QStringLiteral("frames"), settle.frames},
         {QStringLiteral("averageCaptureMs"), settle.frames > 0 ? static_cast<double>(captureMs) / settle.frames : 0.0},
         {QStringLiteral("lastChangedTiles"), settle.lastChangedTiles},
+        {QStringLiteral("timeoutReason"), timeoutReason(settle)},
     });
 
     const ScrollAreaSnapshot after = area.snapshot();
@@ -316,10 +336,18 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     const QVector<quint64> afterRows = computeRowHashes(detector.lastFrame());
     ShiftEstimatorOptions shiftOptions;
     shiftOptions.searchRadius = options.searchRadius;
+    // The prior comes only from the platform-reported position; when that is
+    // missing the search covers every shift rather than guessing from earlier
+    // repeats.
     if (before.position.offset && after.position.offset) {
         const double apiShift = (*after.position.offset - *before.position.offset) * start.scale;
         json.insert(QStringLiteral("apiShiftPx"), apiShift);
+        json.insert(QStringLiteral("expectedShiftSource"), QStringLiteral("platform_offset"));
         shiftOptions.expectedShift = qRound(apiShift);
+    } else {
+        json.insert(QStringLiteral("expectedShiftSource"), QStringLiteral("none"));
+        json.insert(QStringLiteral("expectedShiftMissing"),
+                    !before.position.offset ? QStringLiteral("offset_before") : QStringLiteral("offset_after"));
     }
     const ShiftEstimate estimate = estimateVerticalShift(beforeRows, afterRows, shiftOptions);
     json.insert(QStringLiteral("shift"), shiftToJson(estimate));
