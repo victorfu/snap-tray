@@ -1471,6 +1471,11 @@ target_link_libraries(Tools_StraightStrokes PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_StraightStrokes COMMAND Tools_StraightStrokes)
 set_tests_properties(Tools_StraightStrokes PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Detection_TextLineSnapper Detection/tst_TextLineSnapper.cpp)
+target_link_libraries(Detection_TextLineSnapper PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Detection_TextLineSnapper COMMAND Detection_TextLineSnapper)
+set_tests_properties(Detection_TextLineSnapper PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Tools_MarkerToolHandler Tools/handlers/tst_MarkerToolHandler.cpp)
 target_link_libraries(Tools_MarkerToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_MarkerToolHandler COMMAND Tools_MarkerToolHandler)

@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-06
+last_modified_at: 2026-11-07
 layout: docs
 title: Annotation Tools
 seo_title: "SnapTray Annotation Tools: Draw, Text, Mosaic and Steps"
@@ -36,6 +36,14 @@ doc_order: 2
 Hold `Shift` before pressing the left mouse button, then drag with Pencil or Marker to draw a straight stroke from the starting point to the cursor. The line can follow any angle and keeps the tool’s normal style, including the marker’s transparency. Each stroke is one Undo/Redo step.
 
 The Shift state at the start determines the mode for the entire stroke. Pressing or releasing Shift during a drag does not switch modes. Start without Shift for normal freehand drawing. This works in Region Capture, Pin Windows, and Screen Canvas.
+
+## Snap marker strokes to text
+
+In a single Region Capture selection on macOS or Windows with OCR available, select Marker and enable **Snap to text** in its options bar. This preference starts off. Recognition runs on the original screenshot in the background. Hover over a detected horizontal line to preview its height; drag in either direction to highlight part of it. The stroke keeps your horizontal endpoints and aligns its center and width to one line. Round caps can extend visually beyond the endpoints.
+
+The line locks during the drag, so moving toward another row does not switch lines. Ambiguous rows or columns, unavailable OCR, and strokes started before recognition finishes use the normal marker behavior, including Shift. A late OCR result only affects later strokes. Each stroke remains one Undo/Redo step, and history restores its saved geometry without OCR.
+
+This mode does not select paragraphs, extend to word boundaries, or support vertical/rotated text. It is not available in multi-region capture, Pin Windows, Screen Canvas, or Linux. Disable the toggle to use ordinary freehand highlighting.
 
 ## Changing an annotation you already drew
 

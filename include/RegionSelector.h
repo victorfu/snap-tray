@@ -63,6 +63,7 @@ class QCloseEvent;
 class QResizeEvent;
 class QFutureWatcherBase;
 class OCRManager;
+class TextLineGeometryCache;
 struct OCRResult;
 class QRCodeManager;
 class AutoBlurManager;
@@ -198,6 +199,9 @@ private:
     // Lazy component creation
     void showEmojiPickerPopup();
     OCRManager* ensureOCRManager();
+    void syncMarkerTextSnap();
+    TextLineGeometryCache* m_markerTextCache = nullptr;
+    bool m_markerTextSnapSupported = false;
     QRCodeManager* ensureQRCodeManager();
     LoadingSpinnerRenderer* ensureLoadingSpinner();
 

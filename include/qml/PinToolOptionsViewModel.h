@@ -20,6 +20,8 @@ class PinToolOptionsViewModel : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(bool markerTextSnapAvailable READ markerTextSnapAvailable NOTIFY markerTextSnapChanged)
+    Q_PROPERTY(bool markerTextSnapEnabled READ markerTextSnapEnabled WRITE setMarkerTextSnapEnabled NOTIFY markerTextSnapEnabledChanged)
     // Section visibility
     Q_PROPERTY(bool showColorSection READ showColorSection NOTIFY sectionVisibilityChanged)
     Q_PROPERTY(bool showWidthSection READ showWidthSection NOTIFY sectionVisibilityChanged)
@@ -42,6 +44,7 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(int minWidth READ minWidth CONSTANT)
     Q_PROPERTY(int maxWidth READ maxWidth CONSTANT)
     Q_PROPERTY(int activeToolId READ activeToolId NOTIFY activeToolChanged)
+    Q_PROPERTY(bool markerActive READ isMarkerActive NOTIFY activeToolChanged)
     Q_PROPERTY(bool mosaicActive READ isMosaicActive NOTIFY activeToolChanged)
     Q_PROPERTY(QVariantList mosaicWidthPresetOptions READ mosaicWidthPresetOptions CONSTANT)
 
@@ -107,6 +110,19 @@ public:
     bool showAutoBlurSection() const { return m_showAutoBlur; }
     bool hasContent() const;
 
+    bool markerTextSnapAvailable() const { return m_markerTextSnapAvailable; }
+    bool markerTextSnapEnabled() const { return m_markerTextSnapEnabled; }
+    void setMarkerTextSnapAvailable(bool value) {
+        if (m_markerTextSnapAvailable == value) return;
+        m_markerTextSnapAvailable = value;
+        emit markerTextSnapChanged();
+    }
+    void setMarkerTextSnapEnabled(bool value) {
+        if (m_markerTextSnapEnabled == value) return;
+        m_markerTextSnapEnabled = value;
+        emit markerTextSnapEnabledChanged();
+    }
+
     // Color
     QVariantList colorPalette() const { return m_colorPalette; }
     QVariantList colorPaletteOptions() const;
@@ -120,6 +136,7 @@ public:
     int maxWidth() const { return 30; }
     int activeToolId() const { return static_cast<int>(m_activeToolId); }
     // A targeted selection uses the plain width slider, not the brush presets.
+    bool isMarkerActive() const { return m_activeToolId == ToolId::Marker; }
     bool isMosaicActive() const { return m_activeToolId == ToolId::Mosaic && !m_editingSelection; }
     QVariantList mosaicWidthPresetOptions() const;
 
@@ -201,6 +218,8 @@ public:
     void setZOrderAvailability(bool canRaise, bool canLower);
 
 signals:
+    void markerTextSnapChanged();
+    void markerTextSnapEnabledChanged();
     void sectionVisibilityChanged();
     void currentColorChanged();
     void currentWidthChanged();
@@ -273,6 +292,8 @@ public slots:
     bool handleStepBadgeSizeWheelDelta(int delta);
 
 private:
+    bool m_markerTextSnapAvailable = false;
+    bool m_markerTextSnapEnabled = false;
     void buildColorPalette();
     void applySectionVisibility(bool showColor,
                                 bool showWidth,
