@@ -36,6 +36,7 @@
 #include "update/InstallSourceDetector.h"
 #include "update/UpdateCoordinator.h"
 #include "utils/CoordinateHelper.h"
+#include "utils/TextLayoutUtils.h"
 #ifdef Q_OS_MACOS
 #include "platform/MacTrayActivationGuard.h"
 #include "platform/MacTrayAccessibility.h"
@@ -1226,16 +1227,15 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
     font.setStyleHint(QFont::SansSerif);
     QFontMetrics fm(font);
 
-    // Calculate text dimensions (support multi-line)
+    // Calculate text dimensions (support multi-line). Every line, not just the
+    // visible ones, can widen the card; measuring stops once the cap is reached.
     QStringList lines = text.split('\n');
-    int maxWidth = 0;
-    for (const QString &line : lines) {
-        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
-    }
+    const int maxWidth = TextLayoutUtils::boundedMaxLineWidth(
+        lines, kMaxTextPixmapWidth,
+        [&fm](const QString &line) { return fm.horizontalAdvance(line); });
     int totalHeight = lines.count() * fm.lineSpacing();
 
-    // Limit maximum size
-    maxWidth = qMin(maxWidth, kMaxTextPixmapWidth);
+    // Limit maximum height
     totalHeight = qMin(totalHeight, kMaxTextPixmapHeight);
 
     // Create pixmap with padding

@@ -315,14 +315,10 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     pic.height = processed.height();
     pic.use_argb = 1;
 
-    // Allocate picture buffer
-    if (!WebPPictureAlloc(&pic)) {
-        qWarning() << "WebPAnimationEncoder: Failed to allocate WebPPicture";
-        WebPPictureFree(&pic);
-        return;
-    }
-
-    // Import RGBA data
+    // Import RGBA data. With use_argb set, libwebp (pinned v1.3.2) allocates the
+    // ARGB buffer inside the import and frees any previous one, so a separate
+    // WebPPictureAlloc beforehand would only be discarded. Allocation failure
+    // and invalid dimensions surface here as an import failure.
     if (!WebPPictureImportRGBA(&pic,
                                processed.constBits(),
                                processed.bytesPerLine())) {
