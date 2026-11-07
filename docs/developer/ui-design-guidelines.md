@@ -126,7 +126,7 @@ Record actual environment, results, and evidence for each implementation; a blan
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
-| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | Local Windows build passed; focused UI regression 7/7; earlier full baseline and reruns documented in #210; separate [Windows 11 baseline](windows-ui-acceptance-238.md): 229/233, desktop access blocked | `scripts/run-tests.sh` on a 2× desktop: 231 of 233; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
+| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | Local Windows build passed; focused UI regression 7/7; earlier full baseline and reruns documented in #210; separate [Windows 11 rebased run](windows-ui-acceptance-238.md): 239/244; performance recheck passed, four desktop-sensitive suites unresolved | `scripts/run-tests.sh` on a 2× desktop: 231 of 233; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
 | Wide/narrow, light/dark, selection/export | QML screenshot fixtures (below) | 1200x800/640x480 fixtures passed; representative images inspected (see Windows follow-up) | The same fixtures rendered on Ubuntu at 2×, light and dark |
 | Pending input, drag/undo, close/cancel | Automated preview suites; operation videos; exporting, close-while-exporting and cancelled screenshots (below) | Preview regression and operation scripts passed; QTest-driven | Preview suites and operation videos pass locally; closing during a real export asks Keep/Cancel, Keep finishes it |
 | New recording end-to-end (trim → split/speed → canvas → text/mask/zoom → export) | Scripted real-input session, `editor-220-flow` | Fresh native capture loaded into scripted editor; trim, 2x, canvas, text/mask/zoom, real GIF and H.264 outputs passed; tray handoff not exercised | Real-input session (XTest): split, 2×, mask, text, zoom, undo/redo, MP4 export; trim and canvas not exercised; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
@@ -186,15 +186,24 @@ and `SNAPTRAY_FOCUS_HELPER` for the controlled second-process focus check.
 
 ### Separate single-monitor Windows 11 session
 
-The [Windows 11 session record](windows-ui-acceptance-238.md) retains the
-November 6–7 Qt 6.12.0 evidence from `1bec6606` (base `3d88dc42`): 229/233
-suites passed, with four clipboard failures while desktop access was unavailable.
-Effective 100/150/200% and de/fi/ru/el render fixtures are committed there;
-physical scaling stayed at 125%, with one display and no Narrator speech test.
-These historical results supplement the Windows 10 run above; they do not
-replace its results or establish acceptance of the later integrated main.
-The test runtime's missing offscreen plugin is repaired. The experimental HEVC
-fallback was dropped because main now intentionally exports H.264 on Windows.
+The [Windows 11 session record](windows-ui-acceptance-238.md) now covers a fresh
+Qt 6.12.0 Debug build after rebasing on main `b155fdd5` (November 7). The full
+run passed 239/244 suites; the 4K performance failure passed in isolation at
+194.2 ms/frame. Four suites still need an unlocked-desktop recheck (clipboard
+access and selector lifetime). A missing post-event-wait selector check was
+added so the test reports failure instead of aborting its process.
+
+Editor selection/timeline/flow/reopen, export-state, toolbar restyle/geometry
+Undo and pin operation fixtures passed. Current effective 100/150/200%,
+light/dark and de/fi/ru/el screenshots, plus GIF/MP4 exports, are committed in
+the report. These are QTest-driven operations and generated media, not a fresh
+native desktop recording. Physical scale stayed at 125% on one monitor.
+Actual UI automation observed the Windows lock screen; native input and
+Narrator speech remain untested. These results supplement the Windows 10
+run above without replacing its distinct hardware checks. The subsequent overlay
+selection fix makes a selected low-frame-rate text effect visible past its
+fade-in; its regression failed before and passed after the change, and all four
+affected editor/export/timeline/mask suites passed again.
 
 ### macOS accessibility audit
 
