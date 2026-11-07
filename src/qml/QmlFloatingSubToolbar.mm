@@ -495,7 +495,10 @@ void QmlFloatingSubToolbar::hideControlTooltip()
     }
     m_controlTooltipItemName.clear();
     m_controlTooltipText.clear();
-    m_tooltip.hide();
+    // A request that never showed (its item is hidden) must not close the hint.
+    if (!m_autoBlurHintVisible) {
+        m_tooltip.hide();
+    }
 }
 
 void QmlFloatingSubToolbar::refreshControlTooltip()

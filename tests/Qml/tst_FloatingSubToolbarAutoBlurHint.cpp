@@ -42,6 +42,7 @@ private slots:
     void initTestCase();
     void testHoverReminderLifecycle();
     void testEyedropperTooltipLifecycle();
+    void testControlTooltipAndAutoBlurHintShareTheTooltip();
 };
 
 void TestQmlFloatingSubToolbarAutoBlurHint::initTestCase()
@@ -172,6 +173,70 @@ void TestQmlFloatingSubToolbarAutoBlurHint::testEyedropperTooltipLifecycle()
     QTRY_VERIFY(tooltipOverPick());
     subToolbar.hide();
     QTRY_VERIFY(!tooltipVisible());
+
+    subToolbar.close();
+}
+
+// The Auto Blur hint and control tooltips share one tooltip: whichever shows
+// last owns it, and withdrawing one never closes the other.
+void TestQmlFloatingSubToolbarAutoBlurHint::testControlTooltipAndAutoBlurHintShareTheTooltip()
+{
+    PinToolOptionsViewModel viewModel;
+    SnapTray::QmlFloatingSubToolbar subToolbar(&viewModel);
+    const QRect toolbarRect = testToolbarRect();
+    QVERIFY(toolbarRect.isValid());
+
+    subToolbar.showForTool(static_cast<int>(ToolId::Mosaic));
+    QTRY_VERIFY(subToolbar.isVisible());
+    subToolbar.positionBelow(toolbarRect);
+
+    const QRect buttonRect = subToolbar.autoBlurButtonGlobalRect();
+    QVERIFY(buttonRect.isValid());
+    const auto hoverAutoBlur = [&]() {
+        subToolbar.onAutoBlurButtonHovered(buttonRect.x(), buttonRect.y(),
+                                           buttonRect.width(), buttonRect.height());
+    };
+    const auto tooltipVisible = [&subToolbar]() {
+        QWindow* window = subToolbar.m_tooltip.window();
+        return window && window->isVisible();
+    };
+    const auto shownText = [&subToolbar]() {
+        return shownTooltipText(subToolbar.m_tooltip.window());
+    };
+
+    hoverAutoBlur();
+    QVERIFY(subToolbar.m_autoBlurHintVisible);
+    QTRY_VERIFY(tooltipVisible());
+    const QString hintText = shownText();
+    QVERIFY(!hintText.isEmpty());
+
+    // Mosaic has no colors: a request for the hidden eyedropper leaves the hint up.
+    subToolbar.onControlTooltipRequested(QStringLiteral("colorPickButton"),
+                                         QStringLiteral("Pick color from screen (I)"));
+    QVERIFY(subToolbar.m_autoBlurHintVisible);
+    QVERIFY(tooltipVisible());
+    QCOMPARE(shownText(), hintText);
+
+    // A control tooltip (anchored here on the Auto Blur button itself) takes
+    // over and drops the hint's emphasis...
+    const QString controlText = QStringLiteral("Control tooltip");
+    subToolbar.onControlTooltipRequested(QStringLiteral("autoBlurButton"), controlText);
+    QVERIFY(!subToolbar.m_autoBlurHintVisible);
+    QCOMPARE(subToolbar.m_rootItem->property("autoBlurHintActive").toBool(), false);
+    QTRY_COMPARE(shownText(), controlText);
+    // ...and the hint's hover exit leaves it alone.
+    subToolbar.onAutoBlurButtonHoverExited();
+    QVERIFY(tooltipVisible());
+    QCOMPARE(shownText(), controlText);
+
+    // The hint takes over again, and a late dismissal of the control leaves it up.
+    hoverAutoBlur();
+    QVERIFY(subToolbar.m_autoBlurHintVisible);
+    QTRY_COMPARE(shownText(), hintText);
+    subToolbar.onControlTooltipDismissed();
+    QVERIFY(subToolbar.m_autoBlurHintVisible);
+    QVERIFY(tooltipVisible());
+    QCOMPARE(shownText(), hintText);
 
     subToolbar.close();
 }
