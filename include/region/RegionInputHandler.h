@@ -67,7 +67,8 @@ public:
     void resetDirtyTracking();
     void setBoundarySnapSource(const QImage& image, qreal dpr);
     void setBoundarySnapAllowed(bool allowed);
-    bool handleBoundarySnapKey(int key, bool pressed, bool autoRepeat = false);
+    bool handleBoundarySnapKey(int key, bool pressed, bool autoRepeat = false,
+                               Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     bool cancelSelectionResize();
 
     // Event handlers (called from RegionSelector)

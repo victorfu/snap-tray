@@ -22,6 +22,7 @@ private slots:
         auto axis = vertical ? BoundarySnapIndex::Axis::Vertical : BoundarySnapIndex::Axis::Horizontal;
         auto hit = index.evaluate(axis, vertical ? 50 : 40, 0, vertical ? 80 : 100, {});
         QVERIFY(hit); QCOMPARE(hit->supportFraction, 1.0);
+        QCOMPARE(hit->axis, axis);
         QVERIFY(qAbs(hit->meanStrength - std::sqrt(3.0 * 255 * 255)) < 0.001);
         QVERIFY(!index.evaluate(axis, vertical ? 49 : 39, 0, 10, {}));
         // The index owns shared immutable storage; later writes detach.

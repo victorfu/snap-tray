@@ -6,6 +6,8 @@
 namespace {
 constexpr int kEnterRadius = 6;
 constexpr int kExitRadius = 9;
+constexpr qreal kMaximumDpr = 8.0;
+constexpr int kMaximumSpan = 16384;
 int edgePosition(const QRect& r, Qt::Edge edge)
 {
     if (edge == Qt::LeftEdge) return r.x();
@@ -17,10 +19,9 @@ int edgePosition(const QRect& r, Qt::Edge edge)
 
 void BoundarySnapController::setSource(const QImage& image, qreal devicePixelRatio)
 {
-    ++m_generation;
     reset();
     m_dpr = devicePixelRatio;
-    m_index.setImage(std::isfinite(m_dpr) && m_dpr > 0 && m_dpr <= 8 ? image : QImage());
+    m_index.setImage(std::isfinite(m_dpr) && m_dpr > 0 && m_dpr <= kMaximumDpr ? image : QImage());
 }
 
 void BoundarySnapController::reset()
@@ -34,7 +35,8 @@ std::optional<BoundarySnapController::Lock> BoundarySnapController::query(
 {
     using Axis = BoundarySnapIndex::Axis;
     const bool vertical = edge == Qt::LeftEdge || edge == Qt::RightEdge;
-    const QRect physical = CoordinateHelper::toPhysicalCoveringRect(raw, m_dpr);
+    const QRect physical = CoordinateHelper::toPhysicalCoveringRect(raw, m_dpr)
+        .intersected(QRect(QPoint(), m_index.size()));
     const int begin = vertical ? physical.y() : physical.x();
     const int end = begin + (vertical ? physical.height() : physical.width());
     const int target = edgePosition(raw, edge);
@@ -69,21 +71,26 @@ std::optional<BoundarySnapController::Lock> BoundarySnapController::query(
     return best;
 }
 
-BoundarySnapController::Result BoundarySnapController::snap(const QRect& raw, Qt::Edges movingEdges, QueryOptions options)
+BoundarySnapController::Result BoundarySnapController::snap(
+    const QRect& raw, Qt::Edges movingEdges, qint64 budgetNanoseconds)
 {
-    const qint64 budgetNanoseconds = options.budgetNanoseconds;
     Result result{raw, {}};
     if (!raw.isValid() || m_index.size().isEmpty()) { reset(); return result; }
-    // Reject out-of-image coordinates before any floating-to-integer conversion.
+    // Qt rounds the logical canvas size. Permit that far-edge rounding, then
+    // clamp the physical covering rect just like export does. Keep rejecting
+    // genuinely out-of-canvas coordinates before converting them to integers.
+    const qreal logicalWidth = std::floor(m_index.size().width() / m_dpr + 0.5);
+    const qreal logicalHeight = std::floor(m_index.size().height() / m_dpr + 0.5);
     if (raw.x() < 0 || raw.y() < 0
-        || (qreal(raw.x()) + raw.width()) * m_dpr > m_index.size().width()
-        || (qreal(raw.y()) + raw.height()) * m_dpr > m_index.size().height()) {
+        || qreal(raw.x()) + raw.width() > logicalWidth
+        || qreal(raw.y()) + raw.height() > logicalHeight) {
         reset(); return result;
     }
-    const QRect physical = CoordinateHelper::toPhysicalCoveringRect(raw, m_dpr);
-    constexpr int kMaximumSpan = 16384;
-    if (physical.width() > kMaximumSpan || physical.height() > kMaximumSpan
-        || !QRect(QPoint(), m_index.size()).contains(physical)) { reset(); return result; }
+    const QRect physical = CoordinateHelper::toPhysicalCoveringRect(raw, m_dpr)
+        .intersected(QRect(QPoint(), m_index.size()));
+    if (physical.isEmpty() || physical.width() > kMaximumSpan || physical.height() > kMaximumSpan) {
+        reset(); return result;
+    }
     QElapsedTimer timer;
     timer.start();
     const Qt::Edge xEdge = movingEdges.testFlag(Qt::LeftEdge) ? Qt::LeftEdge : Qt::RightEdge;
@@ -104,7 +111,8 @@ BoundarySnapController::Result BoundarySnapController::snap(const QRect& raw, Qt
         else result.rect.setBottom(m_horizontal->logical - 1);
         result.edges |= yEdge;
     }
-    const QRect crop = CoordinateHelper::toPhysicalCoveringRect(result.rect, m_dpr);
+    const QRect crop = CoordinateHelper::toPhysicalCoveringRect(result.rect, m_dpr)
+        .intersected(QRect(QPoint(), m_index.size()));
     if (!result.rect.isValid()
         || (m_vertical && edgePosition(crop, xEdge) != m_vertical->hit.pixelBoundary)
         || (m_horizontal && edgePosition(crop, yEdge) != m_horizontal->hit.pixelBoundary)) {

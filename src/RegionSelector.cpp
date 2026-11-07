@@ -4562,9 +4562,17 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
     event->ignore();
 }
 
+bool RegionSelector::cancelSelectionResizeGesture()
+{
+    if (!m_inputHandler->cancelSelectionResize()) return false;
+    m_quickPinPressOnCompletedSelection = false;
+    return true;
+}
+
 void RegionSelector::keyReleaseEvent(QKeyEvent* event)
 {
-    if (m_inputHandler->handleBoundarySnapKey(event->key(), false, event->isAutoRepeat())) {
+    if (m_inputHandler->handleBoundarySnapKey(
+            event->key(), false, event->isAutoRepeat(), event->modifiers())) {
         event->accept();
         return;
     }
@@ -4609,7 +4617,8 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         return;
     }
 
-    if (m_inputHandler->handleBoundarySnapKey(event->key(), true, event->isAutoRepeat())) {
+    if (m_inputHandler->handleBoundarySnapKey(
+            event->key(), true, event->isAutoRepeat(), event->modifiers())) {
         event->accept();
         return;
     }
@@ -4639,7 +4648,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             return;
         }
 
-        if (m_inputHandler->cancelSelectionResize()) {
+        if (cancelSelectionResizeGesture()) {
             event->accept();
             return;
         }
@@ -4953,7 +4962,7 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
                 return true;
             }
 
-            if (m_inputHandler->cancelSelectionResize()) return true;
+            if (cancelSelectionResizeGesture()) return true;
 
             // Try to handle escape in tool first (e.g. finish polyline)
             // Note: eventFilter sees keys before keyPressEvent

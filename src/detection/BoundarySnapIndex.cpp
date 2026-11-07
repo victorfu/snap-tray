@@ -1,12 +1,16 @@
 #include "detection/BoundarySnapIndex.h"
 
 #include <cmath>
+#include <QDebug>
 
 void BoundarySnapIndex::setImage(const QImage& image)
 {
     m_image = {};
-    if (image.width() < 2 || image.height() < 2
-        || qint64(image.width()) * image.height() > MaximumPixels) return;
+    if (image.width() < 2 || image.height() < 2) return;
+    if (qint64(image.width()) * image.height() > MaximumPixels) {
+        qDebug() << "Boundary snap disabled: capture exceeds pixel budget" << image.size();
+        return;
+    }
     // These formats have identical QRgb channel layout. Retain their shared
     // storage; other formats are converted once, never inside a query.
     if (image.format() == QImage::Format_RGB32
@@ -14,6 +18,7 @@ void BoundarySnapIndex::setImage(const QImage& image)
         m_image = image;
     } else {
         m_image = image.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        if (m_image.isNull()) qWarning() << "Boundary snap source format conversion failed";
     }
 }
 

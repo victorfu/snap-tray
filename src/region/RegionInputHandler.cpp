@@ -91,12 +91,15 @@ void RegionInputHandler::setBoundarySnapAllowed(bool allowed)
     }
 }
 
-bool RegionInputHandler::handleBoundarySnapKey(int key, bool pressed, bool autoRepeat)
+bool RegionInputHandler::handleBoundarySnapKey(
+    int key, bool pressed, bool autoRepeat, Qt::KeyboardModifiers modifiers)
 {
     if (key != Qt::Key_Alt && key != Qt::Key_S) return false;
     const bool resizing = boundarySnapEligible();
     if (key == Qt::Key_S && !resizing && pressed) return false;
+    if (key == Qt::Key_S && pressed && modifiers != Qt::NoModifier) return false;
     if (autoRepeat) return resizing;
+    m_currentModifiers = modifiers;
     if (key == Qt::Key_Alt) m_currentModifiers.setFlag(Qt::AltModifier, pressed);
     else m_snapKeyHeld = pressed;
     if (resizing && m_state) {
@@ -1367,7 +1370,8 @@ bool RegionInputHandler::updateSelectionGesture(const QPoint& pos)
     }
     else if (m_selectionManager->isResizing()) {
         const bool enabled = boundarySnapEligible()
-            && (m_snapKeyHeld || m_currentModifiers.testFlag(Qt::AltModifier));
+            && ((m_snapKeyHeld && m_currentModifiers == Qt::NoModifier)
+                || m_currentModifiers.testFlag(Qt::AltModifier));
         if (enabled) {
             m_selectionManager->updateResize(pos, [this](const QRect& raw, Qt::Edges edges) {
                 const auto result = m_boundarySnap.snap(raw, edges);

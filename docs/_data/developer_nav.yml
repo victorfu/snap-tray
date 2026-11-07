@@ -39,3 +39,11 @@
       title:
         en: UI Design Guidelines
         zh-tw: UI 設計規範（英文）
+    - route_key: developer_boundary_snap
+      title:
+        en: Selection Boundary Snap
+        zh-tw: 選框邊界吸附（英文）
+    - route_key: developer_boundary_snap_acceptance
+      title:
+        en: Boundary Snap Acceptance
+        zh-tw: 邊界吸附驗收（英文）

@@ -5,18 +5,17 @@
 #include <Qt>
 class QElapsedTimer;
 
-// Synchronous, bounded local queries. No worker can publish stale generations.
+// Synchronous, bounded local queries over the current capture source.
 class BoundarySnapController
 {
 public:
     struct Result { QRect rect; Qt::Edges edges; };
-    struct QueryOptions { qint64 budgetNanoseconds = 4000000; };
+    static constexpr qint64 kDefaultQueryBudgetNs = 4000000;
     void setSource(const QImage& image, qreal devicePixelRatio);
     void reset();
-    Result snap(const QRect& raw, Qt::Edges movingEdges) { return snap(raw, movingEdges, {}); }
-    // A zero budget permits deterministic testing of ordinary-drag fallback.
-    Result snap(const QRect& raw, Qt::Edges movingEdges, QueryOptions options);
-    quint64 generation() const { return m_generation; }
+    // A zero budget forces fallback; a large budget supports deterministic geometry tests.
+    Result snap(const QRect& raw, Qt::Edges movingEdges,
+                qint64 budgetNanoseconds = kDefaultQueryBudgetNs);
 
 private:
     struct Lock { int logical; BoundarySnapIndex::Hit hit; };
@@ -24,7 +23,6 @@ private:
                                const QElapsedTimer& timer, qint64 budgetNanoseconds) const;
     BoundarySnapIndex m_index;
     qreal m_dpr = 1.0;
-    quint64 m_generation = 0;
     std::optional<Lock> m_vertical;
     std::optional<Lock> m_horizontal;
 };

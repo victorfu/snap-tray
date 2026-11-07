@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QCloseEvent>
+#include <QKeyEvent>
 #include <QEnterEvent>
 #include <QImage>
 #include <QPainter>
@@ -337,6 +338,13 @@ public:
     {
         QCloseEvent event;
         selector.closeEvent(&event);
+    }
+
+    static void dispatchEscapePress(RegionSelector& selector, bool viaFilter)
+    {
+        QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+        if (viaFilter) selector.eventFilter(&selector, &event);
+        else selector.keyPressEvent(&event);
     }
 
     static AnnotationLayer* annotationLayer(RegionSelector& selector)

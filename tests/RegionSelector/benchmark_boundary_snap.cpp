@@ -15,6 +15,7 @@
 #include <QSysInfo>
 #include <algorithm>
 #include <vector>
+#include <limits>
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <psapi.h>
@@ -86,6 +87,15 @@ int main(int argc, char** argv)
             BoundarySnapController controller;controller.setSource(source,dpr);
             const double conversionMs=conversion.nsecsElapsed()/1e6;
             const QRect raw(10,10,right-13,bottom-13);
+            // Timing fallback is valid, but cannot make an inert implementation pass.
+            const auto preflight = controller.snap(raw, Qt::RightEdge | Qt::BottomEdge,
+                                                   (std::numeric_limits<qint64>::max)());
+            const QRect preflightCrop = CoordinateHelper::toPhysicalCoveringRect(preflight.rect, dpr);
+            const bool preflightCorrect = preflight.edges == (Qt::RightEdge | Qt::BottomEdge)
+                && preflight.rect.topLeft() == raw.topLeft()
+                && preflightCrop.right() + 1 == pixelRight
+                && preflightCrop.bottom() + 1 == pixelBottom;
+            correct &= preflightCorrect;
             std::vector<double> times;
             int hits=0, fallbacks=0, incorrect=0;
             for(int i=0;i<220;++i) {
@@ -106,6 +116,7 @@ int main(int argc, char** argv)
                 {"width",size.width()},{"height",size.height()},{"dpr",dpr},
                 {"selection_width",raw.width()},{"selection_height",raw.height()},
                 {"samples",200},{"p50_ms",times[99]},{"p95_ms",times[189]},
+                {"preflight_correct",preflightCorrect},
                 {"p95_target_met",times[189]<=4.0},{"hits",hits},{"fallbacks",fallbacks},
                 {"incorrect_results",incorrect},{"source_bytes",double(source.sizeInBytes())},
                 {"source_ms",conversionMs},{"source_shared",image.constBits()==source.constBits()},

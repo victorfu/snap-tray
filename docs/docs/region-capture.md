@@ -46,7 +46,7 @@ When the countdown ends, SnapTray hides the pill, freezes the screen under the c
 
 ### Snap a resized edge to image content
 
-After making a single selection, drag an edge or corner handle and hold `Alt` (`Option` on macOS) to align it with a nearby horizontal or vertical image boundary. You can instead hold `S` **after starting the handle drag**, including when a Linux window manager reserves Alt-drag. A short accent line marks each successful snap. Releasing the key restores the raw drag position immediately, even without moving the pointer; releasing the mouse commits the current position. `Esc` during a live single-selection resize restores the selection from before the drag.
+After making a single selection, drag an edge or corner handle and hold `Alt` (`Option` on macOS) to align it with a nearby horizontal or vertical image boundary. You can instead hold plain `S` (without Ctrl/Cmd/Shift) **after starting the handle drag**, including when a Linux window manager reserves Alt-drag. A short accent line marks each successful snap. Releasing the key restores the raw drag position immediately, even without moving the pointer; releasing the mouse commits the current position. `Esc` during a live single-selection resize restores the selection from before the drag.
 
 Snapping looks for sustained contrast along the selected side. It does not recognize whole objects, and short lines, low-contrast borders or photo textures may not give the intended result. It is disabled for initial selection, whole-selection moves, multi-region/replacement, history editing and locked aspect ratios. Arrow-key adjustments keep their existing behavior.
 
@@ -58,7 +58,7 @@ When window detection is available, SnapTray can detect the window under the cur
 
 ### Cancel and retry
 
-Right-click or press `Esc` to cancel current selection.
+Right-click cancels the current selection. During a live single-selection handle drag, `Esc` cancels only the resize and restores the pre-drag rectangle, even without Alt/Option or S held. In Quick Pin, releasing the mouse after this cancellation does not create a pin. Outside this gesture, including history replay, Esc retains the normal capture/replace cancellation behavior.
 
 ## Multi-region workflow
 
@@ -82,7 +82,7 @@ After the selection is complete, the toolbar supports:
 | Constrain ratio | Hold `Shift` |
 | Toggle multi-region | `M` |
 | Pick a color from the screenshot (after selecting a region) | `I` |
-| Cancel | `Esc` |
+| Restore pre-drag selection during a live single-selection resize; otherwise normal cancellation | `Esc` |
 
 ## Library
 

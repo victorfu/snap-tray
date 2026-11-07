@@ -22,6 +22,8 @@ private slots:
     void initTestCase();
     void testBoundarySnapCaptureRoundTrip();
     void testBoundarySnapHistoryAndCloseLifecycle();
+    void testResizeEscapeDoesNotAcceptQuickPin_data();
+    void testResizeEscapeDoesNotAcceptQuickPin();
     void testBuildCaptureSessionWriteRequestPreservesFields();
     void testRestoreLiveReplaySlotRecordsCaptureContext();
     void testApplyHistoryReplayEntryRecordsCaptureContext();
@@ -46,12 +48,13 @@ void tst_RegionSelectorHistoryReplay::testBoundarySnapCaptureRoundTrip()
     QVERIFY(screen);
     QPixmap initial(400,400); initial.fill(Qt::black);
     selector.initializeForScreen(screen, initial);
-    selector.move(-1200,-600); // local source coordinates must ignore global origin
     for (qreal dpr : {1.0,1.25,1.5,2.0}) {
         QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
         {QPainter p(&image);p.fillRect(qCeil(100*dpr),0,200,400,Qt::white);}
         QPixmap source=QPixmap::fromImage(image);source.setDevicePixelRatio(dpr);
         RegionSelectorTestAccess::replaceCanvasAfterPreservingSelection(selector,source);
+        selector.move(-1200, -600); // applyCanvasGeometry must run before this assertion.
+        QCOMPARE(selector.pos(), QPoint(-1200, -600));
         RegionSelectorTestAccess::setSelectionRect(selector,QRect(20,20,77,80));
         RegionSelectorTestAccess::dispatchMousePress(selector,QPoint(98,60));
         QTest::keyPress(&selector,Qt::Key_S);
@@ -92,7 +95,13 @@ void tst_RegionSelectorHistoryReplay::testBoundarySnapHistoryAndCloseLifecycle()
     entry.id="boundary-snap-lifecycle";entry.replayAvailable=true;
     entry.canvasPath=directory.filePath("canvas.png");
     entry.canvasLogicalSize={400,400};entry.devicePixelRatio=1;entry.selectionRect=raw;
-    QVERIFY(image.save(entry.canvasPath));
+    QImage replay(400, 400, QImage::Format_RGB32);
+    replay.fill(Qt::black);
+    {
+        QPainter painter(&replay);
+        painter.fillRect(200, 0, 200, 400, Qt::white);
+    }
+    QVERIFY(replay.save(entry.canvasPath));
     QVERIFY(RegionSelectorTestAccess::loadSingleReplayEntry(selector,entry));
     RegionSelectorTestAccess::dispatchMousePress(selector,{98,60});
     QTest::keyPress(&selector,Qt::Key_S);
@@ -112,6 +121,67 @@ void tst_RegionSelectorHistoryReplay::testBoundarySnapHistoryAndCloseLifecycle()
     QTest::keyPress(&selector,Qt::Key_S);
     QCOMPARE(RegionSelectorTestAccess::selectionRect(selector),raw);
     QVERIFY(!RegionSelectorTestAccess::snappedEdges(selector));
+}
+
+void tst_RegionSelectorHistoryReplay::testResizeEscapeDoesNotAcceptQuickPin_data()
+{
+    QTest::addColumn<bool>("quickPin");
+    QTest::addColumn<bool>("snapping");
+    QTest::addColumn<bool>("viaFilter");
+    for (bool quickPin : {false, true}) {
+        for (bool snapping : {false, true}) {
+            for (bool viaFilter : {false, true}) {
+                const auto name = QString("%1-%2-%3")
+                    .arg(quickPin ? "quick-pin" : "ordinary-capture")
+                    .arg(snapping ? "snapped" : "raw-resize")
+                    .arg(viaFilter ? "event-filter" : "key-handler");
+                QTest::newRow(qPrintable(name)) << quickPin << snapping << viaFilter;
+            }
+        }
+    }
+}
+
+void tst_RegionSelectorHistoryReplay::testResizeEscapeDoesNotAcceptQuickPin()
+{
+    QFETCH(bool, quickPin);
+    QFETCH(bool, snapping);
+    QFETCH(bool, viaFilter);
+    QTemporaryDir history;
+    QVERIFY(history.isValid());
+    const QByteArray previousHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
+    const auto restore = qScopeGuard([&] {
+        QCoreApplication::sendPostedEvents(qApp, QEvent::MetaCall);
+        SnapTray::HistoryRecorder::instance().waitForIdleForTests();
+        if (previousHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
+        else qputenv("SNAPTRAY_HISTORY_DIR", previousHistory);
+    });
+    QImage image(400, 400, QImage::Format_RGB32);
+    image.fill(Qt::black);
+    {
+        QPainter painter(&image);
+        painter.fillRect(100, 0, 300, 400, Qt::white);
+    }
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.setQuickPinMode(quickPin);
+    const QPixmap source = QPixmap::fromImage(image);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(), source);
+    RegionSelectorTestAccess::replaceCanvasAfterPreservingSelection(selector, source);
+    const QRect original(20, 20, 77, 80);
+    RegionSelectorTestAccess::setSelectionRect(selector, original);
+    QSignalSpy selected(&selector, &RegionSelector::regionSelected);
+    RegionSelectorTestAccess::dispatchWidgetMousePress(selector, {98, 60});
+    if (snapping) QTest::keyPress(&selector, Qt::Key_S);
+    RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, {100, 60}, Qt::LeftButton);
+    QVERIFY(RegionSelectorTestAccess::selectionRect(selector) != original);
+    RegionSelectorTestAccess::dispatchEscapePress(selector, viaFilter);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), original);
+    RegionSelectorTestAccess::dispatchWidgetMouseRelease(selector, {100, 60});
+    QCOMPARE(selected.count(), 0);
+    QCoreApplication::sendPostedEvents(qApp, QEvent::MetaCall);
+    QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
+    QVERIFY(SnapTray::HistoryStore::loadEntries().isEmpty());
 }
 
 void tst_RegionSelectorHistoryReplay::testBuildCaptureSessionWriteRequestPreservesFields()

@@ -28,6 +28,8 @@
 namespace {
 
 constexpr qreal kSelectionBorderWidth = 2.0;
+constexpr qreal kSnapGuidePenWidth = 3.0;
+constexpr int kSnapGuideHalfLength = 16;
 constexpr int kSelectionHandleDiameter = 8;
 constexpr int kSelectionHandleRadius = kSelectionHandleDiameter / 2;
 constexpr int kSelectionChromeMargin = kSelectionHandleRadius + 1;
@@ -397,10 +399,9 @@ void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectio
     // exports and history render the untouched source/annotation layers.
     if (m_selectionManager && m_selectionManager->isResizing() && !m_multiRegionMode) {
         const auto edges = m_selectionManager->snappedEdges();
-        constexpr int kGuideHalfLength = 16;
-        painter.setPen(QPen(selectionAccent, 3.0));
-        const int halfY = qMin(kGuideHalfLength, sel.height() / 2);
-        const int halfX = qMin(kGuideHalfLength, sel.width() / 2);
+        painter.setPen(QPen(selectionAccent, kSnapGuidePenWidth));
+        const int halfY = qMin(kSnapGuideHalfLength, sel.height() / 2);
+        const int halfX = qMin(kSnapGuideHalfLength, sel.width() / 2);
         for (Qt::Edge edge : {Qt::LeftEdge, Qt::RightEdge}) {
             if (!edges.testFlag(edge)) continue;
             const int x = edge == Qt::LeftEdge ? sel.x() : sel.x() + sel.width();

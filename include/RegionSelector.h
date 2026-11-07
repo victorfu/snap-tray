@@ -155,6 +155,7 @@ protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
+    bool cancelSelectionResizeGesture();
     // AnnotationHostAdapter implementation
     QWidget* annotationHostWidget() const override;
     AnnotationLayer* annotationLayerForContext() const override;

@@ -191,12 +191,19 @@ void tst_RegionPainterChrome::testSnapGuidesAreLocalAndTransient()
         return SelectionStateManager::ResizePreview{raw,edges};
     });
     const QImage guided=paint();
-    QVERIFY(guided!=plain);
     const QRect right(kSelectionRect.right()-2,kSelectionRect.center().y()-19,7,39);
     const QRect bottom(kSelectionRect.center().x()-19,kSelectionRect.bottom()-2,39,7);
+    bool rightChanged = false;
+    bool bottomChanged = false;
     for (int y=0;y<plain.height();++y) for (int x=0;x<plain.width();++x) {
-        if (plain.pixel(x,y)!=guided.pixel(x,y)) QVERIFY(right.contains(x,y)||bottom.contains(x,y));
+        if (plain.pixel(x,y)!=guided.pixel(x,y)) {
+            QVERIFY(right.contains(x,y)||bottom.contains(x,y));
+            rightChanged |= right.contains(x,y);
+            bottomChanged |= bottom.contains(x,y);
+        }
     }
+    QVERIFY(rightChanged);
+    QVERIFY(bottomChanged);
     manager.clearSnapGuides();QCOMPARE(paint(),plain);
     manager.finishResize();QCOMPARE(paint(),plain);
 }

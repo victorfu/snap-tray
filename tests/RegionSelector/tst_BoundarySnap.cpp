@@ -1,12 +1,24 @@
 #include <QtTest>
 #include <QPainter>
 #include <QSignalSpy>
+#include <limits>
 #include "region/BoundarySnapController.h"
 #include "region/SelectionStateManager.h"
 #include "utils/CoordinateHelper.h"
 
 using Handle = SelectionStateManager::ResizeHandle;
 namespace {
+// Geometry assertions must not depend on CI scheduling; timeout has an explicit case.
+class GeometrySnapController : public BoundarySnapController
+{
+public:
+    Result snap(const QRect& raw, Qt::Edges edges,
+                qint64 budget = (std::numeric_limits<qint64>::max)())
+    {
+        return BoundarySnapController::snap(raw, edges, budget);
+    }
+};
+
 QImage rectangleImage(const QRect& physical, QSize size = {400,400}) {
     QImage image(size, QImage::Format_RGB32); image.fill(Qt::black);
     QPainter painter(&image); painter.fillRect(physical, Qt::white); return image;
@@ -22,17 +34,68 @@ class tst_BoundarySnap : public QObject
 {
     Q_OBJECT
 private slots:
+    void roundedScreenEdge_data()
+    {
+        QTest::addColumn<QSize>("pixels");
+        QTest::addColumn<qreal>("dpr");
+        QTest::addColumn<bool>("bottomHandle");
+        const QList<QPair<QSize, qreal>> screens = {
+            {{400, 400}, 1.5}, {{1366, 768}, 1.25},
+            {{2560, 1600}, 1.5}, {{2560, 1600}, 1.75},
+            {{3840, 2160}, 2.25}
+        };
+        for (const auto& screen : screens) {
+            for (bool bottom : {false, true}) {
+                const auto name = QString("%1x%2-dpr%3-%4")
+                    .arg(screen.first.width()).arg(screen.first.height())
+                    .arg(screen.second).arg(bottom ? "bottom" : "right");
+                QTest::newRow(qPrintable(name)) << screen.first << screen.second << bottom;
+            }
+        }
+    }
+
+    void roundedScreenEdge()
+    {
+        QFETCH(QSize, pixels);
+        QFETCH(qreal, dpr);
+        QFETCH(bool, bottomHandle);
+        const QSize canvas = pixels / dpr;
+        const int boundary = qCeil(100 * dpr);
+        QImage image(pixels, QImage::Format_RGB32);
+        image.fill(Qt::black);
+        {
+            QPainter painter(&image);
+            painter.fillRect(bottomHandle
+                ? QRect(0, boundary, pixels.width(), pixels.height() - boundary)
+                : QRect(boundary, 0, pixels.width() - boundary, pixels.height()), Qt::white);
+        }
+        const QRect raw = bottomHandle
+            ? QRect(0, 20, canvas.width(), 77)
+            : QRect(20, 0, 77, canvas.height());
+        const auto edge = bottomHandle ? Qt::BottomEdge : Qt::RightEdge;
+        GeometrySnapController controller;
+        controller.setSource(image, dpr);
+        const auto result = controller.snap(raw, edge, (std::numeric_limits<qint64>::max)());
+        QCOMPARE(result.edges, Qt::Edges(edge));
+        const QRect crop = CoordinateHelper::toPhysicalCoveringRect(result.rect, dpr)
+            .intersected(image.rect());
+        QCOMPARE(bottomHandle ? crop.bottom() + 1 : crop.right() + 1, boundary);
+        QCOMPARE(bottomHandle ? crop.width() : crop.height(),
+                 bottomHandle ? pixels.width() : pixels.height());
+    }
+
     void handlesAndDpr_data() {
         QTest::addColumn<int>("handle"); QTest::addColumn<qreal>("dpr");
         for (int h=1;h<=8;++h) for (qreal d : {1.,1.25,1.5,2.})
-            QTest::newRow(qPrintable(QString("%1-%2").arg(h).arg(d))) << h << d;
+            QTest::newRow(qPrintable(QString("%1-dpr-%2")
+                .arg(QString::fromLatin1(QMetaEnum::fromType<Handle>().valueToKey(h))).arg(d))) << h << d;
     }
     void handlesAndDpr() {
         QFETCH(int,handle); QFETCH(qreal,dpr);
         // Odd coordinates exercise floor/ceil asymmetry at fractional DPR.
         const QRect target(41,43,78,76);
         const QRect crop = CoordinateHelper::toPhysicalCoveringRect(target,dpr);
-        BoundarySnapController controller; controller.setSource(rectangleImage(crop),dpr);
+        GeometrySnapController controller; controller.setSource(rectangleImage(crop),dpr);
         auto edges=handleEdges(handle);
         QRect raw=target;
         if(edges.testFlag(Qt::LeftEdge)) raw.setLeft(raw.left()+3);
@@ -68,15 +131,15 @@ private slots:
                 for(int x=20;x<60;++x) representable |= qCeil(x*dpr)==edge;
                 if(!representable) break;
             }
-            BoundarySnapController controller;
+            GeometrySnapController controller;
             controller.setSource(rectangleImage(QRect(0,0,edge,200)),dpr);
             const QRect raw(10,10,qRound(edge/dpr)-10,50);
             auto result=controller.snap(raw,Qt::RightEdge);
             QVERIFY(!result.edges); QCOMPARE(result.rect,raw);
         }
     }
-    void hysteresisAndGeneration() {
-        BoundarySnapController controller;
+    void hysteresisAndSourceReplacement() {
+        GeometrySnapController controller;
         controller.setSource(rectangleImage(QRect(100,0,100,400)),1);
         auto result=controller.snap(QRect(20,20,77,80),Qt::RightEdge);
         QCOMPARE(result.rect.x()+result.rect.width(),100);
@@ -84,9 +147,7 @@ private slots:
         QVERIFY(result.edges); // retained at distance 8, outside entry radius
         result=controller.snap(QRect(20,20,90,80),Qt::RightEdge);
         QVERIFY(!result.edges); // outside exit radius
-        const auto generation=controller.generation();
         controller.setSource(rectangleImage(QRect(100,0,100,30)),1);
-        QVERIFY(controller.generation()>generation);
         result=controller.snap(QRect(20,0,77,20),Qt::RightEdge); QVERIFY(result.edges);
         result=controller.snap(QRect(20,40,77,80),Qt::RightEdge); QVERIFY(!result.edges);
         controller.setSource({},1);
@@ -103,7 +164,7 @@ private slots:
         const QRect physical=CoordinateHelper::toPhysicalCoveringRect(target,dpr);
         QImage image(400,400,QImage::Format_RGB32);image.fill(dark ? QColor(20,20,20) : QColor(220,220,220));
         {QPainter p(&image);p.fillRect(physical,dark ? QColor(60,60,60) : Qt::white);}
-        BoundarySnapController controller;controller.setSource(image,dpr);
+        GeometrySnapController controller;controller.setSource(image,dpr);
         QRect raw=target;raw.setRight(raw.right()-3);raw.setBottom(raw.bottom()-3);
         const auto result=controller.snap(raw,Qt::RightEdge|Qt::BottomEdge);
         QCOMPARE(result.rect,target);QCOMPARE(result.edges,Qt::Edges(Qt::RightEdge|Qt::BottomEdge));
@@ -112,7 +173,7 @@ private slots:
         QImage image(300,200,QImage::Format_RGB32); image.fill(Qt::black);
         {QPainter p(&image);p.fillRect(100,0,4,200,QColor(80,80,80));
          p.fillRect(104,0,196,200,Qt::white);}
-        BoundarySnapController controller;controller.setSource(image,1);
+        GeometrySnapController controller;controller.setSource(image,1);
         // Equidistant candidates choose stronger 104, nearer 100 wins otherwise.
         QCOMPARE(controller.snap(QRect(20,20,82,80),Qt::RightEdge).rect.right()+1,104);
         controller.reset();
@@ -143,13 +204,13 @@ private slots:
          // At y=100, contrast covers 43/77 raw pixels (passes 55%), but
          // only 43/80 if X is snapped first (fails). Both axes must hit.
          p.fillRect(20,100,43,100,Qt::white);}
-        BoundarySnapController controller;controller.setSource(image,1);
+        GeometrySnapController controller;controller.setSource(image,1);
         const auto result=controller.snap(QRect(20,20,77,77),Qt::RightEdge|Qt::BottomEdge);
         QCOMPARE(result.edges,Qt::Edges(Qt::RightEdge|Qt::BottomEdge));
         QCOMPARE(result.rect,QRect(20,20,80,80));
     }
     void sourceReplacementChangesScaleAndLock() {
-        BoundarySnapController controller;
+        GeometrySnapController controller;
         controller.setSource(rectangleImage(QRect(100,0,100,400)),1);
         QCOMPARE(controller.snap(QRect(20,20,77,80),Qt::RightEdge).rect.right()+1,100);
         controller.setSource(rectangleImage(QRect(200,0,8,400)),2);
@@ -160,7 +221,7 @@ private slots:
         QCOMPARE(CoordinateHelper::toPhysicalCoveringRect(result.rect,2).right()+1,208);
     }
     void timeoutFallsBackAndDropsLocks() {
-        BoundarySnapController controller;
+        GeometrySnapController controller;
         controller.setSource(rectangleImage(QRect(100,0,100,400)),1);
         const QRect raw(20,20,77,80);
         QVERIFY(controller.snap(raw,Qt::RightEdge).edges);
@@ -172,7 +233,7 @@ private slots:
         QCOMPARE(next.rect,outsideEntry);QVERIFY(!next.edges);
     }
     void invalidSourcesAndBudgetGuard() {
-        BoundarySnapController controller;
+        GeometrySnapController controller;
         const QRect raw(10,10,80,80);
         for (qreal dpr : {0.0,-1.0,qQNaN(),qInf(),9.0}) {
             controller.setSource(rectangleImage(QRect(90,0,100,400)),dpr);
@@ -187,7 +248,7 @@ private slots:
     void tieAndConstraints() {
         QImage image(300,300,QImage::Format_RGB32);image.fill(Qt::black);
         {QPainter p(&image);p.fillRect(100,0,4,300,Qt::white);}
-        BoundarySnapController controller;controller.setSource(image,1);
+        GeometrySnapController controller;controller.setSource(image,1);
         auto result=controller.snap(QRect(20,20,82,80),Qt::RightEdge);
         QCOMPARE(result.rect.x()+result.rect.width(),100); // stable lower-coordinate tie
         SelectionStateManager manager;manager.setBounds(QRect(0,0,300,300));
