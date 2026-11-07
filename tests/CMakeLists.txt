@@ -235,6 +235,19 @@ if(TARGET Qt6::QOffscreenIntegrationPlugin)
         "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
 endif()
 
+add_executable(Qml_ColorPaletteSectionQml Qml/tst_ColorPaletteSectionQml.cpp)
+target_link_libraries(Qml_ColorPaletteSectionQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_ColorPaletteSectionQml COMMAND Qml_ColorPaletteSectionQml)
+set_tests_properties(Qml_ColorPaletteSectionQml PROPERTIES
+    TIMEOUT 60
+    LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+if(TARGET Qt6::QOffscreenIntegrationPlugin)
+    set_property(TEST Qml_ColorPaletteSectionQml APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
+endif()
+
 add_executable(Qml_FloatingSubToolbarTooltip Qml/tst_FloatingSubToolbarTooltip.cpp)
 target_link_libraries(Qml_FloatingSubToolbarTooltip PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 add_test(NAME Qml_FloatingSubToolbarTooltip COMMAND Qml_FloatingSubToolbarTooltip)

@@ -329,7 +329,7 @@ Applies to the Region Capture toolbar, the Pin Window annotation toolbar, and th
 - Selection follows the annotation, not its position in the list: erasing other annotations keeps it.
 - Marker's **Snap to text** (#304) is a 22×22 icon toggle styled like Shape's Filled toggle, so its width does not depend on the locale.
   - Off: transparent with the toolbar icon color. Hover: the strip's hover background. On: a solid accent block with the active icon color, also while hovered.
-  - Its explanation is in the sub-toolbar tooltip (`ToolOptionsStrip.controlTooltipRequested` → `QmlFloatingSubToolbar` → `ToolbarTooltipController`, as for Auto Blur) and in `Accessible.description`.
+  - Its explanation is in the sub-toolbar tooltip (`ToolOptionsStrip.controlTooltipRequested` → `QmlFloatingSubToolbar` → `ToolbarTooltipController`, shared with Auto Blur and the eyedropper; dismissals name their control, so a late one never closes another control's tooltip) and in `Accessible.description`.
   - Screen readers get a checkbox that toggles on both the toggle and press actions.
   - The button shows only the preference, never OCR progress.
 

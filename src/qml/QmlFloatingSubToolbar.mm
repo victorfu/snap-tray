@@ -390,13 +390,16 @@ void QmlFloatingSubToolbar::showForTool(int toolId)
 void QmlFloatingSubToolbar::onControlTooltipRequested(const QString& controlName,
                                                       const QString& text)
 {
+    // A hidden control (say, the eyedropper while Mosaic shows) cannot take
+    // the tooltip from the one showing it.
     QQuickItem* control = visibleControl(controlName);
     if (!control || text.isEmpty()) {
         return;
     }
 
+    // One tooltip at a time: the latest control takes it over without a flicker.
     if (control != m_tooltipControl) {
-        hideControlTooltip();
+        disconnect(m_tooltipControlVisibility);
         m_tooltipControl = control;
         // A tool or selection change can hide the control under a still
         // pointer, which sends no hover exit.

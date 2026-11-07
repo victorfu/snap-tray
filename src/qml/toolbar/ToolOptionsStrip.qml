@@ -18,8 +18,9 @@ Item {
     readonly property int targetLabelPixelSize: 11
     Accessible.name: root.hasViewModel ? root.viewModel.targetLabel : ""
     property bool autoBlurHintActive: false
-    // QmlFloatingSubToolbar draws the tooltip outside this window, anchored to
-    // the control it finds by controlName (its objectName).
+    // A control asks for a tooltip (Auto Blur, the eyedropper #305, Snap to text
+    // #304). QmlFloatingSubToolbar draws it outside this window, anchored to the
+    // control it finds by controlName (its objectName).
     signal controlTooltipRequested(string controlName, string text)
     signal controlTooltipDismissed(string controlName)
 
@@ -153,6 +154,12 @@ Item {
                 visible: root.hasViewModel && root.viewModel.showColorSection
                 viewModel: root.viewModel
                 anchors.verticalCenter: parent.verticalCenter
+                onTooltipRequested: function(itemName, text) {
+                    root.controlTooltipRequested(itemName, text)
+                }
+                onTooltipDismissed: function(itemName) {
+                    root.controlTooltipDismissed(itemName)
+                }
             }
 
             AutoBlurSection {
