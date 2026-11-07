@@ -1081,7 +1081,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         m_encodingWorker->setNativeFramesEnabled(
             RecordingSettingsManager::instance().nativeFrameEncoding());
     }
-    m_writtenOutputBytes = nativeEncoder ? nativeEncoder->writtenBytesCounter() : nullptr;
+    m_writtenOutputBytes = nativeEncoder ? nativeEncoder->writtenBytesCounter()
+        : gifEncoder ? gifEncoder->writtenBytesCounter() : nullptr;
     m_bufferedOutputBytes = gifEncoder ? gifEncoder->bufferedBytesCounter()
         : webpEncoder ? webpEncoder->bufferedBytesCounter() : nullptr;
     if (gifEncoder) {
@@ -1818,7 +1819,7 @@ void RecordingManager::checkDiskSpace()
         // An encoder writing a temporary file until it finishes (#171 review)
         // reports its size; otherwise the output file shows it.
         const qint64 fileBytes = written ? written->load() : QFileInfo(path).size();
-        // Buffered formats have no file yet: all of it still needs the room.
+        // Only unwritten packets need additional room; exclude streamed bytes.
         const qint64 pendingBytes = buffered ? buffered->load() : 0;
         QMetaObject::invokeMethod(QCoreApplication::instance(),
                                   [guard, generation, freeBytes, fileBytes, sampleMs, pendingBytes]() {
