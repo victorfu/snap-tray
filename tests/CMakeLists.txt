@@ -1015,6 +1015,11 @@ target_link_libraries(Encoding_EncoderFactory PRIVATE snaptray_platform Qt6::Tes
 add_test(NAME Encoding_EncoderFactory COMMAND Encoding_EncoderFactory)
 set_tests_properties(Encoding_EncoderFactory PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
+add_executable(Encoding_WebPAnimEncoder Encoding/tst_WebPAnimEncoder.cpp)
+target_link_libraries(Encoding_WebPAnimEncoder PRIVATE snaptray_platform webpdemux Qt6::Test)
+add_test(NAME Encoding_WebPAnimEncoder COMMAND Encoding_WebPAnimEncoder)
+set_tests_properties(Encoding_WebPAnimEncoder PROPERTIES TIMEOUT 60 LABELS "unit;encoding")
+
 add_executable(Encoding_VideoBitrate Encoding/tst_VideoBitrate.cpp)
 target_include_directories(Encoding_VideoBitrate PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(Encoding_VideoBitrate PRIVATE Qt6::Core Qt6::Test)
