@@ -7879,4 +7879,17 @@ It may be in use by another application.</source>
         <translation>太さ</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>テキストにスナップ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>テキストにスナップ: マーカーの線が検出されたテキスト行に揃います</translation>
+    </message>
+</context>
 </TS>

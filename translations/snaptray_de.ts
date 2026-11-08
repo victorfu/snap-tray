@@ -7883,4 +7883,17 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
         <translation>Breite</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>An Text ausrichten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>An Text ausrichten: Textmarker-Striche richten sich an erkannten Textzeilen aus</translation>
+    </message>
+</context>
 </TS>

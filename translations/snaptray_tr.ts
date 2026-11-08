@@ -7879,4 +7879,17 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <translation>Kalınlık</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Metne hizala</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Metne hizala: İşaretleyici çizgileri algılanan metin satırlarına hizalanır</translation>
+    </message>
+</context>
 </TS>

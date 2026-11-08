@@ -14,7 +14,7 @@ Item {
     id: root
     // The host shows a tooltip anchored on the item named itemName (#305).
     signal tooltipRequested(string itemName, string text)
-    signal tooltipDismissed()
+    signal tooltipDismissed(string itemName)
 
     property var viewModel: null
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
@@ -227,9 +227,9 @@ Item {
             cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
             onEntered: root.tooltipRequested(colorPickButton.objectName, colorPickButton.tooltipText)
-            onExited: root.tooltipDismissed()
+            onExited: root.tooltipDismissed(colorPickButton.objectName)
             // Picking starts on click; the tooltip must not sit over the session.
-            onPressed: root.tooltipDismissed()
+            onPressed: root.tooltipDismissed(colorPickButton.objectName)
             onClicked: {
                 if (root.hasViewModel)
                     root.viewModel.handleColorPickClicked()

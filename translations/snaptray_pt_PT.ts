@@ -7883,4 +7883,17 @@ Pode estar a ser utilizado por outra aplicação.</translation>
         <translation>Espessura</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Ajustar ao texto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Ajustar ao texto: os traços do marcador alinham-se com as linhas de texto detetadas</translation>
+    </message>
+</context>
 </TS>

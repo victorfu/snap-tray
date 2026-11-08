@@ -10,7 +10,7 @@ Item {
     property bool hintActive: false
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property bool autoBlurProcessingValue: root.hasViewModel && root.viewModel.autoBlurProcessing
-    signal buttonHovered(real anchorX, real anchorY, real anchorW, real anchorH)
+    signal buttonHovered()
     signal buttonHoverExited()
 
     implicitWidth: 22
@@ -67,12 +67,7 @@ Item {
             anchors.fill: parent
             cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
-            onEntered: {
-                var anchor = autoBlurButton.mapToGlobal(0, 0)
-                root.buttonHovered(anchor.x, anchor.y,
-                                   autoBlurButton.width,
-                                   autoBlurButton.height)
-            }
+            onEntered: root.buttonHovered()
             onExited: root.buttonHoverExited()
             onClicked: {
                 if (root.hasViewModel)

@@ -7887,4 +7887,17 @@ Może być używany przez inną aplikację.</translation>
         <translation>Grubość</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Przyciągaj do tekstu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Przyciągaj do tekstu: pociągnięcia zakreślacza dopasowują się do wykrytych wierszy tekstu</translation>
+    </message>
+</context>
 </TS>

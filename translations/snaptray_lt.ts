@@ -7887,4 +7887,17 @@ Jį gali naudoti kita programa.</translation>
         <translation>Storis</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Pritraukti prie teksto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Pritraukti prie teksto: žymeklio brūkšniai lygiuojami pagal aptiktas teksto eilutes</translation>
+    </message>
+</context>
 </TS>

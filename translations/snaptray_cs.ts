@@ -7887,4 +7887,17 @@ Může být používána jinou aplikací.</translation>
         <translation>Šířka</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Přichytit k textu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Přichytit k textu: tahy zvýrazňovače se zarovnají na rozpoznané řádky textu</translation>
+    </message>
+</context>
 </TS>

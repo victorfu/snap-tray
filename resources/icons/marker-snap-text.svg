@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- A text line, then a highlight band hugging the next line's ends (#304).
+       Coordinates sit on pixel centers at 14px so the strokes stay crisp at 1x. -->
+  <path d="M2.6 4.3h18.8"/>
+  <rect x="2.6" y="9.4" width="13.7" height="10.3" rx="2.5"/>
+  <path d="M6 14.6h6.9"/>
+</svg>

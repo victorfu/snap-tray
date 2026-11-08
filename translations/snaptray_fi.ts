@@ -7883,4 +7883,17 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <translation>Leveys</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Kohdista tekstiin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Kohdista tekstiin: korostuskynän vedot kohdistuvat tunnistettuihin tekstiriveihin</translation>
+    </message>
+</context>
 </TS>

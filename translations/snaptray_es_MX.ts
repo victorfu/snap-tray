@@ -7883,4 +7883,17 @@ Puede estar en uso por otra aplicación.</translation>
         <translation>Grosor</translation>
     </message>
 </context>
+<context>
+    <name>ToolOptionsStrip</name>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text</source>
+        <translation>Ajustar al texto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/ToolOptionsStrip.qml" />
+        <source>Snap to text: marker strokes align to detected text lines</source>
+        <translation>Ajustar al texto: los trazos del marcador se alinean con las líneas de texto detectadas</translation>
+    </message>
+</context>
 </TS>
