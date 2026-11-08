@@ -29,6 +29,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - On macOS, SnapTray now shows in the Dock with a badge while an update is waiting, and the Ready to Install window comes to the front instead of staying behind other apps.
 - Scrolling the mouse wheel with the Step Badge tool now stops at the smallest and largest size instead of jumping from Large back to Small. In Region Capture, the S/M/L size option now shows the size you last used instead of always Medium.
+- On Windows with monitors at different display scales, pinning an image larger than the screen (with `snaptray pin --file` or Pin in the Library) now places the pin where intended, already shrunk to fit. Before, the pin briefly opened at full size across the monitors and could land offset toward the top-left corner.
 
 ## [1.0.69] - 2026-10-24
 
