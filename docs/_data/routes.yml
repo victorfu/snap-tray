@@ -187,3 +187,7 @@ developer_boundary_snap:
 developer_boundary_snap_acceptance:
   en: /developer/boundary-snap-acceptance/
   zh-tw: /developer/boundary-snap-acceptance/
+
+developer_site_analytics:
+  en: /developer/site-analytics/
+  zh-tw: /developer/site-analytics/

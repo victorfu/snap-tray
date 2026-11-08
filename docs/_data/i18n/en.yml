@@ -141,6 +141,14 @@ footer:
     report_issue: Report Issue
     license: MIT License
 
+analytics_consent:
+  title: "Website analytics"
+  body: "May snaptray.cc use Google Analytics cookies to count visits and download clicks? This applies only to this website; the SnapTray app never sends usage data."
+  accept: "Allow"
+  decline: "Decline"
+  details: "Privacy Policy"
+  settings: "Analytics settings"
+
 docs:
   page_label: Documentation
   sidebar_title: Documentation

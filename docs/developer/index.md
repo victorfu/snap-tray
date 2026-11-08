@@ -21,6 +21,7 @@ This section is the canonical home for SnapTray's technical documentation. The r
 - [UI Design Guidelines](ui-design-guidelines.md): shared visual direction, interaction rules, and the recording editor rollout
 - [Recording Sync Matrix](recording-sync-matrix.md): end-to-end recording verification with fault injection, reports and A/B comparison, and the real-device procedure
 - [Selection Boundary Snap](boundary-snap.md): pixel scoring, crop geometry, interaction limits and performance verification
+- [Website Analytics](site-analytics.md): opt-in GA4 on snaptray.cc, event contract, campaign attribution and read-only reporting
 
 ## Audience split
 

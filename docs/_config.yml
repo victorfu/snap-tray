@@ -22,6 +22,14 @@ github:
   repo_owner: "victorfu"
   repo_name: "snap-tray"
 
+# Website analytics (GA4, opt-in). Leave ga4_measurement_id empty to ship no
+# analytics at all. It only renders in production builds (JEKYLL_ENV=production,
+# which GitHub Pages uses) and only runs on production_host. Allowed campaign
+# values live in _data/analytics_campaigns.yml. See /developer/site-analytics/.
+analytics:
+  ga4_measurement_id: ""
+  production_host: "snaptray.cc"
+
 exclude:
   - Gemfile
   - Gemfile.lock

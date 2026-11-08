@@ -1,0 +1,21 @@
+{% comment %}
+  Opt-in website analytics. Renders nothing unless a GA4 measurement ID is
+  configured and this is a production build. analytics.js additionally checks
+  the host and the visitor's stored choice before loading Google Analytics.
+{% endcomment %}
+{% assign analytics_id = site.analytics.ga4_measurement_id | default: "" | strip %}
+{% if analytics_id != "" and jekyll.environment == "production" %}
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign consent_t = site.data.i18n[lang].analytics_consent %}
+{% assign analytics_repo = site.github.repo_owner | append: "/" | append: site.github.repo_name %}
+<script type="application/json" id="snaptray-analytics-config">{"measurementId":{{ analytics_id | jsonify }},"productionHost":{{ site.analytics.production_host | jsonify }},"repo":{{ analytics_repo | jsonify }},"rules":{{ site.data.analytics_campaigns | jsonify }}}</script>
+<section id="analytics-consent" class="analytics-consent" role="region" aria-labelledby="analytics-consent-title" hidden>
+  <p id="analytics-consent-title" class="analytics-consent-title">{{ consent_t.title }}</p>
+  <p class="analytics-consent-body">{{ consent_t.body }} <a href="{{ site.data.routes.privacy[lang] | relative_url }}#website">{{ consent_t.details }}</a></p>
+  <div class="analytics-consent-actions">
+    <button type="button" class="btn btn-ghost" data-analytics-decline>{{ consent_t.decline }}</button>
+    <button type="button" class="btn btn-primary" data-analytics-accept>{{ consent_t.accept }}</button>
+  </div>
+</section>
+<script src="{{ '/assets/js/analytics.js' | relative_url }}" defer></script>
+{% endif %}

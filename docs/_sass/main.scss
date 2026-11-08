@@ -1426,6 +1426,73 @@ svg {
   }
 }
 
+.footer-link-button {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #446384;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    color: #17345d;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 2px;
+    border-radius: 0.35rem;
+  }
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// Website analytics consent prompt (see _includes/analytics.html).
+.analytics-consent {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 80;
+  max-width: 34rem;
+  margin-left: auto;
+  padding: $space-md;
+  border: 1px solid $border-light;
+  border-radius: $radius-md;
+  background: $surface-1;
+  color: $text-primary;
+  box-shadow: $shadow-soft;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.analytics-consent-title {
+  margin: 0 0 $space-2xs;
+  font-family: $font-display;
+  font-weight: 600;
+}
+
+.analytics-consent-body {
+  margin: 0 0 $space-sm;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.analytics-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: $space-xs;
+}
+
 .footer-bottom {
   margin-top: 1.4rem;
   border-top: 1px solid rgba(118, 157, 213, 0.2);
