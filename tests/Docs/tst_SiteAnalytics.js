@@ -205,18 +205,21 @@ test('shipped campaign allow-list only uses safe identifiers', () => {
   [...text.matchAll(/^\s+market: (\S+)$/gm)].forEach((match) => assert.match(match[1], /^(KR|TH)$/));
 });
 
-test('analytics is off by default and every language has consent strings', () => {
-  const config = fs.readFileSync(path.join(ROOT, 'docs/_config.yml'), 'utf8');
-  assert.match(config, /^\s+ga4_measurement_id: "(G-[A-Z0-9]{4,16})?"$/m);
-  ['en', 'zh-tw', 'ja', 'ko', 'th'].forEach((lang) => {
-    const text = fs.readFileSync(path.join(ROOT, `docs/_data/i18n/${lang}.yml`), 'utf8');
-    const block = text.match(/^analytics_consent:\n((?: {2}.+\n)+)/m);
-    assert.ok(block, `${lang} has analytics_consent`);
-    ['title', 'body', 'accept', 'decline', 'details', 'settings'].forEach((key) => {
-      assert.match(block[1], new RegExp(`^  ${key}: .+$`, 'm'), `${lang}.${key}`);
+for (const [lineEnding, newline] of [['LF', '\n'], ['CRLF', '\r\n']]) {
+  test(`analytics is off by default and every language has consent strings (${lineEnding})`, () => {
+    const config = fs.readFileSync(path.join(ROOT, 'docs/_config.yml'), 'utf8');
+    assert.match(config, /^\s+ga4_measurement_id: "(G-[A-Z0-9]{4,16})?"$/m);
+    ['en', 'zh-tw', 'ja', 'ko', 'th'].forEach((lang) => {
+      const text = fs.readFileSync(path.join(ROOT, `docs/_data/i18n/${lang}.yml`), 'utf8')
+        .replace(/\r?\n/g, newline);
+      const block = text.match(/^analytics_consent:\r?\n((?: {2}.+\r?\n)+)/m);
+      assert.ok(block, `${lang} has analytics_consent`);
+      ['title', 'body', 'accept', 'decline', 'details', 'settings'].forEach((key) => {
+        assert.match(block[1], new RegExp(`^  ${key}: .+$`, 'm'), `${lang}.${key}`);
+      });
     });
   });
-});
+}
 
 // --- Browser wiring with a minimal fake DOM ---------------------------------
 
