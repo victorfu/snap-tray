@@ -94,7 +94,8 @@ private:
     }
 };
 namespace {
-bool writeRecording(const QString& path, int fps = 10, int frames = 20, QSize size = QSize(160, 90))
+bool writeRecording(const QString& path, int fps = 10, int frames = 20,
+                    QSize size = QSize(160, 90), int frameSpacingMs = 0)
 {
     const QString recording = qEnvironmentVariable("SNAPTRAY_EDITOR_RECORDING");
     if (!recording.isEmpty() && qEnvironmentVariableIsSet("SNAPTRAY_EDITOR_VIDEO_DIR")) {
@@ -110,7 +111,7 @@ bool writeRecording(const QString& path, int fps = 10, int frames = 20, QSize si
         QElapsedTimer wait;
         wait.start();
         do {
-            encoder->writeFrame(frame, i * 1000 / fps);
+            encoder->writeFrame(frame, frameSpacingMs > 0 ? i * frameSpacingMs : i * 1000 / fps);
             if (encoder->framesWritten() != before) break;
             QTest::qWait(5);
         } while (wait.elapsed() < 2000);
@@ -1665,18 +1666,21 @@ void tst_RecordingEditor::outputTimeFollowsCutsAndSpeed()
 void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay_data()
 {
     QTest::addColumn<int>("fps");
+    QTest::addColumn<int>("frameSpacingMs");
     QTest::addColumn<qint64>("start");
-    QTest::newRow("five-fps") << 5 << qint64(600);
-    QTest::newRow("sparse-desktop-frames") << 2 << qint64(0);
+    QTest::newRow("five-fps") << 5 << 0 << qint64(600);
+    QTest::newRow("two-fps") << 2 << 0 << qint64(0);
+    QTest::newRow("sparse-desktop-frames") << 30 << 1000 << qint64(200);
 }
 
 void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay()
 {
     QFETCH(int, fps);
+    QFETCH(int, frameSpacingMs);
     QFETCH(qint64, start);
     QTemporaryDir dir;
     const QString video = dir.filePath("recording.mp4");
-    QVERIFY(writeRecording(video, fps));
+    QVERIFY(writeRecording(video, fps, 20, QSize(160, 90), frameSpacingMs));
     RecordingPreviewBackend backend(video);
     backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     QQuickView* view = openPreview(backend);
@@ -1688,13 +1692,15 @@ void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay()
     backend.setOverlayText(overlay, QStringLiteral("Visible title"));
     QVERIFY(backend.setOverlayRange(overlay, start, 3600));
     backend.setSelectedOverlay(-1);
-    QVERIFY(seek(view, 0));
-    QQuickItem* segment = nullptr;
-    QTRY_VERIFY((segment = delegate(view, QStringLiteral("previewOverlaySegment%1").arg(overlay)))
-                && segment->isVisible() && segment->width() > 0);
     QQuickItem* player = item(view, "previewVideoPlayer");
     QVERIFY(player);
     QSignalSpy decoded(player, SIGNAL(frameReady(QImage)));
+    QVERIFY(seek(view, 0));
+    QTRY_VERIFY_WITH_TIMEOUT(!decoded.isEmpty(), 5000);
+    decoded.clear();
+    QQuickItem* segment = nullptr;
+    QTRY_VERIFY((segment = delegate(view, QStringLiteral("previewOverlaySegment%1").arg(overlay)))
+                && segment->isVisible() && segment->width() > 0);
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
                      segment->mapToScene(QPointF(segment->width() / 2, segment->height() / 2)).toPoint());
     QTRY_COMPARE(backend.selectedOverlay(), overlay);
