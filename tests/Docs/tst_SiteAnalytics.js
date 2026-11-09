@@ -254,6 +254,7 @@ function makeWindow(options = {}) {
   const settings = fakeElement();
   settings.hidden = true;
   const docHandlers = {};
+  const windowHandlers = {};
   const appended = [];
   const config = {
     measurementId: 'G-TEST1234',
@@ -281,6 +282,7 @@ function makeWindow(options = {}) {
   };
   const win = {
     document: doc,
+    addEventListener: (type, fn) => { windowHandlers[type] = fn; },
     location: {
       hostname: options.hostname || HOST,
       href: `https://${options.hostname || HOST}/ko/${options.search || ''}`,
@@ -290,7 +292,7 @@ function makeWindow(options = {}) {
     localStorage: options.localStorage || fakeStorage(),
     sessionStorage: options.sessionStorage || fakeStorage()
   };
-  return { win, doc, banner, accept, decline, settings, docHandlers, appended };
+  return { win, doc, banner, accept, decline, settings, docHandlers, windowHandlers, appended };
 }
 
 function linkEvent(href, placement, extra = {}) {
@@ -442,3 +444,70 @@ test('blocked storage still lets the visitor accept and download', () => {
   const pageView = sentEvents(env.win).find((args) => args[1] === 'page_view');
   assert.equal(pageView[2].traffic_source, 'unknown', 'degraded, not invented');
 });
+
+test('revocation disables the loaded Google tag before updating consent, and Allow restores it', () => {
+  const env = makeWindow();
+  analytics.boot(env.win);
+  env.accept.click();
+  const push = env.win.dataLayer.push.bind(env.win.dataLayer);
+  env.win.dataLayer.push = (args) => {
+    if (args[0] === 'consent' && args[1] === 'update') {
+      assert.equal(env.win['ga-disable-G-TEST1234'], args[2].analytics_storage === 'denied');
+    }
+    return push(args);
+  };
+  env.decline.click();
+  assert.equal(env.win['ga-disable-G-TEST1234'], true);
+  env.accept.click();
+  assert.equal(env.win['ga-disable-G-TEST1234'], false);
+  assert.equal(env.appended.length, 1, 'reuse the loaded tag');
+  env.docHandlers.click(linkEvent('https://apps.microsoft.com/detail/9p38m1hx9hvc', 'hero'));
+  assert.equal(sentEvents(env.win).at(-1)[1], 'store_click');
+});
+
+test('other tabs stop tracking on shared consent revocation without writing consent back', () => {
+  const localStorage = fakeStorage();
+  const first = makeWindow({ localStorage });
+  analytics.boot(first.win);
+  first.accept.click();
+  const second = makeWindow({ localStorage, search: '?analytics_test=1' });
+  analytics.boot(second.win);
+  const before = sentEvents(second.win).length;
+  first.decline.click();
+  const consent = localStorage.getItem('snaptray.analyticsConsent');
+  // Browsers deliver this event to other tabs, not the tab making the change.
+  second.windowHandlers.storage?.({
+    storageArea: localStorage, key: 'snaptray.analyticsConsent', newValue: consent
+  });
+  second.docHandlers.click(linkEvent('https://apps.microsoft.com/detail/9p38m1hx9hvc', 'hero'));
+  second.docHandlers.auxclick(linkEvent('https://github.com/victorfu/snap-tray', 'hero', { type: 'auxclick', button: 1 }));
+  assert.equal(sentEvents(second.win).length, before);
+  assert.equal(second.win['ga-disable-G-TEST1234'], true);
+  assert.deepEqual(second.win.sessionStorage.data, {});
+  assert.equal(localStorage.getItem('snaptray.analyticsConsent'), consent);
+  assert.equal(second.banner.hidden, true);
+});
+
+for (const [name, key, value] of [
+  ['removed', 'snaptray.analyticsConsent', null],
+  ['cleared', null, null],
+  ['malformed', 'snaptray.analyticsConsent', 'bad json'],
+  ['expired', 'snaptray.analyticsConsent', JSON.stringify({ choice: 'granted', at: 1 })]
+]) {
+  test(`other tabs fail closed when consent is ${name}`, () => {
+    const env = makeWindow();
+    analytics.boot(env.win);
+    env.accept.click();
+    const before = sentEvents(env.win).length;
+    const notify = (storageArea, eventKey, newValue) => env.windowHandlers.storage?.({ storageArea, key: eventKey, newValue });
+    notify(env.win.sessionStorage, 'snaptray.analyticsConsent', null);
+    notify(env.win.localStorage, 'unrelated', null);
+    env.docHandlers.click(linkEvent('https://github.com/victorfu/snap-tray', 'hero'));
+    assert.equal(sentEvents(env.win).length, before + 1, 'unrelated storage changes are ignored');
+    notify(env.win.localStorage, key, value);
+    env.docHandlers.click(linkEvent('https://github.com/victorfu/snap-tray', 'hero'));
+    assert.equal(sentEvents(env.win).length, before + 1);
+    assert.equal(env.win['ga-disable-G-TEST1234'], true);
+    assert.equal(env.banner.hidden, false);
+  });
+}

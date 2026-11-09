@@ -74,7 +74,8 @@ This 30-minute tab window is our own rule and is not the same as a GA4 session. 
 - `page_location` is origin + path. On the landing page only, the recognized UTM values are re-added so GA's own acquisition reports see the campaign. Other query parameters and fragments are dropped.
 - `page_referrer` is the referring site's origin only (same-site referrers keep their path).
 - Google signals and ad personalization are off; `ad_storage`, `ad_user_data` and `ad_personalization` consent are denied.
-- Declining after allowing sends `consent update analytics_storage=denied`, stops events, clears `snaptray.attribution`, and deletes `_ga` / `_ga_*` cookies.
+- Declining after allowing sets Google's `ga-disable-MEASUREMENT_ID` flag before updating consent to denied, stops events, clears tab attribution and test-traffic state, and deletes `_ga` / `_ga_*` cookies. Allowing again clears the disable flag.
+- Other open tabs listen for shared consent changes and stop tracking on revocation, removal, or invalid/expired consent. They do not write the choice back or automatically start tracking when another tab grants consent.
 
 ## One-time GA4 setup
 

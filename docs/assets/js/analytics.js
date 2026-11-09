@@ -369,6 +369,7 @@
     }
 
     function startTracking() {
+      win[`ga-disable-${config.measurementId}`] = false;
       granted = true;
       if (started) {
         gtag('consent', 'update', { analytics_storage: 'granted' });
@@ -422,6 +423,8 @@
 
     function stopTracking() {
       granted = false;
+      // Consent mode alone still permits cookieless measurements from the loaded tag.
+      win[`ga-disable-${config.measurementId}`] = true;
       if (started) gtag('consent', 'update', { analytics_storage: 'denied' });
       storageRemove(session, ATTRIBUTION_KEY);
       storageRemove(session, TEST_TRAFFIC_KEY);
@@ -449,6 +452,17 @@
     settingsButtons.forEach((button) => {
       button.hidden = false;
       button.addEventListener('click', () => setBannerVisible(true));
+    });
+
+    win.addEventListener('storage', (event) => {
+      if (!local || event.storageArea !== local) return;
+      if (event.key !== CONSENT_KEY && event.key !== null) return;
+      const choice = readConsent(event.newValue, Date.now());
+      if (choice !== 'granted') {
+        // Do not write the shared choice back: this is another tab's update.
+        stopTracking();
+        setBannerVisible(choice === null);
+      }
     });
 
     const choice = readConsent(storageGet(local, CONSENT_KEY), Date.now());
