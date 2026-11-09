@@ -6,30 +6,41 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.70] - 2026-11-09
+
 ### Added
 
-- Added drawing order for annotations: Bring Forward, Send Backward, Bring to Front, and Send to Back for the selected annotation, with `Cmd+]`/`Cmd+[` (`Option` for front/back) on macOS and `Ctrl+]`/`Ctrl+[` (`Shift` for front/back) on Windows and Linux, buttons on the style bar, and an Arrange submenu on pins. Forward and Backward skip annotations that do not overlap. Step numbers keep the order the badges were placed in. On a pin with an annotation selected, `Ctrl/Cmd+]` now brings it forward instead of resetting opacity.
-- Added Delayed Capture to the tray menu, with 3, 5, and 10 second countdowns and an optional hotkey. A click-through countdown pill lets you open menus or hover controls first; when it ends, SnapTray hides the pill, freezes the screen, and opens Region Capture on it. The countdown can be cancelled from the tray or by pressing the hotkey again.
-- Added an eyedropper to the annotation color bar in Region Capture, Pin Windows, and Screen Canvas. Click it or press `I`, then click a pixel to make its color the current color, or the color of the selected annotation (one undo step). A magnifier shows the color code; arrow keys move one physical pixel, `Enter` picks, and `Esc` cancels. It picks from the screenshot or pinned image itself, never from annotations or SnapTray's toolbars.
-- Saved Beautify styles are now shared with the recording editor's Canvas: a style saved in either place can be applied in both. On screenshots a style keeps its pixel sizes as before; on recordings its sizes scale with the video, so it fits a 720p and a 4K recording alike. Beautify can also draw a border, and the recording frame can use custom gradients and the full shadow settings of a style. Existing saved styles carry over unchanged.
+- Added a unified Library for screenshots and editable recording projects, with thumbnails and filters for finding previous captures.
+- Expanded the recording editor with timeline cuts and speed changes, precise crop and trim controls, undo/redo, text and image overlays, and sensitive-area masks applied to exports.
+- Added automatic and editable zoom/pan segments, cursor following, pointer effects, and opt-in shortcut-key hints for recordings.
+- Added recording setup with a microphone level test, separate microphone and system-audio tracks for later mixing, pause/resume controls, and recording status in the tray.
+- Added recording session recovery, disk-space monitoring, and interruption handling to preserve captured footage.
+- Added an optional recording-only area selector. With preview enabled, the area becomes the initial crop of a full-screen recording; with preview disabled, only the selected area is recorded.
+- Added Delayed Capture with 3, 5, and 10 second countdowns, an optional hotkey, and cancellation from the tray or hotkey.
+- Added annotation drawing-order controls, alignment and equal-spacing guides, an eyedropper that samples the captured image, OCR-based marker snapping to text, and capture resize snapping to image boundaries.
+- Added scriptable GUI capture destinations, geometry, and initial selections to the CLI.
 
 ### Improved
 
-- Recording zoom transitions now change the zoom evenly instead of rushing at one end, and a pan between zooms far apart pulls back on the way instead of sweeping across the screen at full zoom. Existing projects keep their zoom segments; only the frames during a transition differ when exported again.
-- Recording pointer smoothing now uses a lag-compensated spring with click anticipation and tighter drag tracking. Off remains the default. Existing projects with smoothing enabled use the new path when exported again; their pointer motion can differ from earlier exports.
-
-- Settings pages are now grouped by task: General, Capture, Pin Windows, Recording, Saving, Text Recognition, and Hotkeys. The former Advanced, Files, and Watermark settings moved to Capture, Pin Windows, and Saving; your settings are kept. Every page except About starts with a title and a short description.
-- Settings can be searched (Ctrl+F or Cmd+F): results open the page and highlight the setting. A setting you changed shows a reset button that restores its default.
-- Beautify opens on named styles (Compact, Standard, Spacious, Flat) and named backgrounds. Padding, corners, shadow, and the other details are under Customize. Save style… keeps up to 8 looks of your own by name, which you can rename or delete.
-- VoiceOver and other screen readers can now use more of SnapTray. Capture toolbar buttons and More menu items have names, and the selected tool reads as selected. Settings pages can be switched by screen reader, and drop-downs read their current choice. Permission, Browse and hotkey buttons say what they apply to. Export codec and background choices read which one is selected. Pinned images are named.
-- Screen readers can also use the style options under the capture toolbar (sizes, colors, width, arrow and line styles, shapes, text formatting, Auto Blur), hear which Library item and section is selected, and hear sliders with their unit ("100%"). Unavailable toolbar buttons such as Undo read as unavailable, the editor behind the export panel can no longer be reached, and on macOS the tray icon is named, including the recording status.
-- The arrow and line style menus are now translated; they were English-only.
+- Reorganized the recording workspace, inspector, and export flow. MP4 exports now offer size, frame-rate, quality, and codec controls with a size estimate; recordings can include backgrounds, padding, rounded corners, shadows, and borders.
+- Smoothed recording zoom transitions and long pans, and added lag-compensated spring pointer smoothing with click anticipation and tighter drag tracking. Pointer smoothing remains off by default; existing projects using these effects may render transitions and pointer motion differently when exported again.
+- Improved native recording performance with ScreenCaptureKit surface encoding on macOS and Windows Graphics Capture with GPU encoding on Windows.
+- Grouped settings by task and added search and per-setting reset controls while preserving existing preferences. Beautify now opens with named styles and backgrounds, with customization and up to eight named saved styles.
+- Shared saved styles between screenshot Beautify and recording Canvas, including borders, gradients, and shadow settings. Screenshot styles retain pixel sizes; recording styles scale to the video dimensions.
+- Added pin hover controls, zoom and opacity shortcuts, clearer click-through status and exit controls, and task-grouped context menus.
+- Grouped capture and canvas toolbar actions with a More menu for narrow screens. The style bar can edit the selected annotation, and geometry, style, and text edits support undo; Escape cancels annotation drags.
+- Expanded screen-reader names, selection states, and keyboard focus handling across toolbars, settings, the Library, recording controls, and pinned images. Updated translations, including arrow and line-style menus.
+- Improved freehand drawing responsiveness, incremental mosaic previews, and large pasted-text layout performance.
 
 ### Fixed
 
-- On macOS, SnapTray now shows in the Dock with a badge while an update is waiting, and the Ready to Install window comes to the front instead of staying behind other apps.
-- Scrolling the mouse wheel with the Step Badge tool now stops at the smallest and largest size instead of jumping from Large back to Small. In Region Capture, the S/M/L size option now shows the size you last used instead of always Medium.
-- On Windows with monitors at different display scales, pinning an image larger than the screen (with `snaptray pin --file` or Pin in the Library) now places the pin where intended, already shrunk to fit. Before, the pin briefly opened at full size across the monitors and could land offset toward the top-left corner.
+- Fixed recording timing around pauses, cuts, variable-frame-rate sources, sparse recordings, and audio mixing. Improved paused seeking, effect selection visibility, and keyboard focus after effect removal and undo.
+- Preserved sensitive-area mask coverage through timeline edits and animation exports, improved cancellable GIF/WebP exports and recovery, and protected recordings during failed or interrupted saves.
+- Kept pin hover controls, hints, and recording warnings out of captures, and kept Linux pin controls above their owner.
+- Fixed oversized pin placement on Windows with mixed display scales, scaled capture bounds, delayed-countdown positioning, and capture toolbar and eyedropper alignment after native window moves.
+- Fixed Step Badge size cycling at its limits and restored the saved size in Region Capture. Preserved fractional annotation geometry and kept cancelled drags from applying on mouse release.
+- Made pending macOS updates visible in the Dock and brought the Ready to Install window forward.
+- Preserved transparent rounded corners in scripted GUI output and improved dialog placement on constrained screens.
 
 ## [1.0.69] - 2026-10-24
 
