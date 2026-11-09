@@ -81,6 +81,10 @@ cp "$SNAPTRAY_BINARY" "$APPDIR/usr/bin/SnapTray"
 cp "$UPDATER" "$APPDIR/usr/bin/snaptray-appimage-updater"
 cp "$SCRIPT_DIR/SnapTray.desktop" "$APPDIR/usr/share/applications/SnapTray.desktop"
 cp "$PROJECT_DIR/resources/icons/snaptray.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/snaptray.svg"
+# appimagetool needs a raster icon for .DirIcon; the SVG alone is insufficient.
+# Stage both before packaging/signing so the final artifact and zsync agree.
+cp "$PROJECT_DIR/resources/icons/snaptray.png" "$APPDIR/snaptray.png"
+ln -s snaptray.png "$APPDIR/.DirIcon"
 
 LINUXDEPLOY="$TOOLS_DIR/linuxdeploy-x86_64.AppImage"
 LINUXDEPLOY_QT="$TOOLS_DIR/linuxdeploy-plugin-qt-x86_64.AppImage"
@@ -211,7 +215,7 @@ mkdir -p "$SMOKE_APPDIR"
   unsquashfs -q -o "$APPIMAGE_OFFSET" "$DIST_DIR/$OUTPUT" >/dev/null
 )
 # Catalogs read metadata from the AppDir root, including symlink targets.
-for metadata in SnapTray.desktop snaptray.svg .DirIcon; do
+for metadata in SnapTray.desktop snaptray.svg snaptray.png .DirIcon; do
   if [ ! -f "$SMOKE_APPDIR/squashfs-root/$metadata" ]; then
     echo "Missing root $metadata in AppImage." >&2
     exit 1
