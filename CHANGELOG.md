@@ -6,6 +6,12 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.71] - 2026-11-09
+
+### Fixed
+
+- Fixed Linux AppImage release packaging failing due to a missing application icon by including the PNG icon and its desktop integration link.
+
 ## [1.0.70] - 2026-11-09
 
 ### Added
