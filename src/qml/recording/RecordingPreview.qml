@@ -475,15 +475,26 @@ Item {
 
     function undoEdit() {
         if (!root.commitInspector()) return
+        root.forceActiveFocus(Qt.OtherFocusReason)
         root.clearSelection()
         cropOverlay.cancel()
         backend.undo()
     }
     function redoEdit() {
         if (!root.commitInspector()) return
+        root.forceActiveFocus(Qt.OtherFocusReason)
         root.clearSelection()
         cropOverlay.cancel()
         backend.redo()
+    }
+    function removeSelectedEffect() {
+        // Removing an effect destroys its focused timeline delegate. Keep
+        // keyboard shortcuts on the surviving editor before that happens.
+        root.forceActiveFocus(Qt.OtherFocusReason)
+        if (backend.selectedMask >= 0) backend.removeMask(backend.selectedMask)
+        else if (backend.selectedZoom >= 0) backend.removeZoom(backend.selectedZoom)
+        else if (backend.selectedOverlay >= 0) backend.removeOverlay(backend.selectedOverlay)
+        else if (backend.selectedPointerHide >= 0) backend.removePointerHide(backend.selectedPointerHide)
     }
     function chooseAspect(index) {
         backend.cropAspectIndex = index
@@ -2063,10 +2074,8 @@ Item {
                               .arg(modelData.end < 0 ? qsTr("the end") : backend.formatPreciseTime(modelData.end))
                     prepareSelection: function() { return root.prepareEffectInteraction("overlay", index) }
                     onActivated: {
-                        if (root.selectEffect("overlay", index)) {
-                            videoPlayer.pause()
-                            videoPlayer.seek(Math.min(endMs - 1, startMs + 100))
-                        }
+                        if (root.selectEffect("overlay", index))
+                            root.showOverlay(index)
                     }
                     onRangeEdited: function(start, end) { root.editEffectRange("overlay", index, start, end) }
                 }
@@ -2469,7 +2478,7 @@ Item {
                     iconSource: root.iconUrl("trash-2")
                     text: qsTr("Delete mask")
                     tooltipText: qsTr("Delete this mask (Delete)")
-                    onClicked: backend.removeMask(backend.selectedMask)
+                    onClicked: root.removeSelectedEffect()
                 }
             }
 
@@ -2779,7 +2788,7 @@ Item {
                     iconSource: root.iconUrl("trash-2")
                     text: overlayPanel.isText ? qsTr("Delete text") : qsTr("Delete image")
                     tooltipText: qsTr("Delete this overlay (Delete)")
-                    onClicked: backend.removeOverlay(backend.selectedOverlay)
+                    onClicked: root.removeSelectedEffect()
                 }
             }
 
@@ -3487,7 +3496,7 @@ Item {
                     iconSource: root.iconUrl("trash-2")
                     text: qsTr("Show the pointer again")
                     tooltipText: qsTr("Delete this hidden range (Delete)")
-                    onClicked: backend.removePointerHide(backend.selectedPointerHide)
+                    onClicked: root.removeSelectedEffect()
                 }
             }
 
@@ -3595,7 +3604,7 @@ Item {
                     iconSource: root.iconUrl("trash-2")
                     text: qsTr("Delete zoom")
                     tooltipText: qsTr("Delete this zoom (Delete)")
-                    onClicked: backend.removeZoom(backend.selectedZoom)
+                    onClicked: root.removeSelectedEffect()
                 }
             }
 
@@ -4405,10 +4414,7 @@ Item {
             if (backend.selectedMask >= 0 || backend.selectedZoom >= 0
                     || backend.selectedOverlay >= 0 || backend.selectedPointerHide >= 0) {
                 if (!root.commitInspector()) { event.accepted = true; break }
-                if (backend.selectedMask >= 0) backend.removeMask(backend.selectedMask)
-                else if (backend.selectedZoom >= 0) backend.removeZoom(backend.selectedZoom)
-                else if (backend.selectedOverlay >= 0) backend.removeOverlay(backend.selectedOverlay)
-                else backend.removePointerHide(backend.selectedPointerHide)
+                root.removeSelectedEffect()
                 event.accepted = true
             } else if (root.toggleCutTarget()) {
                 event.accepted = true

@@ -3,6 +3,7 @@
 #include "qml/QmlRecordingAreaSelector.h"
 #include "platform/PlatformCapabilities.h"
 #include "ImageColorSpaceHelper.h"
+#include "utils/CoordinateHelper.h"
 #include <QClipboard>
 #include <QCursor>
 #include <QWindow>
@@ -842,6 +843,10 @@ void tst_MainApplicationTrayMenu::scriptedGui_finishRepliesWithSelectionAndImage
     // Nothing is answered until the user finishes.
     QTest::qWait(50);
     QCOMPARE(pair.client.bytesAvailable(), qint64(0));
+    // Processing events may close the selector (for example, when the desktop
+    // is locked). Report a failed precondition instead of aborting the suite
+    // inside QTest::keyClick with a null widget.
+    QVERIFY2(selector, "Region selector closed while waiting for user input; check desktop availability");
 
     QTest::keyClick(selector.data(), Qt::Key_Return);
 
@@ -859,7 +864,10 @@ void tst_MainApplicationTrayMenu::scriptedGui_finishRepliesWithSelectionAndImage
     QImage image;
     QVERIFY(image.loadFromData(response.data, "PNG"));
     const qreal dpr = response.result[GuiCommand::kResultDevicePixelRatio].toDouble();
-    QCOMPARE(image.size(), (QSizeF(region.size()) * dpr).toSize());
+    // Fractional-DPI capture covers both pixel edges, including a fractional
+    // origin. Scaling only the size misses the extra edge row at 125%.
+    const QRect localRegion = region.translated(-QGuiApplication::primaryScreen()->geometry().topLeft());
+    QCOMPARE(image.size(), CoordinateHelper::toPhysicalCoveringRect(localRegion, dpr).size());
 
     // Script destinations replace the default pin.
     QTRY_VERIFY(!selector);

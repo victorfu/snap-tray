@@ -63,6 +63,8 @@ private slots:
     void exportPanelKeepsTheEditorOutOfReach();
     void outputTimeFollowsCutsAndSpeed();
     void canvasClickSelectsObjects();
+    void timelineSelectionRevealsFadedOverlay_data();
+    void timelineSelectionRevealsFadedOverlay();
     void backgroundImageShowsThumbnail();
     void splitMarkerKeepsKeyboard();
     void exportProgressSitsOnPanel();
@@ -92,7 +94,8 @@ private:
     }
 };
 namespace {
-bool writeRecording(const QString& path, int fps = 10, int frames = 20, QSize size = QSize(160, 90))
+bool writeRecording(const QString& path, int fps = 10, int frames = 20,
+                    QSize size = QSize(160, 90), int frameSpacingMs = 0)
 {
     const QString recording = qEnvironmentVariable("SNAPTRAY_EDITOR_RECORDING");
     if (!recording.isEmpty() && qEnvironmentVariableIsSet("SNAPTRAY_EDITOR_VIDEO_DIR")) {
@@ -108,7 +111,7 @@ bool writeRecording(const QString& path, int fps = 10, int frames = 20, QSize si
         QElapsedTimer wait;
         wait.start();
         do {
-            encoder->writeFrame(frame, i * 1000 / fps);
+            encoder->writeFrame(frame, frameSpacingMs > 0 ? i * frameSpacingMs : i * 1000 / fps);
             if (encoder->framesWritten() != before) break;
             QTest::qWait(5);
         } while (wait.elapsed() < 2000);
@@ -1342,20 +1345,31 @@ void tst_RecordingEditor::redoAndReopenKeepSelectionHonest()
         QVERIFY(backend.setMaskRange(0, 0, 900));
         QVERIFY(backend.addMask() >= 0);
         QVERIFY(backend.setMaskRange(1, 1000, 1800));
-        backend.setSelectedMask(1);
+        // A real timeline click focuses the delegate that Delete destroys.
+        // Selecting only through the backend misses the lost-keyboard bug.
+        QQuickItem* segment = nullptr;
+        QTRY_VERIFY((segment = delegate(view, "previewMaskSegment1")) && segment->width() > 0);
+        QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                         segment->mapToScene(QPointF(segment->width() / 2, segment->height() / 2)).toPoint());
+        QTRY_COMPARE(backend.selectedMask(), 1);
         QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
         QTest::keyClick(view, Qt::Key_Delete);
         QTRY_COMPARE(backend.masks().size(), 1);
         QCOMPARE(backend.selectedMask(), -1);
-        QVERIFY(QMetaObject::invokeMethod(root, "undoEdit"));
+        QTest::keyClick(view, Qt::Key_Z, Qt::ControlModifier);
         QTRY_COMPARE(backend.masks().size(), 2);
         QCOMPARE(backend.selectedMask(), -1);
-        backend.setSelectedMask(0);
+        QTRY_VERIFY((segment = delegate(view, "previewMaskSegment0")) && segment->width() > 0);
+        QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                         segment->mapToScene(QPointF(segment->width() / 2, segment->height() / 2)).toPoint());
+        QTRY_COMPARE(backend.selectedMask(), 0);
         QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
-        QVERIFY(QMetaObject::invokeMethod(root, "redoEdit"));
+        QTest::keyClick(view, Qt::Key_Z, Qt::ControlModifier | Qt::ShiftModifier);
         QTRY_COMPARE(backend.masks().size(), 1);
         QCOMPARE(backend.selectedMask(), -1);
         QTRY_COMPARE(root->property("inspectorKind").toString(), QStringLiteral("project"));
+        QTest::keyClick(view, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(backend.masks().size(), 2);
         backend.requestDiscard();
     }
 
@@ -1656,6 +1670,65 @@ void tst_RecordingEditor::outputTimeFollowsCutsAndSpeed()
     backend.setPartDeleted(1, false);
     QTRY_VERIFY(hidden->property("exported").toBool());
     backend.requestDiscard();
+}
+
+// Selecting a low-frame-rate overlay must show its content, not just the
+// selection rectangle at the fully transparent start of its fade-in.
+void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay_data()
+{
+    QTest::addColumn<int>("fps");
+    QTest::addColumn<int>("frameSpacingMs");
+    QTest::addColumn<qint64>("start");
+    QTest::newRow("five-fps") << 5 << 0 << qint64(600);
+    QTest::newRow("two-fps") << 2 << 0 << qint64(0);
+    QTest::newRow("sparse-desktop-frames") << 30 << 1000 << qint64(200);
+}
+
+void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay()
+{
+    QFETCH(int, fps);
+    QFETCH(int, frameSpacingMs);
+    QFETCH(qint64, start);
+    QTemporaryDir dir;
+    const QString video = dir.filePath("recording.mp4");
+    QVERIFY(writeRecording(video, fps, 20, QSize(160, 90), frameSpacingMs));
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    view->resize(1200, 800);
+    QTRY_VERIFY(backend.duration() >= 3600);
+    const int overlay = backend.addTextOverlay(0);
+    QVERIFY(overlay >= 0);
+    backend.setOverlayText(overlay, QStringLiteral("Visible title"));
+    QVERIFY(backend.setOverlayRange(overlay, start, 3600));
+    backend.setSelectedOverlay(-1);
+    QQuickItem* player = item(view, "previewVideoPlayer");
+    QVERIFY(player);
+    QSignalSpy decoded(player, SIGNAL(frameReady(QImage)));
+    QVERIFY(seek(view, 0));
+    QTRY_VERIFY_WITH_TIMEOUT(!decoded.isEmpty(), 5000);
+    decoded.clear();
+    QQuickItem* segment = nullptr;
+    QTRY_VERIFY((segment = delegate(view, QStringLiteral("previewOverlaySegment%1").arg(overlay)))
+                && segment->isVisible() && segment->width() > 0);
+    QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                     segment->mapToScene(QPointF(segment->width() / 2, segment->height() / 2)).toPoint());
+    QTRY_COMPARE(backend.selectedOverlay(), overlay);
+    // The optimistic seek position can show text briefly before the decoded
+    // frame arrives. Assert after delivery, including a sparse source frame.
+    QTRY_VERIFY_WITH_TIMEOUT(!decoded.isEmpty(), 5000);
+    SnapTray::OverlaySegment expected;
+    expected.startMs = start;
+    expected.endMs = 3600;
+    QTRY_COMPARE_WITH_TIMEOUT(expected.opacityAt(player->property("framePosition").toLongLong()), 1.0, 5000);
+    QVERIFY(!player->property("playing").toBool());
+    QCOMPARE(player->property("position").toLongLong(), start + 400);
+    // Resuming must release the editing time and follow delivered frames again.
+    QVERIFY(QMetaObject::invokeMethod(player, "play"));
+    QTRY_VERIFY_WITH_TIMEOUT(player->property("framePosition").toLongLong() > start + 400, 5000);
+    QVERIFY(QMetaObject::invokeMethod(player, "pause"));
+    backend.discard();
 }
 
 // #218: clicking a text or mask on the picture selects it, like its block

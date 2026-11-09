@@ -33,7 +33,8 @@ class VideoPlaybackItem : public QQuickPaintedItem
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
     // The time of the frame on screen, updated with every frame: what
     // overlays drawn over the video follow (position may be reported only
-    // every 100 ms while playing).
+    // every 100 ms while playing). A paused seek presents the source frame
+    // at the requested time, which can be later than its PTS for sparse video.
     Q_PROPERTY(qint64 framePosition READ framePosition NOTIFY framePositionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(bool audioPlaybackSupported READ audioPlaybackSupported NOTIFY audioPlaybackSupportedChanged)
@@ -133,6 +134,7 @@ private:
     QImage m_rawFrame;
     FrameProcessor m_frameProcessor;
     qint64 m_framePosition = 0;
+    qint64 m_pausedSeekPosition = -1;
     QImage m_scaledFrame;
     QSize m_lastItemSize;
     QSize m_lastFrameSize;

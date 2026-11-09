@@ -126,7 +126,7 @@ Record actual environment, results, and evidence for each implementation; a blan
 
 | Check | macOS | Windows | Ubuntu 22.04 X11 beta |
 | --- | --- | --- | --- |
-| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | Local Windows build passed; focused UI regression 7/7; earlier full baseline and reruns documented in #210 | `scripts/run-tests.sh` on a 2× desktop: 231 of 233; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
+| Build and repository tests | `scripts/run-tests.sh`, all suites (#214 follow-up PR) | Local Windows build passed; focused UI regression 7/7; earlier full baseline and reruns documented in #210; separate [Windows 11 rebased run](windows-ui-acceptance-238.md): November 9 rebase and unlocked-desktop rechecks; detailed full-suite and native results in the report | `scripts/run-tests.sh` on a 2× desktop: 231 of 233; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
 | Wide/narrow, light/dark, selection/export | QML screenshot fixtures (below) | 1200x800/640x480 fixtures passed; representative images inspected (see Windows follow-up) | The same fixtures rendered on Ubuntu at 2×, light and dark |
 | Pending input, drag/undo, close/cancel | Automated preview suites; operation videos; exporting, close-while-exporting and cancelled screenshots (below) | Preview regression and operation scripts passed; QTest-driven | Preview suites and operation videos pass locally; closing during a real export asks Keep/Cancel, Keep finishes it |
 | New recording end-to-end (trim → split/speed → canvas → text/mask/zoom → export) | Scripted real-input session, `editor-220-flow` | Fresh native capture loaded into scripted editor; trim, 2x, canvas, text/mask/zoom, real GIF and H.264 outputs passed; tray handoff not exercised | Real-input session (XTest): split, 2×, mask, text, zoom, undo/redo, MP4 export; trim and canvas not exercised; see [Ubuntu pass](#ubuntu-2204-x11-pass-238) |
@@ -183,6 +183,32 @@ for deterministic evidence placement. `SNAPTRAY_EDITOR_RECORDING=<mp4>` with
 `SNAPTRAY_EDITOR_VIDEO_DIR` supplies real media to operation fixtures.
 `PinWindow_Evidence nativeControlsAndZOrder` uses `SNAPTRAY_PIN_NATIVE_DIR`
 and `SNAPTRAY_FOCUS_HELPER` for the controlled second-process focus check.
+
+### Separate single-monitor Windows 11 session
+
+The [Windows 11 session record](windows-ui-acceptance-238.md) includes a
+November 9 rebase to main `40357abb`, Qt 6.12.0, and native desktop input at
+125% on one monitor. The earlier four desktop-sensitive suites and the
+coordinate helper passed 5/5 after correcting the fractional-origin capture
+expectation. Full-suite results and their exact revision are in that record.
+
+A fresh desktop recording completed trim, split/2×, canvas, text/mask/zoom,
+GIF and MP4 export through native Windows dialogs, and actual Library
+reopen/delete-mask/undo/redo/export/reopen. Closing during export exercised
+both Keep Exporting and Cancel Export, retaining edits. Native checks exposed
+two repaired bugs: decoded sparse-frame timestamps hid selected overlays,
+and deleting a focused effect prevented Ctrl+Z. Paused presentation time and
+editor focus are now retained. The final build and four affected suites passed
+4/4; the earlier full run was 247/248 with an isolated focus assertion failure
+that passed on rerun. Exact revisions, logs and native screenshots are in the
+session record.
+
+The earlier generated-media QTest flows, screenshots at effective
+100/150/200%, light/dark and de/fi/ru/el, toolbar geometry/restyle and pin
+fixtures remain separately labeled as November 7 evidence. Native results
+are not inferred from those fixtures. Physical mixed-monitor DPI and Narrator
+speech remain unavailable, and incomplete manual checklist rows stay marked
+untested. This session supplements the Windows 10 run above.
 
 ### macOS accessibility audit
 
