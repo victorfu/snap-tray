@@ -7,12 +7,12 @@ render fixtures, native desktop input and Narrator speech are distinct evidence.
 
 ## Current revision and environment
 
-- Rebased on the latest fetched main: `b155fdd5`; fetched again after testing,
-  with no newer main commit.
-- Full build/test revision: `608c5ee1`; the subsequent test-only selector
-  lifetime guard is `d582f7b0`. The overlay-selection fix is `ef8989ea`,
-  rebuilt with `scripts/build.bat` and validated with focused suites.
-- Session date: November 7, 2026, Asia/Taipei; earlier preparation November 6.
+- Rebased on main `40357abb` on November 9, 2026 (Asia/Taipei).
+- Qt 6.12.0 full Debug build passed. Full-suite revision: `4a01210c`;
+  final product/native and affected-suite revision: `947bf3e7`. November 7 results below are
+  retained as a separate historical baseline.
+- Native desktop input became available after the user unlocked Windows on
+  November 9; the new observations are recorded separately below.
 - Windows 11 build `26300.9711` / `26H2`; one 1920 x 1200 display, observed at
   125%. Mixed-monitor DPI is unavailable on this host.
 - Qt 6.12.0, `C:\Qt\6.12.0\msvc2022_64`; MSVC 14.50.35717.
@@ -20,15 +20,90 @@ render fixtures, native desktop input and Narrator speech are distinct evidence.
 - `QT_PATH` selects 6.12.0. Old 6.10.1/6.11.2 SDK directories were removed
   at the user's request during preparation.
 
-**Desktop input is blocked:** an actual screenshot showed the Windows lock
-screen at 18:02, 18:34 and 18:50. Activating Paint for the neutral recording
-background failed. No native mouse/keyboard pass is claimed. The user was
-asked to unlock Windows; there was no unlocked desktop available during this
-run. The previous QA app was stopped and temporary settings restored.
+## November 9 unlocked-desktop follow-up
 
-## Build and regression results
+The four previously desktop-sensitive suites were rerun. RecordingSetup,
+PinWindow_Transform and RegionSelector_StyleSync passed immediately. AppTray
+exposed a test expectation error at native 125%: a region at (40, 30), size
+120 x 80, covers 150 x 101 physical pixels because both fractional pixel edges
+must be included. The test now uses the production covering-rectangle helper
+instead of scaling only the size. All four suites plus CoordinateHelper then
+passed **5/5**, 28.98 seconds (`unlocked-recheck.log`).
 
-`scripts\run-tests.bat` rebuilt the latest main successfully, deployed matching
+The canonical `scripts/run-tests.bat` rebuilt all targets and ran **248 suites**
+on `4a01210c`: **247 passed**, 949.87 seconds. The only failure was
+`Qml_RecordingEditor::timeFieldsKeepTypedKeys`, whose final
+`field->hasActiveFocus()` check failed after the typed-key sequence. The
+isolated case passed without changing its assertions. RecordingAppearance
+and all four formerly desktop-sensitive suites passed in this full run.
+Log: `build/qa238/nov09-full-tests.log`. The eight packaging checks also passed
+in an independent run (`nov09-packaging.log`).
+
+Native mouse/keyboard observations at 125%, preview outer screenshot size
+1026 x 800 physical pixels:
+
+- Started/stopped a fresh 31.961-second desktop recording with the global
+  recording shortcut; the main application opened its editor.
+- Space paused playback. S split the timeline; Ctrl+Z removed the split and
+  Ctrl+Shift+Z restored it. Entered `QA S Delete Space` in the text inspector
+  and used Escape without creating extra timeline splits.
+- Exported MP4 at 720p / 15 fps, completed the real Windows Save Recording
+  dialog, and saved `build/qa238/native-nov09/native-edited.mp4` (10,145,170 bytes).
+- Opened the actual Library, selected the editable project and clicked Open
+  in Editor. Both the split and text survived reopening.
+- Found an additional sparse-frame preview regression: selecting text sought
+  9.873 s, but delivery of the underlying 9.439 s frame reset preview time and
+  made the text disappear. A sparse-timestamp regression reproduces this after decoding,
+  whereas checking only the immediate seek position missed it. The fix keeps
+  the requested presentation time while paused and releases it on playback,
+  stepping, stop or source replacement.
+
+The native flow then completed trim 8.000–14.000 s, a split at 9.473 s with
+2× speed on the second part, a purple gradient canvas with frame/padding,
+text, a solid mask and 2× zoom. Both real Save Recording dialogs completed:
+`native-flow.gif` is 2112 × 1392, 109 frames / 3.750 s (3,772,022 bytes);
+`native-flow.mp4` is 1092 × 720 / 3.767 s (846,404 bytes).
+
+Closing during GIF export and choosing Keep Exporting completed successfully.
+Closing during MP4 export and choosing Cancel Export returned to the editor
+with all edits retained; restarting export succeeded.
+
+The actual Library reopen revealed a second bug: Delete removed the focused
+mask timeline delegate, so Ctrl+Z did nothing until focus was restored. The
+editor now moves keyboard focus to its root before removing effects or
+undoing/redoing. On `947bf3e7`, native Delete → Ctrl+Z → Ctrl+Shift+Z removed,
+restored and removed the mask. Exporting `native-reopen.mp4` and reopening
+through Library preserved trim, split/speed, canvas, text and zoom with the
+mask absent. Selected text remained visible after decoded frame delivery.
+
+The final canonical build passed. The four complete affected suites
+RecordingPreviewExport, RecordingEditor, RecordingPreviewTimeline and
+RecordingPreviewMasks passed **4/4**, 166.36 s on `947bf3e7`
+(`nov09-final-focused.log`). The enhanced focus regression failed before the
+fix (`nov09-focus-before.txt`). This is not a second full 248-suite run.
+
+Native screenshots: [selected overlay](../assets/images/developer/windows-238/native-overlay.png),
+[cancel retained edits](../assets/images/developer/windows-238/native-export-cancel.png),
+[Delete/Undo/Redo](../assets/images/developer/windows-238/native-delete-undo-redo.png).
+Raw desktop recordings include the debug console and remain local under
+`build/qa238/native-nov09/`; they are not published as clean demos.
+
+A native imported-image pin (1382 × 778 physical pixels) opened its context
+menu and opacity submenu and closed successfully. The tool window was absent
+from the automation window inventory; keyboard actions bound to Settings
+activate Settings instead. Hover/shortcut results are therefore not inferred
+from that partial mouse check.
+
+An exploratory nominal-1-fps synthetic recording showed the corrected overlay
+but failed the added resume-advancement assertion in Media Foundation. This is
+not counted as a pass or resolved by the preview-time change. The final VFR
+fixture uses the desktop recorder's nominal 30 fps with sparse timestamps and
+passes both visibility and resume checks. Exploratory log:
+`build/qa238/nov09-editor-recheck.txt`.
+
+## Historical November 7 build and regression results
+
+`scripts\run-tests.bat` rebuilt the then-current main successfully, deployed matching
 Qt DLLs/plugins, and ran all **244 suites**. **239 passed**, in 1096.44 seconds:
 
 ```text
@@ -48,8 +123,7 @@ The following tests FAILED:
 | PinWindow_Transform | `testInfoCopyTracksCurrentTransform`: clipboard text empty instead of dimensions; clipboard access unavailable |
 | RegionSelector_StyleSync | Disabled-magnifier and Beaver-style clipboard-isolation checks read empty text instead of `keep-me`; clipboard access unavailable |
 
-The isolated performance pass is **not** a clean full-suite pass. Four suites
-still require an unlocked-desktop rerun. The guarded test continues reporting
+The isolated performance pass is **not** a clean full-suite pass. Those four suites were subsequently rerun on November 9 as recorded above. The guarded test continues reporting
 a failure; it does not skip or pass the missing-window condition. No assertions
 or performance limits were relaxed.
 
@@ -92,9 +166,29 @@ An earlier HEVC experiment was discarded: current main intentionally disables
 Windows HEVC under #210 and exports H.264. This PR preserves that policy and
 contains no Media Foundation encoder change.
 
-## Current rendered and scripted evidence
+4. **Keep paused presentation time for sparse recordings.** A source frame
+   covers the interval until the next decoded frame. Seeking inside that
+   interval must not move the editor's playhead and timed effects back to the
+   frame's original timestamp. `VideoPlaybackItem` retains the paused seek
+   time through frame delivery; play, step, stop and source replacement clear
+   it. The regression now waits for decoded delivery before checking opacity
+   and verifies that resumed playback advances. Final 5 fps, 2 fps and nominal-30-fps / one-frame-per-second VFR rows
+   passed (5 passes including setup/cleanup, 6.868 s). Initial frame delivery
+   is awaited before the selection so an old callback cannot satisfy the test.
+5. **Match fractional-DPI capture expectations.** The scripted GUI test now
+   compares against the same covering rectangle used by capture, including
+   fractional origins. The production capture size remains unchanged.
 
-The committed screenshots were regenerated from the new build after rebase.
+6. **Preserve keyboard focus when removing effects.** Focus the editor root
+   before removing a timeline delegate or undoing/redoing. Inspector removal
+   and Delete share the same helper. The reopen regression now clicks actual
+   timeline delegates and uses Delete/Ctrl+Z/Ctrl+Shift+Z, rather than calling
+   the undo helper directly.
+
+## November 7 rendered and scripted evidence
+
+The committed screenshots were generated after the November 7 rebase to
+`b155fdd5`; they have not been regenerated for the November 9 revision.
 The existing editor `designEvidence` fixtures passed in dark/light at effective
 100/150/200% and in German, Finnish, Russian and Greek at native 125%.
 Toolbar and pin screenshot fixtures passed. The screenshot-only toolbar run
@@ -157,43 +251,43 @@ second display; a process scale override is not physical mixed-DPI evidence.
 
 | Area | Check | Result / evidence |
 | --- | --- | --- |
-| Editor | New recording → trim → split/2× → canvas → text/mask/zoom → GIF and MP4 | QTest flow and real exports passed on generated media; fresh desktop recording/native handoff not tested |
-| Editor | Retain project → export → library reopen → delete mask → undo/redo → export → reopen | QTest project reopen flow passed; native Library navigation not tested |
-| Editor | Close during export: continue, cancel, edits retained | Automated preview suite and state fixtures passed; native close interaction not tested |
+| Editor | New recording → trim → split/2× → canvas → text/mask/zoom → GIF and MP4 | Passed natively at 125%, 1026 × 800 outer preview; full flow and GIF/MP4 files recorded above |
+| Editor | Retain project → export → library reopen → delete mask → undo/redo → export → reopen | Passed through native Library and save dialogs on final build; mask absent after redo/export/reopen, other edits retained |
+| Editor | Close during export: continue, cancel, edits retained | Passed natively: GIF Keep Exporting and MP4 Cancel Export, edits retained and retry succeeded |
 | Editor | 1200 × 800 and 640 × 480; reachable controls, toggleable inspector | Render fixtures passed (actual sizes above); native reachability not tested |
 | Editor | Light and dark | Render fixtures visually checked; native input not tested |
 | Editor | German, Finnish, Russian, Greek | Render fixtures visually checked; native input not tested |
 | Editor | 100%, 150%, 200%, mixed-DPI monitor move | Effective-scale render fixtures passed; physical display stayed at 125%; mixed-monitor not tested (one monitor) |
-| Editor | Tab/focus; Space, S, Delete, Ctrl+Z, Ctrl+Shift+Z, Escape; text-input isolation | Automated editor suite/operation scenarios passed; physical Tab/focus walkthrough not tested |
+| Editor | Tab/focus; Space, S, Delete, Ctrl+Z, Ctrl+Shift+Z, Escape; text-input isolation | Native Space/S/Delete/Ctrl+Z/Ctrl+Shift+Z/Escape and text isolation exercised; full Tab-order walkthrough not tested |
 | Toolbars | Region, pin and canvas: three groups and finish background | Shared toolbar render checked; native three-surface pass not tested |
-| Toolbars | Narrow overflow; Up/Down/Enter/Escape; focus returns to More | Not tested (desktop access blocked) |
+| Toolbars | Narrow overflow; Up/Down/Enter/Escape; focus returns to More | Not tested in this session |
 | Toolbars | Selected arrow/text/shape: label, restyle, style-only undo/redo | Scripted toolbar restyle/Undo flow passed; all three native surfaces not tested |
-| Toolbars | Tool/background clears selection and restores New object | Not tested (desktop access blocked) |
-| Toolbars | Canvas moved to narrower monitor; record actual overflow behavior | Not tested (desktop access blocked) |
+| Toolbars | Tool/background clears selection and restores New object | Not tested in this session |
+| Toolbars | Canvas moved to narrower monitor; record actual overflow behavior | Not tested in this session |
 | Geometry, all three surfaces | Move/resize/rotate; one undo per drag; redo | AnnotationLayer and scripted geometry Undo passed; native three-surface walkthrough not tested |
-| Geometry, all three surfaces | Escape during drag restores object, release does not move it, no undo entry | Not tested (desktop access blocked) |
-| Geometry, all three surfaces | Text re-edit is one undo; Escape restores original text | Not tested (desktop access blocked) |
-| Geometry, all three surfaces | Style changed during drag: one undo restores geometry and style | Not tested (desktop access blocked) |
-| Geometry, all three surfaces | Crop then undo/redo preserves annotation positions | Not tested (desktop access blocked) |
-| Geometry, all three surfaces | 150%, 200%, mixed-DPI drag/undo | Not tested (desktop access blocked) |
-| Pins | Hover show/hide delay; entering controls keeps them visible | Not tested (desktop access blocked) |
+| Geometry, all three surfaces | Escape during drag restores object, release does not move it, no undo entry | Not tested in this session |
+| Geometry, all three surfaces | Text re-edit is one undo; Escape restores original text | Not tested in this session |
+| Geometry, all three surfaces | Style changed during drag: one undo restores geometry and style | Not tested in this session |
+| Geometry, all three surfaces | Crop then undo/redo preserves annotation positions | Not tested in this session |
+| Geometry, all three surfaces | 150%, 200%, mixed-DPI drag/undo | Not tested in this session |
+| Pins | Hover show/hide delay; entering controls keeps them visible | Not tested in this session |
 | Pins | Zoom slider, stable panel, 33/50/100/200 presets, reset; opacity 10–100 and reset | Scripted pin operation passed; native slider/preset walkthrough not tested |
-| Pins | Escape/other key/outside closes panel; no shortcut leaks to image | Not tested (desktop access blocked) |
-| Pins | Ctrl+=, Ctrl+-, Ctrl+0, [, ], Ctrl+] | Not tested (desktop access blocked) |
-| Pins | Zoom/opacity badge for wheel/edge/menu/panel/shortcut; live badge location | Not tested (desktop access blocked) |
-| Pins | Compact/tiny/short-wide sizes, rotation and flip | Not tested (desktop access blocked) |
-| Pins | Suppression while dragging/resizing/annotating/cropping/layout/click-through; hover setting off | Not tested (desktop access blocked) |
-| Pins | View/Output/Modes/Pins/Close menu groups; opacity submenu/reset | Partial native check at 125%: opened imported-image context menu and closed the test pin; full grouping/reset flow not tested |
-| Pins | Click-through exit pill and tray exit-all action | Not tested (desktop access blocked) |
-| Pins | Live Update excludes overlapping controls/panels/tooltips; red-dot tooltip; pause/resume | Not tested (desktop access blocked) |
-| Pins | Controls and panels remain with pin after switching applications | Not tested (desktop access blocked) |
-| Pins | Annotate and More hover tooltips | Not tested (desktop access blocked) |
-| Pins | Light/dark/German; 100%, 150%, 200% | Not tested (desktop access blocked) |
+| Pins | Escape/other key/outside closes panel; no shortcut leaks to image | Not tested in this session |
+| Pins | Ctrl+=, Ctrl+-, Ctrl+0, [, ], Ctrl+] | Not tested in this session |
+| Pins | Zoom/opacity badge for wheel/edge/menu/panel/shortcut; live badge location | Not tested in this session |
+| Pins | Compact/tiny/short-wide sizes, rotation and flip | Not tested in this session |
+| Pins | Suppression while dragging/resizing/annotating/cropping/layout/click-through; hover setting off | Not tested in this session |
+| Pins | View/Output/Modes/Pins/Close menu groups; opacity submenu/reset | Partial native check at 125%: opened imported-image context menu and opacity submenu, then closed the test pin; full grouping/reset flow not tested |
+| Pins | Click-through exit pill and tray exit-all action | Not tested in this session |
+| Pins | Live Update excludes overlapping controls/panels/tooltips; red-dot tooltip; pause/resume | Not tested in this session |
+| Pins | Controls and panels remain with pin after switching applications | Not tested in this session |
+| Pins | Annotate and More hover tooltips | Not tested in this session |
+| Pins | Light/dark/German; 100%, 150%, 200% | Not tested in this session |
 | Narrator | Editor inspector/timeline/export, toolbars/More, pin controls/click-through names and states | Not tested; accessibility-tree checks alone are insufficient |
 
 ## Remaining work
 
-Unlock Windows before the clipboard and native-input rechecks. Use this
-rebased build for the remaining checklist. Physical mixed-monitor checks need
+The unlocked-desktop clipboard rechecks passed. Continue the remaining native
+checklist using the rebased build; the full-suite result is recorded separately. Physical mixed-monitor checks need
 a second display; Narrator speech requires a listening session. Neither is
 replaced by rendering overrides or accessibility assertions.
