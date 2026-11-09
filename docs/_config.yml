@@ -27,7 +27,7 @@ github:
 # which GitHub Pages uses) and only runs on production_host. Allowed campaign
 # values live in _data/analytics_campaigns.yml. See /developer/site-analytics/.
 analytics:
-  ga4_measurement_id: ""
+  ga4_measurement_id: "G-686X4WBMQM"
   production_host: "snaptray.cc"
 
 exclude:
