@@ -141,6 +141,14 @@ footer:
     report_issue: รายงานปัญหา
     license: MIT License
 
+analytics_consent:
+  title: "การวิเคราะห์เว็บไซต์"
+  body: "อนุญาตให้ snaptray.cc ใช้คุกกี้ของ Google Analytics เพื่อนับจำนวนการเข้าชมและการคลิกดาวน์โหลดหรือไม่? การตั้งค่านี้ใช้กับเว็บไซต์นี้เท่านั้น แอป SnapTray ไม่ส่งข้อมูลการใช้งานใดๆ"
+  accept: "อนุญาต"
+  decline: "ปฏิเสธ"
+  details: "นโยบายความเป็นส่วนตัว"
+  settings: "การตั้งค่าการวิเคราะห์"
+
 docs:
   page_label: เอกสาร
   sidebar_title: เอกสาร

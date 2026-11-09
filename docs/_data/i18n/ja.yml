@@ -141,6 +141,14 @@ footer:
     report_issue: 問題を報告
     license: MIT ライセンス
 
+analytics_consent:
+  title: "ウェブサイト解析"
+  body: "snaptray.cc が Google アナリティクスの Cookie を使って訪問数とダウンロードのクリック数を計測することを許可しますか？対象はこのウェブサイトのみで、SnapTray アプリが利用データを送信することはありません。"
+  accept: "許可する"
+  decline: "拒否する"
+  details: "プライバシーポリシー"
+  settings: "解析の設定"
+
 docs:
   page_label: ドキュメント
   sidebar_title: ドキュメント

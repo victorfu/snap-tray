@@ -13,6 +13,16 @@ add_test(NAME Docs_DeveloperRoutes
     COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Docs/tst_DeveloperRoutes.py" "${CMAKE_SOURCE_DIR}")
 set_tests_properties(Docs_DeveloperRoutes PROPERTIES TIMEOUT 30 LABELS "unit;docs")
 
+# Website analytics contract (docs/assets/js/analytics.js). Needs Node 18+.
+find_program(NODE_EXECUTABLE node)
+if(NODE_EXECUTABLE)
+    add_test(NAME Docs_SiteAnalytics
+        COMMAND ${NODE_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Docs/tst_SiteAnalytics.js" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Docs_SiteAnalytics PROPERTIES TIMEOUT 30 LABELS "unit;docs")
+else()
+    message(STATUS "Node.js not found: skipping Docs_SiteAnalytics")
+endif()
+
 
 # Compile this bootstrap directly into every C++ test executable. It enables
 # a test-only settings override before main() and gives each process its own

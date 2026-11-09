@@ -141,6 +141,14 @@ footer:
     report_issue: 回報問題
     license: MIT 授權
 
+analytics_consent:
+  title: "網站統計"
+  body: "是否允許 snaptray.cc 使用 Google Analytics Cookie 統計造訪次數與下載點擊？此設定僅適用於本網站，SnapTray App 不會傳送任何使用資料。"
+  accept: "允許"
+  decline: "拒絕"
+  details: "隱私政策"
+  settings: "網站統計設定"
+
 docs:
   page_label: 文件中心
   sidebar_title: 文件目錄

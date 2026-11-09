@@ -18,7 +18,7 @@ route_key: releases
 
 <section class="releases-page">
   <div class="container">
-    <div id="releases-list" class="releases-list">
+    <div id="releases-list" class="releases-list" data-analytics-placement="release_list">
       <div class="loading">Loading releases...</div>
     </div>
   </div>
