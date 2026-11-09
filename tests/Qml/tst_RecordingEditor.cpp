@@ -1345,20 +1345,31 @@ void tst_RecordingEditor::redoAndReopenKeepSelectionHonest()
         QVERIFY(backend.setMaskRange(0, 0, 900));
         QVERIFY(backend.addMask() >= 0);
         QVERIFY(backend.setMaskRange(1, 1000, 1800));
-        backend.setSelectedMask(1);
+        // A real timeline click focuses the delegate that Delete destroys.
+        // Selecting only through the backend misses the lost-keyboard bug.
+        QQuickItem* segment = nullptr;
+        QTRY_VERIFY((segment = delegate(view, "previewMaskSegment1")) && segment->width() > 0);
+        QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                         segment->mapToScene(QPointF(segment->width() / 2, segment->height() / 2)).toPoint());
+        QTRY_COMPARE(backend.selectedMask(), 1);
         QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
         QTest::keyClick(view, Qt::Key_Delete);
         QTRY_COMPARE(backend.masks().size(), 1);
         QCOMPARE(backend.selectedMask(), -1);
-        QVERIFY(QMetaObject::invokeMethod(root, "undoEdit"));
+        QTest::keyClick(view, Qt::Key_Z, Qt::ControlModifier);
         QTRY_COMPARE(backend.masks().size(), 2);
         QCOMPARE(backend.selectedMask(), -1);
-        backend.setSelectedMask(0);
+        QTRY_VERIFY((segment = delegate(view, "previewMaskSegment0")) && segment->width() > 0);
+        QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
+                         segment->mapToScene(QPointF(segment->width() / 2, segment->height() / 2)).toPoint());
+        QTRY_COMPARE(backend.selectedMask(), 0);
         QTRY_VERIFY(item(view, "previewMaskPanel")->isVisible());
-        QVERIFY(QMetaObject::invokeMethod(root, "redoEdit"));
+        QTest::keyClick(view, Qt::Key_Z, Qt::ControlModifier | Qt::ShiftModifier);
         QTRY_COMPARE(backend.masks().size(), 1);
         QCOMPARE(backend.selectedMask(), -1);
         QTRY_COMPARE(root->property("inspectorKind").toString(), QStringLiteral("project"));
+        QTest::keyClick(view, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(backend.masks().size(), 2);
         backend.requestDiscard();
     }
 
