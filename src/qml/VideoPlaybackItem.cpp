@@ -37,12 +37,13 @@ void VideoPlaybackItem::createPlayer()
             this, &VideoPlaybackItem::onFrameReady, Qt::QueuedConnection);
     connect(m_player, &IVideoPlayer::stateChanged,
             this, &VideoPlaybackItem::stateChanged);
-    connect(m_player, &IVideoPlayer::positionChanged,
-            this, &VideoPlaybackItem::positionChanged);
+    connect(m_player, &IVideoPlayer::positionChanged, this, [this](qint64) {
+        emit positionChanged(position());
+    });
     // Paused or seeking without a new frame: the reported position is the
     // frame on screen. While playing, frames carry their own time.
     connect(m_player, &IVideoPlayer::positionChanged, this, [this](qint64 positionMs) {
-        if (!isPlaying()) setFramePosition(positionMs);
+        if (!isPlaying()) setFramePosition(m_pausedSeekPosition >= 0 ? m_pausedSeekPosition : positionMs);
     });
     connect(m_player, &IVideoPlayer::durationChanged,
             this, &VideoPlaybackItem::durationChanged);
@@ -110,6 +111,8 @@ int VideoPlaybackItem::playerState() const
 
 qint64 VideoPlaybackItem::position() const
 {
+    if (!isPlaying() && m_pausedSeekPosition >= 0)
+        return m_pausedSeekPosition;
     return m_player ? m_player->position() : 0;
 }
 
@@ -179,6 +182,7 @@ QSize VideoPlaybackItem::videoSize() const
 
 void VideoPlaybackItem::play()
 {
+    m_pausedSeekPosition = -1;
     if (m_player)
         m_player->play();
 }
@@ -201,6 +205,7 @@ void VideoPlaybackItem::togglePlayPause()
 
 void VideoPlaybackItem::stop()
 {
+    m_pausedSeekPosition = -1;
     if (m_player) {
         m_player->stop();
     }
@@ -209,6 +214,7 @@ void VideoPlaybackItem::stop()
 
 void VideoPlaybackItem::clearFrame()
 {
+    m_pausedSeekPosition = -1;
     m_currentFrame = QImage();
     m_rawFrame = QImage();
     m_scaledFrame = QImage();
@@ -229,6 +235,10 @@ void VideoPlaybackItem::seek(qint64 positionMs)
 {
     if (m_player) {
         positionMs = qBound(qint64(0), positionMs, duration());
+        // A VFR desktop frame may cover seconds. Its source PTS is not the
+        // time requested for editing: retain that time when decoding completes
+        // so fades, masks and the playhead do not jump back to the frame start.
+        m_pausedSeekPosition = isPlaying() ? -1 : positionMs;
         m_player->seek(positionMs);
     }
 }
@@ -241,6 +251,7 @@ void VideoPlaybackItem::setLooping(bool loop)
 
 void VideoPlaybackItem::stepForward()
 {
+    m_pausedSeekPosition = -1;
     if (m_player)
         m_player->stepForward();
 }
@@ -259,7 +270,8 @@ void VideoPlaybackItem::onFrameReady(const QImage &frame, qint64 positionMs)
         return;
 
     m_rawFrame = frame;
-    setFramePosition(positionMs >= 0 ? positionMs : position());
+    setFramePosition(!isPlaying() && m_pausedSeekPosition >= 0
+                        ? m_pausedSeekPosition : (positionMs >= 0 ? positionMs : position()));
     m_currentFrame = frame;
     if (m_frameProcessor) {
         m_frameProcessor(m_currentFrame, m_framePosition);

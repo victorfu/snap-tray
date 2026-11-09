@@ -63,6 +63,7 @@ private slots:
     void exportPanelKeepsTheEditorOutOfReach();
     void outputTimeFollowsCutsAndSpeed();
     void canvasClickSelectsObjects();
+    void timelineSelectionRevealsFadedOverlay_data();
     void timelineSelectionRevealsFadedOverlay();
     void backgroundImageShowsThumbnail();
     void splitMarkerKeepsKeyboard();
@@ -1661,11 +1662,21 @@ void tst_RecordingEditor::outputTimeFollowsCutsAndSpeed()
 
 // Selecting a low-frame-rate overlay must show its content, not just the
 // selection rectangle at the fully transparent start of its fade-in.
+void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay_data()
+{
+    QTest::addColumn<int>("fps");
+    QTest::addColumn<qint64>("start");
+    QTest::newRow("five-fps") << 5 << qint64(600);
+    QTest::newRow("sparse-desktop-frames") << 2 << qint64(0);
+}
+
 void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay()
 {
+    QFETCH(int, fps);
+    QFETCH(qint64, start);
     QTemporaryDir dir;
     const QString video = dir.filePath("recording.mp4");
-    QVERIFY(writeRecording(video, 5));
+    QVERIFY(writeRecording(video, fps));
     RecordingPreviewBackend backend(video);
     backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     QQuickView* view = openPreview(backend);
@@ -1675,22 +1686,31 @@ void tst_RecordingEditor::timelineSelectionRevealsFadedOverlay()
     const int overlay = backend.addTextOverlay(0);
     QVERIFY(overlay >= 0);
     backend.setOverlayText(overlay, QStringLiteral("Visible title"));
-    QVERIFY(backend.setOverlayRange(overlay, 600, 3600));
+    QVERIFY(backend.setOverlayRange(overlay, start, 3600));
     backend.setSelectedOverlay(-1);
     QVERIFY(seek(view, 0));
     QQuickItem* segment = nullptr;
     QTRY_VERIFY((segment = delegate(view, QStringLiteral("previewOverlaySegment%1").arg(overlay)))
                 && segment->isVisible() && segment->width() > 0);
+    QQuickItem* player = item(view, "previewVideoPlayer");
+    QVERIFY(player);
+    QSignalSpy decoded(player, SIGNAL(frameReady(QImage)));
     QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier,
                      segment->mapToScene(QPointF(segment->width() / 2, segment->height() / 2)).toPoint());
     QTRY_COMPARE(backend.selectedOverlay(), overlay);
-    QQuickItem* player = item(view, "previewVideoPlayer");
-    QVERIFY(player);
+    // The optimistic seek position can show text briefly before the decoded
+    // frame arrives. Assert after delivery, including a sparse source frame.
+    QTRY_VERIFY_WITH_TIMEOUT(!decoded.isEmpty(), 5000);
     SnapTray::OverlaySegment expected;
-    expected.startMs = 600;
+    expected.startMs = start;
     expected.endMs = 3600;
     QTRY_COMPARE_WITH_TIMEOUT(expected.opacityAt(player->property("framePosition").toLongLong()), 1.0, 5000);
     QVERIFY(!player->property("playing").toBool());
+    QCOMPARE(player->property("position").toLongLong(), start + 400);
+    // Resuming must release the editing time and follow delivered frames again.
+    QVERIFY(QMetaObject::invokeMethod(player, "play"));
+    QTRY_VERIFY_WITH_TIMEOUT(player->property("framePosition").toLongLong() > start + 400, 5000);
+    QVERIFY(QMetaObject::invokeMethod(player, "pause"));
     backend.discard();
 }
 
