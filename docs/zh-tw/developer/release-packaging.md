@@ -17,7 +17,11 @@ docs_copy_key: developer
 
 ### macOS
 
+打包需要 Qt 6.12.0 SDK（含 `qtimageformats`），並檢查版本；
+CMake 與 `macdeployqt` 使用同一份 SDK。
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/macos"
 ./packaging/macos/package.sh
 # 輸出：dist/SnapTray-<version>-macOS.dmg
 ```
@@ -40,32 +44,55 @@ packaging\windows\package.bat msix      REM 只建置 MSIX
 
 - `dist\SnapTray-<version>-Setup.exe`
 - `dist\SnapTray-<version>.msix`
-- `dist\SnapTray-<version>.msixupload`
 
 ### Linux
 
+CI 與 AppImage 打包固定使用 Qt 6.12.0 `linux_gcc_64` SDK（含 `qtimageformats`）。
+腳本預設選取 `$HOME/Qt/6.12.0/gcc_64`，可用 `QT_ROOT_DIR` 指定其他安裝位置，
+但會拒絕其他版本。CMake 與 linuxdeploy 使用同一份 SDK，並清除舊 Qt 套件路徑快取。
+驗證 clean release build 時請使用全新的 `release-linux` 目錄。
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/gcc_64"
 ./packaging/linux/package-appimage.sh
 # Output: dist/SnapTray-<version>-x86_64.AppImage
 ```
 
 Linux beta 目標是 Ubuntu 22.04 X11。此版本沒有內建更新，升級方式是下載新的 AppImage。
 
-打包腳本會在產生 AppImage 後遮蔽 AppImage type marker，讓有
-AppImageLauncher `binfmt_misc` handler 的 Ubuntu 22.04 系統直接執行內嵌的
-AppImage runtime，而不是先繞進 AppImageLauncher。
+打包腳本會保留並檢查 ELF header 與 type 2 AppImage marker（位元組偏移 8 的
+`AI\x02`），遵循 [AppImage 規格](https://github.com/AppImage/AppImageSpec/blob/master/draft.md#type-2-image-format)，
+並檢查解壓後根目錄的 desktop entry、圖示及可執行的 `AppRun`。
+不可遮蔽此 marker；AppImage 目錄與桌面整合工具需要它來辨識檔案並擷取中繼資料。
+
+若 Ubuntu 22.04 上舊版 AppImageLauncher 的 `binfmt_misc` handler 導致無法啟動，
+請在本機更新或停用該 handler。也可從 repository checkout 直接解壓並執行，
+不經過 AppImageLauncher 或 FUSE（需要 `squashfs-tools`）：
+
+```bash
+source packaging/linux/appimage-helpers.sh
+appimage="$(realpath dist/SnapTray-<version>-x86_64.AppImage)"
+unsquashfs -o "$(appimage_squashfs_offset "$appimage")" -d "$appimage.AppDir" "$appimage"
+"$appimage.AppDir/AppRun"
+```
 
 ## 打包前置需求
 
+### Linux
+
+打包檢查需要 `python3`、`xvfb` 與 `xauth`。腳本會在未設定 `XDG_SESSION_TYPE`
+的 Xvfb 環境中驗證解壓後應用程式的 CLI 與系統匣啟動，涵蓋 AppImage 目錄的
+X11 測試環境，並確認 Wayland 與 offscreen session 仍不受支援。
+
 ### macOS
 
-- 已安裝 Qt 6
+- 已安裝 Qt 6.12.0（含 `qtimageformats`）
 - Xcode Command Line Tools
 - 可選 `create-dmg` 以美化 DMG 視覺
 
 ### Windows
 
-- 已安裝 Qt 6
+- 已安裝 Qt 6.12.0（含 `qtimageformats`）
 - Visual Studio Build Tools 或 Visual Studio
 - NSIS（產出 NSIS 安裝程式）
 - Windows 10 SDK（產出 MSIX）
@@ -73,7 +100,7 @@ AppImage runtime，而不是先繞進 AppImageLauncher。
 若 Qt 不是安裝在預設路徑，可設定：
 
 ```batch
-set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+set QT_PATH=C:\Qt\6.12.0\msvc2022_64
 ```
 
 ## Release Notes 與版本規則
@@ -192,7 +219,7 @@ Get-AppPackage SnapTray* | Remove-AppPackage
 1. 登入 Partner Center
 2. 建立或選擇 app reservation
 3. 建立新的 submission
-4. 上傳 `.msixupload`
+4. 上傳 `.msix`
 5. 補齊 listing、pricing、age rating
 6. 送出認證
 

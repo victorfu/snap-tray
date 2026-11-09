@@ -9,17 +9,10 @@ REM   package.bat              - Build both NSIS and MSIX
 REM   package.bat nsis         - Build NSIS installer only
 REM   package.bat msix         - Build MSIX package only
 
-set SCRIPT_DIR=%~dp0
+set "SCRIPT_DIR=%~dp0"
 
-if /i "%~1"=="nsis" (
-    call "%SCRIPT_DIR%package-nsis.bat"
-    exit /b %ERRORLEVEL%
-)
-
-if /i "%~1"=="msix" (
-    call "%SCRIPT_DIR%package-msix.bat"
-    exit /b %ERRORLEVEL%
-)
+if /i "%~1"=="nsis" goto package_nsis
+if /i "%~1"=="msix" goto package_msix
 
 REM Build both
 echo Building NSIS installer...
@@ -41,3 +34,12 @@ if errorlevel 1 (
 )
 
 endlocal
+exit /b 0
+
+:package_nsis
+call "%SCRIPT_DIR%package-nsis.bat"
+exit /b %ERRORLEVEL%
+
+:package_msix
+call "%SCRIPT_DIR%package-msix.bat"
+exit /b %ERRORLEVEL%

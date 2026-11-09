@@ -9,6 +9,8 @@
 #include <QPoint>
 #include <QColor>
 
+struct LineAnnotationGeometry;
+
 /**
  * @brief Polyline annotation (multi-segment line with optional arrowhead)
  *
@@ -30,12 +32,18 @@ public:
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
+    std::size_t estimatedRetainedBytes() const override
+    {
+        return sizeof(PolylineAnnotation)
+            + static_cast<std::size_t>(m_points.capacity()) * sizeof(QPoint);
+    }
     bool containsPoint(const QPoint& point) const;
 
     // Point management
     void addPoint(const QPoint& point);
     void updateLastPoint(const QPoint& point);
     void setPoint(int index, const QPoint& point);
+    void setPoints(const QVector<QPoint>& points);
     void removeLastPoint();
     void moveBy(const QPoint& delta);
     int pointCount() const { return m_points.size(); }
@@ -45,12 +53,14 @@ public:
     void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }
     LineEndStyle lineEndStyle() const { return m_lineEndStyle; }
     LineStyle lineStyle() const { return m_lineStyle; }
+    void setColor(const QColor& color) { m_color = color; }
+    void setWidth(int width) { m_width = qMax(1, width); }
+    void setLineStyle(LineStyle style) { m_lineStyle = style; }
     QColor color() const { return m_color; }
     int width() const { return m_width; }
 
 private:
-    void drawArrowhead(QPainter& painter, const QPoint& from, const QPoint& to, bool filled) const;
-    void drawArrowheadLine(QPainter& painter, const QPoint& from, const QPoint& to) const;
+    LineAnnotationGeometry geometry() const;
 
     QVector<QPoint> m_points;
     QColor m_color;

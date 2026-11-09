@@ -1,3 +1,4 @@
+#include "platform/WindowLevel.h"
 #include "qml/QmlRecordingControlBar.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
@@ -36,6 +37,15 @@ const char* const kStopRecordingText =
     QT_TRANSLATE_NOOP("RecordingControlBar", "Stop Recording");
 const char* const kCancelRecordingText =
     QT_TRANSLATE_NOOP("RecordingControlBar", "Cancel Recording");
+const char* const kStopAndReviewText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "Stop and Review");
+const char* const kTooltipWithHotkeyText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "%1 (%2)");
+
+enum ControlBarButton {
+    kStopButton = 0,
+    kPauseResumeButton = 1,
+};
 
 QString translateRecordingControlBar(const char* sourceText)
 {
@@ -209,18 +219,10 @@ void QmlRecordingControlBar::applyTooltipWindowFlags()
     [window setLevel:kCGScreenSaverWindowLevel];
     [window setHidesOnDeactivate:NO];
     [window setIgnoresMouseEvents:YES];
-    [window setHasShadow:YES];
+    [window setHasShadow:m_tooltipRootItem && m_tooltipRootItem->isVisible()];
     [window setSharingType:NSWindowSharingNone];
 #elif defined(Q_OS_WIN)
-    if (!m_tooltipView)
-        return;
-
-    HWND hwnd = reinterpret_cast<HWND>(m_tooltipView->winId());
-    if (!hwnd)
-        return;
-
-    constexpr DWORD kExcludeFromCapture = 0x00000011;
-    SetWindowDisplayAffinity(hwnd, kExcludeFromCapture);
+    setWindowExcludedFromCapture(m_tooltipView, true);
 #endif
 }
 
@@ -245,6 +247,7 @@ void QmlRecordingControlBar::hide()
 void QmlRecordingControlBar::close()
 {
     hideTooltip();
+    m_captureExclusionsPrepared = false;
 
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -270,6 +273,38 @@ WId QmlRecordingControlBar::winId() const
     if (m_view)
         return m_view->winId();
     return 0;
+}
+
+QList<quintptr> QmlRecordingControlBar::prepareCaptureExclusions()
+{
+    ensureView();
+    ensureTooltipView();
+    if (!m_rootItem || !m_tooltipRootItem) return {};
+    if (!m_captureExclusionsPrepared) {
+        hideTooltip();
+        m_captureExclusionsPrepared = true;
+        // Keep a transparent, input-transparent native window registered with
+        // WindowServer, so SCK can exclude it before the first tooltip hover.
+        m_tooltipRootItem->setVisible(false);
+        m_tooltipView->setPosition(m_view->position());
+        m_tooltipView->show();
+        applyTooltipWindowFlags();
+    }
+    QList<quintptr> ids;
+    for (QQuickView* view : {m_view, m_tooltipView}) {
+#ifdef Q_OS_MACOS
+        NSView* nativeView = reinterpret_cast<NSView*>(view->winId());
+        NSWindow* window = [nativeView window];
+        const NSInteger number = window ? [window windowNumber] : 0;
+        if (number <= 0) return {};
+        ids.append(static_cast<quintptr>(number));
+#else
+        const WId id = view->winId();
+        if (!id) return {};
+        ids.append(id);
+#endif
+    }
+    return ids;
 }
 
 void QmlRecordingControlBar::raiseAboveMenuBar()
@@ -300,16 +335,7 @@ void QmlRecordingControlBar::setExcludedFromCapture(bool excluded)
         }
     }
 #elif defined(Q_OS_WIN)
-    if (!m_view)
-        return;
-
-    HWND hwnd = reinterpret_cast<HWND>(m_view->winId());
-    if (!hwnd)
-        return;
-
-    constexpr DWORD kExcludeFromCapture = 0x00000011;
-    const DWORD affinity = excluded ? kExcludeFromCapture : WDA_NONE;
-    SetWindowDisplayAffinity(hwnd, affinity);
+    setWindowExcludedFromCapture(m_view, excluded);
 #else
     Q_UNUSED(excluded)
 #endif
@@ -375,6 +401,18 @@ QString QmlRecordingControlBar::formatDuration(qint64 ms) const
         .arg(hours, 2, 10, QChar('0'))
         .arg(minutes, 2, 10, QChar('0'))
         .arg(seconds, 2, 10, QChar('0'));
+}
+
+void QmlRecordingControlBar::setStopOpensPreview(bool opensPreview)
+{
+    m_stopOpensPreview = opensPreview;
+}
+
+void QmlRecordingControlBar::setShortcutHints(const QString& pauseResumeHotkey,
+                                              const QString& stopHotkey)
+{
+    m_pauseResumeHotkey = pauseResumeHotkey;
+    m_stopHotkey = stopHotkey;
 }
 
 void QmlRecordingControlBar::setPaused(bool paused)
@@ -457,12 +495,23 @@ void QmlRecordingControlBar::onButtonUnhovered()
 
 QString QmlRecordingControlBar::tooltipForButton(int buttonId) const
 {
+    QString label;
+    QString hotkey;
     switch (buttonId) {
-    case 0: // Stop
-        return translateRecordingControlBar(kStopRecordingText);
+    case kStopButton:
+        label = translateRecordingControlBar(m_stopOpensPreview ? kStopAndReviewText : kStopRecordingText);
+        hotkey = m_stopHotkey;
+        break;
+    case kPauseResumeButton:
+        label = translateRecordingControlBar(m_isPaused ? kResumeRecordingText : kPauseRecordingText);
+        hotkey = m_pauseResumeHotkey;
+        break;
     default:
         return QString();
     }
+    return hotkey.isEmpty()
+        ? label
+        : translateRecordingControlBar(kTooltipWithHotkeyText).arg(label, hotkey);
 }
 
 void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& anchorRect)
@@ -502,6 +551,7 @@ void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& ancho
         };
 
         positionTooltip(QPoint(anchorCenter.x(), barBottom), false);
+        m_tooltipRootItem->setVisible(true);
         m_tooltipView->show();
         applyTooltipWindowFlags();
         m_tooltipView->raise();
@@ -527,8 +577,12 @@ void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& ancho
 void QmlRecordingControlBar::hideTooltip()
 {
     ++m_tooltipRequestId;
-    if (m_tooltipView)
+    if (m_captureExclusionsPrepared && m_tooltipRootItem) {
+        m_tooltipRootItem->setVisible(false);
+        applyTooltipWindowFlags();
+    } else if (m_tooltipView) {
         m_tooltipView->hide();
+    }
 }
 
 // ── Drag handling ──

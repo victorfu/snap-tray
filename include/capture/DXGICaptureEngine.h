@@ -2,6 +2,7 @@
 #define DXGICAPTUREENGINE_H
 
 #include "ICaptureEngine.h"
+#include <functional>
 
 /**
  * @brief Windows capture engine using Desktop Duplication API
@@ -32,10 +33,14 @@ public:
 
     bool setRegion(const QRect &region, QScreen *screen) override;
     bool setRegion(const QRect &region, const CaptureScreenInfo &screenInfo) override;
+    void setFrameRate(int fps) override;
     bool start() override;
     void stop() override;
     bool isRunning() const override;
     QImage captureFrame() override;
+    SnapTray::CapturedFrame captureNativeFrame() override;
+    std::shared_ptr<void> nativeFrameDevice() const override;
+    void setNativeFrameOutput(bool enabled) override;
     QString engineName() const override;
 
     /**
@@ -45,6 +50,8 @@ public:
     static bool isAvailable();
 
 private:
+    friend class TestDXGICaptureEngineThreadLifecycleWin;
+    std::function<void()> m_captureTickObserver;
     class Private;
     Private *d;
 };

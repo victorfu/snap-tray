@@ -1,5 +1,6 @@
 #pragma once
 
+#include "annotations/AnnotationStyle.h"
 #include <QObject>
 #include <QColor>
 #include <QVariantList>
@@ -19,6 +20,8 @@ class PinToolOptionsViewModel : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(bool markerTextSnapAvailable READ markerTextSnapAvailable NOTIFY markerTextSnapChanged)
+    Q_PROPERTY(bool markerTextSnapEnabled READ markerTextSnapEnabled WRITE setMarkerTextSnapEnabled NOTIFY markerTextSnapEnabledChanged)
     // Section visibility
     Q_PROPERTY(bool showColorSection READ showColorSection NOTIFY sectionVisibilityChanged)
     Q_PROPERTY(bool showWidthSection READ showWidthSection NOTIFY sectionVisibilityChanged)
@@ -31,6 +34,9 @@ class PinToolOptionsViewModel : public QObject
 
     // Color section
     Q_PROPERTY(QVariantList colorPalette READ colorPalette CONSTANT)
+    // Same entries as colorPalette, each as {color, name}, so a swatch's
+    // screen reader name travels with its color (#248).
+    Q_PROPERTY(QVariantList colorPaletteOptions READ colorPaletteOptions CONSTANT)
     Q_PROPERTY(QColor currentColor READ currentColor WRITE setCurrentColor NOTIFY currentColorChanged)
 
     // Width section
@@ -38,8 +44,9 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(int minWidth READ minWidth CONSTANT)
     Q_PROPERTY(int maxWidth READ maxWidth CONSTANT)
     Q_PROPERTY(int activeToolId READ activeToolId NOTIFY activeToolChanged)
+    Q_PROPERTY(bool markerActive READ isMarkerActive NOTIFY activeToolChanged)
     Q_PROPERTY(bool mosaicActive READ isMosaicActive NOTIFY activeToolChanged)
-    Q_PROPERTY(QString mosaicBrushHintText READ mosaicBrushHintText CONSTANT)
+    Q_PROPERTY(QVariantList mosaicWidthPresetOptions READ mosaicWidthPresetOptions CONSTANT)
 
     // Text formatting section
     Q_PROPERTY(bool isBold READ isBold WRITE setBold NOTIFY boldChanged)
@@ -55,6 +62,9 @@ class PinToolOptionsViewModel : public QObject
     // Arrow/Line style section
     Q_PROPERTY(int arrowStyle READ arrowStyle WRITE setArrowStyle NOTIFY arrowStyleChanged)
     Q_PROPERTY(int lineStyle READ lineStyle WRITE setLineStyle NOTIFY lineStyleChanged)
+    // Translated names of the current styles, for screen readers (#248).
+    Q_PROPERTY(QString arrowStyleLabel READ arrowStyleLabel NOTIFY arrowStyleChanged)
+    Q_PROPERTY(QString lineStyleLabel READ lineStyleLabel NOTIFY lineStyleChanged)
 
     // Step badge size section
     Q_PROPERTY(int stepBadgeSize READ stepBadgeSize WRITE setStepBadgeSize NOTIFY stepBadgeSizeChanged)
@@ -77,6 +87,15 @@ class PinToolOptionsViewModel : public QObject
     // Whether any section has content to show
     Q_PROPERTY(bool hasContent READ hasContent NOTIFY sectionVisibilityChanged)
 
+    // Selected-object styling (#224)
+    Q_PROPERTY(QString targetLabel READ targetLabel NOTIFY targetChanged)
+    Q_PROPERTY(bool editingSelection READ editingSelection NOTIFY targetChanged)
+    Q_PROPERTY(bool shapeTypeEditable READ shapeTypeEditable NOTIFY targetChanged)
+    // Drawing order of the selected annotation (#268).
+    Q_PROPERTY(QVariantList zOrderOptions READ zOrderOptions CONSTANT)
+    Q_PROPERTY(bool canRaiseSelection READ canRaiseSelection NOTIFY zOrderAvailabilityChanged)
+    Q_PROPERTY(bool canLowerSelection READ canLowerSelection NOTIFY zOrderAvailabilityChanged)
+
 public:
     explicit PinToolOptionsViewModel(QObject* parent = nullptr);
 
@@ -91,8 +110,22 @@ public:
     bool showAutoBlurSection() const { return m_showAutoBlur; }
     bool hasContent() const;
 
+    bool markerTextSnapAvailable() const { return m_markerTextSnapAvailable; }
+    bool markerTextSnapEnabled() const { return m_markerTextSnapEnabled; }
+    void setMarkerTextSnapAvailable(bool value) {
+        if (m_markerTextSnapAvailable == value) return;
+        m_markerTextSnapAvailable = value;
+        emit markerTextSnapChanged();
+    }
+    void setMarkerTextSnapEnabled(bool value) {
+        if (m_markerTextSnapEnabled == value) return;
+        m_markerTextSnapEnabled = value;
+        emit markerTextSnapEnabledChanged();
+    }
+
     // Color
     QVariantList colorPalette() const { return m_colorPalette; }
+    QVariantList colorPaletteOptions() const;
     QColor currentColor() const { return m_currentColor; }
     void setCurrentColor(const QColor& color);
 
@@ -102,8 +135,10 @@ public:
     int minWidth() const { return 1; }
     int maxWidth() const { return 30; }
     int activeToolId() const { return static_cast<int>(m_activeToolId); }
-    bool isMosaicActive() const { return m_activeToolId == ToolId::Mosaic; }
-    QString mosaicBrushHintText() const;
+    // A targeted selection uses the plain width slider, not the brush presets.
+    bool isMarkerActive() const { return m_activeToolId == ToolId::Marker; }
+    bool isMosaicActive() const { return m_activeToolId == ToolId::Mosaic && !m_editingSelection; }
+    QVariantList mosaicWidthPresetOptions() const;
 
     // Text formatting
     bool isBold() const { return m_bold; }
@@ -128,6 +163,8 @@ public:
     void setArrowStyle(int style);
     int lineStyle() const { return m_lineStyle; }
     void setLineStyle(int style);
+    QString arrowStyleLabel() const;
+    QString lineStyleLabel() const;
 
     // Step badge size
     int stepBadgeSize() const { return m_stepBadgeSize; }
@@ -156,10 +193,33 @@ public:
      * Special cases: EmojiSticker shows emoji picker, Eraser shows nothing.
      */
     void showForTool(int toolId);
+
+    // ── Selected-object styling (#224) ──
+    // "Selected: Arrow" while a selection is targeted, otherwise "New object".
+    QString targetLabel() const;
+    bool editingSelection() const { return m_editingSelection; }
+    bool shapeTypeEditable() const { return !m_editingSelection; }
+    // Shows the sections and current values of a selected annotation. While
+    // targeted, strip edits emit selectionStyleEdited instead of the default
+    // signals, and the tool defaults are kept aside untouched.
+    void showForSelection(const AnnotationStyleValues& values);
+    // Returns to the tool defaults captured when targeting began.
+    void clearSelectionTarget();
+    // For host-side dropdown/dialog results: emits selectionStyleEdited and
+    // returns true when a selection is targeted; otherwise does nothing.
+    bool routeToSelection(StyleProperty property, const QVariant& value);
     void clearSections();
     void showLaserPointerOptions();
 
+    // Arrange buttons (#268): one entry per move with its icon, name and shortcut.
+    QVariantList zOrderOptions() const;
+    bool canRaiseSelection() const { return m_canRaiseSelection; }
+    bool canLowerSelection() const { return m_canLowerSelection; }
+    void setZOrderAvailability(bool canRaise, bool canLower);
+
 signals:
+    void markerTextSnapChanged();
+    void markerTextSnapEnabledChanged();
     void sectionVisibilityChanged();
     void currentColorChanged();
     void currentWidthChanged();
@@ -177,12 +237,17 @@ signals:
     void autoBlurEnabledChanged();
     void autoBlurProcessingChanged();
     void showingEmojiPickerChanged();
+    void targetChanged();
+    void selectionStyleEdited(int property, const QVariant& value);
+    void zOrderAvailabilityChanged();
+    void zOrderRequested(int move);   // AnnotationZOrderMove
 
     // Action signals (QML → C++)
     void colorSelected(const QColor& color);
     void customColorPickerRequested();
+    // Eyedropper (#271): the host samples a color from its own image.
+    void colorPickRequested();
     void widthValueChanged(int width);
-    void mosaicBrushAdjustmentLearned();
     void boldToggled(bool enabled);
     void italicToggled(bool enabled);
     void underlineToggled(bool enabled);
@@ -202,7 +267,9 @@ public slots:
     // Called from QML
     void handleColorClicked(int index);
     void handleCustomColorClicked();
+    void handleColorPickClicked();
     void handleWidthChanged(int width);
+    void handleMosaicWidthPresetSelected(int width);
     void handleBoldToggled();
     void handleItalicToggled();
     void handleUnderlineToggled();
@@ -217,11 +284,16 @@ public slots:
     void handleStepBadgeSizeSelected(int size);
     void handleAutoBlurClicked();
     void handleEmojiPickerRequested();
+    void handleZOrderRequested(int move);
 
     // Returns true if the wheel delta was consumed (width adjusted)
     bool handleWidthWheelDelta(int delta);
+    // One size per wheel notch, stopping at Small and Large (no wrap-around).
+    bool handleStepBadgeSizeWheelDelta(int delta);
 
 private:
+    bool m_markerTextSnapAvailable = false;
+    bool m_markerTextSnapEnabled = false;
     void buildColorPalette();
     void applySectionVisibility(bool showColor,
                                 bool showWidth,
@@ -245,9 +317,29 @@ private:
     bool m_showAutoBlur = false;
     bool m_showingEmojiPicker = false;
 
+    // Selected-object styling
+    struct SavedDefaults {
+        QColor color;
+        int width = 0;
+        bool bold = false, italic = false, underline = false;
+        int fontSize = 0;
+        QString fontFamily;
+        int arrowStyle = 0, lineStyle = 0, shapeType = 0, shapeFillMode = 0;
+        bool sections[8] = {};
+        ToolId activeTool = ToolId::Count;
+    };
+    void applyDisplayedValue(StyleProperty property, const QVariant& value);
+    bool m_editingSelection = false;
+    bool m_canRaiseSelection = false;
+    bool m_canLowerSelection = false;
+    StyleTargetKind m_targetKind = StyleTargetKind::None;
+    int m_targetShapeType = 0;
+    SavedDefaults m_savedDefaults;
+
     // Color
     QVariantList m_colorPalette;
-    QColor m_currentColor{220, 53, 69}; // Default red
+    QStringList m_colorPaletteNames; // untranslated, same order as m_colorPalette
+    QColor m_currentColor{0xFF, 0x3B, 0x30}; // Default red (DesignSystem::annotationRed)
 
     // Width
     int m_currentWidth = 3;

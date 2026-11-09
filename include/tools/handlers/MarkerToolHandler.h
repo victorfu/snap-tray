@@ -4,7 +4,9 @@
 #include "../IToolHandler.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/MarkerStroke.h"
+#include "tools/handlers/FreehandSmoother.h"
 
+#include "detection/TextLineSnapper.h"
 #include <QVector>
 #include <QPointF>
 #include <memory>
@@ -30,15 +32,32 @@ public:
     QRect previewBounds() const override;
     bool isDrawing() const override { return m_isDrawing; }
     void cancelDrawing() override;
+    void clearHover() { m_previewDirtyRect = m_previewDirtyRect.united(hoverBounds()); m_hover.reset(); }
+    void onDeactivate(ToolContext*) override { cancelDrawing(); }
 
     bool supportsColor() const override { return true; }
     bool supportsWidth() const override { return true; }
 
 private:
+    std::shared_ptr<const TextLineSnapshot> m_snapshot;
+    QPointF m_snapStart;
+    std::optional<TextLineSnap> m_snap;
+    std::optional<TextLineSnap> m_hover;
+    void tryLockTextLine(const QPointF& pos);
+    void updateSnappedStroke(const QPointF& pos);
+    void updateStraightStroke(const QPointF& pos);
+    QRect liveTailDirtyRect() const;
+    QRect hoverBounds() const;
+
     bool m_isDrawing = false;
+    // Latch Shift at press so modifier changes cannot reshape an active stroke.
+    bool m_straightStroke = false;
     QVector<QPointF> m_currentPath;
     std::unique_ptr<MarkerStroke> m_currentStroke;
     QRect m_previewDirtyRect;
+    FreehandSmoother m_smoother;
+    QPointF m_livePoint;
+    bool m_hasLivePoint = false;
 };
 
 #endif // MARKERTOOLHANDLER_H

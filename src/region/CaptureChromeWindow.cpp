@@ -72,6 +72,79 @@ QRect shortcutHintsRect(const CaptureShortcutHintsOverlay* overlay,
 
 } // namespace
 
+namespace snaptray::region {
+
+CaptureChromeDirtyReason captureChromeDirtyReasonForToolPreview(
+    bool pencilToolActive,
+    const QRegion& previewDirtyRegion)
+{
+    return pencilToolActive && !previewDirtyRegion.isEmpty()
+        ? CaptureChromeDirtyReason::PencilPreview
+        : CaptureChromeDirtyReason::Scene;
+}
+
+void CaptureChromePendingDirtyRegions::add(const QRegion& region,
+                                           CaptureChromeDirtyReason reason)
+{
+    if (reason == CaptureChromeDirtyReason::PencilPreview) {
+        pencilPreview += region;
+    } else {
+        scene += region;
+    }
+}
+
+void CaptureChromePendingDirtyRegions::clear()
+{
+    scene = QRegion();
+    pencilPreview = QRegion();
+}
+
+CaptureChromePendingDirtyRegions CaptureChromePendingDirtyRegions::take()
+{
+    CaptureChromePendingDirtyRegions pending = *this;
+    clear();
+    return pending;
+}
+
+QRegion planCaptureChromeDirtyRegion(const CaptureChromeDirtyRegionPlanInput& input)
+{
+    const QRegion fullRegion(input.windowRect);
+    if (input.forceFullRepaint) {
+        return fullRegion;
+    }
+
+    if (input.conservativeStateCompositing) {
+        // Windows transparent capture chrome needs a full clear for any scene or
+        // render-state change. A Pencil preview is the only safe partial path:
+        // its dirty bounds contain both the old and new mutable tail.
+        if (input.renderStateChanged ||
+            !input.sceneDirtyRegion.isEmpty() ||
+            !input.stateDirtyRegion.isEmpty()) {
+            return fullRegion;
+        }
+
+        return input.previewDirtyRegion.intersected(fullRegion);
+    }
+
+    QRegion dirtyRegion = input.sceneDirtyRegion;
+    dirtyRegion += input.previewDirtyRegion;
+    dirtyRegion += input.stateDirtyRegion;
+    return dirtyRegion.intersected(fullRegion);
+}
+
+QRegion planCaptureChromeDirtyRegionForCurrentPlatform(
+    CaptureChromeDirtyRegionPlanInput input)
+{
+#ifdef Q_OS_WIN
+    input.conservativeStateCompositing = true;
+#else
+    input.conservativeStateCompositing = false;
+#endif
+    return planCaptureChromeDirtyRegion(input);
+}
+
+} // namespace snaptray::region
+
 CaptureChromeWindow::CaptureChromeWindow(QWidget* parent)
     : QWidget(nullptr,
               Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
@@ -116,13 +189,15 @@ void CaptureChromeWindow::setShortcutHintsOverlay(CaptureShortcutHintsOverlay* o
     m_shortcutHintsOverlay = overlay;
 }
 
-void CaptureChromeWindow::markDirtyRegion(const QRegion& region)
+void CaptureChromeWindow::markDirtyRegion(
+    const QRegion& region,
+    snaptray::region::CaptureChromeDirtyReason reason)
 {
     if (region.isEmpty()) {
         return;
     }
 
-    m_pendingDirtyRegion += region;
+    m_pendingDirtyRegions.add(region, reason);
 }
 
 void CaptureChromeWindow::syncToHost(QWidget* host,
@@ -143,6 +218,10 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
     const QRect previousSelectionRect = m_selectionRect;
     const bool previousHasActiveSelection = m_hasActiveSelection;
     const QRect previousHighlightedWindowRect = m_highlightedWindowRect;
+    QWidget* const previousHost = m_host;
+    const qreal previousDevicePixelRatio = m_devicePixelRatio;
+    const int previousCornerRadius = m_cornerRadius;
+    const int previousCurrentTool = m_currentTool;
     const bool previousShowShortcutHints = m_showShortcutHints;
     const LoadingSpinnerRenderer* previousLoadingSpinner = m_loadingSpinner;
     const bool previousShowBusySpinner = m_showBusySpinner;
@@ -150,11 +229,14 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
     const QRect previousGeometry = geometry();
     const bool wasVisible = isVisible();
 
+    const qreal normalizedDevicePixelRatio =
+        devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
+
     m_host = host;
     m_selectionRect = selectionRect.normalized();
     m_hasActiveSelection = hasActiveSelection;
     m_highlightedWindowRect = highlightedWindowRect;
-    m_devicePixelRatio = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
+    m_devicePixelRatio = normalizedDevicePixelRatio;
     m_cornerRadius = cornerRadius;
     m_currentTool = currentTool;
     m_showShortcutHints = showShortcutHints;
@@ -164,7 +246,6 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
 
     if (!m_host || !m_host->isVisible() || !shouldShow || !m_selectionManager) {
         hideOverlay();
-        m_pendingDirtyRegion = QRegion();
         return;
     }
 
@@ -184,23 +265,30 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
     m_regionPainter.setDevicePixelRatio(m_devicePixelRatio);
     m_regionPainter.setCornerRadius(m_cornerRadius);
 
-    QRegion dirtyRegion = m_pendingDirtyRegion;
-    m_pendingDirtyRegion = QRegion();
+    const snaptray::region::CaptureChromePendingDirtyRegions pendingDirtyRegions =
+        m_pendingDirtyRegions.take();
 
-#ifdef Q_OS_WIN
-    // The dimension label and selection chrome can leave trails on some
-    // Windows compositions when partial dirty regions under-clear the previous
-    // glass/chrome footprint. Favor correctness over micro-optimization here.
-    dirtyRegion = QRegion(rect());
-#else
-    if (geometryChanged || becameVisible || !wasVisible) {
-        dirtyRegion = QRegion(rect());
-    } else if (previousShowShortcutHints != m_showShortcutHints) {
-        // Hint-overlay show/hide transitions can leave stale detached chrome
-        // when only the prior panel rect is repainted. Refresh the full window
-        // so the overlay dismisses cleanly under hover and overlap transitions.
-        dirtyRegion = QRegion(rect());
-    } else {
+    const bool selectionVisualStateChanged =
+        previousSelectionRect != m_selectionRect ||
+        previousHasActiveSelection != m_hasActiveSelection ||
+        previousHighlightedWindowRect != m_highlightedWindowRect ||
+        previousCornerRadius != m_cornerRadius;
+    const bool spinnerStateChanged =
+        previousLoadingSpinner != m_loadingSpinner ||
+        previousShowBusySpinner != m_showBusySpinner ||
+        previousBusySpinnerCenter != m_busySpinnerCenter;
+    const bool shortcutHintsChanged =
+        previousShowShortcutHints != m_showShortcutHints;
+    const bool broadRenderStateChanged =
+        previousHost != m_host ||
+        !qFuzzyCompare(previousDevicePixelRatio, m_devicePixelRatio) ||
+        previousCurrentTool != m_currentTool;
+    const bool renderStateChanged =
+        selectionVisualStateChanged || spinnerStateChanged ||
+        shortcutHintsChanged || broadRenderStateChanged;
+
+    QRegion stateDirtyRegion;
+    if (selectionVisualStateChanged) {
         const QRect oldActiveRect = activeVisualRect(
             m_regionPainter,
             previousSelectionRect,
@@ -211,6 +299,15 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
             m_selectionRect,
             m_hasActiveSelection,
             m_highlightedWindowRect);
+        if (oldActiveRect.isValid() && !oldActiveRect.isEmpty()) {
+            stateDirtyRegion += oldActiveRect;
+        }
+        if (newActiveRect.isValid() && !newActiveRect.isEmpty()) {
+            stateDirtyRegion += newActiveRect;
+        }
+    }
+
+    if (spinnerStateChanged) {
         const QRect oldSpinnerRect = spinnerRect(
             previousLoadingSpinner,
             previousShowBusySpinner,
@@ -219,6 +316,15 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
             m_loadingSpinner,
             m_showBusySpinner,
             m_busySpinnerCenter);
+        if (oldSpinnerRect.isValid() && !oldSpinnerRect.isEmpty()) {
+            stateDirtyRegion += oldSpinnerRect;
+        }
+        if (newSpinnerRect.isValid() && !newSpinnerRect.isEmpty()) {
+            stateDirtyRegion += newSpinnerRect;
+        }
+    }
+
+    if (shortcutHintsChanged) {
         const QRect oldShortcutHintsRect = shortcutHintsRect(
             m_shortcutHintsOverlay,
             previousShowShortcutHints,
@@ -227,27 +333,25 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
             m_shortcutHintsOverlay,
             m_showShortcutHints,
             size());
-
-        if (oldActiveRect.isValid() && !oldActiveRect.isEmpty()) {
-            dirtyRegion += oldActiveRect;
-        }
-        if (newActiveRect.isValid() && !newActiveRect.isEmpty()) {
-            dirtyRegion += newActiveRect;
-        }
-        if (oldSpinnerRect.isValid() && !oldSpinnerRect.isEmpty()) {
-            dirtyRegion += oldSpinnerRect;
-        }
-        if (newSpinnerRect.isValid() && !newSpinnerRect.isEmpty()) {
-            dirtyRegion += newSpinnerRect;
-        }
         if (oldShortcutHintsRect.isValid() && !oldShortcutHintsRect.isEmpty()) {
-            dirtyRegion += oldShortcutHintsRect;
+            stateDirtyRegion += oldShortcutHintsRect;
         }
         if (newShortcutHintsRect.isValid() && !newShortcutHintsRect.isEmpty()) {
-            dirtyRegion += newShortcutHintsRect;
+            stateDirtyRegion += newShortcutHintsRect;
         }
     }
-#endif
+
+    snaptray::region::CaptureChromeDirtyRegionPlanInput planInput;
+    planInput.windowRect = rect();
+    planInput.sceneDirtyRegion = pendingDirtyRegions.scene;
+    planInput.previewDirtyRegion = pendingDirtyRegions.pencilPreview;
+    planInput.stateDirtyRegion = stateDirtyRegion;
+    planInput.forceFullRepaint =
+        geometryChanged || becameVisible || !wasVisible ||
+        shortcutHintsChanged || broadRenderStateChanged;
+    planInput.renderStateChanged = renderStateChanged;
+    const QRegion dirtyRegion =
+        snaptray::region::planCaptureChromeDirtyRegionForCurrentPlatform(planInput);
 
     if (!dirtyRegion.isEmpty()) {
         update(dirtyRegion);
@@ -257,6 +361,7 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
 void CaptureChromeWindow::hideOverlay()
 {
     m_lastDimensionInfoRect = QRect();
+    m_pendingDirtyRegions.clear();
     hide();
 }
 

@@ -1,4 +1,7 @@
 #include "qml/QmlFloatingToolbar.h"
+#include "qml/ToolbarOverflowLayout.h"
+#include "qml/ToolbarOverflowPopup.h"
+#include "qml/ToolbarViewModelBase.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
@@ -14,6 +17,10 @@
 #include <QWidget>
 #include <QVariant>
 #include <QtMath>
+#include <QDebug>
+#include <QSysInfo>
+#include <QPlatformSurfaceEvent>
+#include <QSGRendererInterface>
 
 #include <array>
 #include <limits>
@@ -23,6 +30,78 @@
 #endif
 
 namespace SnapTray {
+
+struct QmlFloatingToolbar::SelectionTiming
+{
+    QElapsedTimer timer;
+    quint64 id;
+
+    void record(const char* stage) const
+    {
+        qInfo().noquote() << QStringLiteral("ToolbarTiming id=%1 elapsedMs=%2 stage=%3")
+            .arg(id).arg(timer.nsecsElapsed() / 1000000.0, 0, 'f', 3)
+            .arg(QString::fromLatin1(stage));
+    }
+};
+
+void QmlFloatingToolbar::beginSelectionTiming()
+{
+#ifdef Q_OS_WIN
+    static const bool enabled = qEnvironmentVariableIntValue("SNAPTRAY_TOOLBAR_TIMING") > 0;
+    if (!enabled || isVisible()) {
+        return;
+    }
+    for (const auto& connection : m_timingConnections) {
+        disconnect(connection);
+    }
+    m_timingConnections.clear();
+    static quint64 nextId = 0; // GUI thread only.
+    auto timing = std::make_shared<SelectionTiming>();
+    timing->id = ++nextId;
+    timing->timer.start();
+    m_selectionTiming = timing;
+    recordSelectionTiming("mouseRelease");
+    qInfo().noquote() << "ToolbarTiming id=" << timing->id
+        << "os=" << QSysInfo::prettyProductName() << "qt=" << qVersion()
+#ifdef QT_NO_DEBUG_OUTPUT
+        << "debugOutput=disabled"
+#else
+        << "debugOutput=enabled"
+#endif
+        << "viewAlreadyCreated=" << (m_view != nullptr);
+    connectSelectionTiming();
+#endif
+}
+
+void QmlFloatingToolbar::recordSelectionTiming(const char* stage) const
+{
+    if (m_selectionTiming) {
+        m_selectionTiming->record(stage);
+    }
+}
+
+void QmlFloatingToolbar::connectSelectionTiming()
+{
+    if (!m_view || !m_selectionTiming) {
+        return;
+    }
+    // Capture immutable timing state, never GUI-owned members, in render-thread
+    // callbacks. Single-shot connections avoid logging subsequent frames.
+    const auto timing = m_selectionTiming;
+    const auto type = Qt::ConnectionType(Qt::DirectConnection | Qt::SingleShotConnection);
+    m_timingConnections.append(connect(m_view, &QQuickWindow::sceneGraphInitialized,
+        m_view, [timing, view = m_view]() {
+            timing->record("sceneGraphInitialized");
+            qInfo() << "ToolbarTiming id=" << timing->id << "graphicsApi="
+                    << static_cast<int>(view->rendererInterface()->graphicsApi());
+        }, type));
+    m_timingConnections.append(connect(m_view, &QQuickWindow::beforeRendering,
+        m_view, [timing]() { timing->record("firstBeforeRendering"); }, type));
+    m_timingConnections.append(connect(m_view, &QQuickWindow::afterRendering,
+        m_view, [timing]() { timing->record("firstAfterRendering"); }, type));
+    m_timingConnections.append(connect(m_view, &QQuickWindow::frameSwapped,
+        m_view, [timing]() { timing->record("firstFrameSwapped"); }, type));
+}
 
 namespace {
 constexpr int kParentCursorRestoreRetryDelayMs = 16;
@@ -253,6 +332,7 @@ QmlFloatingToolbar::QmlFloatingToolbar(QObject* viewModel, const Appearance& app
 
 QmlFloatingToolbar::~QmlFloatingToolbar()
 {
+    m_overflow.reset();
     destroyQuickView(m_tooltipView, m_tooltipRootItem);
 
     if (m_view) {
@@ -267,7 +347,11 @@ void QmlFloatingToolbar::ensureView()
     if (m_view)
         return;
 
+    recordSelectionTiming("createView.begin");
     m_view = QmlOverlayManager::instance().createScreenOverlay();
+    recordSelectionTiming("createView.end");
+    m_view->installEventFilter(this);
+    connectSelectionTiming();
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
 
     const QVariantMap initialProperties{
@@ -275,8 +359,10 @@ void QmlFloatingToolbar::ensureView()
          QVariant::fromValue(static_cast<QObject*>(m_viewModel))},
     };
     m_view->setInitialProperties(initialProperties);
+    recordSelectionTiming("setSource.begin");
     m_view->setSource(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/toolbar/FloatingToolbar.qml")));
+    recordSelectionTiming("setSource.end");
 
     if (m_view->status() == QQuickView::Error) {
         for (const auto& error : m_view->errors())
@@ -288,13 +374,27 @@ void QmlFloatingToolbar::ensureView()
         applyAppearance();
     }
 
-    m_view->installEventFilter(this);
     m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
         m_view, QStringLiteral("QmlFloatingToolbar"));
     m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlFloatingToolbar"));
 
+    m_overflow = std::make_unique<ToolbarOverflowPopup>(m_viewModel, m_view);
+    m_overflow->setCursorOwnerId(m_cursorOwnerId);
+    m_overflow->setKeepOpenTest([this](const QPoint& globalPos) {
+        auto* more = m_rootItem ? m_rootItem->findChild<QQuickItem*>(QStringLiteral("toolbarMoreButton")) : nullptr;
+        if (!more || !m_view) return false;
+        const QRectF moreRect = more->mapRectToItem(m_rootItem, more->boundingRect());
+        return moreRect.contains(QPointF(globalPos - m_view->position()));
+    });
+    connect(m_overflow.get(), &ToolbarOverflowPopup::closed, this, [this] {
+        if (auto* more = m_rootItem ? m_rootItem->findChild<QQuickItem*>(QStringLiteral("toolbarMoreButton")) : nullptr)
+            more->forceActiveFocus(Qt::PopupFocusReason);
+        emit overflowVisibilityChanged();
+    });
+
     if (m_rootItem)
         setupConnections();
+    recordSelectionTiming("ensureView.end");
 }
 
 void QmlFloatingToolbar::applyAppearance()
@@ -360,6 +460,66 @@ void QmlFloatingToolbar::setupConnections()
     connectOrWarn(SIGNAL(dragMoved(double,double)),
                   SLOT(onDragMoved(double,double)),
                   "dragMoved");
+    connectOrWarn(SIGNAL(overflowRequested(double,double,double,double)),
+                  SLOT(onOverflowRequested(double,double,double,double)), "overflowRequested");
+    if (auto* vm = qobject_cast<ToolbarViewModelBase*>(m_viewModel)) {
+        // The active tool never collapses, and the button set can change
+        // (multi-region mode), so both re-run the last layout.
+        auto relayout = [this] {
+            if (!m_overflowBounds.isEmpty()) applyOverflowLayout(m_overflowBounds);
+        };
+        connect(vm, &ToolbarViewModelBase::activeToolChanged, this, relayout);
+        connect(vm, &ToolbarViewModelBase::overflowKeepToolChanged, this, relayout);
+        connect(vm, &ToolbarViewModelBase::buttonsChanged, this, relayout);
+        connect(vm, &ToolbarViewModelBase::ocrAvailableChanged, this, relayout);
+    }
+}
+
+void QmlFloatingToolbar::applyOverflowLayout(const QRect& usableBoundsGlobal)
+{
+    ensureView();
+    auto* vm = qobject_cast<ToolbarViewModelBase*>(m_viewModel);
+    if (!m_rootItem || !vm || usableBoundsGlobal.isEmpty()) return;
+    const bool boundsChanged = usableBoundsGlobal != m_overflowBounds;
+    m_overflowBounds = usableBoundsGlobal;
+    QVariantList available;
+    for (const auto& b : vm->buttons())
+        if (!b.toMap().value("isOCR").toBool() || vm->ocrAvailable()) available.append(b);
+    const ToolbarLayoutMetrics metrics{
+        m_rootItem->property("buttonWidth").toInt(), m_rootItem->property("buttonSpacing").toInt(),
+        m_rootItem->property("separatorWidth").toInt(), m_rootItem->property("margin").toInt(),
+        m_rootItem->property("dragHandleWidth").toInt(), m_rootItem->property("contentSpacing").toInt(),
+        m_rootItem->property("groupGap").toInt()};
+    const auto layout = computeToolbarOverflow(available, usableBoundsGlobal.width(),
+                                               vm->activeTool(), metrics,
+                                               vm->overflowKeepTool());
+    if (m_overflow && (boundsChanged
+            || m_rootItem->property("overflowButtons").toList() != layout.overflowButtons))
+        m_overflow->hide();
+    m_rootItem->setProperty("displayButtons", layout.visibleButtons);
+    m_rootItem->setProperty("overflowButtons", layout.overflowButtons);
+    m_rootItem->setProperty("showDragHandle", layout.showDragHandle);
+    m_rootItem->setProperty("constrainedWidth", layout.width);
+    const QSize size(layout.width, m_rootItem->property("barHeight").toInt());
+    if (m_view->size() != size) m_view->resize(size);
+}
+
+void QmlFloatingToolbar::onOverflowRequested(double x, double y, double width, double height)
+{
+    if (!m_view || !m_rootItem || !m_overflow) return;
+    const QVariantList buttons = m_rootItem->property("overflowButtons").toList();
+    if (buttons.isEmpty()) return;
+    hideTooltip();
+    const QRect anchor(m_view->position() + QPoint(qRound(x), qRound(y)),
+                       QSize(qRound(width), qRound(height)));
+    m_overflow->toggle(buttons, anchor, m_overflowBounds);
+    emit overflowVisibilityChanged();
+}
+
+QRect QmlFloatingToolbar::overflowGeometry() const
+{
+    if (!m_overflow || !m_overflow->isVisible() || !m_overflow->window()) return {};
+    return m_overflow->window()->frameGeometry();
 }
 
 void QmlFloatingToolbar::applyPlatformWindowFlags()
@@ -441,22 +601,31 @@ void QmlFloatingToolbar::applyTooltipWindowFlags()
 
 void QmlFloatingToolbar::show()
 {
+    recordSelectionTiming("show.begin");
     ensureView();
 
     if (!m_rootItem)
         return;
 
+    recordSelectionTiming("syncTransientParent.begin");
     syncTransientParent();
+    recordSelectionTiming("syncTransientParent.end");
     const QSize resolvedSize = sizeHint();
     if (!resolvedSize.isEmpty() && m_view->size() != resolvedSize) {
         m_view->resize(resolvedSize);
     }
 
+    recordSelectionTiming("nativeShow.begin");
     m_view->show();
+    recordSelectionTiming("nativeShow.end");
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
     m_view->raise();
     syncCursorSurface();
+    recordSelectionTiming("show.end");
+    // Render callbacks retain their own timing state until the first frame.
+    // Later hide/show cycles must not reuse this release timestamp.
+    m_selectionTiming.reset();
 }
 
 void QmlFloatingToolbar::prewarm()
@@ -480,6 +649,7 @@ void QmlFloatingToolbar::prewarm()
 
 void QmlFloatingToolbar::hide()
 {
+    if (m_overflow) m_overflow->hide();
     hideTooltip();
     if (m_view) {
         m_view->hide();
@@ -495,6 +665,7 @@ void QmlFloatingToolbar::hide()
 
 void QmlFloatingToolbar::close()
 {
+    if (m_overflow) m_overflow->hide();
     hideTooltip();
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -605,6 +776,12 @@ void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
     ensureView();
     if (!m_view)
         return;
+
+    // Fit the row to the viewport first so placement never has to clip it.
+    const QRect viewportLocal = insetViewportRect(QRect(0, 0, viewportWidth, viewportHeight),
+                                                  kToolbarPlacementViewportInset);
+    applyOverflowLayout(viewportLocal.translated(
+        m_parentWidget ? m_parentWidget->mapToGlobal(QPoint()) : QPoint()));
 
     const int w = m_view->width();
     const int h = m_view->height();
@@ -907,6 +1084,12 @@ void QmlFloatingToolbar::attemptParentCursorRestore(quint64 token, int remaining
 
 bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
 {
+    if (obj == m_view && event->type() == QEvent::PlatformSurface) {
+        const auto* surfaceEvent = static_cast<QPlatformSurfaceEvent*>(event);
+        if (surfaceEvent->surfaceEventType() == QPlatformSurfaceEvent::SurfaceCreated) {
+            recordSelectionTiming("nativeSurface.created");
+        }
+    }
     if (obj == m_view) {
         switch (event->type()) {
         case QEvent::Enter:

@@ -1,4 +1,5 @@
 #include "OCRManager.h"
+#include "utils/OCRImageUtils.h"
 #include <QDebug>
 #include <QImage>
 #include <QCoreApplication>
@@ -6,6 +7,8 @@
 #include <QMutexLocker>
 #include <QThread>
 #include <utility>
+#include <algorithm>
+#include <limits>
 
 #include <unknwn.h>
 #include <winrt/Windows.Foundation.h>
@@ -172,7 +175,15 @@ protected:
 
             qDebug() << "OCRManager: Starting text recognition with languages:" << m_languages;
 
-            SoftwareBitmap bitmap = qImageToSoftwareBitmap(m_image);
+            const auto engineLimit = OcrEngine::MaxImageDimension();
+            const int maxDimension = static_cast<int>((std::min)(
+                engineLimit, static_cast<uint32_t>((std::numeric_limits<int>::max)())));
+            const QImage recognitionImage = OCRImageUtils::fitForRecognition(m_image, maxDimension);
+            if (recognitionImage.isNull()) {
+                m_result.error = QStringLiteral("Failed to prepare image for OCR.");
+                goto cleanup;
+            }
+            SoftwareBitmap bitmap = qImageToSoftwareBitmap(recognitionImage);
             OcrResult result = engine.RecognizeAsync(bitmap).get();
 
             if (isInterruptionRequested()) {
@@ -181,8 +192,6 @@ protected:
 
             QStringList lines;
             QVector<OCRTextBlock> blocks;
-            const qreal imageWidth = static_cast<qreal>(m_image.width());
-            const qreal imageHeight = static_cast<qreal>(m_image.height());
 
             for (const auto& line : result.Lines()) {
                 lines.append(QString::fromStdWString(std::wstring(line.Text())));
@@ -194,14 +203,11 @@ protected:
                     }
 
                     const Windows::Foundation::Rect winRect = word.BoundingRect();
-                    const qreal x = imageWidth > 0.0 ? static_cast<qreal>(winRect.X) / imageWidth : 0.0;
-                    const qreal y = imageHeight > 0.0 ? static_cast<qreal>(winRect.Y) / imageHeight : 0.0;
-                    const qreal width = imageWidth > 0.0 ? static_cast<qreal>(winRect.Width) / imageWidth : 0.0;
-                    const qreal height = imageHeight > 0.0 ? static_cast<qreal>(winRect.Height) / imageHeight : 0.0;
 
                     OCRTextBlock block;
                     block.text = wordText;
-                    block.boundingRect = QRectF(x, y, width, height).normalized();
+                    block.boundingRect = OCRImageUtils::normalizedBoundingRect(
+                        QRectF(winRect.X, winRect.Y, winRect.Width, winRect.Height), recognitionImage.size());
                     block.confidence = -1.0f;
                     blocks.push_back(block);
                 }

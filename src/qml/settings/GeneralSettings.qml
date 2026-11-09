@@ -27,15 +27,36 @@ Flickable {
         padding: ComponentTokens.settingsContentPadding
         spacing: ComponentTokens.settingsColumnSpacing
 
+        SettingsPageHeader {
+            title: qsTr("General")
+            description: qsTr("Startup, language, theme and the permissions SnapTray needs.")
+        }
+
         SettingsToggle {
+
+            objectName: "startOnLoginToggle"
             label: qsTr("Start on login")
             checked: settingsBackend.startOnLogin
+            enabled: !settingsBackend.startOnLoginBusy
+                && settingsBackend.startOnLoginCanChange
+            description: settingsBackend.startOnLoginStatusText
             onToggled: function(checked) { settingsBackend.startOnLogin = checked }
+        }
+
+        SettingsSection { title: qsTr("Annotations") }
+        SettingsToggle {
+            objectName: "alignmentAssistToggle"
+            label: qsTr("Annotation alignment assistance")
+            description: qsTr("Align and equally space objects while dragging. Hold Alt/Option to pause, or turn this off if your window manager uses Alt.")
+            checked: settingsBackend.alignmentAssist
+            onToggled: function(checked) { settingsBackend.alignmentAssist = checked }
         }
 
         SettingsSection { title: qsTr("Language") }
 
         SettingsCombo {
+
+            objectName: "languageCombo"
             label: qsTr("Display language")
             model: settingsBackend.availableLanguages
             currentIndex: root.findLanguageIndex()
@@ -50,6 +71,8 @@ Flickable {
         SettingsSection { title: qsTr("Appearance") }
 
         SettingsCombo {
+
+            objectName: "appThemeCombo"
             label: qsTr("App theme")
             model: [
                 { text: qsTr("Dark"), value: 0 },
@@ -66,6 +89,7 @@ Flickable {
         }
 
         SettingsPermissionRow {
+            objectName: "screenRecordingPermissionRow"
             label: qsTr("Screen Recording")
             description: qsTr("Required for capturing screenshots and recording your screen.")
             visible: settingsBackend.isMacOS
@@ -74,6 +98,7 @@ Flickable {
         }
 
         SettingsPermissionRow {
+            objectName: "accessibilityPermissionRow"
             label: qsTr("Accessibility")
             description: qsTr("Required for global hotkeys and window detection.")
             visible: settingsBackend.isMacOS
@@ -85,13 +110,18 @@ Flickable {
 
         SettingsRow {
             id: cliRow
+            objectName: "cliInstallationRow"
             label: qsTr("CLI Status")
 
             property bool busy: false
+            property string errorMessage: ""
 
             Connections {
                 target: settingsBackend
-                function onCliInstalledChanged() { cliRow.busy = false }
+                function onCliOperationFinished(success: bool, errorMessage: string) {
+                    cliRow.busy = false
+                    cliRow.errorMessage = errorMessage
+                }
             }
 
             Row {
@@ -121,6 +151,7 @@ Flickable {
                         ? qsTr("Uninstall CLI") : qsTr("Install CLI")
                     enabled: !cliRow.busy
                     onClicked: {
+                        cliRow.errorMessage = ""
                         cliRow.busy = true
                         if (settingsBackend.cliInstalled)
                             settingsBackend.uninstallCLI()
@@ -129,6 +160,17 @@ Flickable {
                     }
                 }
             }
+        }
+
+        Text {
+            objectName: "cliInstallationError"
+            width: parent.width - parent.leftPadding - parent.rightPadding
+            visible: text.length > 0
+            text: cliRow.errorMessage
+            color: SemanticTokens.statusError
+            font.pixelSize: SemanticTokens.fontSizeBody
+            font.family: SemanticTokens.fontFamily
+            wrapMode: Text.WordWrap
         }
     }
 }

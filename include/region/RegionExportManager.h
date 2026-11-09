@@ -9,6 +9,10 @@
 #include <QPoint>
 #include <QString>
 
+#include <functional>
+#include <optional>
+#include "utils/ImageSaveUtils.h"
+
 class AnnotationLayer;
 class QFutureWatcherBase;
 class QScreen;
@@ -43,7 +47,9 @@ public:
         QString renderWarning;
         QString error;
         bool autoSave = false;
+        bool rememberDirectoryOnSuccess = false;
         bool cancelled = false;
+        std::optional<ImageSaveUtils::UniqueSaveSpec> uniqueSave;
 
         bool isValid() const
         {
@@ -93,9 +99,7 @@ public:
     /**
      * @brief Save a prepared export asynchronously
      */
-    void savePreparedExportAsync(PreparedExport prepared,
-                                 const QString& filePath,
-                                 const QString& renderWarning = QString());
+    void savePreparedExportAsync(PreparedExport prepared, SaveRequest request);
 
     void setMonitorIdentifier(const QString& monitor);
     void setWindowMetadata(const QString& windowTitle, const QString& appName = QString());
@@ -114,6 +118,11 @@ signals:
     void saveFailed(const QString &filePath, const QString &error);
 
 private:
+    friend class tst_RegionExportManager;
+
+    using SaveFileDialog = std::function<QString(
+        QWidget*, const QString&, const QString&, const QString&)>;
+
     /**
      * @brief Apply rounded corner mask to pixmap
      */
@@ -128,6 +137,7 @@ private:
     int m_regionIndex = -1;
     QPointer<QScreen> m_sourceScreen;
     QPointer<QFutureWatcherBase> m_saveWatcher;
+    SaveFileDialog m_saveFileDialog;
 };
 
 #endif // REGIONEXPORTMANAGER_H

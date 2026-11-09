@@ -1,6 +1,7 @@
 #ifndef ICAPTUREENGINE_H
 #define ICAPTUREENGINE_H
 
+#include "recording/CapturedFrame.h"
 #include <QObject>
 #include <QRect>
 #include <QImage>
@@ -24,7 +25,7 @@ struct CaptureScreenInfo
     // may be a monitor model such as "ROG PG279Q".
     QString nativeName;
     QRect geometry;
-    // Native desktop-pixel bounds when the platform exposes them. On Windows
+    // Native desktop-pixel bounds: RandR output geometry on X11. On Windows
     // these match DXGI_OUTPUT_DESC::DesktopCoordinates and avoid scaling Qt's
     // mixed-DPI logical screen origin/size heuristically.
     QRect physicalGeometry;
@@ -74,7 +75,7 @@ public:
     virtual bool setRegion(const QRect &region, const CaptureScreenInfo &screenInfo);
 
     /**
-     * @brief Set the target frame rate
+     * @brief Set the target frame rate, including while capture is running.
      * @param fps Frames per second (used by engines with async delivery)
      */
     virtual void setFrameRate(int fps) { m_frameRate = fps; }
@@ -88,6 +89,10 @@ public:
      * On Windows, this is a no-op (use setWindowExcludedFromCapture instead).
      */
     virtual void setExcludedWindows(const QList<WId> &windowIds) { Q_UNUSED(windowIds); }
+
+    // Pre-resolved native capture identifiers for asynchronous initialization.
+    // Unlike Qt WId on macOS, these are CGWindowIDs, not NSView pointers.
+    virtual void setExcludedCaptureWindowIds(const QList<quintptr>& ids) { Q_UNUSED(ids); }
 
     /**
      * @brief Initialize and start the capture engine
@@ -112,6 +117,41 @@ public:
     virtual QImage captureFrame() = 0;
 
     /**
+     * @brief captureFrame(), plus the backend's own surface for it when it has
+     * one (CapturedFrame::nativeBuffer), so a matching encoder can skip the
+     * CPU copy. Only image, nativeBuffer and pixelSize are filled in.
+     *
+     * Windows engines with native frame output on may return a frame with
+     * only nativeBuffer (a D3D11 texture, no CPU copy at all).
+     */
+    virtual SnapTray::CapturedFrame captureNativeFrame()
+    {
+        SnapTray::CapturedFrame frame;
+        frame.image = captureFrame();
+        frame.pixelSize = frame.image.size();
+        return frame;
+    }
+
+    // The device native frames live on, for the encoder to consume them
+    // directly (a SnapTray::D3D11FrameDevice on Windows). Null when the engine
+    // has no such device. Valid after start().
+    virtual std::shared_ptr<void> nativeFrameDevice() const { return nullptr; }
+
+    // Windows: let frames skip the CPU copy. They then carry only
+    // nativeBuffer while the GPU path works and an image when it does not (a
+    // BitBlt fallback). Enable only when the encoder accepts native frames and
+    // nothing has to draw on them. Takes effect from the next captured frame.
+    virtual void setNativeFrameOutput(bool enabled) { Q_UNUSED(enabled); }
+
+    // Asynchronous backends can deliver completed frames directly to the
+    // encoding queue instead of depending on GUI-thread polling.
+    virtual bool deliversFrames() const { return false; }
+
+    // True when captured frames already contain the pointer. Backends leave
+    // it out where they can; the cursor sidecar records it instead (#159).
+    virtual bool capturesCursor() const { return false; }
+
+    /**
      * @brief Get the name of this capture engine
      */
     virtual QString engineName() const = 0;
@@ -124,6 +164,14 @@ public:
     static ICaptureEngine *createBestEngine(QObject *parent = nullptr);
 
 signals:
+    // A completed frame from a backend that captures on its own thread
+    // (deliversFrames()). It carries its own capture time, so the recording
+    // clock does not depend on when the GUI thread gets to it.
+    void frameCaptured(const SnapTray::CapturedFrame& frame);
+    // The user ended capture through a native system control. Finish encoding
+    // normally so the recording can still be previewed or saved.
+    void stoppedByUser();
+
     /**
      * @brief Emitted when a capture error occurs
      * @param message Error description

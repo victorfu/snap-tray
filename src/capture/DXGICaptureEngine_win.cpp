@@ -1,11 +1,13 @@
 #include "capture/DXGICaptureEngine.h"
+#include "capture/CaptureFrameTiming.h"
+#include "capture/D3D11Frame.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QCoreApplication>
 #include <QScreen>
 #include <QDebug>
 #include <QThread>
-#include <QTimer>
+#include <QChronoTimer>
 
 #include <Windows.h>
 #include <d3d11.h>
@@ -50,6 +52,17 @@ BOOL CALLBACK findMonitorByDeviceName(HMONITOR monitor, HDC, LPRECT, LPARAM cont
     return FALSE;
 }
 
+constexpr bool supportsUnrotatedDuplication(DXGI_MODE_ROTATION rotation) noexcept
+{
+    return rotation == DXGI_MODE_ROTATION_IDENTITY;
+}
+
+static_assert(supportsUnrotatedDuplication(DXGI_MODE_ROTATION_IDENTITY));
+static_assert(!supportsUnrotatedDuplication(DXGI_MODE_ROTATION_UNSPECIFIED));
+static_assert(!supportsUnrotatedDuplication(DXGI_MODE_ROTATION_ROTATE90));
+static_assert(!supportsUnrotatedDuplication(DXGI_MODE_ROTATION_ROTATE180));
+static_assert(!supportsUnrotatedDuplication(DXGI_MODE_ROTATION_ROTATE270));
+
 } // namespace
 
 class DXGICaptureEngine::Private : public QObject
@@ -68,21 +81,45 @@ public:
 
     bool initializeDXGI();
     bool resolvePhysicalOutputGeometry();
-    void cleanup();
+    // keepDevice: only the duplication is recreated (access lost), so native
+    // frames stay on the device the encoder was given.
+    void cleanup(bool keepDevice = false);
     void cleanupThread(QThread *ownerThread);
     QImage captureWithBitBlt();
-    QImage captureWithDXGI();
+    SnapTray::CapturedFrame captureWithDXGI();
+
+    static SnapTray::CapturedFrame imageFrame(const QImage &image)
+    {
+        SnapTray::CapturedFrame frame;
+        frame.image = image;
+        frame.pixelSize = image.size();
+        return frame;
+    }
+
+    static SnapTray::CapturedFrame nativeFrame(const std::shared_ptr<SnapTray::D3D11Frame> &texture)
+    {
+        SnapTray::CapturedFrame frame;
+        frame.nativeBuffer = texture;
+        frame.pixelSize = texture->size;
+        return frame;
+    }
 
     // Thread-safe frame access (matching macOS SCKCaptureEngine pattern)
-    void setLatestFrame(const QImage &frame) {
+    void setLatestFrame(const SnapTray::CapturedFrame &frame) {
         std::lock_guard<std::mutex> lock(frameMutex);
         latestFrame = frame;
     }
 
-    QImage getLatestFrame() {
+    SnapTray::CapturedFrame getLatestFrame() {
         std::lock_guard<std::mutex> lock(frameMutex);
         return latestFrame;
     }
+
+    // Native output (#155): the cropped frame stays a texture on frameDevice.
+    std::shared_ptr<SnapTray::D3D11FrameDevice> frameDevice;
+    std::shared_ptr<SnapTray::D3D11TexturePool> texturePool;
+    std::shared_ptr<SnapTray::D3D11Frame> lastNativeFrame;
+    std::atomic<bool> nativeOutput{false};
 
     ComPtr<ID3D11Device> device;
     ComPtr<ID3D11DeviceContext> context;
@@ -95,16 +132,18 @@ public:
 
     QRect captureRegion;
     CaptureScreenInfo screenInfo;
-    int frameRate = 30;
+    std::function<void()> captureTickObserver;
     std::atomic<bool> running{false};
+    std::atomic<quint64> captureGeneration{0};
+    std::atomic<int> requestedFrameRate{30};
     bool useDXGI = false;
     QImage lastFrame;  // Cache for when no new frame available (used during capture)
     std::chrono::steady_clock::time_point lastFrameTime;
 
     // Worker thread members
     QThread *workerThread = nullptr;
-    QTimer *captureTimer = nullptr;
-    QImage latestFrame;  // Thread-safe cached frame for main thread access
+    QChronoTimer *captureTimer = nullptr;
+    SnapTray::CapturedFrame latestFrame;  // Thread-safe cached frame for main thread access
     std::mutex frameMutex;
 
     // Retry limit for DXGI reinitialization
@@ -163,32 +202,17 @@ bool DXGICaptureEngine::Private::initializeDXGI()
 
     HRESULT hr;
 
-    // Create D3D11 device
-    D3D_FEATURE_LEVEL featureLevels[] = {
-        D3D_FEATURE_LEVEL_11_1,
-        D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_10_1,
-        D3D_FEATURE_LEVEL_10_0
-    };
-    D3D_FEATURE_LEVEL featureLevel;
-
-    hr = D3D11CreateDevice(
-        nullptr,
-        D3D_DRIVER_TYPE_HARDWARE,
-        nullptr,
-        D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-        featureLevels,
-        ARRAYSIZE(featureLevels),
-        D3D11_SDK_VERSION,
-        &device,
-        &featureLevel,
-        &context
-    );
-
-    if (FAILED(hr)) {
-        qWarning() << "DXGICaptureEngine: Failed to create D3D11 device:" << hr;
+    // Create the D3D11 device, or keep the one native frames already use
+    if (!frameDevice || frameDevice->isLost()) {
+        frameDevice = SnapTray::D3D11FrameDevice::create();
+        texturePool.reset();
+        lastNativeFrame.reset();
+    }
+    if (!frameDevice) {
         return false;
     }
+    device = frameDevice->device;
+    context = frameDevice->context;
 
     // Get DXGI device
     ComPtr<IDXGIDevice> dxgiDevice;
@@ -280,6 +304,22 @@ bool DXGICaptureEngine::Private::initializeDXGI()
         return false;
     }
 
+    DXGI_OUTDUPL_DESC duplicationDesc{};
+    duplication->GetDesc(&duplicationDesc);
+    if (!supportsUnrotatedDuplication(duplicationDesc.Rotation)) {
+        // Desktop Duplication exposes rotated outputs in an unrotated surface.
+        // Until the frame and crop coordinates are rotated together, BitBlt is
+        // the safe path because it captures in desktop orientation.
+        qWarning() << "DXGICaptureEngine: Rotated output is not supported by the DXGI path;"
+                   << "using BitBlt fallback. Rotation:"
+                   << static_cast<int>(duplicationDesc.Rotation);
+        stagingTexture.Reset();
+        duplication.Reset();
+        context.Reset();
+        device.Reset();
+        return false;
+    }
+
     // Create staging texture for CPU access
     ZeroMemory(&textureDesc, sizeof(textureDesc));
     textureDesc.Width = outputDesc.DesktopCoordinates.right - outputDesc.DesktopCoordinates.left;
@@ -300,7 +340,7 @@ bool DXGICaptureEngine::Private::initializeDXGI()
     return true;
 }
 
-void DXGICaptureEngine::Private::cleanup()
+void DXGICaptureEngine::Private::cleanup(bool keepDevice)
 {
     std::lock_guard<std::recursive_mutex> lock(resourceMutex);
 
@@ -311,6 +351,12 @@ void DXGICaptureEngine::Private::cleanup()
     duplication.Reset();
     context.Reset();
     device.Reset();
+    if (!keepDevice) {
+        // Frames already handed out keep their textures alive on their own.
+        lastNativeFrame.reset();
+        texturePool.reset();
+        frameDevice.reset();
+    }
     useDXGI = false;
 }
 
@@ -381,18 +427,19 @@ void DXGICaptureEngine::Private::cleanupThread(QThread *ownerThread)
 void DXGICaptureEngine::Private::doCapture()
 {
     if (!running) return;
+    if (captureTickObserver) captureTickObserver();
 
     std::lock_guard<std::recursive_mutex> lock(resourceMutex);
     if (!running) return;  // Double-check after acquiring lock
 
-    QImage frame;
+    SnapTray::CapturedFrame frame;
     if (useDXGI) {
         frame = captureWithDXGI();
     } else {
-        frame = captureWithBitBlt();
+        frame = imageFrame(captureWithBitBlt());
     }
 
-    if (!frame.isNull()) {
+    if (frame.isValid()) {
         setLatestFrame(frame);
     }
 }
@@ -450,20 +497,41 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    QImage image(physRegion.width(), physRegion.height(), QImage::Format_ARGB32);
-    GetDIBits(hdcMem, hBitmap, 0, physRegion.height(), image.bits(), &bmi, DIB_RGB_COLORS);
+    // BI_RGB produces BGRX data; the high byte is padding, not alpha. Mark the
+    // frame as opaque RGB so live pins and alpha-capable encoders do not treat
+    // the undefined padding byte as transparency.
+    QImage image(physRegion.width(), physRegion.height(), QImage::Format_RGB32);
+    const int copiedScanLines = image.isNull()
+        ? 0
+        : GetDIBits(hdcMem, hBitmap, 0, physRegion.height(),
+                    image.bits(), &bmi, DIB_RGB_COLORS);
 
     DeleteObject(hBitmap);
     DeleteDC(hdcMem);
     ReleaseDC(NULL, hdcScreen);
 
+    if (copiedScanLines != physRegion.height()) {
+        qWarning() << "DXGICaptureEngine: GetDIBits failed for BitBlt fallback";
+        return QImage();
+    }
+
+    // QImage::Format_RGB32 ignores alpha semantically, but some QPixmap paths
+    // still preserve the raw high byte. Normalize BGRX to 0xffRRGGBB so every
+    // downstream renderer and encoder sees an opaque frame.
+    for (int y = 0; y < image.height(); ++y) {
+        auto *pixels = reinterpret_cast<QRgb *>(image.scanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            pixels[x] |= 0xff000000U;
+        }
+    }
+
     return image;
 }
 
-QImage DXGICaptureEngine::Private::captureWithDXGI()
+SnapTray::CapturedFrame DXGICaptureEngine::Private::captureWithDXGI()
 {
     if (!duplication || !stagingTexture) {
-        return captureWithBitBlt();
+        return imageFrame(captureWithBitBlt());
     }
 
     HRESULT hr;
@@ -479,10 +547,15 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             now - lastFrameTime).count();
 
-        if (!lastFrame.isNull() && elapsed < 500) {
-            return lastFrame;
+        // Native output keeps the last GPU frame while the screen is still:
+        // a BitBlt refresh would put a full CPU copy back into every frame.
+        if (nativeOutput && lastNativeFrame) {
+            return nativeFrame(lastNativeFrame);
         }
-        return captureWithBitBlt();
+        if (!lastFrame.isNull() && elapsed < 500) {
+            return imageFrame(lastFrame);
+        }
+        return imageFrame(captureWithBitBlt());
     }
 
     if (hr == DXGI_ERROR_ACCESS_LOST) {
@@ -491,24 +564,24 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
             qWarning() << "DXGICaptureEngine: Max retries reached, falling back to BitBlt";
             dxgiRetryCount = 0;
             useDXGI = false;
-            return captureWithBitBlt();
+            return imageFrame(captureWithBitBlt());
         }
 
         qWarning() << "DXGICaptureEngine: Access lost, reinitializing (attempt"
                    << dxgiRetryCount + 1 << "/" << kMaxDxgiRetries << ")";
-        cleanup();
+        cleanup(true);
         useDXGI = initializeDXGI();
         if (useDXGI) {
             dxgiRetryCount++;
             return captureWithDXGI();
         }
         dxgiRetryCount = 0;
-        return captureWithBitBlt();
+        return imageFrame(captureWithBitBlt());
     }
 
     if (FAILED(hr)) {
         qWarning() << "DXGICaptureEngine: AcquireNextFrame failed with hr:" << Qt::hex << hr;
-        return captureWithBitBlt();
+        return imageFrame(captureWithBitBlt());
     }
 
     // Get texture from resource
@@ -516,7 +589,41 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
     hr = resource.As(&frameTexture);
     if (FAILED(hr)) {
         duplication->ReleaseFrame();
-        return captureWithBitBlt();
+        return imageFrame(captureWithBitBlt());
+    }
+
+    if (nativeOutput) {
+        // Map from Qt's per-screen logical coordinates into the output's
+        // native desktop coordinates, as for the CPU copy below.
+        const QRect physRegion = CoordinateHelper::toPhysicalScreenRect(
+            captureRegion, screenInfo.geometry, physicalOutputGeometry, screenInfo.devicePixelRatio);
+        if (physRegion.isEmpty() || !physicalOutputGeometry.contains(physRegion)) {
+            qWarning() << "DXGICaptureEngine: Capture region maps outside selected DXGI output"
+                       << physRegion << physicalOutputGeometry;
+            duplication->ReleaseFrame();
+            return {};
+        }
+        if (!texturePool || texturePool->size() != physRegion.size()) {
+            texturePool = SnapTray::D3D11TexturePool::create(frameDevice, physRegion.size());
+        }
+        // A copy on the GPU: the duplication surface must be released before
+        // the next AcquireNextFrame, the pool texture lives until encoded.
+        auto texture = texturePool ? texturePool->acquire() : nullptr;
+        if (texture) {
+            const D3D11_BOX box{
+                UINT(physRegion.x() - physicalOutputGeometry.x()),
+                UINT(physRegion.y() - physicalOutputGeometry.y()), 0,
+                UINT(physRegion.right() + 1 - physicalOutputGeometry.x()),
+                UINT(physRegion.bottom() + 1 - physicalOutputGeometry.y()), 1};
+            context->CopySubresourceRegion(texture->texture.Get(), 0, 0, 0, 0, frameTexture.Get(), 0, &box);
+            duplication->ReleaseFrame();
+            lastNativeFrame = texture;
+            lastFrame = QImage();
+            lastFrameTime = std::chrono::steady_clock::now();
+            dxgiRetryCount = 0;
+            return nativeFrame(texture);
+        }
+        // Out of GPU memory for another frame: this frame takes the CPU copy.
     }
 
     // Copy to staging texture
@@ -527,7 +634,7 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
     hr = context->Map(stagingTexture.Get(), 0, D3D11_MAP_READ, 0, &mapped);
     if (FAILED(hr)) {
         duplication->ReleaseFrame();
-        return captureWithBitBlt();
+        return imageFrame(captureWithBitBlt());
     }
 
     // Create full-screen image
@@ -556,7 +663,7 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
                    << physRegion << physicalOutputGeometry;
         context->Unmap(stagingTexture.Get(), 0);
         duplication->ReleaseFrame();
-        return QImage();
+        return {};
     }
 
     const int relX = physRegion.x() - physicalOutputGeometry.x();
@@ -572,7 +679,7 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
     // Reset retry counter on successful capture
     dxgiRetryCount = 0;
 
-    return lastFrame;
+    return imageFrame(lastFrame);
 }
 
 // DXGICaptureEngine implementation
@@ -666,8 +773,35 @@ bool DXGICaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &
     return true;
 }
 
+void DXGICaptureEngine::setFrameRate(int fps)
+{
+    if (SnapTray::captureFrameInterval(fps) <= std::chrono::nanoseconds::zero()) {
+        emit error("Invalid capture frame rate");
+        return;
+    }
+    m_frameRate = fps;
+    d->requestedFrameRate = fps;
+    if (!d->running) {
+        return;
+    }
+    const quint64 generation = d->captureGeneration.load();
+    QMetaObject::invokeMethod(d, [state = d, generation] {
+        if (state->running && state->captureGeneration == generation && state->captureTimer) {
+            const auto interval = SnapTray::captureFrameInterval(state->requestedFrameRate.load());
+            if (state->captureTimer->interval() != interval) {
+                state->captureTimer->setInterval(interval);
+            }
+        }
+    }, Qt::QueuedConnection);
+}
+
 bool DXGICaptureEngine::start()
 {
+    const auto interval = SnapTray::captureFrameInterval(m_frameRate);
+    if (interval <= std::chrono::nanoseconds::zero()) {
+        emit error("Invalid capture frame rate");
+        return false;
+    }
     if (!d->screenInfo.isValid() || d->captureRegion.isEmpty()) {
         emit error("Region or screen not configured");
         return false;
@@ -708,28 +842,32 @@ bool DXGICaptureEngine::start()
     d->moveToThread(d->workerThread);
 
     // Create timer in worker thread context
-    d->captureTimer = new QTimer();
+    d->captureTickObserver = m_captureTickObserver;
+    d->captureTimer = new QChronoTimer();
     d->captureTimer->moveToThread(d->workerThread);
-    d->captureTimer->setInterval(1000 / d->frameRate);
+    d->captureTimer->setTimerType(Qt::PreciseTimer);
+    d->captureTimer->setInterval(interval);
 
     // Connect timer to capture slot
-    connect(d->captureTimer, &QTimer::timeout, d, &Private::doCapture);
+    connect(d->captureTimer, &QChronoTimer::timeout, d, &Private::doCapture);
     connect(d->workerThread, &QThread::started, d->captureTimer,
-            QOverload<>::of(&QTimer::start));
+            &QChronoTimer::start);
 
     d->running = true;
+    ++d->captureGeneration;
     d->workerThread->start();
 
     qDebug() << "DXGICaptureEngine: Started with worker thread"
              << (d->useDXGI ? "(DXGI Desktop Duplication)" : "(BitBlt fallback)")
              << "region:" << d->captureRegion
-             << "fps:" << d->frameRate;
+             << "fps:" << m_frameRate;
 
     return true;
 }
 
 void DXGICaptureEngine::stop()
 {
+    ++d->captureGeneration;
     const bool hasThreadResources = d->running || d->captureTimer || d->workerThread;
     if (hasThreadResources || d->useDXGI) {
         if (hasThreadResources) {
@@ -752,7 +890,27 @@ QImage DXGICaptureEngine::captureFrame()
     }
 
     // Return cached frame from worker thread (non-blocking)
+    return d->getLatestFrame().image;
+}
+
+SnapTray::CapturedFrame DXGICaptureEngine::captureNativeFrame()
+{
+    if (!d->running) {
+        return {};
+    }
     return d->getLatestFrame();
+}
+
+std::shared_ptr<void> DXGICaptureEngine::nativeFrameDevice() const
+{
+    std::lock_guard<std::recursive_mutex> lock(d->resourceMutex);
+    // A BitBlt fallback produces CPU frames only.
+    return d->useDXGI ? d->frameDevice : nullptr;
+}
+
+void DXGICaptureEngine::setNativeFrameOutput(bool enabled)
+{
+    d->nativeOutput = enabled;
 }
 
 QString DXGICaptureEngine::engineName() const

@@ -2,16 +2,18 @@
 #include <QGuiApplication>
 #include <QImage>
 #include <QPainter>
+#include <QScreen>
 
 #include "annotations/MosaicBlurType.h"
 #include "PinWindow.h"
 
 #include "annotations/AnnotationLayer.h"
-#include "annotations/ErasedItemsGroup.h"
 #include "annotations/MarkerStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "pinwindow/RegionLayoutRenderer.h"
+#include "utils/CoordinateHelper.h"
 
 namespace {
 
@@ -75,24 +77,47 @@ private slots:
     void testUndoCrop_ZoomedState_RestoresAnnotationPosition();
     void testUndoCrop_RestoresPixmapAndTransformState();
     void testUndoCrop_RestoresAnnotationPosition();
+    void cropThenMoveUndoesInOrder();
+    void moveThenCropUndoesInOrder();
+    void undoDuringGestureLeavesCrop();
     void testApplyCrop_MarkerStroke_RemainsAlignedAfterTranslation();
     void testUndoCrop_MarkerStroke_RestoresOriginalPosition();
-    void testApplyCrop_RefreshesMosaicSourceInsideErasedGroup();
+    void testApplyCrop_RefreshesMosaicSourceInsideRemoveCommand();
+    void testApplyCrop_RefreshesMosaicSourceInsideUndoneAddCommand();
+    void testRegionLayoutApply_MovesAnnotationAfterSuccessfulRecompose();
+    void testRegionLayoutApply_RefreshesMosaicSourceInsideUndoneAddCommand();
+    void testRegionLayoutApply_MaterializesResizedRegionForNextEdit();
+    void testRegionLayoutApply_RecomposeFailureKeepsModeActive();
+    void testRegionLayoutZoomMapsRenderingInputAndApply_data();
+    void testRegionLayoutZoomMapsRenderingInputAndApply();
+    void testRegionLayoutFreezesZoomDuringSession();
+    void testRegionLayoutZoomedAnnotationFollowsRegion();
+    void testRegionLayoutZoomAndRotationShareOneTransform();
+    void testRegionLayoutChromeStaysFixedInView_data();
+    void testRegionLayoutChromeStaysFixedInView();
+    void testRegionLayoutOverlappingHandleTargetsChooseClosest();
+    void testRegionLayoutKeepsControlsOnScreenAndRestoresPosition();
+    void testRegionLayoutDefersScreenClampUntilGestureEnds();
     void testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn();
     void testPreciseSourceSampleRectForRegion_UsesScreenLocalCoordinates();
     void testDisplaySourceRectForTarget_PrefersTranslationOverScaling();
     void testSetSourceRegion_FractionalDpr_PreservesExactLogicalSize();
+    void testSetSourceRegion_PreservesNativeColors_data();
+    void testSetSourceRegion_PreservesNativeColors();
     void testCropUndoRedo_FractionalDpr_RestoresExactLogicalSize();
     void testHandleToolbarUndo_PrioritizesCropWhenNoPostCropAnnotations();
     void testHandleToolbarUndo_PrioritizesPostCropAnnotationsFirst();
     void testHandleToolbarUndo_DoesNothingDuringHistoryLock();
-    void testHandleToolbarUndo_UsesStableCropBoundaryAfterAnnotationTrim();
+    void testHandleToolbarUndo_UsesStableCropBoundaryBeyondFiftyAnnotations();
     void testHandleToolbarRedo_ReappliesCropAfterUndo();
     void testHandleToolbarRedo_DoesNothingDuringHistoryLock();
     void testTransformChange_ClearsCropHistory();
     void testHandleToolbarRedo_PrioritizesCropBeforePostCropAnnotationRedo();
-    void testHandleToolbarRedo_UsesStableCropBoundaryAfterAnnotationTrim();
+    void testHandleToolbarRedo_UsesStableCropBoundaryBeyondFiftyAnnotations();
     void testHandleToolbarUndo_InPlaceCacheInvalidationDoesNotPreemptCropUndo();
+    void testHandleToolbarUndo_NonTopRemovalPrecedesCropUndo();
+    void testHandleToolbarRedo_NewAnnotationBranchInvalidatesCropRedo();
+    void testHistoryFloorInvalidatesUnreachableCropBoundary();
 };
 
 void TestPinWindowCropUndo::initTestCase()
@@ -361,7 +386,7 @@ void TestPinWindowCropUndo::testUndoCrop_MarkerStroke_RestoresOriginalPosition()
     QCOMPARE(marker->boundingRect(), originalRect);
 }
 
-void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup()
+void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideRemoveCommand()
 {
     QPixmap source = createPatternPixmap(240, 160);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
@@ -378,12 +403,13 @@ void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup
 
     window.m_annotationLayer->setSelectedIndex(0);
     QVERIFY(window.m_annotationLayer->removeSelectedItem());
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(window.m_annotationLayer->itemAt(0)) != nullptr);
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+    QVERIFY(window.m_annotationLayer->canUndo());
 
     const QRect cropRect(60, 40, 120, 90);
     window.applyCrop(cropRect);
 
-    // Undo deletion to restore the mosaic item from ErasedItemsGroup storage.
+    // Undo deletion to restore the Mosaic item from command-owned storage.
     window.m_annotationLayer->undo();
     auto* restored = dynamic_cast<MosaicRectAnnotation*>(window.m_annotationLayer->itemAt(0));
     QVERIFY(restored != nullptr);
@@ -411,6 +437,718 @@ void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup
     }
 
     QCOMPARE(actual, expected);
+}
+
+void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideUndoneAddCommand()
+{
+    QPixmap source = createPatternPixmap(240, 160);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    const QRect originalRect(90, 70, 50, 30);
+    window.m_annotationLayer->addItem(std::make_unique<MosaicRectAnnotation>(
+        originalRect,
+        window.m_sharedSourcePixmap,
+        12,
+        MosaicBlurType::Pixelate));
+    window.m_annotationLayer->undo();
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+    QVERIFY(window.m_annotationLayer->canRedo());
+
+    const QRect cropRect(60, 40, 120, 90);
+    window.applyCrop(cropRect);
+    window.m_annotationLayer->redo();
+
+    auto* restored = dynamic_cast<MosaicRectAnnotation*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(restored != nullptr);
+
+    QImage actual(120, 90, QImage::Format_ARGB32_Premultiplied);
+    actual.fill(Qt::transparent);
+    {
+        QPainter painter(&actual);
+        restored->draw(painter);
+    }
+
+    auto expectedSource = std::make_shared<const QPixmap>(source.copy(cropRect));
+    MosaicRectAnnotation expectedAnnotation(
+        originalRect.translated(-cropRect.topLeft()),
+        expectedSource,
+        12,
+        MosaicBlurType::Pixelate);
+    QImage expected(120, 90, QImage::Format_ARGB32_Premultiplied);
+    expected.fill(Qt::transparent);
+    {
+        QPainter painter(&expected);
+        expectedAnnotation.draw(painter);
+    }
+
+    QCOMPARE(actual, expected);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutApply_MovesAnnotationAfterSuccessfulRecompose()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    QVector<LayoutRegion> regions;
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+    leftRegion.index = 1;
+    regions.append(leftRegion);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+    rightRegion.index = 2;
+    regions.append(rightRegion);
+
+    const QVector<QPointF> points = {QPointF(130, 30), QPointF(160, 60)};
+    window.m_annotationLayer->addItem(
+        std::make_unique<MarkerStroke>(points, QColor(Qt::red), 12));
+    auto* marker = dynamic_cast<MarkerStroke*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(marker != nullptr);
+    const QRect originalAnnotationRect = marker->boundingRect();
+
+    window.setMultiRegionData(regions);
+    window.enterRegionLayoutMode();
+    QVERIFY(window.m_regionLayoutManager != nullptr);
+    window.m_regionLayoutManager->selectRegion(1);
+    window.m_regionLayoutManager->startDrag(QPoint(160, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(200, 50));
+    window.m_regionLayoutManager->finishDrag();
+    window.exitRegionLayoutMode(true);
+
+    marker = dynamic_cast<MarkerStroke*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(marker != nullptr);
+    QCOMPARE(marker->boundingRect(), originalAnnotationRect.translated(40, 0));
+    QCOMPARE(window.m_originalPixmap.deviceIndependentSize().toSize(), QSize(250, 100));
+    QVERIFY(window.m_sharedSourcePixmap != nullptr);
+    QVERIFY(pixmapsEqual(*window.m_sharedSourcePixmap, window.m_originalPixmap));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutApply_RefreshesMosaicSourceInsideUndoneAddCommand()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+    QVERIFY(window.m_sharedSourcePixmap != nullptr);
+
+    QVector<LayoutRegion> regions;
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+    leftRegion.index = 1;
+    regions.append(leftRegion);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+    rightRegion.index = 2;
+    regions.append(rightRegion);
+
+    const QRect originalRect(130, 30, 30, 30);
+    window.m_annotationLayer->addItem(std::make_unique<MosaicRectAnnotation>(
+        originalRect,
+        window.m_sharedSourcePixmap,
+        12,
+        MosaicBlurType::Pixelate));
+    window.m_annotationLayer->undo();
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+
+    window.setMultiRegionData(regions);
+    window.enterRegionLayoutMode();
+    QVERIFY(window.m_regionLayoutManager != nullptr);
+    window.m_regionLayoutManager->selectRegion(1);
+    window.m_regionLayoutManager->startDrag(QPoint(160, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(200, 50));
+    window.m_regionLayoutManager->finishDrag();
+    window.exitRegionLayoutMode(true);
+
+    window.m_annotationLayer->redo();
+    auto* restored = dynamic_cast<MosaicRectAnnotation*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(restored != nullptr);
+
+    QImage actual(250, 100, QImage::Format_ARGB32_Premultiplied);
+    actual.fill(Qt::transparent);
+    {
+        QPainter painter(&actual);
+        restored->draw(painter);
+    }
+
+    auto expectedSource = std::make_shared<const QPixmap>(window.m_originalPixmap);
+    MosaicRectAnnotation expectedAnnotation(
+        originalRect.translated(40, 0),
+        expectedSource,
+        12,
+        MosaicBlurType::Pixelate);
+    QImage expected(250, 100, QImage::Format_ARGB32_Premultiplied);
+    expected.fill(Qt::transparent);
+    {
+        QPainter painter(&expected);
+        expectedAnnotation.draw(painter);
+    }
+
+    auto staleSource = std::make_shared<const QPixmap>(source);
+    MosaicRectAnnotation staleAnnotation(
+        originalRect.translated(40, 0),
+        staleSource,
+        12,
+        MosaicBlurType::Pixelate);
+    QImage stale(250, 100, QImage::Format_ARGB32_Premultiplied);
+    stale.fill(Qt::transparent);
+    {
+        QPainter painter(&stale);
+        staleAnnotation.draw(painter);
+    }
+
+    QVERIFY(stale != expected);
+    QCOMPARE(actual, expected);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutApply_MaterializesResizedRegionForNextEdit()
+{
+    const QPixmap source = createPatternPixmap(100, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 100, 100);
+    region.originalRect = region.rect;
+    region.image = source.toImage();
+    region.index = 1;
+    window.setMultiRegionData({region});
+
+    window.enterRegionLayoutMode();
+    QVERIFY(window.m_regionLayoutManager != nullptr);
+    window.m_regionLayoutManager->selectRegion(0);
+    window.m_regionLayoutManager->startResize(
+        ResizeHandler::Edge::BottomRight, QPoint(99, 99));
+    window.m_regionLayoutManager->updateResize(QPoint(199, 199), false);
+    window.m_regionLayoutManager->finishResize();
+    window.exitRegionLayoutMode(true);
+
+    QVERIFY(!window.isRegionLayoutMode());
+    QCOMPARE(window.m_originalPixmap.deviceIndependentSize().toSize(), QSize(200, 200));
+    QCOMPARE(window.m_storedRegions.size(), 1);
+    QCOMPARE(window.m_storedRegions[0].rect, QRect(0, 0, 200, 200));
+    QCOMPARE(window.m_storedRegions[0].originalRect, QRect(0, 0, 200, 200));
+    QCOMPARE(window.m_storedRegions[0].image.size(), QSize(200, 200));
+    const QPixmap firstApply = window.m_originalPixmap;
+
+    // Re-enter and apply without another resize. The committed per-region
+    // image must already match the 200x200 rect, so no transparent quadrant
+    // appears and the result remains byte-for-byte stable.
+    window.enterRegionLayoutMode();
+    window.exitRegionLayoutMode(true);
+
+    QVERIFY(!window.isRegionLayoutMode());
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, firstApply));
+    QVERIFY(window.m_originalPixmap.toImage().pixelColor(199, 199).alpha() > 0);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutApply_RecomposeFailureKeepsModeActive()
+{
+    const QPixmap source = createPatternPixmap(100, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    LayoutRegion invalidRegion;
+    invalidRegion.rect = QRect(0, 0, 100, 100);
+    invalidRegion.originalRect = invalidRegion.rect;
+    invalidRegion.image = QImage();
+    invalidRegion.index = 1;
+    window.setMultiRegionData({invalidRegion});
+
+    window.enterRegionLayoutMode();
+    QVERIFY(window.m_regionLayoutManager != nullptr);
+    window.m_regionLayoutManager->selectRegion(0);
+    window.m_regionLayoutManager->startDrag(QPoint(50, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(130, 50));
+    window.m_regionLayoutManager->finishDrag();
+    const QSize activeLayoutSize = window.size();
+    QCOMPARE(activeLayoutSize, window.regionLayoutViewportSize(QSize(180, 100)));
+
+    window.exitRegionLayoutMode(true);
+
+    // A failed allocation/invalid source must not exit into a half-applied
+    // state. The active layout is left intact so Cancel remains available.
+    QVERIFY(window.isRegionLayoutMode());
+    QCOMPARE(window.size(), activeLayoutSize);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(window.m_storedRegions[0].rect, invalidRegion.rect);
+
+    window.exitRegionLayoutMode(false);
+    QVERIFY(!window.isRegionLayoutMode());
+    QCOMPARE(window.size(), QSize(100, 100));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutZoomMapsRenderingInputAndApply_data()
+{
+    QTest::addColumn<qreal>("zoom");
+    QTest::addColumn<int>("expectedModelDelta");
+
+    QTest::newRow("half") << 0.5 << 40;
+    QTest::newRow("double") << 2.0 << 10;
+}
+
+void TestPinWindowCropUndo::testRegionLayoutZoomMapsRenderingInputAndApply()
+{
+    QFETCH(qreal, zoom);
+    QFETCH(int, expectedModelDelta);
+
+    QImage sourceImage(210, 100, QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(Qt::transparent);
+    {
+        QPainter painter(&sourceImage);
+        painter.fillRect(QRect(0, 0, 100, 100), Qt::red);
+        painter.fillRect(QRect(110, 0, 100, 100), Qt::blue);
+    }
+    const QPixmap source = QPixmap::fromImage(sourceImage);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = sourceImage.copy(leftRegion.rect);
+    leftRegion.index = 1;
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = sourceImage.copy(rightRegion.rect);
+    rightRegion.index = 2;
+
+    window.setZoomLevel(zoom);
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    QVERIFY(window.isRegionLayoutMode());
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(QSize(210, 100)));
+
+    const QPointF secondCenterView(190.0 * zoom, 20.0 * zoom);
+    const QPointF secondSampleView(180.0 * zoom, 10.0 * zoom);
+    QImage rendered(window.size(), QImage::Format_ARGB32_Premultiplied);
+    rendered.fill(Qt::transparent);
+    window.render(&rendered);
+    QCOMPARE(rendered.pixelColor(secondSampleView.toPoint()), QColor(Qt::blue));
+
+    QMouseEvent pressEvent(
+        QEvent::MouseButtonPress,
+        secondCenterView,
+        window.mapToGlobal(secondCenterView.toPoint()),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &pressEvent);
+    QCOMPARE(window.m_regionLayoutManager->selectedIndex(), 1);
+
+    const QPointF movedView = secondCenterView + QPointF(20.0, 0.0);
+    QMouseEvent moveEvent(
+        QEvent::MouseMove,
+        movedView,
+        window.mapToGlobal(movedView.toPoint()),
+        Qt::NoButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &moveEvent);
+    QCOMPARE(window.m_regionLayoutManager->regions()[1].rect.left(),
+             110 + expectedModelDelta);
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(
+        window.m_regionLayoutManager->canvasBounds().size()));
+
+    QMouseEvent releaseEvent(
+        QEvent::MouseButtonRelease,
+        movedView,
+        window.mapToGlobal(movedView.toPoint()),
+        Qt::LeftButton,
+        Qt::NoButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &releaseEvent);
+
+    const QPointF confirmView = RegionLayoutRenderer::confirmButtonRect(
+        window.regionLayoutControlsRect(
+            window.m_regionLayoutManager->canvasBounds().size())).center();
+    QMouseEvent confirmEvent(
+        QEvent::MouseButtonPress,
+        confirmView,
+        window.mapToGlobal(confirmView.toPoint()),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &confirmEvent);
+
+    QVERIFY(!window.isRegionLayoutMode());
+    QCOMPARE(window.zoomLevel(), zoom);
+    const QSize expectedBaseSize(210 + expectedModelDelta, 100);
+    QCOMPARE(window.baseContentLogicalSize(), expectedBaseSize);
+    QCOMPARE(window.size(), CoordinateHelper::toPhysical(expectedBaseSize, zoom));
+    QCOMPARE(window.m_displayPixmap.deviceIndependentSize().toSize(), window.size());
+    const QSize appliedSize = window.size();
+    window.updateSize();
+    QCOMPARE(window.size(), appliedSize);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutFreezesZoomDuringSession()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->selectRegion(1);
+    window.m_regionLayoutManager->startDrag(QPoint(160, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(200, 50));
+    window.m_regionLayoutManager->finishDrag();
+    QCOMPARE(window.m_regionLayoutManager->canvasBounds().size(), QSize(250, 100));
+
+    window.setZoomLevel(2.0);
+    QCOMPARE(window.zoomLevel(), 1.0);
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(QSize(250, 100)));
+    window.setZoomLevel(0.5);
+    QCOMPARE(window.zoomLevel(), 1.0);
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(QSize(250, 100)));
+
+    window.exitRegionLayoutMode(false);
+    QVERIFY(!window.isRegionLayoutMode());
+    QCOMPARE(window.zoomLevel(), 1.0);
+    QCOMPARE(window.size(), QSize(210, 100));
+    window.updateSize();
+    QCOMPARE(window.size(), QSize(210, 100));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutZoomedAnnotationFollowsRegion()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.setZoomLevel(2.0);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+
+    const QVector<QPointF> points = {QPointF(260, 40), QPointF(320, 80)};
+    window.m_annotationLayer->addItem(
+        std::make_unique<MarkerStroke>(points, QColor(Qt::red), 12));
+    auto* marker = dynamic_cast<MarkerStroke*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(marker != nullptr);
+    const QRect originalRect = marker->boundingRect();
+
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    window.setZoomLevel(0.5);
+    QCOMPARE(window.zoomLevel(), 2.0);
+    window.m_regionLayoutManager->selectRegion(1);
+    window.m_regionLayoutManager->startDrag(QPoint(160, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(200, 50));
+    window.m_regionLayoutManager->finishDrag();
+    window.exitRegionLayoutMode(true);
+
+    marker = dynamic_cast<MarkerStroke*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(marker != nullptr);
+    QCOMPARE(marker->boundingRect(), originalRect.translated(80, 0));
+    QCOMPARE(window.zoomLevel(), 2.0);
+    QCOMPARE(window.size(), QSize(500, 200));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutZoomAndRotationShareOneTransform()
+{
+    QImage sourceImage(210, 100, QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(Qt::transparent);
+    {
+        QPainter painter(&sourceImage);
+        painter.fillRect(QRect(0, 0, 100, 100), Qt::red);
+        painter.fillRect(QRect(110, 0, 100, 100), Qt::blue);
+    }
+    PinWindow window(QPixmap::fromImage(sourceImage), QPoint(0, 0), nullptr, false);
+
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = sourceImage.copy(leftRegion.rect);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = sourceImage.copy(rightRegion.rect);
+
+    window.setZoomLevel(2.0);
+    window.rotateRight();
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(QSize(210, 100)));
+
+    const QSize activeSize = window.size();
+    window.rotateRight();
+    window.flipHorizontal();
+    window.setZoomLevel(0.5);
+    QCOMPARE(window.m_rotationAngle, 90);
+    QCOMPARE(window.m_flipHorizontal, false);
+    QCOMPARE(window.zoomLevel(), 2.0);
+    QCOMPARE(window.size(), activeSize);
+
+    const QPointF mappedCenter = window.regionLayoutViewTransform(QSize(210, 100)).map(
+        QPointF(160, 50));
+    QCOMPARE(mappedCenter.toPoint(), QPoint(100, 320));
+
+    QImage rendered(window.size(), QImage::Format_ARGB32_Premultiplied);
+    rendered.fill(Qt::transparent);
+    window.render(&rendered);
+    QCOMPARE(rendered.pixelColor(mappedCenter.toPoint()), QColor(Qt::blue));
+
+    QMouseEvent pressEvent(
+        QEvent::MouseButtonPress,
+        mappedCenter,
+        window.mapToGlobal(mappedCenter.toPoint()),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &pressEvent);
+    QCOMPARE(window.m_regionLayoutManager->selectedIndex(), 1);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutChromeStaysFixedInView_data()
+{
+    QTest::addColumn<qreal>("zoom");
+    QTest::newRow("minimum") << 0.1;
+    QTest::newRow("half") << 0.5;
+    QTest::newRow("double") << 2.0;
+    QTest::newRow("maximum") << 5.0;
+}
+
+void TestPinWindowCropUndo::testRegionLayoutChromeStaysFixedInView()
+{
+    QFETCH(qreal, zoom);
+
+    const QPixmap source = createPatternPixmap(500, 300);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 500, 300);
+    region.originalRect = region.rect;
+    region.image = source.toImage();
+
+    window.setZoomLevel(zoom);
+    window.setMultiRegionData({region});
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->selectRegion(0);
+
+    const QRect controlsRect = window.regionLayoutControlsRect(QSize(500, 300));
+    const QRect confirmRect = RegionLayoutRenderer::confirmButtonRect(controlsRect);
+    const QRect cancelRect = RegionLayoutRenderer::cancelButtonRect(controlsRect);
+    QCOMPARE(confirmRect.size(), QSize(
+        LayoutModeConstants::kButtonWidth,
+        LayoutModeConstants::kButtonHeight));
+    QCOMPARE(cancelRect.size(), confirmRect.size());
+    QVERIFY(window.rect().contains(confirmRect));
+    QVERIFY(window.rect().contains(cancelRect));
+
+    const QTransform modelToView = window.regionLayoutViewTransform(QSize(500, 300));
+    const QPoint topLeft = modelToView.map(QPointF(0.0, 0.0)).toPoint();
+    QCOMPARE(window.regionLayoutHandleAtWidget(topLeft),
+             ResizeHandler::Edge::TopLeft);
+    QCOMPARE(window.regionLayoutHandleAtWidget(topLeft + QPoint(7, 0)),
+             ResizeHandler::Edge::TopLeft);
+    QCOMPARE(window.regionLayoutHandleAtWidget(topLeft + QPoint(9, 0)),
+             ResizeHandler::Edge::None);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutOverlappingHandleTargetsChooseClosest()
+{
+    const QPixmap source = createPatternPixmap(100, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 100, 100);
+    region.originalRect = region.rect;
+    region.image = source.toImage();
+
+    window.setZoomLevel(0.1);
+    window.setMultiRegionData({region});
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->selectRegion(0);
+
+    const QTransform modelToView = window.regionLayoutViewTransform(QSize(100, 100));
+    const QRect viewRect = modelToView.mapRect(QRectF(region.rect)).toAlignedRect();
+    const QPair<ResizeHandler::Edge, QPoint> handles[] = {
+        {ResizeHandler::Edge::TopLeft, viewRect.topLeft()},
+        {ResizeHandler::Edge::Top, QPoint(viewRect.center().x(), viewRect.top())},
+        {ResizeHandler::Edge::TopRight, viewRect.topRight()},
+        {ResizeHandler::Edge::Right, QPoint(viewRect.right(), viewRect.center().y())},
+        {ResizeHandler::Edge::BottomRight, viewRect.bottomRight()},
+        {ResizeHandler::Edge::Bottom, QPoint(viewRect.center().x(), viewRect.bottom())},
+        {ResizeHandler::Edge::BottomLeft, viewRect.bottomLeft()},
+        {ResizeHandler::Edge::Left, QPoint(viewRect.left(), viewRect.center().y())}
+    };
+    for (const auto& handle : handles) {
+        QCOMPARE(window.regionLayoutHandleAtWidget(handle.second), handle.first);
+    }
+
+    const QRect controlsRect = window.regionLayoutControlsRect(QSize(100, 100));
+    QVERIFY(controlsRect.top() > viewRect.bottom());
+    QVERIFY(!RegionLayoutRenderer::confirmButtonRect(controlsRect).intersects(viewRect));
+    QVERIFY(!RegionLayoutRenderer::cancelButtonRect(controlsRect).intersects(viewRect));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutKeepsControlsOnScreenAndRestoresPosition()
+{
+    QScreen* targetScreen = QGuiApplication::primaryScreen();
+    QVERIFY(targetScreen != nullptr);
+    const QRect available = targetScreen->availableGeometry();
+
+    const QPixmap source = createPatternPixmap(100, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 100, 100);
+    region.originalRect = region.rect;
+    region.image = source.toImage();
+
+    const QPoint originalPos(
+        available.left() + qMax(0, (available.width() - 100) / 2),
+        available.bottom() - 99);
+    window.move(originalPos);
+    window.setMultiRegionData({region});
+    window.enterRegionLayoutMode();
+
+    const QRect controlsBand = window.regionLayoutControlsRect(QSize(100, 100));
+    const QRect controlsGlobal = RegionLayoutRenderer::confirmButtonRect(controlsBand)
+                                     .united(RegionLayoutRenderer::cancelButtonRect(controlsBand))
+                                     .translated(window.pos());
+    QVERIFY(available.contains(controlsGlobal));
+
+    window.exitRegionLayoutMode(false);
+    QCOMPARE(window.pos(), originalPos);
+
+    // A layout wider than the screen cannot fit as a whole. The centered
+    // button pair still must be clamped into the available geometry.
+    if (available.width() >= LayoutModeConstants::kMaxCanvasSize) {
+        QSKIP("Available screen is wider than the maximum legal layout canvas.");
+    }
+    const int wideLayoutWidth = qMin(
+        LayoutModeConstants::kMaxCanvasSize,
+        available.width() + 500);
+    QVERIFY(wideLayoutWidth > available.width());
+    PinWindow wideWindow(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion wideRegion = region;
+    wideRegion.rect = QRect(0, 0, wideLayoutWidth, 100);
+    wideRegion.originalRect = wideRegion.rect;
+    wideWindow.move(originalPos);
+    wideWindow.setMultiRegionData({wideRegion});
+    wideWindow.enterRegionLayoutMode();
+
+    const QRect wideControls = wideWindow.regionLayoutControlsRect(
+        QSize(wideLayoutWidth, 100));
+    const QRect buttonPairGlobal = RegionLayoutRenderer::confirmButtonRect(wideControls)
+                                       .united(RegionLayoutRenderer::cancelButtonRect(wideControls))
+                                       .translated(wideWindow.pos());
+    QVERIFY(available.contains(buttonPairGlobal));
+
+    wideWindow.exitRegionLayoutMode(false);
+    QCOMPARE(wideWindow.pos(), originalPos);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutDefersScreenClampUntilGestureEnds()
+{
+    QScreen* targetScreen = QGuiApplication::primaryScreen();
+    QVERIFY(targetScreen != nullptr);
+    const QRect available = targetScreen->availableGeometry();
+
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+
+    const QPoint originalPos(available.right() - 209, available.top() + 40);
+    window.move(originalPos);
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    const QPoint entryPos = window.pos();
+
+    const QPointF pressPos(190.0, 20.0);
+    QMouseEvent pressEvent(
+        QEvent::MouseButtonPress,
+        pressPos,
+        window.mapToGlobal(pressPos.toPoint()),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &pressEvent);
+    QVERIFY(window.m_regionLayoutManager->isDragging());
+
+    const int dragDistance = qMin(
+        available.width(),
+        LayoutModeConstants::kMaxCanvasSize - 300);
+    const QPointF movedPos = pressPos + QPointF(dragDistance, 0.0);
+    QMouseEvent moveEvent(
+        QEvent::MouseMove,
+        movedPos,
+        window.mapToGlobal(movedPos.toPoint()),
+        Qt::NoButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &moveEvent);
+    QCOMPARE(window.pos(), entryPos);
+    const QRect firstMovedRect = window.m_regionLayoutManager->regions()[1].rect;
+
+    QMouseEvent samePositionMove(
+        QEvent::MouseMove,
+        movedPos,
+        window.mapToGlobal(movedPos.toPoint()),
+        Qt::NoButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &samePositionMove);
+    QCOMPARE(window.m_regionLayoutManager->regions()[1].rect, firstMovedRect);
+    QCOMPARE(window.pos(), entryPos);
+
+    QMouseEvent releaseEvent(
+        QEvent::MouseButtonRelease,
+        movedPos,
+        window.mapToGlobal(movedPos.toPoint()),
+        Qt::LeftButton,
+        Qt::NoButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &releaseEvent);
+    QVERIFY(!window.m_regionLayoutManager->isDragging());
+
+    const QSize expandedLayoutSize = window.m_regionLayoutManager->canvasBounds().size();
+    const QRect controls = window.regionLayoutControlsRect(expandedLayoutSize);
+    const QRect buttonsGlobal = RegionLayoutRenderer::confirmButtonRect(controls)
+                                    .united(RegionLayoutRenderer::cancelButtonRect(controls))
+                                    .translated(window.pos());
+    // On a multi-monitor machine the grown window can overlap another screen
+    // more than the one it sits on; the controls must still stay on the latter.
+    QVERIFY(available.contains(buttonsGlobal));
+
+    window.exitRegionLayoutMode(false);
+    QCOMPARE(window.pos(), originalPos);
 }
 
 void TestPinWindowCropUndo::testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn()
@@ -466,6 +1204,65 @@ void TestPinWindowCropUndo::testSetSourceRegion_FractionalDpr_PreservesExactLogi
     QCOMPARE(window.m_sourceSampleRect, QRectF(0.25, 0.0, 125.0, 80.0));
     QCOMPARE(window.m_displayPixmap.size(), QSize(125, 80));
     QVERIFY(qFuzzyCompare(window.m_displayPixmap.devicePixelRatio(), 1.25));
+}
+
+void TestPinWindowCropUndo::testSetSourceRegion_PreservesNativeColors_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::newRow("100-percent") << qreal(1.0);
+    QTest::newRow("125-percent") << qreal(1.25);
+    QTest::newRow("150-percent") << qreal(1.5);
+    QTest::newRow("200-percent") << qreal(2.0);
+    QTest::newRow("250-percent") << qreal(2.5);
+}
+
+void TestPinWindowCropUndo::testSetSourceRegion_PreservesNativeColors()
+{
+    QFETCH(qreal, dpr);
+    const QSize logicalSize(101, 81);
+    const QSize capturedSize(qCeil(logicalSize.width() * dpr),
+                             qCeil(logicalSize.height() * dpr));
+    QImage captured(capturedSize, QImage::Format_RGB32);
+    // Native-pixel stripes expose interpolation that a uniform color cannot.
+    for (int y = 0; y < captured.height(); ++y) {
+        for (int x = 0; x < captured.width(); ++x) {
+            captured.setPixelColor(x, y, (x + y) % 2 ? Qt::red : Qt::cyan);
+        }
+    }
+    QPixmap source = QPixmap::fromImage(captured);
+    source.setDevicePixelRatio(dpr);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.setShowBorder(false);
+    window.setSourceRegion(QRect(QPoint(0, 0), logicalSize), nullptr);
+
+    const QImage display = window.m_displayPixmap.toImage();
+    QCOMPARE(display.size(), CoordinateHelper::toPhysical(logicalSize, dpr));
+    int maxChannelError = 0;
+    for (int y = 0; y < display.height(); ++y) {
+        for (int x = 0; x < display.width(); ++x) {
+            const QColor actual = display.pixelColor(x, y);
+            const QColor expected = captured.pixelColor(x, y);
+            maxChannelError = qMax(maxChannelError, qAbs(actual.red() - expected.red()));
+            maxChannelError = qMax(maxChannelError, qAbs(actual.green() - expected.green()));
+            maxChannelError = qMax(maxChannelError, qAbs(actual.blue() - expected.blue()));
+        }
+    }
+    QCOMPARE(maxChannelError, 0);
+
+    // The final widget paint must not resample the already-sized display
+    // pixmap a second time. Render at the capture DPR, including fractional
+    // backing-store extents, without relying on the test monitor's scale.
+    QImage painted(display.size(), QImage::Format_ARGB32_Premultiplied);
+    painted.setDevicePixelRatio(dpr);
+    painted.fill(Qt::transparent);
+    {
+        QPainter painter(&painted);
+        window.render(&painter);
+    }
+    const QRect interior = display.rect().adjusted(8, 8, -8, -8);
+    painted.setDevicePixelRatio(1.0);
+    QCOMPARE(painted.copy(interior).convertToFormat(QImage::Format_RGB32),
+             captured.copy(interior).convertToFormat(QImage::Format_RGB32));
 }
 
 void TestPinWindowCropUndo::testCropUndoRedo_FractionalDpr_RestoresExactLogicalSize()
@@ -590,14 +1387,14 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_DoesNothingDuringHistoryLock()
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(1));
 }
 
-void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryAfterAnnotationTrim()
+void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryBeyondFiftyAnnotations()
 {
     QPixmap source = createPatternPixmap(260, 180);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
     window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
-    // Fill annotation history to capacity so the first post-crop add trims from the front.
+    // Keep enough annotations to cover the former 50-item content limit.
     for (int i = 0; i < 50; ++i) {
         const QVector<QPoint> points = {
             QPoint(20 + i, 20 + i),
@@ -607,6 +1404,8 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryAfterAnn
             points, QColor(Qt::red), 2, LineEndStyle::None, LineStyle::Solid));
     }
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    AnnotationItem* firstAnnotation = window.m_annotationLayer->itemAt(0);
+    QVERIFY(firstAnnotation != nullptr);
 
     const QRect cropRect(30, 20, 160, 110);
     const QPixmap expectedCropped = source.copy(cropRect);
@@ -616,14 +1415,17 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryAfterAnn
     const QVector<QPoint> postCropPoints = {QPoint(18, 16), QPoint(70, 42)};
     window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
         postCropPoints, QColor(Qt::blue), 2, LineEndStyle::None, LineStyle::Solid));
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(51));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 
     window.handleToolbarUndo(); // Undo post-crop annotation first.
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(49));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
     QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
 
     window.handleToolbarUndo(); // Then undo crop, not pre-crop annotation.
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(49));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
     QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
 }
 
@@ -744,14 +1546,14 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_PrioritizesCropBeforePostCropA
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
 }
 
-void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryAfterAnnotationTrim()
+void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryBeyondFiftyAnnotations()
 {
     QPixmap source = createPatternPixmap(260, 180);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
     window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
-    // Fill annotation history to capacity so post-crop add triggers trimHistory().
+    // Keep enough annotations to cover the former 50-item content limit.
     for (int i = 0; i < 50; ++i) {
         const QVector<QPoint> points = {
             QPoint(20 + i, 20 + i),
@@ -761,6 +1563,8 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryAfterAnn
             points, QColor(Qt::red), 2, LineEndStyle::None, LineStyle::Solid));
     }
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    AnnotationItem* firstAnnotation = window.m_annotationLayer->itemAt(0);
+    QVERIFY(firstAnnotation != nullptr);
 
     const QRect cropRect(30, 20, 160, 110);
     const QPixmap expectedCropped = source.copy(cropRect);
@@ -769,19 +1573,23 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryAfterAnn
     const QVector<QPoint> postCropPoints = {QPoint(18, 16), QPoint(70, 42)};
     window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
         postCropPoints, QColor(Qt::blue), 2, LineEndStyle::None, LineStyle::Solid));
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(51));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 
     window.handleToolbarUndo(); // Undo post-crop annotation
     window.handleToolbarUndo(); // Undo crop
     QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(49));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 
     window.handleToolbarRedo(); // Redo crop first when boundary matches via top item.
     QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(49));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 
     window.handleToolbarRedo(); // Then redo post-crop annotation.
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(51));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 }
 
 void TestPinWindowCropUndo::testHandleToolbarUndo_InPlaceCacheInvalidationDoesNotPreemptCropUndo()
@@ -818,6 +1626,173 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_InPlaceCacheInvalidationDoesNo
 
     window.handleToolbarUndo();
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+}
+
+void TestPinWindowCropUndo::testHandleToolbarUndo_NonTopRemovalPrecedesCropUndo()
+{
+    QPixmap source = createPatternPixmap(220, 140);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(40, 35), QPoint(100, 45)},
+        QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(50, 55), QPoint(120, 65)},
+        QColor(Qt::blue), 3, LineEndStyle::None, LineStyle::Solid));
+    AnnotationItem* topItem = window.m_annotationLayer->itemAt(1);
+
+    const QRect cropRect(30, 20, 120, 80);
+    const QPixmap expectedCropped = source.copy(cropRect);
+    window.applyCrop(cropRect);
+
+    // Removing a non-top item keeps the old top pointer unchanged. History
+    // state, rather than scene shape, must still put this undo before crop.
+    window.m_annotationLayer->setSelectedIndex(0);
+    QVERIFY(window.m_annotationLayer->removeSelectedItem());
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(1));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), topItem);
+
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
+    QCOMPARE(window.m_annotationLayer->itemAt(1), topItem);
+
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
+}
+
+void TestPinWindowCropUndo::testHandleToolbarRedo_NewAnnotationBranchInvalidatesCropRedo()
+{
+    QPixmap source = createPatternPixmap(220, 140);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(40, 35), QPoint(120, 55)},
+        QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+
+    const QRect cropRect(30, 20, 120, 80);
+    window.applyCrop(cropRect);
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY(!window.m_cropRedoStack.isEmpty());
+
+    // The old crop boundary remains annotation-undo-reachable, but the new
+    // branch must invalidate crop redo rather than reapply it out of order.
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(20, 20), QPoint(80, 45)},
+        QColor(Qt::blue), 3, LineEndStyle::None, LineStyle::Solid));
+    window.handleToolbarRedo();
+
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY(window.m_cropRedoStack.isEmpty());
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
+}
+
+void TestPinWindowCropUndo::testHistoryFloorInvalidatesUnreachableCropBoundary()
+{
+    QPixmap source = createPatternPixmap(260, 180);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    const QRect cropRect(30, 20, 160, 110);
+    const QPixmap expectedCropped = source.copy(cropRect);
+    window.applyCrop(cropRect);
+    QVERIFY(!window.m_cropUndoStack.isEmpty());
+
+    for (std::size_t i = 0; i <= AnnotationLayer::kMaxHistoryCommands; ++i) {
+        const int offset = static_cast<int>(i % 20);
+        window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+            QVector<QPoint>{QPoint(10 + offset, 10), QPoint(60 + offset, 30)},
+            QColor(Qt::red), 2, LineEndStyle::None, LineStyle::Solid));
+    }
+    QCOMPARE(window.m_annotationLayer->historyCommandCount(),
+             AnnotationLayer::kMaxHistoryCommands);
+    QCOMPARE(window.m_annotationLayer->historyStateRelation(
+                 window.m_cropUndoStack.constLast().annotationHistoryState),
+             AnnotationLayer::HistoryStateRelation::Unreachable);
+
+    window.handleToolbarUndo();
+
+    // Committed post-crop annotations make the old crop unsafe to undo. The
+    // crop entry is discarded while the latest annotation remains undoable.
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
+    QVERIFY(window.m_cropUndoStack.isEmpty());
+    QCOMPARE(window.m_annotationLayer->itemCount(),
+             AnnotationLayer::kMaxHistoryCommands);
+}
+
+namespace {
+// One recorded move of the item at index 0 (#237), as a drag would record it.
+void movePolyline(AnnotationLayer& layer, QPoint delta)
+{
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    static_cast<PolylineAnnotation*>(layer.itemAt(0))->moveBy(delta);
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+}
+QPoint firstPoint(AnnotationLayer& layer)
+{
+    return static_cast<PolylineAnnotation*>(layer.itemAt(0))->points().first();
+}
+} // namespace
+
+// #237: a move after a crop is undone first, then the crop.
+void TestPinWindowCropUndo::cropThenMoveUndoesInOrder()
+{
+    QPixmap source(220, 140);
+    source.fill(Qt::white);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(50, 40), QPoint(110, 60)}, QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    window.applyCrop(QRect(20, 10, 150, 100));
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(30, 30));
+    movePolyline(*window.m_annotationLayer, QPoint(20, 0));
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(50, 30));
+    window.handleToolbarUndo();   // the move
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(30, 30));
+    QVERIFY(window.canUndoCrop());
+    window.handleToolbarUndo();   // then the crop
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(50, 40));
+}
+
+void TestPinWindowCropUndo::moveThenCropUndoesInOrder()
+{
+    QPixmap source(220, 140);
+    source.fill(Qt::white);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(50, 40), QPoint(110, 60)}, QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    movePolyline(*window.m_annotationLayer, QPoint(20, 0));
+    window.applyCrop(QRect(20, 10, 150, 100));
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(50, 30));
+    window.handleToolbarUndo();   // the crop
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(70, 40));
+    window.handleToolbarUndo();   // then the move, at uncropped coordinates
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(50, 40));
+}
+
+// Undo during a drag must not reach past it and undo the crop.
+void TestPinWindowCropUndo::undoDuringGestureLeavesCrop()
+{
+    QPixmap source(220, 140);
+    source.fill(Qt::white);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(50, 40), QPoint(110, 60)}, QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    window.applyCrop(QRect(20, 10, 150, 100));
+    QVERIFY(window.m_annotationLayer->beginGesture(window.m_annotationLayer->idAt(0)));
+    window.handleToolbarUndo();
+    QVERIFY(window.canUndoCrop());   // still cropped
+    QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(30, 30));
+    window.m_annotationLayer->cancelGesture();
 }
 
 QTEST_MAIN(TestPinWindowCropUndo)

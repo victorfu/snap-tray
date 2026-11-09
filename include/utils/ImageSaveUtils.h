@@ -5,6 +5,9 @@
 #include <QImage>
 #include <QPixmap>
 #include <QString>
+#include <functional>
+#include "utils/FilenameTemplateEngine.h"
+#include "platform/AtomicFilePublish.h"
 
 class QScreen;
 
@@ -15,6 +18,22 @@ public:
         QString message;
         QString stage; // open / format / write / commit
     };
+
+    struct UniqueSaveSpec {
+        QString outputDir;
+        QString filenameTemplate;
+        FilenameTemplateEngine::Context context;
+    };
+    struct UniqueSaveResult {
+        bool success = false;
+        QString filePath;
+        QString renderWarning;
+        Error error;
+    };
+
+    static UniqueSaveResult saveImageUnique(const QImage& image,
+                                            const UniqueSaveSpec& spec,
+                                            const QByteArray& explicitFormat = {});
 
     static bool saveImageAtomically(const QImage& image,
                                     const QString& filePath,
@@ -28,6 +47,16 @@ public:
                                      QScreen* sourceScreen = nullptr);
 
 private:
+    friend class tst_ImageSaveUtils;
+    friend struct ImageSaveUtilsTestAccess;
+    struct UniqueSaveHooks {
+        std::function<SnapTray::FilePublishResult(const QString&, const QString&)> publish;
+        QString uuidSuffix;
+    };
+    static UniqueSaveResult saveImageUniqueWithHooks(const QImage& image,
+                                                     const UniqueSaveSpec& spec,
+                                                     const QByteArray& explicitFormat,
+                                                     const UniqueSaveHooks& hooks);
     static QByteArray resolveFormat(const QString& filePath,
                                     const QByteArray& explicitFormat,
                                     Error* error);

@@ -1,4 +1,5 @@
 #include "capture/SCKCaptureEngine.h"
+#include "capture/FrameRateUpdateState.h"
 
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
@@ -9,8 +10,12 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDebug>
+#include <QThread>
+#include <QMetaObject>
+#include <memory>
 #include <mutex>
 #include <atomic>
+#include <limits>
 
 #if !__has_feature(objc_arc)
 #error "SCKCaptureEngine_mac.mm requires Objective-C ARC"
@@ -42,6 +47,12 @@ static void releasePixelBuffer(void *info)
 }
 #endif
 
+struct SCKFrameRateLifetime
+{
+    std::mutex mutex;
+    SCKCaptureEngine* engine = nullptr;
+};
+
 class SCKCaptureEngine::Private
 {
 public:
@@ -53,6 +64,8 @@ public:
 #if HAS_SCREENCAPTUREKIT
     API_AVAILABLE(macos(12.3))
     SCStream *stream = nil;
+    API_AVAILABLE(macos(12.3))
+    SCStreamConfiguration *configuration = nil;
 
     API_AVAILABLE(macos(12.3))
     SCKStreamDelegate *delegate = nil;
@@ -64,25 +77,39 @@ public:
     QRect captureRegion;
     CaptureScreenInfo screenInfo;
     int frameRate = 30;
+    SnapTray::FrameRateUpdateState frameRateUpdates;
+    std::shared_ptr<SCKFrameRateLifetime> frameRateLifetime = std::make_shared<SCKFrameRateLifetime>();
     std::atomic<bool> running{false};
     bool useScreenCaptureKit = false;
     bool captureStartRequested = false;
 
     // Windows to exclude from capture (stored as CGWindowID)
     QList<CGWindowID> excludedWindowIds;
+    bool requireAllExcludedWindows = false;
 
-    // Latest captured frame (for async delivery)
+    // Latest captured frame (for async delivery). latestFrame wraps the
+    // pixels of latestBuffer, the CVPixelBuffer they live in.
     QImage latestFrame;
+    std::shared_ptr<void> latestBuffer;
     std::mutex frameMutex;
 
-    void setLatestFrame(const QImage &frame) {
+    void setLatestFrame(const QImage &frame, std::shared_ptr<void> buffer = {}) {
         std::lock_guard<std::mutex> lock(frameMutex);
         latestFrame = frame;
+        latestBuffer = std::move(buffer);
     }
 
     QImage getLatestFrame() {
         std::lock_guard<std::mutex> lock(frameMutex);
         return latestFrame;
+    }
+
+    SnapTray::CapturedFrame getLatestCapturedFrame() {
+        std::lock_guard<std::mutex> lock(frameMutex);
+        SnapTray::CapturedFrame frame;
+        frame.image = latestFrame;
+        frame.nativeBuffer = latestBuffer;
+        return frame;
     }
 };
 
@@ -149,7 +176,13 @@ API_AVAILABLE(macos(12.3))
         );
 
         if (!self.invalidated && localEngine) {
-            localEngine->setLatestFrame(wrappedImage);
+            // Encoders can take this surface as is (#154). Each holder keeps
+            // its own retain, so the stream's pool cannot reuse it early.
+            CVPixelBufferRetain(imageBuffer);
+            std::shared_ptr<void> nativeBuffer(imageBuffer, [](void *buffer) {
+                CVPixelBufferRelease(static_cast<CVPixelBufferRef>(buffer));
+            });
+            localEngine->setLatestFrame(wrappedImage, std::move(nativeBuffer));
         } else {
             // If invalidated or no engine, we must release the buffer ourselves
             // because wrappedImage destructor will not run properly or we want to release immediately
@@ -169,8 +202,45 @@ API_AVAILABLE(macos(12.3))
 
 - (void)stream:(SCStream *)stream didStopWithError:(NSError *)error
 {
-    if (error) {
-        NSLog(@"SCKCaptureEngine: Stream stopped with error: %@", error.localizedDescription);
+    dispatch_group_enter(_processingGroup);
+    @try {
+        auto* state = self.engine;
+        if (self.invalidated || !state) {
+            return;
+        }
+        self.invalidated = YES;
+        // Stop polling the cached frame immediately, even before Qt handles
+        // the notification. cleanup() drains this callback before deleting state.
+        state->running = false;
+        state->setLatestFrame(QImage());
+        const bool userStopped = [error.domain isEqualToString:SCStreamErrorDomain]
+            && error.code == SCStreamErrorUserStopped;
+        const QString message = error
+            ? QString::fromNSString(error.localizedDescription)
+            : QStringLiteral("Screen capture stream stopped unexpectedly");
+        SCKStreamDelegate* stoppedDelegate = self;
+        const auto lifetime = state->frameRateLifetime;
+        std::lock_guard<std::mutex> lock(lifetime->mutex);
+        auto* owner = lifetime->engine;
+        if (!owner) {
+            return;
+        }
+        QMetaObject::invokeMethod(owner, [owner, state, stoppedDelegate, userStopped, message] {
+            // A stop/restart may have replaced the stream before delivery.
+            if (state->delegate != stoppedDelegate) {
+                return;
+            }
+            state->running = false;
+            state->captureStartRequested = false;
+            state->setLatestFrame(QImage());
+            if (userStopped) {
+                emit owner->stoppedByUser();
+            } else {
+                emit owner->error(message);
+            }
+        }, Qt::QueuedConnection);
+    } @finally {
+        dispatch_group_leave(_processingGroup);
     }
 }
 
@@ -179,6 +249,7 @@ API_AVAILABLE(macos(12.3))
 
 void SCKCaptureEngine::Private::cleanup()
 {
+    frameRateUpdates.reset(frameRate);
 #if HAS_SCREENCAPTUREKIT
     if (@available(macOS 12.3, *)) {
         SCKStreamDelegate *localDelegate = delegate;
@@ -224,6 +295,7 @@ void SCKCaptureEngine::Private::cleanup()
         // Step 4: Release the last frame and the ARC-owned object graph.
         setLatestFrame(QImage());
         stream = nil;
+        configuration = nil;
         delegate = nil;
         targetDisplay = nil;
     }
@@ -238,10 +310,15 @@ SCKCaptureEngine::SCKCaptureEngine(QObject *parent)
     : ICaptureEngine(parent)
     , d(new Private)
 {
+    d->frameRateLifetime->engine = this;
 }
 
 SCKCaptureEngine::~SCKCaptureEngine()
 {
+    {
+        std::lock_guard<std::mutex> lock(d->frameRateLifetime->mutex);
+        d->frameRateLifetime->engine = nullptr;
+    }
     stop();
     delete d;
 }
@@ -309,13 +386,56 @@ bool SCKCaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &s
 
 void SCKCaptureEngine::setFrameRate(int fps)
 {
+    Q_ASSERT(QThread::currentThread() == thread());
+    if (fps <= 0) {
+        emit error("Invalid capture frame rate");
+        return;
+    }
     m_frameRate = fps;
     d->frameRate = fps;
+    d->frameRateUpdates.request(fps);
+    if (d->running) applyPendingFrameRate();
+}
+
+void SCKCaptureEngine::applyPendingFrameRate()
+{
+#if HAS_SCREENCAPTUREKIT
+    if (@available(macOS 12.3, *)) {
+        if (!d->running || !d->stream || !d->configuration) return;
+        const auto update = d->frameRateUpdates.begin();
+        if (!update) return;
+        const auto request = *update;
+        const auto lifetime = d->frameRateLifetime;
+        // Keep all crop, size, pixel format and exclusion configuration intact.
+        // Only one update is in flight, so this object is never modified
+        // again until the native completion has been handled.
+        SCStreamConfiguration* config = d->configuration;
+        config.minimumFrameInterval = CMTimeMake(1, request.fps);
+        SCStream* stream = d->stream;
+        [stream updateConfiguration:config completionHandler:^(NSError* nativeError) {
+            const QString message = nativeError
+                ? QString::fromNSString(nativeError.localizedDescription) : QString();
+            std::lock_guard<std::mutex> lock(lifetime->mutex);
+            auto* engine = lifetime->engine;
+            if (!engine) return;
+            QMetaObject::invokeMethod(engine, [engine, request, config, message] {
+                auto* state = engine->d;
+                if (!state->frameRateUpdates.complete(request, message.isEmpty())) return;
+                if (!message.isEmpty()) {
+                    emit engine->error(QStringLiteral("Failed to update capture frame rate: ") + message);
+                    return;
+                }
+                state->configuration = config;
+                engine->applyPendingFrameRate();
+            }, Qt::QueuedConnection);
+        }];
+    }
+#endif
 }
 
 void SCKCaptureEngine::setExcludedWindows(const QList<WId> &windowIds)
 {
-    d->excludedWindowIds.clear();
+    QList<quintptr> nativeIds;
     for (WId wid : windowIds) {
         // Convert Qt WId (NSView*) to CGWindowID
         NSView *view = (__bridge NSView *)reinterpret_cast<void *>(wid);
@@ -323,9 +443,23 @@ void SCKCaptureEngine::setExcludedWindows(const QList<WId> &windowIds)
             NSWindow *window = [view window];
             if (window) {
                 CGWindowID windowId = static_cast<CGWindowID>([window windowNumber]);
-                d->excludedWindowIds.append(windowId);
+                nativeIds.append(windowId);
                 qDebug() << "SCKCaptureEngine: Added excluded window ID:" << windowId;
             }
+        }
+    }
+    setExcludedCaptureWindowIds(nativeIds);
+    d->requireAllExcludedWindows = false; // Preserve the legacy live-pin contract.
+}
+
+void SCKCaptureEngine::setExcludedCaptureWindowIds(const QList<quintptr>& ids)
+{
+    d->requireAllExcludedWindows = true;
+    d->excludedWindowIds.clear();
+    for (quintptr id : ids) {
+        if (id != 0 && id <= std::numeric_limits<CGWindowID>::max()
+            && !d->excludedWindowIds.contains(static_cast<CGWindowID>(id))) {
+            d->excludedWindowIds.append(static_cast<CGWindowID>(id));
         }
     }
 }
@@ -362,7 +496,8 @@ bool SCKCaptureEngine::start()
         __block SCShareableContent *content = nil;
         __block NSError *contentError = nil;
 
-        [SCShareableContent getShareableContentWithCompletionHandler:^(
+        [SCShareableContent getShareableContentExcludingDesktopWindows:NO
+            onScreenWindowsOnly:NO completionHandler:^(
             SCShareableContent *shareableContent, NSError *error) {
             content = shareableContent;
             contentError = error;
@@ -477,6 +612,12 @@ bool SCKCaptureEngine::start()
                     }
                 }
                 qDebug() << "SCKCaptureEngine::start() - Found" << excludedWindows.count << "windows to exclude";
+                if (d->requireAllExcludedWindows
+                    && excludedWindows.count != static_cast<NSUInteger>(d->excludedWindowIds.size())) {
+                    emit error(tr("Recording controls could not be excluded from capture. Please try again."));
+                    d->cleanup();
+                    return false;
+                }
             }
 
             // Create content filter for the display, excluding our UI windows
@@ -543,6 +684,8 @@ bool SCKCaptureEngine::start()
             d->stream = [[SCStream alloc] initWithFilter:filter
                                            configuration:config
                                                 delegate:d->delegate];
+            d->configuration = config;
+            d->frameRateUpdates.reset(d->frameRate);
             qDebug() << "SCKCaptureEngine::start() - SCStream created:" << (d->stream ? "valid" : "nil");
 
             qDebug() << "SCKCaptureEngine::start() - Adding stream output...";
@@ -676,6 +819,17 @@ QImage SCKCaptureEngine::captureFrame()
         qDebug() << "SCKCaptureEngine::captureFrame() - Fallback, returning empty";
     }
     return QImage();
+}
+
+SnapTray::CapturedFrame SCKCaptureEngine::captureNativeFrame()
+{
+#if HAS_SCREENCAPTUREKIT
+    if (d->running && d->useScreenCaptureKit) {
+        return d->getLatestCapturedFrame();
+    }
+#endif
+    // Same empty result as captureFrame() when not capturing.
+    return ICaptureEngine::captureNativeFrame();
 }
 
 QString SCKCaptureEngine::engineName() const

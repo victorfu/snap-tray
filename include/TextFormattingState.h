@@ -17,14 +17,17 @@ struct TextFormattingState {
     int fontSize = 16;
     QString fontFamily;  // Empty = system default
 
+    // Use the same default/fallback family list for new and selected text.
+    static void applyFontFamily(QFont& font, const QString& family) {
+        font.setFamilies(family.isEmpty() ? QFont().families() : QStringList{family});
+    }
+
     /**
      * @brief Convert the formatting state to a QFont.
      */
     QFont toQFont() const {
         QFont font;
-        if (!fontFamily.isEmpty()) {
-            font.setFamily(fontFamily);
-        }
+        applyFontFamily(font, fontFamily);
         font.setPointSize(fontSize);
         font.setBold(bold);
         font.setItalic(italic);

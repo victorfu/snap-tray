@@ -69,6 +69,7 @@ std::vector<DetectedElement> enumerateWindowsSnapshot(qreal dpr, DetectionFlags 
                             QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
                             element.bounds = CoordinateHelper::physicalToQtLogical(physicalBounds, menuWnd);
+                            element.nativePhysicalBounds = physicalBounds;
                             element.windowTitle = QString();
                             element.ownerApp = QString();
                             element.windowLayer = 0;
@@ -155,8 +156,8 @@ int getMinimumSize(ElementType type)
 QString getProcessName(DWORD processId)
 {
     QString processName;
-    HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
-                                   FALSE, processId);
+    // QueryFullProcessImageNameW needs no access to the process's memory.
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
     if (hProcess) {
         WCHAR path[MAX_PATH];
         DWORD size = MAX_PATH;
@@ -326,6 +327,7 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     // Create DetectedElement
     DetectedElement element;
     element.bounds = logicalBounds;
+    element.nativePhysicalBounds = physicalBounds;
     element.windowTitle = windowTitle;
     element.ownerApp = ownerApp;
     element.windowLayer = 0;  // Windows doesn't have explicit layers like macOS
@@ -407,6 +409,7 @@ BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam)
 
     DetectedElement element;
     element.bounds = logicalBounds;
+    element.nativePhysicalBounds = physicalBounds;
     element.windowLayer = 1;  // Child elements have layer 1 (vs 0 for windows)
     element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
     element.elementType = elementType;
@@ -438,6 +441,33 @@ bool WindowDetector::hasAccessibilityPermission(bool /*promptIfMissing*/)
 {
     // No special permissions needed on Windows for window enumeration
     return true;
+}
+
+void WindowDetector::populateWindowMetadata(DetectedElement &element, bool includeTitle)
+{
+    // windowId holds the HWND truncated to 32 bits; Windows documents that
+    // handles round-trip safely by sign-extending them back.
+    HWND hwnd = reinterpret_cast<HWND>(
+        static_cast<intptr_t>(static_cast<int32_t>(element.windowId)));
+    if (!hwnd || !IsWindow(hwnd)) {
+        return;
+    }
+
+    if (includeTitle && element.windowTitle.isEmpty()) {
+        // Child controls report the title of their top-level window.
+        HWND rootHwnd = GetAncestor(hwnd, GA_ROOT);
+        if (!rootHwnd) {
+            rootHwnd = hwnd;
+        }
+        constexpr int kMaxTitleLength = 512;
+        WCHAR titleBuffer[kMaxTitleLength];
+        const int titleLen = GetWindowTextW(rootHwnd, titleBuffer, kMaxTitleLength);
+        element.windowTitle = QString::fromWCharArray(titleBuffer, titleLen);
+    }
+
+    if (element.ownerApp.isEmpty() && element.ownerPid > 0) {
+        element.ownerApp = getProcessName(static_cast<DWORD>(element.ownerPid));
+    }
 }
 
 void WindowDetector::setScreen(QScreen *screen)
@@ -542,6 +572,7 @@ void WindowDetector::enumerateWindows()
                             QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
                             element.bounds = CoordinateHelper::physicalToQtLogical(physicalBounds, menuWnd);
+                            element.nativePhysicalBounds = physicalBounds;
                             element.windowTitle = QString();
                             element.ownerApp = QString();
                             element.windowLayer = 0;

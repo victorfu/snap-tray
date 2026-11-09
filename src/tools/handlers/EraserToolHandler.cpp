@@ -26,7 +26,7 @@ void EraserToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
     m_currentStrokeErasedItems.clear();
     m_removedOriginalIndices.clear();
 
-    eraseAt(ctx, pos);
+    eraseSegment(ctx, pos, pos);
     ctx->repaint();
 }
 
@@ -37,9 +37,11 @@ void EraserToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos)
             return;
         }
 
-        eraseAt(ctx, pos);
+        eraseSegment(ctx, m_lastPoint, pos);
         m_lastPoint = pos;
-        ctx->repaint();
+        if (ctx) {
+            ctx->repaint();
+        }
         return;
     }
 }
@@ -51,18 +53,15 @@ void EraserToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos)
     }
 
     if (pos != m_lastPoint) {
-        eraseAt(ctx, pos);
+        eraseSegment(ctx, m_lastPoint, pos);
     }
 
     QPointer<AnnotationLayer> activeLayer = m_activeLayer;
-    const bool transactionValid = activeLayer && activeLayer->endEraseTransaction();
-
-    const bool canCommit = transactionValid && ctx &&
-        (ctx->addAnnotation || ctx->annotationLayer == activeLayer);
-    if (!m_currentStrokeErasedItems.empty() && canCommit) {
-        ctx->addItem(std::make_unique<ErasedItemsGroup>(std::move(m_currentStrokeErasedItems)));
-    } else if (transactionValid && !m_currentStrokeErasedItems.empty()) {
-        activeLayer->restoreRemovedItems(std::move(m_currentStrokeErasedItems));
+    const bool canCommit = activeLayer && ctx && ctx->annotationLayer == activeLayer;
+    const bool committed = canCommit
+        && activeLayer->commitEraseTransaction(std::move(m_currentStrokeErasedItems));
+    if (!committed && activeLayer) {
+        activeLayer->cancelEraseTransaction(std::move(m_currentStrokeErasedItems));
     }
 
     m_isErasing = false;
@@ -91,10 +90,7 @@ void EraserToolHandler::cancelDrawing()
 {
     QPointer<AnnotationLayer> activeLayer = m_activeLayer;
     if (activeLayer) {
-        const bool transactionValid = activeLayer->endEraseTransaction();
-        if (transactionValid && !m_currentStrokeErasedItems.empty()) {
-            activeLayer->restoreRemovedItems(std::move(m_currentStrokeErasedItems));
-        }
+        activeLayer->cancelEraseTransaction(std::move(m_currentStrokeErasedItems));
     }
 
     m_isErasing = false;
@@ -122,7 +118,7 @@ CursorStyleSpec EraserToolHandler::cursorStyleSpec() const
     return spec;
 }
 
-void EraserToolHandler::eraseAt(ToolContext* ctx, const QPoint& pos)
+void EraserToolHandler::eraseSegment(ToolContext* ctx, const QPoint& from, const QPoint& to)
 {
     if (!ctx || !ctx->annotationLayer || !m_activeLayer ||
         ctx->annotationLayer != m_activeLayer ||
@@ -132,24 +128,66 @@ void EraserToolHandler::eraseAt(ToolContext* ctx, const QPoint& pos)
 
     int diameter = std::clamp(m_eraserWidth, kMinWidth, kMaxWidth);
     m_eraserWidth = diameter;
-    auto removedItems = ctx->annotationLayer->removeItemsIntersecting(pos, diameter);
+    auto removedItems = ctx->annotationLayer->removeItemsIntersecting(from, to, diameter);
     if (removedItems.empty()) {
         return;
     }
 
-    std::vector<size_t> removedOriginalIndices;
-    removedOriginalIndices.reserve(removedItems.size());
+    if (removedItems.size()
+            > m_currentStrokeErasedItems.max_size() - m_currentStrokeErasedItems.size()
+        || removedItems.size()
+            > m_removedOriginalIndices.max_size() - m_removedOriginalIndices.size()) {
+        ctx->annotationLayer->restoreRemovedItems(std::move(removedItems));
+        return;
+    }
+
+    const size_t erasedRequired =
+        m_currentStrokeErasedItems.size() + removedItems.size();
+    const size_t indicesRequired =
+        m_removedOriginalIndices.size() + removedItems.size();
+    const auto geometricCapacity = [](size_t required,
+                                      size_t capacity,
+                                      size_t maxSize) {
+        if (required <= capacity) {
+            return capacity;
+        }
+        const size_t doubled = capacity > maxSize / 2
+            ? maxSize
+            : capacity * 2;
+        return (std::max)(required, doubled);
+    };
+
+    try {
+        // Guarantee all aggregation storage before moving ownership out of the
+        // layer-returned batch. Geometric growth preserves amortized O(N)
+        // behavior when a gesture erases one item per mouse sample.
+        if (erasedRequired > m_currentStrokeErasedItems.capacity()) {
+            m_currentStrokeErasedItems.reserve(geometricCapacity(
+                erasedRequired,
+                m_currentStrokeErasedItems.capacity(),
+                m_currentStrokeErasedItems.max_size()));
+        }
+        if (indicesRequired > m_removedOriginalIndices.capacity()) {
+            m_removedOriginalIndices.reserve(geometricCapacity(
+                indicesRequired,
+                m_removedOriginalIndices.capacity(),
+                m_removedOriginalIndices.max_size()));
+        }
+    } catch (...) {
+        ctx->annotationLayer->restoreRemovedItems(std::move(removedItems));
+        return;
+    }
 
     // All indices returned by one layer query refer to the same pre-query
     // ordering. Map the whole batch before recording any of its removals.
     for (auto& indexed : removedItems) {
         indexed.originalIndex = mapToOriginalIndex(indexed.originalIndex);
-        removedOriginalIndices.push_back(indexed.originalIndex);
+    }
+    for (auto& indexed : removedItems) {
+        m_removedOriginalIndices.push_back(indexed.originalIndex);
         m_currentStrokeErasedItems.push_back(std::move(indexed));
     }
 
-    m_removedOriginalIndices.insert(m_removedOriginalIndices.end(),
-        removedOriginalIndices.begin(), removedOriginalIndices.end());
     std::sort(m_removedOriginalIndices.begin(), m_removedOriginalIndices.end());
 }
 

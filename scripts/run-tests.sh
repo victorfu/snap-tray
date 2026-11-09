@@ -27,7 +27,7 @@ configure_build_dir() {
         desired_generator="Ninja"
         desired_sdk="$(xcrun --sdk macosx --show-sdk-path)"
         buildsystem_file="$build_dir/build.ninja"
-        cmake_args=(-G "$desired_generator" "${cmake_args[@]}" -DCMAKE_PREFIX_PATH="$(brew --prefix qt)" -DCMAKE_OSX_SYSROOT="$desired_sdk")
+        cmake_args=(-G "$desired_generator" "${cmake_args[@]}" -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR:-$(brew --prefix qt)}" -DCMAKE_OSX_SYSROOT="$desired_sdk")
     fi
 
     if [[ "$OSTYPE" == linux* ]]; then
@@ -99,7 +99,7 @@ cmake --build "$BUILD_DIR"
 echo ""
 echo "Running tests..."
 if [[ "$OSTYPE" == linux* ]] && [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1; then
-    xvfb-run -a ctest --test-dir "$BUILD_DIR" --output-on-failure
+    XDG_SESSION_TYPE=x11 xvfb-run -a ctest --test-dir "$BUILD_DIR" --output-on-failure
 else
     ctest --test-dir "$BUILD_DIR" --output-on-failure
 fi

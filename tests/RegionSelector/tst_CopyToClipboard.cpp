@@ -1,17 +1,128 @@
 #include <QtTest/QtTest>
+#include <memory>
 
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
+#include "history/HistoryRecorder.h"
 
 class tst_RegionSelectorCopyToClipboard : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void cleanup();
+    void cleanupTestCase();
     void testCopyWaitsForClipboardCompletionBeforeClosingSelector();
     void testCopyDoesNotBlockOnSlowClipboardWriter();
     void testClipboardFailureKeepsSelectorOpenAndAllowsRetry();
+    void testCompletionAfterSelectorDestructionIsIgnored();
+    void testQuickPinCompletesOnce_data();
+    void testQuickPinCompletesOnce();
+    void testQuickPinAcceptsAdjustedPresetOnRelease_data();
+    void testQuickPinAcceptsAdjustedPresetOnRelease();
+
+private:
+    QTemporaryDir m_historyDirectory;
+    QByteArray m_previousHistoryDirectory;
 };
+
+void tst_RegionSelectorCopyToClipboard::initTestCase()
+{
+    m_previousHistoryDirectory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    QVERIFY(m_historyDirectory.isValid());
+    qputenv("SNAPTRAY_HISTORY_DIR", m_historyDirectory.path().toLocal8Bit());
+}
+
+void tst_RegionSelectorCopyToClipboard::cleanup()
+{
+    // Successful copies queue history submission on qApp before starting the
+    // recorder's worker. Flush those callbacks first, then finish image writes
+    // while QApplication and its image plugins are still alive.
+    QCoreApplication::sendPostedEvents(qApp, QEvent::MetaCall);
+    QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_RegionSelectorCopyToClipboard::cleanupTestCase()
+{
+    if (m_previousHistoryDirectory.isNull()) {
+        qunsetenv("SNAPTRAY_HISTORY_DIR");
+    } else {
+        qputenv("SNAPTRAY_HISTORY_DIR", m_previousHistoryDirectory);
+    }
+}
+
+void tst_RegionSelectorCopyToClipboard::testQuickPinCompletesOnce_data()
+{
+    QTest::addColumn<bool>("reenter");
+    QTest::newRow("fallback-click") << false;
+    QTest::newRow("reentrant-completion") << true;
+}
+
+void tst_RegionSelectorCopyToClipboard::testQuickPinCompletesOnce()
+{
+    QFETCH(bool, reenter);
+    auto* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("Requires a screen");
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap background(screen->size());
+    background.fill(Qt::red);
+    selector.initializeForScreen(screen, background);
+    selector.setQuickPinMode(true);
+    QSignalSpy selected(&selector, &RegionSelector::regionSelected);
+    if (reenter) {
+        connect(&selector, &RegionSelector::regionSelected, &selector, [&selector] {
+            RegionSelectorTestAccess::finishSelection(selector);
+        });
+    }
+    RegionSelectorTestAccess::dispatchMousePress(selector, QPoint(50, 50));
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, QPoint(50, 50));
+    QCOMPARE(selected.count(), 1);
+    QVERIFY(RegionSelectorTestAccess::isClosing(selector));
+    RegionSelectorTestAccess::finishSelection(selector);
+    QCOMPARE(selected.count(), 1);
+}
+
+void tst_RegionSelectorCopyToClipboard::testQuickPinAcceptsAdjustedPresetOnRelease_data()
+{
+    // Offsets are relative to the preset rect QRect(40, 40, 120, 80).
+    QTest::addColumn<QPoint>("pressPos");
+    QTest::addColumn<QPoint>("releasePos");
+    QTest::newRow("move") << QPoint(100, 80) << QPoint(110, 85);
+    QTest::newRow("resize-handle") << QPoint(159, 119) << QPoint(180, 140);
+    QTest::newRow("outside-edge-click") << QPoint(10, 80) << QPoint(10, 80);
+}
+
+void tst_RegionSelectorCopyToClipboard::testQuickPinAcceptsAdjustedPresetOnRelease()
+{
+    QFETCH(QPoint, pressPos);
+    QFETCH(QPoint, releasePos);
+    // Scripted `gui -s --region/--last-region` starts from an already complete
+    // selection. Adjusting it must still finish on release, without a toolbar.
+    auto* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("Requires a screen");
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.setQuickPinMode(true);
+    QPixmap background(screen->size());
+    background.fill(Qt::red);
+    const QRect localPreset(40, 40, 120, 80);
+    selector.initializeWithRegion(
+        screen, localPreset.translated(screen->geometry().topLeft()), background);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), localPreset);
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+
+    QSignalSpy selected(&selector, &RegionSelector::regionSelected);
+    RegionSelectorTestAccess::dispatchWidgetMousePress(selector, pressPos);
+    RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, releasePos, Qt::LeftButton);
+    RegionSelectorTestAccess::dispatchWidgetMouseRelease(selector, releasePos);
+
+    QCOMPARE(selected.count(), 1);
+    QVERIFY(RegionSelectorTestAccess::isClosing(selector));
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+}
 
 void tst_RegionSelectorCopyToClipboard::testCopyWaitsForClipboardCompletionBeforeClosingSelector()
 {
@@ -79,11 +190,15 @@ void tst_RegionSelectorCopyToClipboard::testCopyDoesNotBlockOnSlowClipboardWrite
 
     bool writerCalled = false;
     bool completionCalled = false;
+    QObject completionContext;
     RegionSelectorTestAccess::setGuiClipboardWriter(
         selector,
         [&](const QImage&, std::function<void(bool)> completion) {
             writerCalled = true;
-            QTimer::singleShot(150, qApp, [&completionCalled, completion = std::move(completion)]() mutable {
+            // Bind the pending callback to this test invocation. If an
+            // assertion exits early it must not write a dead stack variable
+            // during the next test's event processing.
+            QTimer::singleShot(0, &completionContext, [&completionCalled, completion = std::move(completion)]() mutable {
                 completionCalled = true;
                 if (completion) {
                     completion(true);
@@ -91,13 +206,12 @@ void tst_RegionSelectorCopyToClipboard::testCopyDoesNotBlockOnSlowClipboardWrite
             });
         });
 
-    QElapsedTimer timer;
-    timer.start();
     RegionSelectorTestAccess::invokeCopyToClipboard(selector);
 
-    QVERIFY2(timer.elapsed() < 80, "copyToClipboard() blocked on the clipboard writer");
     QVERIFY(writerCalled);
-    QVERIFY(!completionCalled);
+    // copyToClipboard must return before dispatching the queued writer. This
+    // detects a nested completion wait without a machine-speed threshold.
+    QVERIFY2(!completionCalled, "copyToClipboard() waited for the clipboard writer");
     QVERIFY(!RegionSelectorTestAccess::isClosing(selector));
     QTRY_VERIFY(completionCalled);
     QTRY_VERIFY(RegionSelectorTestAccess::isClosing(selector));
@@ -147,6 +261,28 @@ void tst_RegionSelectorCopyToClipboard::testClipboardFailureKeepsSelectorOpenAnd
     pendingCompletion(true);
     QTRY_VERIFY(RegionSelectorTestAccess::isClosing(selector));
     QCOMPARE(copyRequestedSpy.count(), 1);
+}
+
+void tst_RegionSelectorCopyToClipboard::testCompletionAfterSelectorDestructionIsIgnored()
+{
+    auto* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("No screens available for RegionSelector copy test.");
+    auto selector = std::make_unique<RegionSelector>();
+    selector->setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap preCapture(screen->geometry().size().boundedTo(QSize(320, 240)));
+    preCapture.fill(Qt::red);
+    selector->initializeForScreen(screen, preCapture);
+    RegionSelectorTestAccess::setSelectionRect(*selector, QRect(10, 10, 40, 30));
+    std::function<void(bool)> pending;
+    RegionSelectorTestAccess::setGuiClipboardWriter(*selector,
+        [&](const QImage&, std::function<void(bool)> completion) {
+            pending = std::move(completion);
+        });
+    RegionSelectorTestAccess::invokeCopyToClipboard(*selector);
+    QVERIFY(pending);
+    selector.reset();
+    pending(false);
+    pending(true);
 }
 
 QTEST_MAIN(tst_RegionSelectorCopyToClipboard)

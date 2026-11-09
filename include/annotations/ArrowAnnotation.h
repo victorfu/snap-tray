@@ -16,6 +16,8 @@ enum class LineEndStyle {
     BothArrowOutline // Outline triangles at both ends
 };
 
+struct LineAnnotationGeometry;
+
 /**
  * @brief Arrow annotation (line with optional arrowhead) - supports Quadratic Bézier curves.
  *
@@ -38,18 +40,22 @@ public:
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
+    std::size_t estimatedRetainedBytes() const override { return sizeof(ArrowAnnotation); }
 
     // Point accessors
     void setStart(const QPoint &start);
     void setEnd(const QPoint &end);
-    void setControlPoint(const QPoint &p);
+    void setControlPoint(const QPointF &p);
 
     QPoint start() const { return m_start; }
     QPoint end() const { return m_end; }
-    QPoint controlPoint() const { return m_controlPoint; }
+    QPointF controlPoint() const { return m_controlPoint; }
     QColor color() const { return m_color; }
     int width() const { return m_width; }
     LineStyle lineStyle() const { return m_lineStyle; }
+    void setColor(const QColor& color) { m_color = color; }
+    void setWidth(int width) { m_width = qMax(1, width); }
+    void setLineStyle(LineStyle style) { m_lineStyle = style; }
 
     // Line end style
     void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }
@@ -76,9 +82,7 @@ public:
     void moveBy(const QPoint &delta);
 
 private:
-    // Arrowhead drawing helpers
-    void drawArrowheadAtAngle(QPainter &painter, const QPoint &tip, double angle, bool filled) const;
-    void drawArrowheadLineAtAngle(QPainter &painter, const QPoint &tip, double angle) const;
+    LineAnnotationGeometry geometry() const;
 
     // Tangent angle calculations for Bézier curve
     double endTangentAngle() const;
@@ -86,14 +90,11 @@ private:
 
     QPoint m_start;
     QPoint m_end;
-    QPoint m_controlPoint;
+    QPointF m_controlPoint;
     QColor m_color;
     int m_width;
     LineEndStyle m_lineEndStyle;
     LineStyle m_lineStyle;
-
-    // Hit testing tolerance
-    static constexpr int kHitTolerance = 10;
 };
 
 #endif // ARROWANNOTATION_H

@@ -13,7 +13,9 @@ void MosaicToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_currentPath.clear();
     m_currentPath.append(pos);
 
-    int brushWidth = ctx->width > 0 ? ctx->width : kDefaultBrushWidth;
+    const int brushWidth = ctx->mosaicWidth > 0
+        ? ctx->mosaicWidth
+        : kDefaultBrushWidth;
     m_currentStroke = std::make_unique<MosaicStroke>(
         m_currentPath,
         ctx->sourcePixmap,  // Pass shared pointer directly
@@ -30,6 +32,7 @@ void MosaicToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
+    if (m_currentPath.size() >= 2 && m_currentPath.constLast() == pos) return;
     m_currentPath.append(pos);
     m_currentStroke->addPoint(pos);
 
@@ -43,6 +46,7 @@ void MosaicToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
 
     // Add final point
     if (m_currentPath.isEmpty() || m_currentPath.last() != pos) {
+        m_currentPath.append(pos);
         if (m_currentStroke) {
             m_currentStroke->addPoint(pos);
         }
@@ -67,10 +71,23 @@ void MosaicToolHandler::drawPreview(QPainter& painter) const {
     }
 }
 
+QRect MosaicToolHandler::previewBounds() const
+{
+    return m_isDrawing && m_currentStroke
+        ? m_currentStroke->previewAffectedBoundingRect() : QRect();
+}
+
 void MosaicToolHandler::cancelDrawing() {
     m_isDrawing = false;
     m_currentPath.clear();
     m_currentStroke.reset();
+}
+
+void MosaicToolHandler::onDeactivate(ToolContext* ctx)
+{
+    if (!m_isDrawing) return;
+    cancelDrawing();
+    ctx->repaint(); // Empty previewBounds asks the hosts to clear the old preview.
 }
 
 QCursor MosaicToolHandler::cursor() const {

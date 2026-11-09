@@ -40,6 +40,12 @@ public:
     bool loadAutoSaveRecordings() const;
     void saveAutoSaveRecordings(bool enabled);
 
+    // Manual screenshot save location settings
+    bool loadUseLastScreenshotSaveLocation() const;
+    void saveUseLastScreenshotSaveLocation(bool enabled);
+    QString resolveManualScreenshotSaveDirectory(bool useLastSaveLocation) const;
+    void rememberManualScreenshotSaveDirectory(const QString& savedFilePath);
+
     // Default values
     static QString defaultScreenshotPath();
     static QString defaultRecordingPath();
@@ -48,6 +54,7 @@ public:
     static QString defaultFilenameTemplate();
     static bool defaultAutoSaveScreenshots() { return true; }
     static bool defaultAutoSaveRecordings() { return true; }
+    static bool defaultUseLastScreenshotSaveLocation() { return false; }
 
 private:
     FileSettingsManager() = default;
@@ -61,6 +68,10 @@ private:
     static constexpr const char* kSettingsKeyFilenameTemplate = "files/filenameTemplate";
     static constexpr const char* kSettingsKeyAutoSaveScreenshots = "files/autoSaveScreenshots";
     static constexpr const char* kSettingsKeyAutoSaveRecordings = "files/autoSaveRecordings";
+    static constexpr const char* kSettingsKeyUseLastScreenshotSaveLocation =
+        "files/useLastScreenshotSaveLocation";
+    static constexpr const char* kSettingsKeyLastScreenshotSaveDirectory =
+        "files/lastScreenshotSaveDirectory";
 };
 
 #endif // FILESETTINGSMANAGER_H

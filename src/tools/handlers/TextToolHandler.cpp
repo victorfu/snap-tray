@@ -40,14 +40,10 @@ bool TextToolHandler::handleEscape(ToolContext* ctx)
         return true;
     }
 
-    if (ctx->textAnnotationEditor && ctx->textAnnotationEditor->isTransforming()) {
-        ctx->textAnnotationEditor->finishTransformation();
-        ctx->repaint();
-        return true;
-    }
-
-    if (ctx->textAnnotationEditor && ctx->textAnnotationEditor->isDragging()) {
-        ctx->textAnnotationEditor->finishDragging();
+    // Escape puts a dragged or transformed text back (#237).
+    if (ctx->textAnnotationEditor
+        && (ctx->textAnnotationEditor->isTransforming() || ctx->textAnnotationEditor->isDragging())) {
+        ctx->textAnnotationEditor->cancelInteraction();
         ctx->repaint();
         return true;
     }
@@ -173,11 +169,13 @@ bool TextToolHandler::handleInteractionRelease(ToolContext* ctx, const QPoint& p
 
     auto* textEditor = ctx->textAnnotationEditor;
     if (textEditor->isTransforming()) {
+        if (textEditor->activeHandle() == GizmoHandle::Body) textEditor->updateTransformation(pos);
         textEditor->finishTransformation();
         return true;
     }
 
     if (textEditor->isDragging()) {
+        textEditor->updateDragging(pos);
         textEditor->finishDragging();
         return true;
     }

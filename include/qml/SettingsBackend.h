@@ -7,7 +7,10 @@
 #include <QStringList>
 #include <QVariantList>
 
+#include <functional>
+
 class tst_SettingsBackend;
+struct AutoLaunchStatus;
 template<typename T>
 class QFutureWatcher;
 struct OCRLanguageInfo;
@@ -22,16 +25,23 @@ class SettingsBackend : public QObject
     Q_OBJECT
 
     // ──── General ────
+    // Per-setting reset (#227): keys are property names; see kResettableSettings.
+    Q_PROPERTY(QStringList changedSettings READ changedSettings NOTIFY changedSettingsChanged)
+    Q_PROPERTY(bool alignmentAssist READ alignmentAssist WRITE setAlignmentAssist NOTIFY alignmentAssistChanged)
     Q_PROPERTY(bool startOnLogin READ startOnLogin WRITE setStartOnLogin NOTIFY startOnLoginChanged)
+    Q_PROPERTY(bool startOnLoginBusy READ startOnLoginBusy NOTIFY startOnLoginStateChanged)
+    Q_PROPERTY(bool startOnLoginCanChange READ startOnLoginCanChange NOTIFY startOnLoginStateChanged)
+    Q_PROPERTY(QString startOnLoginStatusText READ startOnLoginStatusText NOTIFY startOnLoginStateChanged)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
     Q_PROPERTY(QVariantList availableLanguages READ availableLanguages CONSTANT)
     Q_PROPERTY(int appTheme READ appTheme WRITE setAppTheme NOTIFY appThemeChanged)
     Q_PROPERTY(bool cliInstalled READ cliInstalled NOTIFY cliInstalledChanged)
     Q_PROPERTY(bool isMacOS READ isMacOS CONSTANT)
     Q_PROPERTY(bool recordingSupported READ recordingSupported CONSTANT)
+    Q_PROPERTY(bool recordingDirectMp4Only READ recordingDirectMp4Only CONSTANT)
     Q_PROPERTY(bool ocrSettingsVisible READ ocrSettingsVisible CONSTANT)
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     // ──── macOS Permissions ────
     Q_PROPERTY(bool hasScreenRecordingPermission READ hasScreenRecordingPermission NOTIFY permissionsChanged)
     Q_PROPERTY(bool hasAccessibilityPermission READ hasAccessibilityPermission NOTIFY permissionsChanged)
@@ -41,11 +51,13 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool magnifierEnabled READ magnifierEnabled WRITE setMagnifierEnabled NOTIFY magnifierEnabledChanged)
     Q_PROPERTY(int cursorCompanionStyle READ cursorCompanionStyle WRITE setCursorCompanionStyle NOTIFY cursorCompanionStyleChanged)
     Q_PROPERTY(bool shortcutHintsEnabled READ shortcutHintsEnabled WRITE setShortcutHintsEnabled NOTIFY shortcutHintsEnabledChanged)
+    Q_PROPERTY(int fullScreenCaptureAction READ fullScreenCaptureAction WRITE setFullScreenCaptureAction NOTIFY fullScreenCaptureActionChanged)
     Q_PROPERTY(int blurIntensity READ blurIntensity WRITE setBlurIntensity NOTIFY blurIntensityChanged)
     Q_PROPERTY(int blurType READ blurType WRITE setBlurType NOTIFY blurTypeChanged)
     Q_PROPERTY(int pinDefaultOpacity READ pinDefaultOpacity WRITE setPinDefaultOpacity NOTIFY pinDefaultOpacityChanged)
     Q_PROPERTY(int pinOpacityStep READ pinOpacityStep WRITE setPinOpacityStep NOTIFY pinOpacityStepChanged)
     Q_PROPERTY(int pinZoomStep READ pinZoomStep WRITE setPinZoomStep NOTIFY pinZoomStepChanged)
+    Q_PROPERTY(bool pinShowHoverControls READ pinShowHoverControls WRITE setPinShowHoverControls NOTIFY pinShowHoverControlsChanged)
     Q_PROPERTY(int pinMaxCacheFiles READ pinMaxCacheFiles WRITE setPinMaxCacheFiles NOTIFY pinMaxCacheFilesChanged)
 
     // ──── Watermark ────
@@ -63,6 +75,13 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int recordingOutputFormat READ recordingOutputFormat WRITE setRecordingOutputFormat NOTIFY recordingOutputFormatChanged)
     Q_PROPERTY(int recordingQuality READ recordingQuality WRITE setRecordingQuality NOTIFY recordingQualityChanged)
     Q_PROPERTY(bool recordingShowPreview READ recordingShowPreview WRITE setRecordingShowPreview NOTIFY recordingShowPreviewChanged)
+    Q_PROPERTY(bool recordingShowSetup READ recordingShowSetup WRITE setRecordingShowSetup NOTIFY recordingShowSetupChanged)
+    Q_PROPERTY(int recordingKeyMode READ recordingKeyMode WRITE setRecordingKeyMode NOTIFY recordingKeyModeChanged)
+    Q_PROPERTY(bool recordingKeysSupported READ recordingKeysSupported CONSTANT)
+    Q_PROPERTY(bool recordingPreselectArea READ recordingPreselectArea WRITE setRecordingPreselectArea NOTIFY recordingPreselectAreaChanged)
+    Q_PROPERTY(int recordingQuickSaveAction READ recordingQuickSaveAction WRITE setRecordingQuickSaveAction NOTIFY recordingQuickSaveActionChanged)
+    Q_PROPERTY(bool recordingKeepProjects READ recordingKeepProjects WRITE setRecordingKeepProjects NOTIFY recordingKeepProjectsChanged)
+    Q_PROPERTY(int recordingProjectCleanupDays READ recordingProjectCleanupDays WRITE setRecordingProjectCleanupDays NOTIFY recordingProjectCleanupDaysChanged)
     Q_PROPERTY(bool recordingAudioEnabled READ recordingAudioEnabled WRITE setRecordingAudioEnabled NOTIFY recordingAudioEnabledChanged)
     Q_PROPERTY(int recordingAudioSource READ recordingAudioSource WRITE setRecordingAudioSource NOTIFY recordingAudioSourceChanged)
     Q_PROPERTY(QString recordingAudioDevice READ recordingAudioDevice WRITE setRecordingAudioDevice NOTIFY recordingAudioDeviceChanged)
@@ -78,6 +97,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(QString filenameTemplate READ filenameTemplate WRITE setFilenameTemplate NOTIFY filenameTemplateChanged)
     Q_PROPERTY(QString filenamePreview READ filenamePreview NOTIFY filenameTemplateChanged)
     Q_PROPERTY(bool autoSaveScreenshots READ autoSaveScreenshots WRITE setAutoSaveScreenshots NOTIFY autoSaveScreenshotsChanged)
+    Q_PROPERTY(bool useLastScreenshotSaveLocation READ useLastScreenshotSaveLocation WRITE setUseLastScreenshotSaveLocation NOTIFY useLastScreenshotSaveLocationChanged)
     Q_PROPERTY(bool autoSaveRecordings READ autoSaveRecordings WRITE setAutoSaveRecordings NOTIFY autoSaveRecordingsChanged)
 
     // ──── Updates ────
@@ -114,8 +134,14 @@ public:
         bool userDismissed);
 
     // ──── General ────
+    bool alignmentAssist() const;
+    void setAlignmentAssist(bool enabled);
     bool startOnLogin() const;
     void setStartOnLogin(bool v);
+    bool startOnLoginBusy() const;
+    bool startOnLoginCanChange() const;
+    QString startOnLoginStatusText() const;
+    void refreshStartOnLogin();
     QString language() const;
     void setLanguage(const QString& v);
     QVariantList availableLanguages() const;
@@ -124,9 +150,10 @@ public:
     bool cliInstalled() const;
     bool isMacOS() const;
     bool recordingSupported() const;
+    bool recordingDirectMp4Only() const;
     bool ocrSettingsVisible() const;
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     // ──── macOS Permissions ────
     bool hasScreenRecordingPermission() const;
     bool hasAccessibilityPermission() const;
@@ -139,6 +166,8 @@ public:
     void setCursorCompanionStyle(int v);
     bool shortcutHintsEnabled() const;
     void setShortcutHintsEnabled(bool v);
+    int fullScreenCaptureAction() const;
+    void setFullScreenCaptureAction(int v);
     int blurIntensity() const;
     void setBlurIntensity(int v);
     int blurType() const;
@@ -149,6 +178,8 @@ public:
     void setPinOpacityStep(int v);
     int pinZoomStep() const;
     void setPinZoomStep(int v);
+    bool pinShowHoverControls() const;
+    void setPinShowHoverControls(bool v);
     int pinMaxCacheFiles() const;
     void setPinMaxCacheFiles(int v);
 
@@ -178,6 +209,21 @@ public:
     void setRecordingQuality(int v);
     bool recordingShowPreview() const;
     void setRecordingShowPreview(bool v);
+    bool recordingShowSetup() const { return m_recordingShowSetup; }
+    int recordingKeyMode() const;
+    void setRecordingKeyMode(int mode);
+    bool recordingKeysSupported() const;
+    bool recordingPreselectArea() const;
+    void setRecordingPreselectArea(bool value);
+    int recordingQuickSaveAction() const;
+    void setRecordingQuickSaveAction(int action);
+    // Re-reads what the recording setup can also change (#193).
+    void refreshRecordingMode();
+    bool recordingKeepProjects() const;
+    void setRecordingKeepProjects(bool value);
+    int recordingProjectCleanupDays() const;
+    void setRecordingProjectCleanupDays(int days);
+    void setRecordingShowSetup(bool v);
     bool recordingAudioEnabled() const;
     void setRecordingAudioEnabled(bool v);
     int recordingAudioSource() const;
@@ -202,6 +248,8 @@ public:
     QString filenamePreview() const;
     bool autoSaveScreenshots() const;
     void setAutoSaveScreenshots(bool v);
+    bool useLastScreenshotSaveLocation() const;
+    void setUseLastScreenshotSaveLocation(bool v);
     bool autoSaveRecordings() const;
     void setAutoSaveRecordings(bool v);
 
@@ -233,7 +281,7 @@ public:
     Q_INVOKABLE void installCLI();
     Q_INVOKABLE void uninstallCLI();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     Q_INVOKABLE void openScreenRecordingSettings();
     Q_INVOKABLE void openAccessibilitySettings();
     Q_INVOKABLE void refreshPermissions();
@@ -257,6 +305,11 @@ public:
     Q_INVOKABLE void clearHotkey(int action);
     Q_INVOKABLE void resetHotkey(int action);
     Q_INVOKABLE void restoreAllHotkeys();
+
+    // Settings that differ from their manager default, and resetting one of them.
+    QStringList changedSettings() const { return m_changedSettings; }
+    Q_INVOKABLE bool canResetSetting(const QString& key) const;
+    Q_INVOKABLE void resetSetting(const QString& key);
     // Proactively offers to disable the Windows "Print Screen opens Snipping
     // Tool" shortcut so Print Screen can be bound as a global hotkey.
     Q_INVOKABLE void checkWindowsPrintScreenSnippingConflict();
@@ -264,13 +317,17 @@ public:
     Q_INVOKABLE QVariantList audioDevices() const;
 
 signals:
+    void changedSettingsChanged();
     // General
+    void alignmentAssistChanged();
     void startOnLoginChanged();
+    void startOnLoginStateChanged();
     void languageChanged();
     void appThemeChanged();
     void cliInstalledChanged();
+    void cliOperationFinished(bool success, const QString& errorMessage);
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     void permissionsChanged();
 #endif
 
@@ -278,11 +335,13 @@ signals:
     void magnifierEnabledChanged();
     void cursorCompanionStyleChanged();
     void shortcutHintsEnabledChanged();
+    void fullScreenCaptureActionChanged();
     void blurIntensityChanged();
     void blurTypeChanged();
     void pinDefaultOpacityChanged();
     void pinOpacityStepChanged();
     void pinZoomStepChanged();
+    void pinShowHoverControlsChanged();
     void pinMaxCacheFilesChanged();
 
     // Watermark
@@ -299,6 +358,12 @@ signals:
     void recordingOutputFormatChanged();
     void recordingQualityChanged();
     void recordingShowPreviewChanged();
+    void recordingShowSetupChanged();
+    void recordingKeyModeChanged();
+    void recordingKeepProjectsChanged();
+    void recordingQuickSaveActionChanged();
+    void recordingPreselectAreaChanged();
+    void recordingProjectCleanupDaysChanged();
     void recordingAudioEnabledChanged();
     void recordingAudioSourceChanged();
     void recordingAudioDeviceChanged();
@@ -313,6 +378,7 @@ signals:
     void recordingPathChanged();
     void filenameTemplateChanged();
     void autoSaveScreenshotsChanged();
+    void useLastScreenshotSaveLocationChanged();
     void autoSaveRecordingsChanged();
 
     // Updates
@@ -335,10 +401,22 @@ signals:
     void ocrBehaviorChanged();
     void ocrLanguagesChanged(const QStringList& languages);
 
+private slots:
+    void refreshChangedSettings();
+
 private:
+    void watchResettableSettings();
+    QStringList m_changedSettings;
     friend class ::tst_SettingsBackend;
 
+    using StartOnLoginCompletion = std::function<void(AutoLaunchStatus)>;
+    using StartOnLoginSetter = std::function<void(bool, StartOnLoginCompletion)>;
+
+    void changeCLIInstallation(bool installed, const std::function<bool()>& operation);
     void loadAllSettings();
+    void setStartOnLoginWithSetter(bool v, const StartOnLoginSetter& setter);
+    void refreshStartOnLoginStatus();
+    void applyStartOnLoginStatus(const AutoLaunchStatus& status);
     QString computeFilenamePreview() const;
     bool normalizeRecordingAudioSettings();
     bool hasRecordingAudioDevice(const QString& deviceId) const;
@@ -350,11 +428,14 @@ private:
 
     // General
     bool m_startOnLogin = false;
+    bool m_startOnLoginBusy = false;
+    bool m_startOnLoginCanChange = true;
+    QString m_startOnLoginStatusText;
     QString m_language;
     int m_appTheme = 0;
     bool m_cliInstalled = false;
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     bool m_hasScreenRecordingPermission = false;
     bool m_hasAccessibilityPermission = false;
 #endif
@@ -362,11 +443,13 @@ private:
     // Advanced
     int m_cursorCompanionStyle = 2;
     bool m_shortcutHintsEnabled = true;
+    int m_fullScreenCaptureAction = 0;
     int m_blurIntensity = 50;
     int m_blurType = 0;
     int m_pinDefaultOpacity = 100;
     int m_pinOpacityStep = 5;
     int m_pinZoomStep = 5;
+    bool m_pinShowHoverControls = true;
     int m_pinMaxCacheFiles = 20;
 
     // Watermark
@@ -383,6 +466,7 @@ private:
     int m_recordingOutputFormat = 0;
     int m_recordingQuality = 55;
     bool m_recordingShowPreview = true;
+    bool m_recordingShowSetup = false;
     bool m_recordingAudioEnabled = false;
     int m_recordingAudioSource = 0;
     QString m_recordingAudioDevice;
@@ -398,6 +482,7 @@ private:
     QString m_recordingPath;
     QString m_filenameTemplate;
     bool m_autoSaveScreenshots = true;
+    bool m_useLastScreenshotSaveLocation = false;
     bool m_autoSaveRecordings = true;
 
     // Updates

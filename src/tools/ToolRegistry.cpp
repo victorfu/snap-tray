@@ -287,17 +287,6 @@ void ToolRegistry::registerTools() {
         false, QColor()
     });
 
-    registerTool({
-        ToolId::Share,
-        "share",
-        QCoreApplication::translate("ToolRegistry", "Share URL"),
-        "",
-        ToolCategory::Action,
-        false, false, false, false, false, false,
-        false, false, false,  // UI visibility: none
-        false, QColor()
-    });
-
 #ifdef Q_OS_MACOS
     registerTool({
         ToolId::Save,
@@ -423,7 +412,6 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Redo,
             ToolId::OCR,
             ToolId::QRCode,
-            ToolId::Share,
             ToolId::MultiRegion,
             ToolId::Pin,
             ToolId::Save,
@@ -472,7 +460,6 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Redo,
             ToolId::OCR,
             ToolId::QRCode,
-            ToolId::Share,
             ToolId::Save,
             ToolId::Copy
         };

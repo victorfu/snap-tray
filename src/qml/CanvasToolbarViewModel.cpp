@@ -26,6 +26,8 @@ void CanvasToolbarViewModel::buildButtonList()
         if (!laserInserted && toolId == ToolId::CanvasWhiteboard) {
             ToolButtonOptions laserOptions;
             laserOptions.isDrawing = true;
+            laserOptions.group = ToolbarGroup::Draw;
+            laserOptions.collapsePriority = ToolbarTraitsDetail::kDrawBasePriority;
             buttons.append(buildCustomButtonEntry(kLaserPointerButtonId,
                                                   QStringLiteral("laser-pointer"),
                                                   QStringLiteral("qrc:/icons/icons/laser-pointer.svg"),
@@ -35,7 +37,7 @@ void CanvasToolbarViewModel::buildButtonList()
         }
 
         auto options = defaultToolButtonOptions(toolId);
-        options.separatorBefore = registry.get(toolId).showSeparatorBefore;
+        options.separatorBefore = (toolId == ToolId::Undo);
         options.isCancel = (toolId == ToolId::Exit);
         buttons.append(buildToolButtonEntry(toolId, options));
     }

@@ -6,7 +6,8 @@
 #include <QtMath>
 
 namespace {
-constexpr qreal kMinAutoFitZoom = 0.1;
+constexpr qreal kDefaultMinZoom = 0.1;
+constexpr int kMinZoomedExtent = 50;
 const QPoint kFallbackPosition(50, 50);
 
 qreal clampedScreenRatio(qreal value, qreal rangeStart, qreal rangeSpan)
@@ -54,6 +55,14 @@ QPointF rectPixelCenter(const QRect& rect)
 }
 }
 
+qreal minimumPinWindowZoom(const QSize& logicalSize)
+{
+    // Very tall images must be able to fit on screen below the normal 10% limit.
+    const int extent = qMax(logicalSize.width(), logicalSize.height());
+    return extent > 0 ? qMin(kDefaultMinZoom, qreal(kMinZoomedExtent) / extent)
+                      : kDefaultMinZoom;
+}
+
 PinWindowPlacement computeInitialPinWindowPlacement(const QPixmap& pixmap,
                                                     const QRect& availableGeometry,
                                                     qreal screenMargin)
@@ -79,7 +88,7 @@ PinWindowPlacement computeInitialPinWindowPlacement(const QPixmap& pixmap,
         if (placement.logicalSize.width() > maxWidth || placement.logicalSize.height() > maxHeight) {
             const qreal scaleX = maxWidth / placement.logicalSize.width();
             const qreal scaleY = maxHeight / placement.logicalSize.height();
-            placement.zoomLevel = qMax(kMinAutoFitZoom, qMin(scaleX, scaleY));
+            placement.zoomLevel = qMax(minimumPinWindowZoom(placement.logicalSize), qMin(scaleX, scaleY));
         }
     }
 

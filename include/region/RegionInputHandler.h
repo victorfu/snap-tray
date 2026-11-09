@@ -10,6 +10,7 @@
 #include <functional>
 #include "TransformationGizmo.h"
 #include "region/RegionInputState.h"
+#include "region/BoundarySnapController.h"
 #include "region/SelectionStateManager.h"
 #include "region/SelectionDirtyRegionPlanner.h"
 #include "tools/ToolId.h"
@@ -64,6 +65,11 @@ public:
 
     // Reset dirty tracking state (call when starting a new capture)
     void resetDirtyTracking();
+    void setBoundarySnapSource(const QImage& image, qreal dpr);
+    void setBoundarySnapAllowed(bool allowed);
+    bool handleBoundarySnapKey(int key, bool pressed, bool autoRepeat = false,
+                               Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool cancelSelectionResize();
 
     // Event handlers (called from RegionSelector)
     void handleMousePress(QMouseEvent* event);
@@ -77,6 +83,9 @@ public:
     QPoint startPoint() const { return m_startPoint; }
     bool isDrawing() const { return m_state && m_state->isDrawing; }
     bool isManipulatingAnnotation() const;
+    // Escape or right-click during a drag of an existing annotation (#237):
+    // puts it back without an undo step. Returns true if one was in progress.
+    bool cancelAnnotationManipulation();
     QRect lastMagnifierRect() const { return m_lastMagnifierRect; }
 
 signals:
@@ -115,7 +124,9 @@ private:
     bool handleArrowAnnotationMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
     void clearDetectionAndNotify(bool selectionTransition = false);
-    void handleSelectionMove(const QPoint& pos);
+    bool updateSelectionGesture(const QPoint& pos);
+    bool boundarySnapEligible() const;
+    void clearPendingWindowClick();
     void handleAnnotationMove(const QPoint& pos);
     void handleAnnotationMove(const QPointF& pos);
     void handleHoverMove(const QPoint& pos, Qt::MouseButtons buttons);
@@ -128,7 +139,7 @@ private:
     bool handleTextEditorRelease(const QPoint& pos);
     bool handleEmojiStickerRelease(const QPoint& pos);
     bool handleArrowAnnotationRelease(const QPoint& pos);
-    void handleSelectionRelease(const QPoint& pos);
+    void handleSelectionRelease();
     void handleAnnotationRelease();
 
     // Annotation helpers
@@ -168,6 +179,10 @@ private:
     std::function<bool()> m_isSelectionPreviewOverlayActive;
     std::function<bool()> m_isFloatingUiHovered;
     std::function<bool(const QPoint&)> m_isSelectionMoveExtensionAt;
+
+    BoundarySnapController m_boundarySnap;
+    bool m_boundarySnapAllowed = true;
+    bool m_snapKeyHeld = false;
 
     // State
     QPoint m_startPoint;

@@ -5,6 +5,7 @@
 #include <QPointF>
 #include <QPointer>
 #include <QRect>
+#include <QRegion>
 #include <QWidget>
 #include <memory>
 
@@ -60,6 +61,11 @@ public:
 
     void closeFromSession();
 
+#ifdef Q_OS_LINUX
+    void setFloatingUiInputRegion(const QRegion& region);
+    QRegion floatingUiInputRegion() const { return m_floatingUiInputRegion; }
+#endif
+
 signals:
     void closeRequested();
 
@@ -85,6 +91,11 @@ private:
     std::unique_ptr<ShapeAnnotationEditor> m_shapeAnnotationEditor;
     RegionSettingsHelper* m_settingsHelper = nullptr;
 
+#ifdef Q_OS_LINUX
+    QRegion m_floatingUiInputRegion;
+    WId m_inputRegionWindow = 0;
+    qreal m_inputRegionPixelRatio = 0.0;
+#endif
     bool m_sessionClosing = false;
 };
 

@@ -35,6 +35,9 @@ class EmojiStickerAnnotation;
 class InlineTextEditor;
 class LaserPointerRenderer;
 class PinToolOptionsViewModel;
+class AnnotationStyleEditor;
+class ColorPickOverlay;
+struct ColorPickSource;
 class PolylineAnnotation;
 class RegionSettingsHelper;
 class ShapeAnnotation;
@@ -59,8 +62,11 @@ class ScreenCanvasSession : public QObject
     Q_OBJECT
 
     friend class TestScreenCanvasPlacement;
+    friend class TestScreenCanvasStyleSync;
     friend class TestScreenCanvasSessionRecovery;
     friend class TestScreenCanvasCopyExport;
+    friend class TestScreenCanvasAnnotationRenderHelper;
+    friend class TestEraserHostRouting;
 
 public:
     struct ToolbarPlacementResolution
@@ -121,6 +127,9 @@ private:
     void updateAllSurfaces();
     void updateSurfacesForAnnotationRect(const QRect& annotationRect);
     bool hasActiveAnnotationInteraction() const;
+    // Escape during a drag of an existing annotation (#237): puts it back
+    // without an undo step. Returns true if one was in progress.
+    bool cancelAnnotationGesture();
     QRect selectedAnnotationInteractionRect() const;
     void requestLocalizedToolRepaint();
     void resetAnnotationInteractionTracking();
@@ -137,7 +146,7 @@ private:
     ScreenSnapshotVisibilityState hideUiForScreenSnapshot();
     void restoreUiAfterScreenSnapshot(const ScreenSnapshotVisibilityState& state);
 
-    void activateSurface(ScreenCanvas* surface);
+    bool activateSurface(ScreenCanvas* surface);
     void beginMouseGrab(ScreenCanvas* surface);
     void endMouseGrab();
     ScreenCanvas* editingSurface() const;
@@ -178,6 +187,11 @@ private:
     void onColorSelected(const QColor& color);
     void onMoreColorsRequested();
     QPoint colorPickerAnchorPoint() const;
+    // Eyedropper (#271): picks from a snapshot of the screen under the
+    // canvas, taken with the canvas hidden and dropped when picking ends.
+    void startColorPick();
+    ColorPickSource colorPickSource(QScreen* screen) const;
+    void applyPickedColor(const QColor& color);
     void onLineWidthChanged(int width);
     void onArrowStyleChanged(LineEndStyle style);
     void onLineStyleChanged(LineStyle style);
@@ -192,6 +206,7 @@ private:
     void updateQmlToolbarState();
     bool initializeToolbarPlacement();
     void relayoutFloatingUi(bool restoreToolbarPosition = false);
+    void refitToolbarToCurrentScreen();
     void saveToolbarPlacement() const;
     void connectScreenTopologySignals();
     void connectApplicationStateSignal();
@@ -226,6 +241,7 @@ private:
     QRect m_desktopGeometry;
     QList<QPointer<ScreenCanvas>> m_surfaces;
     QPointer<ScreenCanvas> m_activeSurface;
+    QPointer<ScreenCanvas> m_activationSyncedSurface;
     QPointer<ScreenCanvas> m_grabbedSurface;
 
     AnnotationLayer* m_annotationLayer = nullptr;
@@ -235,10 +251,12 @@ private:
 
     CanvasToolbarViewModel* m_toolbarViewModel = nullptr;
     PinToolOptionsViewModel* m_toolOptionsViewModel = nullptr;
+    AnnotationStyleEditor* m_styleEditor = nullptr;   // Qt parent owns lifetime
     std::unique_ptr<SnapTray::QmlFloatingToolbar> m_qmlToolbar;
     std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_qmlSubToolbar;
     SnapTray::QmlEmojiPickerPopup* m_emojiPickerPopup = nullptr;
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
+    QPointer<ColorPickOverlay> m_colorPickOverlay;
     LaserPointerRenderer* m_laserRenderer = nullptr;
 
     bool m_toolbarPlacementInitialized = false;

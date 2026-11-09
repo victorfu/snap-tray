@@ -39,6 +39,11 @@
   padding: 0;
 }
 
+// Keep author display rules from exposing controls without a usable target.
+[hidden]:not([hidden="until-found" i]) {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -139,9 +144,13 @@ svg {
 }
 
 [data-reveal] {
+  transition: transform 420ms ease, opacity 420ms ease;
+}
+
+// Content is visible unless the reveal observer has been installed successfully.
+.reveal-ready [data-reveal]:not(.is-visible) {
   opacity: 0;
   transform: translateY(20px);
-  transition: transform 420ms ease, opacity 420ms ease;
 }
 
 [data-reveal].is-visible {
@@ -1417,6 +1426,73 @@ svg {
   }
 }
 
+.footer-link-button {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #446384;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    color: #17345d;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 2px;
+    border-radius: 0.35rem;
+  }
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// Website analytics consent prompt (see _includes/analytics.html).
+.analytics-consent {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 80;
+  max-width: 34rem;
+  margin-left: auto;
+  padding: $space-md;
+  border: 1px solid $border-light;
+  border-radius: $radius-md;
+  background: $surface-1;
+  color: $text-primary;
+  box-shadow: $shadow-soft;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.analytics-consent-title {
+  margin: 0 0 $space-2xs;
+  font-family: $font-display;
+  font-weight: 600;
+}
+
+.analytics-consent-body {
+  margin: 0 0 $space-sm;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.analytics-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: $space-xs;
+}
+
 .footer-bottom {
   margin-top: 1.4rem;
   border-top: 1px solid rgba(118, 157, 213, 0.2);
@@ -1549,6 +1625,13 @@ svg {
 
   .no-js .nav-toggle {
     display: none;
+  }
+
+  // Without JS the language toggle is hidden and can't add .is-open, so keep
+  // the options visible inline (outranks the mobile `display: none` above).
+  .no-js .site-nav .language-switcher .lang-menu {
+    display: grid;
+    border-radius: 0.9rem;
   }
 
   .hero-layout {

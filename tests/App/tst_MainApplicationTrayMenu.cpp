@@ -1,11 +1,29 @@
 #include "MainApplication.h"
+#include "PlatformFeatures.h"
+#include "qml/QmlRecordingAreaSelector.h"
+#include "platform/PlatformCapabilities.h"
+#include "ImageColorSpaceHelper.h"
+#include <QClipboard>
+#include <QCursor>
+#include <QWindow>
+#include "qml/RecordingPreviewBackend.h"
+#include "IVideoEncoder.h"
 
 #include "cli/IPCProtocol.h"
+#include "cli/CLIResult.h"
+#include "cli/commands/GuiCommand.h"
+#include "RegionSelector.h"
+#include "history/HistoryRecorder.h"
 #include "hotkey/HotkeyManager.h"
 #include "qml/QmlDialog.h"
 #include "qml/ScreenPickerViewModel.h"
 #include "qml/QmlSettingsWindow.h"
 #include "RecordingManager.h"
+#include "CaptureManager.h"
+#include "PinWindowManager.h"
+#include "PinWindow.h"
+#include "pinwindow/PinWindowPlacement.h"
+#include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
 #include "update/IUpdateService.h"
 #include "update/InstallSourceDetector.h"
@@ -16,6 +34,17 @@
 #include <QMenu>
 #include <QSettings>
 #include <QTranslator>
+#include <QBuffer>
+#include <QDataStream>
+#include <QLocalServer>
+#include <QLocalSocket>
+#include <QUuid>
+#include <QImageReader>
+#include <QTemporaryDir>
+#include <QScreen>
+#include <QPainter>
+#include <QSet>
+#include <QSystemTrayIcon>
 #include <QtTest>
 
 namespace {
@@ -24,6 +53,61 @@ QString translationFilePath()
 {
     return QDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR))
         .filePath(QStringLiteral("snaptray_zh_TW.qm"));
+}
+
+// A connected CLI <-> main instance socket pair for scripted `gui` tests.
+struct CLISocketPair {
+    QLocalServer server;
+    QLocalSocket client;
+    QLocalSocket* serverSide = nullptr;
+
+    bool open()
+    {
+        const QString name = QStringLiteral("snaptray-test-%1")
+                                 .arg(QUuid::createUuid().toString(QUuid::Id128));
+        if (!server.listen(name)) return false;
+        client.connectToServer(name);
+        if (!client.waitForConnected(1000) || !server.waitForNewConnection(1000)) return false;
+        serverSide = server.nextPendingConnection();
+        return serverSide != nullptr;
+    }
+
+    // Reads one length-prefixed response, as IPCProtocol::sendCommand does.
+    bool readResponse(SnapTray::CLI::IPCResponse* response)
+    {
+        QByteArray buffer;
+        QDeadlineTimer deadline(5000);
+        while (!deadline.hasExpired()) {
+            QCoreApplication::processEvents();
+            client.waitForReadyRead(10);
+            buffer.append(client.readAll());
+            if (buffer.size() < static_cast<int>(sizeof(quint32))) continue;
+            QDataStream stream(buffer);
+            quint32 size = 0;
+            stream >> size;
+            if (buffer.size() < static_cast<qsizetype>(sizeof(quint32) + size)) continue;
+            *response = SnapTray::CLI::IPCResponse::fromJson(buffer.mid(sizeof(quint32), size));
+            return true;
+        }
+        return false;
+    }
+};
+
+QByteArray scriptedGuiCommand(const QJsonObject& options)
+{
+    SnapTray::CLI::IPCMessage message;
+    message.command = QStringLiteral("gui");
+    message.options = options;
+    return message.toJson();
+}
+
+QPixmap solidScreenSnapshot(QScreen* screen)
+{
+    const qreal dpr = screen->devicePixelRatio();
+    QPixmap pixmap(screen->geometry().size() * dpr);
+    pixmap.fill(Qt::darkCyan);
+    pixmap.setDevicePixelRatio(dpr);
+    return pixmap;
 }
 
 class FakeUpdateService final : public IUpdateService
@@ -120,14 +204,38 @@ private slots:
     void cleanupTestCase();
 
     void updateTrayMenuHotkeyText_updatesPasteAction();
+    void updateTrayMenuHotkeyText_updatesFullScreenCaptureAction();
+    void fullScreenCapture_usesTranslatedHotkeyAndTrayLabels();
+    void updateTrayMenuHotkeyText_updatesDelayedCaptureMenu();
+    void initialize_addsDelayedCaptureMenuAfterFullScreenCapture();
+    void delayedCapture_trayPresetStartsCountdownAndRemembersDelay();
+    void delayedCapture_hotkeyTogglesCountdownWithRememberedDelay();
     void updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable();
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
     void initialize_hidesRecordingActionWhenUnsupported();
+    void recordingState_updatesTrayIconAndToolTip();
+    void pauseResumeHotkey_ignoresRepeatsAndOnlyActsWhileCapturing();
+    void recordingWarnings_stayOffTheRecordedScreen();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_removedRecordCommandIsIgnored();
+    void handleCLICommand_deferredUntilFullScreenExportFinishes();
+    void scriptedGui_finishRepliesWithSelectionAndImage();
+    void scriptedGui_escapeRepliesCancelled();
+    void scriptedGui_pinOptionPinsTheCapture();
+    void scriptedGui_rejectedWhileCaptureActive();
+    void scriptedGui_recordsLastRegion();
     void screenPickerClosed_deletesWrapperAndViewModel();
+    void trayDisableClickThroughItem();
+    void queuedHistoryEntryRechecksCaptureMode();
+    void areaSelectorHoldsOtherCaptures();
+    void previewCloseDiscardsTemporaryFile_data();
+    void previewCloseDiscardsTemporaryFile();
+    void cliClipboardPinPosition_data();
+    void cliClipboardPinPosition();
+    void cliFilePinUsesImageLoader_data();
+    void cliFilePinUsesImageLoader();
 
 private:
     void clearAllTestSettings();
@@ -182,6 +290,172 @@ void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesPasteAction()
 
     QVERIFY(!displayHotkey.isEmpty());
     QCOMPARE(pasteAction.text(), MainApplication::tr("%1 (%2)").arg(baseName, displayHotkey));
+}
+
+void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesFullScreenCaptureAction()
+{
+    MainApplication application;
+    QAction fullScreenAction(&application);
+    application.m_fullScreenCaptureAction = &fullScreenAction;
+
+    application.updateTrayMenuHotkeyText();
+
+    // The hotkey is optional, so the default menu text has no shortcut suffix.
+    QCOMPARE(fullScreenAction.text(), MainApplication::tr("Full Screen Capture"));
+}
+
+void tst_MainApplicationTrayMenu::fullScreenCapture_usesTranslatedHotkeyAndTrayLabels()
+{
+    QTranslator translator;
+    QVERIFY2(translator.load(translationFilePath()),
+             qPrintable(QStringLiteral("Failed to load translation file: %1")
+                            .arg(translationFilePath())));
+    QVERIFY(QCoreApplication::installTranslator(&translator));
+
+    // Settings > Hotkeys reads labels resolved when the configs are built.
+    manager().shutdown();
+    manager().initialize();
+    const auto config = manager().getConfig(SnapTray::HotkeyAction::CaptureFullScreen);
+    QCOMPARE(config.displayName, QString::fromUtf8("全螢幕擷取"));
+    QCOMPARE(config.description, QString::fromUtf8("擷取游標所在的螢幕"));
+
+    MainApplication application;
+    QAction fullScreenAction(&application);
+    application.m_fullScreenCaptureAction = &fullScreenAction;
+    application.updateTrayMenuHotkeyText();
+    QCOMPARE(fullScreenAction.text(), QString::fromUtf8("全螢幕擷取"));
+
+    QCoreApplication::removeTranslator(&translator);
+    manager().shutdown();
+    manager().initialize();
+}
+
+void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesDelayedCaptureMenu()
+{
+    MainApplication application;
+    QMenu delayedCaptureMenu;
+    application.m_delayedCaptureMenu = &delayedCaptureMenu;
+
+    application.updateTrayMenuHotkeyText();
+    // Optional hotkey: no shortcut suffix until one is bound.
+    QCOMPARE(delayedCaptureMenu.menuAction()->text(), MainApplication::tr("Delayed Capture"));
+
+    QVERIFY(manager().updateHotkey(SnapTray::HotkeyAction::DelayedRegionCapture,
+                                   QStringLiteral("Ctrl+Shift+D")));
+    application.updateTrayMenuHotkeyText();
+    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(
+        manager().getConfig(SnapTray::HotkeyAction::DelayedRegionCapture).keySequence);
+    QVERIFY(!displayHotkey.isEmpty());
+    QCOMPARE(delayedCaptureMenu.menuAction()->text(),
+             MainApplication::tr("%1 (%2)").arg(MainApplication::tr("Delayed Capture"), displayHotkey));
+    application.m_delayedCaptureMenu = nullptr;
+}
+
+void tst_MainApplicationTrayMenu::initialize_addsDelayedCaptureMenuAfterFullScreenCapture()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+
+    QVERIFY(application.m_delayedCaptureMenu);
+    QVERIFY(application.m_cancelDelayedCaptureAction);
+    const QList<QAction*> actions = application.m_trayMenu->actions();
+    const int fullScreenIndex = actions.indexOf(application.m_fullScreenCaptureAction);
+    QVERIFY(fullScreenIndex >= 0);
+    QCOMPARE(actions.at(fullScreenIndex + 1), application.m_delayedCaptureMenu->menuAction());
+    QCOMPARE(actions.at(fullScreenIndex + 2), application.m_cancelDelayedCaptureAction);
+    QVERIFY(!application.m_cancelDelayedCaptureAction->isVisible());
+    QVERIFY(application.m_delayedCaptureMenu->isEnabled());
+
+    // One checkable preset per delay, the remembered (default) delay checked.
+    const auto& presets = RegionCaptureSettingsManager::kDelayedCapturePresetSeconds;
+    QCOMPARE(application.m_delayedCapturePresetActions.size(), int(presets.size()));
+    QCOMPARE(application.m_delayedCaptureMenu->actions().size(), int(presets.size()));
+    for (int i = 0; i < int(presets.size()); ++i) {
+        QAction* preset = application.m_delayedCapturePresetActions.at(i);
+        QCOMPARE(preset->data().toInt(), presets[i]);
+        QCOMPARE(preset->text(), MainApplication::tr("%n seconds", nullptr, presets[i]));
+        QVERIFY(preset->isCheckable());
+        QCOMPARE(preset->isChecked(),
+                 presets[i] == RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
+    }
+}
+
+void tst_MainApplicationTrayMenu::delayedCapture_trayPresetStartsCountdownAndRemembersDelay()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+    CaptureManager* captureManager = application.m_captureManager;
+    QSignalSpy cancelled(captureManager, &CaptureManager::captureCancelled);
+    QSignalSpy started(captureManager, &CaptureManager::captureStarted);
+
+    QAction* fiveSeconds = application.m_delayedCapturePresetActions.at(1);
+    QCOMPARE(fiveSeconds->data().toInt(), 5);
+    fiveSeconds->trigger();
+
+    QVERIFY(captureManager->isDelayedCapturePending());
+    QCOMPARE(captureManager->delayedCaptureRemainingSeconds(), 5);
+    QCOMPARE(RegionCaptureSettingsManager::instance().delayedCaptureSeconds(), 5);
+    QVERIFY(fiveSeconds->isChecked());
+    QVERIFY(application.m_cancelDelayedCaptureAction->isVisible());
+    QVERIFY(!application.m_delayedCaptureMenu->isEnabled());
+    QCOMPARE(started.count(), 0);
+
+    // Another preset during the countdown is ignored and must not move the check mark.
+    QAction* tenSeconds = application.m_delayedCapturePresetActions.at(2);
+    tenSeconds->trigger();
+    QCOMPARE(captureManager->delayedCaptureRemainingSeconds(), 5);
+    QCOMPARE(RegionCaptureSettingsManager::instance().delayedCaptureSeconds(), 5);
+    QVERIFY(fiveSeconds->isChecked());
+    QVERIFY(!tenSeconds->isChecked());
+
+    // Region and full screen capture stay out while the countdown owns the screen.
+    application.onRegionCapture();
+    application.onFullScreenCapture();
+    QCOMPARE(started.count(), 0);
+    QVERIFY(!captureManager->isFullScreenCaptureInProgress());
+
+    application.m_cancelDelayedCaptureAction->trigger();
+    QVERIFY(!captureManager->isDelayedCapturePending());
+    QVERIFY(!captureManager->isActive());
+    QCOMPARE(cancelled.count(), 1);
+    QVERIFY(!application.m_cancelDelayedCaptureAction->isVisible());
+    QVERIFY(application.m_delayedCaptureMenu->isEnabled());
+    QCOMPARE(started.count(), 0);
+}
+
+void tst_MainApplicationTrayMenu::delayedCapture_hotkeyTogglesCountdownWithRememberedDelay()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    RegionCaptureSettingsManager::instance().setDelayedCaptureSeconds(10);
+
+    MainApplication application;
+    application.initialize();
+    CaptureManager* captureManager = application.m_captureManager;
+    QSignalSpy cancelled(captureManager, &CaptureManager::captureCancelled);
+
+    application.onHotkeyAction(SnapTray::HotkeyAction::DelayedRegionCapture);
+    QVERIFY(captureManager->isDelayedCapturePending());
+    QCOMPARE(captureManager->delayedCaptureRemainingSeconds(), 10);
+    QVERIFY(application.m_cancelDelayedCaptureAction->isVisible());
+
+    // Pressing the hotkey again cancels the countdown.
+    application.onHotkeyAction(SnapTray::HotkeyAction::DelayedRegionCapture);
+    QVERIFY(!captureManager->isDelayedCapturePending());
+    QCOMPARE(cancelled.count(), 1);
+    QVERIFY(!application.m_cancelDelayedCaptureAction->isVisible());
+
+    // CLI commands preempt a pending countdown like any other active capture.
+    application.onHotkeyAction(SnapTray::HotkeyAction::DelayedRegionCapture);
+    QVERIFY(captureManager->isDelayedCapturePending());
+    SnapTray::CLI::IPCMessage command;
+    command.command = QStringLiteral("pin");  // no file/clipboard option: nothing to pin
+    application.handleCLICommand(command.toJson());
+    QVERIFY(!captureManager->isDelayedCapturePending());
+    QCOMPARE(cancelled.count(), 2);
 }
 
 void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable()
@@ -273,16 +547,147 @@ void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported
     MainApplication application;
     application.initialize();
 
-#ifdef Q_OS_LINUX
-    QVERIFY(application.m_fullScreenRecordingAction == nullptr);
-
-    const QList<QAction*> actions = application.m_trayMenu->actions();
-    for (QAction* action : actions) {
-        QVERIFY(!action || action->text() != MainApplication::tr("Record Screen"));
+    const bool supported = SnapTray::currentPlatformCapabilities().supportsRecording;
+    QCOMPARE(application.m_fullScreenRecordingAction != nullptr, supported);
+    if (supported) {
+        QVERIFY(application.m_trayMenu->actions().contains(application.m_fullScreenRecordingAction));
+        QVERIFY(application.m_fullScreenRecordingAction->text().contains(MainApplication::tr("Record Screen")));
     }
-#else
-    QVERIFY(application.m_fullScreenRecordingAction != nullptr);
-#endif
+    QCOMPARE(application.m_showRecordingControlsAction != nullptr,
+             supported && !SnapTray::currentPlatformCapabilities().recordingControlsInTray);
+    if (application.m_showRecordingControlsAction) {
+        QVERIFY(!application.m_showRecordingControlsAction->isVisible());
+    }
+    if (supported) {
+        QVERIFY(application.m_pauseRecordingAction);
+        QVERIFY(!application.m_pauseRecordingAction->isVisible());
+        application.m_recordingManager->m_elapsedTimer.start();
+        application.m_recordingManager->m_state = RecordingManager::State::Recording;
+        application.updateRecordingActionText();
+        QVERIFY(application.m_pauseRecordingAction->isVisible());
+        if (application.m_showRecordingControlsAction) {
+            QVERIFY(application.m_showRecordingControlsAction->isVisible());
+        }
+        QCOMPARE(application.m_pauseRecordingAction->text(), QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+        application.m_pauseRecordingAction->trigger();
+        QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Paused);
+        QCOMPARE(application.m_pauseRecordingAction->text(), QCoreApplication::translate("RecordingControlBar", "Resume Recording"));
+        application.m_recordingManager->m_state = RecordingManager::State::Idle;
+        application.updateRecordingActionText();
+        QVERIFY(!application.m_pauseRecordingAction->isVisible());
+    }
+
+}
+
+void tst_MainApplicationTrayMenu::pauseResumeHotkey_ignoresRepeatsAndOnlyActsWhileCapturing()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    using State = RecordingManager::State;
+    RecordingManager* recording = application.m_recordingManager;
+
+    // Idle, preparing or finishing: the hotkey does nothing.
+    for (State state : {State::Idle, State::Preparing, State::Countdown, State::Encoding}) {
+        recording->m_state = state;
+        application.m_recordingHotkeyHolds = {};
+        application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+        QCOMPARE(recording->state(), state);
+    }
+
+    recording->m_elapsedTimer.start();
+    recording->m_state = State::Recording;
+    application.m_recordingHotkeyHolds = {};
+    application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+    QCOMPARE(recording->state(), State::Paused);
+    // Holding the key: auto-repeat for longer than the old 400 ms throttle
+    // must not resume (PR #165 review).
+    constexpr int kRepeatMs = 40;
+    for (int i = 0; i < 15; ++i) {
+        QTest::qWait(kRepeatMs);
+        application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+        QCOMPARE(recording->state(), State::Paused);
+    }
+    // Released, then a deliberate second press resumes.
+    emit SnapTray::HotkeyManager::instance().actionReleased(SnapTray::HotkeyAction::PauseResumeRecording);
+    QTest::qWait(int(SnapTray::HotkeyHoldFilter::kMinIntervalMs) + 50);
+    application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+    QCOMPARE(recording->state(), State::Recording);
+
+    // Show Recording Controls has nothing to show without a control bar.
+    QVERIFY(!recording->showRecordingControls());
+    application.onHotkeyAction(SnapTray::HotkeyAction::ShowRecordingControls);
+    QCOMPARE(recording->state(), State::Recording);
+    recording->m_state = State::Idle;
+}
+
+void tst_MainApplicationTrayMenu::recordingState_updatesTrayIconAndToolTip()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+    QVERIFY(application.m_trayIcon);
+    QVERIFY(!application.m_trayBasePixmap.isNull());
+
+    using State = RecordingManager::State;
+    using Status = SnapTray::TrayRecordingStatus;
+    RecordingManager* recording = application.m_recordingManager;
+    const qint64 idleIconKey = application.m_trayIcon->icon().cacheKey();
+    const QString idleToolTip = application.m_trayIcon->toolTip();
+    QVERIFY(!idleToolTip.contains(MainApplication::tr("Recording")));
+
+    struct Expectation {
+        State state;
+        Status status;
+        QString text;
+    };
+    const QList<Expectation> expectations{
+        {State::Preparing, Status::Preparing, MainApplication::tr("Preparing to record")},
+        {State::Countdown, Status::Countdown, MainApplication::tr("Recording starts soon")},
+        {State::Recording, Status::Recording, MainApplication::tr("Recording")},
+        {State::Paused, Status::Paused, MainApplication::tr("Recording paused")},
+        {State::Encoding, Status::Finalizing, MainApplication::tr("Finishing recording")},
+    };
+
+    QSet<qint64> activeIconKeys;
+    for (const auto& expected : expectations) {
+        recording->setState(expected.state);
+        QCOMPARE(application.m_trayRecordingStatus, expected.status);
+        const qint64 iconKey = application.m_trayIcon->icon().cacheKey();
+        QVERIFY2(iconKey != idleIconKey, "an active recording state must badge the tray icon");
+        activeIconKeys.insert(iconKey);
+        QVERIFY2(application.m_trayIcon->toolTip().contains(expected.text),
+                 qPrintable(application.m_trayIcon->toolTip()));
+    }
+    QCOMPARE(activeIconKeys.size(), expectations.size());
+
+    // Elapsed time is pause-excluded (RecordingManager computes it) and shown
+    // only while recording or paused.
+    recording->setState(State::Recording);
+    emit recording->durationChanged(83'400);
+    QVERIFY2(application.m_trayIcon->toolTip().contains(QStringLiteral("1:23")),
+             qPrintable(application.m_trayIcon->toolTip()));
+    recording->setState(State::Paused);
+    QVERIFY(application.m_trayIcon->toolTip().contains(QStringLiteral("1:23")));
+    // Audio is listed per source while recording, but not while finishing.
+    SnapTray::RecordingAudioStatus audio;
+    audio.microphone = SnapTray::AudioSourceState::PermissionDenied;
+    audio.systemAudio = SnapTray::AudioSourceState::Active;
+    recording->setAudioStatus(audio);
+    QVERIFY2(application.m_trayIcon->toolTip().contains(SnapTray::describeRecordingAudioStatus(audio)),
+             qPrintable(application.m_trayIcon->toolTip()));
+    recording->setState(State::Encoding);
+    QVERIFY(!application.m_trayIcon->toolTip().contains(QStringLiteral("1:23")));
+    QVERIFY(!application.m_trayIcon->toolTip().contains(SnapTray::describeRecordingAudioStatus(audio)));
+
+    // The preview window is its own indicator; the tray returns to normal.
+    recording->setState(State::Previewing);
+    QCOMPARE(application.m_trayRecordingStatus, Status::Idle);
+    QCOMPARE(application.m_trayIcon->toolTip(), idleToolTip);
+    recording->setState(State::Idle);
+    QCOMPARE(application.m_trayRecordingStatus, Status::Idle);
+    QCOMPARE(application.m_trayIcon->toolTip(), idleToolTip);
 }
 
 void tst_MainApplicationTrayMenu::onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings()
@@ -313,6 +718,292 @@ void tst_MainApplicationTrayMenu::initialize_externalManaged_disablesCheckForUpd
     QVERIFY(!application.m_checkForUpdatesAction->isEnabled());
 }
 
+void tst_MainApplicationTrayMenu::handleCLICommand_deferredUntilFullScreenExportFinishes()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        RegionCaptureSettingsManager::FullScreenCaptureAction::CopyToClipboard);
+
+    MainApplication application;
+    application.initialize();
+
+    // Hold the full screen capture in its copy phase, after the grab.
+    CaptureManager* captureManager = application.m_captureManager;
+    captureManager->m_snapshotOverride = [](QScreen* screen) {
+        QPixmap pixmap(screen->geometry().size() * screen->devicePixelRatio());
+        pixmap.fill(Qt::darkCyan);
+        pixmap.setDevicePixelRatio(screen->devicePixelRatio());
+        return pixmap;
+    };
+    std::function<void(bool)> finishClipboardWrite;
+    captureManager->m_clipboardWriterOverride =
+        [&finishClipboardWrite](const QImage&, std::function<void(bool)> done) {
+            finishClipboardWrite = std::move(done);
+        };
+    captureManager->startFullScreenCaptureOnScreen(QGuiApplication::primaryScreen());
+    QTRY_VERIFY(finishClipboardWrite);
+    QVERIFY(captureManager->isFullScreenCaptureInProgress());
+
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("deferred.png"));
+    QImage image(40, 30, QImage::Format_RGB32);
+    image.fill(Qt::red);
+    QVERIFY(image.save(path));
+
+    SnapTray::CLI::IPCMessage command;
+    command.command = QStringLiteral("pin");
+    command.options = {{QStringLiteral("file"), path}};
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+    application.handleCLICommand(command.toJson());
+
+    // Not dropped, and not run while the export still owns the capture state.
+    QTest::qWait(100);
+    QCOMPARE(created.count(), 0);
+    QCOMPARE(application.m_deferredCLICommands.size(), 1);
+
+    finishClipboardWrite(true);
+    QVERIFY(!captureManager->isFullScreenCaptureInProgress());
+    QTRY_COMPARE(created.count(), 1);
+    QVERIFY(application.m_deferredCLICommands.isEmpty());
+
+    application.m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+namespace {
+
+// Finishing a capture records history on a worker thread: keep it out of the
+// user's history and drain it before the test ends.
+class ScopedTestHistory
+{
+public:
+    ScopedTestHistory()
+        : m_previous(qgetenv("SNAPTRAY_HISTORY_DIR"))
+        , m_hadPrevious(qEnvironmentVariableIsSet("SNAPTRAY_HISTORY_DIR"))
+    {
+        qputenv("SNAPTRAY_HISTORY_DIR", m_directory.path().toLocal8Bit());
+    }
+    ~ScopedTestHistory()
+    {
+        SnapTray::HistoryRecorder::instance().waitForIdleForTests();
+        if (m_hadPrevious) {
+            qputenv("SNAPTRAY_HISTORY_DIR", m_previous);
+        } else {
+            qunsetenv("SNAPTRAY_HISTORY_DIR");
+        }
+    }
+    bool isValid() const { return m_directory.isValid(); }
+
+private:
+    QTemporaryDir m_directory;
+    QByteArray m_previous;
+    bool m_hadPrevious = false;
+};
+
+QJsonObject initialRegionJson(const QRect& rect)
+{
+    return {{SnapTray::CLI::GuiCommand::kResultX, rect.x()},
+            {SnapTray::CLI::GuiCommand::kResultY, rect.y()},
+            {SnapTray::CLI::GuiCommand::kResultWidth, rect.width()},
+            {SnapTray::CLI::GuiCommand::kResultHeight, rect.height()}};
+}
+
+QRect testRegionOnPrimaryScreen()
+{
+    const QRect screen = QGuiApplication::primaryScreen()->geometry();
+    return QRect(screen.topLeft() + QPoint(40, 30), QSize(120, 80));
+}
+
+} // namespace
+
+void tst_MainApplicationTrayMenu::scriptedGui_finishRepliesWithSelectionAndImage()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    const QRect region = testRegionOnPrimaryScreen();
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionWantImage, true},
+                            {GuiCommand::kOptionInitialRegion, initialRegionJson(region)}}),
+        pair.serverSide);
+
+    QPointer<RegionSelector> selector = application.m_captureManager->m_regionSelector;
+    QVERIFY(selector);
+    QVERIFY(application.m_captureManager->isScriptedCapturePending());
+    // Nothing is answered until the user finishes.
+    QTest::qWait(50);
+    QCOMPARE(pair.client.bytesAvailable(), qint64(0));
+
+    QTest::keyClick(selector.data(), Qt::Key_Return);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(response.success);
+    QCOMPARE(response.code, static_cast<int>(CLIResult::Code::Success));
+    QCOMPARE(QRect(response.result[GuiCommand::kResultX].toInt(),
+                   response.result[GuiCommand::kResultY].toInt(),
+                   response.result[GuiCommand::kResultWidth].toInt(),
+                   response.result[GuiCommand::kResultHeight].toInt()),
+             region);
+    QCOMPARE(response.result[GuiCommand::kResultScreen].toInt(),
+             QGuiApplication::screens().indexOf(QGuiApplication::primaryScreen()));
+    QImage image;
+    QVERIFY(image.loadFromData(response.data, "PNG"));
+    const qreal dpr = response.result[GuiCommand::kResultDevicePixelRatio].toDouble();
+    QCOMPARE(image.size(), (QSizeF(region.size()) * dpr).toSize());
+
+    // Script destinations replace the default pin.
+    QTRY_VERIFY(!selector);
+    QCOMPARE(created.count(), 0);
+    QVERIFY(!application.m_captureManager->isScriptedCapturePending());
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::scriptedGui_escapeRepliesCancelled()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionWantImage, true},
+                            {GuiCommand::kOptionAcceptOnSelect, true}}),
+        pair.serverSide);
+
+    QPointer<RegionSelector> selector = application.m_captureManager->m_regionSelector;
+    QVERIFY(selector);
+    QTest::keyClick(selector.data(), Qt::Key_Escape);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(!response.success);
+    QCOMPARE(response.code, static_cast<int>(CLIResult::Code::Cancelled));
+    QVERIFY(response.data.isEmpty());
+    QTRY_VERIFY(!selector);
+    QCOMPARE(created.count(), 0);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::scriptedGui_pinOptionPinsTheCapture()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionPin, true},
+                            {GuiCommand::kOptionInitialRegion,
+                             initialRegionJson(testRegionOnPrimaryScreen())}}),
+        pair.serverSide);
+
+    QPointer<RegionSelector> selector = application.m_captureManager->m_regionSelector;
+    QVERIFY(selector);
+    QTest::keyClick(selector.data(), Qt::Key_Return);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(response.success);
+    // Only --pin: no image travels back to the CLI.
+    QVERIFY(response.data.isEmpty());
+    QTRY_COMPARE(created.count(), 1);
+
+    application.m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::scriptedGui_rejectedWhileCaptureActive()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+
+    application.m_captureManager->startRegionCapture(false);
+    QPointer<RegionSelector> existing = application.m_captureManager->m_regionSelector;
+    QVERIFY(existing);
+    QVERIFY(application.m_captureManager->isActive());
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionWantImage, true}}),
+        pair.serverSide);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(!response.success);
+    QCOMPARE(response.code, static_cast<int>(CLIResult::Code::GeneralError));
+    QVERIFY2(response.error.contains(QStringLiteral("already in progress")),
+             qPrintable(response.error));
+    // The open capture is left alone, and no second selector opened.
+    QCOMPARE(application.m_captureManager->m_regionSelector.data(), existing.data());
+
+    existing->close();
+    QTRY_VERIFY(!existing);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::scriptedGui_recordsLastRegion()
+{
+    using namespace SnapTray::CLI;
+    ScopedTestHistory history;
+    QVERIFY(history.isValid());
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    application.m_captureManager->m_snapshotOverride = solidScreenSnapshot;
+
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    const QRect region = testRegionOnPrimaryScreen();
+    application.handleCLICommand(
+        scriptedGuiCommand({{GuiCommand::kOptionWaitResult, true},
+                            {GuiCommand::kOptionInitialRegion, initialRegionJson(region)}}),
+        pair.serverSide);
+    QPointer<RegionSelector> selector = application.m_captureManager->m_regionSelector;
+    QVERIFY(selector);
+    QTest::keyClick(selector.data(), Qt::Key_Return);
+
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(response.success);
+    const auto stored = RegionCaptureSettingsManager::instance().lastCaptureRegion();
+    QVERIFY(stored.has_value());
+    QCOMPARE(stored->globalRect, region);
+    QCOMPARE(stored->screenName, QGuiApplication::primaryScreen()->name());
+    QTRY_VERIFY(!selector);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
 void tst_MainApplicationTrayMenu::handleCLICommand_removedRecordCommandIsIgnored()
 {
     using namespace SnapTray::CLI;
@@ -334,6 +1025,77 @@ void tst_MainApplicationTrayMenu::handleCLICommand_removedRecordCommandIsIgnored
 
     application.closeScreenPicker();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+// PR #205 review: while the recording area selector is open (the recording
+// manager is still idle and the screen picker gone), screenshots, canvas
+// and pins wait, as they do for the screen picker.
+void tst_MainApplicationTrayMenu::areaSelectorHoldsOtherCaptures()
+{
+    MainApplication application;
+    application.m_captureManager = new CaptureManager(nullptr, &application);
+    application.m_recordingManager = new RecordingManager(&application);
+    QVERIFY(application.canStartRegionCapture());
+    QVERIFY(application.canShutdownForUpdate());
+    application.m_areaSelector = new SnapTray::QmlRecordingAreaSelector(&application);
+    QVERIFY(application.recordingSetupActive());
+    QVERIFY(!application.canStartRegionCapture());
+    QVERIFY(!application.canShutdownForUpdate());
+    QSignalSpy captureStarted(application.m_captureManager, &CaptureManager::captureStarted);
+    application.onHotkeyAction(SnapTray::HotkeyAction::RegionCapture);
+    application.onHotkeyAction(SnapTray::HotkeyAction::CaptureFullScreen);
+    QCOMPARE(captureStarted.count(), 0);
+    application.closeAreaSelector();
+    QVERIFY(!application.recordingSetupActive());
+    QVERIFY(application.canStartRegionCapture());
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
+{
+    MainApplication application;
+    application.m_captureManager = new CaptureManager(nullptr, &application);
+    application.m_recordingManager = new RecordingManager(&application);
+    int replayCalls = 0;
+    application.m_historyReplayStarter = [&](const QString&) { ++replayCalls; return true; };
+    QVERIFY(application.canStartRegionCapture());
+    bool queuedResult = true;
+    QMetaObject::invokeMethod(&application, [&] {
+        queuedResult = application.startHistoryReplay("test-entry");
+    }, Qt::QueuedConnection);
+    auto* viewModel = new SnapTray::ScreenPickerViewModel();
+    auto* picker = new DummyScreenPickerDialog(viewModel, &application);
+    application.attachScreenPicker(picker, viewModel);
+    QTRY_VERIFY(!queuedResult);
+    QCOMPARE(replayCalls, 0);
+    QSignalSpy captureStarted(application.m_captureManager, &CaptureManager::captureStarted);
+    application.onHotkeyAction(SnapTray::HotkeyAction::RegionCapture);
+    application.onHotkeyAction(SnapTray::HotkeyAction::CaptureFullScreen);
+    application.onHotkeyAction(SnapTray::HotkeyAction::DelayedRegionCapture);
+    QCOMPARE(captureStarted.count(), 0);
+    QVERIFY(!application.m_captureManager->isDelayedCapturePending());
+    application.closeScreenPicker();
+    QVERIFY(application.startHistoryReplay("test-entry"));
+    QCOMPARE(replayCalls, 1);
+    using State = RecordingManager::State;
+    for (State state : {State::Preparing, State::Countdown, State::Recording,
+                        State::Paused, State::Encoding}) {
+        application.m_recordingManager->m_state = state;
+        QVERIFY(!application.canStartRegionCapture());
+        QVERIFY(!application.startHistoryReplay("test-entry"));
+        application.onRegionCapture();
+        application.onFullScreenCapture();
+        application.onDelayedCaptureHotkey();
+        QCOMPARE(captureStarted.count(), 0);
+        QVERIFY(!application.m_captureManager->isDelayedCapturePending());
+        QCOMPARE(replayCalls, 1);
+    }
+    // The preview window is an ordinary window: captures and history replay stay available.
+    application.m_recordingManager->m_state = State::Previewing;
+    QVERIFY(application.canStartRegionCapture());
+    QVERIFY(application.startHistoryReplay("test-entry"));
+    QCOMPARE(replayCalls, 2);
+    application.m_recordingManager->m_state = State::Idle;
 }
 
 void tst_MainApplicationTrayMenu::screenPickerClosed_deletesWrapperAndViewModel()
@@ -366,9 +1128,15 @@ void tst_MainApplicationTrayMenu::clearAllTestSettings()
     clearSetting(SnapTray::kSettingsKeyHistoryWindowHotkey);
     clearSetting(SnapTray::kSettingsKeyTogglePinsVisibilityHotkey);
     clearSetting(SnapTray::kSettingsKeyRecordFullScreenHotkey);
+    clearSetting(SnapTray::kSettingsKeyPauseResumeRecordingHotkey);
+    clearSetting(SnapTray::kSettingsKeyShowRecordingControlsHotkey);
+    clearSetting(SnapTray::kSettingsKeyDelayedRegionCaptureHotkey);
 
     auto settings = SnapTray::getSettings();
     settings.remove(QString::fromLatin1(SnapTray::kSettingsKeyHotkeyRegistrationCounter));
+    settings.remove(QStringLiteral("regionCapture/delayedCaptureSeconds"));
+    settings.remove(QStringLiteral("regionCapture/lastRegion"));
+    settings.remove(QStringLiteral("regionCapture/lastRegionScreen"));
     settings.remove(QStringLiteral("update/autoCheck"));
     settings.remove(QStringLiteral("update/checkIntervalHours"));
     settings.remove(QStringLiteral("update/lastCheckTime"));
@@ -405,5 +1173,276 @@ void tst_MainApplicationTrayMenu::installFakeUpdateService(InstallSource install
         });
 }
 
+void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader_data()
+{
+    QTest::addColumn<int>("orientation");
+    QTest::addColumn<bool>("large");
+    QTest::addColumn<bool>("positioned");
+    QTest::newRow("rotate90") << 6 << false << false;
+    QTest::newRow("rotate270") << 8 << false << false;
+    QTest::newRow("mirror") << 2 << false << true;
+    QTest::newRow("large") << 1 << true << false;
+    QTest::newRow("large-positioned") << 1 << true << true;
+}
+
+void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
+{
+    QFETCH(int, orientation);
+    QFETCH(bool, large);
+    QFETCH(bool, positioned);
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    const QSize size = large ? screen->availableGeometry().size() * 2 : QSize(120, 80);
+    QImage input(size, QImage::Format_RGB32);
+    input.fill(Qt::red);
+    { QPainter painter(&input); painter.fillRect(QRect(0, 0, size.width()/2, size.height()/2), Qt::blue); }
+    QByteArray jpeg;
+    QBuffer buffer(&jpeg);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(input.save(&buffer, "JPEG", 100));
+    QByteArray exif = QByteArray::fromHex("45786966000049492a0008000000010012010300010000000100000000000000");
+    exif[24] = char(orientation);
+    QByteArray segment = QByteArray::fromHex("ffe10022") + exif;
+    jpeg.insert(2, segment);
+    QTemporaryDir dir;
+    const QString path = dir.filePath("oriented.jpg");
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QCOMPARE(file.write(jpeg), qint64(jpeg.size()));
+    file.close();
+    QImageReader reader(path);
+    reader.setAutoTransform(false);
+    QImage expected = reader.read();
+    if (orientation == 6) expected = expected.transformed(QTransform().rotate(90));
+    if (orientation == 8) expected = expected.transformed(QTransform().rotate(-90));
+    if (orientation == 2) expected = expected.mirrored(true, false);
+    expected = convertImageForDisplay(expected);
+    const QPoint position = screen->availableGeometry().topLeft() + QPoint(37, 43);
+    SnapTray::CLI::IPCMessage command;
+    command.command = "pin";
+    command.options = {{"file", path}};
+    if (positioned) { command.options["x"] = position.x(); command.options["y"] = position.y(); }
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+    // A pin first shown at its unzoomed size can reach a neighbouring monitor;
+    // Qt then creates it at that monitor's DPI and misplaces it on mixed-DPI desktops.
+    QSize sizeWhenShown;
+    connect(application.m_pinWindowManager, &PinWindowManager::windowCreated, application.m_pinWindowManager,
+            [&sizeWhenShown](PinWindow* window) { if (window->isVisible()) sizeWhenShown = window->size(); });
+    application.handleCLICommand(command.toJson());
+    QTRY_COMPARE(created.count(), 1);
+    PinWindow* pin = application.m_pinWindowManager->windows().first();
+    const auto placement = computeInitialPinWindowPlacement(QPixmap::fromImage(expected), screen->availableGeometry());
+    QCOMPARE(sizeWhenShown, placement.displaySize);
+    QCOMPARE(pin->zoomLevel(), placement.zoomLevel);
+    QCOMPARE(pin->size(), placement.displaySize);
+    QCOMPARE(pin->pos(), positioned ? position : placement.position);
+    if (!large) {
+        const QImage pixels = pin->exportPixmapForMerge().toImage();
+        QCOMPARE(pixels.size(), expected.size());
+        for (const QPoint point : {QPoint(10,10), QPoint(expected.width()-11,10),
+                                   QPoint(10,expected.height()-11), QPoint(expected.width()-11,expected.height()-11)}) {
+            QCOMPARE(pixels.pixelColor(point), expected.pixelColor(point));
+        }
+    }
+    application.m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::cliClipboardPinPosition_data()
+{
+    QTest::addColumn<bool>("text");
+    QTest::addColumn<int>("coordinates");
+    for (bool text : {false, true}) {
+        for (int coordinates = 0; coordinates < 4; ++coordinates) {
+            QTest::newRow(qPrintable(QString("%1-%2").arg(text ? "text" : "image").arg(coordinates)))
+                << text << coordinates;
+        }
+    }
+}
+
+void tst_MainApplicationTrayMenu::cliClipboardPinPosition()
+{
+    QFETCH(bool, text);
+    QFETCH(int, coordinates);
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    auto* clipboard = QGuiApplication::clipboard();
+    if (text) {
+        clipboard->setText("Clipboard pin position");
+    } else {
+        QPixmap image(120, 80);
+        image.fill(Qt::green);
+        image.setDevicePixelRatio(2.0);
+        clipboard->setPixmap(image);
+    }
+    SnapTray::CLI::IPCMessage command;
+    command.command = "pin";
+    command.options = {{"clipboard", true}};
+    const QPoint requested(-240, -120);
+    if (coordinates & 1) command.options["x"] = requested.x();
+    if (coordinates & 2) command.options["y"] = requested.y();
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+    application.handleCLICommand(command.toJson());
+    QCOMPARE(created.count(), 1);
+    auto* pin = application.m_pinWindowManager->windows().first();
+    const QPoint centered = screen->geometry().center() - QPoint(pin->width()/2, pin->height()/2);
+    QCOMPARE(pin->pos(), coordinates == 3 ? requested : centered);
+    application.m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    clipboard->clear();
+}
+
+void tst_MainApplicationTrayMenu::recordingWarnings_stayOffTheRecordedScreen()
+{
+    // PR #170 review: the whole screen is captured and the toast cannot be
+    // excluded everywhere (X11 never, Windows only from 10 2004), so a
+    // warning toast during recording ended up in the video. Every platform
+    // holds warnings until capture ends.
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    QStringList shown;
+    application.m_recordingWarningToast = [&shown](const QString&, const QString& text) { shown.append(text); };
+    using State = RecordingManager::State;
+    RecordingManager* recording = application.m_recordingManager;
+    recording->setState(State::Recording);
+    emit recording->recordingWarning(QStringLiteral("Frames are being dropped."));
+    emit recording->recordingWarning(QStringLiteral("Disk space is low."));
+    QVERIFY2(shown.isEmpty(), "a warning toast would be recorded");
+    QVERIFY(application.m_trayIcon->toolTip().contains(QStringLiteral("Disk space is low.")));
+    // Once the recording stops, everything held is shown, once.
+    recording->setState(State::Encoding);
+    QCOMPARE(shown.size(), 1);
+    QVERIFY(shown.first().contains(QStringLiteral("Frames are being dropped.")));
+    QVERIFY(shown.first().contains(QStringLiteral("Disk space is low.")));
+    QVERIFY(!application.m_trayIcon->toolTip().contains(QStringLiteral("Disk space is low.")));
+    recording->setState(State::Idle);
+    QCOMPARE(shown.size(), 1);
+    // Outside a recording, warnings show immediately.
+    emit recording->recordingWarning(QStringLiteral("Later warning."));
+    QCOMPARE(shown.size(), 2);
+}
+
+// #225: a tray exit for click-through, shown only when a pin uses it.
+void tst_MainApplicationTrayMenu::trayDisableClickThroughItem()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    QVERIFY(application.m_disableClickThroughAction);
+    emit application.m_trayMenu->aboutToShow();
+    QVERIFY(!application.m_disableClickThroughAction->isVisible());
+    if (!PlatformFeatures::instance().capabilities().supportsClickThrough)
+        return;
+    QPixmap pixmap(120, 80);
+    pixmap.fill(Qt::red);
+    PinWindow* pin = application.m_pinWindowManager->createPinWindow(pixmap, QPoint(100, 100));
+    QVERIFY(pin);
+    pin->setClickThrough(true);
+    emit application.m_trayMenu->aboutToShow();
+    QVERIFY(application.m_disableClickThroughAction->isVisible());
+    application.m_disableClickThroughAction->trigger();
+    QVERIFY(!pin->isClickThrough());
+    application.m_pinWindowManager->closeAllWindows();
+}
+
 QTEST_MAIN(tst_MainApplicationTrayMenu)
 #include "tst_MainApplicationTrayMenu.moc"
+
+void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile_data()
+{
+    QTest::addColumn<bool>("escape");
+    QTest::addColumn<bool>("validVideo");
+    QTest::newRow("window-close") << false << true;
+    QTest::newRow("escape") << true << true;
+    QTest::newRow("invalid-window-close") << false << false;
+    QTest::newRow("invalid-escape") << true << false;
+}
+
+void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile()
+{
+#if defined(Q_OS_MACOS) || defined(Q_OS_WIN)
+    QFETCH(bool, escape);
+    QFETCH(bool, validVideo);
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    QTemporaryDir dir;
+    const QString path = dir.filePath("temporary.mp4");
+    if (validVideo) {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder);
+        QVERIFY2(encoder->start(path, QSize(64, 48), 10), qPrintable(encoder->lastError()));
+        QImage frame(64, 48, QImage::Format_ARGB32);
+        frame.fill(Qt::blue);
+        for (int i = 0; i < 3; ++i) {
+            QElapsedTimer wait;
+            wait.start();
+            while (encoder->framesWritten() <= i && wait.elapsed() < 2000) {
+                encoder->writeFrame(frame, i * 100);
+                if (encoder->framesWritten() <= i) QTest::qWait(5);
+            }
+            QCOMPARE(encoder->framesWritten(), qint64(i + 1));
+        }
+        QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+        encoder->finish();
+        QTRY_COMPARE_WITH_TIMEOUT(finished.count(), 1, 10000);
+        QVERIFY(finished.first().first().toBool());
+    } else {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QVERIFY(file.write("Incomplete recording") > 0);
+        file.close();
+    }
+    application.showRecordingPreview(path, 0, true);
+    QVERIFY(application.m_previewBackend);
+    QPointer<RecordingPreviewBackend> backend(application.m_previewBackend);
+    if (validVideo) QTRY_VERIFY(backend->duration() > 0);
+    QSignalSpy discarded(backend, &RecordingPreviewBackend::discardRequested);
+    QSignalSpy closed(backend, &RecordingPreviewBackend::closed);
+    QWindow* preview = nullptr;
+    for (auto* window : QGuiApplication::topLevelWindows()) {
+        if (window->title() == "Recording Preview" && window->isVisible()) preview = window;
+    }
+    QVERIFY(preview);
+    // show()/requestActivate() complete asynchronously on Windows. Key events
+    // sent before exposure have no active QML focus item to receive Escape.
+    QVERIFY(QTest::qWaitForWindowExposed(preview));
+#ifdef Q_OS_WIN
+    if (escape) {
+        preview->requestActivate();
+        QVERIFY(QTest::qWaitForWindowActive(preview));
+    }
+#endif
+    // Esc and the title-bar close ask first; nothing is deleted yet.
+    if (escape) {
+        QTest::keyClick(preview, Qt::Key_Escape);
+    } else {
+        QVERIFY(!preview->close());
+    }
+    QVERIFY(backend->discardConfirmationPending());
+    QCOMPARE(discarded.count(), 0);
+    QVERIFY(QFileInfo::exists(path));
+    // Confirm with the keyboard: Tab to "Discard", then Enter.
+    if (escape) {
+        QTest::keyClick(preview, Qt::Key_Tab);
+        QTest::keyClick(preview, Qt::Key_Return);
+    } else {
+        backend->discard();
+    }
+    QCOMPARE(discarded.count(), 1);
+    QCOMPARE(discarded.first().first().toString(), path);
+    QCOMPARE(closed.count(), 1);
+    QTRY_VERIFY(backend.isNull());
+    QTRY_VERIFY(!QFileInfo::exists(path));
+#else
+    QSKIP("Recording is unsupported on Linux");
+#endif
+}

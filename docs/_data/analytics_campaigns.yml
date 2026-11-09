@@ -1,0 +1,21 @@
+# Allow-list for website campaign tags (see /developer/site-analytics/).
+# Only values listed here are sent to analytics as-is; anything else is
+# reported as "other". Use short, non-personal identifiers only: never put
+# email addresses, account names or free text into a UTM tag.
+# utm_content must look like post01 or group2 (letters then 1-3 digits).
+mediums:
+  - community
+  - social
+  - article
+  - video
+campaigns:
+  korea_launch_20261115:
+    market: KR
+    sources:
+      - geeknews
+  thailand_launch_20261115:
+    market: TH
+    sources:
+      - blognone
+      - devhub
+      - facebook

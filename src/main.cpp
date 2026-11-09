@@ -1,7 +1,9 @@
+#include <QLocalSocket>
 #include "MainApplication.h"
 #include "AutoLaunchManager.h"
 #include "SingleInstanceGuard.h"
 #include "cli/CLIHandler.h"
+#include "cli/CaptureOutputHelper.h"
 #include "platform/PlatformCapabilities.h"
 #include "platform/QtQuickBackendPolicy.h"
 #include "settings/LanguageManager.h"
@@ -10,12 +12,14 @@
 
 #if defined(Q_OS_LINUX)
 #include "platform/LinuxDesktopEnvironment.h"
+#include "platform/LinuxClipboardOwner.h"
+#include "platform/LinuxQtQuickSmokeCheck.h"
+#include "platform/LinuxRecordingSmokeCheck.h"
 #endif
 
 #include <QApplication>
 #include <QCoreApplication>
 #include <QDebug>
-#include <QFile>
 #include <QOperatingSystemVersion>
 #include <QStringList>
 #include <QTextStream>
@@ -52,13 +56,34 @@ int main(int argc, char* argv[])
 #endif
 
     SnapTray::applyQtQuickGraphicsBackendPolicy(
-        SnapTray::selectQtQuickGraphicsBackendPolicy(QOperatingSystemVersion::current()));
+        SnapTray::currentQtQuickGraphicsBackendPolicy());
 
     // Check for CLI arguments before creating QApplication
     QStringList arguments;
     for (int i = 0; i < argc; ++i) {
         arguments.append(QString::fromLocal8Bit(argv[i]));
     }
+
+#if defined(Q_OS_LINUX)
+    // Exercise the deployed Qt Quick runtime without starting the tray app or
+    // touching settings. Packaging uses the offscreen QPA platform on CI.
+    if (arguments.size() == 2 &&
+        arguments.at(1) == QStringLiteral("--internal-recording-smoke-check")) {
+        QGuiApplication app(argc, argv);
+        return SnapTray::runLinuxRecordingSmokeCheck();
+    }
+    if (arguments.size() == 2 &&
+        arguments.at(1) == QStringLiteral("--internal-qt-quick-smoke-check")) {
+        QGuiApplication app(argc, argv);
+        return SnapTray::runLinuxQtQuickSmokeCheck();
+    }
+
+    if (SnapTray::isLinuxClipboardOwnerRequest(arguments)) {
+        QGuiApplication app(argc, argv);
+        if (!SnapTray::currentPlatformCapabilities().isRuntimeSupported) return 1;
+        return SnapTray::runLinuxClipboardOwner(arguments);
+    }
+#endif
 
     if (shouldBypassRuntimeGuardForMetadataCommand(arguments)) {
         QCoreApplication app(argc, argv);
@@ -105,11 +130,16 @@ int main(int argc, char* argv[])
         QTextStream out(stdout);
         QTextStream err(stderr);
 
+        for (const QString& warning : std::as_const(result.warnings)) {
+            err << "Warning: " << warning << "\n";
+        }
+        err.flush();
+
         if (!result.data.isEmpty()) {
             // Binary data (--raw)
-            QFile outFile;
-            if (outFile.open(stdout, QIODevice::WriteOnly)) {
-                outFile.write(result.data);
+            if (!SnapTray::CLI::writeRawOutputToStdout(result.data)) {
+                err << "Error: Failed to write raw image to stdout\n";
+                result.code = SnapTray::CLI::CLIResult::Code::FileError;
             }
         }
         else if (!result.message.isEmpty()) {
@@ -181,6 +211,21 @@ int main(int argc, char* argv[])
         &MainApplication::handleCLICommand);
 
     mainApp.initialize();
+#ifdef Q_OS_LINUX
+    // Confirm only after single-instance ownership and tray initialization.
+    const auto updateAck = qEnvironmentVariable("SNAPTRAY_UPDATE_ACK");
+    const auto updateToken = qgetenv("SNAPTRAY_UPDATE_TOKEN");
+    qunsetenv("SNAPTRAY_UPDATE_ACK");
+    qunsetenv("SNAPTRAY_UPDATE_TOKEN");
+    if (updateAck.startsWith("snaptray-update-") && !updateToken.isEmpty()) {
+        QLocalSocket socket;
+        socket.connectToServer(updateAck);
+        if (socket.waitForConnected(1000)) {
+            socket.write(updateToken);
+            socket.waitForBytesWritten(1000);
+        }
+    }
+#endif
 
     return app.exec();
 }

@@ -1,9 +1,15 @@
 #include <QtTest>
+#include <QScopeGuard>
 #include <QGuiApplication>
 #include <QWheelEvent>
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "RegionSelector.h"
+#include "detection/TextLineGeometryCache.h"
+#include "region/SelectionStateManager.h"
+#include "tools/ToolManager.h"
+#include "annotations/StepBadgeAnnotation.h"
+#include "settings/AnnotationSettingsManager.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/RegionToolbarViewModel.h"
@@ -15,12 +21,50 @@ class tst_RegionSelectorMultiRegionSubToolbar : public QObject
     Q_OBJECT
 
 private slots:
+    void testMarkerTextCacheIsSingleRegionOnly();
     void initTestCase();
     void testToolbarToggleHidesSubToolbarInMultiRegionMode();
     void testBeginReplaceHidesStaleSubToolbar();
     void testCompletedSelectionReopensHiddenSubToolbar();
     void testWheelDoesNotAdjustWidthWithoutCompletedSelection();
+    void testMosaicWheelDoesNotAdjustWidthWithCompletedSelection();
+    void testStepBadgeSizeStartsSavedAndWheelStopsAtEnds();
 };
+
+void tst_RegionSelectorMultiRegionSubToolbar::testMarkerTextCacheIsSingleRegionOnly()
+{
+    AnnotationSettingsManager::instance().saveMarkerTextSnap(false);
+    const auto cleanup = qScopeGuard([] { AnnotationSettingsManager::instance().saveMarkerTextSnap(false); });
+    RegionSelector selector;
+    delete selector.m_markerTextCache;
+    int requests = 0;
+    OCRCallback callback;
+    selector.m_markerTextCache = new TextLineGeometryCache(
+        [&](const QPixmap&, const QStringList&, const OCRCallback& cb) { ++requests; callback = cb; }, &selector);
+    selector.m_markerTextSnapSupported = true;
+    selector.m_backgroundPixmap = QPixmap(400,200);
+    selector.m_backgroundPixmap.fill(Qt::white);
+    selector.m_devicePixelRatio = 1;
+    selector.m_selectionManager->setSelectionRect({0,0,400,200});
+    selector.syncMarkerTextSnap();
+    QVERIFY(selector.m_toolOptionsViewModel->markerTextSnapAvailable());
+    QCOMPARE(requests,0);
+    selector.m_toolOptionsViewModel->setMarkerTextSnapEnabled(true);
+    QCOMPARE(requests,1);
+    selector.syncMarkerTextSnap(); QCOMPARE(requests,1);
+    OCRResult result; result.success = true; result.blocks = {{"text",{.1,.2,.5,.1},-1}};
+    callback(result);
+    QVERIFY(selector.m_toolManager->context()->markerTextLines());
+    selector.m_inputState.multiRegionMode = true;
+    selector.syncMarkerTextSnap();
+    QVERIFY(!selector.m_toolOptionsViewModel->markerTextSnapAvailable());
+    QVERIFY(!selector.m_toolManager->context()->markerTextLines());
+    selector.m_inputState.multiRegionMode = false;
+    selector.m_markerTextSnapSupported = false; // Linux / unavailable native OCR
+    selector.syncMarkerTextSnap();
+    QVERIFY(!selector.m_toolOptionsViewModel->markerTextSnapAvailable());
+    QCOMPARE(requests,1);
+}
 
 void tst_RegionSelectorMultiRegionSubToolbar::initTestCase()
 {
@@ -116,6 +160,62 @@ void tst_RegionSelectorMultiRegionSubToolbar::testWheelDoesNotAdjustWidthWithout
     selector.wheelEvent(&event);
 
     QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 5);
+}
+
+void tst_RegionSelectorMultiRegionSubToolbar::testMosaicWheelDoesNotAdjustWidthWithCompletedSelection()
+{
+    RegionSelector selector;
+
+    selector.m_selectionManager->setSelectionRect(QRect(20, 20, 120, 90));
+    selector.m_inputState.currentTool = ToolId::Mosaic;
+    selector.m_inputState.showSubToolbar = true;
+    selector.m_toolOptionsViewModel->showForTool(static_cast<int>(ToolId::Mosaic));
+    selector.m_toolOptionsViewModel->setCurrentWidth(18);
+    QVERIFY(selector.m_selectionManager->isComplete());
+
+    QWheelEvent event(QPointF(40, 40),
+                      QPointF(40, 40),
+                      QPoint(),
+                      QPoint(0, 120),
+                      Qt::NoButton,
+                      Qt::NoModifier,
+                      Qt::NoScrollPhase,
+                      false);
+
+    selector.wheelEvent(&event);
+
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 18);
+    QVERIFY(!event.isAccepted());
+}
+
+void tst_RegionSelectorMultiRegionSubToolbar::testStepBadgeSizeStartsSavedAndWheelStopsAtEnds()
+{
+    auto& annotationSettings = AnnotationSettingsManager::instance();
+    const StepBadgeSize previous = annotationSettings.loadStepBadgeSize();
+    const auto restore = qScopeGuard([&] { annotationSettings.saveStepBadgeSize(previous); });
+    annotationSettings.saveStepBadgeSize(StepBadgeSize::Large);
+
+    RegionSelector selector;
+    // The S/M/L strip shows the saved size, not the default Medium.
+    QCOMPARE(selector.m_toolOptionsViewModel->stepBadgeSize(), static_cast<int>(StepBadgeSize::Large));
+
+    selector.m_inputState.currentTool = ToolId::StepBadge;
+    auto wheel = [&selector](int deltaY) {
+        QWheelEvent event(QPointF(40, 40), QPointF(40, 40), QPoint(), QPoint(0, deltaY),
+                          Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        selector.wheelEvent(&event);
+        return event.isAccepted();
+    };
+
+    // Scrolling up at Large stays at Large instead of wrapping to Small.
+    QVERIFY(wheel(120));
+    QCOMPARE(selector.m_stepBadgeSize, StepBadgeSize::Large);
+    QCOMPARE(selector.m_toolOptionsViewModel->stepBadgeSize(), static_cast<int>(StepBadgeSize::Large));
+
+    QVERIFY(wheel(-120));
+    QCOMPARE(selector.m_stepBadgeSize, StepBadgeSize::Medium);
+    QCOMPARE(selector.m_toolOptionsViewModel->stepBadgeSize(), static_cast<int>(StepBadgeSize::Medium));
+    QCOMPARE(annotationSettings.loadStepBadgeSize(), StepBadgeSize::Medium);
 }
 
 QTEST_MAIN(tst_RegionSelectorMultiRegionSubToolbar)

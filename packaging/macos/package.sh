@@ -10,6 +10,8 @@ set -e
 #   SNAPTRAY_SPARKLE_PUBLIC_KEY="..." \
 #   ./package.sh
 #
+# Required Qt SDK:
+#   QT_ROOT_DIR          - Qt 6.12.0 SDK root (same SDK for build/deploy)
 # Optional environment variables:
 #   CODESIGN_IDENTITY     - Developer ID for code signing
 #   NOTARIZE_KEYCHAIN_PROFILE - notarytool keychain profile name (recommended)
@@ -41,22 +43,6 @@ codesign_runtime() {
     else
         codesign --force --sign - \
             --options runtime \
-            "$@" \
-            "$target"
-    fi
-}
-
-codesign_nested() {
-    local target="$1"
-    shift
-
-    if [ -n "$CODESIGN_IDENTITY" ]; then
-        codesign --force --sign "$CODESIGN_IDENTITY" \
-            --timestamp \
-            "$@" \
-            "$target"
-    else
-        codesign --force --sign - \
             "$@" \
             "$target"
     fi
@@ -139,13 +125,21 @@ if [ -z "$SPARKLE_FRAMEWORK" ] || [ ! -d "$SPARKLE_FRAMEWORK" ]; then
     exit 1
 fi
 
-# Check for Qt
-QT_PREFIX=$(brew --prefix qt 2>/dev/null || echo "")
-if [ -z "$QT_PREFIX" ] || [ ! -d "$QT_PREFIX" ]; then
-    echo -e "${RED}Error: Qt not found. Please install with: brew install qt${NC}"
+# Release packaging must never silently select a different Homebrew Qt.
+QT_PREFIX="${QT_ROOT_DIR:-}"
+if [ -z "$QT_PREFIX" ] || [ ! -x "$QT_PREFIX/bin/qmake" ] || \
+   [ ! -x "$QT_PREFIX/bin/macdeployqt" ] || \
+   [ ! -f "$QT_PREFIX/lib/cmake/Qt6/Qt6Config.cmake" ]; then
+    echo -e "${RED}Error: Set QT_ROOT_DIR to a complete Qt 6.12.0 macOS SDK.${NC}"
+    exit 1
+fi
+QT_VERSION=$("$QT_PREFIX/bin/qmake" -query QT_VERSION)
+if [ "$QT_VERSION" != "6.12.0" ]; then
+    echo -e "${RED}Error: macOS packaging requires Qt 6.12.0; found $QT_VERSION at $QT_PREFIX.${NC}"
     exit 1
 fi
 echo "Qt path: $QT_PREFIX"
+echo "Qt version: $QT_VERSION"
 
 if [ -z "$MACOS_SDK_PATH" ]; then
     MACOS_SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
@@ -168,8 +162,10 @@ if command -v ccache &> /dev/null; then
 fi
 
 cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
+    -U 'Qt6*_DIR' -U QT_DIR \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$QT_PREFIX" \
+    -DQt6_DIR:PATH="$QT_PREFIX/lib/cmake/Qt6" \
     -DCMAKE_OSX_SYSROOT="$MACOS_SDK_PATH" \
     -DSNAPTRAY_SPARKLE_FEED_URL="$SNAPTRAY_SPARKLE_FEED_URL" \
     -DSNAPTRAY_SPARKLE_PUBLIC_KEY="$SNAPTRAY_SPARKLE_PUBLIC_KEY" \
@@ -188,12 +184,19 @@ fi
 # Step 2: Run macdeployqt
 echo ""
 echo -e "${YELLOW}[2/8] Running macdeployqt...${NC}"
+if [ -n "$CODESIGN_IDENTITY" ]; then
+    MACDEPLOYQT_SIGNING_ARGS=("-sign-for-notarization=$CODESIGN_IDENTITY")
+else
+    MACDEPLOYQT_SIGNING_ARGS=("-codesign=-" "-hardened-runtime")
+fi
+
 "$QT_PREFIX/bin/macdeployqt" "$APP_PATH" \
     -qmldir="$QML_SOURCE_DIR" \
     -qmlimport="$QML_IMPORT_DIR" \
-    -verbose=1
+    -verbose=1 \
+    "${MACDEPLOYQT_SIGNING_ARGS[@]}"
 
-echo "Removing optional Qt modules pulled in by Homebrew macdeployqt..."
+echo "Removing unused optional Qt modules..."
 OPTIONAL_QML_PATHS=(
     "$APP_PATH/Contents/Resources/qml/Qt3D"
     "$APP_PATH/Contents/Resources/qml/QtPdf"
@@ -295,7 +298,7 @@ echo "Re-signing modified Brotli dylibs..."
 for lib in "${BROTLI_LIBS[@]}"; do
     lib_path="$FRAMEWORKS_DIR/$lib"
     [ -f "$lib_path" ] || continue
-    codesign_nested "$lib_path"
+    codesign_runtime "$lib_path"
 done
 
 # Step 3: Bundle Sparkle
@@ -336,11 +339,14 @@ if [ -d "$SPARKLE_CURRENT/Updater.app" ]; then
 fi
 
 codesign_runtime "$SPARKLE_DEST"
-codesign_runtime "$APP_PATH" --deep --entitlements "$SCRIPT_DIR/entitlements.plist"
+codesign_runtime "$APP_PATH" --entitlements "$SCRIPT_DIR/entitlements.plist"
 
 echo "Verifying signature..."
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 echo -e "${GREEN}Signature verified${NC}"
+
+echo "Verifying packaged microphone configuration..."
+"$SCRIPT_DIR/verify-app-permissions.sh" "$APP_PATH"
 
 # Step 5: Notarize app bundle before creating distributable archives
 echo ""

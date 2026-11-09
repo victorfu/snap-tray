@@ -10,9 +10,8 @@ namespace {
 
 bool isExportActionTool(ToolId toolId)
 {
-    static constexpr std::array<ToolId, 4> kExportActionTools = {
+    static constexpr std::array<ToolId, 3> kExportActionTools = {
         ToolId::Pin,
-        ToolId::Share,
         ToolId::Save,
         ToolId::Copy,
     };
@@ -41,6 +40,14 @@ void ToolbarViewModelBase::setActiveTool(int toolId)
     if (m_activeTool != toolId) {
         m_activeTool = toolId;
         emit activeToolChanged();
+    }
+}
+
+void ToolbarViewModelBase::setOverflowKeepTool(int toolId)
+{
+    if (m_overflowKeepTool != toolId) {
+        m_overflowKeepTool = toolId;
+        emit overflowKeepToolChanged();
     }
 }
 
@@ -83,19 +90,6 @@ void ToolbarViewModelBase::setOCRAvailable(bool value)
     }
 }
 
-bool ToolbarViewModelBase::shareInProgress() const
-{
-    return m_shareInProgress;
-}
-
-void ToolbarViewModelBase::setShareInProgress(bool value)
-{
-    if (m_shareInProgress != value) {
-        m_shareInProgress = value;
-        emit shareInProgressChanged();
-    }
-}
-
 bool ToolbarViewModelBase::autoBlurProcessing() const
 {
     return m_autoBlurProcessing;
@@ -116,7 +110,6 @@ ToolbarViewModelBase::ToolButtonOptions ToolbarViewModelBase::defaultToolButtonO
     options.isOCR = (toolId == ToolId::OCR);
     options.isUndo = (toolId == ToolId::Undo);
     options.isRedo = (toolId == ToolId::Redo);
-    options.isShare = (toolId == ToolId::Share);
     options.isExportAction = isExportActionTool(toolId);
     return options;
 }
@@ -127,13 +120,16 @@ QVariantMap ToolbarViewModelBase::buildToolButtonEntry(ToolId toolId,
 {
     auto& registry = ToolRegistry::instance();
     const auto& def = registry.get(toolId);
+    ToolButtonOptions resolved = options;
+    if (!resolved.group) resolved.group = toolbarGroup(toolId);
+    if (!resolved.collapsePriority) resolved.collapsePriority = toolbarCollapsePriority(toolId);
     return buildCustomButtonEntry(static_cast<int>(toolId),
                                   def.iconKey,
                                   QStringLiteral("qrc:/icons/icons/%1.svg").arg(def.iconKey),
                                   tooltipOverride.isNull()
                                       ? registry.getTooltipWithShortcut(toolId)
                                       : tooltipOverride,
-                                  options);
+                                  resolved);
 }
 
 QVariantMap ToolbarViewModelBase::buildCustomButtonEntry(int id,
@@ -152,15 +148,31 @@ QVariantMap ToolbarViewModelBase::buildCustomButtonEntry(int id,
     entry[QStringLiteral("isOCR")] = options.isOCR;
     entry[QStringLiteral("isUndo")] = options.isUndo;
     entry[QStringLiteral("isRedo")] = options.isRedo;
-    entry[QStringLiteral("isShare")] = options.isShare;
     entry[QStringLiteral("isAction")] = options.isAction;
     entry[QStringLiteral("isExportAction")] = options.isExportAction;
     entry[QStringLiteral("isCancel")] = options.isCancel;
+    entry[QStringLiteral("group")] = static_cast<int>(options.group.value_or(ToolbarGroup::Assist));
+    entry[QStringLiteral("collapsePriority")] = options.collapsePriority.value_or(kNeverCollapse);
     return entry;
 }
 
 void ToolbarViewModelBase::setButtons(QVariantList buttons)
 {
+    // A group change starts a separator plus the wider group gap; unranked
+    // drawing tools collapse from the end of the row first.
+    int previousGroup = -1;
+    for (int i = 0; i < buttons.size(); ++i) {
+        QVariantMap entry = buttons[i].toMap();
+        const int group = entry.value(QStringLiteral("group")).toInt();
+        const bool groupStart = previousGroup != -1 && group != previousGroup;
+        entry[QStringLiteral("groupStart")] = groupStart;
+        if (groupStart) entry[QStringLiteral("separatorBefore")] = true;
+        if (entry.value(QStringLiteral("collapsePriority")).toInt()
+                == ToolbarTraitsDetail::kDrawBasePriority)
+            entry[QStringLiteral("collapsePriority")] = ToolbarTraitsDetail::kDrawBasePriority - i;
+        buttons[i] = entry;
+        previousGroup = group;
+    }
     m_buttons = std::move(buttons);
     emit buttonsChanged();
 }

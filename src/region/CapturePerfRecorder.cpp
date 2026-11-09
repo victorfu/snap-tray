@@ -11,7 +11,7 @@ namespace {
 
 bool capturePerfEnabled()
 {
-#if defined(Q_OS_WIN) && !defined(QT_NO_DEBUG_OUTPUT)
+#if (defined(Q_OS_WIN) || defined(Q_OS_MACOS)) && !defined(QT_NO_DEBUG_OUTPUT)
     static const bool enabled = qEnvironmentVariableIntValue("SNAPTRAY_CAPTURE_PERF") > 0;
     return enabled;
 #else

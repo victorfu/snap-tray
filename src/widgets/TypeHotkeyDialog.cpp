@@ -482,7 +482,7 @@ QString TypeHotkeyDialog::modifiersToDisplayString(Qt::KeyboardModifiers modifie
     //   Physical Ctrl → Qt::MetaModifier
     QString result;
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     // macOS: Map Qt modifiers back to physical key names
     // Order follows macOS convention: Ctrl, Option, Shift, Cmd
     if (modifiers & Qt::MetaModifier) result += QStringLiteral("Ctrl+");

@@ -3,12 +3,155 @@
 // found in the LICENSE file.
 
 #include "WindowLevel.h"
+#include "platform/CaptureExclusionPolicy.h"
+#include <QDateTime>
+#include <QDebug>
 
 #ifdef Q_OS_WIN
 #include <Windows.h>
+
+namespace {
+// Windows 10 can reject per-pixel-alpha surfaces with error 8: translucent
+// QWidgets and transparent Qt Quick windows (software scene graph). Establish
+// affinity without the layered surface, then restore the original style.
+// Keep this workaround specific to the reproduced failure; other errors retain
+// the normal diagnostic path. Toggling WS_EX_LAYERED invalidates the contents,
+// so repaint() runs whether or not the retry succeeded.
+template <typename Repaint>
+bool setLayeredCaptureAffinity(HWND hwnd, DWORD affinity, DWORD& error,
+                               const char *className, Repaint repaint)
+{
+    // Callers repeat the request on every show. Toggling the layered style
+    // again would drop the surface each time, so keep what is already set.
+    DWORD current = 0;
+    if (GetWindowDisplayAffinity(hwnd, &current) && current == affinity) {
+        return true;
+    }
+    if (SetWindowDisplayAffinity(hwnd, affinity)) {
+        return true;
+    }
+    error = GetLastError();
+    if (error != ERROR_NOT_ENOUGH_MEMORY) {
+        return false;
+    }
+    const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    if (!(exStyle & WS_EX_LAYERED)) {
+        return false;
+    }
+    // A window layered through SetLayeredWindowAttributes loses those
+    // attributes with the style; restore them as well.
+    COLORREF key = 0;
+    BYTE alpha = 255;
+    DWORD layeredFlags = 0;
+    const bool hasAttributes = GetLayeredWindowAttributes(hwnd, &key, &alpha, &layeredFlags)
+        && layeredFlags != 0;
+
+    SetLastError(ERROR_SUCCESS);
+    if (!SetWindowLongPtrW(hwnd, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED)) {
+        const DWORD styleError = GetLastError();
+        if (styleError != ERROR_SUCCESS) {
+            error = styleError;
+            return false;
+        }
+    }
+
+    const BOOL applied = SetWindowDisplayAffinity(hwnd, affinity);
+    const DWORD affinityError = applied ? ERROR_SUCCESS : GetLastError();
+    SetLastError(ERROR_SUCCESS);
+    const LONG_PTR previousStyle = SetWindowLongPtrW(hwnd, GWL_EXSTYLE, exStyle);
+    DWORD restoreError = previousStyle ? ERROR_SUCCESS : GetLastError();
+    if (restoreError == ERROR_SUCCESS && hasAttributes
+        && !SetLayeredWindowAttributes(hwnd, key, alpha, layeredFlags)) {
+        restoreError = GetLastError();
+    }
+
+    repaint();
+    error = restoreError != ERROR_SUCCESS ? restoreError : affinityError;
+    if (!applied || error != ERROR_SUCCESS) {
+        return false;
+    }
+    qDebug() << "Window capture affinity applied after layered-window retry:" << className;
+    return true;
+}
+
+bool setWidgetCaptureAffinity(QWidget *widget, HWND hwnd, DWORD affinity, DWORD& error)
+{
+    if (!widget->testAttribute(Qt::WA_TranslucentBackground)) {
+        if (SetWindowDisplayAffinity(hwnd, affinity)) {
+            return true;
+        }
+        error = GetLastError();
+        return false;
+    }
+    return setLayeredCaptureAffinity(hwnd, affinity, error, widget->metaObject()->className(),
+                                     [widget] { widget->update(); });
+}
+
+void logCaptureAffinityFailure(const QObject *object, HWND hwnd, bool excluded,
+                               DWORD affinity, DWORD error, bool visible,
+                               bool topLevel, Qt::WindowFlags flags, const QRect& geometry)
+{
+    // The caller saves GetLastError before any Qt or Win32 diagnostics run.
+    LPWSTR messageBuffer = nullptr;
+    const DWORD messageLength = FormatMessageW(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr, error, 0, reinterpret_cast<LPWSTR>(&messageBuffer), 0, nullptr);
+    const QString errorMessage = messageLength
+        ? QString::fromWCharArray(messageBuffer, static_cast<int>(messageLength)).simplified()
+        : QStringLiteral("System error description unavailable");
+    if (messageBuffer) {
+        LocalFree(messageBuffer);
+    }
+
+    const auto hex = [](quint64 value) {
+        return QStringLiteral("0x%1").arg(value, 0, 16);
+    };
+    const auto style = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
+    const auto exStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
+    DWORD processId = 0;
+    const DWORD threadId = GetWindowThreadProcessId(hwnd, &processId);
+    DWORD currentAffinity = 0;
+    const BOOL affinityReadable = GetWindowDisplayAffinity(hwnd, &currentAffinity);
+    const DWORD affinityReadError = affinityReadable ? ERROR_SUCCESS : GetLastError();
+    const auto version = QOperatingSystemVersion::current();
+
+    qWarning().nospace()
+        << "Failed to set window capture affinity: " << error
+        << " message=" << errorMessage
+        << " timestamp=" << QDateTime::currentDateTime().toString(Qt::ISODateWithMs)
+        << " class=" << object->metaObject()->className()
+        << " objectName=" << object->objectName()
+        << " parentClass=" << (object->parent() ? object->parent()->metaObject()->className() : "<none>")
+        << " hwnd=" << hex(reinterpret_cast<quintptr>(hwnd))
+        << " excluded=" << excluded << " requestedAffinity=" << hex(affinity)
+        << " affinityReadable=" << bool(affinityReadable)
+        << " currentAffinity=" << (affinityReadable ? hex(currentAffinity) : QStringLiteral("unavailable"))
+        << " affinityReadError=" << affinityReadError
+        << " qtVisible=" << visible << " qtTopLevel=" << topLevel
+        << " qtFlags=" << hex(static_cast<quint64>(flags.toInt()))
+        << " geometry=" << geometry
+        << " nativeValid=" << bool(IsWindow(hwnd))
+        << " nativeVisible=" << bool(IsWindowVisible(hwnd))
+        << " nativeTopLevel=" << (GetAncestor(hwnd, GA_ROOT) == hwnd)
+        << " ownerHwnd=" << hex(reinterpret_cast<quintptr>(GetWindow(hwnd, GW_OWNER)))
+        << " style=" << hex(style) << " exStyle=" << hex(exStyle)
+        << " layered=" << bool(exStyle & WS_EX_LAYERED)
+        << " transparent=" << bool(exStyle & WS_EX_TRANSPARENT)
+        << " noRedirectionBitmap=" << bool(exStyle & WS_EX_NOREDIRECTIONBITMAP)
+        << " windowProcessId=" << processId << " currentProcessId=" << GetCurrentProcessId()
+        << " windowThreadId=" << threadId << " currentThreadId=" << GetCurrentThreadId()
+        << " windowsVersion=" << version.majorVersion() << '.' << version.minorVersion()
+        << '.' << version.microVersion() << " qtVersion=" << qVersion();
+}
+} // namespace
 #endif
 
 void raiseWindowAboveMenuBar(QWidget *)
+{
+    // Windows does not need special handling for window level
+}
+
+void raiseWindowAboveMenuBar(QWindow *)
 {
     // Windows does not need special handling for window level
 }
@@ -64,13 +207,12 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
     }
     HWND hwnd = reinterpret_cast<HWND>(widget->winId());
     if (hwnd) {
-        // WDA_EXCLUDEFROMCAPTURE = 0x00000011, available on Windows 10 version 2004+
-        // This makes the window invisible to screen capture APIs (including DXGI)
-        constexpr DWORD WDA_EXCLUDEFROMCAPTURE_VALUE = 0x00000011;
-        DWORD affinity = excluded ? WDA_EXCLUDEFROMCAPTURE_VALUE : WDA_NONE;
-        if (!SetWindowDisplayAffinity(hwnd, affinity)) {
-            // May fail on older Windows versions - this is expected
-            // The window will still be visible in captures on older systems
+        const DWORD affinity = SnapTray::windowsCaptureAffinity(excluded, QOperatingSystemVersion::current());
+        DWORD error = ERROR_SUCCESS;
+        if (!setWidgetCaptureAffinity(widget, hwnd, affinity, error)) {
+            logCaptureAffinityFailure(widget, hwnd, excluded, affinity, error,
+                                      widget->isVisible(), widget->isWindow(),
+                                      widget->windowFlags(), widget->geometry());
         }
     }
 #else
@@ -88,9 +230,17 @@ void setWindowExcludedFromCapture(QWindow *window, bool excluded)
 
     HWND hwnd = reinterpret_cast<HWND>(window->winId());
     if (hwnd) {
-        constexpr DWORD WDA_EXCLUDEFROMCAPTURE_VALUE = 0x00000011;
-        DWORD affinity = excluded ? WDA_EXCLUDEFROMCAPTURE_VALUE : WDA_NONE;
-        SetWindowDisplayAffinity(hwnd, affinity);
+        const DWORD affinity = SnapTray::windowsCaptureAffinity(excluded, QOperatingSystemVersion::current());
+        DWORD error = ERROR_SUCCESS;
+        if (!setLayeredCaptureAffinity(hwnd, affinity, error, window->metaObject()->className(),
+                                       [window] {
+            // QQuickWindow::update() is a slot; plain QWindows repaint on request.
+            if (!QMetaObject::invokeMethod(window, "update")) window->requestUpdate();
+        })) {
+            logCaptureAffinityFailure(window, hwnd, excluded, affinity, error,
+                                      window->isVisible(), window->isTopLevel(),
+                                      window->flags(), window->geometry());
+        }
     }
 #else
     Q_UNUSED(window)

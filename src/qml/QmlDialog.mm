@@ -28,15 +28,30 @@ QPoint QmlDialog::centeredTopLeftForBounds(const QRect& bounds, const QSize& vie
     };
 }
 
+QPoint QmlDialog::keptInsideBounds(const QPoint& topLeft, const QSize& viewSize, const QRect& bounds)
+{
+    if (!bounds.isValid() || viewSize.isEmpty()) {
+        return topLeft;
+    }
+
+    const auto fit = [](int start, int length, int boundsStart, int boundsLength) {
+        return qMax(boundsStart, qMin(start, boundsStart + boundsLength - length));
+    };
+    return {
+        fit(topLeft.x(), viewSize.width(), bounds.x(), bounds.width()),
+        fit(topLeft.y(), viewSize.height(), bounds.y(), bounds.height())
+    };
+}
+
 QmlDialog::QmlDialog(const QUrl& qmlSource, QObject* viewModel,
-                     const QString& contextPropertyName, QObject* parent)
+                     const QString& contextPropertyName, QObject* parent, ViewModelOwnership ownership)
     : QObject(parent)
     , m_qmlSource(qmlSource)
     , m_viewModel(viewModel)
     , m_contextPropertyName(contextPropertyName)
 {
     // Take ownership of the ViewModel so it is cleaned up together with this dialog.
-    if (viewModel)
+    if (viewModel && ownership == ViewModelOwnership::Owned)
         viewModel->setParent(this);
 }
 
@@ -61,6 +76,7 @@ void QmlDialog::ensureView()
     }
 
     m_view = QmlOverlayManager::instance().createScreenOverlay();
+    m_view->setModality(m_modal ? Qt::ApplicationModal : Qt::NonModal);
 
     // Use initial properties so the viewModel QML property is set before component creation.
     // This avoids null-reference errors during initial binding evaluation.
@@ -81,6 +97,11 @@ void QmlDialog::ensureView()
     connect(m_view, &QQuickView::closing, this, [this]() {
         emit closed();
     });
+    // The view follows its content's size, which can grow after it is shown
+    // (the recording setup lays out and loads devices late). Keep it on the
+    // screen instead of letting it grow past the bottom edge.
+    connect(m_view, &QWindow::widthChanged, this, &QmlDialog::keepViewOnScreen);
+    connect(m_view, &QWindow::heightChanged, this, &QmlDialog::keepViewOnScreen);
 
     syncTransientParent();
 }
@@ -145,12 +166,13 @@ void QmlDialog::showAt(const QPoint& pos)
 
     if (pos.isNull()) {
         // Center on primary screen
-        QScreen* screen = QGuiApplication::primaryScreen();
-        if (screen) {
-            m_view->setPosition(centeredTopLeftForBounds(screen->geometry(), m_view->size()));
+        m_centeredOn = QGuiApplication::primaryScreen();
+        if (m_centeredOn) {
+            placeView(centeredTopLeftForBounds(m_centeredOn->availableGeometry(), m_view->size()));
         }
     } else {
-        m_view->setPosition(pos);
+        m_centeredOn = nullptr;
+        placeView(pos);
     }
 
     showPreparedView();
@@ -164,9 +186,9 @@ void QmlDialog::showCenteredOnScreen(QScreen* screen)
         return;
     }
 
-    QScreen* targetScreen = screen ? screen : QGuiApplication::primaryScreen();
-    if (targetScreen) {
-        m_view->setPosition(centeredTopLeftForBounds(targetScreen->geometry(), m_view->size()));
+    m_centeredOn = screen ? screen : QGuiApplication::primaryScreen();
+    if (m_centeredOn) {
+        placeView(centeredTopLeftForBounds(m_centeredOn->availableGeometry(), m_view->size()));
     }
 
     showPreparedView();
@@ -203,7 +225,54 @@ void QmlDialog::close()
 
 void QmlDialog::setModal(bool modal)
 {
+    if (m_modal == modal) return;
+    const bool visible = m_view && m_view->isVisible();
+    const QRect geometry = m_view ? m_view->geometry() : QRect();
+    // Qt registers modal blocking when a window is shown. Hide using the old
+    // modality first so switching a visible dialog also updates that registry.
+    if (visible) m_view->hide();
     m_modal = modal;
+    if (m_view) m_view->setModality(modal ? Qt::ApplicationModal : Qt::NonModal);
+    if (visible) {
+        m_view->setGeometry(geometry);
+        showPreparedView();
+    }
+}
+
+void QmlDialog::placeView(const QPoint& topLeft)
+{
+    if (!m_view) {
+        return;
+    }
+
+    QScreen* screen = m_centeredOn ? m_centeredOn.data() : QGuiApplication::screenAt(topLeft);
+    if (!screen) {
+        screen = m_view->screen() ? m_view->screen() : QGuiApplication::primaryScreen();
+    }
+    m_placedAt = screen ? keptInsideBounds(topLeft, m_view->size(), screen->availableGeometry()) : topLeft;
+    m_placedSize = m_view->size();
+    m_view->setPosition(m_placedAt);
+}
+
+void QmlDialog::keepViewOnScreen()
+{
+    if (!m_view || !m_view->isVisible()) {
+        return;
+    }
+
+    // A window manager can constrain the old position to the new size before
+    // delivering the resize notification (e.g. Mutter on X11). That is still
+    // our centered placement, not a user move. Other moves keep the user's
+    // position and only constrain it to the screen.
+    const QPoint constrainedPlacement = m_centeredOn
+        ? keptInsideBounds(m_placedAt, m_view->size(), m_centeredOn->availableGeometry())
+        : m_placedAt;
+    if (m_view->position() != m_placedAt && m_view->position() != constrainedPlacement) {
+        m_centeredOn = nullptr;
+    }
+    placeView(m_centeredOn
+        ? centeredTopLeftForBounds(m_centeredOn->availableGeometry(), m_view->size())
+        : m_view->position());
 }
 
 void QmlDialog::syncCursorSurface()
@@ -224,6 +293,13 @@ void QmlDialog::syncCursorSurface()
 bool QmlDialog::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_view && event) {
+        // A move at the last placed size is independent of content growth.
+        // Remember it now, before a later resize can constrain it to the same
+        // screen edge as our former centered position.
+        if (event->type() == QEvent::Move && m_view->isVisible()
+            && m_view->size() == m_placedSize && m_view->position() != m_placedAt) {
+            m_centeredOn = nullptr;
+        }
         if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {

@@ -1,6 +1,6 @@
 # SnapTray Project
 
-SnapTray is a Qt 6 screenshot and annotation application for macOS, Windows, and Ubuntu 22.04 X11 beta. It provides region capture, on-screen annotation, pin windows, and screen canvas mode across supported platforms. MP4 recording with optional audio capture, GIF/WebP export workflows, and OCR are macOS/Windows only; Linux beta hides and does not include those features.
+SnapTray is a Qt 6 screenshot and annotation application for macOS, Windows, and Ubuntu 22.04 X11 beta. It provides region capture, on-screen annotation, pin windows, and screen canvas mode across supported platforms. Linux X11 recording uses system FFmpeg and PulseAudio libraries, including audio, preview, and export. OCR remains macOS/Windows only.
 
 ## Canonical Docs
 
@@ -38,7 +38,7 @@ scripts\build-and-run-release.bat   REM Release build + run app
 
 ### Linux beta
 
-Use Ubuntu 22.04 X11 with Qt 6.10.1 for the supported Linux beta target.
+Use Ubuntu 22.04 X11 with Qt 6.12.0 for the supported Linux beta target.
 
 ```bash
 ./scripts/build.sh                  # Debug build
@@ -52,7 +52,7 @@ For routine verification, use the build and test scripts. Running the app is onl
 
 ## Prerequisites
 
-- Qt 6.10.1
+- Qt 6.12.0 on all supported platforms
 - CMake 3.16+
 - Ninja
 - macOS: Xcode Command Line Tools
@@ -111,7 +111,9 @@ Use `PlatformFeatures` and the platform layer instead of scattering OS-specific 
 
 ### Recording is screen-first
 
-Recording is macOS/Windows only. Recording entry is driven by the tray menu or recording hotkey and always records a full screen source. The CLI does not support recording. Region Selector remains screenshot-only and must not regain region-recording semantics. Linux beta must keep recording hidden and unsupported.
+Recording entry is driven by the tray menu or recording hotkey and always records a full screen source. The CLI does not support recording. Region Selector remains screenshot-only and must not regain region-recording semantics. Linux recording is enabled by `SNAPTRAY_ENABLE_LINUX_RECORDING`; X11 keeps active recording controls in the tray so floating controls are not captured.
+
+Choosing a region happens after recording, by cropping in the Recording Preview; capture itself stays full screen. The one exception is opt-in (#194, off by default): an area chosen before recording with the recording-only `QmlRecordingAreaSelector` (never Region Selector). In edit mode (preview on) capture still stays full screen and the area only becomes the preview's initial crop, kept in the session manifest for recovery. In quick mode (preview off) there is no preview to crop in, so the area itself is the recorded region.
 
 ### Shared glass UI stays shared
 
@@ -153,7 +155,7 @@ Use `GlassRenderer` and existing toolbar style helpers for floating panels inste
 
 - Tests live under `tests/<Component>/tst_<Name>.cpp`
 - The suite uses Qt Test with helpers such as `QCOMPARE` and `QVERIFY`
-- Important test areas include CLI, Cursor, Detection, Encoding, Hotkey, PinWindow, Qml, RecordingManager, RegionSelector, ScreenCanvas, Settings, Share, Tools, Update, and Utils
+- Important test areas include CLI, Cursor, Detection, Encoding, Hotkey, PinWindow, Qml, RecordingManager, RegionSelector, ScreenCanvas, Settings, Tools, Update, and Utils
 
 ## Patterns to Avoid
 

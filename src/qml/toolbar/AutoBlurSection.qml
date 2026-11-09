@@ -10,7 +10,7 @@ Item {
     property bool hintActive: false
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property bool autoBlurProcessingValue: root.hasViewModel && root.viewModel.autoBlurProcessing
-    signal buttonHovered(real anchorX, real anchorY, real anchorW, real anchorH)
+    signal buttonHovered()
     signal buttonHoverExited()
 
     implicitWidth: 22
@@ -22,6 +22,13 @@ Item {
         id: autoBlurButton
         objectName: "autoBlurButton"
         anchors.fill: parent
+        // Screen readers (#248): the hint already says what it does.
+        Accessible.role: Accessible.Button
+        Accessible.name: root.hasViewModel ? root.viewModel.autoBlurHintText : ""
+        Accessible.onPressAction: {
+            if (root.hasViewModel)
+                root.viewModel.handleAutoBlurClicked()
+        }
         radius: 4
         readonly property bool emphasized: root.hintActive || blurMouse.containsMouse
         color: {
@@ -60,12 +67,7 @@ Item {
             anchors.fill: parent
             cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
-            onEntered: {
-                var anchor = autoBlurButton.mapToGlobal(0, 0)
-                root.buttonHovered(anchor.x, anchor.y,
-                                   autoBlurButton.width,
-                                   autoBlurButton.height)
-            }
+            onEntered: root.buttonHovered()
             onExited: root.buttonHoverExited()
             onClicked: {
                 if (root.hasViewModel)

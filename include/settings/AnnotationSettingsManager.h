@@ -6,6 +6,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "tools/ToolWidthSlot.h"
 
 /**
  * @brief Singleton class for managing annotation settings.
@@ -23,13 +24,17 @@ public:
     QColor loadColor() const;
     void saveColor(const QColor& color);
 
+    bool loadAlignmentAssist() const;
+    void saveAlignmentAssist(bool enabled);
+
+    bool loadMarkerTextSnap() const;
+    void saveMarkerTextSnap(bool enabled);
+
     // Width settings
     int loadWidth() const;
     void saveWidth(int width);
-
-    // Mosaic brush-size hint state
-    bool loadMosaicBrushAdjustmentLearned() const;
-    void saveMosaicBrushAdjustmentLearned(bool learned);
+    int loadWidthForTool(ToolId toolId) const;
+    void saveWidthForTool(ToolId toolId, int width);
 
     // Arrow and line style settings
     LineEndStyle loadArrowStyle() const;
@@ -59,9 +64,10 @@ public:
     void saveMosaicBlurType(MosaicBlurType type);
 
     // Default values
-    static constexpr int kDefaultWidth = 3;
-    static constexpr bool kDefaultMosaicBrushAdjustmentLearned = false;
-    static QColor defaultColor() { return Qt::red; }
+    static constexpr int kDefaultWidth = ToolWidthDefaults::kStroke;
+    static constexpr int kDefaultMosaicBrushSize = ToolWidthDefaults::kMosaicBrushDefault;
+    // Apple system red; must match DesignSystem::annotationRed() (UI layer).
+    static QColor defaultColor() { return QColor(0xFF, 0x3B, 0x30); }
     static constexpr LineEndStyle kDefaultArrowStyle = LineEndStyle::EndArrow;
     static constexpr LineStyle kDefaultLineStyle = LineStyle::Solid;
     static constexpr StepBadgeSize kDefaultStepBadgeSize = StepBadgeSize::Medium;
@@ -79,8 +85,7 @@ private:
 
     static constexpr const char* kSettingsKeyColor = "annotationColor";
     static constexpr const char* kSettingsKeyWidth = "annotationWidth";
-    static constexpr const char* kSettingsKeyMosaicBrushAdjustmentLearned =
-        "mosaicBrushAdjustmentLearned";
+    static constexpr const char* kSettingsKeyMosaicBrushSize = "mosaicBrushSize";
     static constexpr const char* kSettingsKeyArrowStyle = "annotation/arrowStyle";
     static constexpr const char* kSettingsKeyLineStyle = "annotation/lineStyle";
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";

@@ -4,17 +4,37 @@
 
 #include <QClipboard>
 #include <QGuiApplication>
+#include <QSettings>
 #include <QScreen>
+#include <QQuickWindow>
+#include <QScopeGuard>
+#include <QQmlDebuggingEnabler>
+#include <QQmlEngine>
+#include "qml/QmlOverlayManager.h"
+#include <QtMath>
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "platform/QtQuickBackendPolicy.h"
+#include "settings/AnnotationSettingsManager.h"
+#include "annotation/ColorPickOverlay.h"
 #include "settings/RegionCaptureSettingsManager.h"
+#include "settings/Settings.h"
 #include "region/RegionInputHandler.h"
+#include "region/RegionToolbarHandler.h"
+#include "qml/RegionToolbarViewModel.h"
+#include "region/CaptureShortcutHintsOverlay.h"
 #include "region/SelectionDimensionLabel.h"
+#include "region/SelectionDirtyRegionPlanner.h"
 #include "tools/ToolManager.h"
 
 namespace {
@@ -22,6 +42,43 @@ const QRect kSelectionRect(40, 40, 160, 120);
 const QPoint kSelectionBodyPos(180, 140);
 const QPoint kArrowControlHandlePos(100, 80);
 const QPoint kArrowDraggedControlPos(110, 86);
+
+class ScopedWidthSettings final
+{
+public:
+    ScopedWidthSettings()
+        : m_settings(SnapTray::getSettings())
+        , m_hadStrokeWidth(m_settings.contains(QStringLiteral("annotationWidth")))
+        , m_strokeWidth(m_settings.value(QStringLiteral("annotationWidth")))
+        , m_hadMosaicWidth(m_settings.contains(QStringLiteral("mosaicBrushSize")))
+        , m_mosaicWidth(m_settings.value(QStringLiteral("mosaicBrushSize")))
+    {
+    }
+
+    ~ScopedWidthSettings()
+    {
+        restore(QStringLiteral("annotationWidth"), m_hadStrokeWidth, m_strokeWidth);
+        restore(QStringLiteral("mosaicBrushSize"), m_hadMosaicWidth, m_mosaicWidth);
+        m_settings.sync();
+    }
+
+private:
+    void restore(const QString& key, bool existed, const QVariant& value)
+    {
+        if (existed) {
+            m_settings.setValue(key, value);
+        }
+        else {
+            m_settings.remove(key);
+        }
+    }
+
+    QSettings m_settings;
+    bool m_hadStrokeWidth;
+    QVariant m_strokeWidth;
+    bool m_hadMosaicWidth;
+    QVariant m_mosaicWidth;
+};
 
 void verifyMoveCursor(const QCursor& cursor)
 {
@@ -62,19 +119,35 @@ private:
     static void prepareSelectionTool(RegionSelector& selector);
     static void addSelectedCurvedArrow(RegionSelector& selector);
     static QRect showToolbarForTool(RegionSelector& selector, ToolId tool);
+    static void mouse(RegionSelector& selector, QEvent::Type type, QPoint pos,
+                      Qt::MouseButton button = Qt::LeftButton);
 
 private slots:
+    void initTestCase();
     void testUsesAuthorityModeByDefault();
+    void testStrokeAndMosaicWidthsRestoreIndependently();
+    void selectedArrowStyleIsUndoable();
+    void colorPickSamplesFrozenScreenshot();
+    void pickedColorEditsSelectionUndoably();
+    void arrowEndpointDragIsUndoable();
+    void polylineVertexDragIsUndoable();
+    void emojiMoveIsUndoable();
+    void shapeMoveIsUndoable();
+    void escapeMidDragRestores();
+    void rightClickMidDragRestores();
+    void undoDisabledWhileDragging();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
-    void testSelectionCompletionShowsToolbarAfterWindowsHandoff();
-    void testSelectionCompletionPositionsToolbarAfterWindowsHandoff();
+    void testSelectionCompletionShowsToolbarBeforeChromePaint();
+    void testSelectionCompletionPositionsToolbarBeforeChromePaint();
     void testSelectionDragUsesClosedHandCursor();
     void testReleaseOverFloatingUiFinishesSelectionDrag();
     void testReleaseOverFloatingUiFinishesDrawingDrag();
     void testReleaseOverFloatingUiCancelsSingleClickAnnotation_data();
     void testReleaseOverFloatingUiCancelsSingleClickAnnotation();
     void testAutoBlurRequestGuardRejectsStaleContext();
+    void testAutoBlurGaussianCoversDetectedRegion_data();
+    void testAutoBlurGaussianCoversDetectedRegion();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
     void testToolbarLeaveRestoresArrowToolCrossCursor();
@@ -83,19 +156,265 @@ private slots:
     void testRestoreRegionCursorAfterArrowControlHoverReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsMosaicCursor();
+    void testMosaicWidthChangeImmediatelyUpdatesCursor();
     void testInitializeForScreen_DisabledMagnifierPreventsVisibility();
     void testInitializeForScreen_BeaverStyleDisablesMagnifierMode();
     void testInitializeForScreen_BeaverStyleSkipsMagnifierPrewarm();
     void testInitializeForScreen_MagnifierStylePrewarmsCache();
     void testDisabledMagnifierIgnoresShiftAndCopyShortcuts();
     void testBeaverStyleIgnoresShiftAndCopyShortcuts();
+    void testHostFallbackPaintsAboveShortcutHints();
+    void testHostFallbackUsesOverlayRenderHints();
     void testInitialRevealTimeoutRevealsReadySelector();
+#ifdef Q_OS_MACOS
+    void testMacInitialCursorCompanionUsesHostUntilDetachedUiAppears();
+#endif
 #ifdef Q_OS_LINUX
+    void testLinuxCursorCompanionStaysInHost_data();
+    void testLinuxCursorCompanionStaysInHost();
+    void testLinuxCursorCompanionDragUsesOneCursorPosition_data();
+    void testLinuxCursorCompanionDragUsesOneCursorPosition();
     void testLinuxCaptureSurfaceRemainsManaged();
     void testLinuxTransparentCaptureHelpersDoNotBypassWindowManager();
     void testLinuxSelectionToolbarPrewarmsAfterShow();
+    void testLinuxSelectionToolbarPositionedBeforeShow();
+    void testLinuxSelectionManipulationRestoresToolbarWithoutRepaint_data();
+    void testLinuxSelectionManipulationRestoresToolbarWithoutRepaint();
 #endif
 };
+
+void TestRegionSelectorStyleSync::initTestCase()
+{
+    // Test-only override for comparing identical capture paths in fresh
+    // processes. Production platform policy remains unchanged.
+    const QByteArray backend = qgetenv("SNAPTRAY_TEST_TOOLBAR_BACKEND");
+    QVERIFY2(backend.isEmpty() || backend == "software" || backend == "default",
+             "SNAPTRAY_TEST_TOOLBAR_BACKEND must be software or default");
+    auto policy = SnapTray::currentQtQuickGraphicsBackendPolicy();
+    if (backend == "software") {
+        policy = SnapTray::QtQuickGraphicsBackendPolicy::Software;
+    } else if (backend == "default") {
+        policy = SnapTray::QtQuickGraphicsBackendPolicy::PlatformDefault;
+    }
+    SnapTray::applyQtQuickGraphicsBackendPolicy(policy);
+}
+
+void TestRegionSelectorStyleSync::testHostFallbackPaintsAboveShortcutHints()
+{
+    RegionSelector selector;
+    selector.resize(QSize(640, 480));
+    selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
+    selector.m_cursorCompanionStyle =
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
+    selector.m_shortcutHintsVisible = true;
+
+    const QRect hintsRect =
+        selector.m_shortcutHintsOverlay->panelRectForViewport(selector.size());
+    QVERIFY(hintsRect.isValid());
+
+    // Keep the magnifier below the cursor so its opaque panel overlaps the
+    // top of the shortcut-hints panel.
+    const QPoint cursorPos(hintsRect.left() + 16, hintsRect.top() - 32);
+    const SelectionDirtyRegionPlanner dirtyRegionPlanner;
+    const QRect fallbackRect = dirtyRegionPlanner.cursorCompanionRectForCursor(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier,
+        cursorPos,
+        selector.size());
+    QVERIFY(fallbackRect.intersects(hintsRect));
+
+    QPixmap background(selector.size());
+    background.fill(QColor(72, 118, 164));
+
+    selector.m_inputState.currentPoint = cursorPos;
+    selector.m_hostFallbackCursorCompanionRect = fallbackRect;
+    selector.m_magnifierOverlay->syncToHost(
+        &selector,
+        cursorPos,
+        &background,
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier,
+        false);
+
+    auto makeCanvas = [&selector]() {
+        QImage image(selector.size(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        return image;
+    };
+    auto drawFallback = [&selector, &fallbackRect](QImage& image) {
+        QPainter painter(&image);
+        painter.setClipRect(fallbackRect, Qt::IntersectClip);
+        selector.m_magnifierOverlay->paintFallback(painter, selector.size());
+    };
+    auto drawHints = [&selector](QImage& image) {
+        QPainter painter(&image);
+        selector.m_shortcutHintsOverlay->draw(painter, selector.size());
+    };
+
+    QImage expected = makeCanvas();
+    drawHints(expected);
+    drawFallback(expected);
+
+    QImage reversed = makeCanvas();
+    drawFallback(reversed);
+    drawHints(reversed);
+    QVERIFY2(expected != reversed,
+             "The probe must exercise pixels shared by the hints and companion.");
+
+    QImage actual = makeCanvas();
+    {
+        QPainter painter(&actual);
+        selector.paintHostForegroundOverlays(painter, false);
+    }
+    QCOMPARE(actual, expected);
+}
+
+void TestRegionSelectorStyleSync::testHostFallbackUsesOverlayRenderHints()
+{
+    RegionSelector selector;
+    selector.resize(QSize(180, 160));
+
+    QImage sourceImage(QSize(192, 192), QImage::Format_ARGB32_Premultiplied);
+    for (int y = 0; y < sourceImage.height(); ++y) {
+        QRgb* row = reinterpret_cast<QRgb*>(sourceImage.scanLine(y));
+        for (int x = 0; x < sourceImage.width(); ++x) {
+            const bool light = ((x + y) % 3) == 0;
+            row[x] = light ? qRgba(255, 255, 255, 255) : qRgba(0, 0, 0, 255);
+        }
+    }
+    selector.m_magnifierOverlay->m_beaverPixmap = QPixmap::fromImage(sourceImage);
+
+    const QPoint cursorPos(24, 24);
+    const SelectionDirtyRegionPlanner dirtyRegionPlanner;
+    const QRect targetRect = dirtyRegionPlanner.beaverRectForCursor(
+        cursorPos, selector.size());
+    selector.m_magnifierOverlay->syncToHost(
+        &selector,
+        cursorPos,
+        nullptr,
+        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver,
+        false);
+
+    auto makeCanvas = [&selector]() {
+        QImage image(selector.size(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        return image;
+    };
+    auto drawSource = [&](bool smooth) {
+        QImage image = makeCanvas();
+        QPainter painter(&image);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, smooth);
+        painter.drawPixmap(targetRect, selector.m_magnifierOverlay->m_beaverPixmap);
+        return image;
+    };
+
+    const QImage fastReference = drawSource(false);
+    const QImage smoothReference = drawSource(true);
+    QVERIFY2(fastReference != smoothReference,
+             "The probe image must distinguish fast and smooth pixmap scaling.");
+
+    QImage fallback = makeCanvas();
+    {
+        QPainter painter(&fallback);
+        QVERIFY(!painter.testRenderHint(QPainter::Antialiasing));
+        QVERIFY(!painter.testRenderHint(QPainter::SmoothPixmapTransform));
+        selector.m_magnifierOverlay->paintFallback(painter, selector.size());
+        QVERIFY(!painter.testRenderHint(QPainter::Antialiasing));
+        QVERIFY(!painter.testRenderHint(QPainter::SmoothPixmapTransform));
+    }
+
+    QCOMPARE(fallback, smoothReference);
+}
+
+#ifdef Q_OS_MACOS
+void TestRegionSelectorStyleSync::testMacInitialCursorCompanionUsesHostUntilDetachedUiAppears()
+{
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.resize(QSize(640, 480));
+    selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
+    selector.m_cursorCompanionStyle =
+        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver;
+    selector.m_inputState.currentPoint = selector.rect().center();
+
+    QPixmap beaverProbe(QSize(192, 192));
+    beaverProbe.fill(QColor(78, 142, 206));
+    selector.m_magnifierOverlay->m_beaverPixmap = beaverProbe;
+
+    // This assertion is platform-window independent: with no detached QML UI,
+    // synchronization selects the host paint path and never shows the overlay.
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.cursorCompanionRequiresOverlay());
+    QVERIFY(!selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_hostFallbackCursorCompanionRect.isValid());
+
+    const QPoint cursorGlobal = QCursor::pos();
+    QScreen* screen = QGuiApplication::screenAt(cursorGlobal);
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        return;
+    }
+
+    const QRect screenGeometry = screen->geometry();
+    const QSize hostSize = screenGeometry.size().boundedTo(QSize(640, 480));
+    QPoint hostTopLeft = cursorGlobal - QPoint(hostSize.width() / 2, hostSize.height() / 2);
+    hostTopLeft.setX(qBound(screenGeometry.left(),
+                            hostTopLeft.x(),
+                            screenGeometry.right() - hostSize.width() + 1));
+    hostTopLeft.setY(qBound(screenGeometry.top(),
+                            hostTopLeft.y(),
+                            screenGeometry.bottom() - hostSize.height() + 1));
+
+    selector.setGeometry(QRect(hostTopLeft, hostSize));
+    selector.m_inputState.currentPoint = cursorGlobal - hostTopLeft;
+
+    selector.show();
+    QTRY_VERIFY(selector.isVisible());
+    selector.syncMagnifierOverlay();
+
+    QVERIFY(!selector.cursorCompanionRequiresOverlay());
+    QVERIFY(!selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_hostFallbackCursorCompanionRect.isValid());
+
+    // Keep the toolbar visible and its explicit position stable during repaint.
+    selector.m_selectionManager->setSelectionRect(selector.rect());
+    selector.m_toolbarUserDragged = true;
+    selector.m_qmlToolbar->setPosition(screenGeometry.topLeft() + QPoint(12, 12));
+    selector.m_qmlToolbar->show();
+    QTRY_VERIFY(selector.m_qmlToolbar->isVisible());
+    if (selector.m_qmlToolbar->geometry().contains(cursorGlobal)) {
+        const QSize toolbarSize = selector.m_qmlToolbar->geometry().size();
+        selector.m_qmlToolbar->setPosition(
+            screenGeometry.bottomRight() -
+            QPoint(toolbarSize.width() + 12, toolbarSize.height() + 12));
+    }
+    QVERIFY(!selector.m_qmlToolbar->geometry().contains(cursorGlobal));
+
+    QVERIFY(selector.cursorCompanionRequiresOverlay());
+    selector.syncMagnifierOverlay();
+    QVERIFY(selector.m_magnifierOverlay->isVisible());
+
+    // Exercise the real paint event synchronously so native exposure timing and
+    // unrelated cursor/focus events cannot interrupt the renderer handoff.
+    QImage overlayFrame(selector.m_magnifierOverlay->size(),
+                        QImage::Format_ARGB32_Premultiplied);
+    overlayFrame.fill(Qt::transparent);
+    selector.m_magnifierOverlay->render(&overlayFrame);
+    QVERIFY(selector.m_magnifierOverlay->hasPaintedSinceShow());
+
+    // Once the top-level renderer has painted, the next synchronization drops
+    // the temporary host copy and leaves a single companion surface.
+    selector.syncMagnifierOverlay();
+    QVERIFY(selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_magnifierOverlay->hasPaintedSinceShow());
+    QVERIFY(!selector.m_hostFallbackCursorCompanionRect.isValid());
+
+    selector.m_qmlToolbar->hide();
+    selector.m_magnifierOverlay->hideOverlay();
+    selector.hide();
+}
+#endif
 
 void TestRegionSelectorStyleSync::prepareSelectionTool(RegionSelector& selector)
 {
@@ -135,7 +454,462 @@ void TestRegionSelectorStyleSync::testUsesAuthorityModeByDefault()
     QCOMPARE(CursorAuthority::instance().modeForWidget(&selector), CursorSurfaceMode::Authority);
 }
 
+// #271: the eyedropper samples the frozen screenshot, not annotations, and
+// only once a region is selected.
+void TestRegionSelectorStyleSync::colorPickSamplesFrozenScreenshot()
+{
+    RegionSelector selector;
+    selector.resize(200, 150);
+    QImage screenshot(400, 300, QImage::Format_ARGB32_Premultiplied);
+    screenshot.fill(QColor(10, 20, 30));
+    screenshot.setPixelColor(41, 61, QColor(250, 128, 3));
+    screenshot.setDevicePixelRatio(2.0);
+    selector.m_backgroundPixmap = QPixmap::fromImage(screenshot);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(0, 30), QPoint(200, 30), Qt::red, 12));
+
+    const ColorPickSource source = selector.colorPickSource();
+    QVERIFY(source.isValid());
+    QCOMPARE(source.sampleRect.size(), QSize(200, 150));
+    QCOMPARE(source.image.devicePixelRatio(), 2.0);
+    // Logical (20.5, 30.5) is physical (41, 61), under the arrow.
+    const QPoint pixel = ColorPick::pixelAt(QPointF(20.5, 30.5), 2.0, source.image.size());
+    QCOMPARE(ColorPick::colorAt(source.image, pixel), QColor(250, 128, 3));
+
+    // Before a region is selected there is nothing to annotate.
+    selector.startColorPick();
+    QVERIFY(!selector.m_colorPickOverlay);
+}
+
+void TestRegionSelectorStyleSync::pickedColorEditsSelectionUndoably()
+{
+    ScopedWidthSettings restoreWidths;
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor savedColor = settings.loadColor();
+    const auto restore = qScopeGuard([&] { settings.saveColor(savedColor); });
+    settings.saveColor(Qt::red);
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    auto* vm = selector.m_toolOptionsViewModel;
+    const QColor picked(0x1a, 0x73, 0xe8);
+
+    selector.applyPickedColor(picked);
+    QCOMPARE(vm->currentColor(), picked);
+    QCOMPARE(selector.m_toolManager->color(), picked);
+    QCOMPARE(settings.loadColor(), picked);
+
+    settings.saveColor(Qt::red);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::green, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    QVERIFY(vm->editingSelection());
+    selector.applyPickedColor(picked);
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    QCOMPARE(arrow()->color(), picked);
+    QCOMPARE(settings.loadColor(), QColor(Qt::red));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(arrow()->color(), QColor(Qt::green));
+}
+
+void TestRegionSelectorStyleSync::selectedArrowStyleIsUndoable()
+{
+    ScopedWidthSettings restoreWidths;
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor savedColor = settings.loadColor();
+    const auto savedArrow = settings.loadArrowStyle();
+    const auto restore = qScopeGuard([&] {
+        settings.saveColor(savedColor);
+        settings.saveArrowStyle(savedArrow);
+    });
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto* vm = selector.m_toolOptionsViewModel;
+    QVERIFY(vm->editingSelection());
+    QCOMPARE(vm->targetLabel(), QStringLiteral("Selected: Arrow"));
+    const int paletteIndex = 2;
+    const QColor chosen = vm->colorPalette().at(paletteIndex).value<QColor>();
+    vm->handleColorClicked(paletteIndex);
+    auto arrow = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    QCOMPARE(arrow()->color(), chosen);
+    QCOMPARE(settings.loadColor(), savedColor); // defaults untouched
+    QVERIFY(selector.m_toolbarViewModel->canUndo());
+    // A dropdown result (arrow style menu) also edits the selection.
+    selector.onArrowStyleChanged(LineEndStyle::None);
+    QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::None);
+    QCOMPARE(settings.loadArrowStyle(), savedArrow);
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(arrow()->lineEndStyle(), LineEndStyle::EndArrow);
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(arrow()->color(), QColor(Qt::red));
+    emit selector.m_toolbarHandler->redoRequested();
+    QCOMPARE(arrow()->color(), chosen);
+    // Picking another tool ends the selection; the strip returns to that tool.
+    emit selector.m_toolbarHandler->toolChanged(ToolId::Pencil, true);
+    QVERIFY(!vm->editingSelection());
+    QCOMPARE(selector.m_annotationLayer->selectedIndex(), -1);
+}
+
+void TestRegionSelectorStyleSync::mouse(RegionSelector& selector, QEvent::Type type, QPoint pos,
+                                        Qt::MouseButton button)
+{
+    const Qt::MouseButtons held = type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::MouseButtons(button);
+    QMouseEvent event(type, QPointF(pos), QPointF(selector.mapToGlobal(pos)),
+                      type == QEvent::MouseMove ? Qt::NoButton : button, held, Qt::NoModifier);
+    if (type == QEvent::MouseButtonPress) selector.mousePressEvent(&event);
+    else if (type == QEvent::MouseMove) selector.mouseMoveEvent(&event);
+    else selector.mouseReleaseEvent(&event);
+}
+
+// #237: dragging an arrow's end handle is one undo step that also restores
+// the curve's control point.
+void TestRegionSelectorStyleSync::arrowEndpointDragIsUndoable()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    auto arrow = std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3);
+    arrow->setControlPoint(QPointF(105, 40));
+    selector.m_annotationLayer->addItem(std::move(arrow));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(150, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(160, 80));
+    mouse(selector, QEvent::MouseMove, QPoint(170, 90));
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(170, 90));
+    QCOMPARE(item()->end(), QPoint(170, 90));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(item()->end(), QPoint(150, 60));
+    QCOMPARE(item()->controlPoint(), QPointF(105, 40));
+    emit selector.m_toolbarHandler->redoRequested();
+    QCOMPARE(item()->end(), QPoint(170, 90));
+}
+
+void TestRegionSelectorStyleSync::polylineVertexDragIsUndoable()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{{60, 120}, {110, 70}, {160, 120}}, Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<PolylineAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(110, 70));
+    mouse(selector, QEvent::MouseMove, QPoint(115, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(120, 55));
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(120, 55));
+    QCOMPARE(item()->points().at(1), QPoint(120, 55));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(item()->points().at(1), QPoint(110, 70));
+}
+
+void TestRegionSelectorStyleSync::emojiMoveIsUndoable()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<EmojiStickerAnnotation>(QPoint(100, 100), QStringLiteral("🙂"), 1.0));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<EmojiStickerAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    const QPoint start = item()->center().toPoint();
+    mouse(selector, QEvent::MouseButtonPress, start);
+    mouse(selector, QEvent::MouseMove, start + QPoint(10, 0));
+    mouse(selector, QEvent::MouseMove, start + QPoint(20, 5));
+    mouse(selector, QEvent::MouseButtonRelease, start + QPoint(20, 5));
+    QCOMPARE(item()->position(), QPoint(120, 105));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(item()->position(), QPoint(100, 100));
+}
+
+void TestRegionSelectorStyleSync::shapeMoveIsUndoable()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(std::make_unique<ShapeAnnotation>(
+        QRect(70, 70, 60, 40), ShapeType::Rectangle, Qt::red, 3, true));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<ShapeAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(100, 90));
+    mouse(selector, QEvent::MouseMove, QPoint(110, 90));
+    mouse(selector, QEvent::MouseMove, QPoint(130, 95));
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(130, 95));
+    QCOMPARE(item()->rectF().topLeft(), QPointF(100, 75));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // the edit, not the add
+    QCOMPARE(item()->rectF().topLeft(), QPointF(70, 70));
+}
+
+// Escape during a drag puts the annotation back; the capture stays open.
+void TestRegionSelectorStyleSync::escapeMidDragRestores()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    const auto token = selector.m_annotationLayer->historyStateToken();
+    QSignalSpy cancelled(&selector, &RegionSelector::selectionCancelled);
+    auto item = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(80, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(90, 80));
+    mouse(selector, QEvent::MouseMove, QPoint(100, 90));
+    QCOMPARE(item()->start(), QPoint(80, 90));   // the body moved by (20, 30)
+    QTest::keyClick(&selector, Qt::Key_Escape);
+    QCOMPARE(item()->start(), QPoint(60, 60));
+    QCOMPARE(item()->end(), QPoint(150, 60));
+    QCOMPARE(selector.m_annotationLayer->historyStateToken(), token);
+    QCOMPARE(cancelled.count(), 0);
+    // The rest of the drag no longer moves it.
+    mouse(selector, QEvent::MouseMove, QPoint(140, 100));
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(140, 100));
+    QCOMPARE(item()->start(), QPoint(60, 60));
+}
+
+void TestRegionSelectorStyleSync::rightClickMidDragRestores()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    auto item = [&] { return static_cast<ArrowAnnotation*>(selector.m_annotationLayer->itemAt(0)); };
+    mouse(selector, QEvent::MouseButtonPress, QPoint(80, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(100, 90));
+    mouse(selector, QEvent::MouseButtonPress, QPoint(100, 90), Qt::RightButton);
+    QCOMPARE(selector.m_annotationLayer->itemCount(), size_t(1));   // not cleared
+    QCOMPARE(item()->start(), QPoint(60, 60));
+    QVERIFY(!selector.m_annotationLayer->isGestureActive());
+}
+
+void TestRegionSelectorStyleSync::undoDisabledWhileDragging()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::setSelectionRect(selector, kSelectionRect);
+    selector.m_annotationLayer->addItem(
+        std::make_unique<ArrowAnnotation>(QPoint(60, 60), QPoint(150, 60), Qt::red, 3));
+    selector.m_annotationLayer->setSelectedIndex(0);
+    QTRY_VERIFY(selector.m_toolbarViewModel->canUndo());
+    mouse(selector, QEvent::MouseButtonPress, QPoint(80, 60));
+    mouse(selector, QEvent::MouseMove, QPoint(100, 90));
+    QTRY_VERIFY(!selector.m_toolbarViewModel->canUndo());
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(100, 90));
+    QTRY_VERIFY(selector.m_toolbarViewModel->canUndo());
+}
+
+void TestRegionSelectorStyleSync::testStrokeAndMosaicWidthsRestoreIndependently()
+{
+    ScopedWidthSettings restoreSettings;
+    auto& settings = AnnotationSettingsManager::instance();
+    settings.saveWidthForTool(ToolId::Pencil, 4);
+    settings.saveWidthForTool(ToolId::Mosaic, 18);
+
+    RegionSelector selector;
+    selector.m_qmlSubToolbar.reset();
+    QCOMPARE(selector.m_inputState.annotationWidth, 4);
+
+    selector.handleToolbarClick(ToolId::Pencil);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::Pencil);
+    QCOMPARE(selector.m_inputState.annotationWidth, 4);
+    QCOMPARE(selector.m_toolManager->width(), 4);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 4);
+
+    selector.onLineWidthChanged(6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 18);
+
+    selector.handleToolbarClick(ToolId::Mosaic);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::Mosaic);
+    QCOMPARE(selector.m_inputState.annotationWidth, 18);
+    QCOMPARE(selector.m_toolManager->width(), 18);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 18);
+
+    selector.onLineWidthChanged(30);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 30);
+
+    selector.handleToolbarClick(ToolId::Mosaic);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::Selection);
+    QCOMPARE(selector.m_toolManager->currentTool(), ToolId::Selection);
+    QCOMPARE(selector.m_inputState.annotationWidth, 6);
+    QCOMPARE(selector.m_toolManager->width(), 6);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 6);
+
+    selector.handleToolbarClick(ToolId::Pencil);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::Pencil);
+    QCOMPARE(selector.m_inputState.annotationWidth, 6);
+    QCOMPARE(selector.m_toolManager->width(), 6);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 6);
+}
+
 #ifdef Q_OS_LINUX
+void TestRegionSelectorStyleSync::testLinuxCursorCompanionStaysInHost_data()
+{
+    using Style = RegionCaptureSettingsManager::CursorCompanionStyle;
+    QTest::addColumn<Style>("style");
+    QTest::newRow("beaver") << Style::Beaver;
+    QTest::newRow("magnifier") << Style::Magnifier;
+}
+
+void TestRegionSelectorStyleSync::testLinuxCursorCompanionStaysInHost()
+{
+    QFETCH(RegionCaptureSettingsManager::CursorCompanionStyle, style);
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    // Center the host on the live cursor without moving the system pointer.
+    selector.setGeometry(QRect(QCursor::pos() - QPoint(320, 240), QSize(640, 480)));
+    selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
+    selector.m_cursorCompanionStyle = style;
+    selector.m_shortcutHintsVisible = false;
+    selector.m_backgroundPixmap = QPixmap(selector.size());
+    selector.m_backgroundPixmap.fill(QColor(72, 118, 164));
+    QPixmap beaverProbe(QSize(192, 192));
+    beaverProbe.fill(QColor(78, 142, 206));
+    selector.m_magnifierOverlay->m_beaverPixmap = beaverProbe;
+
+    selector.show();
+    QTRY_VERIFY(selector.isVisible());
+    selector.m_inputState.currentPoint = selector.mapFromGlobal(QCursor::pos());
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.cursorCompanionRequiresOverlay());
+    QVERIFY(!selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_hostFallbackCursorCompanionRect.isValid());
+
+    // A visible toolbar must not switch Linux back to the independent window
+    // that GNOME can stack below the focused full-screen capture host.
+    selector.m_selectionManager->setSelectionRect(selector.rect());
+    selector.m_toolbarUserDragged = true;
+    selector.m_qmlToolbar->show();
+    QTRY_VERIFY(selector.m_qmlToolbar->isVisible());
+    selector.m_qmlToolbar->setPosition(QCursor::pos() + QPoint(40, 40));
+    QVERIFY(!selector.m_qmlToolbar->geometry().contains(QCursor::pos()));
+
+    const auto paintForeground = [&selector]() {
+        QImage frame(selector.size(), QImage::Format_ARGB32_Premultiplied);
+        frame.fill(Qt::transparent);
+        QPainter painter(&frame);
+        selector.paintHostForegroundOverlays(painter, false);
+        return frame;
+    };
+
+    for (int frame = 0; frame < 2; ++frame) {
+        selector.syncMagnifierOverlay();
+        QVERIFY(!selector.cursorCompanionRequiresOverlay());
+        QVERIFY(!selector.m_magnifierOverlay->isVisible());
+        const QRect companionRect = selector.m_hostFallbackCursorCompanionRect;
+        QVERIFY(companionRect.isValid());
+        QVERIFY(paintForeground().pixelColor(companionRect.center()).alpha() > 0);
+    }
+
+    // The host copy must still disappear when drawing or disabling companions.
+    selector.m_inputState.isDrawing = true;
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.m_hostFallbackCursorCompanionRect.isValid());
+    QImage emptyFrame(selector.size(), QImage::Format_ARGB32_Premultiplied);
+    emptyFrame.fill(Qt::transparent);
+    QCOMPARE(paintForeground(), emptyFrame);
+
+    selector.m_inputState.isDrawing = false;
+    selector.m_cursorCompanionStyle = RegionCaptureSettingsManager::CursorCompanionStyle::None;
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.m_hostFallbackCursorCompanionRect.isValid());
+    QCOMPARE(paintForeground(), emptyFrame);
+}
+
+void TestRegionSelectorStyleSync::testLinuxCursorCompanionDragUsesOneCursorPosition_data()
+{
+    using Style = RegionCaptureSettingsManager::CursorCompanionStyle;
+    QTest::addColumn<Style>("style");
+    QTest::addColumn<QPoint>("eventPos");
+    QTest::addColumn<QPoint>("liveOffset");
+    QTest::addColumn<QPoint>("companionPos");
+
+    // At these positions in a 640x480 viewport, one more pixel makes the
+    // companion flip to the opposite side of the cursor.
+    QTest::newRow("beaver-right") << Style::Beaver << QPoint(538, 150) << QPoint(1, 0) << QPoint(538, 150);
+    QTest::newRow("beaver-bottom") << Style::Beaver << QPoint(150, 378) << QPoint(0, 1) << QPoint(150, 378);
+    QTest::newRow("magnifier-right") << Style::Magnifier << QPoint(430, 150) << QPoint(1, 0) << QPoint(430, 150);
+    QTest::newRow("magnifier-bottom") << Style::Magnifier << QPoint(150, 245) << QPoint(0, 1) << QPoint(150, 245);
+
+    // A grabbed mouse can leave the capture screen during a selection drag.
+    // Only the companion position is clamped; selection input stays untouched.
+    QTest::newRow("beaver-outside-right") << Style::Beaver << QPoint(750, 150) << QPoint() << QPoint(639, 150);
+    QTest::newRow("beaver-outside-bottom") << Style::Beaver << QPoint(150, 600) << QPoint() << QPoint(150, 479);
+    QTest::newRow("beaver-outside-left") << Style::Beaver << QPoint(-50, 150) << QPoint() << QPoint(0, 150);
+    QTest::newRow("beaver-outside-top") << Style::Beaver << QPoint(150, -50) << QPoint() << QPoint(150, 0);
+    QTest::newRow("magnifier-outside-right") << Style::Magnifier << QPoint(750, 150) << QPoint() << QPoint(639, 150);
+    QTest::newRow("magnifier-outside-bottom") << Style::Magnifier << QPoint(150, 600) << QPoint() << QPoint(150, 479);
+    QTest::newRow("magnifier-outside-left") << Style::Magnifier << QPoint(-50, 150) << QPoint() << QPoint(0, 150);
+    QTest::newRow("magnifier-outside-top") << Style::Magnifier << QPoint(150, -50) << QPoint() << QPoint(150, 0);
+}
+
+void TestRegionSelectorStyleSync::testLinuxCursorCompanionDragUsesOneCursorPosition()
+{
+    QFETCH(RegionCaptureSettingsManager::CursorCompanionStyle, style);
+    QFETCH(QPoint, eventPos);
+    QFETCH(QPoint, liveOffset);
+    QFETCH(QPoint, companionPos);
+
+    const QPoint originalCursorPos = QCursor::pos();
+    const auto restoreCursor = qScopeGuard([originalCursorPos]() {
+        QCursor::setPos(originalCursorPos);
+    });
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    // Leave room on every side for the native cursor to move outside the host.
+    selector.setGeometry(QRect(100, 100, 640, 480));
+    selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
+    selector.m_cursorCompanionStyle = style;
+    selector.m_shortcutHintsVisible = false;
+    selector.m_backgroundPixmap = QPixmap(selector.size());
+    selector.m_backgroundPixmap.fill(QColor(72, 118, 164));
+    QPixmap beaverProbe(QSize(192, 192));
+    beaverProbe.fill(QColor(78, 142, 206));
+    selector.m_magnifierOverlay->m_beaverPixmap = beaverProbe;
+    selector.show();
+    QCoreApplication::processEvents();
+
+    const QPoint liveGlobalPos = selector.mapToGlobal(eventPos + liveOffset);
+    QCursor::setPos(liveGlobalPos);
+    if (QCursor::pos() != liveGlobalPos) {
+        QSKIP("System cursor position could not be adjusted for cursor companion drag test.");
+    }
+    RegionSelectorTestAccess::dispatchMousePress(selector, QPoint(100, 100));
+    RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, eventPos, Qt::LeftButton);
+    QVERIFY(selector.m_selectionManager->isSelecting());
+    QCOMPARE(selector.m_inputState.currentPoint, eventPos);
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.m_magnifierOverlay->isVisible());
+
+    // Render an unclipped reference at the companion position, without a live host
+    // that could replace the supplied cursor position during synchronization.
+    MagnifierOverlay reference(selector.m_magnifierPanel);
+    reference.m_beaverPixmap = beaverProbe;
+    reference.syncToHost(nullptr, companionPos, &selector.m_backgroundPixmap, style, false);
+    QImage expected(selector.size(), QImage::Format_ARGB32_Premultiplied);
+    expected.fill(Qt::transparent);
+    {
+        QPainter painter(&expected);
+        reference.paintFallback(painter, selector.size());
+    }
+    const QRect expectedRect = SelectionDirtyRegionPlanner().cursorCompanionRectForCursor(
+        style, companionPos, selector.size());
+    QVERIFY(expected.pixelColor(expectedRect.center()).alpha() > 0);
+    QCOMPARE(selector.m_hostFallbackCursorCompanionRect, expectedRect);
+
+    QImage actual(selector.size(), QImage::Format_ARGB32_Premultiplied);
+    actual.fill(Qt::transparent);
+    {
+        QPainter painter(&actual);
+        selector.paintHostForegroundOverlays(painter, false);
+    }
+    QCOMPARE(actual, expected);
+    QCOMPARE(selector.m_magnifierOverlay->m_cursorPos, companionPos);
+}
+
 void TestRegionSelectorStyleSync::testLinuxCaptureSurfaceRemainsManaged()
 {
     RegionSelector selector;
@@ -176,6 +950,80 @@ void TestRegionSelectorStyleSync::testLinuxSelectionToolbarPrewarmsAfterShow()
 
     selector.close();
 }
+
+void TestRegionSelectorStyleSync::testLinuxSelectionToolbarPositionedBeforeShow()
+{
+    RegionSelector selector;
+    selector.m_currentScreen = QGuiApplication::primaryScreen();
+    QVERIFY(selector.m_currentScreen);
+    selector.setGeometry(QRect(0, 0, 800, 600));
+    selector.setUpdatesEnabled(false);
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+    selector.m_qmlToolbar->prewarm();
+    QWindow* toolbarWindow = RegionSelectorTestAccess::toolbarWindow(selector);
+    QVERIFY(toolbarWindow);
+    toolbarWindow->setPosition(QPoint(-10000, -10000));
+
+    QRect geometryWhenShown;
+    connect(toolbarWindow, &QWindow::visibleChanged, &selector, [&](bool visible) {
+        if (visible) geometryWhenShown = toolbarWindow->geometry();
+    });
+    RegionSelectorTestAccess::dispatchMousePress(selector, QPoint(150, 150));
+    RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, QPoint(600, 450), Qt::LeftButton);
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, QPoint(600, 450));
+
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    QVERIFY(geometryWhenShown.isValid());
+    QCOMPARE(geometryWhenShown, RegionSelectorTestAccess::toolbarGeometry(selector));
+    QVERIFY(selector.geometry().contains(geometryWhenShown));
+}
+
+void TestRegionSelectorStyleSync::testLinuxSelectionManipulationRestoresToolbarWithoutRepaint_data()
+{
+    QTest::addColumn<bool>("resize");
+    QTest::newRow("move") << false;
+    QTest::newRow("resize") << true;
+}
+
+void TestRegionSelectorStyleSync::testLinuxSelectionManipulationRestoresToolbarWithoutRepaint()
+{
+    QFETCH(bool, resize);
+    RegionSelector selector;
+    selector.m_currentScreen = QGuiApplication::primaryScreen();
+    QVERIFY(selector.m_currentScreen);
+    selector.setGeometry(QRect(0, 0, 800, 600));
+    selector.setUpdatesEnabled(false);
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+    const QRect selection(150, 150, 400, 250);
+    selector.m_selectionManager->setSelectionRect(selection);
+    selector.syncCompletedSelectionFloatingUi();
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    QWindow* originalWindow = RegionSelectorTestAccess::toolbarWindow(selector);
+
+    const QPoint start = resize ? selection.bottomRight() : selection.center();
+    const QPoint end = start + QPoint(50, 40);
+    if (resize) {
+        selector.m_selectionManager->startResize(start, SelectionStateManager::ResizeHandle::BottomRight);
+    } else {
+        selector.m_selectionManager->startMove(start);
+    }
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
+
+    // No event processing or host repaint: releasing the selection must map
+    // the existing toolbar at its new position immediately.
+    QVERIFY(selector.m_selectionManager->isComplete());
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    QCOMPARE(RegionSelectorTestAccess::toolbarWindow(selector), originalWindow);
+    QCOMPARE(selector.m_selectionManager->selectionRect(),
+             resize ? selection.adjusted(0, 0, 50, 40) : selection.translated(50, 40));
+    const QPoint expectedTopLeft = SnapTray::QmlFloatingToolbar::resolveTopLeftForSelection(
+        selector.m_selectionManager->selectionRect(),
+        selector.m_qmlToolbar->sizeHint(), selector.rect(),
+        SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge,
+        selector.currentSelectionDimensionInfoRect());
+    QCOMPARE(originalWindow->position(), selector.mapToGlobal(expectedTopLeft));
+}
 #endif
 
 void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesMoveCursor()
@@ -212,7 +1060,7 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesEventPosWhenLiveCurs
     QCursor::setPos(originalCursorPos);
 }
 
-void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarAfterWindowsHandoff()
+void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarBeforeChromePaint()
 {
     QScreen* screen = QGuiApplication::primaryScreen();
     if (!screen) {
@@ -241,19 +1089,32 @@ void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarAfterWindow
                           Qt::NoModifier);
     selector.m_inputHandler->handleMouseMove(&moveEvent);
 
-    RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
+    // Exercise the widget entry point as well as the input handler, including
+    // the opt-in Windows release-to-toolbar timing start.
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             QPointF(end),
+                             QPointF(selector.mapToGlobal(end)),
+                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(&selector, &releaseEvent);
 
 #ifdef Q_OS_WIN
+    // The detached chrome/control-panel handoff still runs, but the toolbar
+    // must already be visible without processing another paint event.
     QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
-    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#ifdef Q_OS_WIN
+    auto* toolbar = qobject_cast<QQuickWindow*>(
+        RegionSelectorTestAccess::toolbarWindow(selector));
+    QVERIFY(toolbar);
+    QSignalSpy frameSpy(toolbar, &QQuickWindow::frameSwapped);
+    QTRY_VERIFY(!frameSpy.isEmpty());
     QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
-    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
-#else
     QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
 #endif
 }
 
-void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarAfterWindowsHandoff()
+void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarBeforeChromePaint()
 {
     QScreen* screen = QGuiApplication::primaryScreen();
     if (!screen) {
@@ -294,12 +1155,8 @@ void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarAfterWi
 
 #ifdef Q_OS_WIN
     QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
-    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
-    QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
-    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
-#else
-    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
 #endif
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
     const QRect toolbarGeometry = RegionSelectorTestAccess::toolbarGeometry(selector);
     QVERIFY(toolbarGeometry.isValid());
     QVERIFY(!toolbarGeometry.isEmpty());
@@ -328,6 +1185,12 @@ void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarAfterWi
         dimensionRect);
 
     QCOMPARE(toolbarGeometry.topLeft(), selector.mapToGlobal(expectedLocalTopLeft));
+#ifdef Q_OS_WIN
+    QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QCoreApplication::processEvents();
+    QCOMPARE(RegionSelectorTestAccess::toolbarGeometry(selector), toolbarGeometry);
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
 }
 
 void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()
@@ -466,6 +1329,41 @@ void TestRegionSelectorStyleSync::testReleaseOverFloatingUiCancelsSingleClickAnn
 
     QCOMPARE(selector.m_annotationLayer->itemCount(), static_cast<size_t>(1));
     QVERIFY(!selector.m_inputState.isDrawing);
+}
+
+void TestRegionSelectorStyleSync::testAutoBlurGaussianCoversDetectedRegion_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    for (qreal dpr : {1.0, 1.25, 1.5, 2.0}) {
+        QTest::addRow("dpr-%g", dpr) << dpr;
+    }
+}
+
+void TestRegionSelectorStyleSync::testAutoBlurGaussianCoversDetectedRegion()
+{
+    QFETCH(qreal, dpr);
+    RegionSelector selector;
+    AnnotationLayer layer;
+    QPixmap capture(240, 200);
+    capture.fill(Qt::red);
+    capture.setDevicePixelRatio(dpr);
+    RegionSelector::AutoBlurRequestSnapshot request;
+    request.selectionRect = QRect(16, 16, 80, 60);
+    request.clampedPhysicalRect = QRect(16 * dpr, 16 * dpr, 80 * dpr, 60 * dpr);
+    request.devicePixelRatio = dpr;
+    request.sourcePixmap = std::make_shared<const QPixmap>(capture);
+    request.annotationLayer = &layer;
+    request.blockSize = 12;
+    request.blurType = MosaicBlurType::Gaussian;
+    selector.addAutoBlurRegions(request, {QRect(16 * dpr, 16 * dpr, 32 * dpr, 24 * dpr)});
+    QCOMPARE(layer.itemCount(), size_t(1));
+    QImage output(240, 200, QImage::Format_ARGB32);
+    output.setDevicePixelRatio(dpr);
+    output.fill(Qt::transparent);
+    { QPainter painter(&output); layer.itemAt(0)->draw(painter); }
+    for (int y = 32 * dpr; y < 56 * dpr; ++y)
+        for (int x = 32 * dpr; x < 64 * dpr; ++x)
+            QCOMPARE(output.pixelColor(x, y), QColor(Qt::red));
 }
 
 void TestRegionSelectorStyleSync::testAutoBlurRequestGuardRejectsStaleContext()
@@ -770,6 +1668,49 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsMosaicCursor()
              toolCursor.pixmap().deviceIndependentSize());
 }
 
+void TestRegionSelectorStyleSync::testMosaicWidthChangeImmediatelyUpdatesCursor()
+{
+    ScopedWidthSettings restoreSettings;
+    auto& settings = AnnotationSettingsManager::instance();
+    settings.saveWidthForTool(ToolId::Pencil, 7);
+    settings.saveWidthForTool(ToolId::Mosaic, 18);
+
+    RegionSelector selector;
+    selector.m_selectionManager->setSelectionRect(kSelectionRect);
+    selector.m_inputState.currentTool = ToolId::Mosaic;
+    selector.m_toolManager->setCurrentTool(ToolId::Mosaic);
+
+    constexpr int cursorPadding = 4;
+    const QList<int> presetWidths{10, 18, 30};
+    for (const int width : presetWidths) {
+        selector.onLineWidthChanged(width);
+
+        QCOMPARE(selector.m_inputState.annotationWidth, width);
+        QCOMPARE(selector.m_toolManager->width(), width);
+        QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), width);
+        QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 7);
+
+        const QCursor cursor = selector.cursor();
+        QVERIFY(!cursor.pixmap().isNull());
+        QCOMPARE(cursor.shape(), Qt::BitmapCursor);
+
+        const int brushFootprint = width * 2;
+        const int expectedLogicalExtent = brushFootprint + (cursorPadding * 2);
+        const qreal cursorDpr = cursor.pixmap().devicePixelRatio();
+        const qreal expectedDeviceIndependentExtent =
+            qCeil(expectedLogicalExtent * cursorDpr) / cursorDpr;
+        const QSizeF expectedCursorSize(expectedDeviceIndependentExtent,
+                                        expectedDeviceIndependentExtent);
+        QCOMPARE(cursor.pixmap().deviceIndependentSize(), expectedCursorSize);
+        QCOMPARE(cursor.hotSpot(),
+                 QPoint(expectedLogicalExtent / 2,
+                        expectedLogicalExtent / 2));
+    }
+
+    selector.m_toolManager->setCurrentTool(ToolId::Pencil);
+    QCOMPARE(selector.m_toolManager->width(), 7);
+}
+
 void TestRegionSelectorStyleSync::testInitializeForScreen_DisabledMagnifierPreventsVisibility()
 {
     QScreen* screen = QGuiApplication::primaryScreen();
@@ -971,5 +1912,30 @@ void TestRegionSelectorStyleSync::testInitialRevealTimeoutRevealsReadySelector()
     selector.close();
 }
 
-QTEST_MAIN(TestRegionSelectorStyleSync)
+int main(int argc, char** argv)
+{
+    const bool profileToolbar = qEnvironmentVariableIntValue("SNAPTRAY_PROFILE_TOOLBAR") > 0;
+    // Profile a fresh process running only the selection-completion test.
+    // Keep debugging disabled for normal tests and restrict enabled services
+    // to profiling (no JavaScript debugger or object inspector).
+    if (profileToolbar) {
+        QQmlDebuggingEnabler::enableDebugging(true);
+    }
+    QApplication app(argc, argv);
+    app.setAttribute(Qt::AA_Use96Dpi, true);
+    if (profileToolbar) {
+        QQmlDebuggingEnabler::setServices(QQmlDebuggingEnabler::profilerServices());
+    }
+    TestRegionSelectorStyleSync test;
+    QTEST_SET_MAIN_SOURCE_PATH
+    const int result = QTest::qExec(&test, argc, argv);
+    if (profileToolbar) {
+        // The overlay engine intentionally survives until process exit. Stop
+        // recording explicitly and let the profiler receive its buffered data.
+        SnapTray::QmlOverlayManager::instance().engine()->evaluate(QStringLiteral("console.profileEnd()"));
+        constexpr int kProfilerFlushWaitMs = 2000;
+        QTest::qWait(kProfilerFlushWaitMs);
+    }
+    return result;
+}
 #include "tst_StyleSync.moc"

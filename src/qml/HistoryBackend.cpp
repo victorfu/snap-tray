@@ -102,10 +102,8 @@ void HistoryBackend::pin(int index)
     const PinWindowPlacement placement = computeInitialPinWindowPlacement(
         pixmap,
         screen ? screen->availableGeometry() : QRect());
-    PinWindow* pinWindow = m_pinWindowManager->createPinWindow(pixmap, placement.position);
-    if (pinWindow && placement.zoomLevel < 1.0) {
-        pinWindow->setZoomLevel(placement.zoomLevel);
-    }
+    // Zoom before the first show so an oversized pin is created on the right screen's DPI.
+    m_pinWindowManager->createPinWindow(pixmap, placement.position, true, placement.zoomLevel);
 
     emit closeRequested();
 }
@@ -145,7 +143,9 @@ void HistoryBackend::saveAs(int index)
     }
 
     auto& fileSettings = FileSettingsManager::instance();
-    const QString defaultDir = fileSettings.loadScreenshotPath();
+    const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
+    const QString defaultDir =
+        fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
     FilenameTemplateEngine::Context context;
     context.timestamp = entry.createdAt.isValid() ? entry.createdAt : QDateTime::currentDateTime();
     context.type = QStringLiteral("History");
@@ -178,6 +178,9 @@ void HistoryBackend::saveAs(int index)
         return;
     }
 
+    if (rememberDirectoryOnSuccess) {
+        fileSettings.rememberManualScreenshotSaveDirectory(filePath);
+    }
     emit closeRequested();
 }
 

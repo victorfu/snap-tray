@@ -33,10 +33,12 @@ public:
     bool setRegion(const QRect &region, const CaptureScreenInfo &screenInfo) override;
     void setFrameRate(int fps) override;
     void setExcludedWindows(const QList<WId> &windowIds) override;
+    void setExcludedCaptureWindowIds(const QList<quintptr>& ids) override;
     bool start() override;
     void stop() override;
     bool isRunning() const override;
     QImage captureFrame() override;
+    SnapTray::CapturedFrame captureNativeFrame() override;
     QString engineName() const override;
 
     /**
@@ -56,6 +58,7 @@ public:
     class Private;
 
 private:
+    void applyPendingFrameRate();
     Private *d;
 };
 

@@ -11,6 +11,7 @@
 #include <QTextStream>
 
 #include <optional>
+#include <utility>
 
 namespace {
 
@@ -31,16 +32,28 @@ QString currentExecutablePath()
 QString desktopExecQuotedArgument(const QString& value)
 {
     QString escaped = value;
+    escaped.replace('%', QStringLiteral("%%"));
     escaped.replace('\\', QStringLiteral("\\\\"));
     escaped.replace('"', QStringLiteral("\\\""));
     escaped.replace('`', QStringLiteral("\\`"));
     escaped.replace('$', QStringLiteral("\\$"));
+
+    // Desktop-entry string escaping is decoded before Exec argument quoting.
+    escaped.replace('\\', QStringLiteral("\\\\"));
+    escaped.replace('\n', QStringLiteral("\\n"));
+    escaped.replace('\r', QStringLiteral("\\r"));
+    escaped.replace('\t', QStringLiteral("\\t"));
     return QStringLiteral("\"%1\"").arg(escaped);
 }
 
 QString desktopExecCommand()
 {
-    return QStringLiteral("%1 --minimized").arg(desktopExecQuotedArgument(currentExecutablePath()));
+    // GIO checks the executable before expanding %%, so a percent-containing
+    // path cannot be argv[0]. Keep the shell program fixed and pass the path as
+    // a positional argument: its contents are never evaluated as shell code.
+    return QStringLiteral("/bin/sh -c %1 snaptray %2 --minimized")
+        .arg(desktopExecQuotedArgument(QStringLiteral("exec \"$@\"")),
+             desktopExecQuotedArgument(currentExecutablePath()));
 }
 
 bool desktopEntryExists()
@@ -55,7 +68,7 @@ SnapTray::AutoLaunchSyncState startupEntryState()
         return SnapTray::AutoLaunchSyncState::Disabled;
     }
 
-    const QString canonicalExecutableArgument = desktopExecQuotedArgument(currentExecutablePath());
+    const QString canonicalCommand = desktopExecCommand();
     QTextStream in(&file);
     while (!in.atEnd()) {
         const QString line = in.readLine().trimmed();
@@ -63,7 +76,7 @@ SnapTray::AutoLaunchSyncState startupEntryState()
             continue;
         }
 
-        return line.mid(QStringLiteral("Exec=").size()).contains(canonicalExecutableArgument)
+        return line.mid(QStringLiteral("Exec=").size()) == canonicalCommand
             ? SnapTray::AutoLaunchSyncState::EnabledCurrentCanonical
             : SnapTray::AutoLaunchSyncState::EnabledCurrentLegacy;
     }
@@ -117,4 +130,28 @@ bool AutoLaunchManager::syncWithPreference()
     }
 
     return isEnabled();
+}
+
+void AutoLaunchManager::queryStatus(StatusCallback callback)
+{
+    if (callback) {
+        callback({isEnabled() ? AutoLaunchState::Enabled : AutoLaunchState::Disabled, {}});
+    }
+}
+
+void AutoLaunchManager::setEnabledAsync(bool enabled, StatusCallback callback)
+{
+    if (!callback) {
+        return;
+    }
+
+    if (!setEnabled(enabled)) {
+        callback({
+            isEnabled() ? AutoLaunchState::Enabled : AutoLaunchState::Disabled,
+            QStringLiteral("Failed to update the Linux autostart entry.")
+        });
+        return;
+    }
+
+    queryStatus(std::move(callback));
 }

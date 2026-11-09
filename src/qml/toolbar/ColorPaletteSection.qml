@@ -2,25 +2,37 @@ import QtQuick
 import SnapTrayQml
 
 /**
- * ColorPaletteSection: Custom color swatch + preset color palette.
+ * ColorPaletteSection: Custom color swatch + preset color palette + eyedropper.
  *
- * Layout: [Custom swatch] [3px] [6 preset swatches with 3px spacing]
+ * Layout: [Custom swatch] [3px] [6 preset swatches with 3px spacing] [6px] [Eyedropper]
+ *
+ * The swatches run unbroken and the eyedropper ends the row (#305): between
+ * them, its line icon cut the solid row in two. Spacing alone sets it apart,
+ * since the strip has no separators between its sections either.
  */
 Item {
     id: root
+    // The host shows a tooltip anchored on the item named itemName (#305).
+    signal tooltipRequested(string itemName, string text)
+    signal tooltipDismissed(string itemName)
+
     property var viewModel: null
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property color currentColorValue: root.hasViewModel
         ? root.viewModel.currentColor
         : "transparent"
-    readonly property var paletteModel: root.hasViewModel ? root.viewModel.colorPalette : []
+    // {color, name} entries; the name travels with its color (#248).
+    readonly property var paletteModel: root.hasViewModel ? root.viewModel.colorPaletteOptions : []
 
     readonly property int sectionPadding: 4
     readonly property int swatchSize: 20
     readonly property int swatchSpacing: 3
     readonly property int indicatorSize: 10
+    readonly property int pickIconSize: 14
+    readonly property int pickButtonGap: 2 * swatchSpacing
 
-    implicitWidth: sectionPadding + customSwatch.width + swatchSpacing + paletteRow.width + sectionPadding
+    implicitWidth: sectionPadding + customSwatch.width + swatchSpacing + paletteRow.width
+                   + pickButtonGap + colorPickButton.width + sectionPadding
     implicitHeight: swatchSize
     width: implicitWidth
     height: implicitHeight
@@ -28,7 +40,15 @@ Item {
     // Custom color swatch (shows current color)
     Rectangle {
         id: customSwatch
+        objectName: "customColorSwatch"
         x: root.sectionPadding
+        // Screen readers (#248): opens the color picker; reads the current color.
+        Accessible.role: Accessible.Button
+        Accessible.name: qsTr("Custom color") + ", " + root.currentColorValue.toString().toUpperCase()
+        Accessible.onPressAction: {
+            if (root.hasViewModel)
+                root.viewModel.handleCustomColorClicked()
+        }
         width: root.swatchSize
         height: root.swatchSize
         radius: 3
@@ -106,15 +126,27 @@ Item {
             model: root.paletteModel
 
             Rectangle {
+                required property var modelData
+                required property int index
+                readonly property color swatchColor: modelData.color
+                objectName: "colorSwatch_" + index
+                Accessible.role: Accessible.RadioButton
+                Accessible.name: modelData.name
+                Accessible.checkable: true
+                Accessible.checked: swatchColor == root.currentColorValue
+                Accessible.onPressAction: {
+                    if (root.hasViewModel)
+                        root.viewModel.handleColorClicked(index)
+                }
                 width: root.swatchSize
                 height: root.swatchSize
                 radius: 3
-                color: modelData
+                color: swatchColor
                 border.width: 1
                 border.color: {
-                    var lum = modelData.r * 0.299 +
-                              modelData.g * 0.587 +
-                              modelData.b * 0.114
+                    var lum = swatchColor.r * 0.299 +
+                              swatchColor.g * 0.587 +
+                              swatchColor.b * 0.114
                     return lum > 0.7
                         ? Qt.rgba(96 / 255, 96 / 255, 96 / 255, 1.0)
                         : Qt.rgba(192 / 255, 192 / 255, 192 / 255, 1.0)
@@ -129,7 +161,7 @@ Item {
                     color: "transparent"
                     border.width: 2
                     border.color: DesignSystem.accentDefault
-                    visible: modelData == root.currentColorValue
+                    visible: swatchColor == root.currentColorValue
                 }
 
                 // Hover effect
@@ -139,7 +171,7 @@ Item {
                     color: "transparent"
                     border.width: 2
                     border.color: DesignSystem.accentDefault
-                    visible: swatchMouse.containsMouse && modelData != root.currentColorValue
+                    visible: swatchMouse.containsMouse && swatchColor != root.currentColorValue
                 }
 
                 MouseArea {
@@ -152,6 +184,55 @@ Item {
                             root.viewModel.handleColorClicked(index)
                     }
                 }
+            }
+        }
+    }
+
+    // Eyedropper (#271): the host samples a color from its own image. It ends
+    // the color row and is drawn like any enabled toolbar icon (#305).
+    Rectangle {
+        id: colorPickButton
+        objectName: "colorPickButton"
+        readonly property string label: qsTr("Pick color from screen")
+        readonly property string tooltipText: label + " (I)"
+        anchors.left: paletteRow.right
+        anchors.leftMargin: root.pickButtonGap
+        Accessible.role: Accessible.Button
+        Accessible.name: colorPickButton.label
+        Accessible.description: qsTr("Shortcut: I")
+        Accessible.onPressAction: {
+            if (root.hasViewModel)
+                root.viewModel.handleColorPickClicked()
+        }
+        width: root.swatchSize
+        height: root.swatchSize
+        radius: 3
+        color: pickMouse.containsMouse
+            ? (SemanticTokens.isDarkMode
+                ? Qt.rgba(80 / 255, 80 / 255, 80 / 255, 1.0)
+                : Qt.rgba(232 / 255, 232 / 255, 232 / 255, 1.0))
+            : "transparent"
+
+        SvgIcon {
+            objectName: "colorPickIcon"
+            anchors.centerIn: parent
+            source: "qrc:/icons/icons/eyedropper.svg"
+            iconSize: root.pickIconSize
+            color: ComponentTokens.toolbarIcon
+        }
+
+        MouseArea {
+            id: pickMouse
+            anchors.fill: parent
+            cursorShape: CursorTokens.toolbarControl
+            hoverEnabled: true
+            onEntered: root.tooltipRequested(colorPickButton.objectName, colorPickButton.tooltipText)
+            onExited: root.tooltipDismissed(colorPickButton.objectName)
+            // Picking starts on click; the tooltip must not sit over the session.
+            onPressed: root.tooltipDismissed(colorPickButton.objectName)
+            onClicked: {
+                if (root.hasViewModel)
+                    root.viewModel.handleColorPickClicked()
             }
         }
     }

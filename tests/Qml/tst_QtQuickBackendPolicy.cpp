@@ -11,7 +11,8 @@ class tst_QtQuickBackendPolicy : public QObject
 private slots:
     void testWindows10UsesSoftwarePolicy();
     void testWindows11UsesPlatformDefaultPolicy();
-    void testNonWindowsUsePlatformDefaultPolicy();
+    void testVersionPolicyDefaultsForMacAndUnknown();
+    void testCurrentPlatformPolicy();
 };
 
 void tst_QtQuickBackendPolicy::testWindows10UsesSoftwarePolicy()
@@ -38,7 +39,7 @@ void tst_QtQuickBackendPolicy::testWindows11UsesPlatformDefaultPolicy()
         SnapTray::QtQuickGraphicsBackendPolicy::PlatformDefault);
 }
 
-void tst_QtQuickBackendPolicy::testNonWindowsUsePlatformDefaultPolicy()
+void tst_QtQuickBackendPolicy::testVersionPolicyDefaultsForMacAndUnknown()
 {
     QCOMPARE(
         SnapTray::selectQtQuickGraphicsBackendPolicy(
@@ -48,6 +49,17 @@ void tst_QtQuickBackendPolicy::testNonWindowsUsePlatformDefaultPolicy()
         SnapTray::selectQtQuickGraphicsBackendPolicy(
             QOperatingSystemVersion(QOperatingSystemVersion::Unknown, 0, 0, 0)),
         SnapTray::QtQuickGraphicsBackendPolicy::PlatformDefault);
+}
+
+void tst_QtQuickBackendPolicy::testCurrentPlatformPolicy()
+{
+#ifdef Q_OS_LINUX
+    QCOMPARE(SnapTray::currentQtQuickGraphicsBackendPolicy(),
+             SnapTray::QtQuickGraphicsBackendPolicy::Software);
+#else
+    QCOMPARE(SnapTray::currentQtQuickGraphicsBackendPolicy(),
+             SnapTray::selectQtQuickGraphicsBackendPolicy(QOperatingSystemVersion::current()));
+#endif
 }
 
 QTEST_MAIN(tst_QtQuickBackendPolicy)

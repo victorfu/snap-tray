@@ -1,10 +1,21 @@
 #include "MediaFoundationEncoder.h"
+#include "encoding/AudioSampleTiming.h"
+#include "encoding/IntermediateQuality.h"
+#include "encoding/MFSampleTimes_win.h"
+#include "encoding/VideoBitrate.h"
+#include "encoding/VideoRateControl.h"
 
 #ifdef Q_OS_WIN
 
+#include "capture/D3D11Frame.h"
+#include "encoding/D3D11Nv12Converter_win.h"
+
+#include <QDir>
 #include <QFile>
 #include <QDebug>
+#include <QHash>
 #include <QThread>
+#include <QUuid>
 
 #include <windows.h>
 #include <mfapi.h>
@@ -12,16 +23,59 @@
 #include <mfreadwrite.h>
 #include <mferror.h>
 #include <codecapi.h>
+#include <wrl/client.h>
+
+#include <mutex>
 
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfplat.lib")
 #pragma comment(lib, "mfuuid.lib")
+
+using Microsoft::WRL::ComPtr;
+
+namespace {
+
+// Frames the GPU probe encodes before checking that the file decodes.
+constexpr int kGpuProbeFrames = 3;
+// Probe frames are cleared to 50% gray; decoded luma must come back near it
+// (16 + 0.5 * 219 in BT.709 limited range).
+constexpr int kGpuProbeLuma = 126;
+constexpr int kGpuProbeLumaTolerance = 24;
+
+// The GPU path converts with an explicit matrix; tag the stream with it so
+// players do not guess (BT.601 is the usual guess for unknown streams).
+HRESULT setBt709LimitedRange(IMFMediaType *type)
+{
+    HRESULT hr = type->SetUINT32(MF_MT_YUV_MATRIX, MFVideoTransferMatrix_BT709);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_VIDEO_NOMINAL_RANGE, MFNominalRange_16_235);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_VIDEO_PRIMARIES, MFVideoPrimaries_BT709);
+    if (SUCCEEDED(hr)) hr = type->SetUINT32(MF_MT_TRANSFER_FUNCTION, MFVideoTransFunc_709);
+    return hr;
+}
+
+QString hrText(HRESULT hr)
+{
+    return QStringLiteral("0x%1").arg(quint32(hr), 8, 16, QChar('0'));
+}
+
+} // namespace
 
 class MediaFoundationEncoderPrivate
 {
 public:
     IMFSinkWriter *sinkWriter = nullptr;
     DWORD videoStreamIndex = 0;
+    bool enableHardwareTransforms = true;
+
+    // GPU input (#155): frames arrive as textures on the capture device and
+    // are converted to NV12 surfaces there; the sink writer shares the device.
+    std::shared_ptr<SnapTray::D3D11FrameDevice> nativeDevice;
+    std::unique_ptr<SnapTray::D3D11Nv12Converter> converter;  // set while GPU input is in use
+    ComPtr<IMFDXGIDeviceManager> deviceManager;
+    bool gpuProbe = false;  // this encoder is the capability probe itself
+    QString gpuUnavailableReason;  // why start() chose CPU input despite a device
+    bool warnedAboutGpuFailure = false;
+    bool gpuInput() const { return converter != nullptr; }
 
     // Audio members
     DWORD audioStreamIndex = 0;
@@ -39,6 +93,9 @@ public:
     qint64 frameNumber = 0;
     bool running = false;
     int quality = 55;  // 0-100
+    SnapTray::VideoRateControl requestedRateControl = SnapTray::VideoRateControl::Bitrate;
+    SnapTray::VideoRateControl effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+    int keyFrameIntervalSeconds = 0; // 0 = encoder default
     bool mfInitialized = false;
     bool warnedAboutFrameResize = false;
 
@@ -46,22 +103,30 @@ public:
         return frameRate > 0 ? 10000000LL / frameRate : 10000000LL / 30;
     }
 
+    // For the intermediate (ConstantQuality requested) this is both the
+    // average target and the peak of the peak-constrained VBR encode.
     UINT32 calculateBitrate() const {
-        int pixels = frameSize.width() * frameSize.height();
-        // Quality 0-100 maps to bits per pixel 0.1-0.3
-        double bitsPerPixel = 0.1 + (quality / 100.0) * 0.2;
-        UINT32 bitrate = static_cast<UINT32>(pixels * frameRate * bitsPerPixel);
-        // Clamp to reasonable range: 1 Mbps to 50 Mbps
-        return qBound(1000000U, bitrate, 50000000U);
+        if (requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
+            return static_cast<UINT32>(SnapTray::IntermediateQuality::intermediateBitrate(frameSize, frameRate));
+        }
+        return static_cast<UINT32>(SnapTray::VideoBitrate::forQuality(frameSize, frameRate, quality));
     }
 
     HRESULT createSinkWriter(const QString &path) {
         IMFAttributes *attributes = nullptr;
-        HRESULT hr = MFCreateAttributes(&attributes, 1);
+        HRESULT hr = MFCreateAttributes(&attributes, 2);
         if (FAILED(hr)) return hr;
 
         // Enable hardware transforms for better performance
-        hr = attributes->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE);
+        hr = attributes->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, enableHardwareTransforms ? TRUE : FALSE);
+        if (SUCCEEDED(hr) && deviceManager) {
+            // The encoder MFT takes surfaces on this device instead of memory buffers.
+            hr = attributes->SetUnknown(MF_SINK_WRITER_D3D_MANAGER, deviceManager.Get());
+        }
+        if (FAILED(hr)) {
+            attributes->Release();
+            return hr;
+        }
 
         hr = MFCreateSinkWriterFromURL(
             reinterpret_cast<LPCWSTR>(path.utf16()),
@@ -77,6 +142,7 @@ public:
     HRESULT configureVideoStream() {
         IMFMediaType *outputType = nullptr;
         IMFMediaType *inputType = nullptr;
+        IMFAttributes *encodingParams = nullptr;
         HRESULT hr = S_OK;
 
         // ========== Output type (H.264) ==========
@@ -104,18 +170,28 @@ public:
         hr = MFSetAttributeRatio(outputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
         if (FAILED(hr)) goto done;
 
+        if (gpuInput()) {
+            hr = setBt709LimitedRange(outputType);
+            if (FAILED(hr)) goto done;
+        }
+
         hr = sinkWriter->AddStream(outputType, &videoStreamIndex);
         if (FAILED(hr)) goto done;
 
-        // ========== Input type (RGB32) ==========
+        // ========== Input type (RGB32, or NV12 surfaces on the GPU path) ==========
         hr = MFCreateMediaType(&inputType);
         if (FAILED(hr)) goto done;
 
         hr = inputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
         if (FAILED(hr)) goto done;
 
-        hr = inputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32);
+        hr = inputType->SetGUID(MF_MT_SUBTYPE, gpuInput() ? MFVideoFormat_NV12 : MFVideoFormat_RGB32);
         if (FAILED(hr)) goto done;
+
+        if (gpuInput()) {
+            hr = setBt709LimitedRange(inputType);
+            if (FAILED(hr)) goto done;
+        }
 
         hr = inputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
         if (FAILED(hr)) goto done;
@@ -129,11 +205,105 @@ public:
         hr = MFSetAttributeRatio(inputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
         if (FAILED(hr)) goto done;
 
-        hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, nullptr);
+        // Codec properties must be handed over as encoding parameters: values
+        // set through ICodecAPI after the input type is negotiated are accepted
+        // but ignored by the H.264 MFT. When the full set is rejected, keep
+        // the GOP (seeking in the preview depends on it) before giving up on
+        // parameters altogether.
+        //
+        // A ConstantQuality request (the preview intermediate) is encoded as
+        // peak-constrained VBR at the intermediate ceiling: the MFT's Quality
+        // mode accepts CODECAPI_AVEncCommonMaxBitRate but ignores it (random
+        // content measured at 14.5x the ceiling), so it cannot be bounded on
+        // this platform. effectiveRateControl therefore stays Bitrate.
+        {
+            const bool intermediate = requestedRateControl == SnapTray::VideoRateControl::ConstantQuality;
+            const UINT32 gopFrames = keyFrameIntervalSeconds > 0
+                ? static_cast<UINT32>(frameRate * keyFrameIntervalSeconds) : 0;
+            // full: GOP plus, for the intermediate, peak-constrained VBR;
+            // otherwise: GOP plus unconstrained VBR.
+            auto createParams = [this, intermediate, gopFrames](bool full) -> IMFAttributes* {
+                IMFAttributes *params = nullptr;
+                HRESULT paramHr = MFCreateAttributes(&params, 5);
+                if (FAILED(paramHr) || !params) {
+                    qWarning() << "MediaFoundationEncoder: cannot create encoding parameters (hr =" << Qt::hex << paramHr << ")";
+                    return nullptr;
+                }
+                if (gopFrames > 0) {
+                    paramHr = params->SetUINT32(CODECAPI_AVEncMPVGOPSize, gopFrames);
+                    if (FAILED(paramHr)) {
+                        qWarning() << "MediaFoundationEncoder: GOP size parameter rejected (hr =" << Qt::hex << paramHr << ")";
+                    }
+                }
+                if (full && intermediate) {
+                    const HRESULT modeHr = params->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
+                        eAVEncCommonRateControlMode_PeakConstrainedVBR);
+                    const HRESULT peakHr = params->SetUINT32(CODECAPI_AVEncCommonMaxBitRate, calculateBitrate());
+                    const HRESULT meanHr = params->SetUINT32(CODECAPI_AVEncCommonMeanBitRate, calculateBitrate());
+                    // Bound the initial burst as well as the drain rate. The
+                    // default buffer can overshoot the ceiling on short clips.
+                    constexpr UINT32 kBufferDurationMs = 500;
+                    const UINT32 bufferBytes = static_cast<UINT32>(
+                        quint64(calculateBitrate()) * kBufferDurationMs / (8 * 1000));
+                    const HRESULT bufferHr = params->SetUINT32(CODECAPI_AVEncCommonBufferSize, bufferBytes);
+                    if (FAILED(modeHr) || FAILED(peakHr) || FAILED(meanHr) || FAILED(bufferHr)) {
+                        qWarning() << "MediaFoundationEncoder: peak-constrained VBR parameters rejected (hr =" << Qt::hex
+                                   << modeHr << peakHr << meanHr << bufferHr << ")";
+                    }
+                } else if (!full) {
+                    paramHr = params->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
+                        eAVEncCommonRateControlMode_UnconstrainedVBR);
+                    if (FAILED(paramHr)) {
+                        qWarning() << "MediaFoundationEncoder: VBR mode parameter rejected (hr =" << Qt::hex << paramHr << ")";
+                    }
+                }
+                return params;
+            };
+
+            const char *appliedParams = "encoder defaults";
+            bool peakApplied = false;
+            if (intermediate || gopFrames > 0) {
+                encodingParams = createParams(true);
+            }
+            hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
+            if (encodingParams) {
+                encodingParams->Release();
+                encodingParams = nullptr;
+                if (SUCCEEDED(hr)) {
+                    appliedParams = intermediate ? "GOP + peak-constrained VBR" : "GOP";
+                    peakApplied = intermediate;
+                } else {
+                    qWarning() << "MediaFoundationEncoder: encoding parameters rejected (hr =" << Qt::hex << hr
+                               << "), retrying with GOP and unconstrained VBR";
+                    encodingParams = createParams(false);
+                    hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
+                    if (SUCCEEDED(hr)) {
+                        appliedParams = "GOP + unconstrained VBR";
+                    } else {
+                        qWarning() << "MediaFoundationEncoder: GOP and VBR parameters rejected (hr =" << Qt::hex << hr
+                                   << "), retrying with encoder defaults";
+                        hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, nullptr);
+                        if (FAILED(hr)) {
+                            qWarning() << "MediaFoundationEncoder: input type rejected with encoder defaults (hr ="
+                                       << Qt::hex << hr << ")";
+                        }
+                    }
+                }
+            }
+            effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+            if (SUCCEEDED(hr)) {
+                qDebug() << "MediaFoundationEncoder: video encoding parameters applied:" << appliedParams;
+                if (peakApplied) {
+                    qDebug() << "MediaFoundationEncoder: intermediate VBR at" << calculateBitrate() << "bps, peak"
+                             << calculateBitrate() << "bps, GOP" << gopFrames << "frames";
+                }
+            }
+        }
 
     done:
         if (outputType) outputType->Release();
         if (inputType) inputType->Release();
+        if (encodingParams) encodingParams->Release();
         return hr;
     }
 
@@ -210,14 +380,268 @@ public:
             sinkWriter->Release();
             sinkWriter = nullptr;
         }
+        disableGpuInput();
         running = false;
     }
+
+    // Sink writer, streams and BeginWriting, for the input chosen by gpuInput().
+    QString openSinkWriter(const QString &path) {
+        HRESULT hr = createSinkWriter(path);
+        if (FAILED(hr)) {
+            return QString("Failed to create sink writer: %1").arg(hrText(hr));
+        }
+
+        hr = configureVideoStream();
+        if (FAILED(hr)) {
+            cleanup();
+            return QString("Failed to configure video stream: %1").arg(hrText(hr));
+        }
+
+        // Configure audio stream if enabled
+        if (audioEnabled) {
+            hr = configureAudioStream();
+            if (FAILED(hr)) {
+                qWarning() << "MediaFoundationEncoder: Failed to configure audio stream: 0x" << Qt::hex << hr
+                           << "- continuing without audio";
+                audioEnabled = false;
+            } else {
+                qDebug() << "MediaFoundationEncoder: Audio stream configured -"
+                         << audioSampleRate << "Hz," << audioChannels << "ch,"
+                         << audioBitsPerSample << "bit";
+            }
+        }
+
+        // CPU frames go in as RGB32 through a video processor that would
+        // otherwise re-time them to the nominal frame rate (and hold back the
+        // last one): each frame keeps the time it was captured at (#210).
+        // NV12 GPU input has no processor in between.
+        if (!gpuInput()) {
+            hr = SnapTray::keepSampleTimesThroughVideoProcessor(sinkWriter, videoStreamIndex);
+            if (FAILED(hr)) {
+                qWarning() << "MediaFoundationEncoder: cannot keep frame times through the video processor:"
+                           << hrText(hr);
+            }
+        }
+
+        hr = sinkWriter->BeginWriting();
+        if (FAILED(hr)) {
+            cleanup();
+            return QString("Failed to begin writing: %1").arg(hrText(hr));
+        }
+        return {};
+    }
+
+    // Converter and device manager for GPU input; empty on success.
+    QString enableGpuInput() {
+        auto gpuConverter = std::make_unique<SnapTray::D3D11Nv12Converter>();
+        QString error;
+        if (!gpuConverter->initialize(nativeDevice, frameSize, frameRate, &error)) {
+            return error;
+        }
+        UINT resetToken = 0;
+        HRESULT hr = MFCreateDXGIDeviceManager(&resetToken, &deviceManager);
+        if (SUCCEEDED(hr)) {
+            hr = deviceManager->ResetDevice(nativeDevice->device.Get(), resetToken);
+        }
+        if (FAILED(hr)) {
+            deviceManager.Reset();
+            return QString("DXGI device manager unavailable: %1").arg(hrText(hr));
+        }
+        converter = std::move(gpuConverter);
+        return {};
+    }
+
+    void disableGpuInput() {
+        converter.reset();
+        deviceManager.Reset();
+    }
+
+    // The sink writer only saves CPU work when its encoder takes the surfaces
+    // itself; a software encoder would read every surface back. Empty when the
+    // video encoder is D3D11 aware.
+    QString checkEncoderUsesSurfaces() const {
+        ComPtr<IMFSinkWriterEx> writerEx;
+        if (FAILED(sinkWriter->QueryInterface(IID_PPV_ARGS(&writerEx)))) {
+            return QStringLiteral("sink writer does not expose its transforms");
+        }
+        for (DWORD index = 0;; ++index) {
+            GUID category = GUID_NULL;
+            ComPtr<IMFTransform> transform;
+            if (FAILED(writerEx->GetTransformForStream(videoStreamIndex, index, &category, &transform))) {
+                break;
+            }
+            if (category != MFT_CATEGORY_VIDEO_ENCODER) continue;
+            ComPtr<IMFAttributes> attributes;
+            UINT32 d3d11Aware = FALSE;
+            if (SUCCEEDED(transform->GetAttributes(&attributes))) {
+                attributes->GetUINT32(MF_SA_D3D11_AWARE, &d3d11Aware);
+            }
+            return d3d11Aware ? QString() : QStringLiteral("the selected H.264 encoder does not take D3D11 surfaces");
+        }
+        return QStringLiteral("no H.264 encoder transform found");
+    }
+
+    // Converted (or failed) GPU sample to the sink writer; true when written.
+    bool writeGpuSample(HRESULT convertHr, IMFSample *sample, qint64 timestampMs) {
+        HRESULT hr = convertHr;
+        if (SUCCEEDED(hr)) {
+            const LONGLONG timestamp = timestampMs >= 0 ? timestampMs * 10000LL
+                                                        : frameNumber * frameDuration100ns();
+            hr = sample->SetSampleTime(timestamp);
+            if (SUCCEEDED(hr)) hr = sample->SetSampleDuration(frameDuration100ns());
+            if (SUCCEEDED(hr)) hr = sinkWriter->WriteSample(videoStreamIndex, sample);
+        }
+        if (FAILED(hr)) {
+            // The stream keeps its configuration: a lost device rejects the
+            // remaining frames instead of switching encoders mid-stream.
+            if (!warnedAboutGpuFailure) {
+                const HRESULT removed = nativeDevice->device->GetDeviceRemovedReason();
+                qWarning() << "MediaFoundationEncoder: GPU frame rejected:" << hrText(hr)
+                           << (FAILED(removed) ? QString("device lost (%1)").arg(hrText(removed)) : QString());
+                warnedAboutGpuFailure = true;
+            }
+            return false;
+        }
+        framesWritten++;
+        frameNumber++;
+        return true;
+    }
+
+    static bool probeGpuInput(const std::shared_ptr<SnapTray::D3D11FrameDevice> &device,
+                              const QSize &size, int frameRate, QString *reason);
 };
 
+namespace {
+
+// Empty when `path` holds a video stream of `size` that decodes to the probe's
+// mid-gray. The reader is asked for uncompressed NV12, so a decoder has to
+// run: without an output type ReadSample hands back the compressed samples.
+QString verifyDecodes(const QString &path, const QSize &size)
+{
+    ComPtr<IMFSourceReader> reader;
+    HRESULT hr = MFCreateSourceReaderFromURL(reinterpret_cast<LPCWSTR>(path.utf16()), nullptr, &reader);
+    if (FAILED(hr)) return QString("probe output unreadable: %1").arg(hrText(hr));
+    const DWORD stream = static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM);
+    ComPtr<IMFMediaType> type;
+    UINT32 width = 0;
+    UINT32 height = 0;
+    if (FAILED(reader->GetNativeMediaType(stream, 0, &type))
+        || FAILED(MFGetAttributeSize(type.Get(), MF_MT_FRAME_SIZE, &width, &height))
+        || QSize(int(width), int(height)) != size) {
+        return QString("probe output has the wrong frame size %1x%2").arg(width).arg(height);
+    }
+    ComPtr<IMFMediaType> uncompressed;
+    hr = MFCreateMediaType(&uncompressed);
+    if (SUCCEEDED(hr)) hr = uncompressed->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+    if (SUCCEEDED(hr)) hr = uncompressed->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_NV12);
+    if (SUCCEEDED(hr)) hr = reader->SetCurrentMediaType(stream, nullptr, uncompressed.Get());
+    if (FAILED(hr)) return QString("no decoder for the probe output: %1").arg(hrText(hr));
+
+    for (int attempt = 0; attempt < kGpuProbeFrames * 4; ++attempt) {
+        DWORD flags = 0;
+        ComPtr<IMFSample> sample;
+        hr = reader->ReadSample(stream, 0, nullptr, &flags, nullptr, &sample);
+        if (FAILED(hr)) return QString("probe output does not decode: %1").arg(hrText(hr));
+        if (sample) {
+            ComPtr<IMFMediaBuffer> buffer;
+            BYTE *data = nullptr;
+            DWORD length = 0;
+            if (FAILED(sample->ConvertToContiguousBuffer(&buffer)) || FAILED(buffer->Lock(&data, nullptr, &length))
+                || length == 0) {
+                return QStringLiteral("probe output decoded to an empty frame");
+            }
+            // The first luma sample of a frame cleared to 50% gray: about 126
+            // in BT.709 limited range. Far off means the encoder wrote garbage.
+            const int luma = data[0];
+            buffer->Unlock();
+            if (qAbs(luma - kGpuProbeLuma) > kGpuProbeLumaTolerance) {
+                return QString("probe output decoded to the wrong picture (luma %1)").arg(luma);
+            }
+            return {};
+        }
+        if (flags & MF_SOURCE_READERF_ENDOFSTREAM) break;
+    }
+    return QStringLiteral("probe output has no decodable frame");
+}
+
+} // namespace
+
+bool MediaFoundationEncoderPrivate::probeGpuInput(const std::shared_ptr<SnapTray::D3D11FrameDevice> &device,
+                                                  const QSize &size, int frameRate, QString *reason)
+{
+    // One probe per adapter and stream shape per run: a driver that accepted
+    // the surfaces once keeps doing so, and the probe costs a short encode.
+    static std::mutex cacheMutex;
+    static QHash<QString, QString> cache;  // key -> failure reason, empty = works
+    const QString key = QString("%1:%2/%3x%4@%5")
+                            .arg(device->adapterLuid.HighPart).arg(device->adapterLuid.LowPart)
+                            .arg(size.width()).arg(size.height()).arg(frameRate);
+    {
+        std::lock_guard<std::mutex> lock(cacheMutex);
+        const auto cached = cache.constFind(key);
+        if (cached != cache.constEnd()) {
+            *reason = cached.value();
+            return reason->isEmpty();
+        }
+    }
+
+    QString failure;
+    const QString path = QDir::temp().filePath(
+        QString("snaptray-gpu-probe-%1.mp4").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)));
+    {
+        MediaFoundationEncoder probe(true, nullptr);
+        probe.d->gpuProbe = true;
+        probe.setNativeFrameDevice(device);
+        auto pool = SnapTray::D3D11TexturePool::create(device, size);
+        if (!probe.start(path, size, frameRate)) {
+            failure = probe.lastError();
+        } else if (!probe.acceptsNativeFrames()) {
+            failure = probe.d->gpuUnavailableReason;
+        } else if (!pool) {
+            failure = QStringLiteral("cannot allocate probe textures");
+        } else {
+            for (int i = 0; i < kGpuProbeFrames; ++i) {
+                auto frame = pool->acquire();
+                ComPtr<ID3D11RenderTargetView> target;
+                if (frame && SUCCEEDED(device->device->CreateRenderTargetView(frame->texture.Get(), nullptr, &target))) {
+                    const float gray[4] = {0.5f, 0.5f, 0.5f, 1.0f};
+                    device->context->ClearRenderTargetView(target.Get(), gray);
+                }
+                probe.writeNativeFrame(frame, qint64(i) * 1000 / frameRate);
+            }
+            bool finalized = false;
+            QObject::connect(&probe, &IVideoEncoder::finished, &probe,
+                             [&finalized](bool success, const QString &) { finalized = success; });
+            if (probe.framesWritten() != kGpuProbeFrames) {
+                failure = QStringLiteral("probe frames were rejected");
+                probe.abort();
+            } else {
+                probe.finish();
+                failure = finalized ? verifyDecodes(path, probe.d->frameSize)
+                                    : QString("probe encode did not finalize: %1").arg(probe.lastError());
+            }
+        }
+    }
+    QFile::remove(path);
+
+    {
+        std::lock_guard<std::mutex> lock(cacheMutex);
+        cache.insert(key, failure);
+    }
+    *reason = failure;
+    return failure.isEmpty();
+}
+
 MediaFoundationEncoder::MediaFoundationEncoder(QObject *parent)
+    : MediaFoundationEncoder(true, parent)
+{
+}
+
+MediaFoundationEncoder::MediaFoundationEncoder(bool enableHardwareTransforms, QObject *parent)
     : IVideoEncoder(parent)
     , d(new MediaFoundationEncoderPrivate)
 {
+    d->enableHardwareTransforms = enableHardwareTransforms;
     HRESULT hr = MFStartup(MF_VERSION);
     d->mfInitialized = SUCCEEDED(hr);
     if (!d->mfInitialized) {
@@ -271,54 +695,117 @@ bool MediaFoundationEncoder::start(const QString &outputPath, const QSize &frame
     d->framesWritten = 0;
     d->frameNumber = 0;
     d->warnedAboutFrameResize = false;
+    d->warnedAboutGpuFailure = false;
+    d->gpuUnavailableReason.clear();
 
     // Remove existing file if present
     QFile::remove(outputPath);
 
-    HRESULT hr = d->createSinkWriter(outputPath);
-    if (FAILED(hr)) {
-        d->lastError = QString("Failed to create sink writer: 0x%1").arg(hr, 8, 16, QChar('0'));
-        return false;
-    }
-
-    hr = d->configureVideoStream();
-    if (FAILED(hr)) {
-        d->lastError = QString("Failed to configure video stream: 0x%1").arg(hr, 8, 16, QChar('0'));
-        d->cleanup();
-        return false;
-    }
-
-    // Configure audio stream if enabled
-    if (d->audioEnabled) {
-        hr = d->configureAudioStream();
-        if (FAILED(hr)) {
-            qWarning() << "MediaFoundationEncoder: Failed to configure audio stream: 0x" << Qt::hex << hr
-                       << "- continuing without audio";
-            d->audioEnabled = false;
-        } else {
-            qDebug() << "MediaFoundationEncoder: Audio stream configured -"
-                     << d->audioSampleRate << "Hz," << d->audioChannels << "ch,"
-                     << d->audioBitsPerSample << "bit";
+    // GPU input first, when the capture device allows it and a real encode
+    // on this adapter worked; any failure keeps the CPU input below.
+    if (d->nativeDevice) {
+        const bool audioRequested = d->audioEnabled;
+        QString reason;
+        if (!d->enableHardwareTransforms) {
+            reason = QStringLiteral("software encoding requested");
+        } else if (!d->nativeDevice->videoSupport || d->nativeDevice->isLost()) {
+            reason = QStringLiteral("capture device has no usable video support");
+        } else if (d->gpuProbe
+                   || MediaFoundationEncoderPrivate::probeGpuInput(d->nativeDevice, d->frameSize, d->frameRate, &reason)) {
+            reason = d->enableGpuInput();
+            if (reason.isEmpty()) {
+                reason = d->openSinkWriter(outputPath);
+                if (reason.isEmpty()) {
+                    reason = d->checkEncoderUsesSurfaces();
+                    if (!reason.isEmpty()) d->cleanup();
+                }
+                if (!reason.isEmpty()) {
+                    d->disableGpuInput();
+                    // The CPU attempt configures audio afresh.
+                    d->audioEnabled = audioRequested;
+                    QFile::remove(outputPath);
+                }
+            }
+        }
+        if (!reason.isEmpty()) {
+            d->gpuUnavailableReason = reason;
+            qWarning() << "MediaFoundationEncoder: GPU input unavailable on" << d->nativeDevice->adapterName
+                       << "-" << reason << "- using CPU frames";
         }
     }
 
-    hr = d->sinkWriter->BeginWriting();
-    if (FAILED(hr)) {
-        d->lastError = QString("Failed to begin writing: 0x%1").arg(hr, 8, 16, QChar('0'));
-        d->cleanup();
-        return false;
+    if (!d->sinkWriter) {
+        d->lastError = d->openSinkWriter(outputPath);
+        if (!d->lastError.isEmpty()) {
+            return false;
+        }
     }
 
     d->running = true;
     qDebug() << "MediaFoundationEncoder: Started encoding to" << outputPath
              << "size:" << d->frameSize << "fps:" << frameRate
-             << "quality:" << d->quality << "bitrate:" << d->calculateBitrate();
+             << "quality:" << d->quality << "bitrate:" << d->calculateBitrate()
+             << "input:" << (d->gpuInput() ? QString("GPU NV12 on %1").arg(d->nativeDevice->adapterName)
+                                           : QStringLiteral("CPU RGB32"));
+    return true;
+}
+
+void MediaFoundationEncoder::setNativeFrameDevice(std::shared_ptr<void> device)
+{
+    if (d->running) {
+        qWarning() << "MediaFoundationEncoder: Cannot change the native frame device while running";
+        return;
+    }
+    d->nativeDevice = std::static_pointer_cast<SnapTray::D3D11FrameDevice>(device);
+}
+
+bool MediaFoundationEncoder::acceptsNativeFrames() const
+{
+    return d->running && d->gpuInput();
+}
+
+bool MediaFoundationEncoder::writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs)
+{
+    if (!d->running || !d->sinkWriter) {
+        return false;
+    }
+    const auto frame = SnapTray::d3d11FrameFrom(nativeBuffer);
+    if (!frame || !frame->texture) {
+        return false;
+    }
+    if (!d->gpuInput() || frame->device != d->converter->device()) {
+        // CPU input, or a frame from another device (the capture device was
+        // recreated): the same stream continues through a CPU copy.
+        const QImage image = SnapTray::readBackD3D11Frame(*frame);
+        if (image.isNull()) {
+            return false;
+        }
+        writeFrame(image, timestampMs);
+        return true;
+    }
+    ComPtr<IMFSample> sample;
+    const HRESULT hr = d->converter->convert(frame->texture.Get(), frame->size, &sample);
+    // A failed GPU write is rejected like a failed WriteSample on the CPU
+    // path: retrying it as an image would not succeed on a lost device.
+    if (d->writeGpuSample(hr, sample.Get(), timestampMs)) {
+        emit progress(d->framesWritten);
+    }
     return true;
 }
 
 void MediaFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
 {
     if (!d->running || !d->sinkWriter) {
+        return;
+    }
+
+    if (d->gpuInput()) {
+        // The stream takes NV12 surfaces: upload and convert on the GPU.
+        ComPtr<IMFSample> gpuSample;
+        const HRESULT hr = d->converter->convertImage(frame, &gpuSample);
+        if (d->writeGpuSample(hr, gpuSample.Get(), timestampMs)) {
+            emit progress(d->framesWritten);
+        }
         return;
     }
 
@@ -468,6 +955,22 @@ void MediaFoundationEncoder::setQuality(int quality)
     d->quality = qBound(0, quality, 100);
 }
 
+void MediaFoundationEncoder::setRateControl(SnapTray::VideoRateControl mode, int qualityValue)
+{
+    d->requestedRateControl = mode;
+    d->quality = qBound(0, qualityValue, 100);
+}
+
+void MediaFoundationEncoder::setKeyFrameIntervalSeconds(int seconds)
+{
+    d->keyFrameIntervalSeconds = qMax(0, seconds);
+}
+
+SnapTray::VideoRateControl MediaFoundationEncoder::effectiveRateControl() const
+{
+    return d->effectiveRateControl;
+}
+
 void MediaFoundationEncoder::setAudioFormat(int sampleRate, int channels, int bitsPerSample)
 {
     if (d->running) {
@@ -492,7 +995,7 @@ bool MediaFoundationEncoder::isAudioEnabled() const
     return d->audioEnabled;
 }
 
-void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs)
+void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 startFrame)
 {
     if (!d->running || !d->sinkWriter || !d->audioEnabled) {
         return;
@@ -527,16 +1030,19 @@ void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64
     if (FAILED(hr)) goto done;
 
     {
-        // Convert ms to 100-nanosecond units
-        LONGLONG timestamp = timestampMs * 10000LL;
-        hr = sample->SetSampleTime(timestamp);
-        if (FAILED(hr)) goto done;
-
-        // Calculate duration based on number of samples
+        // Quantize both absolute frame boundaries to Media Foundation's
+        // 100-nanosecond clock so adjacent buffers cannot overlap or leave gaps.
         int bytesPerFrame = d->audioChannels * d->audioBitsPerSample / 8;
         int numFrames = bufferSize / bytesPerFrame;
-        LONGLONG duration = (static_cast<LONGLONG>(numFrames) * 10000000LL) / d->audioSampleRate;
-        hr = sample->SetSampleDuration(duration);
+        const auto timing = SnapTray::Audio::scaleAudioSampleRange(
+            startFrame, numFrames, d->audioSampleRate, 10000000LL);
+        if (!timing.valid) {
+            qWarning() << "MediaFoundationEncoder: Invalid audio sample timing";
+            goto done;
+        }
+        hr = sample->SetSampleTime(timing.start);
+        if (FAILED(hr)) goto done;
+        hr = sample->SetSampleDuration(timing.duration);
         if (FAILED(hr)) goto done;
     }
 

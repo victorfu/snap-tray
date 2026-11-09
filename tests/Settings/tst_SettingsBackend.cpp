@@ -1,8 +1,12 @@
 #include <QtTest>
+#include <QHash>
 #include <QSignalSpy>
 
+#include "AutoLaunchManager.h"
 #include "hotkey/HotkeyTypes.h"
 #include "qml/SettingsBackend.h"
+#include "platform/PlatformCapabilities.h"
+#include "settings/AutoLaunchSettingsManager.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
 #include "update/IUpdateService.h"
@@ -10,6 +14,8 @@
 #include "update/UpdateCoordinator.h"
 
 using SnapTray::SettingsBackend;
+
+Q_DECLARE_METATYPE(AutoLaunchState)
 
 namespace {
 
@@ -53,6 +59,12 @@ public:
 
 FakeUpdateService* g_fakeUpdateService = nullptr;
 
+struct SettingSnapshot
+{
+    bool existed = false;
+    QVariant value;
+};
+
 } // namespace
 
 class tst_SettingsBackend : public QObject
@@ -60,14 +72,20 @@ class tst_SettingsBackend : public QObject
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void cleanupTestCase();
     void init();
     void cleanup();
 
+    void testCLICompletion_data();
+    void testCLICompletion();
     void testAvailableLanguages_PrioritizesConfiguredAsianLanguages();
     void testCursorCompanionStyle_RoundTripPersistsAndSignals();
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
+    void testFullScreenCaptureAction_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
+    void testUseLastScreenshotSaveLocation_RoundTripPersistsAndSignals();
     void testCheckForUpdates_Started_EmitsNoTerminalSignals();
     void testCheckForUpdates_Failed_EmitsFailure();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
@@ -76,11 +94,48 @@ private slots:
     void testShouldPromptWindowsPrintScreenDisable_DecisionMatrix();
     void testFeatureSupportPropertiesFollowPlatformCapabilities();
     void testHotkeyCategoriesHideRecordingWhenUnsupported();
+    void testStartOnLoginRequestPersistsAcceptedIntent();
+    void testStartOnLoginStatusReflectsSystemState_data();
+    void testStartOnLoginStatusReflectsSystemState();
 
 private:
     void clearTestSettings();
     void installFakeUpdateService(UpdateCheckResult result);
+
+    QHash<QString, SettingSnapshot> m_settingSnapshots;
 };
+
+void tst_SettingsBackend::initTestCase()
+{
+    auto settings = SnapTray::getSettings();
+    const QStringList keys = {
+        QStringLiteral("recording/audioDevice"),
+        QStringLiteral("detection/blurType"),
+        QStringLiteral("general/startOnLogin"),
+        QStringLiteral("regionCapture/cursorCompanionStyle"),
+        QStringLiteral("regionCapture/fullScreenCaptureAction"),
+        QStringLiteral("update/lastCheckTime"),
+        QStringLiteral("files/filenameTemplate"),
+        QStringLiteral("files/useLastScreenshotSaveLocation"),
+    };
+
+    for (const QString& key : keys) {
+        m_settingSnapshots.insert(key, {settings.contains(key), settings.value(key)});
+    }
+}
+
+void tst_SettingsBackend::cleanupTestCase()
+{
+    auto settings = SnapTray::getSettings();
+    for (auto it = m_settingSnapshots.cbegin(); it != m_settingSnapshots.cend(); ++it) {
+        if (it.value().existed) {
+            settings.setValue(it.key(), it.value().value);
+        } else {
+            settings.remove(it.key());
+        }
+    }
+    settings.sync();
+}
 
 void tst_SettingsBackend::init()
 {
@@ -105,7 +160,10 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("detection/blurType");
     settings.remove("general/startOnLogin");
     settings.remove("regionCapture/cursorCompanionStyle");
+    settings.remove("regionCapture/fullScreenCaptureAction");
     settings.remove("update/lastCheckTime");
+    settings.remove("files/filenameTemplate");
+    settings.remove("files/useLastScreenshotSaveLocation");
     settings.sync();
 }
 
@@ -119,6 +177,99 @@ void tst_SettingsBackend::installFakeUpdateService(UpdateCheckResult result)
             g_fakeUpdateService = service.get();
             return service;
         });
+}
+
+void tst_SettingsBackend::testStartOnLoginRequestPersistsAcceptedIntent()
+{
+    SettingsBackend backend;
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.startOnLoginBusy(), 5000);
+
+    backend.m_startOnLoginCanChange = true;
+    const bool requested = !backend.startOnLogin();
+    AutoLaunchSettingsManager::instance().savePreferredEnabled(!requested);
+    QCOMPARE(
+        AutoLaunchSettingsManager::instance().loadPreferredEnabled(),
+        std::optional<bool>(!requested));
+
+    bool setterCalled = false;
+    backend.setStartOnLoginWithSetter(
+        requested,
+        [&setterCalled, requested](bool enabled, auto completion) {
+            Q_UNUSED(completion);
+            setterCalled = true;
+            QCOMPARE(enabled, requested);
+        });
+
+    QVERIFY(setterCalled);
+    QVERIFY(backend.startOnLoginBusy());
+    QVERIFY(!backend.startOnLoginCanChange());
+    QCOMPARE(
+        AutoLaunchSettingsManager::instance().loadPreferredEnabled(),
+        std::optional<bool>(requested));
+}
+
+void tst_SettingsBackend::testStartOnLoginStatusReflectsSystemState_data()
+{
+    QTest::addColumn<AutoLaunchState>("state");
+    QTest::addColumn<QString>("errorMessage");
+    QTest::addColumn<bool>("enabled");
+    QTest::addColumn<bool>("canChange");
+    QTest::addColumn<bool>("hasDescription");
+    QTest::addColumn<bool>("initialPreference");
+    QTest::addColumn<bool>("expectedPreference");
+
+    QTest::newRow("disabled")
+        << AutoLaunchState::Disabled << QString() << false << true << false
+        << true << false;
+    QTest::newRow("enabled")
+        << AutoLaunchState::Enabled << QString() << true << true << false
+        << false << true;
+    QTest::newRow("disabled-by-user")
+        << AutoLaunchState::DisabledByUser << QString() << false << false << true
+        << true << true;
+    QTest::newRow("disabled-by-policy")
+        << AutoLaunchState::DisabledByPolicy << QString() << false << false << true
+        << true << true;
+    QTest::newRow("enabled-by-policy")
+        << AutoLaunchState::EnabledByPolicy << QString() << true << false << true
+        << false << false;
+    QTest::newRow("unavailable")
+        << AutoLaunchState::Unavailable << QString() << false << false << true
+        << true << true;
+    QTest::newRow("operation-error")
+        << AutoLaunchState::Disabled << QStringLiteral("boom") << false << true << true
+        << true << true;
+}
+
+void tst_SettingsBackend::testStartOnLoginStatusReflectsSystemState()
+{
+    QFETCH(AutoLaunchState, state);
+    QFETCH(QString, errorMessage);
+    QFETCH(bool, enabled);
+    QFETCH(bool, canChange);
+    QFETCH(bool, hasDescription);
+    QFETCH(bool, initialPreference);
+    QFETCH(bool, expectedPreference);
+
+    SettingsBackend backend;
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.startOnLoginBusy(), 5000);
+
+    AutoLaunchSettingsManager::instance().savePreferredEnabled(initialPreference);
+    QCOMPARE(
+        AutoLaunchSettingsManager::instance().loadPreferredEnabled(),
+        std::optional<bool>(initialPreference));
+    backend.applyStartOnLoginStatus({state, errorMessage});
+
+    QCOMPARE(backend.startOnLogin(), enabled);
+    QCOMPARE(backend.startOnLoginBusy(), false);
+    QCOMPARE(backend.startOnLoginCanChange(), canChange);
+    QCOMPARE(!backend.startOnLoginStatusText().isEmpty(), hasDescription);
+    if (!errorMessage.isEmpty()) {
+        QVERIFY(backend.startOnLoginStatusText().contains(errorMessage));
+    }
+    QCOMPARE(
+        AutoLaunchSettingsManager::instance().loadPreferredEnabled(),
+        std::optional<bool>(expectedPreference));
 }
 
 void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLanguages()
@@ -207,6 +358,33 @@ void tst_SettingsBackend::testCursorCompanionStyle_RoundTripPersistsAndSignals()
     QCOMPARE(magnifierChangedSpy.count(), 2);
 }
 
+void tst_SettingsBackend::testFullScreenCaptureAction_RoundTripPersistsAndSignals()
+{
+    auto settings = SnapTray::getSettings();
+    SettingsBackend backend;
+    QCOMPARE(backend.fullScreenCaptureAction(), 0);
+
+    QSignalSpy changedSpy(&backend, &SettingsBackend::fullScreenCaptureActionChanged);
+
+    backend.setFullScreenCaptureAction(0);
+    QCOMPARE(changedSpy.count(), 0);
+    QVERIFY(!settings.contains("regionCapture/fullScreenCaptureAction"));
+
+    backend.setFullScreenCaptureAction(2);
+    QCOMPARE(backend.fullScreenCaptureAction(), 2);
+    QCOMPARE(settings.value("regionCapture/fullScreenCaptureAction").toInt(), 2);
+    QCOMPARE(changedSpy.count(), 1);
+
+    backend.setFullScreenCaptureAction(99);
+    QCOMPARE(backend.fullScreenCaptureAction(), 2);
+    QCOMPARE(changedSpy.count(), 1);
+
+    backend.setFullScreenCaptureAction(1);
+    QCOMPARE(backend.fullScreenCaptureAction(), 1);
+    QCOMPARE(settings.value("regionCapture/fullScreenCaptureAction").toInt(), 1);
+    QCOMPARE(changedSpy.count(), 2);
+}
+
 void tst_SettingsBackend::testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice()
 {
     RecordingSettingsManager::instance().setAudioDevice(QStringLiteral("stale-device"));
@@ -249,6 +427,37 @@ void tst_SettingsBackend::testBlurTypeMapping_RoundTripMatchesUiIndices()
 
     reloadedBackend.setBlurType(1);
     QCOMPARE(settings.value("detection/blurType").toString(), QStringLiteral("gaussian"));
+}
+
+void tst_SettingsBackend::testUseLastScreenshotSaveLocation_RoundTripPersistsAndSignals()
+{
+    auto settings = SnapTray::getSettings();
+
+    SettingsBackend backend;
+    QVERIFY(!backend.useLastScreenshotSaveLocation());
+    QVERIFY(!settings.contains(QStringLiteral("files/useLastScreenshotSaveLocation")));
+
+    QSignalSpy changedSpy(&backend, &SettingsBackend::useLastScreenshotSaveLocationChanged);
+
+    backend.setUseLastScreenshotSaveLocation(false);
+    QCOMPARE(changedSpy.count(), 0);
+    QVERIFY(!settings.contains(QStringLiteral("files/useLastScreenshotSaveLocation")));
+
+    backend.setUseLastScreenshotSaveLocation(true);
+    QVERIFY(backend.useLastScreenshotSaveLocation());
+    QCOMPARE(settings.value(QStringLiteral("files/useLastScreenshotSaveLocation")).toBool(), true);
+    QCOMPARE(changedSpy.count(), 1);
+
+    backend.setUseLastScreenshotSaveLocation(true);
+    QCOMPARE(changedSpy.count(), 1);
+
+    SettingsBackend reloadedBackend;
+    QVERIFY(reloadedBackend.useLastScreenshotSaveLocation());
+
+    backend.setUseLastScreenshotSaveLocation(false);
+    QVERIFY(!backend.useLastScreenshotSaveLocation());
+    QCOMPARE(settings.value(QStringLiteral("files/useLastScreenshotSaveLocation")).toBool(), false);
+    QCOMPARE(changedSpy.count(), 2);
 }
 
 void tst_SettingsBackend::testCheckForUpdates_Started_EmitsNoTerminalSignals()
@@ -363,13 +572,9 @@ void tst_SettingsBackend::testFeatureSupportPropertiesFollowPlatformCapabilities
 {
     SettingsBackend backend;
 
-#if defined(Q_OS_LINUX)
-    QVERIFY(!backend.recordingSupported());
-    QVERIFY(!backend.ocrSettingsVisible());
-#else
-    QVERIFY(backend.recordingSupported());
-    QVERIFY(backend.ocrSettingsVisible());
-#endif
+    const auto caps = SnapTray::currentPlatformCapabilities();
+    QCOMPARE(backend.recordingSupported(), caps.supportsRecording);
+    QCOMPARE(backend.ocrSettingsVisible(), caps.supportsOCR);
 }
 
 void tst_SettingsBackend::testHotkeyCategoriesHideRecordingWhenUnsupported()
@@ -386,12 +591,39 @@ void tst_SettingsBackend::testHotkeyCategoriesHideRecordingWhenUnsupported()
         }
     }
 
-#if defined(Q_OS_LINUX)
-    QVERIFY(!sawRecording);
-#else
-    QVERIFY(sawRecording);
-#endif
+    QCOMPARE(sawRecording, backend.recordingSupported());
 }
 
 QTEST_MAIN(tst_SettingsBackend)
 #include "tst_SettingsBackend.moc"
+
+void tst_SettingsBackend::testCLICompletion_data()
+{
+    QTest::addColumn<bool>("initial");
+    QTest::addColumn<bool>("requested");
+    QTest::addColumn<bool>("success");
+    for (bool initial : {false, true})
+        for (bool requested : {false, true})
+            for (bool success : {false, true})
+                QTest::newRow(qPrintable(QString("%1-%2-%3").arg(initial).arg(requested).arg(success)))
+                    << initial << requested << success;
+}
+
+void tst_SettingsBackend::testCLICompletion()
+{
+    QFETCH(bool, initial);
+    QFETCH(bool, requested);
+    QFETCH(bool, success);
+    SettingsBackend backend;
+    backend.m_cliInstalled = initial;
+    QSignalSpy changed(&backend, &SettingsBackend::cliInstalledChanged);
+    QSignalSpy finished(&backend, &SettingsBackend::cliOperationFinished);
+    int calls = 0;
+    backend.changeCLIInstallation(requested, [&] { ++calls; return success; });
+    QCOMPARE(calls, 1);
+    QCOMPARE(finished.count(), 1);
+    QCOMPARE(finished.first().at(0).toBool(), success);
+    QCOMPARE(finished.first().at(1).toString().isEmpty(), success);
+    QCOMPARE(backend.cliInstalled(), success ? requested : initial);
+    QCOMPARE(changed.count(), int(success && initial != requested));
+}

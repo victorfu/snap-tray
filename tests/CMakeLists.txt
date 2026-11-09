@@ -9,16 +9,127 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+add_test(NAME Docs_DeveloperRoutes
+    COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Docs/tst_DeveloperRoutes.py" "${CMAKE_SOURCE_DIR}")
+set_tests_properties(Docs_DeveloperRoutes PROPERTIES TIMEOUT 30 LABELS "unit;docs")
+
+# Website analytics contract (docs/assets/js/analytics.js). Needs Node 18+.
+find_program(NODE_EXECUTABLE node)
+if(NODE_EXECUTABLE)
+    add_test(NAME Docs_SiteAnalytics
+        COMMAND ${NODE_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Docs/tst_SiteAnalytics.js" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Docs_SiteAnalytics PROPERTIES TIMEOUT 30 LABELS "unit;docs")
+else()
+    message(STATUS "Node.js not found: skipping Docs_SiteAnalytics")
+endif()
+
+
+# Compile this bootstrap directly into every C++ test executable. It enables
+# a test-only settings override before main() and gives each process its own
+# temporary INI store, so calls through SnapTray::getSettings() cannot read,
+# remove, or overwrite the user's SnapTray settings.
+add_library(snaptray_test_settings_isolation OBJECT TestSettingsIsolation.cpp)
+target_include_directories(snaptray_test_settings_isolation PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/generated
+)
+target_link_libraries(snaptray_test_settings_isolation PRIVATE Qt6::Core)
+
+add_test(
+    NAME Packaging_MacMicrophoneMetadata
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_MacMicrophoneMetadata.py"
+            "${CMAKE_SOURCE_DIR}"
+)
+set_tests_properties(Packaging_MacMicrophoneMetadata PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+
+add_test(NAME Packaging_MacQtSelection
+    COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_MacQtSelection.py"
+            "${CMAKE_SOURCE_DIR}")
+set_tests_properties(Packaging_MacQtSelection PROPERTIES TIMEOUT 60 LABELS "unit;packaging")
+
+if(WIN32)
+    add_test(NAME Packaging_WindowsNsisSigning
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsNsisSigning.py" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_WindowsNsisSigning PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+    add_test(NAME Packaging_WindowsPackageWrapper
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsPackageWrapper.py" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_WindowsPackageWrapper PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+    add_test(NAME Packaging_WindowsQtDetection
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsQtDetection.py" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_WindowsQtDetection PROPERTIES TIMEOUT 60 LABELS "unit;packaging")
+endif()
+
 if(UNIX AND NOT APPLE)
+    add_test(NAME Packaging_LinuxQtSelection
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_LinuxQtSelection.py"
+                "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_LinuxQtSelection PROPERTIES TIMEOUT 60 LABELS "unit;packaging")
     add_test(
-        NAME Packaging_AppImageBinfmtBypass
-        COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_AppImageBinfmtBypass.sh" "${CMAKE_SOURCE_DIR}"
+        NAME Packaging_AppImageFormat
+        COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_AppImageFormat.sh" "${CMAKE_SOURCE_DIR}"
     )
-    set_tests_properties(Packaging_AppImageBinfmtBypass PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+    set_tests_properties(Packaging_AppImageFormat PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+
+    add_test(NAME Packaging_QtQuickSoftwareRendering
+        COMMAND ${CMAKE_COMMAND} -E env
+            --unset=QT_QUICK_BACKEND --unset=QMLSCENE_DEVICE --unset=QSG_RHI_BACKEND
+            QT_QPA_PLATFORM=offscreen
+            $<TARGET_FILE:SnapTray> --internal-qt-quick-smoke-check)
+    set_tests_properties(Packaging_QtQuickSoftwareRendering PROPERTIES
+        TIMEOUT 15 LABELS "integration;packaging")
+
+    add_test(NAME Packaging_LinuxX11Startup
+        COMMAND xvfb-run -a ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_LinuxX11Startup.py"
+            $<TARGET_FILE:SnapTray>)
+    set_tests_properties(Packaging_LinuxX11Startup PROPERTIES
+        TIMEOUT 60 LABELS "integration;packaging")
 endif()
 
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
+
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_executable(Encoding_LinuxMedia Encoding/tst_LinuxMedia.cpp)
+    target_include_directories(Encoding_LinuxMedia PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(Encoding_LinuxMedia PRIVATE snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+    add_test(NAME Encoding_LinuxMedia COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Encoding/run_linux_media_test.py $<TARGET_FILE:Encoding_LinuxMedia>)
+    set_tests_properties(Encoding_LinuxMedia PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
+    # Recording sync matrix (#163): synthetic content through the real timing
+    # pipeline and encoder, then decoded and checked.
+    add_executable(Encoding_SyncMatrix Encoding/tst_SyncMatrix.cpp Encoding/SyncMatrix.cpp)
+    target_include_directories(Encoding_SyncMatrix PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/Encoding)
+    target_compile_definitions(Encoding_SyncMatrix PRIVATE SNAPTRAY_SYNC_MATRIX_DECODE)
+    target_link_libraries(Encoding_SyncMatrix PRIVATE snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+    add_test(NAME Encoding_SyncMatrix COMMAND Encoding_SyncMatrix)
+    set_tests_properties(Encoding_SyncMatrix PROPERTIES TIMEOUT 300 LABELS "integration;encoding"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    add_executable(Encoding_FFmpegEncoder Encoding/tst_FFmpegEncoder.cpp)
+    target_link_libraries(Encoding_FFmpegEncoder PRIVATE
+        snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+    add_test(NAME Encoding_FFmpegEncoder COMMAND Encoding_FFmpegEncoder)
+    set_tests_properties(Encoding_FFmpegEncoder PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
+    add_executable(Encoding_LinuxRecordingPrototype Encoding/tst_LinuxRecordingPrototype.cpp)
+    target_link_libraries(Encoding_LinuxRecordingPrototype PRIVATE
+        snaptray_ui snaptray_qmlplugin PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+    target_sources(Encoding_LinuxRecordingPrototype PRIVATE
+        ${CMAKE_SOURCE_DIR}/resources/resources.qrc
+        ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp
+        ${CMAKE_SOURCE_DIR}/include/qml/SettingsBackend.h)
+    add_test(NAME Encoding_LinuxRecordingPrototype
+        COMMAND xvfb-run -a -s "-screen 0 1920x1080x24"
+            ${CMAKE_COMMAND} -E env --unset=WAYLAND_DISPLAY --unset=WAYLAND_SOCKET
+            QT_QPA_PLATFORM=xcb QT_QUICK_BACKEND=software XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
+            $<TARGET_FILE:Encoding_LinuxRecordingPrototype>)
+    set_tests_properties(Encoding_LinuxRecordingPrototype PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
+endif()
+
+add_executable(Packaging_ImageFormatDecoding Packaging/tst_ImageFormatDecoding.cpp)
+target_link_libraries(Packaging_ImageFormatDecoding PRIVATE Qt6::Gui Qt6::Test)
+add_test(NAME Packaging_ImageFormatDecoding COMMAND Packaging_ImageFormatDecoding)
+set_tests_properties(Packaging_ImageFormatDecoding PROPERTIES TIMEOUT 30 LABELS "integration;packaging")
 
 # ============================================================================
 # QML ViewModel Tests
@@ -43,10 +154,21 @@ add_dependencies(Qml_PinToolbarViewModel SnapTray_lrelease)
 add_test(NAME Qml_PinToolbarViewModel COMMAND Qml_PinToolbarViewModel)
 set_tests_properties(Qml_PinToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_PinHoverBarViewModel Qml/tst_PinHoverBarViewModel.cpp)
+target_link_libraries(Qml_PinHoverBarViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_PinHoverBarViewModel COMMAND Qml_PinHoverBarViewModel)
+set_tests_properties(Qml_PinHoverBarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_RegionToolbarViewModel Qml/tst_RegionToolbarViewModel.cpp)
 target_link_libraries(Qml_RegionToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_RegionToolbarViewModel COMMAND Qml_RegionToolbarViewModel)
 set_tests_properties(Qml_RegionToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_CursorTokens Qml/tst_CursorTokens.cpp)
+target_link_libraries(Qml_CursorTokens PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+target_sources(Qml_CursorTokens PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_CursorTokens COMMAND Qml_CursorTokens)
+set_tests_properties(Qml_CursorTokens PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Qml_BeautifyPanelBackend Qml/tst_BeautifyPanelBackend.cpp)
 target_link_libraries(Qml_BeautifyPanelBackend PRIVATE snaptray_ui Qt6::Test)
@@ -59,6 +181,36 @@ target_sources(Qml_BeautifyPanelQml PRIVATE ${CMAKE_SOURCE_DIR}/resources/resour
 add_test(NAME Qml_BeautifyPanelQml COMMAND Qml_BeautifyPanelQml)
 set_tests_properties(Qml_BeautifyPanelQml PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(Qml_ToolbarEvidence Qml/tst_ToolbarEvidence.cpp)
+target_link_libraries(Qml_ToolbarEvidence PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_ToolbarEvidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_ToolbarEvidence COMMAND Qml_ToolbarEvidence)
+set_tests_properties(Qml_ToolbarEvidence PROPERTIES TIMEOUT 120 LABELS "unit")
+
+add_executable(Qml_ToolbarOverflow Qml/tst_ToolbarOverflow.cpp)
+target_link_libraries(Qml_ToolbarOverflow PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_ToolbarOverflow PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_ToolbarOverflow COMMAND Qml_ToolbarOverflow)
+set_tests_properties(Qml_ToolbarOverflow PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(Qml_PinHoverBarQml Qml/tst_PinHoverBarQml.cpp)
+target_link_libraries(Qml_PinHoverBarQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_PinHoverBarQml PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_PinHoverBarQml COMMAND Qml_PinHoverBarQml)
+set_tests_properties(Qml_PinHoverBarQml PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(Qml_DialogModality Qml/tst_QmlDialogModality.cpp)
+target_link_libraries(Qml_DialogModality PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_DialogModality PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_DialogModality COMMAND Qml_DialogModality)
+set_tests_properties(Qml_DialogModality PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
+
+add_executable(Qml_SettingsCombo Qml/tst_SettingsCombo.cpp)
+target_link_libraries(Qml_SettingsCombo PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_SettingsCombo PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_SettingsCombo COMMAND Qml_SettingsCombo)
+set_tests_properties(Qml_SettingsCombo PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
+
 add_executable(Qml_OverlayManagerLifetime Qml/tst_QmlOverlayManagerLifetime.cpp)
 target_link_libraries(Qml_OverlayManagerLifetime PRIVATE snaptray_qml Qt6::Quick Qt6::Widgets)
 add_test(NAME Qml_OverlayManagerLifetime COMMAND Qml_OverlayManagerLifetime)
@@ -67,17 +219,49 @@ set_tests_properties(Qml_OverlayManagerLifetime PROPERTIES TIMEOUT 10 LABELS "in
 add_executable(Qml_WidthSectionQml Qml/tst_WidthSectionQml.cpp)
 target_link_libraries(Qml_WidthSectionQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 add_test(NAME Qml_WidthSectionQml COMMAND Qml_WidthSectionQml)
-set_tests_properties(Qml_WidthSectionQml PROPERTIES TIMEOUT 60 LABELS "unit")
+set_tests_properties(Qml_WidthSectionQml PROPERTIES
+    TIMEOUT 60
+    LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+if(TARGET Qt6::QOffscreenIntegrationPlugin)
+    # windeployqt normally deploys only qwindows beside the test binaries.
+    # Resolve the explicit offscreen backend from the configured Qt SDK even
+    # when that deployed directory contains a qt.conf with a local Prefix.
+    set_property(TEST Qml_WidthSectionQml APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
+endif()
 
-add_executable(Qml_FloatingSubToolbarAutoBlurHint Qml/tst_FloatingSubToolbarAutoBlurHint.cpp)
-target_link_libraries(Qml_FloatingSubToolbarAutoBlurHint PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
-add_test(NAME Qml_FloatingSubToolbarAutoBlurHint COMMAND Qml_FloatingSubToolbarAutoBlurHint)
-set_tests_properties(Qml_FloatingSubToolbarAutoBlurHint PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+add_executable(Qml_ToolOptionsAccessibility Qml/tst_ToolOptionsAccessibility.cpp)
+target_link_libraries(Qml_ToolOptionsAccessibility PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_ToolOptionsAccessibility COMMAND Qml_ToolOptionsAccessibility)
+set_tests_properties(Qml_ToolOptionsAccessibility PROPERTIES
+    TIMEOUT 60
+    LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+if(TARGET Qt6::QOffscreenIntegrationPlugin)
+    set_property(TEST Qml_ToolOptionsAccessibility APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
+endif()
 
-add_executable(Qml_FloatingSubToolbarMosaicHint Qml/tst_FloatingSubToolbarMosaicHint.cpp)
-target_link_libraries(Qml_FloatingSubToolbarMosaicHint PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
-add_test(NAME Qml_FloatingSubToolbarMosaicHint COMMAND Qml_FloatingSubToolbarMosaicHint)
-set_tests_properties(Qml_FloatingSubToolbarMosaicHint PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+add_executable(Qml_ColorPaletteSectionQml Qml/tst_ColorPaletteSectionQml.cpp)
+target_link_libraries(Qml_ColorPaletteSectionQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_ColorPaletteSectionQml COMMAND Qml_ColorPaletteSectionQml)
+set_tests_properties(Qml_ColorPaletteSectionQml PROPERTIES
+    TIMEOUT 60
+    LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+if(TARGET Qt6::QOffscreenIntegrationPlugin)
+    set_property(TEST Qml_ColorPaletteSectionQml APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
+endif()
+
+add_executable(Qml_FloatingSubToolbarTooltip Qml/tst_FloatingSubToolbarTooltip.cpp)
+target_link_libraries(Qml_FloatingSubToolbarTooltip PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_FloatingSubToolbarTooltip COMMAND Qml_FloatingSubToolbarTooltip)
+set_tests_properties(Qml_FloatingSubToolbarTooltip PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(Qml_SettingsWindowFeatureGating
     Qml/tst_SettingsWindowFeatureGating.cpp
@@ -85,6 +269,7 @@ add_executable(Qml_SettingsWindowFeatureGating
     ${CMAKE_SOURCE_DIR}/include/qml/SettingsBackend.h
 )
 target_link_libraries(Qml_SettingsWindowFeatureGating PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_SettingsWindowFeatureGating PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME Qml_SettingsWindowFeatureGating COMMAND Qml_SettingsWindowFeatureGating)
 set_tests_properties(Qml_SettingsWindowFeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
 
@@ -108,6 +293,77 @@ target_link_libraries(Qml_ScreenPickerViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_ScreenPickerViewModel COMMAND Qml_ScreenPickerViewModel)
 set_tests_properties(Qml_ScreenPickerViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_RecordingSession RecordingManager/tst_RecordingSession.cpp)
+target_link_libraries(RecordingManager_RecordingSession PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RecordingManager_RecordingSession COMMAND RecordingManager_RecordingSession)
+set_tests_properties(RecordingManager_RecordingSession PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_DiskSpaceGuard RecordingManager/tst_DiskSpaceGuard.cpp)
+target_link_libraries(RecordingManager_DiskSpaceGuard PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_DiskSpaceGuard COMMAND RecordingManager_DiskSpaceGuard)
+set_tests_properties(RecordingManager_DiskSpaceGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingHealth RecordingManager/tst_RecordingHealth.cpp)
+target_link_libraries(RecordingManager_RecordingHealth PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingHealth COMMAND RecordingManager_RecordingHealth)
+set_tests_properties(RecordingManager_RecordingHealth PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_SessionClock RecordingManager/tst_SessionClock.cpp)
+target_link_libraries(RecordingManager_SessionClock PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_SessionClock COMMAND RecordingManager_SessionClock)
+set_tests_properties(RecordingManager_SessionClock PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingSetup RecordingManager/tst_RecordingSetup.cpp)
+target_link_libraries(RecordingManager_RecordingSetup PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(RecordingManager_RecordingSetup PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME RecordingManager_RecordingSetup COMMAND RecordingManager_RecordingSetup)
+set_tests_properties(RecordingManager_RecordingSetup PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_RecordingPreviewCrop Qml/tst_RecordingPreviewCrop.cpp)
+target_link_libraries(Qml_RecordingPreviewCrop PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME Qml_RecordingPreviewCrop COMMAND Qml_RecordingPreviewCrop)
+set_tests_properties(Qml_RecordingPreviewCrop PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_RecordingPreviewZoom Qml/tst_RecordingPreviewZoom.cpp)
+target_link_libraries(Qml_RecordingPreviewZoom PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingPreviewZoom PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingPreviewZoom COMMAND Qml_RecordingPreviewZoom)
+set_tests_properties(Qml_RecordingPreviewZoom PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(Qml_RecordingPreviewPointer Qml/tst_RecordingPreviewPointer.cpp)
+target_link_libraries(Qml_RecordingPreviewPointer PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingPreviewPointer PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingPreviewPointer COMMAND Qml_RecordingPreviewPointer)
+set_tests_properties(Qml_RecordingPreviewPointer PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(Qml_RecordingPreviewMp4Options Qml/tst_RecordingPreviewMp4Options.cpp)
+target_link_libraries(Qml_RecordingPreviewMp4Options PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingPreviewMp4Options PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingPreviewMp4Options COMMAND Qml_RecordingPreviewMp4Options)
+set_tests_properties(Qml_RecordingPreviewMp4Options PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(Qml_RecordingPreviewDiscard Qml/tst_RecordingPreviewDiscard.cpp)
+target_link_libraries(Qml_RecordingPreviewDiscard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingPreviewDiscard PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingPreviewDiscard COMMAND Qml_RecordingPreviewDiscard)
+set_tests_properties(Qml_RecordingPreviewDiscard PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(Qml_RecordingCropOverlay Qml/tst_RecordingCropOverlay.cpp)
+target_link_libraries(Qml_RecordingCropOverlay PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingCropOverlay PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingCropOverlay COMMAND Qml_RecordingCropOverlay)
+# These suites drive many full preview/editor windows. Pin the software scene graph:
+# on a GPU desktop session (GNOME X11, NVIDIA) every OpenGL swap of these test
+# windows can block for about a second, which pushes both suites past their
+# timeouts (#264).
+set_tests_properties(Qml_RecordingCropOverlay PROPERTIES TIMEOUT 60 LABELS "unit;integration"
+    ENVIRONMENT "QT_QUICK_BACKEND=software")
+if(WIN32)
+    # The full 84-case overlay suite takes about 75 s on the Windows 10 Debug
+    # acceptance machine (#210); keep every case within the CTest time budget.
+    set_tests_properties(Qml_RecordingCropOverlay PROPERTIES TIMEOUT 120)
+endif()
+
 add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
 target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)
 target_compile_definitions(Qml_WindowPolicyGuard PRIVATE
@@ -121,9 +377,163 @@ add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
 set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Platform_Capabilities Platform/tst_PlatformCapabilities.cpp)
+if(WIN32)
+    add_executable(Platform_WindowCaptureAffinity Platform/tst_WindowCaptureAffinity.cpp)
+    target_include_directories(Platform_WindowCaptureAffinity PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(Platform_WindowCaptureAffinity PRIVATE snaptray_platform Qt6::Quick Qt6::Test)
+    add_test(NAME Platform_WindowCaptureAffinity COMMAND Platform_WindowCaptureAffinity)
+    set_tests_properties(Platform_WindowCaptureAffinity PROPERTIES TIMEOUT 30 LABELS "integration")
+endif()
+add_executable(Platform_LinuxClipboardOwner Platform/tst_LinuxClipboardOwner.cpp)
+target_link_libraries(Platform_LinuxClipboardOwner PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Platform_LinuxClipboardOwner COMMAND Platform_LinuxClipboardOwner)
+set_tests_properties(Platform_LinuxClipboardOwner PROPERTIES TIMEOUT 45 LABELS "unit;integration")
+if(UNIX AND NOT APPLE)
+    add_executable(Platform_LinuxClipboardProbe Platform/LinuxClipboardProbe.cpp)
+    target_link_libraries(Platform_LinuxClipboardProbe PRIVATE snaptray_platform Qt6::Gui)
+    target_compile_definitions(Platform_LinuxClipboardOwner PRIVATE
+        CLIPBOARD_PROBE_PATH="$<TARGET_FILE:Platform_LinuxClipboardProbe>")
+    add_dependencies(Platform_LinuxClipboardOwner Platform_LinuxClipboardProbe)
+endif()
+add_executable(CLI_MacCLIInstaller CLI/tst_MacCLIInstaller.cpp)
+target_link_libraries(CLI_MacCLIInstaller PRIVATE snaptray_core Qt6::Test)
+add_test(NAME CLI_MacCLIInstaller COMMAND CLI_MacCLIInstaller)
+set_tests_properties(CLI_MacCLIInstaller PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+add_executable(RecordingManager_FrameRateUpdateState RecordingManager/tst_FrameRateUpdateState.cpp)
+target_link_libraries(RecordingManager_FrameRateUpdateState PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_FrameRateUpdateState COMMAND RecordingManager_FrameRateUpdateState)
+set_tests_properties(RecordingManager_FrameRateUpdateState PROPERTIES TIMEOUT 30 LABELS "unit")
+add_executable(RecordingManager_WindowTimeline RecordingManager/tst_WindowTimeline.cpp)
+target_link_libraries(RecordingManager_WindowTimeline PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_WindowTimeline COMMAND RecordingManager_WindowTimeline)
+set_tests_properties(RecordingManager_WindowTimeline PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(RecordingManager_WindowFrameMapping RecordingManager/tst_WindowFrameMapping.cpp)
+target_link_libraries(RecordingManager_WindowFrameMapping PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_WindowFrameMapping COMMAND RecordingManager_WindowFrameMapping)
+set_tests_properties(RecordingManager_WindowFrameMapping PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_WindowTimelineRecorder RecordingManager/tst_WindowTimelineRecorder.cpp)
+target_link_libraries(RecordingManager_WindowTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_WindowTimelineRecorder COMMAND RecordingManager_WindowTimelineRecorder)
+set_tests_properties(RecordingManager_WindowTimelineRecorder PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_CursorTimeline RecordingManager/tst_CursorTimeline.cpp)
+target_link_libraries(RecordingManager_CursorTimeline PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_CursorTimeline COMMAND RecordingManager_CursorTimeline)
+set_tests_properties(RecordingManager_CursorTimeline PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RedactionTrack RecordingManager/tst_RedactionTrack.cpp)
+target_link_libraries(RecordingManager_RedactionTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RedactionTrack COMMAND RecordingManager_RedactionTrack)
+set_tests_properties(RecordingManager_RedactionTrack PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_ZoomTrack RecordingManager/tst_ZoomTrack.cpp)
+target_link_libraries(RecordingManager_ZoomTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_ZoomTrack COMMAND RecordingManager_ZoomTrack)
+set_tests_properties(RecordingManager_ZoomTrack PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_CursorEffects RecordingManager/tst_CursorEffects.cpp)
+target_link_libraries(RecordingManager_CursorEffects PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_CursorEffects COMMAND RecordingManager_CursorEffects)
+set_tests_properties(RecordingManager_CursorEffects PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_Mp4ExportOptions RecordingManager/tst_Mp4ExportOptions.cpp)
+target_link_libraries(RecordingManager_Mp4ExportOptions PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_Mp4ExportOptions COMMAND RecordingManager_Mp4ExportOptions)
+set_tests_properties(RecordingManager_Mp4ExportOptions PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingAppearance RecordingManager/tst_RecordingAppearance.cpp)
+target_link_libraries(RecordingManager_RecordingAppearance PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingAppearance COMMAND RecordingManager_RecordingAppearance)
+set_tests_properties(RecordingManager_RecordingAppearance PROPERTIES TIMEOUT 120 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_TimelineEdit RecordingManager/tst_TimelineEdit.cpp)
+target_link_libraries(RecordingManager_TimelineEdit PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_TimelineEdit COMMAND RecordingManager_TimelineEdit)
+set_tests_properties(RecordingManager_TimelineEdit PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_KeyTimeline RecordingManager/tst_KeyTimeline.cpp)
+target_link_libraries(RecordingManager_KeyTimeline PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_KeyTimeline COMMAND RecordingManager_KeyTimeline)
+set_tests_properties(RecordingManager_KeyTimeline PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_OverlayTrack RecordingManager/tst_OverlayTrack.cpp)
+target_link_libraries(RecordingManager_OverlayTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_OverlayTrack COMMAND RecordingManager_OverlayTrack)
+set_tests_properties(RecordingManager_OverlayTrack PROPERTIES TIMEOUT 60 LABELS "unit")
+if(UNIX AND NOT APPLE)
+    set_tests_properties(RecordingManager_OverlayTrack PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+# Windows/macOS use their native platform font databases. In particular, the
+# Windows offscreen plugin looks for fonts in the SDK, where Qt no longer
+# ships fonts. This image-only test creates no windows.
+
+add_executable(RecordingManager_AudioTracks RecordingManager/tst_AudioTracks.cpp)
+target_link_libraries(RecordingManager_AudioTracks PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_AudioTracks COMMAND RecordingManager_AudioTracks)
+set_tests_properties(RecordingManager_AudioTracks PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingArea RecordingManager/tst_RecordingArea.cpp)
+target_link_libraries(RecordingManager_RecordingArea PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingArea COMMAND RecordingManager_RecordingArea)
+set_tests_properties(RecordingManager_RecordingArea PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_RecordingProject RecordingManager/tst_RecordingProject.cpp)
+target_link_libraries(RecordingManager_RecordingProject PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RecordingProject COMMAND RecordingManager_RecordingProject)
+set_tests_properties(RecordingManager_RecordingProject PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
+target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_CursorTimelineRecorder COMMAND RecordingManager_CursorTimelineRecorder)
+set_tests_properties(RecordingManager_CursorTimelineRecorder PROPERTIES TIMEOUT 60 LABELS "unit")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND X11_XTest_FOUND AND X11_Xfixes_FOUND AND X11_Xi_FOUND)
+    # The real X11 probe, driven through XTest on its own Xvfb display.
+    target_sources(RecordingManager_CursorTimelineRecorder PRIVATE RecordingManager/x11_pointer_helper.cpp)
+    target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE X11::X11 X11::Xtst)
+    target_compile_definitions(RecordingManager_CursorTimelineRecorder PRIVATE SNAPTRAY_TEST_HAS_XTEST)
+    add_test(NAME RecordingManager_X11CursorProbe
+        COMMAND xvfb-run -a -s "-screen 0 800x600x24"
+            ${CMAKE_COMMAND} -E env --unset=WAYLAND_DISPLAY --unset=WAYLAND_SOCKET
+            QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
+            $<TARGET_FILE:RecordingManager_CursorTimelineRecorder> x11ProbeOnIsolatedDisplay x11RecorderKeepsQueuedClicks x11QueuedClickKeepsItsDuration x11ClicksDuringAnotherPointerGrab)
+    set_tests_properties(RecordingManager_X11CursorProbe PROPERTIES TIMEOUT 60 LABELS "integration")
+    # The real X11 key probe (#187): typed text follows the keyboard state.
+    add_executable(RecordingManager_X11KeyProbe RecordingManager/tst_X11KeyProbe.cpp)
+    target_link_libraries(RecordingManager_X11KeyProbe PRIVATE snaptray_platform X11::X11 X11::Xtst Qt6::Test)
+    add_test(NAME RecordingManager_X11KeyProbe
+        COMMAND xvfb-run -a -s "-screen 0 800x600x24"
+            ${CMAKE_COMMAND} -E env --unset=WAYLAND_DISPLAY --unset=WAYLAND_SOCKET
+            QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
+            $<TARGET_FILE:RecordingManager_X11KeyProbe>)
+    set_tests_properties(RecordingManager_X11KeyProbe PROPERTIES TIMEOUT 60 LABELS "integration")
+endif()
+
+add_executable(RecordingManager_WindowTimelineSidecar RecordingManager/tst_WindowTimelineSidecar.cpp)
+target_link_libraries(RecordingManager_WindowTimelineSidecar PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_WindowTimelineSidecar COMMAND RecordingManager_WindowTimelineSidecar)
+set_tests_properties(RecordingManager_WindowTimelineSidecar PROPERTIES TIMEOUT 60 LABELS "unit")
 target_link_libraries(Platform_Capabilities PRIVATE snaptray_core Qt6::Test)
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_compile_definitions(Platform_Capabilities PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
+endif()
 add_test(NAME Platform_Capabilities COMMAND Platform_Capabilities)
 set_tests_properties(Platform_Capabilities PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# Scroll capture core (#265)
+add_executable(ScrollCapture_RowHashShiftEstimator ScrollCapture/tst_RowHashShiftEstimator.cpp)
+target_link_libraries(ScrollCapture_RowHashShiftEstimator PRIVATE snaptray_core Qt6::Test)
+add_test(NAME ScrollCapture_RowHashShiftEstimator COMMAND ScrollCapture_RowHashShiftEstimator)
+set_tests_properties(ScrollCapture_RowHashShiftEstimator PROPERTIES TIMEOUT 30 LABELS "unit")
+add_executable(ScrollCapture_FrameSettleDetector ScrollCapture/tst_FrameSettleDetector.cpp)
+target_link_libraries(ScrollCapture_FrameSettleDetector PRIVATE snaptray_core Qt6::Test)
+add_test(NAME ScrollCapture_FrameSettleDetector COMMAND ScrollCapture_FrameSettleDetector)
+set_tests_properties(ScrollCapture_FrameSettleDetector PROPERTIES TIMEOUT 30 LABELS "unit")
 
 if(UNIX AND NOT APPLE)
     add_executable(Platform_LinuxDesktopEnvironment Platform/tst_LinuxDesktopEnvironment.cpp)
@@ -133,6 +543,21 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if(APPLE)
+    add_executable(Platform_MacTrayActivationGuard Platform/tst_MacTrayActivationGuard.mm)
+    target_link_libraries(Platform_MacTrayActivationGuard PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_MacTrayActivationGuard COMMAND Platform_MacTrayActivationGuard)
+    set_tests_properties(Platform_MacTrayActivationGuard PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+
+    add_executable(Platform_MacTrayAccessibility Platform/tst_MacTrayAccessibility.mm)
+    target_link_libraries(Platform_MacTrayAccessibility PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_MacTrayAccessibility COMMAND Platform_MacTrayAccessibility)
+    set_tests_properties(Platform_MacTrayAccessibility PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+
+    add_executable(Platform_MacDockPresence Platform/tst_MacDockPresence.mm)
+    target_link_libraries(Platform_MacDockPresence PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_MacDockPresence COMMAND Platform_MacDockPresence)
+    set_tests_properties(Platform_MacDockPresence PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+
     add_executable(Platform_GuiClipboardOrdering Platform/tst_GuiClipboardOrdering.mm)
     target_link_libraries(Platform_GuiClipboardOrdering PRIVATE snaptray_platform Qt6::Test)
     add_test(NAME Platform_GuiClipboardOrdering COMMAND Platform_GuiClipboardOrdering)
@@ -151,10 +576,54 @@ if(APPLE)
     set_tests_properties(Qml_FloatingOverlayCaptureExclusion PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 endif()
 
+# The sync matrix reports an explicit skip where decoded-media analysis is unavailable.
+if(APPLE OR WIN32)
+    add_executable(Encoding_SyncMatrix Encoding/tst_SyncMatrix.cpp)
+    target_link_libraries(Encoding_SyncMatrix PRIVATE Qt6::Test)
+    add_test(NAME Encoding_SyncMatrix COMMAND Encoding_SyncMatrix)
+    set_tests_properties(Encoding_SyncMatrix PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
+endif()
+
+# Recording preview export (native encoder + transcoder): every recording platform.
+if(APPLE OR WIN32 OR SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_executable(Qml_RecordingPreviewExport Qml/tst_RecordingPreviewExport.cpp)
+    target_link_libraries(Qml_RecordingPreviewExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+    add_test(NAME Qml_RecordingPreviewExport COMMAND Qml_RecordingPreviewExport)
+    set_tests_properties(Qml_RecordingPreviewExport PROPERTIES TIMEOUT 120 LABELS "integration")
+    add_executable(Qml_RecordingPreviewAppearance Qml/tst_RecordingPreviewAppearance.cpp)
+    target_link_libraries(Qml_RecordingPreviewAppearance PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+    target_sources(Qml_RecordingPreviewAppearance PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+    add_test(NAME Qml_RecordingPreviewAppearance COMMAND Qml_RecordingPreviewAppearance)
+    set_tests_properties(Qml_RecordingPreviewAppearance PROPERTIES TIMEOUT 60 LABELS "integration")
+    add_executable(Qml_RecordingEditor Qml/tst_RecordingEditor.cpp)
+    target_link_libraries(Qml_RecordingEditor PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+    target_sources(Qml_RecordingEditor PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+    add_test(NAME Qml_RecordingEditor COMMAND Qml_RecordingEditor)
+    # Software scene graph for the same reason as Qml_RecordingCropOverlay (#264).
+    set_tests_properties(Qml_RecordingEditor PROPERTIES TIMEOUT 120 LABELS "integration"
+        ENVIRONMENT "QT_QUICK_BACKEND=software")
+    add_executable(Qml_RecordingPreviewTimeline Qml/tst_RecordingPreviewTimeline.cpp)
+    target_link_libraries(Qml_RecordingPreviewTimeline PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+    target_sources(Qml_RecordingPreviewTimeline PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+    add_test(NAME Qml_RecordingPreviewTimeline COMMAND Qml_RecordingPreviewTimeline)
+    set_tests_properties(Qml_RecordingPreviewTimeline PROPERTIES TIMEOUT 60 LABELS "integration")
+    add_executable(Qml_RecordingPreviewMasks Qml/tst_RecordingPreviewMasks.cpp)
+    target_link_libraries(Qml_RecordingPreviewMasks PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+    target_sources(Qml_RecordingPreviewMasks PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+    add_test(NAME Qml_RecordingPreviewMasks COMMAND Qml_RecordingPreviewMasks)
+    set_tests_properties(Qml_RecordingPreviewMasks PROPERTIES TIMEOUT 120 LABELS "integration"
+        ENVIRONMENT "QT_QUICK_BACKEND=software")
+endif()
+
 add_executable(Utils_ScreenCaptureRegionUtils Utils/tst_ScreenCaptureRegionUtils.cpp)
 target_link_libraries(Utils_ScreenCaptureRegionUtils PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Utils_ScreenCaptureRegionUtils COMMAND Utils_ScreenCaptureRegionUtils)
 set_tests_properties(Utils_ScreenCaptureRegionUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Utils_VideoCropGeometry Utils/tst_VideoCropGeometry.cpp)
+target_link_libraries(Utils_VideoCropGeometry PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_VideoCropGeometry COMMAND Utils_VideoCropGeometry)
+set_tests_properties(Utils_VideoCropGeometry PROPERTIES TIMEOUT 60 LABELS "unit")
 
 set(APP_MainApplicationTrayMenu_SOURCES ${APP_SOURCES})
 list(FILTER APP_MainApplicationTrayMenu_SOURCES EXCLUDE REGEX "^src/main\\.cpp$")
@@ -194,6 +663,54 @@ add_dependencies(App_MainApplicationTrayMenu SnapTray_lrelease)
 add_test(NAME App_MainApplicationTrayMenu COMMAND App_MainApplicationTrayMenu)
 set_tests_properties(App_MainApplicationTrayMenu PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(App_FullScreenCapture
+    App/tst_FullScreenCapture.cpp
+    ${CMAKE_SOURCE_DIR}/src/CaptureManager.cpp
+    ${CMAKE_SOURCE_DIR}/include/CaptureManager.h
+)
+target_include_directories(App_FullScreenCapture PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+    ${CMAKE_BINARY_DIR}
+)
+target_link_libraries(App_FullScreenCapture PRIVATE
+    snaptray_ui
+    snaptray_platform
+    snaptray_algorithms
+    snaptray_core
+    snaptray_qmlplugin
+    Qt6::Test
+)
+add_test(NAME App_FullScreenCapture COMMAND App_FullScreenCapture)
+set_tests_properties(App_FullScreenCapture PROPERTIES TIMEOUT 60 LABELS "unit")
+if(TARGET Qt6::QOffscreenIntegrationPlugin)
+    set_property(TEST App_FullScreenCapture APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
+endif()
+
+add_executable(App_DelayedCapture
+    App/tst_DelayedCapture.cpp
+    ${CMAKE_SOURCE_DIR}/src/CaptureManager.cpp
+    ${CMAKE_SOURCE_DIR}/include/CaptureManager.h
+)
+target_include_directories(App_DelayedCapture PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+    ${CMAKE_BINARY_DIR}
+)
+target_link_libraries(App_DelayedCapture PRIVATE
+    snaptray_ui
+    snaptray_platform
+    snaptray_algorithms
+    snaptray_core
+    snaptray_qmlplugin
+    Qt6::Test
+)
+add_test(NAME App_DelayedCapture COMMAND App_DelayedCapture)
+set_tests_properties(App_DelayedCapture PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
     add_executable(Qml_QtQuickBackendWin Qml/tst_QtQuickBackendWin.cpp)
     target_link_libraries(Qml_QtQuickBackendWin PRIVATE snaptray_platform Qt6::Qml Qt6::Quick Qt6::Test)
@@ -211,9 +728,35 @@ endif()
 # ============================================================================
 
 add_executable(PinWindow_Transform PinWindow/tst_Transform.cpp)
-target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME PinWindow_Transform COMMAND PinWindow_Transform)
 set_tests_properties(PinWindow_Transform PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(PinWindow_PinHoverBar PinWindow/tst_PinHoverBar.cpp)
+target_link_libraries(PinWindow_PinHoverBar PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(PinWindow_PinHoverBar PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME PinWindow_PinHoverBar COMMAND PinWindow_PinHoverBar)
+set_tests_properties(PinWindow_PinHoverBar PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(PinWindow_PinHoverIntegration PinWindow/tst_PinHoverIntegration.cpp)
+target_link_libraries(PinWindow_PinHoverIntegration PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(PinWindow_PinHoverIntegration PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(PinWindow_PinHoverIntegration PRIVATE X11::X11)
+endif()
+add_test(NAME PinWindow_PinHoverIntegration COMMAND PinWindow_PinHoverIntegration)
+set_tests_properties(PinWindow_PinHoverIntegration PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(PinWindow_ContextMenuLayout PinWindow/tst_ContextMenuLayout.cpp)
+target_link_libraries(PinWindow_ContextMenuLayout PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME PinWindow_ContextMenuLayout COMMAND PinWindow_ContextMenuLayout)
+set_tests_properties(PinWindow_ContextMenuLayout PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_Evidence PinWindow/tst_PinWindowEvidence.cpp)
+target_link_libraries(PinWindow_Evidence PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(PinWindow_Evidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME PinWindow_Evidence COMMAND PinWindow_Evidence)
+set_tests_properties(PinWindow_Evidence PROPERTIES TIMEOUT 120 LABELS "unit")
 
 add_executable(PinWindow_WatermarkRenderer PinWindow/tst_WatermarkRenderer.cpp)
 target_link_libraries(PinWindow_WatermarkRenderer PRIVATE snaptray_ui Qt6::Test)
@@ -244,6 +787,33 @@ add_executable(PinWindow_HistoryModel PinWindow/tst_HistoryModel.cpp)
 target_link_libraries(PinWindow_HistoryModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_HistoryModel COMMAND PinWindow_HistoryModel)
 set_tests_properties(PinWindow_HistoryModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_LibraryModel Qml/tst_LibraryModel.cpp)
+target_link_libraries(Qml_LibraryModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_LibraryModel COMMAND Qml_LibraryModel)
+set_tests_properties(Qml_LibraryModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_LibraryWindow Qml/tst_LibraryWindow.cpp)
+target_link_libraries(Qml_LibraryWindow PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_LibraryWindow PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_LibraryWindow COMMAND Qml_LibraryWindow)
+set_tests_properties(Qml_LibraryWindow PROPERTIES TIMEOUT 120 LABELS "unit;integration")
+
+add_executable(Qml_LibraryEvidence Qml/tst_LibraryEvidence.cpp)
+target_link_libraries(Qml_LibraryEvidence PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_LibraryEvidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_LibraryEvidence COMMAND Qml_LibraryEvidence)
+set_tests_properties(Qml_LibraryEvidence PROPERTIES TIMEOUT 120 LABELS "unit")
+
+add_executable(Qml_SettingsEvidence
+    Qml/tst_SettingsEvidence.cpp
+    ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp
+    ${CMAKE_SOURCE_DIR}/include/qml/SettingsBackend.h
+)
+target_link_libraries(Qml_SettingsEvidence PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_SettingsEvidence PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_SettingsEvidence COMMAND Qml_SettingsEvidence)
+set_tests_properties(Qml_SettingsEvidence PROPERTIES TIMEOUT 120 LABELS "unit")
 
 add_executable(PinWindow_HistoryRecorder PinWindow/tst_HistoryRecorder.cpp)
 target_link_libraries(PinWindow_HistoryRecorder PRIVATE snaptray_ui Qt6::Test)
@@ -291,6 +861,9 @@ set_tests_properties(ScreenCanvas_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;i
 
 add_executable(ScreenCanvas_Placement ScreenCanvas/tst_Placement.cpp)
 target_link_libraries(ScreenCanvas_Placement PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(ScreenCanvas_Placement PRIVATE X11::X11 X11::Xext)
+endif()
 add_test(NAME ScreenCanvas_Placement COMMAND ScreenCanvas_Placement)
 set_tests_properties(ScreenCanvas_Placement PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
@@ -305,7 +878,7 @@ add_test(NAME ScreenCanvas_CopyExport COMMAND ScreenCanvas_CopyExport)
 set_tests_properties(ScreenCanvas_CopyExport PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(ScreenCanvas_AnnotationRenderHelper ScreenCanvas/tst_AnnotationRenderHelper.cpp)
-target_link_libraries(ScreenCanvas_AnnotationRenderHelper PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(ScreenCanvas_AnnotationRenderHelper PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 target_include_directories(ScreenCanvas_AnnotationRenderHelper PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_test(NAME ScreenCanvas_AnnotationRenderHelper COMMAND ScreenCanvas_AnnotationRenderHelper)
 set_tests_properties(ScreenCanvas_AnnotationRenderHelper PROPERTIES TIMEOUT 60 LABELS "unit")
@@ -331,6 +904,13 @@ target_compile_definitions(RegionSelector_CaptureShortcutHintsOverlay PRIVATE
 add_dependencies(RegionSelector_CaptureShortcutHintsOverlay SnapTray_lrelease)
 add_test(NAME RegionSelector_CaptureShortcutHintsOverlay COMMAND RegionSelector_CaptureShortcutHintsOverlay)
 set_tests_properties(RegionSelector_CaptureShortcutHintsOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_CaptureChromeDirtyRegionPlanner
+    RegionSelector/tst_CaptureChromeDirtyRegionPlanner.cpp
+)
+target_link_libraries(RegionSelector_CaptureChromeDirtyRegionPlanner PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_CaptureChromeDirtyRegionPlanner COMMAND RegionSelector_CaptureChromeDirtyRegionPlanner)
+set_tests_properties(RegionSelector_CaptureChromeDirtyRegionPlanner PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_RegionPainterChrome RegionSelector/tst_RegionPainterChrome.cpp)
 target_link_libraries(RegionSelector_RegionPainterChrome PRIVATE snaptray_ui Qt6::Test)
@@ -408,6 +988,11 @@ target_link_libraries(RegionSelector_MultiRegionReplaceFlow PRIVATE snaptray_ui 
 add_test(NAME RegionSelector_MultiRegionReplaceFlow COMMAND RegionSelector_MultiRegionReplaceFlow)
 set_tests_properties(RegionSelector_MultiRegionReplaceFlow PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_ToolbarState RegionSelector/tst_ToolbarState.cpp)
+target_link_libraries(RegionSelector_ToolbarState PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_ToolbarState COMMAND RegionSelector_ToolbarState)
+set_tests_properties(RegionSelector_ToolbarState PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RegionSelector_MultiRegionSubToolbar RegionSelector/tst_MultiRegionSubToolbar.cpp)
 target_link_libraries(RegionSelector_MultiRegionSubToolbar PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_MultiRegionSubToolbar COMMAND RegionSelector_MultiRegionSubToolbar)
@@ -435,6 +1020,7 @@ set_tests_properties(RegionSelector_RegionExportManager PROPERTIES TIMEOUT 60 LA
 
 add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
 target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+target_sources(RegionSelector_StyleSync PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
 set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
@@ -452,29 +1038,129 @@ target_link_libraries(Encoding_EncoderFactory PRIVATE snaptray_platform Qt6::Tes
 add_test(NAME Encoding_EncoderFactory COMMAND Encoding_EncoderFactory)
 set_tests_properties(Encoding_EncoderFactory PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
+add_executable(Encoding_WebPAnimEncoder Encoding/tst_WebPAnimEncoder.cpp)
+target_link_libraries(Encoding_WebPAnimEncoder PRIVATE snaptray_platform webpdemux Qt6::Test)
+add_test(NAME Encoding_WebPAnimEncoder COMMAND Encoding_WebPAnimEncoder)
+set_tests_properties(Encoding_WebPAnimEncoder PROPERTIES TIMEOUT 60 LABELS "unit;encoding")
+
+add_executable(Encoding_VideoBitrate Encoding/tst_VideoBitrate.cpp)
+target_include_directories(Encoding_VideoBitrate PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Encoding_VideoBitrate PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME Encoding_VideoBitrate COMMAND Encoding_VideoBitrate)
+set_tests_properties(Encoding_VideoBitrate PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Encoding_IntermediateQuality Encoding/tst_IntermediateQuality.cpp)
+target_include_directories(Encoding_IntermediateQuality PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Encoding_IntermediateQuality PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME Encoding_IntermediateQuality COMMAND Encoding_IntermediateQuality)
+set_tests_properties(Encoding_IntermediateQuality PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Encoding_EncodingWorker Encoding/tst_EncodingWorker.cpp)
 target_link_libraries(Encoding_EncodingWorker PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Encoding_EncodingWorker COMMAND Encoding_EncodingWorker)
 set_tests_properties(Encoding_EncodingWorker PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(Video_VideoTrimmerSafety Video/tst_VideoTrimmerSafety.cpp)
-target_compile_definitions(Video_VideoTrimmerSafety PRIVATE
-    VIDEO_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src/video"
+add_executable(Video_RemixedAudioPreview Video/tst_RemixedAudioPreview.cpp ../src/video/RemixedAudioPreview.cpp)
+target_include_directories(Video_RemixedAudioPreview PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Video_RemixedAudioPreview PRIVATE Qt6::Gui Qt6::Test)
+add_test(NAME Video_RemixedAudioPreview COMMAND Video_RemixedAudioPreview)
+set_tests_properties(Video_RemixedAudioPreview PROPERTIES TIMEOUT 30 LABELS "unit")
+
+add_executable(Video_NativePcmReader Video/tst_NativePcmReader.cpp)
+target_include_directories(Video_NativePcmReader PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_NativePcmReader PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Video_NativePcmReader COMMAND Video_NativePcmReader)
+set_tests_properties(Video_NativePcmReader PROPERTIES TIMEOUT 30 LABELS "unit")
+
+add_executable(Video_SourceReaderMailbox Video/tst_SourceReaderMailbox.cpp)
+target_include_directories(Video_SourceReaderMailbox PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_SourceReaderMailbox PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME Video_SourceReaderMailbox COMMAND Video_SourceReaderMailbox)
+set_tests_properties(Video_SourceReaderMailbox PROPERTIES TIMEOUT 30 LABELS "unit")
+
+# Cross-platform transcoder contract. The test-only audio decoder is native per
+# platform; the stub (Linux, where the test skips) makes the audio contract fail
+# if a platform gains a transcoder without a decoder.
+add_executable(Video_VideoTranscoder
+    Video/tst_VideoTranscoder.cpp
+    $<IF:$<PLATFORM_ID:Darwin>,Video/VideoTranscoderTestAudio_mac.mm,$<IF:$<PLATFORM_ID:Windows>,Video/VideoTranscoderTestAudio_win.cpp,$<IF:$<BOOL:${SNAPTRAY_ENABLE_LINUX_RECORDING}>,Video/VideoTranscoderTestAudio_linux.cpp,Video/VideoTranscoderTestAudio_stub.cpp>>>
 )
-target_link_libraries(Video_VideoTrimmerSafety PRIVATE snaptray_platform Qt6::Test)
-add_test(NAME Video_VideoTrimmerSafety COMMAND Video_VideoTrimmerSafety)
-set_tests_properties(Video_VideoTrimmerSafety PROPERTIES TIMEOUT 30 LABELS "unit")
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_compile_definitions(Video_VideoTranscoder PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_link_libraries(Video_VideoTranscoder PRIVATE PkgConfig::SYSTEM_FFMPEG)
+endif()
+set_source_files_properties(Video/VideoTranscoderTestAudio_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+target_include_directories(Video_VideoTranscoder PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_VideoTranscoder PRIVATE snaptray_platform Qt6::Test
+    "$<$<PLATFORM_ID:Darwin>:-framework AVFoundation>" "$<$<PLATFORM_ID:Darwin>:-framework CoreMedia>"
+    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
+    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
+add_test(NAME Video_VideoTranscoder COMMAND Video_VideoTranscoder)
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_test(NAME Video_NativeEditExport COMMAND Video_VideoTranscoder)
+    add_test(NAME Video_NativeEditConcurrentAudio COMMAND Video_VideoTranscoder)
+    set_tests_properties(Video_NativeEditConcurrentAudio PROPERTIES TIMEOUT 120 LABELS "integration;slow"
+        ENVIRONMENT "SNAPTRAY_TEST_NATIVE_EDIT_EXPORT=1;SNAPTRAY_TEST_CONCURRENT_AUDIO=1;QT_QPA_PLATFORM=offscreen")
+    set_tests_properties(Video_NativeEditExport PROPERTIES TIMEOUT 120 LABELS "integration;slow"
+        ENVIRONMENT "SNAPTRAY_TEST_NATIVE_EDIT_EXPORT=1;QT_QPA_PLATFORM=offscreen")
+endif()
+
+set_tests_properties(Video_VideoTranscoder PROPERTIES TIMEOUT 120 LABELS "integration;slow")
+
+add_executable(Video_MediaFoundationFrameCopy Video/tst_MediaFoundationFrameCopy_win.cpp)
+target_include_directories(Video_MediaFoundationFrameCopy PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_MediaFoundationFrameCopy PRIVATE Qt6::Gui Qt6::Test
+    "$<$<PLATFORM_ID:Windows>:mfplat>" "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
+add_test(NAME Video_MediaFoundationFrameCopy COMMAND Video_MediaFoundationFrameCopy)
+set_tests_properties(Video_MediaFoundationFrameCopy PROPERTIES TIMEOUT 30 LABELS "unit")
 
 if(WIN32)
+
     add_executable(Video_MediaFoundationPipeline Video/tst_MediaFoundationPipeline.cpp)
     target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test)
     add_test(NAME Video_MediaFoundationPipeline COMMAND Video_MediaFoundationPipeline)
     set_tests_properties(Video_MediaFoundationPipeline PROPERTIES TIMEOUT 60 LABELS "integration;slow")
+
+    add_executable(Encoding_MediaFoundationEncoderIntermediate Encoding/tst_MediaFoundationEncoderIntermediate_win.cpp)
+    target_link_libraries(Encoding_MediaFoundationEncoderIntermediate PRIVATE snaptray_platform Qt6::Gui Qt6::Test mfreadwrite mfplat mfuuid ole32)
+    add_test(NAME Encoding_MediaFoundationEncoderIntermediate COMMAND Encoding_MediaFoundationEncoderIntermediate)
+    set_tests_properties(Encoding_MediaFoundationEncoderIntermediate PROPERTIES TIMEOUT 120 LABELS "integration;slow")
+
+    add_executable(Encoding_MediaFoundationEncoderGpu Encoding/tst_MediaFoundationEncoderGpu_win.cpp)
+    target_link_libraries(Encoding_MediaFoundationEncoderGpu PRIVATE snaptray_platform Qt6::Gui Qt6::Test d3d11 mfreadwrite mfplat mfuuid ole32)
+    add_test(NAME Encoding_MediaFoundationEncoderGpu COMMAND Encoding_MediaFoundationEncoderGpu)
+    set_tests_properties(Encoding_MediaFoundationEncoderGpu PROPERTIES TIMEOUT 120 LABELS "integration")
+endif()
+
+if(APPLE)
+    add_executable(Encoding_AVFoundationEncoderIntermediate Encoding/tst_AVFoundationEncoderIntermediate_mac.mm)
+    set_source_files_properties(Encoding/tst_AVFoundationEncoderIntermediate_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    target_link_libraries(Encoding_AVFoundationEncoderIntermediate PRIVATE snaptray_platform Qt6::Gui Qt6::Test
+        "-framework AVFoundation" "-framework CoreMedia")
+    add_test(NAME Encoding_AVFoundationEncoderIntermediate COMMAND Encoding_AVFoundationEncoderIntermediate)
+    set_tests_properties(Encoding_AVFoundationEncoderIntermediate PROPERTIES TIMEOUT 120 LABELS "integration;slow")
+
+    add_executable(Encoding_AVFoundationNativeFrames Encoding/tst_AVFoundationNativeFrames_mac.mm)
+    set_source_files_properties(Encoding/tst_AVFoundationNativeFrames_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    target_link_libraries(Encoding_AVFoundationNativeFrames PRIVATE snaptray_platform Qt6::Gui Qt6::Test
+        "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo")
+    add_test(NAME Encoding_AVFoundationNativeFrames COMMAND Encoding_AVFoundationNativeFrames)
+    set_tests_properties(Encoding_AVFoundationNativeFrames PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 endif()
 
 # ============================================================================
 # Detection Tests (link snaptray_algorithms)
 # ============================================================================
+
+add_executable(ColorWidgets_ColorWheel ColorWidgets/tst_ColorWheel.cpp)
+target_link_libraries(ColorWidgets_ColorWheel PRIVATE snaptray_colorwidgets Qt6::Test)
+add_test(NAME ColorWidgets_ColorWheel COMMAND ColorWidgets_ColorWheel)
+set_tests_properties(ColorWidgets_ColorWheel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(ColorWidgets_ColorDialog ColorWidgets/tst_ColorDialog.cpp)
+target_link_libraries(ColorWidgets_ColorDialog PRIVATE snaptray_colorwidgets Qt6::Test)
+add_test(NAME ColorWidgets_ColorDialog COMMAND ColorWidgets_ColorDialog)
+set_tests_properties(ColorWidgets_ColorDialog PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Detection_FaceDetector Detection/tst_FaceDetector.cpp)
 target_link_libraries(Detection_FaceDetector PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
@@ -493,6 +1179,18 @@ add_executable(Detection_TableDetector Detection/tst_TableDetector.cpp)
 target_link_libraries(Detection_TableDetector PRIVATE snaptray_algorithms Qt6::Test)
 add_test(NAME Detection_TableDetector COMMAND Detection_TableDetector)
 set_tests_properties(Detection_TableDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Detection_OCRImageUtils Detection/tst_OCRImageUtils.cpp)
+target_link_libraries(Detection_OCRImageUtils PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+add_test(NAME Detection_OCRImageUtils COMMAND Detection_OCRImageUtils)
+set_tests_properties(Detection_OCRImageUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
+if(APPLE OR WIN32)
+    add_executable(Detection_OCRCredentialGeometry Detection/tst_OCRCredentialGeometry.cpp)
+    target_link_libraries(Detection_OCRCredentialGeometry PRIVATE snaptray_platform snaptray_algorithms Qt6::Test)
+    add_test(NAME Detection_OCRCredentialGeometry COMMAND Detection_OCRCredentialGeometry)
+    set_tests_properties(Detection_OCRCredentialGeometry PROPERTIES TIMEOUT 120 LABELS "integration")
+endif()
 
 add_executable(Detection_CredentialDetector Detection/tst_CredentialDetector.cpp)
 target_link_libraries(Detection_CredentialDetector PRIVATE snaptray_algorithms Qt6::Test)
@@ -517,6 +1215,13 @@ target_link_libraries(Detection_WindowDetectorQueryMode PRIVATE snaptray_platfor
 add_test(NAME Detection_WindowDetectorQueryMode COMMAND Detection_WindowDetectorQueryMode)
 set_tests_properties(Detection_WindowDetectorQueryMode PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(WIN32)
+    add_executable(Detection_WindowDetectorMetadata Detection/tst_WindowDetectorMetadata_win.cpp)
+    target_link_libraries(Detection_WindowDetectorMetadata PRIVATE snaptray_platform Qt6::Test advapi32)
+    add_test(NAME Detection_WindowDetectorMetadata COMMAND Detection_WindowDetectorMetadata)
+    set_tests_properties(Detection_WindowDetectorMetadata PROPERTIES TIMEOUT 60 LABELS "unit")
+endif()
+
 # ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================
@@ -531,15 +1236,29 @@ target_link_libraries(Utils_FilenameTemplateEngine PRIVATE snaptray_core Qt6::Te
 add_test(NAME Utils_FilenameTemplateEngine COMMAND Utils_FilenameTemplateEngine)
 set_tests_properties(Utils_FilenameTemplateEngine PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_TextLayoutUtils Utils/tst_TextLayoutUtils.cpp)
+target_link_libraries(Utils_TextLayoutUtils PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_TextLayoutUtils COMMAND Utils_TextLayoutUtils)
+set_tests_properties(Utils_TextLayoutUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Utils_ImageSaveUtils Utils/tst_ImageSaveUtils.cpp)
 target_link_libraries(Utils_ImageSaveUtils PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Utils_ImageSaveUtils COMMAND Utils_ImageSaveUtils)
 set_tests_properties(Utils_ImageSaveUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_UniqueImageSaveProcess Utils/UniqueImageSaveProcess.cpp)
+target_link_libraries(Utils_UniqueImageSaveProcess PRIVATE snaptray_core)
+add_dependencies(Utils_ImageSaveUtils Utils_UniqueImageSaveProcess)
+
 add_executable(Utils_TrayTooltipFormatter Utils/tst_TrayTooltipFormatter.cpp)
 target_link_libraries(Utils_TrayTooltipFormatter PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Utils_TrayTooltipFormatter COMMAND Utils_TrayTooltipFormatter)
 set_tests_properties(Utils_TrayTooltipFormatter PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Utils_TrayRecordingIndicator Utils/tst_TrayRecordingIndicator.cpp)
+target_link_libraries(Utils_TrayRecordingIndicator PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Utils_TrayRecordingIndicator COMMAND Utils_TrayRecordingIndicator)
+set_tests_properties(Utils_TrayRecordingIndicator PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # CLI Tests
@@ -555,10 +1274,24 @@ target_link_libraries(CLI_FeatureGating PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_FeatureGating COMMAND CLI_FeatureGating)
 set_tests_properties(CLI_FeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(CLI_GuiCommandOptions CLI/tst_GuiCommandOptions.cpp)
+target_link_libraries(CLI_GuiCommandOptions PRIVATE snaptray_cli Qt6::Test)
+add_test(NAME CLI_GuiCommandOptions COMMAND CLI_GuiCommandOptions)
+set_tests_properties(CLI_GuiCommandOptions PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(CLI_CaptureOutputHelper CLI/tst_CaptureOutputHelper.cpp)
 target_link_libraries(CLI_CaptureOutputHelper PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_CaptureOutputHelper COMMAND CLI_CaptureOutputHelper)
 set_tests_properties(CLI_CaptureOutputHelper PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(CLI_PathPersistence
+    CLI/tst_PathPersistence.cpp
+    ${CMAKE_SOURCE_DIR}/src/platform/PathEnvUtils_win.cpp
+)
+target_include_directories(CLI_PathPersistence PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(CLI_PathPersistence PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME CLI_PathPersistence COMMAND CLI_PathPersistence)
+set_tests_properties(CLI_PathPersistence PROPERTIES TIMEOUT 60 LABELS "unit")
 
 if(WIN32)
     add_executable(CLI_WindowsPathEnv
@@ -611,8 +1344,19 @@ add_executable(IPC_SingleInstanceGuardRace
 add_dependencies(IPC_SingleInstanceGuardRace IPC_SingleInstanceGuardProbe)
 target_include_directories(IPC_SingleInstanceGuardRace PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(IPC_SingleInstanceGuardRace PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-add_test(NAME IPC_SingleInstanceGuardRace COMMAND IPC_SingleInstanceGuardRace)
-set_tests_properties(IPC_SingleInstanceGuardRace PROPERTIES TIMEOUT 60 LABELS "integration")
+add_test(
+    NAME IPC_SingleInstanceGuardConcurrentStart
+    COMMAND IPC_SingleInstanceGuardRace testConcurrentStart_ExactlyOnePrimary -o -,txt
+)
+add_test(
+    NAME IPC_SingleInstanceGuardActivation
+    COMMAND IPC_SingleInstanceGuardRace testSecondaryCanActivatePrimary -o -,txt
+)
+set_tests_properties(
+    IPC_SingleInstanceGuardConcurrentStart
+    IPC_SingleInstanceGuardActivation
+    PROPERTIES TIMEOUT 30 LABELS "integration"
+)
 
 # ============================================================================
 # Settings Tests (link snaptray_ui for full settings dependencies)
@@ -647,6 +1391,13 @@ add_executable(Settings_AutoLaunchSyncPolicy Settings/tst_AutoLaunchSyncPolicy.c
 target_link_libraries(Settings_AutoLaunchSyncPolicy PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Settings_AutoLaunchSyncPolicy COMMAND Settings_AutoLaunchSyncPolicy)
 set_tests_properties(Settings_AutoLaunchSyncPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
+
+if(UNIX AND NOT APPLE)
+    add_executable(Settings_AutoLaunchLinux Settings/tst_AutoLaunchLinux.cpp)
+    target_link_libraries(Settings_AutoLaunchLinux PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Settings_AutoLaunchLinux COMMAND Settings_AutoLaunchLinux)
+    set_tests_properties(Settings_AutoLaunchLinux PROPERTIES TIMEOUT 60 LABELS "integration")
+endif()
 
 add_executable(Settings_WindowsPrintScreenSettingsManager
     Settings/tst_WindowsPrintScreenSettingsManager.cpp
@@ -709,6 +1460,12 @@ set_tests_properties(Cursor_CursorQmlGuard PROPERTIES TIMEOUT 60 LABELS "unit")
 # Hotkey Tests (link snaptray_ui for HotkeyManager)
 # ============================================================================
 
+add_executable(Hotkey_HotkeyHoldFilter Hotkey/tst_HotkeyHoldFilter.cpp)
+target_include_directories(Hotkey_HotkeyHoldFilter PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Hotkey_HotkeyHoldFilter PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME Hotkey_HotkeyHoldFilter COMMAND Hotkey_HotkeyHoldFilter)
+set_tests_properties(Hotkey_HotkeyHoldFilter PROPERTIES TIMEOUT 30 LABELS "unit")
+
 add_executable(Hotkey_HotkeyManager Hotkey/tst_HotkeyManager.cpp)
 target_link_libraries(Hotkey_HotkeyManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Hotkey_HotkeyManager COMMAND Hotkey_HotkeyManager)
@@ -738,10 +1495,42 @@ target_link_libraries(Annotations_MarkerStroke PRIVATE snaptray_core Qt6::Widget
 add_test(NAME Annotations_MarkerStroke COMMAND Annotations_MarkerStroke)
 set_tests_properties(Annotations_MarkerStroke PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_MosaicStroke
+    Annotations/tst_MosaicStroke.cpp
+    Annotations/reference/LegacyMosaicStroke.cpp)
+target_link_libraries(Annotations_MosaicStroke PRIVATE snaptray_algorithms opencv_imgproc Qt6::Widgets Qt6::Test)
+target_include_directories(Annotations_MosaicStroke PRIVATE
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+)
+add_test(NAME Annotations_MosaicStroke COMMAND Annotations_MosaicStroke)
+set_tests_properties(Annotations_MosaicStroke PROPERTIES TIMEOUT 180 LABELS "unit")
+
+add_executable(Annotations_MosaicRectAnnotation Annotations/tst_MosaicRectAnnotation.cpp)
+target_link_libraries(Annotations_MosaicRectAnnotation PRIVATE snaptray_algorithms opencv_imgproc Qt6::Widgets Qt6::Test)
+target_include_directories(Annotations_MosaicRectAnnotation PRIVATE
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+)
+add_test(NAME Annotations_MosaicRectAnnotation COMMAND Annotations_MosaicRectAnnotation)
+set_tests_properties(Annotations_MosaicRectAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_PencilStroke Annotations/tst_PencilStroke.cpp)
 target_link_libraries(Annotations_PencilStroke PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_PencilStroke COMMAND Annotations_PencilStroke)
 set_tests_properties(Annotations_PencilStroke PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_StraightStrokes Tools/tst_StraightStrokes.cpp)
+target_link_libraries(Tools_StraightStrokes PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_StraightStrokes COMMAND Tools_StraightStrokes)
+set_tests_properties(Tools_StraightStrokes PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Detection_TextLineSnapper Detection/tst_TextLineSnapper.cpp)
+target_link_libraries(Detection_TextLineSnapper PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Detection_TextLineSnapper COMMAND Detection_TextLineSnapper)
+set_tests_properties(Detection_TextLineSnapper PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Tools_MarkerToolHandler Tools/handlers/tst_MarkerToolHandler.cpp)
 target_link_libraries(Tools_MarkerToolHandler PRIVATE snaptray_ui Qt6::Test)
@@ -753,10 +1542,35 @@ target_link_libraries(Annotations_PolylineAnnotation PRIVATE snaptray_core Qt6::
 add_test(NAME Annotations_PolylineAnnotation COMMAND Annotations_PolylineAnnotation)
 set_tests_properties(Annotations_PolylineAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_AnnotationStyle Annotations/tst_AnnotationStyle.cpp)
+target_link_libraries(Annotations_AnnotationStyle PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationStyle COMMAND Annotations_AnnotationStyle)
+set_tests_properties(Annotations_AnnotationStyle PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_AnnotationGeometry Annotations/tst_AnnotationGeometry.cpp)
+target_link_libraries(Annotations_AnnotationGeometry PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationGeometry COMMAND Annotations_AnnotationGeometry)
+set_tests_properties(Annotations_AnnotationGeometry PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_AnnotationStyleEditor Annotations/tst_AnnotationStyleEditor.cpp)
+target_link_libraries(Annotations_AnnotationStyleEditor PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationStyleEditor COMMAND Annotations_AnnotationStyleEditor)
+set_tests_properties(Annotations_AnnotationStyleEditor PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_ColorPickOverlay Annotations/tst_ColorPickOverlay.cpp)
+target_link_libraries(Annotations_ColorPickOverlay PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_ColorPickOverlay COMMAND Annotations_ColorPickOverlay)
+set_tests_properties(Annotations_ColorPickOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_AnnotationLayer Annotations/tst_AnnotationLayer.cpp)
 target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_AnnotationLayer COMMAND Annotations_AnnotationLayer)
 set_tests_properties(Annotations_AnnotationLayer PROPERTIES TIMEOUT 60 LABELS "unit")
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # The 432 painted-geometry cases take about five minutes with Qt's debug
+    # libraries. Keep every pixel/hit-test assertion and allow for slower hosts.
+    set_tests_properties(Annotations_AnnotationLayer PROPERTIES TIMEOUT 600 LABELS "unit;slow")
+endif()
 
 add_executable(Annotations_AnnotationContext Annotations/tst_AnnotationContext.cpp)
 target_link_libraries(Annotations_AnnotationContext PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
@@ -792,6 +1606,16 @@ target_link_libraries(Tools_ToolManagerEscape PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_ToolManagerEscape COMMAND Tools_ToolManagerEscape)
 set_tests_properties(Tools_ToolManagerEscape PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Tools_ToolWidthSlot Tools/tst_ToolWidthSlot.cpp)
+target_link_libraries(Tools_ToolWidthSlot PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Tools_ToolWidthSlot COMMAND Tools_ToolWidthSlot)
+set_tests_properties(Tools_ToolWidthSlot PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_ToolManagerWidthRouting Tools/tst_ToolManagerWidthRouting.cpp)
+target_link_libraries(Tools_ToolManagerWidthRouting PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_ToolManagerWidthRouting COMMAND Tools_ToolManagerWidthRouting)
+set_tests_properties(Tools_ToolManagerWidthRouting PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Tool Handler Tests (link snaptray_ui for tool handlers)
 # ============================================================================
@@ -820,6 +1644,11 @@ add_executable(Tools_EraserToolHandler Tools/handlers/tst_EraserToolHandler.cpp)
 target_link_libraries(Tools_EraserToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_EraserToolHandler COMMAND Tools_EraserToolHandler)
 set_tests_properties(Tools_EraserToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_EraserHostRouting Tools/tst_EraserHostRouting.cpp)
+target_link_libraries(Tools_EraserHostRouting PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME Tools_EraserHostRouting COMMAND Tools_EraserHostRouting)
+set_tests_properties(Tools_EraserHostRouting PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(Tools_TextToolHandler Tools/handlers/tst_TextToolHandler.cpp)
 target_link_libraries(Tools_TextToolHandler PRIVATE snaptray_ui Qt6::Test)
@@ -865,6 +1694,12 @@ target_link_libraries(RecordingManager_Lifecycle PRIVATE snaptray_ui snaptray_pl
 add_test(NAME RecordingManager_Lifecycle COMMAND RecordingManager_Lifecycle)
 set_tests_properties(RecordingManager_Lifecycle PROPERTIES TIMEOUT 60 LABELS "integration")
 
+add_executable(RecordingManager_Startup RecordingManager/tst_Startup.cpp)
+target_link_libraries(RecordingManager_Startup PRIVATE snaptray_ui snaptray_platform snaptray_qmlplugin Qt6::Test)
+target_sources(RecordingManager_Startup PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME RecordingManager_Startup COMMAND RecordingManager_Startup)
+set_tests_properties(RecordingManager_Startup PROPERTIES TIMEOUT 120 LABELS "unit")
+
 add_executable(RecordingManager_InitTask RecordingManager/tst_InitTask.cpp)
 target_compile_definitions(RecordingManager_InitTask PRIVATE
     CAPTURE_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src/capture"
@@ -888,6 +1723,14 @@ target_link_libraries(RecordingManager_RecordingFileUtils PRIVATE snaptray_ui Qt
 add_test(NAME RecordingManager_RecordingFileUtils COMMAND RecordingManager_RecordingFileUtils)
 set_tests_properties(RecordingManager_RecordingFileUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_TimestampedPcmMixer
+    RecordingManager/tst_TimestampedPcmMixer.cpp)
+target_link_libraries(RecordingManager_TimestampedPcmMixer PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_TimestampedPcmMixer
+    COMMAND RecordingManager_TimestampedPcmMixer)
+set_tests_properties(RecordingManager_TimestampedPcmMixer
+    PROPERTIES TIMEOUT 30 LABELS "unit")
+
 add_executable(RecordingManager_CoreAudioCaptureEngineSafety
     RecordingManager/tst_CoreAudioCaptureEngineSafety.cpp
 )
@@ -899,6 +1742,28 @@ add_test(NAME RecordingManager_CoreAudioCaptureEngineSafety
     COMMAND RecordingManager_CoreAudioCaptureEngineSafety)
 set_tests_properties(RecordingManager_CoreAudioCaptureEngineSafety
     PROPERTIES TIMEOUT 30 LABELS "unit")
+
+if(APPLE)
+add_executable(RecordingManager_CoreAudioRuntime RecordingManager/tst_CoreAudioRuntime.mm)
+set_source_files_properties(RecordingManager/tst_CoreAudioRuntime.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+target_link_libraries(RecordingManager_CoreAudioRuntime PRIVATE snaptray_platform Qt6::Test
+    "-framework AVFoundation" "-framework Foundation")
+add_test(NAME RecordingManager_CoreAudioRuntime COMMAND RecordingManager_CoreAudioRuntime)
+set_tests_properties(RecordingManager_CoreAudioRuntime PROPERTIES TIMEOUT 30 LABELS "unit")
+
+add_executable(RecordingManager_CaptureExclusion RecordingManager/tst_CaptureExclusion.mm)
+set_source_files_properties(RecordingManager/tst_CaptureExclusion.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+target_link_libraries(RecordingManager_CaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test
+    "-framework ScreenCaptureKit" "-framework Cocoa")
+target_sources(RecordingManager_CaptureExclusion PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME RecordingManager_CaptureExclusion COMMAND RecordingManager_CaptureExclusion)
+set_tests_properties(RecordingManager_CaptureExclusion PROPERTIES TIMEOUT 60 LABELS "integration")
+endif()
+
+add_executable(RecordingManager_CaptureFrameTiming RecordingManager/tst_CaptureFrameTiming.cpp)
+target_link_libraries(RecordingManager_CaptureFrameTiming PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_CaptureFrameTiming COMMAND RecordingManager_CaptureFrameTiming)
+set_tests_properties(RecordingManager_CaptureFrameTiming PROPERTIES TIMEOUT 30 LABELS "unit")
 
 if(WIN32)
 add_executable(RecordingManager_DXGICaptureEngineThreadLifecycle
@@ -912,6 +1777,19 @@ target_link_libraries(RecordingManager_DXGICaptureEngineThreadLifecycle PRIVATE
 add_test(NAME RecordingManager_DXGICaptureEngineThreadLifecycle
     COMMAND RecordingManager_DXGICaptureEngineThreadLifecycle)
 set_tests_properties(RecordingManager_DXGICaptureEngineThreadLifecycle
+    PROPERTIES TIMEOUT 120 LABELS "integration")
+
+add_executable(RecordingManager_WindowsGpuCapture
+    RecordingManager/tst_WindowsGpuCapture_win.cpp
+)
+target_link_libraries(RecordingManager_WindowsGpuCapture PRIVATE
+    snaptray_platform
+    Qt6::Gui
+    Qt6::Test
+)
+add_test(NAME RecordingManager_WindowsGpuCapture
+    COMMAND RecordingManager_WindowsGpuCapture)
+set_tests_properties(RecordingManager_WindowsGpuCapture
     PROPERTIES TIMEOUT 120 LABELS "integration")
 
 add_executable(RecordingManager_WASAPIAudioCaptureEngineThreadSafety
@@ -944,15 +1822,6 @@ add_test(NAME Beautify_Renderer COMMAND Beautify_Renderer)
 set_tests_properties(Beautify_Renderer PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
-# Share Tests
-# ============================================================================
-
-add_executable(Share_ShareUploadClient Share/tst_ShareUploadClient.cpp)
-target_link_libraries(Share_ShareUploadClient PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME Share_ShareUploadClient COMMAND Share_ShareUploadClient)
-set_tests_properties(Share_ShareUploadClient PROPERTIES TIMEOUT 60 LABELS "unit")
-
-# ============================================================================
 # Update Tests (link snaptray_ui for update components)
 # ============================================================================
 
@@ -971,6 +1840,13 @@ target_link_libraries(Update_InstallSourceDetector PRIVATE snaptray_ui Qt6::Test
 add_test(NAME Update_InstallSourceDetector COMMAND Update_InstallSourceDetector)
 set_tests_properties(Update_InstallSourceDetector PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(APPLE)
+    add_executable(Update_SparkleGentleReminders Update/tst_SparkleGentleReminders.mm)
+    target_link_libraries(Update_SparkleGentleReminders PRIVATE snaptray_ui Qt6::Test)
+    add_test(NAME Update_SparkleGentleReminders COMMAND Update_SparkleGentleReminders)
+    set_tests_properties(Update_SparkleGentleReminders PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+endif()
+
 add_test(
     NAME Update_GenerateAppcast
     COMMAND ${Python3_EXECUTABLE}
@@ -987,6 +1863,60 @@ add_test(
 )
 set_tests_properties(Update_RenderReleaseNotesPage PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(Update_AppImageUpdateService Update/tst_AppImageUpdateService.cpp)
+    target_link_libraries(Update_AppImageUpdateService PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+    add_test(NAME Update_AppImageUpdateService COMMAND Update_AppImageUpdateService)
+    set_tests_properties(Update_AppImageUpdateService PROPERTIES TIMEOUT 60 LABELS "unit")
+endif()
+
+add_executable(Detection_BoundarySnapIndex Detection/tst_BoundarySnapIndex.cpp)
+target_link_libraries(Detection_BoundarySnapIndex PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Detection_BoundarySnapIndex COMMAND Detection_BoundarySnapIndex)
+set_tests_properties(Detection_BoundarySnapIndex PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_BoundarySnap RegionSelector/tst_BoundarySnap.cpp)
+target_link_libraries(RegionSelector_BoundarySnap PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_BoundarySnap COMMAND RegionSelector_BoundarySnap)
+set_tests_properties(RegionSelector_BoundarySnap PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# Synthetic performance evidence: correctness gates CI; timing is reported.
+add_executable(RegionSelector_BoundarySnapBenchmark RegionSelector/benchmark_boundary_snap.cpp)
+target_link_libraries(RegionSelector_BoundarySnapBenchmark PRIVATE snaptray_ui)
+add_test(NAME RegionSelector_BoundarySnapMetrics
+    COMMAND RegionSelector_BoundarySnapBenchmark --report
+        "${CMAKE_BINARY_DIR}/boundary-snap-metrics.json")
+set_tests_properties(RegionSelector_BoundarySnapMetrics PROPERTIES
+    TIMEOUT 30 LABELS "boundary-snap-acceptance;performance"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_property(TEST Detection_BoundarySnapIndex RegionSelector_BoundarySnap
+    RegionSelector_RegionInputHandler RegionSelector_RegionPainterChrome
+    RegionSelector_HistoryReplay RegionSelector_SelectionStateManager
+    APPEND PROPERTY LABELS "boundary-snap-acceptance")
+
+
+# Keep this after all test executable declarations so newly added test targets
+# are isolated automatically as well.
+add_executable(Tools_AnnotationSnapEngine Tools/tst_AnnotationSnapEngine.cpp)
+target_link_libraries(Tools_AnnotationSnapEngine PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_AnnotationSnapEngine COMMAND Tools_AnnotationSnapEngine)
+set_tests_properties(Tools_AnnotationSnapEngine PROPERTIES TIMEOUT 60 LABELS "unit")
+
+get_property(snaptray_test_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+foreach(snaptray_test_target IN LISTS snaptray_test_targets)
+    get_target_property(snaptray_test_target_type ${snaptray_test_target} TYPE)
+    if(snaptray_test_target_type STREQUAL "EXECUTABLE")
+        target_sources(${snaptray_test_target} PRIVATE
+            $<TARGET_OBJECTS:snaptray_test_settings_isolation>
+        )
+    endif()
+endforeach()
+
+# Windows GUI executables otherwise send QtTest diagnostics to the debugger,
+# leaving failed CTest jobs with no assertion output in their CI logs.
+get_property(snaptray_registered_tests DIRECTORY PROPERTY TESTS)
+set_property(TEST ${snaptray_registered_tests} APPEND PROPERTY ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1")
+
 # ============================================================================
 # CTest Label Summary
 # ============================================================================
@@ -1001,3 +1931,7 @@ set_tests_properties(Update_RenderReleaseNotesPage PROPERTIES TIMEOUT 60 LABELS 
 #   ctest -L slow           # Run slow tests
 #   ctest -LE slow          # Exclude slow tests
 # ============================================================================
+
+add_test(NAME Update_AppImageArtifacts
+    COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Update/tst_appimage_artifacts.py")
+set_tests_properties(Update_AppImageArtifacts PROPERTIES TIMEOUT 60 LABELS "unit")

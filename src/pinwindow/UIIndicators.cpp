@@ -32,19 +32,24 @@ void UIIndicators::ensureClickThroughExitButtonCreated()
             this, &UIIndicators::exitClickThroughRequested);
 }
 
-void UIIndicators::showZoomIndicator(qreal zoomLevel)
+void UIIndicators::showZoomIndicator(const QString& text, bool topRight)
 {
+    m_zoomText = text;
     ensureZoomBadgeCreated();
-    m_zoomBadge->showBadge(QString("%1%").arg(qRound(zoomLevel * 100)));
-    // Position at top-left corner
-    m_zoomBadge->move(m_shadowMargin + 8, m_shadowMargin + 8);
+    m_zoomBadge->showBadge(text);
+    // Top-left, or top-right when the top-left holds the Live indicator.
+    const int x = topRight
+        ? m_parentWidget->width() - m_shadowMargin - m_zoomBadge->width() - 8
+        : m_shadowMargin + 8;
+    m_zoomBadge->move(x, m_shadowMargin + 8);
     m_zoomBadge->raise();
 }
 
-void UIIndicators::showOpacityIndicator(qreal opacity)
+void UIIndicators::showOpacityIndicator(const QString& text)
 {
+    m_opacityText = text;
     ensureOpacityBadgeCreated();
-    m_opacityBadge->showBadge(QString("%1%").arg(qRound(opacity * 100)));
+    m_opacityBadge->showBadge(text);
     // Position at bottom-left corner (after showBadge which calls setFixedSize)
     m_opacityBadge->move(m_shadowMargin + 8,
                          m_parentWidget->height() - m_shadowMargin - m_opacityBadge->height() - 8);
@@ -54,11 +59,5 @@ void UIIndicators::showOpacityIndicator(qreal opacity)
 void UIIndicators::showClickThroughIndicator(bool enabled)
 {
     ensureClickThroughExitButtonCreated();
-    if (enabled) {
-        m_clickThroughExitButton->updatePosition();
-        m_clickThroughExitButton->show();
-        m_clickThroughExitButton->raise();
-    } else {
-        m_clickThroughExitButton->hide();
-    }
+    m_clickThroughExitButton->setClickThroughEnabled(enabled);
 }

@@ -1,6 +1,11 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import SnapTrayQml
 
+// Beautify (#227): results first. Named styles and backgrounds come before the
+// pixel controls, which sit under a collapsible Customize. Names and order
+// follow the recording editor's Canvas (Background, Padding, Corners, Shadow,
+// Aspect ratio).
 Item {
     id: root
 
@@ -11,21 +16,134 @@ Item {
     readonly property var backend: typeof beautifyBackend !== "undefined" ? beautifyBackend : null
     property int leftPadding: 0
     property int rightPadding: 0
+    // Stays as left while the panel is reused in a session.
+    property bool customizeExpanded: false
+    // Naming a style to save (#227); Esc then cancels naming instead of closing.
+    property bool namingStyle: false
 
-    width: 340
-    height: contentColumn.implicitHeight + 32
+    // The saved style being renamed, or -1 while naming a new one. The index
+    // follows the style by name when the list changes under it.
+    property int renamingIndex: -1
+    property string renamingName: ""
+    property bool committingName: false
+    readonly property bool nameTaken: root.namingStyle && root.renamingIndex >= 0 && root.backend
+        ? root.backend.customStyleNameTaken(styleNameInput.text, root.renamingIndex)
+        : false
+    // A new name needs a free place (the list is shared with other panels and
+    // the recording editor); a saved name is updated in place.
+    readonly property bool wouldNotFit: root.namingStyle && root.renamingIndex < 0 && root.backend
+        ? root.backend.customStylesFull && !root.backend.customStyleNameTaken(styleNameInput.text, -1)
+        : false
+
+    function startNamingStyle() {
+        if (!root.backend || root.backend.customStylesFull)
+            return
+        root.renamingIndex = -1
+        openNameField(root.backend.suggestedCustomStyleName())
+    }
+
+    function startRenamingStyle(index) {
+        if (!root.backend || index < 0 || index >= root.backend.customStyleModel.length)
+            return
+        root.renamingIndex = index
+        root.renamingName = root.backend.customStyleModel[index].name
+        openNameField(root.renamingName)
+    }
+
+    function openNameField(text) {
+        styleNameInput.text = text
+        root.namingStyle = true
+        styleNameInput.forceActiveFocus()
+        styleNameInput.selectAll()
+    }
+
+    // Returns false (field stays open) when a save or rename is refused.
+    function finishNamingStyle(save) {
+        if (save && root.backend && styleNameInput.text.trim().length > 0) {
+            root.committingName = true
+            var ok = root.renamingIndex >= 0
+                ? root.backend.renameCustomStyle(root.renamingIndex, styleNameInput.text)
+                : root.backend.saveCustomStyle(styleNameInput.text)
+            root.committingName = false
+            if (!ok)
+                return false
+        }
+        var renamed = root.renamingIndex
+        root.namingStyle = false
+        root.renamingIndex = -1
+        root.renamingName = ""
+        // Renaming rebuilds the cards; give focus back to the renamed one.
+        if (renamed >= 0)
+            Qt.callLater(function() {
+                var card = savedRepeater.itemAt(renamed)
+                if (card)
+                    card.forceActiveFocus()
+            })
+        return true
+    }
+
+    // Deleting a style (here or in another panel) moves the one being
+    // renamed; follow it by name, and stop renaming if it is gone.
+    Connections {
+        target: root.backend
+        function onCustomStylesChanged() {
+            if (!root.namingStyle || root.renamingIndex < 0 || root.committingName)
+                return
+            var model = root.backend.customStyleModel
+            var wanted = root.renamingName.toLowerCase()
+            for (var i = 0; i < model.length; ++i) {
+                if (model[i].name.toLowerCase() === wanted) {
+                    root.renamingIndex = i
+                    return
+                }
+            }
+            root.renamingIndex = -1
+            root.finishNamingStyle(false)
+        }
+    }
+
+    readonly property int contentMargin: 16
+    readonly property int styleCardHeight: 64
+    readonly property int styleCardWidth: Math.floor((width - 2 * contentMargin - 3 * 8) / 4)
+    readonly property int swatchSize: 28
+    // How much of a style's padding and corners the small card drawing shows.
+    readonly property real cardPaddingScale: 0.09
+    readonly property real cardCornerScale: 0.25
+
+    readonly property color backgroundStart: root.backend ? root.backend.primaryColor : "transparent"
+    readonly property color backgroundEnd: root.backend && root.backend.secondaryColorVisible
+        ? root.backend.secondaryColor : root.backgroundStart
+
+    // Available screen height minus edge margins, set by QmlBeautifyPanel (0 = no limit).
+    // A panel taller than that scrolls instead of leaving the screen.
+    property int maxHeight: 0
+    readonly property int naturalHeight: contentColumn.implicitHeight + 2 * contentMargin
+
+    width: 360
+    height: maxHeight > 0 ? Math.min(naturalHeight, maxHeight) : naturalHeight
 
     PanelSurface {
         anchors.fill: parent
         radius: 14
     }
 
+    Flickable {
+        id: scroller
+        objectName: "beautifyPanelScroller"
+        anchors.fill: parent
+        z: 1
+        clip: true
+        contentWidth: width
+        contentHeight: root.naturalHeight
+        interactive: contentHeight > height
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar { policy: scroller.interactive ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+
     Column {
         id: contentColumn
-        x: 16
-        y: 16
-        z: 1
-        width: parent.width - 32
+        x: root.contentMargin
+        y: root.contentMargin
+        width: root.width - 2 * root.contentMargin
         spacing: 10
         property int leftPadding: 0
         property int rightPadding: 0
@@ -68,7 +186,11 @@ Item {
                     }
                 }
 
+                // Inside the scroller: keep a vertical drag moving the window,
+                // and never leave the window marked as dragging.
+                preventStealing: true
                 onReleased: root.dragFinished()
+                onCanceled: root.dragFinished()
             }
 
             Text {
@@ -98,6 +220,10 @@ Item {
                     : closeMouse.containsMouse
                         ? ComponentTokens.buttonGhostBackgroundHover
                         : "transparent"
+
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Close")
+                Accessible.onPressAction: if (root.backend) root.backend.requestClose()
 
                 Behavior on color {
                     ColorAnimation { duration: SemanticTokens.durationFast }
@@ -154,25 +280,281 @@ Item {
             }
         }
 
-        Row {
+        // ── Style ──────────────────────────────────────────────
+        Item {
             width: parent.width
-            spacing: 6
+            height: styleCaption.implicitHeight
+
+            Text {
+                id: styleCaption
+                anchors.left: parent.left
+                text: qsTr("Style").toUpperCase()
+                color: ComponentTokens.settingsSectionText
+                font.pixelSize: SemanticTokens.fontSizeCaption
+                font.weight: Font.Medium
+                font.family: SemanticTokens.fontFamily
+                font.letterSpacing: SemanticTokens.letterSpacingWide
+            }
+
+            Text {
+                objectName: "beautifyCustomStyleCaption"
+                anchors.left: styleCaption.right
+                anchors.leftMargin: SemanticTokens.spacing8
+                anchors.right: saveStyleButton.left
+                anchors.rightMargin: SemanticTokens.spacing8
+                anchors.verticalCenter: styleCaption.verticalCenter
+                elide: Text.ElideRight
+                visible: root.backend ? root.backend.currentStyle < 0 && root.backend.currentCustomStyle < 0 : false
+                text: qsTr("Custom")
+                color: SemanticTokens.textSecondary
+                font.pixelSize: SemanticTokens.fontSizeCaption
+                font.family: SemanticTokens.fontFamily
+            }
+
+            // Saves the current look by name; hidden once it is a saved style.
+            Text {
+                id: saveStyleButton
+                objectName: "beautifySaveStyleButton"
+                anchors.right: parent.right
+                anchors.verticalCenter: styleCaption.verticalCenter
+                visible: root.backend ? root.backend.currentCustomStyle < 0 && !root.namingStyle : false
+                readonly property bool full: root.backend ? root.backend.customStylesFull : false
+                text: qsTr("Save style…")
+                color: full ? SemanticTokens.textTertiary : SemanticTokens.accentDefault
+                font.pixelSize: SemanticTokens.fontSizeCaption
+                font.weight: Font.Medium
+                font.family: SemanticTokens.fontFamily
+                font.underline: saveStyleMouse.containsMouse && !full
+
+                activeFocusOnTab: visible
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Save style…")
+                Accessible.description: full ? saveStyleButton.fullText : ""
+                Accessible.onPressAction: root.startNamingStyle()
+                Keys.onSpacePressed: root.startNamingStyle()
+                Keys.onReturnPressed: root.startNamingStyle()
+                readonly property string fullText: root.backend
+                    ? qsTr("You can keep up to %1 saved styles. Delete one to save another.").arg(root.backend.maxCustomStyles)
+                    : ""
+
+                FocusFrame { showFocus: saveStyleButton.activeFocus }
+
+                MouseArea {
+                    id: saveStyleMouse
+                    anchors.fill: parent
+                    anchors.margins: -4
+                    hoverEnabled: true
+                    cursorShape: saveStyleButton.full ? Qt.ArrowCursor : CursorTokens.clickable
+                    onClicked: root.startNamingStyle()
+                }
+
+                ToolTip.visible: saveStyleMouse.containsMouse && full
+                ToolTip.text: fullText
+                ToolTip.delay: 300
+            }
+        }
+
+        // Name for the style being saved.
+        Row {
+            objectName: "beautifyStyleNameRow"
+            width: parent.width
+            spacing: 8
+            visible: root.namingStyle
+            height: visible ? 30 : 0
+            Accessible.name: root.renamingIndex >= 0 ? qsTr("Rename style") : qsTr("Save style…")
+
+            Rectangle {
+                width: parent.width - saveNameButton.width - cancelNameButton.width - 2 * parent.spacing
+                height: 30
+                radius: ComponentTokens.inputRadius
+                color: ComponentTokens.inputBackground
+                border.width: 1
+                border.color: root.nameTaken
+                    ? SemanticTokens.statusError
+                    : styleNameInput.activeFocus ? ComponentTokens.inputBorderFocus : ComponentTokens.inputBorder
+
+                TextInput {
+                    id: styleNameInput
+                    objectName: "beautifyStyleNameInput"
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    verticalAlignment: TextInput.AlignVCenter
+                    maximumLength: 40
+                    color: SemanticTokens.textPrimary
+                    selectionColor: ComponentTokens.inputSelectionBackground
+                    selectedTextColor: ComponentTokens.inputSelectionText
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    clip: true
+                    selectByMouse: true
+                    Accessible.role: Accessible.EditableText
+                    Accessible.name: qsTr("Style name")
+                    Keys.onReturnPressed: root.finishNamingStyle(true)
+                    Keys.onEnterPressed: root.finishNamingStyle(true)
+                    Keys.onEscapePressed: root.finishNamingStyle(false)
+                }
+            }
+
+            SettingsButton {
+                id: saveNameButton
+                objectName: "beautifyStyleNameSave"
+                text: root.renamingIndex >= 0 ? qsTr("Rename") : qsTr("Save")
+                primary: true
+                enabled: styleNameInput.text.trim().length > 0 && !root.nameTaken && !root.wouldNotFit
+                onClicked: root.finishNamingStyle(true)
+            }
+
+            SettingsButton {
+                id: cancelNameButton
+                text: qsTr("Cancel")
+                onClicked: root.finishNamingStyle(false)
+            }
+        }
+
+        Text {
+            objectName: "beautifyStyleNameTaken"
+            width: parent.width
+            visible: root.nameTaken
+            height: visible ? implicitHeight : 0
+            text: qsTr("Another saved style already has this name.")
+            color: SemanticTokens.statusError
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            wrapMode: Text.Wrap
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: text
+        }
+
+        Text {
+            objectName: "beautifyStyleNameFull"
+            width: parent.width
+            visible: root.wouldNotFit
+            height: visible ? implicitHeight : 0
+            text: root.backend
+                ? qsTr("You can keep up to %1 saved styles. Delete one to save another.").arg(root.backend.maxCustomStyles)
+                : ""
+            color: SemanticTokens.statusError
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            wrapMode: Text.Wrap
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: text
+        }
+
+        Row {
+            id: styleRow
+            width: parent.width
+            spacing: 8
+
+            Repeater {
+                model: root.backend ? root.backend.styleModel : []
+
+                delegate: StyleCard {
+                    required property int index
+                    required property var modelData
+                    objectName: "beautifyStyle" + index
+                    width: root.styleCardWidth
+                    name: modelData.name
+                    accessibleName: qsTr("Style: %1").arg(modelData.name)
+                    padding: modelData.padding
+                    cornerRadius: modelData.cornerRadius
+                    shadowEnabled: modelData.shadowEnabled
+                    shadowBlur: modelData.shadowBlur
+                    startColor: root.backgroundStart
+                    endColor: root.backgroundEnd
+                    chosen: root.backend ? root.backend.currentStyle === index : false
+                    onActivated: if (root.backend) root.backend.applyStyle(index)
+                }
+            }
+        }
+
+        // Saved styles: the whole look, drawn on their own background.
+        Flow {
+            id: savedStyles
+            objectName: "beautifySavedStyles"
+            width: parent.width
+            spacing: 8
+            visible: savedRepeater.count > 0
+
+            Repeater {
+                id: savedRepeater
+                model: root.backend ? root.backend.customStyleModel : []
+
+                delegate: StyleCard {
+                    required property int index
+                    required property var modelData
+                    objectName: "beautifySavedStyle" + index
+                    width: root.styleCardWidth
+                    name: modelData.name
+                    accessibleName: qsTr("Saved style: %1").arg(modelData.name)
+                    padding: modelData.padding
+                    cornerRadius: modelData.cornerRadius
+                    shadowEnabled: modelData.shadowEnabled
+                    shadowBlur: modelData.shadowBlur
+                    startColor: modelData.startColor
+                    endColor: modelData.endColor
+                    chosen: root.backend ? root.backend.currentCustomStyle === index : false
+                    deletable: true
+                    onActivated: if (root.backend) root.backend.applyCustomStyle(index)
+                    onDeleteRequested: if (root.backend) root.backend.deleteCustomStyle(index)
+                    onRenameRequested: root.startRenamingStyle(index)
+                }
+            }
+        }
+
+        // ── Background ─────────────────────────────────────────
+        Text {
+            text: qsTr("Background").toUpperCase()
+            color: ComponentTokens.settingsSectionText
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.weight: Font.Medium
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingWide
+        }
+
+        Flow {
+            width: parent.width
+            spacing: 8
 
             Repeater {
                 model: root.backend ? root.backend.presetModel : []
 
                 delegate: Rectangle {
-                    width: 24
-                    height: 24
-                    radius: 12
-                    border.width: presetMouse.containsMouse ? 2 : 1
-                    border.color: presetMouse.containsMouse
-                        ? ComponentTokens.beautifyPresetHoverRing
-                        : ComponentTokens.beautifyPreviewFrame
+                    id: swatch
+                    required property int index
+                    required property var modelData
+                    readonly property bool chosen: root.backend ? root.backend.currentPreset === index : false
+
+                    objectName: "beautifyBackground" + index
+                    width: root.swatchSize
+                    height: root.swatchSize
+                    radius: SemanticTokens.radiusSmall
+                    border.width: chosen || presetMouse.containsMouse ? 2 : 1
+                    border.color: chosen
+                        ? SemanticTokens.accentDefault
+                        : presetMouse.containsMouse
+                            ? ComponentTokens.beautifyPresetHoverRing
+                            : ComponentTokens.beautifyPreviewFrame
 
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: modelData.startColor }
-                        GradientStop { position: 1.0; color: modelData.endColor }
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: swatch.modelData.startColor }
+                        GradientStop { position: 1.0; color: swatch.modelData.endColor }
+                    }
+
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Background: %1").arg(modelData.name)
+                    Accessible.checkable: true
+                    Accessible.checked: chosen
+                    Accessible.onPressAction: if (root.backend) root.backend.applyPreset(index)
+                    Keys.onSpacePressed: if (root.backend) root.backend.applyPreset(index)
+                    Keys.onReturnPressed: if (root.backend) root.backend.applyPreset(index)
+
+                    FocusFrame {
+                        showFocus: swatch.activeFocus
+                        extraRadius: swatch.radius
                     }
 
                     MouseArea {
@@ -180,153 +562,235 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: CursorTokens.clickable
-                        onClicked: if (root.backend) root.backend.applyPreset(index)
+                        onClicked: if (root.backend) root.backend.applyPreset(swatch.index)
                     }
+
+                    ToolTip.visible: presetMouse.containsMouse
+                    ToolTip.text: modelData.name
+                    ToolTip.delay: 500
                 }
             }
         }
 
-        SettingsCombo {
+        // ── Customize ──────────────────────────────────────────
+        Rectangle {
+            id: customizeHeader
+            objectName: "beautifyCustomizeToggle"
             width: parent.width
-            label: qsTr("Background:")
-            model: root.backend ? root.backend.backgroundTypeModel : []
-            currentIndex: root.backend ? root.backend.backgroundType : 0
-            onActivated: function(index) {
-                if (root.backend)
-                    root.backend.backgroundType = index
+            height: 32
+            radius: SemanticTokens.radiusSmall
+            color: customizeMouse.pressed
+                ? ComponentTokens.buttonGhostBackgroundPressed
+                : customizeMouse.containsMouse
+                    ? ComponentTokens.buttonGhostBackgroundHover
+                    : "transparent"
+
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Customize")
+            Accessible.description: root.customizeExpanded
+                ? qsTr("Hide padding, corners, shadow and other details")
+                : qsTr("Show padding, corners, shadow and other details")
+            Accessible.checkable: true
+            Accessible.checked: root.customizeExpanded
+            Accessible.onPressAction: root.customizeExpanded = !root.customizeExpanded
+            Keys.onSpacePressed: root.customizeExpanded = !root.customizeExpanded
+            Keys.onReturnPressed: root.customizeExpanded = !root.customizeExpanded
+
+            Behavior on color {
+                ColorAnimation { duration: SemanticTokens.durationFast }
             }
-        }
 
-        SettingsRow {
-            width: parent.width
-            label: qsTr("Colors:")
-
-            Row {
+            SvgIcon {
+                id: customizeChevron
+                anchors.left: parent.left
+                anchors.leftMargin: 4
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
-
-                Rectangle {
-                    width: 28
-                    height: 28
-                    radius: 8
-                    color: root.backend ? root.backend.primaryColor : "transparent"
-                    border.width: 1
-                    border.color: ComponentTokens.beautifyPreviewFrame
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: CursorTokens.clickable
-                        onClicked: if (root.backend) root.backend.pickPrimaryColor()
-                    }
-                }
-
-                Rectangle {
-                    visible: root.backend ? root.backend.secondaryColorVisible : false
-                    width: 28
-                    height: 28
-                    radius: 8
-                    color: root.backend ? root.backend.secondaryColor : "transparent"
-                    border.width: 1
-                    border.color: ComponentTokens.beautifyPreviewFrame
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: CursorTokens.clickable
-                        onClicked: if (root.backend) root.backend.pickSecondaryColor()
-                    }
-                }
+                source: root.customizeExpanded
+                    ? "qrc:/icons/icons/chevron-down.svg"
+                    : "qrc:/icons/icons/chevron-right.svg"
+                iconSize: ComponentTokens.iconSizeMenu
+                color: SemanticTokens.iconColor
             }
-        }
 
-        SettingsSlider {
-            width: parent.width
-            label: qsTr("Padding:")
-            from: 16
-            to: 200
-            suffix: "px"
-            value: root.backend ? root.backend.padding : 16
-            onMoved: function(value) {
-                if (root.backend)
-                    root.backend.padding = value
-            }
-        }
-
-        SettingsSlider {
-            width: parent.width
-            label: qsTr("Corners:")
-            from: 0
-            to: 40
-            suffix: "px"
-            value: root.backend ? root.backend.cornerRadius : 0
-            onMoved: function(value) {
-                if (root.backend)
-                    root.backend.cornerRadius = value
-            }
-        }
-
-        SettingsCombo {
-            width: parent.width
-            label: qsTr("Ratio:")
-            model: root.backend ? root.backend.aspectRatioModel : []
-            currentIndex: root.backend ? root.backend.aspectRatio : 0
-            onActivated: function(index) {
-                if (root.backend)
-                    root.backend.aspectRatio = index
-            }
-        }
-
-        SettingsRow {
-            width: parent.width
-            label: qsTr("Shadow")
-
-            Rectangle {
-                id: shadowToggle
+            Text {
+                anchors.left: customizeChevron.right
+                anchors.leftMargin: SemanticTokens.spacing8
+                anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: ComponentTokens.toggleWidth
-                height: ComponentTokens.toggleHeight
-                radius: height / 2
-                color: root.backend && root.backend.shadowEnabled
-                    ? ComponentTokens.toggleTrackOn
-                    : ComponentTokens.toggleTrackOff
+                elide: Text.ElideRight
+                text: qsTr("Customize")
+                color: SemanticTokens.textPrimary
+                font.pixelSize: SemanticTokens.fontSizeBody
+                font.weight: Font.Medium
+                font.family: SemanticTokens.fontFamily
+            }
 
-                Rectangle {
-                    width: ComponentTokens.toggleKnobSize
-                    height: ComponentTokens.toggleKnobSize
-                    radius: ComponentTokens.toggleKnobRadius
-                    color: ComponentTokens.toggleKnob
+            FocusFrame {
+                showFocus: customizeHeader.activeFocus
+                extraRadius: customizeHeader.radius
+            }
+
+            MouseArea {
+                id: customizeMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: CursorTokens.clickable
+                onClicked: root.customizeExpanded = !root.customizeExpanded
+            }
+        }
+
+        Column {
+            id: customizeContent
+            objectName: "beautifyCustomizeContent"
+            width: parent.width
+            spacing: 4
+            visible: root.customizeExpanded
+            // A Column still reserves its children's height while hidden.
+            height: visible ? implicitHeight : 0
+            property int leftPadding: 0
+            property int rightPadding: 0
+
+            SettingsCombo {
+                objectName: "beautifyBackgroundType"
+                label: qsTr("Background type")
+                model: root.backend ? root.backend.backgroundTypeModel : []
+                currentIndex: root.backend ? root.backend.backgroundType : 0
+                onActivated: function(index) {
+                    if (root.backend)
+                        root.backend.backgroundType = index
+                }
+            }
+
+            SettingsRow {
+                label: qsTr("Colors")
+
+                Row {
                     anchors.verticalCenter: parent.verticalCenter
-                    x: root.backend && root.backend.shadowEnabled
-                        ? shadowToggle.width - width - ComponentTokens.toggleKnobInset
-                        : ComponentTokens.toggleKnobInset
+                    spacing: 8
 
-                    Behavior on x {
-                        NumberAnimation { duration: SemanticTokens.durationFast; easing.type: Easing.InOutCubic }
-                    }
-                }
+                    Repeater {
+                        model: [
+                            { secondary: false, name: qsTr("First color") },
+                            { secondary: true, name: qsTr("Second color") }
+                        ]
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: CursorTokens.clickable
-                    onClicked: {
-                        if (root.backend)
-                            root.backend.shadowEnabled = !root.backend.shadowEnabled
+                        delegate: Rectangle {
+                            id: colorChip
+                            required property var modelData
+                            visible: !modelData.secondary
+                                || (root.backend ? root.backend.secondaryColorVisible : false)
+                            width: root.swatchSize
+                            height: root.swatchSize
+                            radius: 8
+                            color: root.backend
+                                ? (modelData.secondary ? root.backend.secondaryColor : root.backend.primaryColor)
+                                : "transparent"
+                            border.width: 1
+                            border.color: ComponentTokens.beautifyPreviewFrame
+
+                            function pick() {
+                                if (!root.backend)
+                                    return
+                                if (modelData.secondary)
+                                    root.backend.pickSecondaryColor()
+                                else
+                                    root.backend.pickPrimaryColor()
+                            }
+
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.Button
+                            Accessible.name: modelData.name
+                            Accessible.onPressAction: pick()
+                            Keys.onSpacePressed: pick()
+                            Keys.onReturnPressed: pick()
+
+                            FocusFrame {
+                                showFocus: colorChip.activeFocus
+                                extraRadius: colorChip.radius
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: CursorTokens.clickable
+                                onClicked: colorChip.pick()
+                            }
+                        }
                     }
                 }
             }
-        }
 
-        SettingsSlider {
-            width: parent.width
-            label: qsTr("  Blur:")
-            from: 0
-            to: 100
-            suffix: "px"
-            value: root.backend ? root.backend.shadowBlur : 0
-            opacity: root.backend && root.backend.shadowEnabled ? 1.0 : 0.45
-            enabled: root.backend && root.backend.shadowEnabled
-            onMoved: function(value) {
-                if (root.backend)
-                    root.backend.shadowBlur = value
+            SettingsSlider {
+                objectName: "beautifyPaddingSlider"
+                label: qsTr("Padding")
+                from: 16
+                to: 200
+                suffix: "px"
+                value: root.backend ? root.backend.padding : 16
+                onMoved: function(value) {
+                    if (root.backend)
+                        root.backend.padding = value
+                }
+            }
+
+            SettingsSlider {
+                objectName: "beautifyCornerSlider"
+                label: qsTr("Corners")
+                from: 0
+                to: 40
+                suffix: "px"
+                value: root.backend ? root.backend.cornerRadius : 0
+                onMoved: function(value) {
+                    if (root.backend)
+                        root.backend.cornerRadius = value
+                }
+            }
+
+            SettingsToggle {
+                objectName: "beautifyShadowToggle"
+                label: qsTr("Shadow")
+                checked: root.backend ? root.backend.shadowEnabled : false
+                onToggled: function(checked) {
+                    if (root.backend)
+                        root.backend.shadowEnabled = checked
+                }
+            }
+
+            SettingsSlider {
+                objectName: "beautifyBlurSlider"
+                label: qsTr("Shadow blur")
+                from: 0
+                to: 100
+                suffix: "px"
+                value: root.backend ? root.backend.shadowBlur : 0
+                opacity: enabled ? 1.0 : 0.45
+                enabled: root.backend ? root.backend.shadowEnabled : false
+                onMoved: function(value) {
+                    if (root.backend)
+                        root.backend.shadowBlur = value
+                }
+            }
+
+            // Shared with the recording frame's border (#269).
+            SettingsToggle {
+                objectName: "beautifyBorderToggle"
+                label: qsTr("Border")
+                checked: root.backend ? root.backend.borderEnabled : false
+                onToggled: function(checked) {
+                    if (root.backend)
+                        root.backend.borderEnabled = checked
+                }
+            }
+
+            SettingsCombo {
+                objectName: "beautifyAspectRatio"
+                label: qsTr("Aspect ratio")
+                model: root.backend ? root.backend.aspectRatioModel : []
+                currentIndex: root.backend ? root.backend.aspectRatio : 0
+                onActivated: function(index) {
+                    if (root.backend)
+                        root.backend.aspectRatio = index
+                }
             }
         }
 
@@ -353,5 +817,211 @@ Item {
                 onClicked: if (root.backend) root.backend.requestClose()
             }
         }
+    }
+    }
+
+    // A style preview card: a small drawing of padding, corners and shadow on
+    // a background, its name below, a chosen ring, and for saved styles a
+    // delete button (also the Delete key).
+    component StyleCard: Item {
+        id: card
+        property string name
+        property string accessibleName
+        property int padding
+        property int cornerRadius
+        property bool shadowEnabled
+        property int shadowBlur
+        property color startColor
+        property color endColor
+        property bool chosen: false
+        property bool deletable: false
+        signal activated()
+        signal deleteRequested()
+        signal renameRequested()
+
+        height: root.styleCardHeight
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Button
+        Accessible.name: accessibleName
+        Accessible.checkable: true
+        Accessible.checked: chosen
+        Accessible.onPressAction: card.activated()
+        Keys.onSpacePressed: card.activated()
+        Keys.onReturnPressed: card.activated()
+        Keys.onDeletePressed: if (card.deletable) card.deleteRequested()
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_F2 && card.deletable) {
+                card.renameRequested()
+                event.accepted = true
+            }
+        }
+
+        Rectangle {
+            id: cardFrame
+            anchors.top: parent.top
+            width: parent.width
+            height: parent.height - cardLabel.implicitHeight - 4
+            radius: SemanticTokens.radiusSmall
+            color: "transparent"
+            border.width: card.chosen ? 2 : 1
+            border.color: card.chosen
+                ? SemanticTokens.accentDefault
+                : cardMouse.containsMouse ? ComponentTokens.beautifyPresetHoverRing : ComponentTokens.beautifyPreviewFrame
+
+            Rectangle {
+                id: cardBackground
+                anchors.fill: parent
+                anchors.margins: 3
+                radius: SemanticTokens.radiusSmall - 2
+                clip: true
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: card.startColor }
+                    GradientStop { position: 1.0; color: card.endColor }
+                }
+
+                readonly property real inset: Math.max(2, card.padding * root.cardPaddingScale)
+
+                Rectangle {
+                    visible: card.shadowEnabled
+                    x: inner.x + 1
+                    y: inner.y + 2
+                    width: inner.width
+                    height: inner.height
+                    radius: inner.radius
+                    color: "#000000"
+                    opacity: Math.min(0.45, 0.12 + card.shadowBlur / 200)
+                }
+
+                Rectangle {
+                    id: inner
+                    x: cardBackground.inset
+                    y: cardBackground.inset
+                    width: cardBackground.width - 2 * cardBackground.inset
+                    height: cardBackground.height - 2 * cardBackground.inset
+                    radius: card.cornerRadius * root.cardCornerScale
+                    color: "#ffffff"
+
+                    Column {
+                        x: 4
+                        y: 4
+                        spacing: 2
+                        Repeater {
+                            model: 3
+                            Rectangle {
+                                required property int index
+                                width: Math.max(0, inner.width * (0.7 - 0.15 * index) - 8)
+                                height: 2
+                                radius: 1
+                                color: "#c8ccd4"
+                            }
+                        }
+                    }
+                }
+            }
+
+            FocusFrame {
+                showFocus: card.activeFocus
+                extraRadius: cardFrame.radius
+            }
+        }
+
+        Text {
+            id: cardLabel
+            anchors.bottom: parent.bottom
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            text: card.name
+            color: card.chosen ? SemanticTokens.textPrimary : SemanticTokens.textSecondary
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.weight: card.chosen ? Font.Medium : Font.Normal
+            font.family: SemanticTokens.fontFamily
+        }
+
+        MouseArea {
+            id: cardMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: CursorTokens.clickable
+            onClicked: card.activated()
+        }
+
+        Rectangle {
+            id: renameButton
+            objectName: "beautifyStyleRename"
+            visible: deleteButton.visible
+            anchors.left: cardFrame.left
+            anchors.top: cardFrame.top
+            anchors.margins: -5
+            width: 18
+            height: 18
+            radius: 9
+            color: renameMouse.containsMouse ? SemanticTokens.accentDefault : ComponentTokens.beautifyPreviewPlaceholder
+            border.width: 1
+            border.color: ComponentTokens.beautifyPreviewFrame
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Rename style %1").arg(card.name)
+            Accessible.onPressAction: card.renameRequested()
+
+            SvgIcon {
+                anchors.centerIn: parent
+                source: "qrc:/icons/icons/pencil.svg"
+                iconSize: 10
+                color: renameMouse.containsMouse ? "#ffffff" : SemanticTokens.iconColor
+            }
+
+            MouseArea {
+                id: renameMouse
+                anchors.fill: parent
+                anchors.margins: -3
+                hoverEnabled: true
+                cursorShape: CursorTokens.clickable
+                onClicked: card.renameRequested()
+            }
+
+            ToolTip.visible: renameMouse.containsMouse
+            ToolTip.text: qsTr("Rename (F2)")
+            ToolTip.delay: 400
+        }
+
+        Rectangle {
+            id: deleteButton
+            objectName: "beautifyStyleDelete"
+            visible: card.deletable && (cardMouse.containsMouse || deleteMouse.containsMouse
+                                        || renameMouse.containsMouse || card.activeFocus)
+            anchors.right: cardFrame.right
+            anchors.top: cardFrame.top
+            anchors.margins: -5
+            width: 18
+            height: 18
+            radius: 9
+            color: deleteMouse.containsMouse ? SemanticTokens.statusError : ComponentTokens.beautifyPreviewPlaceholder
+            border.width: 1
+            border.color: ComponentTokens.beautifyPreviewFrame
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Delete style %1").arg(card.name)
+            Accessible.onPressAction: card.deleteRequested()
+
+            SvgIcon {
+                anchors.centerIn: parent
+                source: "qrc:/icons/icons/close.svg"
+                iconSize: 10
+                color: deleteMouse.containsMouse ? "#ffffff" : SemanticTokens.iconColor
+            }
+
+            MouseArea {
+                id: deleteMouse
+                anchors.fill: parent
+                anchors.margins: -3
+                hoverEnabled: true
+                cursorShape: CursorTokens.clickable
+                onClicked: card.deleteRequested()
+            }
+        }
+
+        ToolTip.visible: cardMouse.containsMouse && cardLabel.truncated
+        ToolTip.text: name
+        ToolTip.delay: 500
     }
 }

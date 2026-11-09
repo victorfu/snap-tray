@@ -6,6 +6,7 @@
 #include <QWidget>
 #include <QSettings>
 #include <QtMath>
+#include <QGuiApplication>
 #include <QFontMetrics>
 
 namespace {
@@ -37,6 +38,7 @@ TextAnnotationEditor::TextAnnotationEditor(QObject* parent)
 
 void TextAnnotationEditor::setAnnotationLayer(AnnotationLayer* layer)
 {
+    cancelInteraction();
     m_annotationLayer = layer;
 }
 
@@ -67,7 +69,7 @@ void TextAnnotationEditor::startEditing(const QPoint& pos, const QRect& selectio
     if (!m_textEditor) return;
 
     m_editSessionActive = true;
-    m_editingIndex = -1;  // Creating new annotation
+    m_editingId = 0;  // Creating new annotation
     m_textEditor->setColor(color);
     m_textEditor->setFont(m_formatting.toQFont());
     const QPoint displayPos = toRoundedPoint(m_annotationToDisplayMapper(QPointF(pos)));
@@ -88,7 +90,17 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
     }
 
     m_editSessionActive = true;
-    m_editingIndex = annotationIndex;
+    m_editingId = m_annotationLayer->idAt(annotationIndex);
+    // A slow double-click may have started a drag first; it ends here so its
+    // release cannot end the edit's undo step (review #237-2).
+    if (m_isDragging || m_isTransforming) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
+        m_isDragging = false;
+        m_isTransforming = false;
+        m_activeGizmoHandle = GizmoHandle::None;
+    }
+    // The whole edit (content, font, colour, position) is one undo step (#237).
+    m_annotationLayer->beginGesture(m_editingId);
 
     // Extract formatting from existing annotation
     m_formatting = TextFormattingState::fromQFont(textItem->font());
@@ -105,7 +117,7 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
 
     QPointF baselineAnnotation = textItem->mapLocalPointToTransformed(baselineLocalOffset(textItem->font()));
     QPoint baselineDisplay = toRoundedPoint(m_annotationToDisplayMapper(baselineAnnotation));
-    m_textEditor->startEditingExisting(baselineDisplay, selectionRect, textItem->text());
+    m_textEditor->startEditingExisting(baselineDisplay, selectionRect, textItem->text(), textItem->wrapWidth());
 
     // Hide the original annotation while editing (prevent duplicate display)
     textItem->setVisible(false);
@@ -129,10 +141,12 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
     QPointF baselineAnnotation = m_displayToAnnotationMapper(QPointF(position));
     QPointF localBaseline = baselineLocalOffset(font);
     bool createdNew = false;
+    const qreal wrapWidth = m_textEditor ? m_textEditor->committedTextWidth() : 0.0;
 
-    if (m_editingIndex >= 0) {
+    if (m_editingId != 0) {
         // Re-editing: restore visibility first
-        auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));
+        const int index = editingIndex();
+        auto* textItem = index >= 0 ? dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(index)) : nullptr;
         if (textItem) {
             textItem->setVisible(true);  // Restore visibility
             if (!text.isEmpty()) {
@@ -144,6 +158,7 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
                 textItem->setText(text);
                 textItem->setFont(font);
                 textItem->setColor(color);
+                if (wrapWidth > 0) textItem->setWrapWidth(wrapWidth);
                 textItem->setRotation(originalRotation);
                 textItem->setScale(originalScale);
                 textItem->setMirror(originalMirrorX, originalMirrorY);
@@ -152,13 +167,15 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
                 textItem->setPosition(topLeft);
             }
         }
-        m_annotationLayer->setSelectedIndex(m_editingIndex);
-        m_editingIndex = -1;
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyStyle | AnnotationLayer::ModifyGeometry);
+        if (index >= 0) m_annotationLayer->setSelectedIndex(index);
+        m_editingId = 0;
         m_annotationLayer->invalidateCache();
     }
     else if (!text.isEmpty()) {
         // Create new TextBoxAnnotation
         auto textAnnotation = std::make_unique<TextBoxAnnotation>(QPointF(0, 0), text, font, color);
+        if (wrapWidth > 0) textAnnotation->setWrapWidth(wrapWidth);
         QPointF topLeft = textAnnotation->topLeftFromTransformedLocalPoint(baselineAnnotation, localBaseline);
         textAnnotation->setPosition(topLeft);
         m_annotationLayer->addItem(std::move(textAnnotation));
@@ -178,17 +195,24 @@ void TextAnnotationEditor::cancelEditing()
 {
     m_editSessionActive = false;
 
-    if (m_editingIndex >= 0 && m_annotationLayer) {
+    if (m_editingId != 0 && m_annotationLayer) {
+        m_annotationLayer->cancelGesture();
         // Restore visibility of the original annotation
-        auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));
+        const int index = editingIndex();
+        auto* textItem = index >= 0 ? dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(index)) : nullptr;
         if (textItem) {
             textItem->setVisible(true);
         }
-        m_editingIndex = -1;
+        m_editingId = 0;
         m_annotationLayer->invalidateCache();
     }
     emit editingCancelled();
     emit updateRequested();
+}
+
+int TextAnnotationEditor::editingIndex() const
+{
+    return (m_annotationLayer && m_editingId != 0) ? m_annotationLayer->indexOfId(m_editingId) : -1;
 }
 
 bool TextAnnotationEditor::isEditing() const
@@ -215,6 +239,10 @@ void TextAnnotationEditor::startTransformation(const QPoint& pos, GizmoHandle ha
     m_transformStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
 
     m_dragStart = pos;
+    if (handle == GizmoHandle::Body)
+        m_annotationLayer->snapController().begin(m_annotationLayer, pos);
+    else
+        m_annotationLayer->snapController().end();
 }
 
 void TextAnnotationEditor::updateTransformation(const QPoint& pos)
@@ -226,6 +254,7 @@ void TextAnnotationEditor::updateTransformation(const QPoint& pos)
 
     QPointF center = m_transformStartCenter;
     QPointF delta = QPointF(pos) - center;
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
 
     switch (m_activeGizmoHandle) {
     case GizmoHandle::Rotation: {
@@ -255,6 +284,7 @@ void TextAnnotationEditor::updateTransformation(const QPoint& pos)
     }
 
     case GizmoHandle::Body: {
+        if (m_annotationLayer->snapController().move(pos, QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier))) break;
         // Move the annotation
         QPoint moveD = pos - m_dragStart;
         textItem->moveBy(moveD);
@@ -272,14 +302,25 @@ void TextAnnotationEditor::updateTransformation(const QPoint& pos)
 
 void TextAnnotationEditor::finishTransformation()
 {
+    if (m_isTransforming && m_annotationLayer) m_annotationLayer->snapController().end();
+    if (!m_isTransforming) {
+        return;
+    }
+
+    if (m_annotationLayer) m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isTransforming = false;
     m_activeGizmoHandle = GizmoHandle::None;
+    if (m_annotationLayer) {
+        m_annotationLayer->invalidateCache();
+    }
 }
 
 void TextAnnotationEditor::startDragging(const QPoint& pos)
 {
     m_isDragging = true;
     m_dragStart = pos;
+    if (m_annotationLayer)
+        m_annotationLayer->snapController().begin(m_annotationLayer, pos);
 }
 
 void TextAnnotationEditor::updateDragging(const QPoint& pos)
@@ -289,7 +330,12 @@ void TextAnnotationEditor::updateDragging(const QPoint& pos)
     auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->selectedItem());
     if (!textItem) return;
 
+    if (m_annotationLayer->snapController().move(pos, QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier))) {
+        emit updateRequested();
+        return;
+    }
     QPoint delta = pos - m_dragStart;
+    m_annotationLayer->ensureGesture();
     textItem->moveBy(delta);
     m_dragStart = pos;
     emit updateRequested();
@@ -297,7 +343,27 @@ void TextAnnotationEditor::updateDragging(const QPoint& pos)
 
 void TextAnnotationEditor::finishDragging()
 {
+    if (m_isDragging && m_annotationLayer) m_annotationLayer->snapController().end();
+    if (!m_isDragging) {
+        return;
+    }
+
+    if (m_annotationLayer) m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isDragging = false;
+    if (m_annotationLayer) {
+        m_annotationLayer->invalidateCache();
+    }
+}
+
+void TextAnnotationEditor::cancelInteraction()
+{
+    if (!m_isTransforming && !m_isDragging) return;
+    if (m_annotationLayer) m_annotationLayer->snapController().end();
+    if (m_annotationLayer) m_annotationLayer->cancelGesture();
+    m_isTransforming = false;
+    m_isDragging = false;
+    m_activeGizmoHandle = GizmoHandle::None;
+    emit updateRequested();
 }
 
 void TextAnnotationEditor::setBold(bool enabled)

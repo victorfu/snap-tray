@@ -1,0 +1,634 @@
+# SnapTray 全庫 Code Review 修正追蹤
+
+- 審查日期：2026-09-01
+- 審查基準：main @ 82611586a549f4ada3c7131b92854ebaddcaf0e1
+- 審查模式：唯讀、Double Confirm、全庫掃描
+- 目前結論：36 項 Confirmed Issue、2 項 Potential Issue、1 項 Rejected
+
+## 使用方式
+
+這份文件是修正進度的唯一追蹤表。每次處理問題時：
+
+1. 更新總表狀態。
+2. 在該項目的「修正證據」補上 commit／PR、測試名稱與平台驗證結果。
+3. 只有符合「完成條件」並通過相關回歸測試，才能標為 Verified。
+4. 不刪除已否決、重複或不修的項目；改用 Rejected、Duplicate 或 Won't Fix，並記錄理由。
+
+狀態定義：
+
+- Open：尚未開始。
+- In Progress：已有候選修正，但尚未完成驗證。
+- Fix Ready：修正已完成，等待完整驗證或跨平台驗證。
+- Verified：完成條件與回歸測試皆通過。
+- Blocked：被環境、平台或外部條件阻擋。
+- Potential：仍需指定的 runtime／產品契約確認。
+- Rejected：後續證據反證原 finding 的觸發或後果；不是已修復。
+
+優先度定義：
+
+- P0：Release blocker、資料遺失、隱私遮罩失效或 crash／UAF。
+- P1：主要功能錯誤、資源耗盡、嚴重 UI／輸出不一致。
+- P2：範圍較窄但可達的功能錯誤。
+
+> 行號以審查基準為主；後續修改可能使行號漂移，函式／類別名稱才是長期定位依據。
+
+## 進度摘要
+
+| 類型 | 數量 |
+|---|---:|
+| Confirmed / Open | 0 |
+| Confirmed / Fix Ready | 34 |
+| Confirmed / In Progress | 0 |
+| Confirmed / Verified | 2 |
+| Potential / 待確認 | 0 |
+| Potential / Fix Ready（防禦性修正） | 2 |
+| Rejected / 已反證 | 1 |
+
+建立本文件時，工作樹已存在兩組未提交候選修正：
+
+- REV-004：Settings test isolation，涉及 include/settings/Settings.h、tests/CMakeLists.txt、tests/TestSettingsIsolation.cpp 等；後續已完成獨立驗證並標為 Verified。
+- REV-009：Screen Canvas text interaction cache，涉及 src/ScreenCanvasSession.cpp、src/region/TextAnnotationEditor.cpp 與相關測試；後續已完成獨立驗證並標為 Verified。
+
+上述變更在本文件建立時尚未完成獨立驗證；目前 REV-004 與 REV-009 均已符合完成條件並標為 Verified。其餘既有工作樹變更不由本文件認領。
+
+## Issue 總表
+
+| ID | 狀態 | 優先度 | 信心 | 平台／區域 | 摘要 |
+|---|---|---:|---|---|---|
+| REV-001 | Rejected | — | High | macOS Release | v1.0.62 已在 macOS 14.8.7 ARM64 通過 loader 與基本 GUI startup smoke |
+| REV-002 | Fix Ready | P0 | High | Mosaic / HiDPI | Gaussian 自動遮罩只覆蓋部分實體像素 |
+| REV-003 | Fix Ready | P0 | High | Windows OCR | 未遵守 OcrEngine MaxImageDimension |
+| REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
+| REV-005 | Fix Ready | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
+| REV-006 | Fix Ready | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
+| REV-007 | Fix Ready | — | Medium | Windows Video | 已移除強制終止，非同步取消與原生壓力驗證待補 |
+| REV-008 | Fix Ready | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
+| REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
+| REV-010 | Fix Ready | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
+| REV-011 | Fix Ready | P1 | High | Region Selection | mouse release 忽略最後座標 |
+| REV-012 | Fix Ready | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
+| REV-013 | Fix Ready | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
+| REV-014 | Fix Ready | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
+| REV-015 | Fix Ready | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
+| REV-016 | Fix Ready | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
+| REV-017 | Fix Ready | P1 | High | Text | 空白被折疊且編輯／成品換行布局不一致 |
+| REV-018 | Fix Ready | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
+| REV-019 | Fix Ready | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
+| REV-020 | Fix Ready | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
+| REV-021 | Fix Ready | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
+| REV-022 | Fix Ready | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
+| REV-023 | Fix Ready | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
+| REV-024 | Fix Ready | P2 | High | CLI Full | 負數 screen 被當成未指定 |
+| REV-025 | Fix Ready | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
+| REV-026 | Fix Ready | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
+| REV-027 | Fix Ready | P2 | High | QML | CursorTokens 未註冊 singleton |
+| REV-028 | Fix Ready | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
+| REV-029 | Fix Ready | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
+| REV-030 | Fix Ready | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
+| REV-031 | Fix Ready | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
+| REV-032 | Fix Ready | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
+| REV-033 | Fix Ready | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成無內容佔位 |
+| REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
+| REV-035 | Fix Ready | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
+| REV-036 | Fix Ready | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
+| REV-037 | Fix Ready | — | Low | Region Toolbar | StepBadge 狀態同步已修；原始操作後果仍未確認 |
+| POT-001 | Fix Ready | P1 | High | Pin Toolbar | 窄螢幕安全定位與更多選單已完成，跨平台 UI 待驗證 |
+| POT-002 | Fix Ready | P2 | High | Recording Preview | 關閉預覽等同丟棄並刪除暫存檔 |
+
+## 詳細問題與完成條件
+
+### REV-001 — bundled Qt minos 26 導致 macOS 14 無法啟動（已反證）
+
+- 狀態：Rejected
+- 原始證據：release 使用浮動 macos-latest 與 Homebrew Qt；v1.0.62 的 126／154 個 Mach-O 為 minos 26.0，主程式直接依賴其中的 QtQuick、QtQml、QtSvg。
+- 反證證據：官方 v1.0.62 DMG 在 macOS 14.8.7 ARM64 runner 通過固定 SHA-256、DMG、簽章、公證與 Gatekeeper 驗證；`SnapTray --version` 成功，無參數 GUI process 存活 10 秒，startup log 無 dyld／Qt 錯誤。
+- 判定：LC_BUILD_VERSION minos 26.0 並未使這些 dylib 在 Sonoma 上被拒絕載入；「macOS 14／15 實際無法啟動」與 P0 Release-blocking 後果不成立。
+- 驗證邊界：尚未涵蓋 macOS 14.0、Settings/QML 實際互動、Region Capture／TCC、updater 與長時間穩定性。
+- 後續建議：固定 Qt 與 release 輸入、遞迴檢查最終 bundle 的 Mach-O metadata，仍可作為 release reproducibility／hardening 工作，但不屬於此已反證的啟動 blocker。
+- 反證紀錄：https://github.com/victorfu/snap-tray/actions/runs/33515420361/job/99881113054
+
+### REV-002 — HiDPI Gaussian 自動遮罩可能只覆蓋左上區域
+
+- 狀態：Fix Ready
+- 證據：src/annotations/MosaicRectAnnotation.cpp:172-234,237-274。
+- 觸發：來源 QPixmap 的 DPR 大於 1，MosaicRectAnnotation 使用 Gaussian；來源 QImage 保留 DPR，但 resultImage 是 DPR 1，drawImage 會按 device-independent size 縮小繪製。
+- 後果：resultImage 剩餘區域保持透明；套回原圖後部分敏感內容未被 Gaussian 遮罩，屬隱私風險。Pixelate 走直接像素填入，不是同一問題。
+- 完成條件：以 DPR 2／1.5、四象限高對比來源測試 Gaussian rect，斷言整個目標 rect 每個實體像素皆被處理；同時驗證 Pin／Region credential auto-blur。
+- 修正證據：Gaussian 暫存 QImage 在實體像素合成前清除 DPR，只有最終 QPixmap 恢復來源 DPR。Annotations_MosaicRectAnnotation 以獨立逐像素參考驗證 27 組來源／目標 DPR、非零位置、邊界裁切、快取重用與來源替換。RegionSelector_StyleSync 與 PinWindow_StyleSync 新增自動遮罩插入／旋轉映射的 HiDPI 覆蓋測試。
+- 驗證：2026-09-12 macOS 乾淨建置與 scripts/build.sh 通過；MosaicRectAnnotation、MosaicStroke、AnnotationSerializer、AutoBlurManager 四套測試，以及兩個入口回歸測試通過。Windows／Linux 建置及實機 UI smoke 尚待驗證，因此保留 Fix Ready。對應本機 commit：fix: cover full HiDPI Gaussian mask rectangles。
+
+### REV-003 — Windows OCR 未處理 MaxImageDimension
+
+- 狀態：Fix Ready
+- 證據：src/OCRManager_win.cpp:91-120,173-176；src/PinWindow.cpp:1910-1915,5027-5045。
+- 觸發：輸入任一實體像素軸超過 OcrEngine::MaxImageDimension，例如 4K／5K 或 HiDPI 大範圍截圖。
+- 後果：手動 OCR 失敗；credential auto-blur 無法得到 credential regions，敏感文字保持未遮蔽。
+- 完成條件：Windows 以 MaxImageDimension、MaxImageDimension + 1 與大型雙軸圖片驗證；若縮放或分塊，OCR bounding boxes 必須正確映回原圖；覆蓋 Pin／Region OCR 與 credential auto-blur。
+- 修正證據：Windows OCR 在 SoftwareBitmap 建立前依 OcrEngine::MaxImageDimension 限制實體尺寸，維持比例且不產生零尺寸；word boxes 改按實際 recognition image 尺寸正規化，保持回原圖及 credential detector 的座標契約。來源 DPR／原圖不變，配置失敗維持失敗通知。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 OCRImageUtils、CredentialDetector、AutoBlurManager 三套測試通過；涵蓋限制值／+1／雙軸大圖／極端長寬、DPR 1／1.5／2 與 7001×5003 原圖的 credential 框回映射。Windows native OCR／語言包及 Pin／Region 實機辨識待驗證，保留 Fix Ready。 對應本機 commit：fix: fit Windows OCR images to the engine dimension limit。
+
+### REV-004 — 測試會修改真實 SnapTray settings
+
+- 狀態：Verified（修正位於未提交工作樹）
+- 證據：tests/App/tst_MainApplicationTrayMenu.cpp:143-164,359-384；tests/Settings/tst_AnnotationSettingsManager.cpp:84-110；tests/Settings/tst_PinWindowSettingsManager.cpp:68-87；tests/Settings/tst_RegionCaptureSettingsManager.cpp:28-44；tests/Update/tst_UpdateCoordinator.cpp:64-71,95-108；tests/Update/tst_UpdateSettingsManager.cpp:43-60；include/settings/Settings.h:571-581。
+- 觸發：執行上述 test binaries 或 canonical test suite。
+- 後果：tests 直接 remove／write 真實 namespace。Debug 測試可刪除 SnapTray-Debug 的 hotkey、annotation、pin、region、update 偏好；Release-config test 可能污染 production namespace。
+- 實際副作用：本次 Debug 驗證已執行相關 suites；若原本存在這些 Debug keys，可能已被刪除。事前沒有 snapshot，不能安全自動復原；production release namespace 未受這次 Debug build 影響。
+- 完成條件：每個 test process 在 main 前切到獨立暫存 store；以 sentinel 驗證正常結束與異常終止都不改變真實 key 的 existence、type、value；全套測試通過。
+- 修正證據：SnapTray::getSettings() 已在 Windows migration／macOS legacy cleanup 前套用 test-only exact-file override；TestSettingsIsolation 會在 main 前為每個 process 建立唯一 QTemporaryDir/settings.ini；tests/CMakeLists.txt 將 bootstrap object 統一注入所有 C++ test／helper executables，正式 app 不包含該 object。process 即使異常終止也只可能留下暫存 store，不需回復真實 namespace。
+- 驗證：generated Debug graph 的 140／140 test／helper executables 均包含 isolation object；20 個直接或間接 settings-writer suites（含 App、Annotation、Pin、Region 與兩個 Update suites）在 standalone／平行執行皆通過；Settings_SettingsStorageLocation 驗證 temporary INI 與 platform store 不同。macOS Debug 全目標建置與 clean Release 的 StorageLocation／RegionCapture 測試通過；Debug／production plist 在 focused test window 前後 SHA-256 不變。完整 suite 的有效結果為 143／143；Windows／Linux runtime 仍由 CI 覆蓋。
+
+### REV-005 — 唯一檔名配置存在 TOCTOU
+
+- 狀態：Fix Ready
+- 證據：src/utils/FilenameTemplateEngine.cpp:258-308；src/region/RegionExportManager.cpp:200-205,246-295；src/cli/CaptureOutputHelper.cpp:73-74,112-120；src/PinWindow.cpp:1648-1663,6049-6070；src/utils/ImageSaveUtils.cpp:75-103。
+- 觸發：兩個 producer 在同一 output directory、timestamp 與 filename context 下並行儲存，且都在任一方 commit 前完成 QFile::exists 檢查。
+- 後果：兩個操作都可能回報成功，但後完成的 QSaveFile::commit 取代先前檔案，只剩一張，造成靜默資料遺失。
+- 完成條件：以 barrier 同步兩個 producer 和兩個 process；必須取得不同保留路徑並保留兩份不同內容。Recording 既有 collision retry 不得退化。
+- 修正證據：saveImageUnique 將同目錄暫存編碼與原子禁止覆寫發布整合，碰撞時沿用序號／UUID 重試。AtomicFilePublish 封裝 macOS exclusive rename、Linux renameat2 與 Windows MoveFileExW，POSIX 只允許 hard-link 安全回退。Region、Pin、Beautify 自動儲存及 CLI 自動命名入口均回報實際路徑；手動／明確 output 覆寫保持原契約。
+- 驗證：2026-09-12 macOS scripts/build.sh 通過；Utils_ImageSaveUtils、FilenameTemplateEngine、RegionExportManager、CLI_CaptureOutputHelper、RecordingManager_Lifecycle 五套測試及 Pin／Beautify 自動儲存回歸通過。包含同步雙執行緒／雙程序、100 次序號與 UUID 碰撞、dangling symlink、失敗清理、設定快照與最終路徑。Windows／Ubuntu 原子操作尚待實機驗證，保留 Fix Ready。對應本機 commit：fix: publish uniquely named images without overwriting。
+
+### REV-006 — CaptureChrome annotation cache 無上限成長
+
+- 狀態：Fix Ready
+- 證據：include/annotations/AnnotationLayer.h:218-249；src/AnnotationLayer.cpp:1019-1054,1075-1130；src/region/CaptureChromeWindow.cpp:386-392；src/region/RegionPainter.cpp:592-623。
+- 觸發：Windows capture overlay 已有 annotation，使用者反覆移動／resize selection，使 annotation viewport origin／size 持續產生新 CacheKey，而 layer revision 沒有改變。
+- 後果：m_annotationCaches 為無上限 map，每個 key 保留一張高 DPI QPixmap；長時間操作會持續增加 RAM／圖形資源，最終可能 OOM 或使程式／系統不穩定。
+- 完成條件：對數千個不同 viewport 做壓力測試，cache entries 與 retained bytes 必須有明確上限；畫面與 full repaint pixel parity 一致。
+- 修正證據：drawCached／drawWithDirtyRegion 共用有上限快取管理；每層最多 8 entries／128 MiB，配置前優先淘汰 exclude 暫存快取，再採 LRU。單張超額時只保留最新一張；null pixmap 回退直接繪製。所有移除／清空／append 路徑統一計數，cacheStats 提供唯讀統計；不修改 annotation、history state 或既有拖曳／release invalidation 契約。
+- 驗證：2026-09-12 macOS scripts/build.sh 與六套針對性測試通過。新增 5,000 組 viewport／DPR 逐像素比對、LRU／暫存優先、128 MiB 預算、單張超額、重用／清理／null fallback 與 history 不變性驗證。最終 scripts/run-tests.sh 全 147 項通過，all_qmllint exit 0；Windows compositor／縮放實機 smoke 尚待驗證，保留 Fix Ready。對應本機 commit：fix: bound annotation viewport pixmap caches。
+
+### REV-007 — Media Foundation player 強制終止 reader thread
+
+- 分類：Potential（未宣稱原始 crash／UAF 後果已重現）
+- 狀態：Fix Ready（防禦性修正）
+- 證據：src/video/MediaFoundationPlayer_win.cpp:532-556。
+- 觸發：close／reload 時 reader thread 在一秒內未退出。
+- 原始風險描述：程式呼叫 QThread::terminate，再立即 wait／delete；thread 可能在持有 mutex、執行 COM 或存取 player state 時被終止，造成 deadlock、heap corruption、UAF 或 crash。
+- 完成條件：移除強制 terminate 路徑；以可取消的 blocking read／cooperative shutdown 完成；反覆 load、seek、close 與損壞檔案壓力測試不 hang、不 crash，並通過 sanitizer／Application Verifier。
+- 重新判定：2026-09-12 核對 stopReaderThread，terminate → wait(500) → delete 仍在，最後 wait 結果未檢查；但尚未重現 blocking read／終止失敗造成 crash 或 UAF，不能僅由危險 API 斷言實際後果。維持待確認，不視為已修復。
+- 待確認：Windows 使用損壞檔案、延遲／阻塞 read 與反覆 close／reload 重現失敗，再依具體 thread lifetime 證據確認缺陷與修正範圍。
+
+- 修正證據：Source Reader 使用 MF_SOURCE_READER_ASYNC_CALLBACK，sample 經由 COM 自有引用與可取消 mailbox 交給 worker；取消即喚醒等待且丟棄遲到結果。首幀也走非同步路徑，pacing 等待可喚醒。停止後協作 join，再釋放 thread／reader／callback，移除 terminate 與未檢查的 timed wait。舊 generation 回呼仍由既有 guard 排除。
+- 設計依據：[Microsoft 非同步 Source Reader](https://learn.microsoft.com/en-us/windows/win32/medfound/using-the-source-reader-in-asynchronous-mode) 與 [Flush 契約](https://learn.microsoft.com/en-us/windows/win32/api/mfreadwrite/nf-mfreadwrite-imfsourcereader-flush)。
+- 驗證：2026-09-12 macOS canonical build、Video_SourceReaderMailbox 與 Video_VideoTrimmerSafety 通過；涵蓋無解碼回覆時取消、UI timer 不中斷、sample 引用清理與 500 次並行回覆／取消。Windows COM callback、30 次有效／損壞影片 reload／seek／close 與既有 paused-seek／loop 原生回歸已加入但未在本機執行；MSVC build／Application Verifier 尚待 Windows，維持 Fix Ready 與 Potential 分類。對應本機 commit：fix: cancel asynchronous Media Foundation reads before joining workers。
+
+### REV-008 — 首次麥克風授權會凍結 UI 並錯置錄影時間軸
+
+- 狀態：Fix Ready
+- 證據：src/capture/CoreAudioCaptureEngine_mac.mm:766-806；src/RecordingManager.cpp:953-985,1057-1075。
+- 觸發：macOS 麥克風權限為 NotDetermined，倒數結束後開始錄影。
+- 後果：主執行緒在 dispatch_semaphore_wait(DISPATCH_TIME_FOREVER) 等授權；RecordingManager 已先啟動 elapsed timer。使用者停留在系統 prompt 的時間會被算入第一個 video timestamp，而 audio timeline 從授權後的零點開始，造成 UI 凍結、開頭長空洞或 A/V 錯位。
+- 完成條件：授權流程不得阻塞主執行緒；只有音訊與影像皆準備好後才建立共同 epoch／進入 Recording；以延遲 5–10 秒授權、拒絕與允許三種情境驗證。
+- 修正證據：Preparing 保存錄影設定快照，非同步完成麥克風授權後才初始化 capture／encoder。start generation 與 QPointer 排除取消、重啟、銷毀及螢幕移除後的回呼；CoreAudio start 不再等待授權 semaphore。拒絕時僅調整本次有效來源，保留偏好並在準備完成後警告。倒數及延後 capture timer 同樣受 generation 保護。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 RecordingManager_Startup、StateMachine、Lifecycle、CoreAudioCaptureEngineSafety 四套測試通過；涵蓋事件迴圈持續運作、設定快照、授權狀態／格式／來源矩陣、取消／重啟／重複回覆／銷毀、計時起點與舊 timer。未重設日常 App TCC；獨立 bundle 首次授權及實際影音同步 smoke 尚待執行，保留 Fix Ready。對應本機 commit：fix: request microphone permission before recording initialization。
+
+### REV-009 — Screen Canvas 文字 transform 重用舊 annotation cache
+
+- 狀態：Verified（修正位於未提交工作樹）
+- 證據：src/ScreenCanvasSession.cpp 的 drawAnnotations；src/region/TextAnnotationEditor.cpp 的 start／update／finish dragging/transform；tests/ScreenCanvas/tst_AnnotationRenderHelper.cpp。
+- 觸發：選取文字後拖移、旋轉或縮放；文字 transform 在 interaction 期間不增加 layer revision，舊邏輯也未把 text editor 視為 active interaction。
+- 後果：draw path 可重用含舊文字位置／transform 的快取，畫面出現殘影、舊位置或操作結束後仍顯示 stale content。
+- 完成條件：position／rotation／scale 三種 interaction 的 live frame 與明確 dirty-path frame pixel-equal；release 後 cache revision 更新；Screen Canvas、Region、Pin 均無回歸。
+- 修正證據：ScreenCanvasSession::drawAnnotations 已統一使用 hasActiveAnnotationInteraction，使 text drag／rotation／scale 在 interaction 期間走 exclude-selected dirty path；TextAnnotationEditor::finishDragging／finishTransformation 在 release 時各 invalidate layer cache 一次，move 期間不重建整層 cache。
+- 驗證：ScreenCanvas_AnnotationRenderHelper 以 position／rotation／scale 三列先建立舊 full cache，再驗證 live frame 與明確 dirty-path frame pixel-equal；Tools_TextToolHandler 驗證 move 期間 revision 不變、release 後增加；RegionSelector_TextAnnotationEditor 與全部 PinWindow suites 通過。scripts/build.sh 通過；完整 scripts/run-tests.sh 為 140／143 通過，僅 Platform_GuiClipboardOrdering（sandbox pasteboard）、IPC_SingleInstanceGuardActivation（sandbox IPC）與 Settings_SettingsBackend（sandbox 禁止 /bin/ps）失敗，均不在本項路徑。
+
+### REV-010 — selection create／一般 resize 沒有 clamp 到 bounds
+
+- 狀態：Fix Ready
+- 證據：src/region/SelectionStateManager.cpp:94-129,203-373；相對地 updateMove／setFromDetectedWindow 會在 436-468 呼叫 clampToBounds。
+- 觸發：拖曳到 capture widget 外建立 selection，或用未鎖比例的 handle resize 超出四個邊界。
+- 後果：selection rect 可大於可擷取畫布；後續實體 copy 會被 intersect，但 UI dimension、toolbar placement、history／metadata 使用未截斷 rect，產生尺寸與實際輸出不一致或控制項跑出畫面。
+- 完成條件：create 與八個 resize handle 在四邊越界時都維持於 bounds；鎖比例與最小尺寸契約不變；export／history rect 與實際 pixels 一致。
+- 修正證據：手動新選取限制 press／move，普通 resize 僅限制被拖曳的邊；比例鎖定選取／角落以 bounds 內的 inclusive 寬高計算，保留固定 anchor 與最小尺寸。未設定 bounds 及程式化 setSelectionRect 保持原契約。
+- 驗證：2026-09-12 macOS scripts/build.sh、SelectionStateManager、RegionExportManager、MultiRegionReplaceFlow 三套測試通過。新增四方向／比例矩陣、八種 handle、反向拖曳、最小尺寸、固定 anchor、非零 bounds 與 HiDPI 輸出／annotation 對位驗證。Windows／Ubuntu 手動選取 UI smoke 待補，標為 Fix Ready。對應本機 commit：fix: keep manual selections and resize handles within canvas bounds。
+
+### REV-011 — selection release 忽略最後座標
+
+- 狀態：Fix Ready
+- 證據：src/region/RegionInputHandler.cpp:385-445,1284-1344；handleSelectionRelease 對 pos 使用 Q_UNUSED。
+- 觸發：最後一個 mouse move 被 coalesce／漏送，release 位置不同於上一個 move；小拖曳尤其容易發生。
+- 後果：selection 終點停在舊位置；本應成立的 selection 可能被判成小點擊並改為 detected window 或 full-screen selection。
+- 完成條件：release 前必須套用最後座標到 selecting／resizing／moving 狀態；加入「只有 press + release、沒有中間 move」及 coalesced final move 測試。
+- 修正證據：move、polling、release 共用 updateSelectionGesture，release 先套用事件座標再 finish；pending detected-window click 也依最後位移轉成拖曳。保留點擊門檻、FloatingUi release 與多區域語意，未修改 annotation release。
+- 驗證：2026-09-12 macOS scripts/build.sh、RegionInputHandler 與 MultiRegionReplaceFlow 通過；新增 16 組 detected／move／multi／floating 矩陣及 resize／move 最後座標測試。原生 RegionSelector_StyleSync 為 29 passed／5 skipped／0 failed；Windows／Ubuntu 真實輸入與跨螢幕 smoke 尚待驗證，保留 Fix Ready。對應本機 commit：fix: apply final release coordinates to selection gestures。
+
+### REV-012 — Eraser 快速拖曳會漏擦
+
+- 狀態：Fix Ready
+- 證據：src/tools/handlers/EraserToolHandler.cpp:33-55,119-130。
+- 觸發：相鄰 mouse move event 的距離大於 eraser diameter，且中間有 annotation。
+- 後果：eraseAt 只查詢離散 sample 圓／方位，沒有沿 m_lastPoint 到 pos 插值；使用者看到連續拖曳，但中間物件仍保留。
+- 完成條件：按 brush 半徑或更小步距沿 segment 掃描；不同事件密度得到相同擦除結果；一個 gesture 仍只產生一個 undo command。
+- 修正證據：Eraser move／release 改查詢前後事件之間完整的 round-cap swept path；Pencil／Marker／Mosaic 使用筆畫幾何交集，其餘物件維持 expanded bounding rect 語意。沿用單次 gesture transaction、取消復原及原始 z-order。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 Tools_EraserToolHandler、Annotations_AnnotationLayer、Annotations_MosaicStroke 三套測試通過；新增 24 組事件密度／方向／取消矩陣，涵蓋 press＋release、四類物件及單次 undo／redo。Windows／Ubuntu 原生輸入 smoke 待補，保留 Fix Ready。對應本機 commit：fix: erase annotations across complete drag segments。
+
+### REV-013 — Arrow endpoint curve 依事件取樣而變
+
+- 狀態：Fix Ready
+- 證據：src/annotations/ArrowAnnotation.cpp:262-280；src/region/RegionInputHandler.cpp:1572-1582；src/PinWindow.cpp:5593-5603；src/ScreenCanvasSession.cpp:2608-2615。
+- 觸發：拖動既有 curved arrow 的 start／end；總位移被拆成多個含奇數像素的 move delta。
+- 後果：每次 setStart／setEnd 都以 QPoint 的 delta / 2 更新 control point並截斷。相同起終點若由不同事件序列到達，最終 control point 與曲線形狀不同。
+- 完成條件：以 drag-start snapshot 計算一次絕對結果或使用無截斷浮點；一大步與多小步的最終 start/end/control 必須完全一致。
+- 修正證據：Arrow control point 全程使用 QPointF，端點位移以浮點半位移更新；初始 midpoint、三個編輯入口、clone 與 History JSON 皆保留小數，既有整數資料仍可讀取。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 ArrowAnnotation、AnnotationSerializer、TransformationGizmo、ArrowToolHandler 四套測試通過。新增正負奇數位移／起終端點一大步與 29 小步的座標及像素一致測試，並驗證反向還原、clone、整數／半像素序列化與 undo／redo；跨平台原生拖曳 smoke 待補，保留 Fix Ready。對應本機 commit：fix: preserve fractional arrow control points during endpoint edits。
+
+### REV-014 — 寬箭頭的視覺超出 bounding／hit geometry
+
+- 狀態：Fix Ready
+- 證據：src/annotations/ArrowAnnotation.cpp:154-224,227-241；src/annotations/PolylineAnnotation.cpp:140-226,260-280。
+- 觸發：使用較大 line width；arrowhead length 為 max(10, width × 3)，但 Arrow bounding 固定 margin 20，Polyline margin 也遠小於 3 × width；containsPoint 只 stroke 主路徑。
+- 後果：arrowhead 可在 dirty repaint／cache／export 中被裁切，且點擊可見 arrowhead 可能無法選取 annotation。
+- 完成條件：bounding rect 與 hit path 必須包含各種 line-end style 的實際 arrowhead geometry；寬度最小／最大與各角度做 pixel bounds、dirty repaint、selection 測試。
+- 修正證據：Arrow／Polyline 共用 LineAnnotationGeometry，繪製、bounds 及 hit testing 取自相同 shaft／head paths；bounds 包含線寬、圓角及抗鋸齒邊距，實心／外框／V 型及雙箭頭均可點選。保留逐筆直接繪製，未擴大 generic culling。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 ArrowAnnotation、PolylineAnnotation、AnnotationLayer、ArrowToolHandler、PolylineToolHandler、EraserToolHandler 六套測試通過；432 組矩陣涵蓋寬度 1／30／100、六種 end styles、四個方向、DPR 1／1.5／2 與負 origin，驗證 bounds clip／快取／dirty／直接繪製像素一致及可見像素 hit。Windows／Ubuntu 原生 repaint smoke 待補，保留 Fix Ready。對應本機 commit：fix: share painted arrow geometry for bounds and hit testing。
+
+### REV-015 — Polyline 短末段把箭頭放在倒數頂點
+
+- 狀態：Fix Ready
+- 證據：src/annotations/PolylineAnnotation.cpp:64-135。
+- 觸發：polyline 至少三點，最後一段短於 arrowLength。
+- 後果：arrowTipIdx 改為倒數頂點，但 path loop 仍繼續畫到真正末點；結果是箭頭出現在中途，箭頭尖端後還有一段線尾，與 end-arrow 語意相反。
+- 完成條件：不論末段長度，end arrow 必須位於視覺終點且 shaft 正確縮短；涵蓋零長度、短折線、急角與各 arrow style。
+- 修正證據：Polyline head 固定在實際終點，沿折線回溯計算接合底部與方向；短末段可跨頂點接合、整條短線限制 head 尺寸，雙箭頭各使用最多半條線長。shaft 依路徑長度裁短，不再反向延伸；重複／同向共線點只在繪製時正規化，原始頂點與 History 資料保留。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 PolylineAnnotation、ArrowAnnotation、AnnotationLayer、PolylineToolHandler、AnnotationSerializer 五套測試通過；新增 107 組短線／方向／style／重複／零長度／急角／回頭路徑情境，驗證分段前後像素相同、shaft 不越過尖端、實際終點 head wing 像素。REV-014 的 432 組 clip／cache／hit 矩陣仍通過；跨平台 UI smoke 待補，保留 Fix Ready。對應本機 commit：fix: anchor polyline arrowheads at the final endpoint。
+
+### REV-016 — 小 annotation 的 gizmo handles 可能不可達
+
+- 狀態：Fix Ready
+- 證據：include/TransformationGizmo.h:48-56；src/TransformationGizmo.cpp:119-153,224-258,306-337,394-430,452-472。
+- 觸發：文字、emoji、shape、arrow 或相鄰 polyline vertices 的 handle centers 距離小於兩個 hit radius 總和。
+- 後果：hit zones 重疊，固定的檢查順序永遠回傳前一個 handle；後面的 corner／endpoint／vertex 即使可見也選不到。
+- 完成條件：重疊時依最近距離與穩定 tie-break 選擇；對小尺寸、重合 endpoints／vertices 與旋轉後物件做 data-driven hit test。
+- 修正證據：Text／Emoji／Shape／Arrow／Polyline 的 gizmo 使用共用最近距離判定，只比較落在各自有效半徑內的候選；同距離保留 rotation／corner、control／start／end、vertex 原順序作穩定 tie-break。仍先判定 handle，再回退 body／none。
+- 驗證：2026-09-12 macOS scripts/build.sh、TransformationGizmo 與 RegionInputHandler 通過；新增 27 組小尺寸／旋轉／負座標／重合／同距離／半徑邊界與 body fallback 測試。REV-012～016 整合後 scripts/run-tests.sh 全 149／149 套測試通過（既有平台及環境 skip 保留），all_qmllint exit 0（既有 warnings）；Windows／Ubuntu 原生互動 smoke 待補，保留 Fix Ready。對應本機 commit：fix: select the nearest overlapping annotation handle。
+
+### REV-017 — 文字空白與編輯／成品換行布局不一致
+
+- 狀態：Fix Ready
+- 證據：src/annotations/TextBoxAnnotation.cpp:40-87,153-183。
+- 觸發：連續／前後空白，或在窄輸入框編輯長 CJK／英文文字。
+- 後果：成品折疊空白；輸入框的 soft wrap 寬度未傳入 annotation，提交後變成自然寬度的單行並在匯出時被裁切。已用 52 字中文於 220 px 選區重現輸入布局 6 行、成品寬 1108 px；長英文亦同。
+- 完成條件：rendered text 保留原始 whitespace 語意；CJK 可在 grapheme boundary 換行且不切斷 surrogate／combining sequence；加入 mixed-script 與多空格 pixel／layout 測試。
+- 修正證據：文字編輯器與成品共用 QTextDocument 換行設定，保留空白、空行與 Unicode grapheme；提交保存實際 text width，成品按該寬度重新排版。重編輯固定原 wrap width，clone／History JSON 保存可選 wrapWidth（舊資料預設自然寬度），保留原本 baseline、旋轉／縮放與 Qt 原生字型光柵化。
+- 驗證：2026-09-12 macOS scripts/build.sh、TextBoxAnnotation、TextAnnotationEditor、AnnotationSerializer、ScreenCanvas_AnnotationRenderHelper 通過；15 組空白／空行／CJK／長英文／combining＋ZWJ emoji × DPR 1／1.5／2，驗證編輯與成品 line spans 一致、水平不溢出、重編輯／clone／serialization 像素一致。跨平台輸入法及原生編輯 UI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: preserve text whitespace and layout through annotation editing。
+
+### REV-018 — Detected-window metadata 在儲存前被清除
+
+- 狀態：Fix Ready
+- 證據：src/region/RegionInputHandler.cpp:1284-1344；src/RegionSelector.cpp:1005-1011,4101-4116。
+- 觸發：點擊 detected window 建立選取，之後按 Save／auto-save。
+- 後果：selection release 呼叫 clearDetectionAndNotify，RegionSelector connection 同時 reset m_detectedWindow；saveToFile 因此把 windowTitle／ownerApp 設成空字串。使用 window／app token 的 filename 與 metadata 遺失。
+- 完成條件：完成 detected-window selection 時保存 metadata snapshot，直到 selection 被替換／取消；Save、Copy history、quick pin 各入口使用一致 snapshot。
+- 修正證據：選取完成時保存 windowTitle／ownerApp，與 hover detection 分離；SaveRequest 使用選取快照，移動／resize 保留來源資訊，新選取／取消／程式化替換清除。共用 HistoryCaptureSnapshot 將資訊傳入 Save／Copy／Quick Pin 的 History 記錄；manifest 新增可選欄位，History replay／live slot 可還原，舊 manifest 仍相容。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 HistoryReplay、RegionInputHandler、RegionExportManager、HistoryStore、HistoryRecorder 五套回歸通過；驗證真實 press／release 清除 highlight 後 metadata、獨立命名快照、移動與替換、manifest roundtrip／舊檔相容及 replay。跨平台原生視窗偵測／UI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: retain selected window metadata through export and history。
+
+### REV-019 — 跨螢幕保留 selection 後按 Enter 不寫 History
+
+- 狀態：Fix Ready
+- 證據：src/RegionSelector.cpp:2111-2156,4461-4470；一般 finishSelection／history submission 位於 1838-1892。
+- 觸發：完成單一 selection 後把游標切到另一螢幕，selection 被保存成 m_preservedSelectionPixmap；此時按 Enter。
+- 後果：finishPreservedSelection 只 emit regionSelected 並 close，繞過正常 pending history submission；截圖可成功交付，但 History 缺少這筆紀錄。
+- 完成條件：preserved path 與一般 finish path 使用同一個 history contract；驗證圖片、global rect、DPR、annotations 與 history entry 完整一致。
+- 修正證據：preserveCompletedSelectionSnapshot 同時保留原 canvas／selection／annotations／DPR／metadata 的 HistoryCaptureSnapshot；跨螢幕後 Enter 使用保留快照提交共用 History writer。完成前先消費 preserved state，取消清除快照，避免重複交付與 History 重複記錄。
+- 驗證：2026-09-12 macOS scripts/build.sh、HistoryReplay、RegionInputHandler、HistoryRecorder 通過；6 組 DPR 1／1.5／2 與取消矩陣，以 Enter 驗證原 canvas／輸出像素、global rect、selection、annotations JSON、metadata 與單一 History entry，模擬新畫布及不同 DPR 不污染舊截圖。實際多螢幕切換 smoke 待補，保留 Fix Ready。 對應本機 commit：fix: record preserved cross-screen selections in history。
+
+### REV-020 — Screen Canvas 自訂顏色沒有完整同步／保存
+
+- 狀態：Fix Ready
+- 證據：src/ScreenCanvasSession.cpp:2016-2053。
+- 觸發：在 Screen Canvas 的 More Colors 選擇自訂顏色。
+- 後果：preset color 走 onColorSelected，會同步 ToolManager、laser、inline editors、ViewModel 並 saveColor；custom callback 只更新 ToolManager 與 ViewModel。Laser／現有 inline editor 仍用舊色，重開後也回到舊設定。
+- 完成條件：所有 color entry 共用同一同步與持久化函式；驗證 pencil／text／laser、所有 surface、重開 session 後顏色一致。
+- 修正證據：More Colors 的 colorSelected 回呼改走 onColorSelected，共用 preset color 的 ToolManager／laser／所有 inline editors／ViewModel 同步與 AnnotationSettingsManager 保存流程。
+- 驗證：2026-09-12 macOS scripts/build.sh、ScreenCanvas_StyleSync 與 SessionRecovery 通過；新增 pencil／正在編輯 text／active laser 三組，透過實際 picker signal 驗證兩個 surface、狀態、持久化與新 session 還原顏色。跨平台多螢幕原生 UI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: synchronize and persist custom screen canvas colors。
+
+### REV-021 — CLI file pin 略過正常圖片載入契約
+
+- 狀態：Fix Ready
+- 證據：src/MainApplication.cpp:183-216；正常路徑位於 616-629,659-698；src/PinWindow.cpp:519-572；src/pinwindow/PinWindowPlacement.cpp:57-98。
+- 觸發：snaptray pin --file 載入含 EXIF rotation／mirror 的 JPEG，或尺寸遠大於螢幕的圖片。
+- 後果：CLI 直接 QImage(filePath) 並自行置中，未 setAutoTransform、display conversion 或 computeInitialPinWindowPlacement；圖片方向錯誤，或以原尺寸大幅超出螢幕。
+- 完成條件：CLI 與 GUI Pin from Image 共用 loader／placement；EXIF 6／8／mirrored fixtures pixels 一致；超大圖符合既有 90% available-geometry auto-fit。
+- 修正證據：GUI 與 CLI file Pin 共用非同步 QImageReader loader，套用 EXIF auto-transform、display conversion 與既有 availableGeometry 90% auto-fit；同時指定 x/y 時保留明確位置，watcher 由 MainApplication 管理生命週期。
+- 驗證：2026-09-12 macOS canonical build 與原生 Cocoa App_MainApplicationTrayMenu、PinWindow_PinWindowPlacement、CLI_NumericArgumentValidation 3 套通過；5 組真實 CLI IPC fixture 覆蓋 EXIF 6／8／mirror pixels、超大圖片、指定位置與顯示色彩轉換。Windows／Linux 原生 UI 待補，保留 Fix Ready。 對應本機 commit：fix: share image loading and placement for CLI file pins。
+
+### REV-022 — CLI clipboard pin 忽略 x／y
+
+- 狀態：Fix Ready
+- 證據：src/cli/commands/PinCommand.cpp:81-112；src/MainApplication.cpp:179-218,849-901。
+- 觸發：snaptray pin --clipboard -x 200 -y 120。
+- 後果：IPC message 有 x／y，但 clipboard branch 呼叫無座標的 onPasteFromClipboard；Pin 固定在游標螢幕中央，CLI 仍回報成功。
+- 完成條件：同時提供 x/y 時 top-left 精確符合；皆未提供或只提供一個時維持既有置中契約。
+- 修正證據：clipboard Pin 共用私有 helper 接收 optional position；CLI 同時提供 x/y 時直接套用，GUI 快捷鍵、皆未提供與單一座標仍依游標螢幕置中。
+- 驗證：2026-09-12 macOS canonical build 與原生 Cocoa App_MainApplicationTrayMenu 通過；8 組圖片／文字及座標完整／缺漏矩陣涵蓋負座標與 HiDPI 圖片。Windows／Linux UI 待補，保留 Fix Ready。 對應本機 commit：fix: honor explicit coordinates for CLI clipboard pins。
+
+### REV-023 — gui --delay 非數字被接受
+
+- 狀態：Fix Ready
+- 證據：src/cli/commands/GuiCommand.cpp:10-29；src/cli/CLIHandler.cpp:98-118；src/MainApplication.cpp:167-174。
+- 觸發：已有主程式時執行 snaptray gui --delay abc 或 overflow 數字。
+- 後果：preflight 未驗證；QString::toInt 未檢查 ok，失敗得到 0。非法命令回傳成功並立即啟動 Region Capture。
+- 完成條件：非法、空值、overflow 回 InvalidArguments 且不發 IPC／不啟動 capture；0 與合法正整數維持契約。
+- 修正證據：GuiCommand 在 IPC preflight 使用 toInt(ok) 驗證 delay 且拒絕負數；buildIPCMessage 防禦性略過非法 delay，避免靜默轉成零。
+- 驗證：2026-09-12 macOS canonical build 與 CLI_NumericArgumentValidation 通過；非數字、空值、overflow、負數皆在 CLIHandler preflight 回 InvalidArguments，0／250／int 最大值保持正確 IPC payload。跨平台 CLI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: validate GUI capture delay before sending IPC。
+
+### REV-024 — full --screen 負數被當成未指定
+
+- 狀態：Fix Ready
+- 證據：src/cli/commands/FullCommand.cpp:43-79。
+- 觸發：snaptray full --screen=-1 或其他可解析的負數。
+- 後果：負數成功轉成 int，之後因 screenNum >= 0 不成立而落入游標螢幕 fallback；明確的非法輸入卻成功擷取另一個螢幕。
+- 完成條件：任何提供但小於 0 的 screen 都回 InvalidArguments；只有完全未提供 option 才可 fallback。
+- 修正證據：FullCommand 僅在未指定 screen 時保留 -1 sentinel；任何明確提供的負數在 delay／capture 前回 InvalidArguments。
+- 驗證：2026-09-12 macOS canonical build 與 CLI_NumericArgumentValidation 通過；-1／-2／int 最小值皆拒絕，並驗證不進入 10 秒 delay。跨平台 CLI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: reject explicitly negative full capture screen indices。
+
+### REV-025 — Linux filename 限制使用字元數而非 bytes
+
+- 狀態：Fix Ready
+- 證據：src/utils/FilenameTemplateEngine.cpp:311-339,360-389；src/region/RegionExportManager.cpp:191-198；src/utils/ImageSaveUtils.cpp:75-84。
+- 觸發：ext4 等 NAME_MAX 以 bytes 計算的檔案系統，template 含長 CJK、emoji 或多 byte Unicode metadata。
+- 後果：QString::length／left 判定少於 255，但 UTF-8 component 超過 255 bytes；QSaveFile::open 以 ENAMETOOLONG 失敗，auto-save 無輸出。
+- 完成條件：Ubuntu 22.04 實際寫入 CJK、emoji、mixed ASCII；basename.toUtf8().size 不超過目標限制，保留 extension／collision suffix／hash，不切斷 grapheme。
+- 修正證據：Linux 依 UTF-8 bytes 與目的目錄 NAME_MAX 限制檔名，使用 grapheme boundary 裁切；保留副檔名、hash、counter／UUID 尾碼。必要尾碼無法容納時回報錯誤，不把空檔名當目的目錄發布；Windows 既有路徑長度政策保留。
+- 驗證：2026-09-12 macOS scripts/build.sh、FilenameTemplateEngine、ImageSaveUtils、RegionExportManager 通過；12 組 CJK／mixed／combining／ZWJ emoji 與 suffix 矩陣驗證 byte budget、完整字元群及實際檔案寫入，另驗證 counter／UUID、並行唯一存檔與失敗清理回歸。Linux 原生 render／collision 寫檔斷言已加入，Ubuntu ext4 runtime 待補，保留 Fix Ready。 對應本機 commit：fix: bound Linux filenames by UTF-8 bytes without splitting graphemes。
+- 整合回歸補充：counter 保留範圍改由 template 的末尾 {#}／{#:n} 決定，避免把 window/app metadata 的長數字誤判為不可裁切的 counter。新增 400 位數 metadata 與 30 位格式 counter 測試；macOS canonical build、FilenameTemplateEngine／ImageSaveUtils／RegionExportManager 通過。對應本機 commit：fix: reserve filename counters only when declared by templates。
+
+### REV-026 — Linux display-server 衝突時錯判 X11
+
+- 狀態：Fix Ready
+- 證據：src/platform/PlatformCapabilities.cpp:21-69,92-105；src/main.cpp:92-96,144-147。
+- 觸發：XDG_SESSION_TYPE=wayland 但 Qt QPA=xcb，或 XDG_SESSION_TYPE=x11 但 QPA=offscreen／minimal。
+- 後果：判斷以 OR 且先回傳 X11；runtime guard 錯誤放行並啟用只支援 Ubuntu 22.04 X11 的 capture、global hotkey、window detection。
+- 完成條件：建立 session/QPA 決策矩陣並 fail closed；x11+xcb 才 supported，wayland、offscreen、minimal 與衝突訊號不得啟用 X11-only capabilities。
+- 修正證據：display-server 判定採 session 與實際 Qt backend 同時符合 x11＋xcb 才放行；Wayland／XWayland、offscreen／minimal、缺少或衝突訊號保持不支援，移除僅憑 DISPLAY 的放行 fallback。Linux Xvfb 測試腳本與 CI 明確設定其 x11 session。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 Platform_Capabilities 通過，新增 25 組 session／QPA 決策矩陣，驗證 runtime、hotkey、window detection 同步停用，Linux 錄影／OCR 維持關閉；scripts/run-tests.sh bash -n 通過。Ubuntu X11／Wayland 實機啟動與更新後 CI 待執行，保留 Fix Ready。 對應本機 commit：fix: require matching Linux X11 session and Qt backend。
+
+### REV-027 — CursorTokens 未註冊為 QML singleton
+
+- 狀態：Fix Ready
+- 證據：CMakeLists.txt:910-923；src/qml/tokens/CursorTokens.qml:1-13；代表性引用 src/qml/controls/SettingsButton.qml:64-69。
+- 觸發：建立任何引用 CursorTokens.* 的 SnapTrayQml 元件；目前約 41 個 references。
+- 後果：runtime 可出現 ReferenceError；AOT 路徑會退回預設 Arrow，enabled button 沒有 PointingHand、drag 沒有 ClosedHand。
+- 完成條件：生成 qmldir 宣告 singleton CursorTokens；all_qmllint 無相關 warning；runtime 驗證 SettingsButton 與 toolbar drag cursor。
+- 修正證據：在 qt_add_qml_module 前將 CursorTokens.qml 加入 QT_QML_SINGLETON_TYPE 清單，生成正確 singleton qmldir entry；保留既有 tokens 資源路徑與宣告。
+- 驗證：2026-09-12 macOS scripts/build.sh、CursorTokens、ToolbarOverflow、SettingsWindowFeatureGating 通過；驗證正式 resource／QML cache 的 SettingsButton enabled/disabled 游標、工具列 press/release 游標，以及與正式 engine 相同 import path 下有版本／無版本匯入和 singleton instance。最終 scripts/run-tests.sh 155／155 套通過（既有平台／環境 skip 保留）；首跑 DialogModality 在建立 dialog 前的基準鍵盤計數異常，獨立與完整重跑皆通過。all_qmllint exit 0，無 CursorTokens 相關警告。Windows／Ubuntu 原生 cursor smoke 待補，保留 Fix Ready。 對應本機 commit：fix: register CursorTokens as a QML singleton。
+
+### REV-028 — CLI install／uninstall 失敗後 Settings 永久 busy
+
+- 狀態：Fix Ready
+- 證據：src/qml/settings/GeneralSettings.qml:89-132；src/qml/SettingsBackend.cpp:958-971；src/platform/PlatformFeatures_mac.mm:266-295；src/platform/PlatformFeatures_linux.cpp:183-209；Windows 實作 src/platform/PlatformFeatures_win.cpp:173-197。
+- 觸發：使用者點 Install／Uninstall，之後取消 macOS 管理員授權，或 Linux mkdir／open／chmod／remove 失敗。
+- 後果：QML 先設 busy=true，失敗時 backend 不 emit cliInstalledChanged，而這是唯一解除 busy 的路徑；按鈕停在 Please wait... 直到重建 Settings。Windows 寫 Registry 後也未 sync／檢查 status，可能 false-success。
+- 完成條件：成功與失敗都發出 completion；失敗恢復 busy、保留原狀態並顯示錯誤；Windows 驗證實際 PATH store 狀態後才回成功。
+- 修正證據：SettingsBackend 成功／失敗皆發出 cliOperationFinished，失敗保留原安裝狀態；QML completion 解除 busy 並顯示錯誤文字。Windows PATH mutation 必須 sync、檢查 QSettings status 並從新 store 讀回比對後才回成功及 broadcast。新增可注入的私有 operation helper 與隔離 PATH persistence 測試。
+- 驗證：2026-09-12 macOS canonical build、all_qmllint 與原生 Cocoa Settings_SettingsBackend、Qml_SettingsWindowFeatureGating、CLI_PathPersistence 3 套通過；8 組 install/uninstall/state/result 矩陣、QML 失敗後恢復、持久化／讀回／寫入失敗皆涵蓋。sandbox/offscreen Settings 舊 update 測試逾時，原生重跑通過；Windows 私有 Registry fixture 已加入，原生驗證待補，保留 Fix Ready。 對應本機 commit：fix: complete failed CLI installation actions and verify PATH writes。
+
+### REV-029 — ColorWheel triangle 的 value 軸使用錯誤尺寸
+
+- 狀態：Fix Ready
+- 證據：src/colorwidgets/ColorDialog.cpp:49-54；src/colorwidgets/ColorWheel.cpp:145-170,262-299,319-333,402-415。
+- 觸發：預設 Triangle color picker，在 triangle 右側選擇高 value 顏色。
+- 後果：x 軸長度是 width，render 卻用 x / height；最右端只畫約 86% value，但 selector／輸出可到 100%，指示點下顏色與實際 QColor 不一致。x=0 的 sliceH=0 亦可導致 saturation 除零。
+- 完成條件：固定 hue，對多個 S/V 比較 selector pixel 與 color()；包含 V=0/128/255、邊界與不同 DPR，且不得有 NaN／invalid QColor。
+- 修正證據：Triangle texture 的 value 軸改依實際像素寬度，端點取樣涵蓋完整 0～1，零寬切片固定 saturation 0 避免除零；HSV／HSL 使用與 color() 相同的 hue 與整數色彩範圍，維持 LCH 契約。
+- 驗證：2026-09-12 macOS scripts/build.sh、ColorWidgets_ColorWheel 與 ScreenCanvas_StyleSync 通過；27 組尺寸／hue／HSV-HSL-LCH 矩陣驗證端點、黑白及中間色，實際 mouse selection 與 texture 一致；另在 DPR 1.5、2 各 30 個 Qt Test 計數全數通過。跨平台色盤原生顯示 smoke 待補，保留 Fix Ready。 對應本機 commit：fix: align triangle color wheel rendering with selected colors。
+
+### REV-030 — QmlDialog::setModal(true) 沒有建立 modal window
+
+- 狀態：Fix Ready
+- 證據：src/qml/QmlDialog.mm:113-136,175-207；caller：src/MainApplication.cpp:1140-1149、src/PinWindow.cpp:1767-1791。
+- 觸發：caller 在 show 前 setModal(true)。
+- 後果：函式只保存 bool，未對 backing QQuickView 呼叫 setModality；QWindow::modality 仍為 NonModal。背景 PinWindow／其他視窗仍可能接受 input。
+- 完成條件：modal true/false 的 backing QWindow modality 正確；用背景測試視窗驗證 mouse／key 阻擋；覆蓋 screen picker 與 share-password caller。
+- 修正證據：QmlDialog 首次 show 前套用 ApplicationModal／NonModal；可見時 hide→切換→show 更新 Qt modal registry，保留 geometry、ViewModel 與 transient parent 且不發 closed。Region Capture 與 History replay 共用 MainApplication 的模式互斥判斷，queued History 請求在執行時重新檢查。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 Qml_DialogModality、App_MainApplicationTrayMenu、RegionSelector_TransientUiCancelGuard 三套原生回歸通過。包含 QWindow 滑鼠／鍵盤阻擋及恢復、可見時切換、screen picker／share-password 真實 QML、History queued 操作及錄影狀態／快捷鍵互斥。Windows／Ubuntu modal 與雙螢幕 UI smoke 待補，保留 Fix Ready。對應本機 commit：fix: enforce dialog modality and guard history capture entry。
+
+### REV-031 — Pin Info 顯示新值但 Copy 複製舊值
+
+- 狀態：Fix Ready
+- 證據：src/PinWindow.cpp:1326-1348,2209-2230。
+- 觸發：先開過一次 context menu，再 zoom／rotate／flip／opacity／resize／crop，重新開 Info 並點單一列。
+- 後果：action text 被更新，但 triggered lambda capture 的 value 仍是第一次建立時的字串；clipboard 與畫面不同。Copy All 不受影響。
+- 完成條件：Size／Zoom／Rotation／Opacity／Mirror／crop data rows 都驗證顯示值與 clipboard 同步。
+- 修正證據：Info QAction 保存目前 value 在 data 中，refreshInfoMenu 同時更新顯示與 payload；triggered 讀取即時 data，連線生命週期綁定 action，不再捕捉第一次建立時的舊值。
+- 驗證：2026-09-12 macOS scripts/build.sh、PinWindow_Transform 與 CropUndo 通過；同一組 actions 在初始、zoom／rotation／opacity／兩軸 mirror、crop 與再次變更後，逐列 trigger 驗證 clipboard 等於顯示值。Windows／Ubuntu 原生 clipboard smoke 待補，保留 Fix Ready。 對應本機 commit：fix: copy current values from pin info actions。
+
+### REV-032 — macOS SCK 未排除錄影 tooltip window
+
+- 狀態：Fix Ready
+- 證據：src/RecordingManager.cpp:553-557；src/capture/SCKCaptureEngine_mac.mm:467-485；src/qml/QmlRecordingControlBar.mm:104-120,195-214。
+- 觸發：ScreenCaptureKit stream 建立後，使用者 hover control bar 顯示獨立 tooltip window。
+- 後果：content filter 初始化時只收到 control bar winId；tooltip 沒被加入 excludingWindows。setSharingType:NSWindowSharingNone 是 legacy window-sharing policy，不能替代 SCK content filter，因此 tooltip 可被錄進影片。
+- 完成條件：錄影時建立／顯示 tooltip，逐 frame 確認輸出不含 control bar 與 tooltip；動態出現的 overlay 必須更新 filter 或在 stream 前完整建立並排除。
+- 修正證據：錄影準備階段預建 tooltip native window，以不可見 root 保留 WindowServer 身分；hover／hide 不重建視窗。GUI thread 先保存 control bar＋tooltip 的 CGWindowID，再交給非同步 init／SCK filter，避免 worker 存取 NSView；SCK 納入 offscreen windows，若本次錄影需要的排除項缺失則回報失敗。既有 Pin live capture 的 Qt WId 入口保留。
+- 驗證：2026-09-12 macOS scripts/build.sh、RecordingManager_InitTask／Startup 與原生 CaptureExclusion 通過。macOS 26.6.2 的 current-process SCShareableContent 確認兩個視窗皆可被發現，反覆 tooltip show／hide、close／重建 ID 快照與生命週期回歸通過。逐幀 SCK 像素測試已加入，但測試 executable 未有 Screen Recording 權限而 skip，未要求或重設 TCC；保留 Fix Ready，待實際錄影與其他 macOS 版本 smoke。 對應本機 commit：fix: include recording tooltips in ScreenCaptureKit exclusions。
+
+### REV-033 — Windows 10 2004 前 exclusion 會變無內容佔位
+
+- 狀態：Fix Ready
+- 證據：src/platform/WindowLevel_win.cpp:59-94；src/qml/QmlRecordingControlBar.mm:214-224。
+- 觸發：在 Windows 10 version 2004 前使用 WDA_EXCLUDEFROMCAPTURE (0x11)。
+- 後果：API 在舊版本按 WDA_MONITOR 行為處理，視窗不是透明消失，而是在 capture 中成為無內容佔位（顏色依擷取路徑而定）；程式註解與 UI 契約誤以為只是「仍可見」。
+- 完成條件：runtime version gate；舊版採明確 fallback／警告或不顯示 overlay；Windows 10 1909 與 2004+ 各做錄影 pixel smoke。
+- 修正證據：共用 Windows capture-affinity policy 以 Qt 回報的真實 OS build gate Windows 10 2004；舊版使用 WDA_NONE 保持控制列可操作，避免 WDA_MONITOR 無內容佔位。QWidget／QWindow、錄影 control bar／tooltip／boundary 全數經相同 helper；Preparing 階段明確警告控制 UI 可能錄入，每次錄影只提示一次。
+- 驗證：2026-09-12 macOS scripts/build.sh、Platform_Capabilities、RecordingManager_Startup／Lifecycle 通過；7 組 Windows 版本與 unknown-build gate、開／關排除旗標及兩組每次錄影警告去重測試通過。原生 Qml_FloatingOverlayCaptureExclusion 使用 Cocoa 重跑通過（offscreen 不提供 NSWindow）；Windows 1909／2004+ 原生 build 與像素 smoke 待補，保留 Fix Ready。 對應本機 commit：fix: gate Windows capture exclusion and warn on legacy fallback。
+
+### REV-034 — Native encoder 靜默關閉 audio，呼叫端仍啟動錄音
+
+- 狀態：Fix Ready
+- 證據：src/encoding/EncoderFactory.cpp:102-125；src/MediaFoundationEncoder.cpp:292-303,472-496；src/RecordingManager.cpp:781-892。
+- 觸發：使用者要求 MP4 audio，但 Media Foundation audio stream configuration 失敗；encoder 仍讓 start() 成功並把內部 audioEnabled 改為 false。
+- 後果：RecordingManager 不查 encoder->isAudioEnabled，仍建立／啟動 audio engine、顯示 audio enabled 並丟 PCM 給 worker；最後輸出是無聲影片且沒有對使用者警告。
+- 完成條件：encoder startup result 明確回報 audio capability／fallback；呼叫端同步 UI 與 capture engine並發出一次可理解警告；以故意使 audio media type 失敗的 fake／Windows integration test 驗證。
+- 修正證據：EncoderFactory 與 RecordingInitTask 結果新增實際 audioEnabled／audioWarning。manager 在移交 encoder 前消費能力，無音訊時略過 audio engine／PCM 連線並關閉控制列指示；準備／啟動階段的降級警告共用去重與合併流程，保留錄影中既有警告及使用者偏好。整體 encoder start 失敗仍走錯誤清理。
+- 驗證：2026-09-12 macOS scripts/build.sh 與五套 encoder／init／startup／worker／CoreAudio safety 測試通過；fake encoder 貫穿 factory→init result→manager→QML 控制列／encoding worker，驗證成功降級、音訊未要求、正常 PCM、警告合併與資源回收，GIF／WebP 不發錯誤音訊警告。整合後 scripts/run-tests.sh 149／149 通過，all_qmllint exit 0。Windows native 降級實機驗證待補，保留 Fix Ready。對應本機 commit：fix: propagate effective encoder audio capability to recording startup。
+
+### REV-035 — DXGI capture cadence 固定 30 fps
+
+- 狀態：Fix Ready
+- 證據：include/capture/ICaptureEngine.h:80,142；src/RecordingInitTask.cpp:147-176；src/capture/DXGICaptureEngine_win.cpp:109,758-774。
+- 觸發：設定 24、60 或任何非 30 frame rate。
+- 後果：setFrameRate 只改 ICaptureEngine base member，DXGICaptureEngine::Private 有另一個固定 30 的 frameRate，QTimer 仍用 1000/30；encoder 卻用使用者選擇值。24 fps 會過度擷取／時間戳取樣不一致，60 fps 會重複／不足 frame，輸出 cadence 不符合設定。
+- 完成條件：capture timer 使用同一 frameRate source；24／30／60 各量測固定時間的 callback 數與 frame timestamp cadence，容許合理 timer jitter。
+- 修正證據：DXGI worker 移除固定 30 fps 副本，start 直接使用 ICaptureEngine 接收的本次 frame rate；採 Precise QChronoTimer 與奈秒 interval 保留 24／60 fps 的小數毫秒，非法 rate 拒絕啟動，保留既有 worker affinity／stop cleanup。
+- 驗證：2026-09-12 macOS scripts/build.sh、CaptureFrameTiming、RecordingManager_StateMachine／Startup 通過；10／15／24／30／60 fps 驗證精確 interval、固定時間 callback 數與平均 cadence，另驗證非法 rate。Windows DXGI lifecycle suite 新增真實 worker tick observer 的同組 cadence 測試，Windows native build／DXGI 與 BitBlt smoke 待執行，保留 Fix Ready。 對應本機 commit：fix: drive DXGI capture cadence from the configured frame rate。
+
+### REV-036 — macOS 麥克風中途失效沒有通知
+
+- 狀態：Fix Ready
+- 證據：src/capture/CoreAudioCaptureEngine_mac.mm:423-439,820-885,1046-1093；沒有註冊 AVCaptureDeviceWasDisconnectedNotification 或 AVCaptureSessionRuntimeErrorNotification。
+- 觸發：錄影中拔除 USB microphone、Bluetooth input 斷線，或 AVCaptureSession 發生 runtime error。
+- 後果：初始 running 檢查已通過後，程式不再更新 m_microphoneActive／mixer source，也不 emit warning；影片後半段靜音或缺少一個 source，UI 仍顯示音訊正常。
+- 完成條件：監聽並在 cleanup 時解除 device/session notifications；中途故障要停用 source、更新 activeSourceChanged、警告使用者；拔除／重連與 system+mic fallback 實機測試。
+- 修正證據：監聽選定麥克風的 disconnected 及本次 AVCaptureSession 的 runtime error／意外停止通知。每次訂閱使用獨立 mutex＋QPointer bridge，owner thread 處理失效；cleanup 先失效 bridge 並解除 observer，再停止 native capture 及 drain callbacks。停用 microphone mixer source 並通知 effective source，沿用 manager 的剩餘來源／靜音影片、音訊指示與警告政策，不改偏好、不於本次錄影自動重新接入裝置。
+- 驗證：2026-09-12 macOS canonical build、CoreAudioRuntime／CoreAudioCaptureEngineSafety／TimestampedPcmMixer／Startup 通過。真實 NotificationCenter fixture 的 12 組 notification／來源／pause 情境及停止重啟／銷毀後舊回呼隔離共 15 個 Qt Test 計數通過；剩餘 system PCM 持續輸出，manager 的 SystemAudio→None 狀態維持 Recording、指示關閉與偏好保存通過。最終 scripts/run-tests.sh 153／153 套通過（既有平台／環境 skip 保留），all_qmllint exit 0（既有 warnings）。未操作日常 TCC；USB／Bluetooth 實際拔除／重連 smoke 待補，保留 Fix Ready。 對應本機 commit：fix: degrade microphone capture safely after runtime device loss。
+
+### REV-037 — StepBadge／Mosaic toggle-off 未同步 ToolManager
+
+- 分類：Potential（未宣稱原始操作後果已重現）
+- 狀態：Fix Ready（防禦性修正）
+- 證據：src/region/RegionToolbarHandler.cpp:94-155；src/RegionSelector.cpp:1023-1036,3455-3467；src/region/RegionInputHandler.cpp:970-997。
+- 觸發：目前工具是 StepBadge 或 Mosaic，再點同一 toolbar button 切回 Selection。
+- 原始風險描述：handler 與 inputState 已是 Selection，但 ToolManager::currentTool 仍是舊工具；選取輸入本身可運作，但後續 cursor refresh 會從 stale ToolManager 取回舊工具 cursor。
+- 完成條件：兩工具的 toggle-off 都讓 handler、inputState、ViewModel、ToolManager 同步為 Selection；toolCursorRequested 不再回傳舊 cursor。
+- 重新判定：2026-09-12 核對 handleMosaicTool，toggle-off 已同步 ToolManager，Mosaic 子項已修。handleStepBadgeTool 仍提前 return，但 StepBadge 與 Selection 的 idle cursor 同為 CrossCursor，且未證實會誤放 badge；目前僅確認內部狀態不同步，操作後果仍待確認。
+- 待確認：重現 StepBadge toggle-off 後可見的錯誤游標、誤操作或後續工具切換問題，再確認剩餘子項；不再把 Mosaic 列為未修。
+
+- 修正證據：StepBadge 改走共用 annotation toggle handler，ToolManager 在 toolChanged 通知前同步 Selection；移除重複且漏同步的分支。
+- 驗證：2026-09-12 macOS canonical build、RegionSelector_ToolbarState 與 Qml_RegionToolbarViewModel 通過；反覆 StepBadge／Mosaic toggle 與後續 Pencil 切換，通知期間 ToolManager 始終一致。原生跨平台操作 smoke 待補；原先錯游標／誤放 badge 未重現，維持 Potential 分類。對應本機 commit：fix: synchronize step badge toggles through the shared tool handler。
+
+### POT-001 — 窄螢幕 Pin toolbar 定位與操作可達性
+
+- 分類：Confirmed（由 Potential 升格）
+- 狀態：Fix Ready
+- 原始證據：638 px 工具列在 640 px 畫面產生 qBound(10, x, -9)，Debug assertion 已重現。
+- 修正證據：ToolbarOverflowLayout 統一 availableGeometry 的 10 px 邊距、exclusive 邊界與安全 clamp。Pin 工具列依實際 QML 尺寸分配按鈕，保留 Save／Copy／Done，其餘移至獨立 GlassSurface 更多選單；固定區也放不下時採單一更多按鈕。共用 Region／Canvas 預設配置維持原行為。選單支援停用／active 狀態、鍵盤、捲動、不搶焦點、click-outside 與完整關閉生命週期。
+- 驗證：2026-09-12 macOS scripts/build.sh 通過；Qml_ToolbarOverflow 的 1／100／300／500／640／1920 px、OCR 顯隱、負座標／oversized clamp、鍵盤／捲動／生命週期共 17 個測試計數通過。另四套 Pin／Region／Canvas ViewModel 與 Pin StyleSync 回歸通過，實際 QML 截圖已檢查。all_qmllint exit 0；既有 CursorTokens 等警告不在本項範圍。Windows／Linux 跨螢幕、縮放 UI smoke 待補，保留 Fix Ready。
+- 對應本機 commit：fix: keep pin toolbar actions reachable on narrow screens。
+- 整合驗證補充：共用 ToolbarButtonState.js 改以私有 QML resource 提供，避免 standalone QQmlEngine 的模組歧義。新增冷啟動匯入回歸；Qml_WidthSectionQml、Qml_SettingsWindowFeatureGating 與 Qml_ToolbarOverflow 均通過。補充 commit：fix: keep toolbar state script private to QML resources。
+
+## 已確認產品契約項目
+
+### POT-002 — 直接關閉 Recording Preview 會保留暫存 MP4
+
+- 分類：Confirmed（產品契約確認後升格）
+- 狀態：Fix Ready
+- 信心水準：High
+- 證據：src/qml/RecordingPreviewBackend.mm:85-88,313-324；src/MainApplication.cpp:904-942；src/RecordingManager.cpp:1319-1329,1468-1499。
+- 待確認情境：使用視窗 close button／系統 close，而不是明確按 Discard。
+- 可能後果：closing 只 emit closed(false)，不 emit discardRequested；RecordingManager 清空 m_tempVideoPath，但不刪除檔案，直到下次 stale-temp cleanup。這可能是意外磁碟殘留，也可能是刻意的 crash-recovery 保留策略。
+- 升格條件：先確認產品對「關閉預覽」的契約；若等同 Discard，關閉後 temp file 必須立即移除；若要保留，UI／cleanup retention 必須明文化並有上限測試。
+- 修正證據：使用者於 2026-09-12 明確確認「關閉預覽等同丟棄」。所有 close 路徑集中 finishClose，以一次性 guard 保護 closed／discardRequested，保留先 teardown 再 queued 刪檔的順序。Save 不觸發丟棄，處理中 close 仍阻擋。
+- 驗證：macOS canonical build、原生 Cocoa App_MainApplicationTrayMenu 與 Qml_RecordingPreviewExport 通過；實際 QWindow close 與 Escape 驗證暫存檔刪除、backend 銷毀及單次通知；另覆蓋重複 close／discard／save、處理中關閉、MP4／GIF／WebP 匯出與失敗保留。Windows 原生檔案 handle／關閉 smoke 待補，保留 Fix Ready。對應本機 commit：39dc0dbd（fix: discard recording temporary files when closing preview）。
+
+- 補充回歸：使用 native encoder 產生有效 MP4，等待實際播放器載入 duration，再透過 QWindow close／Escape 關閉；有效與損壞影片共 4 組均驗證單次通知、backend 銷毀與檔案刪除。原生 Cocoa App_MainApplicationTrayMenu 通過。
+
+## 已反證或不列入本次 tracker
+
+- Share JPEG HiDPI flatten helper 有可重現 defect，但 Share 在目前 Region／Pin toolbar 都被刻意隱藏，沒有正式 UI、shortcut 或 CLI 入口，因此是 latent unreachable code，不列 Confirmed。
+- 錄影開始後 100 ms 內 pause 的 state hole 目前沒有可達 pause UI／caller，不列 Confirmed。
+- Rotated Pin double-click raw point 只影響已移除的 preview path，不列。
+- WebP baseline 行為契約不明，不列 bug。
+- 先前懷疑的 RGB/BGR、WASAPI、QScreen UAF、Watermark opacity、Eraser cancel/undo、time double-click 已被目前程式碼反證或已修復。
+- qmllint 的純樣式／版本可接受 warnings 不列 bug；CursorTokens 是唯一經 runtime 證實並升格的 lint finding。
+- 首次完整 test run 的 clipboard、IPC、SettingsBackend 三個失敗均由 sandbox 限制造成；在 sandbox 外重跑 3/3 通過，不列產品 bug。
+
+## 審查覆蓋與驗證紀錄
+
+- Tracked files：1,046。
+- C++／Objective-C++／QML：687 files，約 151,659 lines。
+- Automation／build files：49 files，約 10,227 lines。
+- 其餘 CMake、packaging、Jekyll、docs source 亦已掃描；build、release 與 docs/_site 的生成／重複輸出不當成 source 重複計數。
+- ./scripts/run-tests.sh：143 tests；sandbox 造成的 3 個失敗在 sandbox 外重跑後全數通過，因此有效結果為 143/143。
+- cmake --build build --target all_qmllint：exit 0。
+- Shell bash -n、JavaScript node --check、XML／QRC／plist／TS well-formed、resource references、git diff --check：通過。
+- Jekyll temporary build：通過；內部 broken links：0。
+- 建立 tracker 前的 repository 基準沒有被 review 修改；但 test 本身造成的 Debug settings 副作用已記錄於 REV-004。
+
+## 參考資料
+
+- SnapTray v1.0.62 release：https://github.com/victorfu/snap-tray/releases/tag/v1.0.62
+- SnapTray v1.0.62 macOS 14.8.7 smoke：https://github.com/victorfu/snap-tray/actions/runs/33515420361/job/99881113054
+- Microsoft OcrEngine.MaxImageDimension：https://learn.microsoft.com/en-us/uwp/api/windows.media.ocr.ocrengine.maximagedimension
+- Microsoft OCR sample：https://github.com/Microsoft/Windows-universal-samples/blob/main/Samples/OCR/cs/OcrFileImage.xaml.cs
+- Qt QThread termination warning：https://doc.qt.io/qt-6/qthread.html
+- Apple AVCaptureSession：https://developer.apple.com/documentation/avfoundation/avcapturesession
+- Apple NSWindow sharing none：https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.enum/none
+- Microsoft SetWindowDisplayAffinity：https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity
+- Apple device-disconnected notification：https://developer.apple.com/documentation/avfoundation/avcapturedevice/wasdisconnectednotification
+- Apple capture-session runtime error notification：https://developer.apple.com/documentation/avfoundation/avcapturesession/runtimeerrornotification
+
+## 更新紀錄
+
+| 日期 | 變更 |
+|---|---|
+| 2026-09-01 | 建立全庫 review tracker；37 Confirmed、2 Potential；REV-004 與 REV-009 因既有未提交候選修正標為 In Progress。 |
+| 2026-09-01 | REV-009 完成修正與獨立驗證：文字 position／rotation／scale interaction 改走 dirty-render path，release 後 invalidate layer cache；狀態更新為 Verified。 |
+| 2026-09-01 | REV-004 完成修正與獨立驗證：所有 C++ test process 改用獨立 temporary INI，Debug／Release 真實 settings store 不再被測試刪寫；狀態更新為 Verified。 |
+| 2026-09-01 | REV-001 經官方 v1.0.62 DMG 的 macOS 14.8.7 ARM64 smoke 反證：loader、`--version` 與 10 秒 GUI startup 均通過；由 Open／P0 改為 Rejected，統計更新為 36 Confirmed、2 Potential、1 Rejected。 |
+| 2026-09-12 | REV-002 完成 DPR 合成修正與 macOS 像素／入口回歸測試，標為 Fix Ready；跨平台 UI 驗證待補。 |
+| 2026-09-12 | REV-005 完成原子禁止覆寫存檔與所有自動命名入口遷移，macOS 並行及回歸測試通過；標為 Fix Ready。 |
+| 2026-09-12 | POT-001 升格 Confirmed；完成安全定位與更多選單，macOS QML 排版及互動驗證通過，標為 Fix Ready。 |
+| 2026-09-12 | POT-001 整合驗證修正共用腳本的模組匯出歧義；兩套既有 standalone QML 測試與新增匯入回歸通過。 |
+| 2026-09-12 | REV-006 完成 8 entries／128 MiB 快取限制與壓力／像素回歸，標為 Fix Ready；四項修正整合後 macOS 全 147 項測試通過。 |
+| 2026-09-12 | REV-008 完成非同步授權前置、設定快照與啟動回呼隔離，四套 macOS 回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-010 完成手動選取／resize 邊界與比例 anchor 修正，三套 macOS 回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-011 完成共用 selection gesture 更新與 release 最後座標修正，輸入／多區域及原生 StyleSync 回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-030 完成 QQuickView modality 與 History capture 入口互斥，三套原生 macOS 回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-034 完成實際 encoder 音訊能力傳遞與靜音降級 UI／警告，標為 Fix Ready；本批五項修正整合後 macOS 149／149 測試通過，QML lint exit 0。 |
+| 2026-09-12 | REV-012 完成連續刷頭掃描與單次 gesture history 回歸，macOS 建置及三套測試通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-013 完成箭頭控制點浮點化與序列化精度回歸，macOS 建置及四套測試通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-014 完成 Arrow／Polyline 實際繪製幾何共用與 432 組像素回歸，macOS 建置及六套測試通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-015 完成短末段終點與 shaft 接合修正，macOS 建置、五套測試及 107 組新增回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-016 完成最近 handle 與穩定同距離判定，標為 Fix Ready；本批 REV-012～016 整合後 macOS 全 149 套測試通過，QML lint exit 0。 |
+| 2026-09-12 | 同步 REV-007／REV-037 重新判定為 Potential；確認 Mosaic 子項已修、其餘操作後果待重現。統計更新為 35 Confirmed、3 Potential、1 Rejected。 |
+| 2026-09-12 | REV-003 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-018 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-019 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-020 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-025 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-026 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-029 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-031 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-033 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-035 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-025 整合覆核修正 counter 判定，長數字 metadata 與明示格式 counter 回歸通過。 |
+| 2026-09-12 | REV-036 完成修正與針對性回歸，標為 Fix Ready；本批指定 11 項整合後 macOS 153／153 套測試通過，QML lint exit 0；硬體及其他平台 smoke 待補。 |
+| 2026-09-12 | REV-032 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-027 完成修正與針對性回歸，標為 Fix Ready；與 REV-032 整合後 macOS 155／155 套測試通過，QML lint 無 CursorTokens 警告。 |
+| 2026-09-12 | REV-017 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-021 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-022 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-023 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-024 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-028 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-037 完成狀態同步防禦性修正與回歸；分類維持 Potential，狀態為 Fix Ready，不將未重現的誤操作升格 Confirmed。 |
+| 2026-09-12 | POT-002 依使用者確認的關閉即丟棄契約升格 Confirmed；原生 close／Escape 刪檔回歸通過，標 Fix Ready。 |
+| 2026-09-12 | REV-007 移除強制 thread termination 並加入非同步取消；portable 回歸通過，Windows 編譯／原生壓力與原始後果確認待補，分類維持 Potential、狀態 Fix Ready。 |
+| 2026-09-12 | 本批 REV-017／021／022／023／024／028、REV-037／007 防禦性修正及 POT-002 整合完成：canonical build 與 scripts/run-tests.sh 158/158 通過（144.14 秒），all_qmllint exit 0，保留既有警告；追加有效 MP4 close／Escape 原生測試亦通過。未執行 Windows／Ubuntu runtime、MSVC 編譯或 Application Verifier，相關項目保留 Fix Ready。 |
+
+## 2026-10-04 結案驗收基線
+
+基線 dev-3 `7afc5b80`；本輪在 macOS 27.0.1 ARM64、Qt 6.11.2 執行 canonical build 與完整測試。完整 183 suites 已執行；最終完整跑為 182/183，裁切 suite 修正測試吸附座標與 release 座標處理後，ctest 失敗項重跑通過（該 suite 最终 67/67 cases）。下列套件均有本輪 Passed 結果；包含 skip 的套件不能替代被略過案例的完成證據。
+
+實機資源：Gigabyte M32U，3840×2160 像素（邏輯 1920×1080）；目前工具程序的 Screen Recording preflight=false。未有 Windows／Linux 本輪結果，`gh run list --branch dev-3` 回傳空列表。故不批次改為 Verified。REV-007／REV-037 保留 Potential 分類。
+
+| ID | 本輪 macOS 回歸套件（Passed） | 剩餘結案門檻 |
+|---|---|---|
+| REV-002 | `Annotations_MosaicRectAnnotation`、`RegionSelector_StyleSync`、`PinWindow_StyleSync`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-003 | `Detection_OCRImageUtils`、`Detection_CredentialDetector`、`Detection_AutoBlurManager` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-005 | `Utils_ImageSaveUtils`、`RegionSelector_RegionExportManager`、`CLI_CaptureOutputHelper`、`RecordingManager_Lifecycle` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-006 | `Annotations_AnnotationLayer`、`ScreenCanvas_AnnotationRenderHelper` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-007 | `Video_SourceReaderMailbox`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-008 | `RecordingManager_Startup`、`RecordingManager_CoreAudioCaptureEngineSafety` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-010 | `RegionSelector_SelectionStateManager`、`RegionSelector_RegionExportManager`、`RegionSelector_MultiRegionReplaceFlow` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-011 | `RegionSelector_RegionInputHandler`、`RegionSelector_MultiRegionReplaceFlow` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-012 | `Tools_EraserToolHandler`、`Annotations_AnnotationLayer` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-013 | `Annotations_ArrowAnnotation`、`PinWindow_AnnotationSerializer`、`Tools_ArrowToolHandler` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-014 | `Annotations_ArrowAnnotation`、`Annotations_PolylineAnnotation`、`Annotations_AnnotationLayer` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-015 | `Annotations_PolylineAnnotation`、`Tools_PolylineToolHandler` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-016 | `RegionSelector_TransformationGizmo` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-017 | `Annotations_TextBoxAnnotation`、`RegionSelector_TextAnnotationEditor`、`Tools_TextToolHandler` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-018 | `RegionSelector_RegionExportManager` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-019 | `RegionSelector_HistoryReplay`、`PinWindow_HistoryRecorder` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-020 | `ScreenCanvas_StyleSync` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-021 | `PinWindow_PinWindowPlacement`、`App_MainApplicationTrayMenu` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-022 | `App_MainApplicationTrayMenu` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-023 | `CLI_NumericArgumentValidation` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-024 | `CLI_NumericArgumentValidation` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-025 | `Utils_FilenameTemplateEngine`、`Utils_ImageSaveUtils` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-026 | `Platform_Capabilities` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-027 | `Qml_CursorTokens` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-028 | `Settings_SettingsBackend`、`CLI_PathPersistence`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-029 | `ColorWidgets_ColorWheel`、`ScreenCanvas_StyleSync` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-030 | `Qml_DialogModality`、`App_MainApplicationTrayMenu`、`RegionSelector_TransientUiCancelGuard`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-031 | `PinWindow_Transform`、`PinWindow_CropUndo` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-032 | `RecordingManager_CaptureExclusion`、`RecordingManager_InitTask`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-033 | `Platform_Capabilities`、`Qml_FloatingOverlayCaptureExclusion` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-034 | `Encoding_EncoderFactory`、`RecordingManager_InitTask`、`RecordingManager_Startup`、`Encoding_EncodingWorker` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-035 | `RecordingManager_CaptureFrameTiming` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-036 | `RecordingManager_CoreAudioRuntime`、`RecordingManager_CoreAudioCaptureEngineSafety`、`RecordingManager_TimestampedPcmMixer` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-037 | `RegionSelector_ToolbarState`、`Qml_RegionToolbarViewModel` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| POT-001 | `Qml_ToolbarOverflow`、`PinWindow_StyleSync`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| POT-002 | `Qml_RecordingPreviewExport`、`App_MainApplicationTrayMenu`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |

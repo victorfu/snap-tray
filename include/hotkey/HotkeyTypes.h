@@ -30,6 +30,8 @@ enum class HotkeyAction {
 
     // Capture actions (100-199)
     RegionCapture = 100,
+    CaptureFullScreen = 101,
+    DelayedRegionCapture = 102,
 
     // Canvas actions (200-299)
     ScreenCanvas = 200,
@@ -45,6 +47,8 @@ enum class HotkeyAction {
 
     // Recording actions (500-599)
     RecordFullScreen = 500,
+    PauseResumeRecording = 501,
+    ShowRecordingControls = 502,
 };
 
 /**
@@ -113,6 +117,22 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         "F2"       // kDefaultHotkey
     },
     {
+        HotkeyAction::CaptureFullScreen,
+        HotkeyCategory::Capture,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Full Screen Capture"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Capture the screen under the cursor"),
+        "captureFullScreenHotkey",
+        ""  // Optional, no default
+    },
+    {
+        HotkeyAction::DelayedRegionCapture,
+        HotkeyCategory::Capture,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Delayed Capture"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Start a countdown, then capture a region"),
+        "delayedRegionCaptureHotkey",
+        ""  // Optional, no default
+    },
+    {
         HotkeyAction::ScreenCanvas,
         HotkeyCategory::Canvas,
         QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Screen Canvas"),
@@ -147,8 +167,8 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
     {
         HotkeyAction::HistoryWindow,
         HotkeyCategory::Pin,
-        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "History"),
-        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Open history window"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Library"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Open the Library of screenshots and recordings"),
         "historyWindowHotkey",  // kSettingsKeyHistoryWindowHotkey
         ""                   // Optional, no default
     },
@@ -167,6 +187,22 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Start screen recording"),
         "recordFullScreenHotkey",  // kSettingsKeyRecordFullScreenHotkey
         ""                         // Optional, no default
+    },
+    {
+        HotkeyAction::PauseResumeRecording,
+        HotkeyCategory::Recording,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pause/Resume Recording"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pause or resume the current screen recording"),
+        "pauseResumeRecordingHotkey",  // kSettingsKeyPauseResumeRecordingHotkey
+        ""                             // Optional, no default
+    },
+    {
+        HotkeyAction::ShowRecordingControls,
+        HotkeyCategory::Recording,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Show Recording Controls"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Bring the recording control bar back into view"),
+        "showRecordingControlsHotkey",  // kSettingsKeyShowRecordingControlsHotkey
+        ""                              // Optional, no default
     },
 };
 

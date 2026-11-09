@@ -1,8 +1,119 @@
 #include <QtTest/QtTest>
 #include <QTemporaryDir>
+#include <QPainter>
+#include "encoding/WebPAnimEncoder.h"
 #include <QSignalSpy>
 #include <QFile>
+#include <QSaveFile>
+#include <QImageReader>
+#include <QBuffer>
+#include <QScopedValueRollback>
+#include "external/msf_gif.h"
 #include "encoding/NativeGifEncoder.h"
+
+#include <numeric>
+
+namespace {
+
+bool skipGifSubBlocks(const QByteArray &data, qsizetype &offset)
+{
+    while (offset < data.size()) {
+        const int blockSize = static_cast<uchar>(data.at(offset++));
+        if (blockSize == 0) {
+            return true;
+        }
+        if (offset + blockSize > data.size()) {
+            return false;
+        }
+        offset += blockSize;
+    }
+    return false;
+}
+
+QList<int> gifFrameDelays(const QString &path, QList<int> *disposals = nullptr)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+
+    const QByteArray data = file.readAll();
+    if (data.size() < 13 || (!data.startsWith("GIF87a") && !data.startsWith("GIF89a"))) {
+        return {};
+    }
+
+    auto byteAt = [&data](qsizetype offset) {
+        return static_cast<uchar>(data.at(offset));
+    };
+
+    qsizetype offset = 6;
+    const int logicalScreenPacked = byteAt(offset + 4);
+    offset += 7;
+    if (logicalScreenPacked & 0x80) {
+        const qsizetype colorTableBytes = 3 * (1 << ((logicalScreenPacked & 0x07) + 1));
+        if (offset + colorTableBytes > data.size()) {
+            return {};
+        }
+        offset += colorTableBytes;
+    }
+
+    QList<int> delays;
+    while (offset < data.size()) {
+        const int marker = byteAt(offset++);
+        if (marker == 0x3b) {
+            return delays;
+        }
+
+        if (marker == 0x21) {
+            if (offset >= data.size()) {
+                return {};
+            }
+            const int extensionLabel = byteAt(offset++);
+            if (extensionLabel == 0xf9) {
+                if (offset + 6 > data.size() || byteAt(offset) != 0x04) {
+                    return {};
+                }
+                if (disposals) disposals->append((byteAt(offset + 1) >> 2) & 7);
+                delays.append(byteAt(offset + 2) | (byteAt(offset + 3) << 8));
+                offset += 5;
+                if (byteAt(offset++) != 0x00) {
+                    return {};
+                }
+            } else if (!skipGifSubBlocks(data, offset)) {
+                return {};
+            }
+            continue;
+        }
+
+        if (marker == 0x2c) {
+            if (offset + 9 > data.size()) {
+                return {};
+            }
+            const int imagePacked = byteAt(offset + 8);
+            offset += 9;
+            if (imagePacked & 0x80) {
+                const qsizetype colorTableBytes = 3 * (1 << ((imagePacked & 0x07) + 1));
+                if (offset + colorTableBytes > data.size()) {
+                    return {};
+                }
+                offset += colorTableBytes;
+            }
+            if (offset >= data.size()) {
+                return {};
+            }
+            ++offset; // LZW minimum code size
+            if (!skipGifSubBlocks(data, offset)) {
+                return {};
+            }
+            continue;
+        }
+
+        return {};
+    }
+    return {};
+}
+
+} // namespace
 
 /**
  * @brief Tests for NativeGifEncoder
@@ -19,6 +130,16 @@ class TestNativeGifEncoder : public QObject
     Q_OBJECT
 
 private slots:
+    void bufferedBytesAreCountedBeforeTheFileExists();
+    void gifPendingBytesStayBounded();
+    void gifMatchesLegacy_data();
+    void gifMatchesLegacy();
+    void gifWriteFailure_data();
+    void gifWriteFailure();
+    void gifCommitFailure();
+    void gifAbortPreservesExisting();
+    void webpEstimateFollowsChangedRegions();
+    void webpEstimateCoversHighEntropyFrames();
     void initTestCase();
     void cleanupTestCase();
     void init();
@@ -43,6 +164,12 @@ private slots:
     void testWriteNullFrame();
     void testWriteFrameNotRunning();
     void testProgressSignalEmitted();
+    void testTimestampDelayBelongsToPreviousFrame();
+    void testRegressedTimestampDoesNotBecomeNextBaseline();
+    void testDefaultFrameRatePreservesCentisecondRemainder_data();
+    void testDefaultFrameRatePreservesCentisecondRemainder();
+    void testTimestampQuantizationPreservesDuration_data();
+    void testTimestampQuantizationPreservesDuration();
 
     // Finish tests
     void testFinishCreatesFile();
@@ -51,6 +178,7 @@ private slots:
     void testFinishWithNoFrames();
     void testFinishWithNoFramesPreservesExistingFile();
     void testFinishNotRunning();
+    void testFinishFlushesSingleFrame();
 
     // Abort tests
     void testAbortCleansUp();
@@ -292,6 +420,106 @@ void TestNativeGifEncoder::testProgressSignalEmitted()
     QCOMPARE(progressSpy.at(1).at(0).toLongLong(), 60);
 }
 
+void TestNativeGifEncoder::testTimestampDelayBelongsToPreviousFrame()
+{
+    const QString path = tempFilePath("timestamp_previous_frame.gif");
+    QVERIFY(m_encoder->start(path, QSize(2, 2), 20));
+
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(255, 0, 0)), 0);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(0, 255, 0)), 15);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(0, 0, 255)), 35);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(255, 255, 0)), 60);
+    m_encoder->finish();
+
+    QCOMPARE(gifFrameDelays(path), QList<int>({1, 2, 3, 5}));
+}
+
+void TestNativeGifEncoder::testRegressedTimestampDoesNotBecomeNextBaseline()
+{
+    const QString path = tempFilePath("regressed_timestamp.gif");
+    QVERIFY(m_encoder->start(path, QSize(2, 2), 30));
+
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(255, 0, 0)), 1000);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(0, 255, 0)), 0);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(0, 0, 255)), 1033);
+    m_encoder->finish();
+
+    QCOMPARE(gifFrameDelays(path), QList<int>({3, 3, 4}));
+}
+
+void TestNativeGifEncoder::testDefaultFrameRatePreservesCentisecondRemainder_data()
+{
+    QTest::addColumn<int>("frameRate");
+
+    QTest::newRow("15 fps") << 15;
+    QTest::newRow("24 fps") << 24;
+    QTest::newRow("30 fps") << 30;
+}
+
+void TestNativeGifEncoder::testDefaultFrameRatePreservesCentisecondRemainder()
+{
+    QFETCH(int, frameRate);
+
+    const QString path = tempFilePath(QString("default_%1_fps.gif").arg(frameRate));
+    QVERIFY(m_encoder->start(path, QSize(2, 2), frameRate));
+    for (int i = 0; i < frameRate; ++i) {
+        m_encoder->writeFrame(createTestFrame(
+            QSize(2, 2), qRgb((i * 37) % 256, (i * 71) % 256, (i * 113) % 256)));
+    }
+    m_encoder->finish();
+
+    const QList<int> delays = gifFrameDelays(path);
+    QCOMPARE(delays.size(), frameRate);
+    QList<int> expectedDelays;
+    int remainder = 0;
+    for (int i = 0; i < frameRate; ++i) {
+        remainder += 100;
+        expectedDelays.append(remainder / frameRate);
+        remainder %= frameRate;
+    }
+    QCOMPARE(delays, expectedDelays);
+    QCOMPARE(std::accumulate(delays.cbegin(), delays.cend(), 0), 100);
+}
+
+void TestNativeGifEncoder::testTimestampQuantizationPreservesDuration_data()
+{
+    QTest::addColumn<int>("frameRate");
+    QTest::addColumn<int>("expectedCentiseconds");
+
+    QTest::newRow("15 fps") << 15 << 106;
+    QTest::newRow("24 fps") << 24 << 104;
+    QTest::newRow("30 fps") << 30 << 103;
+}
+
+void TestNativeGifEncoder::testTimestampQuantizationPreservesDuration()
+{
+    QFETCH(int, frameRate);
+    QFETCH(int, expectedCentiseconds);
+
+    const QString path = tempFilePath(QString("timestamp_%1_fps.gif").arg(frameRate));
+    QVERIFY(m_encoder->start(path, QSize(2, 2), frameRate));
+    for (int i = 0; i <= frameRate; ++i) {
+        const qint64 timestampMs = static_cast<qint64>(i) * 1000 / frameRate;
+        m_encoder->writeFrame(createTestFrame(
+            QSize(2, 2), qRgb((i * 41) % 256, (i * 67) % 256, (i * 97) % 256)),
+            timestampMs);
+    }
+    m_encoder->finish();
+
+    const QList<int> delays = gifFrameDelays(path);
+    QCOMPARE(delays.size(), frameRate + 1);
+    QList<int> expectedDelays;
+    int remainder = 0;
+    for (int i = 0; i < frameRate; ++i) {
+        remainder += 100;
+        expectedDelays.append(remainder / frameRate);
+        remainder %= frameRate;
+    }
+    expectedDelays.append(100 / frameRate);
+    QCOMPARE(delays, expectedDelays);
+    QCOMPARE(std::accumulate(delays.cbegin(), delays.cend(), 0), expectedCentiseconds);
+}
+
 // ============================================================================
 // Finish Tests
 // ============================================================================
@@ -383,6 +611,18 @@ void TestNativeGifEncoder::testFinishNotRunning()
     QCOMPARE(finishedSpy.count(), 1);
     QCOMPARE(finishedSpy.first().at(0).toBool(), false);
     QVERIFY(finishedSpy.first().at(1).toString().isEmpty());
+}
+
+void TestNativeGifEncoder::testFinishFlushesSingleFrame()
+{
+    const QString path = tempFilePath("single_frame_flush.gif");
+    QVERIFY(m_encoder->start(path, QSize(2, 2), 24));
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2)));
+    QCOMPARE(m_encoder->framesWritten(), 1);
+
+    m_encoder->finish();
+
+    QCOMPARE(gifFrameDelays(path), QList<int>({4}));
 }
 
 // ============================================================================
@@ -481,11 +721,10 @@ void TestNativeGifEncoder::testBitDepthClamping()
 
 void TestNativeGifEncoder::testErrorSignalOnFailure()
 {
-    // Test error signal emission when finish fails
+    // Output errors are now reported before capture begins.
     QString invalidPath = "/nonexistent/directory/test.gif";
-    QVERIFY(m_encoder->start(invalidPath, QSize(100, 100), 30));
-
     QSignalSpy errorSpy(m_encoder, &NativeGifEncoder::error);
+    QVERIFY(!m_encoder->start(invalidPath, QSize(100, 100), 30));
 
     m_encoder->writeFrame(createTestFrame(QSize(100, 100)));
     m_encoder->finish();
@@ -497,12 +736,334 @@ void TestNativeGifEncoder::testErrorSignalOnFailure()
 void TestNativeGifEncoder::testLastErrorMessage()
 {
     QString invalidPath = "/nonexistent/directory/test.gif";
-    QVERIFY(m_encoder->start(invalidPath, QSize(100, 100), 30));
+    QVERIFY(!m_encoder->start(invalidPath, QSize(100, 100), 30));
 
     m_encoder->writeFrame(createTestFrame(QSize(100, 100)));
     m_encoder->finish();
 
     QVERIFY(!m_encoder->lastError().isEmpty());
+}
+
+void TestNativeGifEncoder::bufferedBytesAreCountedBeforeTheFileExists()
+{
+    // Final paths remain untouched until finish; GIF streams to staging.
+    QTemporaryDir dir;
+    QImage a(64, 48, QImage::Format_ARGB32);
+    QImage b(64, 48, QImage::Format_ARGB32);
+    a.fill(Qt::red);
+    b.fill(Qt::blue);
+
+    NativeGifEncoder gif;
+    const QString gifPath = dir.filePath(QStringLiteral("held.gif"));
+    QVERIFY(gif.start(gifPath, a.size(), 10));
+    const auto gifBytes = gif.bufferedBytesCounter();
+    for (int i = 0; i < 6; ++i) gif.writeFrame(i % 2 ? a : b, i * 100);
+    QVERIFY(!QFileInfo::exists(gifPath) || QFileInfo(gifPath).size() == 0);
+    QVERIFY(gifBytes->load() > 0);
+    QVERIFY(gif.writtenBytesCounter()->load() > 0);
+    gif.abort();
+    QCOMPARE(gifBytes->load(), 0);
+
+    WebPAnimationEncoder webp;
+    const QString webpPath = dir.filePath(QStringLiteral("held.webp"));
+    QVERIFY(webp.start(webpPath, a.size(), 10));
+    const auto webpBytes = webp.bufferedBytesCounter();
+    webp.writeFrame(a, 0);
+    const qint64 afterFirst = webpBytes->load();
+    QVERIFY(afterFirst > 0);
+    // An unchanged screen adds nothing to the estimate; a change does.
+    webp.writeFrame(a, 100);
+    QCOMPARE(webpBytes->load(), afterFirst);
+    webp.writeFrame(b, 200);
+    QVERIFY(webpBytes->load() > afterFirst);
+    QVERIFY(!QFileInfo::exists(webpPath) || QFileInfo(webpPath).size() == 0);
+    webp.abort();
+}
+
+void TestNativeGifEncoder::gifPendingBytesStayBounded()
+{
+    QTemporaryDir dir;
+    NativeGifEncoder gif;
+    QVERIFY(gif.start(dir.filePath("bounded.gif"), QSize(64, 48), 10));
+    QImage frame(64, 48, QImage::Format_RGBA8888);
+    quint32 rng = 12345;
+    for (int i = 0; i < 200; ++i) {
+        for (qsizetype j = 0; j < frame.sizeInBytes(); ++j) {
+            rng = rng * 1664525u + 1013904223u;
+            frame.bits()[j] = static_cast<uchar>(rng >> 24);
+        }
+        gif.writeFrame(frame, i * 100);
+        // One pending packet, not all compressed frames since start.
+        QVERIFY(gif.bufferedBytesCounter()->load() < 64 * 48 * 8);
+    }
+    gif.abort();
+}
+
+void TestNativeGifEncoder::gifMatchesLegacy_data()
+{
+    QTest::addColumn<int>("fixture");
+    QTest::newRow("static") << 0;
+    QTest::newRow("moving") << 1;
+    QTest::newRow("transparent-background-restore") << 2;
+    QTest::newRow("noise-then-repeated-solid") << 3;
+    QTest::newRow("random") << 4;
+}
+
+void TestNativeGifEncoder::gifMatchesLegacy()
+{
+    QFETCH(int, fixture);
+    QScopedValueRollback<int> alphaThreshold(msf_gif_alpha_threshold, fixture == 2 ? 128 : 0);
+    QTemporaryDir dir;
+    const QString path = dir.filePath("stream.gif");
+    NativeGifEncoder gif;
+    QVERIFY(gif.start(path, QSize(64, 48), 10));
+    MsfGifState legacy = {};
+    QVERIFY(msf_gif_begin(&legacy, 64, 48));
+    quint32 rng = 12345;
+    for (int i = 0; i < 20; ++i) {
+        QImage frame(64, 48, QImage::Format_RGBA8888);
+        frame.fill(QColor(90, 105, 115));
+        if (fixture == 4 || (fixture == 3 && i == 0)) {
+            for (int y = 0; y < frame.height(); ++y) {
+                for (int x = 0; x < frame.width(); ++x) {
+                    rng = rng * 1664525u + 1013904223u;
+                    frame.setPixelColor(x, y, QColor((rng >> 24) & 255, (rng >> 16) & 255, (rng >> 8) & 255));
+                }
+            }
+        } else if (fixture == 1 || fixture == 2) {
+            if (fixture == 2) frame.fill(Qt::transparent);
+            QPainter painter(&frame);
+            painter.fillRect(QRect((i * 3) % 50, 10, 12, 12), Qt::red);
+        }
+        gif.writeFrame(frame, i * 100);
+        QVERIFY(msf_gif_frame(&legacy, frame.bits(), 10, 16, frame.bytesPerLine()));
+    }
+    auto result = msf_gif_end(&legacy);
+    QVERIFY(result.data);
+    const QByteArray expected(reinterpret_cast<const char *>(result.data), result.dataSize);
+    msf_gif_free(result);
+    gif.finish();
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), expected); // includes loop, disposal, palettes and pixels
+    QCOMPARE(gif.writtenBytesCounter()->load(), expected.size());
+    QCOMPARE(gif.bufferedBytesCounter()->load(), 0);
+    QList<int> disposals;
+    QCOMPARE(gifFrameDelays(path, &disposals), QList<int>(20, 10));
+    if (fixture == 2) QVERIFY(disposals.contains(2));
+    QVERIFY(expected.contains("NETSCAPE2.0"));
+    QImageReader reader(path);
+    QCOMPARE(reader.loopCount(), -1);
+    QBuffer reference;
+    reference.setData(expected);
+    QVERIFY(reference.open(QIODevice::ReadOnly));
+    QImageReader referenceReader(&reference, "gif");
+    int decoded = 0;
+    while (reader.canRead()) {
+        const QImage actual = reader.read();
+        QVERIFY(!actual.isNull());
+        QCOMPARE(actual, referenceReader.read());
+        ++decoded;
+    }
+    QCOMPARE(decoded, 20);
+}
+
+namespace {
+class FailingSaveFile : public QSaveFile
+{
+public:
+    FailingSaveFile(const QString &path, bool shortWrite, int successfulWrites)
+        : QSaveFile(path), m_short(shortWrite), m_successfulWrites(successfulWrites) {}
+protected:
+    qint64 writeData(const char *data, qint64 length) override
+    {
+        if (m_successfulWrites-- > 0) return QSaveFile::writeData(data, length);
+        setErrorString("Injected disk full");
+        return m_short ? length - 1 : -1;
+    }
+private:
+    bool m_short;
+    int m_successfulWrites;
+};
+
+class CommitFailingSaveFile : public QSaveFile
+{
+public:
+    using QSaveFile::QSaveFile;
+protected:
+    qint64 writeData(const char *data, qint64 length) override
+    {
+        const qint64 written = QSaveFile::writeData(data, length);
+        // A one-frame GIF writes its header, then its final packet/trailer.
+        if (++m_writes == 2) cancelWriting();
+        return written;
+    }
+private:
+    int m_writes = 0;
+};
+}
+
+void TestNativeGifEncoder::gifWriteFailure_data()
+{
+    QTest::addColumn<bool>("shortWrite");
+    QTest::addColumn<bool>("atFinish");
+    QTest::newRow("short-write-frame") << true << false;
+    QTest::newRow("disk-full-frame") << false << false;
+    QTest::newRow("short-write-finish") << true << true;
+    QTest::newRow("disk-full-finish") << false << true;
+}
+
+void TestNativeGifEncoder::gifWriteFailure()
+{
+    QFETCH(bool, shortWrite);
+    QFETCH(bool, atFinish);
+    QTemporaryDir dir;
+    const QString path = dir.filePath("existing.gif");
+    QFile original(path);
+    QVERIFY(original.open(QIODevice::WriteOnly));
+    QCOMPARE(original.write("original"), 8);
+    original.close();
+    NativeGifEncoder gif;
+    QVERIFY(gif.start(path, QSize(64, 48), 10));
+    gif.m_file = std::make_unique<FailingSaveFile>(path, shortWrite, atFinish ? 1 : 0);
+    gif.m_file->setDirectWriteFallback(false);
+    QVERIFY(gif.m_file->open(QIODevice::WriteOnly | QIODevice::Unbuffered));
+    QSignalSpy errors(&gif, &NativeGifEncoder::error);
+    QSignalSpy finished(&gif, &NativeGifEncoder::finished);
+    const auto frame = createTestFrame(QSize(64, 48));
+    gif.writeFrame(frame, 0);
+    if (!atFinish) gif.writeFrame(frame, 100);
+    gif.finish();
+    gif.finish();
+    QCOMPARE(errors.count(), 1);
+    QCOMPARE(finished.count(), 1);
+    QVERIFY(!finished.first().at(0).toBool());
+    QVERIFY(!gif.isRunning());
+    QVERIFY(!gif.m_file);
+    QVERIFY(!gif.m_gifState);
+    QCOMPARE(gif.bufferedBytesCounter()->load(), 0);
+    QVERIFY(original.open(QIODevice::ReadOnly));
+    QCOMPARE(original.readAll(), QByteArray("original"));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden), QStringList("existing.gif"));
+    original.close(); // Release the reader before atomic replacement on Windows.
+    QVERIFY(gif.start(path, QSize(64, 48), 10));
+    gif.writeFrame(frame, 0);
+    gif.finish();
+    QCOMPARE(finished.count(), 2);
+    QVERIFY(finished.last().at(0).toBool());
+}
+
+void TestNativeGifEncoder::gifCommitFailure()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath("existing.gif");
+    QFile original(path);
+    QVERIFY(original.open(QIODevice::WriteOnly));
+    original.write("original");
+    original.close();
+    NativeGifEncoder gif;
+    QVERIFY(gif.start(path, QSize(64, 48), 10));
+    QSignalSpy errors(&gif, &NativeGifEncoder::error);
+    QSignalSpy finished(&gif, &NativeGifEncoder::finished);
+    gif.writeFrame(createTestFrame(QSize(64, 48)), 0);
+    gif.m_file = std::make_unique<CommitFailingSaveFile>(path);
+    gif.m_file->setDirectWriteFallback(false);
+    QVERIFY(gif.m_file->open(QIODevice::WriteOnly | QIODevice::Unbuffered));
+    gif.finish();
+    QCOMPARE(errors.count(), 1);
+    QCOMPARE(finished.count(), 1);
+    QVERIFY(!finished.first().at(0).toBool());
+    QVERIFY(gif.lastError().contains("commit"));
+    QVERIFY(original.open(QIODevice::ReadOnly));
+    QCOMPARE(original.readAll(), QByteArray("original"));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden), QStringList("existing.gif"));
+}
+
+void TestNativeGifEncoder::gifAbortPreservesExisting()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath("existing.gif");
+    QFile original(path);
+    QVERIFY(original.open(QIODevice::WriteOnly));
+    original.write("original");
+    original.close();
+    {
+        NativeGifEncoder gif;
+        QVERIFY(gif.start(path, QSize(64, 48), 10));
+        for (int i = 0; i < 10; ++i) gif.writeFrame(createTestFrame(QSize(64, 48)), i * 100);
+        QVERIFY(gif.writtenBytesCounter()->load() > 0);
+        gif.abort();
+        gif.abort();
+    }
+    QVERIFY(original.open(QIODevice::ReadOnly));
+    QCOMPARE(original.readAll(), QByteArray("original"));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden), QStringList("existing.gif"));
+}
+
+void TestNativeGifEncoder::webpEstimateFollowsChangedRegions()
+{
+    // PR #171 review: a small moving square charged the whole screen per
+    // frame, so the disk guard reserved ~250x the real output.
+    QTemporaryDir dir;
+    const QSize size(640, 360);
+    WebPAnimationEncoder webp;
+    const QString path = dir.filePath(QStringLiteral("square.webp"));
+    QVERIFY(webp.start(path, size, 30));
+    const auto counter = webp.bufferedBytesCounter();
+    for (int i = 0; i < 100; ++i) {
+        QImage frame(size, QImage::Format_ARGB32);
+        frame.fill(Qt::white);
+        QPainter painter(&frame);
+        painter.fillRect(QRect(10 + i * 5, 100, 10, 10), Qt::black);
+        painter.end();
+        webp.writeFrame(frame, i * 33);
+    }
+    const qint64 estimate = counter->load();
+    QSignalSpy finished(&webp, &WebPAnimationEncoder::finished);
+    webp.finish();
+    QCOMPARE(finished.count(), 1);
+    const qint64 actual = QFileInfo(path).size();
+    QVERIFY(actual > 0);
+    QVERIFY2(estimate < actual * 10,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+    QVERIFY2(estimate >= actual / 2,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+}
+
+void TestNativeGifEncoder::webpEstimateCoversHighEntropyFrames()
+{
+    // PR #171 review: a fixed bytes-per-pixel rate reserved 2.3 MB for
+    // 100 noise frames that encode to 15.6 MB, so the animation could
+    // outgrow the disk before the guard stopped it. The estimate must not
+    // fall short of the real output for content that does not compress.
+    QTemporaryDir dir;
+    const QSize size(640, 360);
+    WebPAnimationEncoder webp;
+    const QString path = dir.filePath(QStringLiteral("noise.webp"));
+    QVERIFY(webp.start(path, size, 30));
+    const auto counter = webp.bufferedBytesCounter();
+    QImage frame(size, QImage::Format_ARGB32);
+    quint32 seed = 7;
+    for (int i = 0; i < 40; ++i) {
+        for (int y = 0; y < size.height(); ++y) {
+            auto* line = reinterpret_cast<QRgb*>(frame.scanLine(y));
+            for (int x = 0; x < size.width(); ++x) {
+                seed = seed * 1664525u + 1013904223u;
+                line[x] = 0xff000000u | (seed >> 8);
+            }
+        }
+        webp.writeFrame(frame, i * 33);
+    }
+    const qint64 estimate = counter->load();
+    QSignalSpy finished(&webp, &WebPAnimationEncoder::finished);
+    webp.finish();
+    QCOMPARE(finished.count(), 1);
+    const qint64 actual = QFileInfo(path).size();
+    QVERIFY(actual > 0);
+    QVERIFY2(estimate >= actual,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+    QVERIFY2(estimate < actual * 4,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
 }
 
 QTEST_MAIN(TestNativeGifEncoder)

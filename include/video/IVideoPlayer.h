@@ -3,6 +3,7 @@
 
 #include <QImage>
 #include <QObject>
+#include <functional>
 #include <QSize>
 #include <QString>
 
@@ -23,6 +24,8 @@ public:
     virtual void pause() = 0;
     virtual void stop() = 0;
     virtual void seek(qint64 positionMs) = 0;
+    // Pause and advance one frame. Backends can override with native PTS stepping.
+    virtual void stepForward();
 
     // State queries
     virtual State state() const = 0;
@@ -31,6 +34,9 @@ public:
     virtual QSize videoSize() const = 0;      // Native video dimensions
     virtual bool hasVideo() const = 0;
     virtual bool hasAudio() const = 0;
+    // Playback capability is distinct from hasAudio(), which only reports
+    // whether the media contains an audio track.
+    virtual bool supportsAudioPlayback() const = 0;
     virtual double frameRate() const = 0;     // FPS (e.g., 29.97, 60.0)
     virtual int frameIntervalMs() const = 0;  // Milliseconds per frame
 
@@ -44,6 +50,13 @@ public:
     virtual void setLooping(bool loop) = 0;
     virtual bool isLooping() const = 0;
 
+    // Plays this audio instead of the file's track (#189: separate tracks
+    // mixed at the chosen volumes). Called off the GUI thread with 48 kHz
+    // stereo frames of the source timeline; returns PCM16 for them. Empty =
+    // the file's track. False where playback cannot use it.
+    using AudioSource = std::function<QByteArray(qint64 startFrame, int frames)>;
+    virtual bool setAudioSource(AudioSource source) { Q_UNUSED(source); return false; }
+
     // Playback rate control
     virtual void setPlaybackRate(float rate) = 0;  // 0.25 - 2.0
     virtual float playbackRate() const = 0;
@@ -55,7 +68,9 @@ signals:
     void stateChanged(IVideoPlayer::State state);
     void positionChanged(qint64 positionMs);
     void durationChanged(qint64 durationMs);
-    void frameReady(const QImage &frame);
+    // positionMs: the frame's presentation time, -1 when unknown. Unlike
+    // positionChanged (throttled on some platforms), it is exact per frame.
+    void frameReady(const QImage &frame, qint64 positionMs = -1);
     void error(const QString &message);
     void mediaLoaded();
     void playbackFinished();

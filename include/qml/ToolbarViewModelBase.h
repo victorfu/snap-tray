@@ -4,7 +4,10 @@
 #include <QVariantList>
 #include <QVariantMap>
 
+#include <optional>
+
 #include "tools/ToolId.h"
+#include "tools/ToolbarTraits.h"
 
 /**
  * Shared base for QML toolbar view models.
@@ -21,7 +24,6 @@ class ToolbarViewModelBase : public QObject
     Q_PROPERTY(bool canUndo READ canUndo WRITE setCanUndo NOTIFY canUndoChanged)
     Q_PROPERTY(bool canRedo READ canRedo WRITE setCanRedo NOTIFY canRedoChanged)
     Q_PROPERTY(bool ocrAvailable READ ocrAvailable WRITE setOCRAvailable NOTIFY ocrAvailableChanged)
-    Q_PROPERTY(bool shareInProgress READ shareInProgress WRITE setShareInProgress NOTIFY shareInProgressChanged)
     Q_PROPERTY(bool autoBlurProcessing READ autoBlurProcessing WRITE setAutoBlurProcessing NOTIFY autoBlurProcessingChanged)
 
 public:
@@ -31,10 +33,11 @@ public:
         bool isOCR = false;
         bool isUndo = false;
         bool isRedo = false;
-        bool isShare = false;
         bool isAction = false;
         bool isExportAction = false;
         bool isCancel = false;
+        std::optional<ToolbarGroup> group;      // custom buttons must set it
+        std::optional<int> collapsePriority;    // custom buttons must set it
     };
 
     explicit ToolbarViewModelBase(QObject* parent = nullptr);
@@ -43,6 +46,12 @@ public:
 
     int activeTool() const;
     void setActiveTool(int toolId);
+
+    // A tool that must stay out of More besides activeTool, for toolbars whose
+    // highlight can sit on a mode button (canvas whiteboard/blackboard) while
+    // another tool is in use. -1 when unused.
+    int overflowKeepTool() const { return m_overflowKeepTool; }
+    void setOverflowKeepTool(int toolId);
 
     bool canUndo() const;
     void setCanUndo(bool value);
@@ -53,19 +62,16 @@ public:
     bool ocrAvailable() const;
     void setOCRAvailable(bool value);
 
-    bool shareInProgress() const;
-    void setShareInProgress(bool value);
-
     bool autoBlurProcessing() const;
     void setAutoBlurProcessing(bool value);
 
 signals:
     void buttonsChanged();
     void activeToolChanged();
+    void overflowKeepToolChanged();
     void canUndoChanged();
     void canRedoChanged();
     void ocrAvailableChanged();
-    void shareInProgressChanged();
     void autoBlurProcessingChanged();
 
 protected:
@@ -83,9 +89,9 @@ protected:
 private:
     QVariantList m_buttons;
     int m_activeTool = -1;
+    int m_overflowKeepTool = -1;
     bool m_canUndo = false;
     bool m_canRedo = false;
     bool m_ocrAvailable = true;
-    bool m_shareInProgress = false;
     bool m_autoBlurProcessing = false;
 };

@@ -6,7 +6,7 @@
  * @brief ViewModel exposing RegionSelector toolbar state to QML.
  *
  * Builds a button list from ToolRegistry::getToolsForToolbar(RegionSelector),
- * tracks active tool and undo/redo/share state, and forwards QML clicks
+ * tracks active tool and undo/redo state, and forwards QML clicks
  * back to RegionSelector via signals.
  *
  * Supports multi-region mode which rebuilds the button list to show
@@ -34,7 +34,6 @@ signals:
     void ocrClicked();
     void qrCodeClicked();
     void pinClicked();
-    void shareClicked();
     void saveClicked();
     void copyClicked();
     void multiRegionToggled();

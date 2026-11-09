@@ -23,7 +23,7 @@ hero:
     - macOS 14+
     - Windows 10+
     - Ubuntu 22.04 X11 beta
-    - Qt 6.10.1
+    - Qt 6.12.0
   runtime_title: SnapTray ランタイム
   runtime_items:
     - ルーペ精度付きの範囲キャプチャ
@@ -140,6 +140,14 @@ footer:
     privacy: プライバシーポリシー
     report_issue: 問題を報告
     license: MIT ライセンス
+
+analytics_consent:
+  title: "ウェブサイト解析"
+  body: "snaptray.cc が Google アナリティクスの Cookie を使って訪問数とダウンロードのクリック数を計測することを許可しますか？対象はこのウェブサイトのみで、SnapTray アプリが利用データを送信することはありません。"
+  accept: "許可する"
+  decline: "拒否する"
+  details: "プライバシーポリシー"
+  settings: "解析の設定"
 
 docs:
   page_label: ドキュメント

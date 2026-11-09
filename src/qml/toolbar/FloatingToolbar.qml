@@ -1,5 +1,6 @@
 import QtQuick
 import SnapTrayQml
+import "ToolbarButtonState.js" as ButtonState
 
 /**
  * FloatingToolbar: Glass-effect toolbar for PinWindow annotation mode.
@@ -18,6 +19,10 @@ Item {
     id: root
     required property var viewModel
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    property var displayButtons: root.hasViewModel ? root.viewModel.buttons : []
+    property var overflowButtons: []
+    property int constrainedWidth: -1
+    property bool showDragHandle: true
     property int iconPalette: 0
     readonly property bool useCaptureOverlayIconPalette: root.iconPalette === 1
     property color iconNormalColor: root.useCaptureOverlayIconPalette
@@ -40,6 +45,7 @@ Item {
     signal dragStarted()
     signal dragFinished()
     signal dragMoved(real deltaX, real deltaY)
+    signal overflowRequested(real anchorX, real anchorY, real anchorW, real anchorH)
 
     // ── Layout constants (match WindowedToolbar dimensions) ──
     readonly property int barHeight: 32
@@ -47,12 +53,39 @@ Item {
     readonly property int buttonHeight: 24
     readonly property int buttonSpacing: 2
     readonly property int separatorWidth: 8
+    readonly property int groupGap: 4
+    readonly property int finishTintRadius: 6
+    readonly property int finishTintPadding: 1
     readonly property int margin: 8
     readonly property int separatorLineHeight: 16
     readonly property int dragHandleWidth: 16
     readonly property int contentSpacing: 6
 
-    width: contentRow.width + margin * 2
+    // Paint each contiguous visible Finish run once. Per-button translucent
+    // rectangles overlap at the seams and make the accent almost twice as dark.
+    readonly property var finishTintWidths: {
+        var widths = []
+        var start = -1
+        for (var i = 0; i < root.displayButtons.length; ++i) {
+            widths[i] = 0
+            var button = root.displayButtons[i]
+            if (!root.hasViewModel || (button.isOCR && !root.viewModel.ocrAvailable))
+                continue
+            if (button.group !== 2) {
+                start = -1
+                continue
+            }
+            if (start < 0 || button.separatorBefore) {
+                start = i
+                widths[start] = root.buttonWidth + root.finishTintPadding * 2
+            } else {
+                widths[start] += root.buttonWidth + root.buttonSpacing
+            }
+        }
+        return widths
+    }
+
+    width: constrainedWidth > 0 ? constrainedWidth : contentRow.width + margin * 2
     height: barHeight
 
     // ── Glass background ──
@@ -61,18 +94,20 @@ Item {
         glassRadius: 8
     }
 
-    Row {
+    Item {
         id: contentRow
         anchors {
             left: parent.left
-            leftMargin: root.margin
+            leftMargin: Math.min(root.margin, Math.max(0, (root.width - 1) / 4))
             verticalCenter: parent.verticalCenter
         }
-        spacing: root.contentSpacing
+        width: buttonRow.width + (root.showDragHandle ? root.dragHandleWidth + root.contentSpacing : 0)
+        height: root.barHeight
         z: 1
 
         Item {
             id: dragHandle
+            visible: root.showDragHandle
             objectName: "toolbarDragHandle"
             width: root.dragHandleWidth
             height: root.barHeight
@@ -130,10 +165,11 @@ Item {
         // ── Button row ──
         Row {
             id: buttonRow
+            x: root.showDragHandle ? root.dragHandleWidth + root.contentSpacing : 0
             spacing: root.buttonSpacing
 
             Repeater {
-                model: root.hasViewModel ? root.viewModel.buttons : []
+                model: root.displayButtons
 
                 Loader {
                     id: delegateLoader
@@ -143,6 +179,8 @@ Item {
                     readonly property int buttonId: buttonData.id
                     readonly property bool isSeparatorBefore: buttonData.separatorBefore
                     readonly property bool isOCR: buttonData.isOCR
+                    readonly property bool isGroupStart: buttonData.groupStart === true
+                    readonly property real finishTintWidth: root.finishTintWidths[index] || 0
 
                     // Skip OCR button if not available
                     active: root.hasViewModel && !(isOCR && !root.viewModel.ocrAvailable)
@@ -157,7 +195,9 @@ Item {
                         // Separator before (if configured)
                         Item {
                             id: separatorItem
-                            width: delegateLoader.isSeparatorBefore ? root.separatorWidth : 0
+                            width: delegateLoader.isSeparatorBefore
+                                ? root.separatorWidth + (delegateLoader.isGroupStart ? root.groupGap : 0)
+                                : 0
                             height: root.barHeight
                             visible: delegateLoader.isSeparatorBefore
 
@@ -168,6 +208,17 @@ Item {
                                 height: root.separatorLineHeight
                                 color: ComponentTokens.toolbarSeparator
                             }
+                        }
+
+                        Rectangle {
+                            objectName: "toolbarFinishTint_" + delegateLoader.buttonId
+                            visible: delegateLoader.finishTintWidth > 0
+                            x: separatorItem.width - root.finishTintPadding
+                            width: delegateLoader.finishTintWidth
+                            height: root.buttonHeight + 4
+                            anchors.verticalCenter: parent.verticalCenter
+                            radius: root.finishTintRadius
+                            color: ComponentTokens.toolbarFinishGroupBackground
                         }
 
                         ToolbarButton {
@@ -181,20 +232,8 @@ Item {
                             isCancel: delegateLoader.buttonData.isCancel || false
                             isActive: root.hasViewModel
                                       && root.viewModel.activeTool === delegateLoader.buttonId
-                            isDisabled: {
-                                if (!root.hasViewModel)
-                                    return true;
-                                if (delegateLoader.buttonData.isUndo)
-                                    return !root.viewModel.canUndo;
-                                if (delegateLoader.buttonData.isRedo)
-                                    return !root.viewModel.canRedo;
-                                if (delegateLoader.buttonData.isShare)
-                                    return root.viewModel.shareInProgress
-                                           || root.viewModel.autoBlurProcessing;
-                                if (delegateLoader.buttonData.isExportAction)
-                                    return root.viewModel.autoBlurProcessing;
-                                return false;
-                            }
+                            accessibleCheckable: delegateLoader.buttonData.isDrawing || false
+                            isDisabled: ButtonState.isDisabled(delegateLoader.buttonData, root.viewModel)
                             iconNormalColor: root.iconNormalColor
                             iconActionColor: root.iconActionColor
                             iconCancelColor: root.iconCancelColor
@@ -213,7 +252,48 @@ Item {
 
                             onUnhovered: root.buttonUnhovered()
                         }
+
+                        // A disabled button gets no hover (#248); keep its
+                        // tooltip, for example why Undo is unavailable, from here.
+                        MouseArea {
+                            objectName: "toolbarDisabledHover_" + delegateLoader.buttonId
+                            x: toolbarButton.x
+                            y: toolbarButton.y
+                            width: toolbarButton.width
+                            height: toolbarButton.height
+                            enabled: toolbarButton.isDisabled
+                            hoverEnabled: true
+                            acceptedButtons: Qt.NoButton
+                            cursorShape: CursorTokens.toolbarControl
+                            onContainsMouseChanged: {
+                                if (containsMouse) {
+                                    var mapped = toolbarButton.mapToItem(null, 0, 0)
+                                    root.buttonHovered(toolbarButton.buttonId, mapped.x, mapped.y,
+                                                       toolbarButton.width, toolbarButton.height)
+                                } else {
+                                    root.buttonUnhovered()
+                                }
+                            }
+                        }
                     }
+                }
+            }
+            ToolbarButton {
+                id: moreButton
+                objectName: "toolbarMoreButton"
+                visible: root.overflowButtons.length > 0
+                width: root.showDragHandle ? root.buttonWidth
+                    : Math.max(1, Math.min(root.buttonWidth, root.width - contentRow.x * 2))
+                height: root.buttonHeight
+                y: (root.barHeight - height) / 2
+                textLabel: "\u22ef"
+                tooltipText: qsTr("More")
+                isActive: root.hasViewModel && root.overflowButtons.some(function(button) {
+                    return button.id === root.viewModel.activeTool
+                })
+                onClicked: {
+                    var anchor = mapToItem(root, 0, 0)
+                    root.overflowRequested(anchor.x, anchor.y, width, height)
                 }
             }
         }

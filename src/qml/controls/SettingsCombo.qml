@@ -16,20 +16,51 @@ SettingsRow {
     property var currentValue: model.length > 0 && currentIndex >= 0 && currentIndex < model.length
         ? model[currentIndex].value : undefined
 
+    // Spoken name; defaults to the label (set it when the label is hidden).
+    property string accessibleName: label
     property int minimumPopupWidth: 0
+    property int controlWidth: 0 // 0 keeps the content-based settings layout
 
     signal activated(int index)
+
+    // Size to the widest option, not the selected one, so no option is cut
+    // short in the combo or its popup (which would otherwise be as narrow as
+    // a short selection).
+    readonly property int delegatePadding: 12
+    readonly property real widestTextWidth: {
+        let widest = 0
+        for (let i = 0; i < model.length; ++i)
+            widest = Math.max(widest, optionMetrics.advanceWidth(String(model[i].text)))
+        return Math.ceil(widest)
+    }
+
+    FontMetrics {
+        id: optionMetrics
+        font.pixelSize: SemanticTokens.fontSizeBody
+        font.family: SemanticTokens.fontFamily
+        font.letterSpacing: SemanticTokens.letterSpacingDefault
+    }
 
     ComboBox {
         id: combo
         anchors.verticalCenter: parent.verticalCenter
-        width: Math.max(120, implicitWidth)
+        width: root.controlWidth > 0
+            ? root.controlWidth
+            : Math.min(Math.max(120, implicitWidth,
+                                root.widestTextWidth + contentItem.leftPadding
+                                    + contentItem.rightPadding + leftPadding + rightPadding),
+                       // Never past the row; a long option then elides here
+                       // but still shows in full in the popup.
+                       parent && parent.width > 0 ? parent.width : Number.MAX_VALUE)
         model: root.model
         currentIndex: root.currentIndex
         textRole: "text"
 
         Accessible.role: Accessible.ComboBox
-        Accessible.name: root.label
+        // The label and the current choice (#238): the shown text is a custom
+        // contentItem, so screen readers would not otherwise hear the value.
+        Accessible.name: combo.displayText !== ""
+            ? root.accessibleName + ", " + combo.displayText : root.accessibleName
 
         onActivated: function(index) {
             root.activated(index)
@@ -70,7 +101,9 @@ SettingsRow {
 
         popup: Popup {
             y: combo.height + 2
-            width: Math.max(combo.width, root.minimumPopupWidth)
+            width: Math.max(combo.width, root.minimumPopupWidth,
+                            root.widestTextWidth + SemanticTokens.spacing8
+                                + 2 * root.delegatePadding + leftPadding + rightPadding)
             padding: 1
 
             enter: Transition {
@@ -100,7 +133,14 @@ SettingsRow {
             // even when minimumPopupWidth makes the popup wider than combo.
             width: ListView.view ? ListView.view.width : combo.width
             height: ComponentTokens.inputHeight
+            horizontalPadding: root.delegatePadding
             highlighted: combo.highlightedIndex === index
+            // The option's accessible name; the shown text is contentItem (#210).
+            // Set explicitly: Qt copies `text` into the name only while
+            // accessibility is already active.
+            text: modelData.text
+            Accessible.role: Accessible.ListItem
+            Accessible.name: modelData.text
 
             contentItem: Text {
                 text: modelData.text

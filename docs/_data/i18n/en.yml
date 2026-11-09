@@ -23,7 +23,7 @@ hero:
     - macOS 14+
     - Windows 10+
     - Ubuntu 22.04 X11 beta
-    - Qt 6.10.1
+    - Qt 6.12.0
   runtime_title: SnapTray Runtime
   runtime_items:
     - Region Capture with magnifier precision
@@ -140,6 +140,14 @@ footer:
     privacy: Privacy Policy
     report_issue: Report Issue
     license: MIT License
+
+analytics_consent:
+  title: "Website analytics"
+  body: "May snaptray.cc use Google Analytics cookies to count visits and download clicks? This applies only to this website; the SnapTray app never sends usage data."
+  accept: "Allow"
+  decline: "Decline"
+  details: "Privacy Policy"
+  settings: "Analytics settings"
 
 docs:
   page_label: Documentation

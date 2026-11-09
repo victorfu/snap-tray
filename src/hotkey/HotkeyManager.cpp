@@ -473,6 +473,7 @@ bool HotkeyManager::updateHotkey(HotkeyAction action, const QString& keySequence
         saveToSettings(action);
         emit hotkeyChanged(action, config);
         emit registrationStatusChanged(action, config.status);
+        refreshAffectedConflicts(oldSequence, config.keySequence, action);
         return true;
     }
 
@@ -740,6 +741,9 @@ void HotkeyManager::createHotkeyInstance(HotkeyAction action)
         // Connect activated signal with captured action
         connect(hotkey, &QHotkey::activated, this, [this, action]() {
             onHotkeyActivated(action);
+        });
+        connect(hotkey, &QHotkey::released, this, [this, action]() {
+            emit actionReleased(action);
         });
 
         m_hotkeys[action] = hotkey;

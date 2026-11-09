@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QTemporaryDir>
+#include <QTextBoundaryFinder>
 
 #include "utils/FilenameTemplateEngine.h"
 
@@ -19,6 +20,10 @@ private slots:
     void testBuildUniqueFilePath_AppendsCounter();
     void testSanitize_InvalidCharacters();
     void testLengthLimit_IsEnforced();
+    void testUtf8LengthLimit_data();
+    void testUtf8LengthLimit();
+    void testCollisionSuffixSurvivesLengthLimit();
+    void testNumericMetadataIsNotACounter();
 };
 
 void tst_FilenameTemplateEngine::testRender_BasicTokens()
@@ -135,6 +140,88 @@ void tst_FilenameTemplateEngine::testLengthLimit_IsEnforced()
 
     const auto result = FilenameTemplateEngine::renderFilename("{windowTitle}.{ext}", context);
     QVERIFY(result.filename.length() <= 255);
+    QVERIFY(result.filename.endsWith(".png"));
+}
+
+void tst_FilenameTemplateEngine::testUtf8LengthLimit_data()
+{
+    QTest::addColumn<QString>("cluster");
+    QTest::addColumn<QString>("suffix");
+    for (const QString& cluster : {QStringLiteral("測試"), QStringLiteral("A測📌"),
+                                   QStringLiteral("e\u0301"), QStringLiteral("👨‍👩‍👧‍👦")}) {
+        for (const QString& suffix : {QString(), QStringLiteral("_1"), QStringLiteral("_01234567")}) {
+            QTest::addRow("%s-%s", qPrintable(cluster), qPrintable(suffix)) << cluster << suffix;
+        }
+    }
+}
+
+void tst_FilenameTemplateEngine::testUtf8LengthLimit()
+{
+    QFETCH(QString, cluster);
+    QFETCH(QString, suffix);
+    const QString base = cluster.repeated(100);
+    const QString source = base + suffix + QStringLiteral(".png");
+    const QString limited = FilenameTemplateEngine::limitFilenameComponent(source, 255, true, suffix);
+    QVERIFY(!limited.isEmpty());
+    QVERIFY(limited.toUtf8().size() <= 255);
+    QVERIFY(limited.endsWith(suffix + QStringLiteral(".png")));
+    const int hashStart = limited.indexOf('~');
+    QVERIFY(hashStart >= 0);
+    QCOMPARE(limited.mid(hashStart + 1, 6).size(), 6);
+    const QString prefix = limited.left(hashStart);
+    QVERIFY(base.startsWith(prefix));
+    QTextBoundaryFinder boundaries(QTextBoundaryFinder::Grapheme, base);
+    boundaries.setPosition(prefix.size());
+    QVERIFY(boundaries.isAtBoundary());
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QFile file(dir.filePath(limited));
+    QVERIFY2(file.open(QIODevice::WriteOnly | QIODevice::NewOnly), qPrintable(file.errorString()));
+    QCOMPARE(file.write("complete"), qint64(8));
+    file.close();
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), QByteArray("complete"));
+}
+
+void tst_FilenameTemplateEngine::testCollisionSuffixSurvivesLengthLimit()
+{
+    QTemporaryDir dir;
+    FilenameTemplateEngine::Context context;
+    context.windowTitle = QStringLiteral("界").repeated(400);
+    context.outputDir = dir.path();
+    for (const QString& templ : {QStringLiteral("{windowTitle}.{ext}"),
+                                 QStringLiteral("{windowTitle}_{#:4}.{ext}"),
+                                 QStringLiteral("{windowTitle}_{#:30}.{ext}")}) {
+        QTemporaryDir caseDirectory;
+        QVERIFY(caseDirectory.isValid());
+        context.outputDir = caseDirectory.path();
+        const QString initial = FilenameTemplateEngine::renderFilename(templ, context).filename;
+        const QString numbered = FilenameTemplateEngine::collisionFilename(templ, context, initial, 42);
+        const QString uuid = FilenameTemplateEngine::collisionFilename(templ, context, initial, 0, "deadbeef");
+        const QString expectedCounter = templ.contains("#:30") ? QStringLiteral("_000000000000000000000000000042.png")
+            : templ.contains("{#") ? QStringLiteral("_0042.png") : QStringLiteral("_42.png");
+        QVERIFY(numbered.endsWith(expectedCounter));
+        QVERIFY(uuid.endsWith("_deadbeef.png"));
+        QVERIFY(initial != numbered && numbered != uuid);
+#ifdef Q_OS_LINUX
+        for (const QString& filename : {initial, numbered, uuid}) {
+            QVERIFY(filename.toUtf8().size() <= 255);
+            QFile file(caseDirectory.filePath(filename));
+            QVERIFY2(file.open(QIODevice::WriteOnly | QIODevice::NewOnly), qPrintable(file.errorString()));
+        }
+#endif
+    }
+    QVERIFY(FilenameTemplateEngine::limitFilenameComponent(QString(40, 'a') + ".png", 10, true).isEmpty());
+}
+
+void tst_FilenameTemplateEngine::testNumericMetadataIsNotACounter()
+{
+    FilenameTemplateEngine::Context context;
+    context.windowTitle = QStringLiteral("Document_") + QString(400, QChar('9'));
+    const auto result = FilenameTemplateEngine::renderFilename("{windowTitle}.{ext}", context);
+    QVERIFY(!result.filename.isEmpty());
+    QVERIFY(result.error.isEmpty());
+    QVERIFY(result.filename.size() <= 255);
     QVERIFY(result.filename.endsWith(".png"));
 }
 

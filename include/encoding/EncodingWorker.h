@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "WatermarkRenderer.h"
+#include "recording/RecordingHealth.h"
 
 class IVideoEncoder;
 class NativeGifEncoder;
@@ -44,6 +45,32 @@ public:
     struct FrameData {
         QImage frame;
         qint64 timestampMs;
+        qint64 enqueuedNs = 0;  // set by enqueueFrame(), for the queue-age metric
+        // The capture backend's surface for `frame` (CapturedFrame::nativeBuffer).
+        // The video encoder encodes it directly when it can; `frame` stays the
+        // fallback (watermark, incompatible buffer, native frames turned off).
+        // Windows GPU frames have no `frame` at all: without the native path
+        // they cannot be encoded and are counted as rejected.
+        std::shared_ptr<void> nativeBuffer;
+        QSize pixelSize;  // sizes an image-less frame for the queue budget
+
+        // Bytes counted against the queue budget (a GPU frame as 32-bit pixels).
+        qint64 byteSize() const
+        {
+            return frame.isNull() ? qint64(pixelSize.width()) * pixelSize.height() * 4 : frame.sizeInBytes();
+        }
+    };
+
+    // Limits for frames waiting to be encoded. When one is reached the new
+    // frame is dropped (the queue keeps the older frames, so what is encoded
+    // stays in order) and the reason is counted. Bytes are each frame's full
+    // image size: shared images are counted more than once, erring on the
+    // side of a smaller queue. Stale: the oldest waiting frame is older than
+    // maxAgeMs, so the encoder is not keeping up.
+    struct QueueBudget {
+        int maxFrames = 30;
+        qint64 maxBytes = 512LL * 1024 * 1024;
+        qint64 maxAgeMs = 3000;
     };
 
     /**
@@ -51,7 +78,7 @@ public:
      */
     struct AudioData {
         QByteArray data;
-        qint64 timestampMs;
+        qint64 startFrame;
     };
 
     /**
@@ -97,6 +124,14 @@ public:
      */
     void setWatermarkSettings(const WatermarkRenderer::Settings& settings);
 
+    // Let the video encoder take frames' native buffers (default on). Off
+    // forces the image path for every frame, for A/B comparison.
+    void setNativeFramesEnabled(bool enabled) { m_nativeFramesEnabled = enabled; }
+
+    void setQueueBudget(const QueueBudget& budget);
+    // Counters for this recording; optional. Shared with RecordingManager.
+    void setHealth(std::shared_ptr<SnapTray::RecordingHealth> health);
+
     // ========== Lifecycle ==========
 
     /**
@@ -129,12 +164,12 @@ public:
     /**
      * @brief Write audio samples to encoder
      * @param data PCM audio data
-     * @param timestampMs Timestamp in milliseconds
+     * @param startFrame First frame on the canonical 48 kHz audio timeline
      *
      * Thread-safe: Audio is queued and processed by the worker thread.
      * Can be called from any thread (e.g., audio capture thread via DirectConnection).
      */
-    void writeAudioSamples(const QByteArray& data, qint64 timestampMs);
+    void writeAudioSamples(const QByteArray& data, qint64 startFrame);
 
     // ========== State Queries ==========
 
@@ -172,12 +207,16 @@ signals:
 private:
     bool startOnWorkerThread();
     void stopOnWorkerThread();
+    // Empties both queues and their byte count; m_queueMutex must be held.
+    void clearQueuesLocked();
     void requestFinishOnWorkerThread();
     void scheduleProcessing();
     void processNextFrame();
     void doProcessFrame(const FrameData& frameData);
     void handleProcessingFailure(const QString& context, const QString& details);
     void applyWatermark(QImage& frame);
+    // Hands the frame's native buffer to the video encoder; false = write the image.
+    bool writeNativeFrame(const FrameData& frameData);
     void finishEncoder();
 
     // Encoders (owned, accessed only by worker thread)
@@ -189,7 +228,10 @@ private:
     // Frame queue (thread-safe)
     mutable QMutex m_queueMutex;
     QQueue<FrameData> m_frameQueue;
-    static constexpr int MAX_QUEUE_SIZE = 30;  // ~1 second at 30fps
+    QueueBudget m_budget;         // guarded by m_queueMutex
+    qint64 m_queuedBytes = 0;     // guarded by m_queueMutex
+    std::shared_ptr<SnapTray::RecordingHealth> m_health;
+    qint64 encoderFramesWritten() const;
 
     // Audio queue (thread-safe, shared mutex with frame queue)
     QQueue<AudioData> m_audioQueue;
@@ -202,15 +244,16 @@ private:
     std::atomic<bool> m_finishRequested{false};
     std::atomic<qint64> m_framesWritten{0};
     std::atomic<bool> m_finishCalled{false};
-    bool m_wasNearFull = false;
+    std::atomic<bool> m_wasNearFull{false};
+    std::atomic<bool> m_nativeFramesEnabled{true};
 
     // Configuration
     WatermarkRenderer::Settings m_watermarkSettings;
     QImage m_cachedWatermarkImage;  // Use QImage for thread safety (QPixmap is not thread-safe)
 
-    // Queue thresholds
-    static constexpr int QUEUE_NEAR_FULL_THRESHOLD = 24;  // 80% of max
-    static constexpr int QUEUE_LOW_THRESHOLD = 6;         // 20% of max
+    // Queue thresholds, as percentages of the frame budget
+    static constexpr int QUEUE_NEAR_FULL_PERCENT = 80;
+    static constexpr int QUEUE_LOW_PERCENT = 20;
 };
 
 #endif // ENCODINGWORKER_H

@@ -4,6 +4,7 @@
 #include "../IToolHandler.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/MosaicStroke.h"
+#include "tools/ToolWidthSlot.h"
 
 #include <QVector>
 #include <QPoint>
@@ -15,7 +16,7 @@
  */
 class MosaicToolHandler : public IToolHandler {
 public:
-    static constexpr int kDefaultBrushWidth = 18;
+    static constexpr int kDefaultBrushWidth = ToolWidthDefaults::kMosaicBrushDefault;
     static constexpr int kDefaultBlockSize = 6;
 
     MosaicToolHandler() = default;
@@ -28,8 +29,10 @@ public:
     void onMouseRelease(ToolContext* ctx, const QPoint& pos) override;
 
     void drawPreview(QPainter& painter) const override;
+    QRect previewBounds() const override;
     bool isDrawing() const override { return m_isDrawing; }
     void cancelDrawing() override;
+    void onDeactivate(ToolContext* ctx) override;
 
     bool supportsColor() const override { return false; }
     bool supportsWidth() const override { return true; }

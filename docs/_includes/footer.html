@@ -1,7 +1,8 @@
 {% assign lang = page.lang | default: site.default_lang %}
 {% assign t = site.data.i18n[lang] %}
+{% assign developer_url = site.data.routes.developer_home[lang] | default: site.data.routes.developer_home.en %}
 
-<footer class="site-footer">
+<footer class="site-footer" data-analytics-placement="footer">
   <div class="container footer-grid">
     <section>
       <p class="footer-title">{{ t.footer.product_title }}</p>
@@ -14,9 +15,13 @@
       <div class="footer-links">
         <a href="{{ site.data.routes.home[lang] | relative_url }}">{{ t.footer.links.home }}</a>
         <a href="{{ site.data.routes.docs_home[lang] | relative_url }}">{{ t.footer.links.docs }}</a>
-        <a href="{{ site.data.routes.developer_home[lang] | relative_url }}">{{ t.footer.links.developer }}</a>
+        <a href="{{ developer_url | relative_url }}">{{ t.footer.links.developer }}</a>
         <a href="{{ site.data.routes.releases[lang] | relative_url }}">{{ t.footer.links.releases }}</a>
         <a href="{{ site.data.routes.privacy[lang] | relative_url }}">{{ t.footer.links.privacy }}</a>
+        {% assign analytics_id = site.analytics.ga4_measurement_id | default: "" | strip %}
+        {% if analytics_id != "" and jekyll.environment == "production" %}
+        <button type="button" class="footer-link-button" data-analytics-settings hidden>{{ t.analytics_consent.settings }}</button>
+        {% endif %}
       </div>
     </section>
 

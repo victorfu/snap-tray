@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QRect>
 #include <QPoint>
+#include <functional>
 
 /**
  * @brief Selection state and operation management
@@ -78,8 +79,18 @@ public:
     ResizeHandle hitTestHandle(const QPoint& pos, int handleSize = 16) const;
     ResizeHandle activeResizeHandle() const { return m_activeHandle; }
     void startResize(const QPoint& pos, ResizeHandle handle);
-    void updateResize(const QPoint& pos);
+    struct ResizePreview { QRect rect; Qt::Edges snappedEdges; };
+    using ResizeTransform = std::function<ResizePreview(const QRect&, Qt::Edges)>;
+    void updateResize(const QPoint& pos, const ResizeTransform& transform = {});
+    Qt::Edges snappedEdges() const { return m_snappedEdges; }
+    void clearSnapGuides();
     void finishResize();
+    // Apply an outside click with the same constraints as a handle drag.
+    void resizeToPosition(const QPoint& pos, ResizeHandle handle);
+
+    // Keyboard resize keeps top/left fixed and adjusts the inclusive
+    // bottom-right edges while honoring the ratio, bounds and minimum size.
+    bool resizeFromBottomRight(const QPoint& edgeDelta, int minimumSize = 10);
 
     // Move operations
     bool hitTestMove(const QPoint& pos) const;
@@ -97,16 +108,21 @@ public:
     QRect originalRect() const { return m_originalRect; }
 
 signals:
+    void snapGuidesChanged();
     void stateChanged(State newState);
     void selectionChanged(const QRect& rect);
 
 private:
     void setState(State state);
     void clampToBounds();
+    QRect resizedRect(const QRect& originalRect, ResizeHandle handle, const QPoint& delta) const;
+    QPoint clampPointToBounds(const QPoint& point) const;
+    QRect selectionRectForDrag(const QPoint& anchor, const QPoint& point) const;
     QPoint adjustDeltaForAspectRatio(const QPoint& delta) const;
     bool isCornerHandle(ResizeHandle handle) const;
     void updateHandleRectsCache(int handleSize) const;
 
+    Qt::Edges m_snappedEdges;
     State m_state = State::None;
     QRect m_selectionRect;
     QRect m_bounds;
@@ -114,7 +130,6 @@ private:
 
     // Operation temporaries
     QPoint m_startPoint;
-    QPoint m_lastPoint;
     QRect m_originalRect;  // For resize/move restoration
     ResizeHandle m_activeHandle = ResizeHandle::None;
 

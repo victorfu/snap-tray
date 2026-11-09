@@ -4,7 +4,13 @@
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
 #include "encoding/EncoderFactory.h"
+#include "encoding/IntermediateQuality.h"
+#include "encoding/VideoRateControl.h"
 #include "utils/CoordinateHelper.h"
+
+#ifdef Q_OS_WIN
+#include "capture/WGCCaptureEngine.h"
+#endif
 
 #include <QDebug>
 #include <QScreen>
@@ -20,6 +26,8 @@ RecordingInitTask::Result::~Result() = default;
 
 void RecordingInitTask::Result::cleanup()
 {
+    audioEnabled = false;
+    audioWarning.clear();
     if (captureEngine) {
         if (captureEngineStarted) {
             captureEngine->stop();
@@ -144,17 +152,8 @@ void RecordingInitTask::run()
     emit finished();
 }
 
-bool RecordingInitTask::initializeCaptureEngine()
+bool RecordingInitTask::configureAndStartCaptureEngine()
 {
-    qDebug() << "RecordingInitTask: Creating capture engine...";
-
-    // Create capture engine with nullptr parent (will be reparented on main thread)
-    m_result.captureEngine.reset(ICaptureEngine::createBestEngine(nullptr));
-    if (!m_result.captureEngine) {
-        m_result.error = "Failed to create capture engine";
-        return false;
-    }
-
     qDebug() << "RecordingInitTask: Setting region:" << m_config.region
              << "screen:" << m_config.screenInfo.name;
 
@@ -166,9 +165,9 @@ bool RecordingInitTask::initializeCaptureEngine()
     m_result.captureEngine->setFrameRate(m_config.frameRate);
 
     // Set windows to exclude from capture (e.g., recording UI overlays)
-    if (!m_config.excludedWindowIds.isEmpty()) {
-        qDebug() << "RecordingInitTask: Setting" << m_config.excludedWindowIds.size() << "excluded windows";
-        m_result.captureEngine->setExcludedWindows(m_config.excludedWindowIds);
+    if (!m_config.excludedCaptureWindowIds.isEmpty()) {
+        qDebug() << "RecordingInitTask: Setting" << m_config.excludedCaptureWindowIds.size() << "excluded windows";
+        m_result.captureEngine->setExcludedCaptureWindowIds(m_config.excludedCaptureWindowIds);
     }
 
     qDebug() << "RecordingInitTask: Starting capture engine...";
@@ -177,6 +176,41 @@ bool RecordingInitTask::initializeCaptureEngine()
         return false;
     }
     m_result.captureEngineStarted = true;
+    return true;
+}
+
+bool RecordingInitTask::initializeCaptureEngine()
+{
+    qDebug() << "RecordingInitTask: Creating capture engine...";
+
+#ifdef Q_OS_WIN
+    if (m_config.preferGraphicsCapture) {
+        if (!WGCCaptureEngine::isAvailable()) {
+            qWarning() << "RecordingInitTask: Windows Graphics Capture unavailable, using the default engine";
+        } else {
+            m_result.captureEngine.reset(new WGCCaptureEngine(nullptr));
+            if (configureAndStartCaptureEngine()) {
+                qDebug() << "RecordingInitTask: Capture engine started:" << m_result.captureEngine->engineName();
+                return true;
+            }
+            const auto *wgc = static_cast<WGCCaptureEngine *>(m_result.captureEngine.get());
+            qWarning() << "RecordingInitTask: Windows Graphics Capture failed to start ("
+                       << wgc->lastStartError() << "), using the default engine";
+            m_result.captureEngine.reset();
+            m_result.error.clear();
+        }
+    }
+#endif
+
+    // Create capture engine with nullptr parent (will be reparented on main thread)
+    m_result.captureEngine.reset(ICaptureEngine::createBestEngine(nullptr));
+    if (!m_result.captureEngine) {
+        m_result.error = "Failed to create capture engine";
+        return false;
+    }
+    if (!configureAndStartCaptureEngine()) {
+        return false;
+    }
 
     qDebug() << "RecordingInitTask: Capture engine started:"
         << m_result.captureEngine->engineName();
@@ -215,7 +249,15 @@ bool RecordingInitTask::initializeEncoder()
     encoderConfig.frameSize = m_config.frameSize;
     encoderConfig.frameRate = m_config.frameRate;
     encoderConfig.outputPath = m_config.outputPath;
-    encoderConfig.quality = m_config.quality;
+    // A crash during recording should leave a recoverable file (#157).
+    encoderConfig.fragmentedOutput = true;
+    if (m_config.intermediateQuality) {
+        encoderConfig.rateControl = SnapTray::VideoRateControl::ConstantQuality;
+        encoderConfig.quality = SnapTray::IntermediateQuality::kConstantQualityValue;
+        encoderConfig.keyFrameIntervalSeconds = SnapTray::IntermediateQuality::kKeyFrameIntervalSeconds;
+    } else {
+        encoderConfig.quality = m_config.quality;
+    }
 
     // Configure audio settings for native encoder.
     // Format must match captured PCM data to avoid speed/channel distortion.
@@ -226,8 +268,13 @@ bool RecordingInitTask::initializeEncoder()
         encoderConfig.audioBitsPerSample = m_config.audioBitsPerSample;
     }
 
+    // The MP4 encoder may take frames straight from the capture device.
+    if (m_config.gpuEncoding && m_config.outputFormat == EncoderFactory::Format::MP4 && m_result.captureEngine) {
+        encoderConfig.nativeFrameDevice = m_result.captureEngine->nativeFrameDevice();
+    }
+
     // Create encoder (pass nullptr parent - will be reparented on main thread)
-    auto encoderResult = EncoderFactory::create(encoderConfig, nullptr);
+    auto encoderResult = m_createEncoder(encoderConfig, nullptr);
 
     if (!encoderResult.success) {
         m_result.error = encoderResult.errorMessage;
@@ -235,6 +282,9 @@ bool RecordingInitTask::initializeEncoder()
     }
 
     m_result.usingNativeEncoder = encoderResult.isNative;
+    m_result.fragmentedOutput = encoderResult.fragmentedOutput;
+    m_result.audioEnabled = encoderResult.audioEnabled;
+    m_result.audioWarning = encoderResult.audioWarning;
     m_result.nativeEncoder.reset(encoderResult.nativeEncoder);
     m_result.gifEncoder.reset(encoderResult.gifEncoder);
     m_result.webpEncoder.reset(encoderResult.webpEncoder);

@@ -1,9 +1,9 @@
 #include "PlatformFeatures.h"
+#include "platform/LinuxClipboardOwner.h"
 
 #include "OCRManager.h"
 #include "WindowDetector.h"
 
-#include <QBuffer>
 #include <QClipboard>
 #include <QCoreApplication>
 #include <QDir>
@@ -11,7 +11,6 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QMetaObject>
-#include <QMimeData>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
@@ -40,6 +39,11 @@ QString shellQuote(const QString& value)
     QString escaped = value;
     escaped.replace('\'', QStringLiteral("'\"'\"'"));
     return QStringLiteral("'%1'").arg(escaped);
+}
+
+QString cliExecLine(const QString& appPath)
+{
+    return QStringLiteral("exec %1 \"$@\"").arg(shellQuote(appPath));
 }
 
 } // namespace
@@ -83,7 +87,7 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
     return new WindowDetector(parent);
 }
 
-QIcon PlatformFeatures::createTrayIcon() const
+QPixmap PlatformFeatures::createTrayPixmap() const
 {
     constexpr int size = 32;
     QPixmap pixmap(size, size);
@@ -111,12 +115,12 @@ QIcon PlatformFeatures::createTrayIcon() const
     painter.setBrush(QColor(QStringLiteral("#FBBF24")));
     painter.drawPath(lightningPath);
 
-    return QIcon(pixmap);
+    return pixmap;
 }
 
 bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const
 {
-    return copyImageToClipboardForGui(image);
+    return SnapTray::copyImageToLinuxClipboard(image, launchableAppPath());
 }
 
 bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
@@ -125,20 +129,11 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
         return false;
     }
 
-    QClipboard* clipboard = QGuiApplication::clipboard();
-    if (!clipboard) {
-        return false;
+    if (QClipboard* clipboard = QGuiApplication::clipboard()) {
+        clipboard->setImage(image);
+        return true;
     }
-
-    auto* mimeData = new QMimeData();
-    QByteArray pngData;
-    QBuffer buffer(&pngData);
-    buffer.open(QIODevice::WriteOnly);
-    image.save(&buffer, "PNG");
-    mimeData->setData(QStringLiteral("image/png"), pngData);
-    mimeData->setImageData(image);
-    clipboard->setMimeData(mimeData);
-    return true;
+    return false;
 }
 
 void PlatformFeatures::copyImageToClipboardForGuiAsync(
@@ -177,7 +172,9 @@ bool PlatformFeatures::isCLIInstalled() const
         return false;
     }
 
-    return QString::fromUtf8(file.readAll()).contains(getAppExecutablePath());
+    // Match the shell-quoted exec line installCLI() writes; the raw path won't
+    // appear verbatim when it contains a single quote.
+    return QString::fromUtf8(file.readAll()).contains(cliExecLine(getAppExecutablePath()));
 }
 
 bool PlatformFeatures::installCLI() const
@@ -194,7 +191,7 @@ bool PlatformFeatures::installCLI() const
 
     QTextStream stream(&file);
     stream << "#!/bin/sh\n";
-    stream << "exec " << shellQuote(getAppExecutablePath()) << " \"$@\"\n";
+    stream << cliExecLine(getAppExecutablePath()) << "\n";
     file.close();
 
     return QFile::setPermissions(

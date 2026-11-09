@@ -33,9 +33,16 @@ void MagnifierOverlay::syncToHost(QWidget* host,
 {
     m_host = host;
     m_backgroundPixmap = backgroundPixmap;
+#ifdef Q_OS_LINUX
+    // Linux paints in the host, whose dirty and clip regions use this cursor
+    // snapshot. Resampling the live cursor can flip the companion outside the
+    // host's clip region while a selection drag event is being processed.
+    m_cursorPos = cursorPos;
+#else
     const QPoint liveCursorPos = currentHostCursorPos();
     const QPoint effectiveCursorPos = liveCursorPos.isNull() ? cursorPos : liveCursorPos;
     m_cursorPos = effectiveCursorPos;
+#endif
     m_style = style;
 
     const bool canRenderMagnifier =
@@ -107,27 +114,31 @@ void MagnifierOverlay::paintEvent(QPaintEvent* event)
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     m_hasPaintedSinceShow = true;
 
-    paintCurrentStyle(painter);
+    paintCurrentStyle(painter, size());
 }
 
-void MagnifierOverlay::paintFallback(QPainter& painter)
+void MagnifierOverlay::paintFallback(QPainter& painter, const QSize& viewportSize)
 {
-    paintCurrentStyle(painter);
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    paintCurrentStyle(painter, viewportSize);
+    painter.restore();
 }
 
-void MagnifierOverlay::paintCurrentStyle(QPainter& painter)
+void MagnifierOverlay::paintCurrentStyle(QPainter& painter, const QSize& viewportSize)
 {
     if (m_style == RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier) {
         if (!m_panel || !m_backgroundPixmap || m_backgroundPixmap->isNull()) {
             return;
         }
-        m_panel->draw(painter, m_cursorPos, size(), *m_backgroundPixmap);
+        m_panel->draw(painter, m_cursorPos, viewportSize, *m_backgroundPixmap);
         return;
     }
 
     if (m_style == RegionCaptureSettingsManager::CursorCompanionStyle::Beaver &&
         !m_beaverPixmap.isNull()) {
-        drawBeaver(painter);
+        drawBeaver(painter, viewportSize);
     }
 }
 
@@ -165,10 +176,10 @@ QPoint MagnifierOverlay::currentHostCursorPos() const
     return localPos;
 }
 
-void MagnifierOverlay::drawBeaver(QPainter& painter)
+void MagnifierOverlay::drawBeaver(QPainter& painter, const QSize& viewportSize)
 {
     const QRect iconRect =
-        m_dirtyRegionPlanner.beaverRectForCursor(m_cursorPos, size());
+        m_dirtyRegionPlanner.beaverRectForCursor(m_cursorPos, viewportSize);
     if (!iconRect.isValid()) {
         return;
     }

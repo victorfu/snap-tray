@@ -3,17 +3,16 @@
 #include "qml/ToolbarTooltipController.h"
 
 #include <QObject>
+#include <QPointer>
 #include <QRect>
 #include <QString>
-#include <QTimer>
 
 class QQuickView;
 class QQuickItem;
 class PinToolOptionsViewModel;
 class QWidget;
 class QWindow;
-class TestQmlFloatingSubToolbarAutoBlurHint;
-class TestQmlFloatingSubToolbarMosaicHint;
+class TestQmlFloatingSubToolbarTooltip;
 
 namespace SnapTray {
 
@@ -72,33 +71,15 @@ signals:
     void emojiPickerRequested();
 
 private slots:
-    void onActiveToolChanged();
-    void onMosaicBrushAdjustmentLearned();
-    void onMosaicBrushPreviewHovered(double globalX,
-                                      double globalY,
-                                      double width,
-                                      double height);
-    void onMosaicBrushPreviewHoverExited();
-    void onAutoBlurButtonHovered(double globalX,
-                                 double globalY,
-                                 double width,
-                                 double height);
-    void onAutoBlurButtonHoverExited();
+    // ToolOptionsStrip.qml asks for a tooltip on hover; controlName is the
+    // hovered control's objectName.
+    void onControlTooltipRequested(const QString& controlName, const QString& text);
+    void onControlTooltipDismissed(const QString& controlName);
 
 private:
-    friend class ::TestQmlFloatingSubToolbarAutoBlurHint;
-    friend class ::TestQmlFloatingSubToolbarMosaicHint;
-
-    enum class MosaicHintDisplay
-    {
-        None,
-        Coachmark,
-        HoverReminder,
-        AutoBlurHoverReminder,
-    };
+    friend class ::TestQmlFloatingSubToolbarTooltip;
 
     void ensureView();
-    void initializeHintConnections();
     void applyPlatformWindowFlags();
     void syncTransientParent();
     void syncCursorSurface();
@@ -106,17 +87,11 @@ private:
     void scheduleParentCursorRestore();
     void attemptParentCursorRestore(quint64 token, int remainingAttempts);
     bool eventFilter(QObject* obj, QEvent* event) override;
-    void activateMosaicHint();
-    void deactivateMosaicHint();
-    void suspendMosaicHint();
-    void showPendingMosaicCoachmark();
-    void showMosaicHint(MosaicHintDisplay display, const QRect& anchorGlobalRect);
-    void showAutoBlurHint(const QRect& anchorGlobalRect);
-    void hideMosaicHint();
-    void setMosaicHintEmphasis(bool active);
+    QQuickItem* visibleControl(const QString& controlName) const;
+    QRect controlGlobalRect(const QString& controlName) const;
+    void showControlTooltip();
+    void hideControlTooltip();
     void setAutoBlurHintEmphasis(bool active);
-    QRect mosaicPreviewGlobalRect() const;
-    QRect autoBlurButtonGlobalRect() const;
 
     PinToolOptionsViewModel* m_viewModel = nullptr;
     QQuickView* m_view = nullptr;
@@ -127,13 +102,10 @@ private:
     QString m_cursorOwnerId;
     ToolbarTooltipController m_tooltip;
     TooltipPlacement m_tooltipPlacement = TooltipPlacement::Below;
-    QTimer m_mosaicCoachmarkTimer;
-    MosaicHintDisplay m_mosaicHintDisplay = MosaicHintDisplay::None;
-    bool m_mosaicHintActivationActive = false;
-    bool m_mosaicCoachmarkPending = false;
-    bool m_mosaicBrushAdjustmentLearned = false;
-    bool m_mosaicPreviewHovered = false;
-    bool m_suppressHoverReminderUntilExit = false;
+    // The control whose tooltip is showing; null when none is.
+    QPointer<QQuickItem> m_tooltipControl;
+    QString m_tooltipText;
+    QMetaObject::Connection m_tooltipControlVisibility;
 };
 
 } // namespace SnapTray

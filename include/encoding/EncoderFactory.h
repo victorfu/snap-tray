@@ -4,6 +4,9 @@
 #include <QObject>
 #include <QSize>
 #include <QString>
+#include <functional>
+#include <memory>
+#include "encoding/VideoRateControl.h"
 
 class IVideoEncoder;
 class NativeGifEncoder;
@@ -47,6 +50,16 @@ public:
 
         // Native encoder settings
         int quality = 55;  // 0-100 (higher = better quality, larger file)
+        // Native (MP4) encoders only. ConstantQuality uses `quality` as the
+        // quality target and VideoBitrate as a ceiling; 0 keyframe seconds
+        // keeps the encoder default.
+        SnapTray::VideoRateControl rateControl = SnapTray::VideoRateControl::Bitrate;
+        int keyFrameIntervalSeconds = 0;
+        // Ask the native encoder for fragmented (crash-safe) MP4 output.
+        bool fragmentedOutput = false;
+        // Capture device whose frames the native encoder may encode without
+        // a CPU copy (ICaptureEngine::nativeFrameDevice()); null = CPU frames.
+        std::shared_ptr<void> nativeFrameDevice;
 
         // GIF settings (msf_gif)
         int gifBitDepth = 16;  // 1-16, higher = better colors but larger file
@@ -72,6 +85,10 @@ public:
         bool success = false;
         bool isNative = false;
         QString errorMessage;
+        bool audioEnabled = false;
+        QString audioWarning;
+        // The native encoder writes fragments: a crash leaves a playable prefix.
+        bool fragmentedOutput = false;
 
         /**
          * @brief Check if any encoder was created
@@ -98,12 +115,17 @@ public:
     static bool isNativeEncoderAvailable();
 
 private:
+    friend class TestEncoderFactory;
+    friend struct EncoderFactoryTestAccess;
+    using NativeEncoderFactory = std::function<IVideoEncoder*(QObject*)>;
+    static EncoderResult createWithNativeFactory(const EncoderConfig& config, QObject* parent,
+                                                  const NativeEncoderFactory& factory);
     /**
      * @brief Try to create and start a native encoder
      * @return Encoder pointer or nullptr if failed
      */
     static IVideoEncoder* tryCreateNativeEncoder(
-        const EncoderConfig& config, QObject* parent);
+        const EncoderConfig& config, QObject* parent, const NativeEncoderFactory& factory);
 
     /**
      * @brief Try to create and start a GIF encoder

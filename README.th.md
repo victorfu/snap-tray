@@ -55,6 +55,29 @@ SnapTray คือแอปสกรีนช็อตและมาร์ก�
 
 บน macOS/Windows เริ่มจากเมนูถาดระบบหรือปุ่มลัดการบันทึก เลือกหน้าจอเมื่อจำเป็น จากนั้นใช้แถบควบคุมแบบลอยเพื่อดูระยะเวลาและหยุดการบันทึก
 
+## Linux: AppImageLauncher รุ่นเก่า
+
+AppImageLauncher รุ่นเก่า (รวมถึงรุ่นปี 2022 จาก Ubuntu PPA) อาจทำให้ AppImage ของ SnapTray เปิดไม่ได้ โดยแสดงข้อผิดพลาด เช่น `fuse: memory allocation failed`, `Can't open squashfs image: Bad address` หรือ `execv error: No such file or directory` ข้อความเหล่านี้อาจเกิดจาก[ปัญหาความเข้ากันได้ของ AppImageLauncher](https://github.com/AppImage/type2-runtime/issues/121) ไม่จำเป็นต้องหมายถึงหน่วยความจำไม่เพียงพอ
+
+หากติดตั้ง AppImageLauncher ไว้ ให้อัปเดตด้วยไฟล์ `.deb` ที่ตรงกับระบบจาก[หน้าเผยแพร่ทางการ](https://github.com/TheAssassin/AppImageLauncher/releases) สำหรับ Ubuntu x86_64 ให้เลือก `amd64.deb` เนื่องจาก PPA เดิมอาจยังมีเฉพาะรุ่นที่มีปัญหา โปรดทำตาม[คำแนะนำการติดตั้งบน Ubuntu อย่างเป็นทางการ](https://github.com/TheAssassin/AppImageLauncher/wiki/Install-on-Ubuntu-or-Debian)
+
+หากหลังอัปเดตแล้วการเปิดแอปดูเหมือนค้าง ให้กด `Ctrl+C` ในเทอร์มินัลนั้น แล้วลองโหลดบริการของผู้ใช้ใหม่โดยไม่ต้องรีบูต:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user restart appimagelauncherd.service
+# แทนที่ <version> และพาธให้ตรงกับ AppImage ที่ดาวน์โหลดมา
+timeout 15s ./SnapTray-<version>-x86_64.AppImage --version
+```
+
+ข้อความ `Created symlink ... appimagelauncherd.service` เป็นข้อความปกติจากการตั้งค่าบริการ เมื่อตรวจสอบเวอร์ชันสำเร็จแล้ว สามารถเปิด SnapTray ได้ตามปกติ หรือเรียกใช้ในเบื้องหลังเพื่อให้ใช้เทอร์มินัลต่อได้:
+
+```bash
+nohup ./SnapTray-<version>-x86_64.AppImage > /tmp/snaptray.log 2>&1 &
+```
+
+SnapTray ทำงานอยู่ในถาดระบบและจะไม่เปิดหน้าต่างหลักโดยอัตโนมัติ ให้มองหาไอคอนในถาดระบบ หากรีสตาร์ตบริการแล้วยังแก้ปัญหาไม่ได้ โปรดดู[วิธีแตกไฟล์แล้วเรียกใช้](docs/developer/release-packaging.md#linux) (ภาษาอังกฤษ)
+
 ## เรียนรู้เพิ่มเติม
 
 - รุ่นที่เผยแพร่: [GitHub Releases](https://github.com/victorfu/snap-tray/releases)

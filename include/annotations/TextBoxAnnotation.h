@@ -13,12 +13,8 @@
 #include <memory>
 
 /**
- * @brief Text annotation with box-bounded word-wrap and resize support.
- *
- * Unlike TextAnnotation which uses uniform scaling, TextBoxAnnotation:
- * - Has a resizable box that text wraps within
- * - Corner drag = resize box (text reflows), NOT scale
- * - Supports rotation around box center
+ * @brief Text annotation with whitespace-preserving wrapping and transforms.
+ * Layout width is independent of the gizmo's uniform scale and rotation.
  */
 class TextBoxAnnotation : public AnnotationItem
 {
@@ -44,6 +40,13 @@ public:
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
+    std::size_t estimatedRetainedBytes() const override
+    {
+        return sizeof(TextBoxAnnotation)
+            + static_cast<std::size_t>(m_text.capacity() + m_cachedText.capacity())
+                * sizeof(QChar)
+            + estimatedPixmapBytes(m_cachedPixmap);
+    }
 
     // Text manipulation
     void setText(const QString &text);
@@ -52,6 +55,10 @@ public:
     // Box manipulation (for resize operations)
     QRectF box() const { return m_box; }
     void setBox(const QRectF& box);
+    void setWrapWidth(qreal width);
+    // Restores a recorded layout exactly (#237): no box recalculation.
+    void restoreLayout(const QString& text, const QRectF& box, qreal wrapWidth);
+    qreal wrapWidth() const { return m_wrapWidth; }
 
     // Position (top-left of box in world coordinates)
     void setPosition(const QPointF &position);
@@ -94,6 +101,7 @@ public:
 private:
     QPointF m_position;      // Top-left anchor in world coordinates
     QRectF m_box;            // Local rect (0,0 to width,height)
+    qreal m_wrapWidth = 0.0;  // Content width; zero preserves legacy natural sizing.
     QString m_text;
     QFont m_font;
     QColor m_color;
@@ -114,9 +122,6 @@ private:
     void regenerateCache(qreal dpr) const;
     bool isCacheValid(qreal dpr) const;
     void invalidateCache() const { m_cachedPixmap = QPixmap(); }
-
-    // Word-wrap helper
-    QStringList wrapText() const;
 
     // Calculate initial box size based on text
     void calculateInitialBox();

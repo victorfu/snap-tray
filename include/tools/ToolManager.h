@@ -105,6 +105,9 @@ public:
      * @return true if handled, false otherwise.
      */
     bool handleEscape();
+    // Cancels a drag or transform of an existing text or shape through the
+    // shared editors (#237). Returns true if one was in progress.
+    bool cancelAnnotationInteraction();
 
     // Context management
     ToolContext* context() { return m_context.get(); }
@@ -125,7 +128,7 @@ public:
     QColor color() const { return m_context->color; }
 
     void setWidth(int width);
-    int width() const { return m_context->width; }
+    int width() const;
 
     void setArrowStyle(LineEndStyle style);
     LineEndStyle arrowStyle() const { return m_context->arrowStyle; }

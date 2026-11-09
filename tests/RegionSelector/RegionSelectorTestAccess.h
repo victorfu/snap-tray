@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QCoreApplication>
+#include <QCloseEvent>
+#include <QKeyEvent>
 #include <QEnterEvent>
 #include <QImage>
 #include <QPainter>
@@ -16,6 +18,8 @@
 #include "region/SelectionDimmingOverlay.h"
 #include "region/SelectionPreviewOverlay.h"
 #include "region/SelectionStateManager.h"
+#include "region/RegionExportManager.h"
+#include "annotations/AnnotationLayer.h"
 #include "region/StaticCaptureBackgroundWindow.h"
 
 class RegionSelectorTestAccess
@@ -54,6 +58,32 @@ public:
                               buttons,
                               Qt::NoModifier);
         selector.mouseMoveEvent(&moveEvent);
+    }
+
+    static void dispatchWidgetMousePress(RegionSelector& selector, const QPoint& localPos)
+    {
+        const QPoint globalPos = selector.mapToGlobal(localPos);
+        QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                               QPointF(localPos),
+                               QPointF(localPos),
+                               QPointF(globalPos),
+                               Qt::LeftButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+        selector.mousePressEvent(&pressEvent);
+    }
+
+    static void dispatchWidgetMouseRelease(RegionSelector& selector, const QPoint& localPos)
+    {
+        const QPoint globalPos = selector.mapToGlobal(localPos);
+        QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                                 QPointF(localPos),
+                                 QPointF(localPos),
+                                 QPointF(globalPos),
+                                 Qt::LeftButton,
+                                 Qt::NoButton,
+                                 Qt::NoModifier);
+        selector.mouseReleaseEvent(&releaseEvent);
     }
 
     static void dispatchWindowEnter(QWindow* window, const QPoint& globalPos)
@@ -103,6 +133,75 @@ public:
     {
         selector.m_inputState.highlightedWindowRect = rect;
         selector.m_inputState.hasDetectedWindow = rect.isValid() && !rect.isEmpty();
+    }
+
+    static void seedDetectedWindow(RegionSelector& selector, const QRect& rect,
+                                   const QString& title, const QString& app)
+    {
+        seedDetectedWindowHighlight(selector, rect);
+        DetectedElement element;
+        element.bounds = rect;
+        element.windowTitle = title;
+        element.ownerApp = app;
+        selector.m_detectedWindow = element;
+    }
+
+    static std::optional<SnapTray::CaptureSessionWriteRequest> currentHistoryRequest(RegionSelector& selector)
+    {
+        auto snapshot = selector.makeHistoryCaptureSnapshot();
+        if (!snapshot) return {};
+        return selector.buildCaptureSessionWriteRequest({*snapshot, QImage()});
+    }
+
+    static QPixmap exportSelection(RegionSelector& selector)
+    {
+        return selector.m_exportManager->getSelectedRegion(selector.m_selectionManager->selectionRect());
+    }
+
+    static RegionExportManager::SaveRequest createSaveRequest(RegionSelector& selector)
+    {
+        return selector.m_exportManager->createSaveRequest(selector.m_selectionManager->selectionRect());
+    }
+
+    static void moveSelection(RegionSelector& selector, const QPoint& delta)
+    {
+        const QPoint from = selector.m_selectionManager->selectionRect().center();
+        selector.m_selectionManager->startMove(from);
+        selector.m_selectionManager->updateMove(from + delta);
+        selector.m_selectionManager->finishMove();
+    }
+
+    static void preserveCompletedSelection(RegionSelector& selector)
+    {
+        selector.preserveCompletedSelectionSnapshot();
+    }
+
+    static QPixmap preservedSelectionPixmap(const RegionSelector& selector)
+    {
+        return selector.m_preservedSelectionPixmap;
+    }
+
+    static QRect preservedGlobalRect(const RegionSelector& selector)
+    {
+        return selector.m_preservedGlobalSelectionRect;
+    }
+
+    static void replaceCanvasAfterPreservingSelection(RegionSelector& selector, const QPixmap& capture)
+    {
+        selector.applyCaptureContext({capture, capture.devicePixelRatio(), selector.m_currentScreen});
+        selector.m_selectionManager->clearSelection();
+        selector.m_annotationLayer->clear();
+        selector.applyCanvasGeometry(capture.deviceIndependentSize().toSize());
+    }
+
+    static void finishPreservedSelection(RegionSelector& selector)
+    {
+        selector.finishPreservedSelection();
+    }
+
+    static void clearPreservedSelection(RegionSelector& selector)
+    {
+        selector.clearPreservedSelection();
     }
 
     static void setSelectionRect(RegionSelector& selector, const QRect& rect)
@@ -224,6 +323,35 @@ public:
         return selector.applyHistoryReplayEntry(entry);
     }
 
+    static bool loadSingleReplayEntry(RegionSelector& selector, const SnapTray::HistoryEntry& entry)
+    {
+        selector.m_historyReplayEntries = {entry};
+        return selector.loadHistoryReplayIndex(0);
+    }
+
+    static Qt::Edges snappedEdges(const RegionSelector& selector)
+    {
+        return selector.m_selectionManager->snappedEdges();
+    }
+
+    static void dispatchClose(RegionSelector& selector)
+    {
+        QCloseEvent event;
+        selector.closeEvent(&event);
+    }
+
+    static void dispatchEscapePress(RegionSelector& selector, bool viaFilter)
+    {
+        QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+        if (viaFilter) selector.eventFilter(&selector, &event);
+        else selector.keyPressEvent(&event);
+    }
+
+    static AnnotationLayer* annotationLayer(RegionSelector& selector)
+    {
+        return selector.m_annotationLayer;
+    }
+
     static QRect selectionRect(const RegionSelector& selector)
     {
         return selector.m_selectionManager->selectionRect();
@@ -320,6 +448,11 @@ public:
     static bool isClosing(const RegionSelector& selector)
     {
         return selector.m_isClosing;
+    }
+
+    static void finishSelection(RegionSelector& selector)
+    {
+        selector.finishSelection();
     }
 
     static void setGuiClipboardWriter(

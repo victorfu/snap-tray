@@ -1,5 +1,8 @@
 #include "RegionSelector.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationStyleEditor.h"
+#include "annotation/ColorPickOverlay.h"
+#include "annotations/AnnotationStyle.h"
 #include "history/AnnotationSerializer.h"
 #include "history/HistoryRecorder.h"
 #include "platform/WindowLevel.h"
@@ -19,7 +22,6 @@
 #include "qml/QmlOverlayPanel.h"
 #include "qml/RegionControlViewModel.h"
 #include "qml/MultiRegionListViewModel.h"
-#include "share/ShareUploadClient.h"
 #include "annotations/AllAnnotations.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
@@ -35,6 +37,8 @@
 using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "qml/QmlEmojiPickerPopup.h"
 #include "OCRManager.h"
+#include "detection/TextLineGeometryCache.h"
+#include "tools/handlers/MarkerToolHandler.h"
 #include "QRCodeManager.h"
 #include "PlatformFeatures.h"
 #include "detection/AutoBlurManager.h"
@@ -49,8 +53,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "qml/QRCodeResultViewModel.h"
 #include "qml/QmlDialog.h"
 #include "qml/QmlToast.h"
-#include "qml/SharePasswordViewModel.h"
-#include "qml/ShareResultViewModel.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/ToolRepaintHelper.h"
@@ -68,6 +70,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QClipboard>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QScopedValueRollback>
 #include <QCloseEvent>
 #include <QResizeEvent>
 #include <QShowEvent>
@@ -230,6 +233,13 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_selectionManager = new SelectionStateManager(this);
     connect(m_selectionManager, &SelectionStateManager::selectionChanged,
         this, [this](const QRect& rect) {
+            if (!m_adjustingSelectionWithKeyboard && !m_selectionManager->isManipulating()) {
+                setSelectionWindowMetadata({}, {});
+            }
+            if (m_markerTextCache) {
+                m_markerTextCache->clear();
+                static_cast<MarkerToolHandler*>(m_toolManager->handler(ToolId::Marker))->clearHover();
+            }
             ++m_autoBlurGeneration;
             if (m_inputState.multiRegionMode && m_multiRegionManager &&
                 m_inputState.replaceTargetIndex < 0) {
@@ -245,8 +255,14 @@ RegionSelector::RegionSelector(QWidget* parent)
             syncCaptureChromeWindow();
             // Removed update() - repaints now handled by RegionInputHandler's throttled path
         });
+    connect(m_selectionManager, &SelectionStateManager::snapGuidesChanged,
+        this, [this]() { requestCaptureSceneUpdate(); });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            if (newState == SelectionStateManager::State::None
+                || newState == SelectionStateManager::State::Selecting) {
+                setSelectionWindowMetadata({}, {});
+            }
             // Detached capture window handoff is Windows-only. macOS keeps the
             // in-window toolbar path, so this branch must stay inert there.
             const bool enteringCompletedSelectionHandoff =
@@ -264,6 +280,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
             if (enteringCompletedSelectionHandoff) {
                 m_selectionCompletionHandoffPending = true;
+                m_qmlToolbar->recordSelectionTiming("selectionComplete.handoffPending");
             }
 
             const bool suppressionBefore = m_inputState.completedSelectionDragUiSuppressed;
@@ -282,6 +299,11 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
 
             syncSelectionPreviewOverlay();
+            if (usesDetachedCaptureWindows() && m_captureChromeWindow) {
+                // SelectionStateManager::State changes can alter dimension and
+                // annotation chrome even when the selection rect is unchanged.
+                m_captureChromeWindow->markDirtyRegion(QRegion(rect()));
+            }
             syncCaptureChromeWindow();
             m_lastSelectionState = newState;
 
@@ -355,7 +377,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Load saved annotation settings (or defaults)
     auto& settings = AnnotationSettingsManager::instance();
     m_inputState.annotationColor = settings.loadColor();
-    m_inputState.annotationWidth = settings.loadWidth();
+    m_inputState.annotationWidth = settings.loadWidthForTool(m_inputState.currentTool);
     m_inputState.arrowStyle = settings.loadArrowStyle();
     m_inputState.lineStyle = settings.loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
@@ -375,13 +397,33 @@ RegionSelector::RegionSelector(QWidget* parent)
             "ToolManager.needsRepaint.hostReaction",
             QStringLiteral("tool=%1").arg(static_cast<int>(
                 m_toolManager ? m_toolManager->currentTool() : ToolId::Selection)));
-        if (usesDetachedCaptureWindows()) {
-            syncCaptureChromeWindow();
-            return;
-        }
         const QRect previewRect = snaptray::tools::previewRepaintRect(
             m_toolManager,
             SelectionDirtyRegionPlanner::kAnnotationRepaintMargin);
+        if (usesDetachedCaptureWindows()) {
+            if (m_captureChromeWindow) {
+                const QRegion previewDirtyRegion =
+                    previewRect.isValid() && !previewRect.isEmpty()
+                    ? QRegion(previewRect)
+                    : QRegion();
+                const bool pencilToolActive =
+                    m_toolManager && m_toolManager->currentTool() == ToolId::Pencil;
+                const auto dirtyReason =
+                    snaptray::region::captureChromeDirtyReasonForToolPreview(
+                        pencilToolActive,
+                        previewDirtyRegion);
+
+                // Other previews and annotation interactions keep the
+                // conservative Windows full-clear path.
+                m_captureChromeWindow->markDirtyRegion(
+                    !previewDirtyRegion.isEmpty()
+                        ? previewDirtyRegion
+                        : QRegion(rect()),
+                    dirtyReason);
+            }
+            syncCaptureChromeWindow();
+            return;
+        }
         if (previewRect.isValid() && !previewRect.isEmpty()) {
             requestCaptureSceneUpdate(previewRect);
             return;
@@ -416,6 +458,27 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolbarViewModel = new RegionToolbarViewModel(this);
     m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
     m_toolOptionsViewModel = new PinToolOptionsViewModel(this);
+    m_markerTextSnapSupported = PlatformFeatures::instance().isOCRAvailable() && OCRManager::isAvailable();
+    m_toolOptionsViewModel->setMarkerTextSnapEnabled(AnnotationSettingsManager::instance().loadMarkerTextSnap());
+    m_markerTextCache = new TextLineGeometryCache(
+        [this](const QPixmap& image, const QStringList& languages, const OCRCallback& callback) {
+            if (auto* manager = ensureOCRManager()) {
+                manager->setRecognitionLanguages(languages);
+                manager->recognizeText(image, callback);
+            } else {
+                callback(OCRResult{});
+            }
+        }, this);
+    m_toolManager->context()->markerTextLines = [this]() {
+        syncMarkerTextSnap();
+        return m_markerTextCache->snapshot();
+    };
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::markerTextSnapEnabledChanged, this, [this]() {
+        AnnotationSettingsManager::instance().saveMarkerTextSnap(m_toolOptionsViewModel->markerTextSnapEnabled());
+        syncMarkerTextSnap();
+        static_cast<MarkerToolHandler*>(m_toolManager->handler(ToolId::Marker))->clearHover();
+        update();
+    });
 
     // Create QML floating toolbar windows
     m_qmlToolbar = std::make_unique<SnapTray::QmlFloatingToolbar>(
@@ -439,8 +502,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this]() { handleToolbarClick(ToolId::Save); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::copyClicked,
         this, [this]() { handleToolbarClick(ToolId::Copy); });
-    connect(m_toolbarViewModel, &RegionToolbarViewModel::shareClicked,
-        this, [this]() { handleToolbarClick(ToolId::Share); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::ocrClicked,
         this, [this]() { handleToolbarClick(ToolId::OCR); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::qrCodeClicked,
@@ -457,6 +518,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_textAnnotationEditor = new TextAnnotationEditor(this);
     m_shapeAnnotationEditor = std::make_unique<ShapeAnnotationEditor>();
     m_shapeAnnotationEditor->setAnnotationLayer(m_annotationLayer);
+    m_annotationLayer->snapController().setEnabled(true);
 
     // Provide text dependencies to ToolManager (TextToolHandler).
     m_toolManager->setInlineTextEditor(m_textEditor);
@@ -477,17 +539,36 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolOptionsViewModel->setCurrentWidth(m_inputState.annotationWidth);
     m_toolOptionsViewModel->setArrowStyle(static_cast<int>(m_inputState.arrowStyle));
     m_toolOptionsViewModel->setLineStyle(static_cast<int>(m_inputState.lineStyle));
+    m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(m_stepBadgeSize));
 
     // Centralized annotation/text setup and common signal wiring
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
     m_annotationContext->setupTextAnnotationEditor();
     m_annotationContext->connectTextEditorSignals();
 
+    // Selected-annotation styling (#224): strip edits go to the selection.
+    m_styleEditor = new AnnotationStyleEditor(m_annotationLayer, m_toolOptionsViewModel, this);
+    m_styleEditor->setInlineEditingPredicate(
+        [this] { return m_textEditor && m_textEditor->isEditing(); });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetShown, this, [this] {
+        syncRegionSubToolbar(false);
+    });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetCleared, this, [this] {
+        syncRegionSubToolbar(true);
+    });
+    // Inline text editing owns styling while it runs; re-evaluate when it ends.
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::editingFinished,
+        m_styleEditor, &AnnotationStyleEditor::refreshTarget);
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::editingCancelled,
+        m_styleEditor, &AnnotationStyleEditor::refreshTarget);
+
     // Connect sub-toolbar ViewModel signals (replaces connectToolOptionsSignals)
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorSelected,
         this, &RegionSelector::onColorSelected);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::customColorPickerRequested,
         this, &RegionSelector::onMoreColorsRequested);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorPickRequested,
+        this, &RegionSelector::startColorPick);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::widthValueChanged,
         this, &RegionSelector::onLineWidthChanged);
     connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::arrowStyleSelected,
@@ -575,13 +656,13 @@ RegionSelector::RegionSelector(QWidget* parent)
                 m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
             }
             if (m_selectionManager && m_selectionManager->hasSelection()) {
-                update(m_selectionManager->selectionRect().adjusted(
+                requestCaptureSceneUpdate(m_selectionManager->selectionRect().adjusted(
                     -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                     -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                     SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                     SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
             } else {
-                update();
+                requestCaptureSceneUpdate();
             }
         });
 
@@ -800,7 +881,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_exportManager, &RegionExportManager::saveCompleted,
         this, [this](const QPixmap& pixmap, const QImage& image, const QString& filePath) {
             m_exportInProgress = false;
-            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress)) {
+            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
                 m_loadingSpinner->stop();
             }
             recordCaptureSession(image);
@@ -810,60 +891,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_exportManager, &RegionExportManager::saveFailed,
         this, [this](const QString& filePath, const QString& error) {
             m_exportInProgress = false;
-            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress)) {
+            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
                 m_loadingSpinner->stop();
             }
             emit saveFailed(filePath, error);
             restoreAfterDialogCancelled();
-        });
-
-    m_shareClient = new ShareUploadClient(this);
-    connect(m_shareClient, &ShareUploadClient::uploadSucceeded,
-        this, [this](const QString& url, const QDateTime& expiresAt, bool isProtected) {
-            m_shareInProgress = false;
-            if (m_toolbarHandler) {
-                m_toolbarHandler->setShareInProgress(false);
-            }
-            m_toolbarViewModel->setShareInProgress(false);
-            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
-                m_loadingSpinner->stop();
-            }
-            update();
-
-            if (m_pendingShareSubmission.has_value()) {
-                submitPendingHistorySubmission(std::move(*m_pendingShareSubmission));
-                m_pendingShareSubmission.reset();
-            }
-
-            auto* vm = new ShareResultViewModel(this);
-            vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
-            m_pendingSharePassword.clear();
-            auto* dialog = createTransientDialog(
-                QUrl("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml"),
-                vm, "viewModel");
-            trackBlockingDialog(dialog);
-            connect(vm, &ShareResultViewModel::dialogClosed, this, [this, dialog]() {
-                dialog->close();
-                restoreAfterDialogCancelled();
-            });
-            dialog->showCenteredOnScreen(m_currentScreen.data());
-        });
-    connect(m_shareClient, &ShareUploadClient::uploadFailed,
-        this, [this](const QString& errorMessage) {
-            m_shareInProgress = false;
-            if (m_toolbarHandler) {
-                m_toolbarHandler->setShareInProgress(false);
-            }
-            m_toolbarViewModel->setShareInProgress(false);
-            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
-                m_loadingSpinner->stop();
-            }
-            m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
-                errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage,
-                m_selectionManager->selectionRect());
-            m_pendingSharePassword.clear();
-            m_pendingShareSubmission.reset();
-            update();
         });
 
     // Initialize input handling component
@@ -924,6 +956,14 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_inputHandler, &RegionInputHandler::selectionFinished,
         this, [this]() {
+            if (!m_inputState.multiRegionMode && m_detectedWindow
+                && m_inputState.hasDetectedWindow
+                && m_selectionManager->selectionRect()
+                    == m_inputState.highlightedWindowRect.intersected(rect())) {
+                DetectedElement selectedWindow = *m_detectedWindow;
+                WindowDetector::populateWindowMetadata(selectedWindow);
+                setSelectionWindowMetadata(selectedWindow.windowTitle, selectedWindow.ownerApp);
+            }
             m_selectionManager->finishSelection();
             if (!m_inputState.multiRegionMode) {
                 CursorManager::instance().popCursorForWidget(this, CursorContext::Selection);
@@ -948,7 +988,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
-            } else if (!m_selectionCompletionHandoffPending) {
+            } else {
                 syncCompletedSelectionFloatingUi();
             }
         });
@@ -973,7 +1013,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
-            } else if (!m_selectionCompletionHandoffPending) {
+            } else {
                 syncCompletedSelectionFloatingUi();
             }
         });
@@ -1003,6 +1043,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect toolbar handler signals (tool state changes)
     connect(m_toolbarHandler, &RegionToolbarHandler::toolChanged,
         this, [this](ToolId tool, bool showSubToolbar) {
+            // Picking a tool ends selected-annotation styling (#224).
+            if (tool != m_inputState.currentTool || showSubToolbar) {
+                m_annotationLayer->clearSelection();
+            }
             m_inputState.currentTool = tool;
             m_inputState.showSubToolbar = showSubToolbar;
             m_toolbarViewModel->setActiveTool(showSubToolbar ? static_cast<int>(tool) : -1);
@@ -1026,8 +1070,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::saveToFile);
     connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,
         this, &RegionSelector::copyToClipboard);
-    connect(m_toolbarHandler, &RegionToolbarHandler::shareRequested,
-        this, &RegionSelector::shareToUrl);
     connect(m_toolbarHandler, &RegionToolbarHandler::ocrRequested,
         this, &RegionSelector::performOCR);
     connect(m_toolbarHandler, &RegionToolbarHandler::qrCodeRequested,
@@ -1208,32 +1250,64 @@ void RegionSelector::onColorSelected(const QColor& color)
 
 void RegionSelector::onMoreColorsRequested()
 {
-    m_toolOptionsViewModel->setCurrentColor(m_inputState.annotationColor);
+    const bool editingSelection = m_toolOptionsViewModel->editingSelection();
+    if (!editingSelection) {
+        m_toolOptionsViewModel->setCurrentColor(m_inputState.annotationColor);
+    }
 
     AnnotationContext::showColorPickerDialog(
         this,
         m_colorPickerDialog,
-        m_inputState.annotationColor,
+        editingSelection ? m_toolOptionsViewModel->currentColor() : m_inputState.annotationColor,
         geometry().center(),
         [this](const QColor& color) {
+            if (m_toolOptionsViewModel->routeToSelection(StyleProperty::Color, color)) {
+                return;
+            }
             syncColorToAllWidgets(color);
         },
         m_colorPickerDialogFactory);
 }
 
+ColorPickSource RegionSelector::colorPickSource() const
+{
+    ColorPickSource source;
+    source.overlayGeometry = QRect(mapToGlobal(QPoint(0, 0)), size());
+    source.sampleRect = source.overlayGeometry;
+    source.image = m_backgroundPixmap.toImage();
+    return source;
+}
+
+void RegionSelector::startColorPick()
+{
+    if (m_colorPickOverlay || !m_selectionManager->isComplete()) {
+        return;
+    }
+    m_colorPickOverlay = ColorPickOverlay::begin(
+        this, colorPickSource(), [this](const QColor& color) { applyPickedColor(color); });
+}
+
+void RegionSelector::applyPickedColor(const QColor& color)
+{
+    // Same path as the custom color dialog: a selected annotation takes the
+    // color as one undoable change; otherwise it becomes the current color.
+    if (m_toolOptionsViewModel->routeToSelection(StyleProperty::Color, color)) {
+        return;
+    }
+    syncColorToAllWidgets(color);
+}
+
 void RegionSelector::onLineWidthChanged(int width)
 {
-    if (m_inputState.currentTool == ToolId::Mosaic) {
-        m_inputState.annotationWidth = width;
-        // Update cursor to reflect new width
-        setToolCursor();
-        AnnotationSettingsManager::instance().saveWidth(width);
-    }
-    else {
-        m_inputState.annotationWidth = width;
-        AnnotationSettingsManager::instance().saveWidth(width);
-    }
+    m_inputState.annotationWidth = width;
     m_toolManager->setWidth(width);
+    AnnotationSettingsManager::instance().saveWidthForTool(
+        m_inputState.currentTool, width);
+
+    if (m_inputState.currentTool == ToolId::Mosaic) {
+        // Cursor and painting both read the already-updated Mosaic slot.
+        setToolCursor();
+    }
     requestCaptureSceneUpdate();
 }
 
@@ -1267,6 +1341,27 @@ void RegionSelector::showEmojiPickerPopup()
     }
     QRect anchor = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
     m_emojiPickerPopup->showAt(anchor);
+}
+
+void RegionSelector::syncMarkerTextSnap()
+{
+    if (!m_markerTextCache || !m_toolOptionsViewModel) return;
+    const bool available = !m_isClosing && m_markerTextSnapSupported && !m_inputState.multiRegionMode &&
+        m_inputState.replaceTargetIndex < 0 && m_selectionManager->isComplete();
+    m_toolOptionsViewModel->setMarkerTextSnapAvailable(available);
+    if (!available || !m_toolOptionsViewModel->markerTextSnapEnabled()) {
+        m_markerTextCache->clear();
+        return;
+    }
+    const QRect crop = CoordinateHelper::toPhysical(m_selectionManager->selectionRect(), m_devicePixelRatio)
+        .intersected(m_backgroundPixmap.rect());
+    TextLineGeometryCache::Key key;
+    key.source = m_backgroundPixmap.cacheKey();
+    key.crop = crop;
+    key.imageSize = m_backgroundPixmap.size();
+    key.dpr = m_devicePixelRatio;
+    key.languages = OCRSettingsManager::instance().languages();
+    m_markerTextCache->request(key, m_backgroundPixmap);
 }
 
 OCRManager* RegionSelector::ensureOCRManager()
@@ -1351,7 +1446,13 @@ void RegionSelector::applyCaptureContext(const SelectorCaptureContext& context)
 {
     ++m_autoBlurGeneration;
     const qreal normalizedDpr = context.devicePixelRatio > 0.0 ? context.devicePixelRatio : 1.0;
+    if (m_markerTextCache) {
+        m_markerTextCache->clear();
+        static_cast<MarkerToolHandler*>(m_toolManager->handler(ToolId::Marker))->clearHover();
+    }
     m_backgroundPixmap = context.backgroundPixmap;
+    m_inputHandler->setBoundarySnapSource(m_backgroundPixmap.toImage(), normalizedDpr);
+    m_inputHandler->setBoundarySnapAllowed(!m_historyReplayActive);
     m_devicePixelRatio = normalizedDpr;
     m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
     m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
@@ -1402,6 +1503,7 @@ void RegionSelector::refreshMagnifierContext(const QPoint& cursorPos,
 
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
+    setSelectionWindowMetadata({}, {});
     m_historyReplayEntries.clear();
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
@@ -1472,8 +1574,11 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     beginInitialRevealPreparation(m_initialWindowDetectionMode);
 }
 
-void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
+void RegionSelector::initializeWithRegion(QScreen* screen,
+                                          const QRect& region,
+                                          const QPixmap& preCapture)
 {
+    setSelectionWindowMetadata({}, {});
     m_historyReplayEntries.clear();
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
@@ -1496,8 +1601,13 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
         return;
     }
 
-    // Capture the screen first
-    applyCaptureContext({m_currentScreen->grabWindow(0), m_devicePixelRatio, m_currentScreen});
+    // Reuse the caller's frame when provided so the preset matches what was captured.
+    if (!preCapture.isNull()) {
+        applyCaptureContext({preCapture, m_devicePixelRatio, m_currentScreen});
+    }
+    else {
+        applyCaptureContext({m_currentScreen->grabWindow(0), m_devicePixelRatio, m_currentScreen});
+    }
 
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();
@@ -1547,7 +1657,7 @@ bool RegionSelector::beginHistoryReplay(const QString& entryId)
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
 
-    if (!m_historyLiveSlot.valid) {
+    if (m_historyReplayIndex < 0) {
         snapshotLiveReplaySlot();
     }
 
@@ -1586,10 +1696,6 @@ void RegionSelector::navigateHistoryReplay(int direction)
         return;
     }
 
-    if (!m_historyLiveSlot.valid) {
-        snapshotLiveReplaySlot();
-    }
-
     int targetIndex = m_historyReplayIndex;
     if (direction < 0) {
         targetIndex = (m_historyReplayIndex < 0)
@@ -1602,6 +1708,12 @@ void RegionSelector::navigateHistoryReplay(int direction)
 
     if (targetIndex == m_historyReplayIndex) {
         return;
+    }
+
+    // Refresh live edits on every departure, but never snapshot a no-op key
+    // press or replace the live slot while browsing historical entries.
+    if (m_historyReplayIndex < 0) {
+        snapshotLiveReplaySlot();
     }
 
     if (targetIndex < 0) {
@@ -1623,6 +1735,8 @@ void RegionSelector::snapshotLiveReplaySlot()
     m_historyLiveSlot.multiRegions = currentHistoryCaptureRegions();
     m_historyLiveSlot.annotationsJson = SnapTray::serializeAnnotationLayer(*m_annotationLayer);
     m_historyLiveSlot.cornerRadius = m_cornerRadius;
+    m_historyLiveSlot.windowTitle = m_selectionWindowTitle;
+    m_historyLiveSlot.ownerApp = m_selectionOwnerApp;
 }
 
 void RegionSelector::restoreLiveReplaySlot()
@@ -1663,8 +1777,9 @@ void RegionSelector::restoreLiveReplaySlot()
         }
     }
 
-    m_annotationLayer->clear();
-    if (!m_historyLiveSlot.annotationsJson.isEmpty()) {
+    if (m_historyLiveSlot.annotationsJson.isEmpty()) {
+        m_annotationLayer->replaceItems({});
+    } else {
         QString errorMessage;
         SnapTray::deserializeAnnotationLayer(
             m_historyLiveSlot.annotationsJson, m_annotationLayer, m_sharedSourcePixmap, &errorMessage);
@@ -1672,6 +1787,8 @@ void RegionSelector::restoreLiveReplaySlot()
 
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
+    m_inputHandler->setBoundarySnapAllowed(true);
+    setSelectionWindowMetadata(m_historyLiveSlot.windowTitle, m_historyLiveSlot.ownerApp);
     update();
 }
 
@@ -1687,6 +1804,7 @@ bool RegionSelector::loadHistoryReplayIndex(int index)
 
     m_historyReplayIndex = index;
     m_historyReplayActive = true;
+    m_inputHandler->setBoundarySnapAllowed(false);
     return true;
 }
 
@@ -1746,16 +1864,17 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
         }
     }
 
-    m_annotationLayer->clear();
-    if (!annotationsData.isEmpty()) {
+    if (annotationsData.isEmpty()) {
+        m_annotationLayer->replaceItems({});
+    } else {
         QString errorMessage;
         if (!SnapTray::deserializeAnnotationLayer(
                 annotationsData, m_annotationLayer, m_sharedSourcePixmap, &errorMessage)) {
-            m_annotationLayer->clear();
             return false;
         }
     }
 
+    setSelectionWindowMetadata(entry.windowTitle, entry.ownerApp);
     update();
     return true;
 }
@@ -1771,7 +1890,22 @@ void RegionSelector::clearHistoryReplaySelectionState()
         m_multiRegionManager->clear();
     }
     m_selectionManager->clearSelection();
-    m_annotationLayer->clear();
+}
+
+void RegionSelector::setSelectionWindowMetadata(const QString& title, const QString& ownerApp)
+{
+    m_selectionWindowTitle = title;
+    m_selectionOwnerApp = ownerApp;
+    if (m_exportManager) {
+        m_exportManager->setWindowMetadata(title, ownerApp);
+    }
+}
+
+void RegionSelector::rememberLastCaptureRegion(const QRect& globalRect, QScreen* screen) const
+{
+    // `snaptray gui --last-region` starts from this.
+    RegionCaptureSettingsManager::instance().setLastCaptureRegion(
+        globalRect, screen ? screen->name() : QString());
 }
 
 void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
@@ -1779,6 +1913,7 @@ void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
     if (resultPixmap.isNull()) {
         return;
     }
+    rememberLastCaptureRegion(localToGlobal(currentHistorySelectionRect()), m_currentScreen);
 
     auto snapshot = makeHistoryCaptureSnapshot();
     if (!snapshot.has_value()) {
@@ -1804,6 +1939,7 @@ void RegionSelector::recordCaptureSession(const QImage& resultImage)
     if (resultImage.isNull()) {
         return;
     }
+    rememberLastCaptureRegion(localToGlobal(currentHistorySelectionRect()), m_currentScreen);
 
     auto snapshot = makeHistoryCaptureSnapshot();
     if (!snapshot.has_value()) {
@@ -1838,6 +1974,8 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
     snapshot.cornerRadius = m_cornerRadius;
     snapshot.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
     snapshot.createdAt = createdAt;
+    snapshot.windowTitle = m_selectionWindowTitle;
+    snapshot.ownerApp = m_selectionOwnerApp;
     return snapshot;
 }
 
@@ -1869,6 +2007,8 @@ SnapTray::CaptureSessionWriteRequest RegionSelector::buildCaptureSessionWriteReq
     request.cornerRadius = submission.snapshot.cornerRadius;
     request.maxEntries = submission.snapshot.maxEntries;
     request.createdAt = submission.snapshot.createdAt;
+    request.windowTitle = submission.snapshot.windowTitle;
+    request.ownerApp = submission.snapshot.ownerApp;
     return request;
 }
 
@@ -2099,11 +2239,16 @@ void RegionSelector::preserveCompletedSelectionSnapshot()
     if (selectedRegion.isNull()) {
         return;
     }
+    auto historySnapshot = makeHistoryCaptureSnapshot();
+    if (!historySnapshot) {
+        return;
+    }
 
     m_preservedGlobalSelectionRect = QRect(
         localToGlobal(selectionRect.topLeft()),
         selectionRect.size());
     m_preservedSelectionPixmap = selectedRegion;
+    m_preservedHistorySnapshot = std::move(historySnapshot);
     m_hasPreservedSelection = m_preservedGlobalSelectionRect.isValid() &&
                               !m_preservedGlobalSelectionRect.isEmpty();
 }
@@ -2113,20 +2258,27 @@ void RegionSelector::clearPreservedSelection()
     m_hasPreservedSelection = false;
     m_preservedGlobalSelectionRect = QRect();
     m_preservedSelectionPixmap = QPixmap();
+    m_preservedHistorySnapshot.reset();
 }
 
 void RegionSelector::finishPreservedSelection()
 {
-    if (!m_hasPreservedSelection ||
+    if (m_isClosing || !m_hasPreservedSelection ||
         m_preservedSelectionPixmap.isNull() ||
         !m_preservedGlobalSelectionRect.isValid() ||
         m_preservedGlobalSelectionRect.isEmpty()) {
         return;
     }
 
-    emit regionSelected(m_preservedSelectionPixmap,
-                        m_preservedGlobalSelectionRect.topLeft(),
-                        m_preservedGlobalSelectionRect);
+    const QPixmap result = m_preservedSelectionPixmap;
+    const QRect globalRect = m_preservedGlobalSelectionRect;
+    auto snapshot = std::move(m_preservedHistorySnapshot);
+    clearPreservedSelection();
+    if (snapshot) {
+        submitPendingHistorySubmission({std::move(*snapshot), result.toImage()});
+    }
+    rememberLastCaptureRegion(globalRect, QGuiApplication::screenAt(globalRect.center()));
+    emit regionSelected(result, globalRect.topLeft(), globalRect);
     close();
 }
 
@@ -2729,21 +2881,25 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionIn
         m_selectionManager->hasActiveSelection() &&
         selectionRect.isValid() &&
         m_selectionManager->hasSelection();
-    const bool suppressSelectionFloatingUi =
-        completedSelectionDragUiSuppressed() || m_selectionCompletionHandoffPending;
+    // The toolbar can be positioned from the current selection before the
+    // detached chrome paints. Keep the chrome handoff for the control panel,
+    // but do not put toolbar creation and its first frame behind that paint.
+    const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
+    // Quick Pin mode finishes on release and never shows annotation controls,
+    // even when it starts from an already completed preset selection.
     const bool shouldShowSelectionUi =
         initialRevealVisible &&
         hasSelectableCapture &&
+        !m_quickPinMode &&
         !m_exportInProgress;
 
     if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
-        if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
-            m_qmlToolbar->show();
-        }
         if (m_qmlToolbar) {
             if (!m_toolbarUserDragged) {
                 const QRect dimensionInfoRect =
-                    dimensionInfoRectOverride.isValid() && !dimensionInfoRectOverride.isEmpty()
+                    m_selectionCompletionHandoffPending
+                        ? currentSelectionDimensionInfoRect()
+                        : dimensionInfoRectOverride.isValid() && !dimensionInfoRectOverride.isEmpty()
                         ? dimensionInfoRectOverride
                         : (m_captureChromeWindow && m_captureChromeWindow->isVisible()
                             ? m_captureChromeWindow->lastDimensionInfoRect()
@@ -2758,6 +2914,11 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionIn
             m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
             m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
             m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
+            // Map the native window only after its final position and button
+            // state are ready, so the first frame appears in the right place.
+            if (!m_qmlToolbar->isVisible()) {
+                m_qmlToolbar->show();
+            }
             if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
                 m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
             }
@@ -2840,7 +3001,7 @@ void RegionSelector::requestCaptureSceneUpdate(const QRect& rect)
     if (usesDetachedCaptureWindows()) {
         if (m_captureChromeWindow) {
             m_captureChromeWindow->markDirtyRegion(
-                rect.isValid() && !rect.isEmpty() ? QRegion(rect) : QRegion());
+                rect.isValid() && !rect.isEmpty() ? QRegion(rect) : QRegion(this->rect()));
         }
         syncCaptureChromeWindow();
         return;
@@ -2949,7 +3110,7 @@ void RegionSelector::syncCaptureChromeWindow()
         m_selectionManager->hasSelection();
     const bool shouldDrawBusySpinner = hasSelectableCapture &&
         (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
-         m_shareInProgress || m_exportInProgress);
+         m_exportInProgress);
 
     const bool wasVisible = m_captureChromeWindow->isVisible();
     const QRect previousGeometry = m_captureChromeWindow->geometry();
@@ -2984,12 +3145,14 @@ void RegionSelector::commitSelectionCompletionHandoffAfterChromePaint()
         return;
     }
 
+    m_qmlToolbar->recordSelectionTiming("chromePaint.callback");
     m_selectionCompletionHandoffPending = false;
     QTimer::singleShot(0, this, [this]() {
         if (m_isClosing || !isVisible()) {
             return;
         }
 
+        m_qmlToolbar->recordSelectionTiming("handoff.queuedCallback");
         syncDetachedSelectionUiDuringPaint();
         syncRegionControlPanelDuringPaint();
         syncFloatingUiCursor();
@@ -3053,6 +3216,10 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         m_detachedCaptureWindowsNeedFullClear = false;
     }
 #endif
+    // Keep the logical repaint clip visible to annotation renderers. Pencil's
+    // incremental preview uses it to avoid resubmitting locked segments that
+    // are outside the current dirty tail.
+    painter.setClipRegion(dirtyRegion);
     if (m_traceProbe) {
         RegionSelectorTraceProbe::PaintEventRecord record;
         record.dirtyRegion = dirtyRegion;
@@ -3070,28 +3237,11 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     if (detachedCaptureWindowsActive) {
         syncStaticCaptureBackgroundWindow();
         syncCaptureChromeWindow();
-        painter.setClipRegion(dirtyRegion);
         painter.setCompositionMode(QPainter::CompositionMode_Source);
         painter.fillRect(dirtyRegion.boundingRect(), QColor(0, 0, 0, 1));
         painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     } else {
         paintSelectorScene(painter, dirtyRegion);
-    }
-
-    if (m_magnifierOverlay &&
-        !m_magnifierOverlay->hasPaintedSinceShow() &&
-        m_initialRevealState == InitialRevealState::Revealed &&
-        shouldShowCursorCompanion()) {
-        if (m_hostFallbackCursorCompanionRect.isValid()) {
-            painter.save();
-            painter.setClipRect(m_hostFallbackCursorCompanionRect);
-            m_magnifierOverlay->paintFallback(painter);
-            painter.restore();
-        }
-    } else if (m_hostFallbackCursorCompanionRect.isValid()) {
-        const QRect fallbackRect = m_hostFallbackCursorCompanionRect;
-        m_hostFallbackCursorCompanionRect = QRect();
-        requestCaptureSceneUpdate(fallbackRect);
     }
 
     syncDetachedSelectionUiDuringPaint();
@@ -3110,7 +3260,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         !m_exportInProgress;
     const bool shouldDrawBusySpinner = hasSelectableCapture &&
         (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
-         m_shareInProgress || m_exportInProgress);
+         m_exportInProgress);
     if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
         if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
             const int regionCount = m_multiRegionManager->count();
@@ -3144,15 +3294,39 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         m_loadingSpinner->draw(painter, selectionRect.center());
     }
 
-    syncMagnifierOverlayDuringPaint();
+    // Position region control panel after paint (painter computes dimension info rect)
+    syncRegionControlPanelDuringPaint();
 
+    // Resolve all detached surfaces before choosing the host fallback. The
+    // fallback is then painted last, matching the established top-level
+    // magnifier's stacking above every host-rendered overlay.
+    syncMagnifierOverlayDuringPaint();
+    paintHostForegroundOverlays(painter, detachedCaptureWindowsActive);
+}
+
+void RegionSelector::paintHostForegroundOverlays(QPainter& painter,
+                                                 bool detachedCaptureWindowsActive)
+{
     // Shortcut hints remain painter-based in the RegionSelector host window.
     if (!detachedCaptureWindowsActive && m_shortcutHintsVisible && m_shortcutHintsOverlay) {
         m_shortcutHintsOverlay->draw(painter, size());
     }
 
-    // Position region control panel after paint (painter computes dimension info rect)
-    syncRegionControlPanelDuringPaint();
+    if (m_magnifierOverlay &&
+        !m_magnifierOverlay->hasPaintedSinceShow() &&
+        m_initialRevealState == InitialRevealState::Revealed &&
+        shouldShowCursorCompanion()) {
+        if (m_hostFallbackCursorCompanionRect.isValid()) {
+            painter.save();
+            painter.setClipRect(m_hostFallbackCursorCompanionRect, Qt::IntersectClip);
+            m_magnifierOverlay->paintFallback(painter, size());
+            painter.restore();
+        }
+    } else if (m_hostFallbackCursorCompanionRect.isValid()) {
+        const QRect fallbackRect = m_hostFallbackCursorCompanionRect;
+        m_hostFallbackCursorCompanionRect = QRect();
+        requestCaptureSceneUpdate(fallbackRect);
+    }
 }
 
 void RegionSelector::syncMagnifierOverlay()
@@ -3163,13 +3337,24 @@ void RegionSelector::syncMagnifierOverlay()
 
     snaptray::region::CapturePerfScope perfScope("RegionSelector.syncMagnifierOverlay");
 
-    const bool shouldTrackHostFallback =
+    QPoint companionCursorPos = m_inputState.currentPoint;
+#ifdef Q_OS_LINUX
+    // A grabbed cursor can leave the capture screen. Bound the companion
+    // snapshot once so host clipping and rendering agree at screen edges.
+    companionCursorPos.setX(qBound(0, companionCursorPos.x(), qMax(0, width() - 1)));
+    companionCursorPos.setY(qBound(0, companionCursorPos.y(), qMax(0, height() - 1)));
+#endif
+
+    const bool shouldShow =
         m_initialRevealState == InitialRevealState::Revealed &&
-        shouldShowCursorCompanion() &&
-        !m_magnifierOverlay->hasPaintedSinceShow();
+        shouldShowCursorCompanion();
+    const bool requiresOverlay = shouldShow && cursorCompanionRequiresOverlay();
+    const bool shouldTrackHostFallback =
+        shouldShow &&
+        (!requiresOverlay || !m_magnifierOverlay->hasPaintedSinceShow());
     const QRect currentFallbackRect = shouldTrackHostFallback
         ? g_cursorCompanionDirtyRegionPlanner.cursorCompanionRectForCursor(
-            m_cursorCompanionStyle, m_inputState.currentPoint, size())
+            m_cursorCompanionStyle, companionCursorPos, size())
         : QRect();
     if (currentFallbackRect != m_hostFallbackCursorCompanionRect) {
         QRect dirtyRect = currentFallbackRect;
@@ -3192,10 +3377,10 @@ void RegionSelector::syncMagnifierOverlay()
 
     m_magnifierOverlay->syncToHost(
         this,
-        m_inputState.currentPoint,
+        companionCursorPos,
         &m_backgroundPixmap,
         m_cursorCompanionStyle,
-        shouldShowCursorCompanion());
+        requiresOverlay);
 }
 
 void RegionSelector::positionRegionControlPanel()
@@ -3334,12 +3519,15 @@ void RegionSelector::updateCompletedSelectionDragUiSuppression()
     syncCaptureChromeWindow();
 
     if (!m_inputState.completedSelectionDragUiSuppressed) {
-        QTimer::singleShot(0, this, [this]() {
-            restoreDetachedSelectionFloatingUiIfNeeded();
-            if (!usesDetachedCaptureWindows()) {
-                syncFloatingUiCursor();
-            }
-        });
+        if (usesDetachedCaptureWindows()) {
+            QTimer::singleShot(0, this, [this]() {
+                restoreDetachedSelectionFloatingUiIfNeeded();
+            });
+        } else if (!m_isClosing) {
+            // Moving/resizing has the same latency requirement as the initial
+            // selection. Do not wait for the full-screen host to repaint.
+            syncCompletedSelectionFloatingUi();
+        }
     }
 }
 
@@ -3548,6 +3736,11 @@ bool RegionSelector::hasBlockingTransientUiOpen() const
         return true;
     }
 
+    // The eyedropper owns Esc and focus while it runs.
+    if (m_colorPickOverlay) {
+        return true;
+    }
+
     if (QApplication::activePopupWidget() || QApplication::activeModalWidget()) {
         return true;
     }
@@ -3630,6 +3823,28 @@ bool RegionSelector::shouldShowCursorCompanion() const
            !m_cursorOverSelectionToolbar;
 }
 
+bool RegionSelector::cursorCompanionRequiresOverlay() const
+{
+#ifdef Q_OS_LINUX
+    // GNOME can stack independent tool windows below the focused full-screen
+    // capture host, even with WindowStaysOnTopHint. Keep the companion in the
+    // host paint path so it remains visible after the overlay's first paint.
+    return false;
+#elif defined(Q_OS_MACOS)
+    // Before detached QML surfaces exist, drawing through the host is visually
+    // identical and avoids creating/repainting a second full-screen top-level
+    // surface during the initial reveal. Restore the overlay as soon as any
+    // detached capture UI needs the established above-QML stacking behavior.
+    return (m_qmlToolbar && m_qmlToolbar->isVisible()) ||
+           (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) ||
+           (m_regionControlPanel && m_regionControlPanel->isVisible()) ||
+           (m_multiRegionListPanel && m_multiRegionListPanel->isVisible()) ||
+           (m_emojiPickerPopup && m_emojiPickerPopup->isVisible());
+#else
+    return true;
+#endif
+}
+
 bool RegionSelector::shouldShowMagnifier() const
 {
     return m_magnifierEnabled && shouldShowCursorCompanion();
@@ -3653,7 +3868,7 @@ QRect RegionSelector::selectedAnnotationInteractionVisualRect() const
 {
     return snaptray::tools::selectedAnnotationRepaintRect(
         m_annotationLayer,
-        kAnnotationInteractionVisualMargin);
+        kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds() : QRect());
 }
 
 bool RegionSelector::requestLocalizedAnnotationInteractionUpdate()
@@ -3830,9 +4045,7 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     // Sync current state to handler
     m_toolbarHandler->setCurrentTool(m_inputState.currentTool);
     m_toolbarHandler->setShowSubToolbar(m_inputState.showSubToolbar);
-    m_toolbarHandler->setAnnotationWidth(m_inputState.annotationWidth);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
-    m_toolbarHandler->setShareInProgress(m_shareInProgress);
     m_toolbarHandler->setMultiRegionMode(m_inputState.multiRegionMode);
 
     // Delegate to handler
@@ -3862,7 +4075,30 @@ void RegionSelector::updateToolbarAutoBlurState()
 
 void RegionSelector::syncRegionSubToolbar(bool refreshContent)
 {
-    if (!m_qmlSubToolbar || !m_toolOptionsViewModel) {
+    syncMarkerTextSnap();
+    if (!m_toolOptionsViewModel) {
+        return;
+    }
+
+    const auto syncActiveToolWidth = [this]() {
+        const int toolWidth =
+            AnnotationSettingsManager::instance().loadWidthForTool(
+                m_inputState.currentTool);
+        m_inputState.annotationWidth = toolWidth;
+        m_toolManager->setWidth(toolWidth);
+        m_toolOptionsViewModel->setCurrentWidth(toolWidth);
+
+        if (m_inputState.currentTool == ToolId::Mosaic) {
+            setToolCursor();
+        }
+    };
+
+    // Keep runtime and ViewModel state synchronized even when no floating
+    // sub-toolbar surface is available (for example during headless tests).
+    if (!m_qmlSubToolbar) {
+        if (refreshContent) {
+            syncActiveToolWidth();
+        }
         return;
     }
 
@@ -3878,10 +4114,23 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
         return;
     }
 
+    if (m_styleEditor && m_styleEditor->hasTarget()) {
+        // The strip shows the selected annotation; keep it, don't reset to the tool.
+        if (!m_qmlSubToolbar->isVisible()) {
+            m_qmlSubToolbar->show();
+        }
+        if (m_qmlToolbar && m_qmlToolbar->isVisible()) {
+            m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
+        }
+        return;
+    }
+
     const bool shouldRefreshContent = refreshContent ||
                                       !m_qmlSubToolbar->isVisible() ||
                                       !m_toolOptionsViewModel->hasContent();
     if (shouldRefreshContent) {
+        syncActiveToolWidth();
+
         if (m_inputState.currentTool == ToolId::Mosaic) {
             m_toolOptionsViewModel->setAutoBlurEnabled(m_autoBlurManager != nullptr);
         }
@@ -4028,7 +4277,7 @@ void RegionSelector::copyToClipboard()
             safeThis->m_exportInProgress = false;
             if (safeThis->m_loadingSpinner &&
                 !(safeThis->m_ocrInProgress || safeThis->m_qrCodeInProgress ||
-                  safeThis->m_autoBlurInProgress || safeThis->m_shareInProgress)) {
+                  safeThis->m_autoBlurInProgress)) {
                 safeThis->m_loadingSpinner->stop();
             }
 
@@ -4081,11 +4330,7 @@ void RegionSelector::saveToFile()
             ? m_multiRegionManager->activeIndex()
             : -1;
         m_exportManager->setRegionIndex(regionIndex);
-        if (m_detectedWindow.has_value()) {
-            m_exportManager->setWindowMetadata(m_detectedWindow->windowTitle, m_detectedWindow->ownerApp);
-        } else {
-            m_exportManager->setWindowMetadata(QString(), QString());
-        }
+        m_exportManager->setWindowMetadata(m_selectionWindowTitle, m_selectionOwnerApp);
     }
 
     const QRect selectionRect = m_selectionManager->selectionRect();
@@ -4126,85 +4371,28 @@ void RegionSelector::saveToFile()
 
     m_exportInProgress = true;
     hideDetachedFloatingUi();
-    if (!QGuiApplication::screens().isEmpty()) {
-        show();
-        activateWindow();
-        raise();
-    }
-    ensureLoadingSpinner()->start();
-    update();
-
-    m_exportManager->savePreparedExportAsync(
-        std::move(prepared), saveRequest.filePath, saveRequest.renderWarning);
-}
-
-void RegionSelector::shareToUrl()
-{
-    if (m_exportInProgress || m_shareInProgress || m_ocrInProgress || m_qrCodeInProgress ||
-        !m_shareClient || !m_selectionManager || !m_selectionManager->isComplete()) {
-        return;
-    }
-
-    if (!ensureAutoBlurReadyForExport()) {
-        return;
-    }
-
-    const QPixmap selectedRegion = m_exportManager->getSelectedRegion(
-        m_selectionManager->selectionRect(), effectiveCornerRadius());
-    if (selectedRegion.isNull()) {
-        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
-            tr("Failed to process selected region"), m_selectionManager->selectionRect());
-        return;
-    }
-
-    auto* vm = new SharePasswordViewModel(this);
-    auto* dialog = createTransientDialog(
-        QUrl("qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml"),
-        vm, "viewModel");
-    trackBlockingDialog(dialog);
-    connect(vm, &SharePasswordViewModel::accepted, this, [this, vm, dialog, selectedRegion]() {
-        dialog->close();
-        if (m_shareInProgress || !m_shareClient) {
-            return;
-        }
-
-        m_pendingSharePassword = vm->password();
-        auto snapshot = makeHistoryCaptureSnapshot(QDateTime::currentDateTime());
-        if (snapshot.has_value()) {
-            m_pendingShareSubmission = PendingHistorySubmission{
-                std::move(*snapshot),
-                selectedRegion.toImage()
-            };
-        } else {
-            m_pendingShareSubmission.reset();
-        }
-
-        m_shareInProgress = true;
-        if (m_toolbarHandler) {
-            m_toolbarHandler->setShareInProgress(true);
-        }
-        m_toolbarViewModel->setShareInProgress(true);
+    // A manual save already hid the fullscreen selector before opening the dialog.
+    // Keep it hidden while saving so it cannot flash briefly before close().
+    if (!usesDialog) {
         ensureLoadingSpinner()->start();
         update();
+    }
 
-        m_shareClient->uploadPixmap(selectedRegion, m_pendingSharePassword);
-    });
-    connect(vm, &SharePasswordViewModel::rejected, this, [this, dialog]() {
-        m_pendingSharePassword.clear();
-        m_pendingShareSubmission.reset();
-        dialog->close();
-        restoreAfterDialogCancelled();
-    });
-    dialog->setModal(true);
-    dialog->showCenteredOnScreen(m_currentScreen.data());
+    m_exportManager->savePreparedExportAsync(std::move(prepared), saveRequest);
 }
 
 void RegionSelector::finishSelection()
 {
+    if (m_isClosing || m_exportInProgress) {
+        return;
+    }
     if (!ensureAutoBlurReadyForExport()) {
         return;
     }
 
+    // Claim completion before emitting signals, which can synchronously reenter
+    // this method. Quick Pin's full-screen fallback also emits two input signals.
+    m_isClosing = true;
     QRect sel = m_selectionManager->selectionRect();
     QPixmap selectedRegion = m_exportManager->getSelectedRegion(sel, effectiveCornerRadius());
 
@@ -4238,6 +4426,15 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
         }
     }
 
+    // A preset selection (scripted --region/--last-region) is already complete,
+    // so moving, resizing or edge-adjusting it never emits selectionFinished.
+    // In Quick Pin mode the release must still accept the selection.
+    if (event->button() == Qt::LeftButton) {
+        m_quickPinPressOnCompletedSelection =
+            m_quickPinMode && !m_inputState.multiRegionMode &&
+            m_selectionManager->isComplete();
+    }
+
     m_inputHandler->handleMousePress(event);
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
     // QML multi-region panel handles cursor internally
@@ -4257,6 +4454,9 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
+    if (m_inputState.currentTool == ToolId::Marker && !m_toolManager->isDrawing()) {
+        m_toolManager->handleMouseMove(event->position(), event->modifiers());
+    }
     m_inputHandler->handleMouseMove(event);
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
@@ -4272,6 +4472,17 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 
     const bool releasedOverFloatingUi =
         isGlobalPosOverFloatingUi(event->globalPosition().toPoint());
+    if (event->button() == Qt::LeftButton && !releasedOverFloatingUi &&
+        !m_inputState.multiRegionMode && !m_quickPinMode &&
+        !m_selectionManager->isComplete() && m_qmlToolbar) {
+        m_qmlToolbar->beginSelectionTiming();
+    }
+    const bool acceptAdjustedSelectionOnRelease =
+        event->button() == Qt::LeftButton && !releasedOverFloatingUi &&
+        m_quickPinPressOnCompletedSelection;
+    if (event->button() == Qt::LeftButton) {
+        m_quickPinPressOnCompletedSelection = false;
+    }
     m_inputHandler->handleMouseRelease(
         event,
         releasedOverFloatingUi
@@ -4279,6 +4490,10 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
             : RegionInputHandler::ReleaseTarget::Canvas);
     if (releasedOverFloatingUi) {
         syncFloatingUiCursor();
+        return;
+    }
+    if (acceptAdjustedSelectionOnRelease && m_selectionManager->isComplete()) {
+        finishSelection();
         return;
     }
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
@@ -4328,17 +4543,8 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
 
     // Handle scroll wheel for StepBadge size adjustment
     if (m_inputState.currentTool == ToolId::StepBadge) {
-        // Cycle through sizes: Small -> Medium -> Large -> Small
-        int current = static_cast<int>(m_stepBadgeSize);
-        if (delta > 0) {
-            current = (current + 1) % 3;  // Scroll up = increase size
-        }
-        else {
-            current = (current + 2) % 3;  // Scroll down = decrease size
-        }
-        StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
-        onStepBadgeSizeChanged(newSize);
-        m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(newSize));
+        // Scroll up = larger, down = smaller; stops at Small and Large.
+        m_toolOptionsViewModel->handleStepBadgeSizeWheelDelta(delta);
         event->accept();
         return;
     }
@@ -4357,8 +4563,39 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
     event->ignore();
 }
 
+bool RegionSelector::cancelSelectionResizeGesture()
+{
+    if (!m_inputHandler->cancelSelectionResize()) return false;
+    m_quickPinPressOnCompletedSelection = false;
+    return true;
+}
+
+void RegionSelector::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt && m_annotationLayer && m_annotationLayer->snapController().active()) {
+        m_annotationLayer->snapController().setSuspended(false);
+        if (!requestLocalizedAnnotationInteractionUpdate()) update();
+        event->accept();
+        return;
+    }
+
+    if (m_inputHandler->handleBoundarySnapKey(
+            event->key(), false, event->isAutoRepeat(), event->modifiers())) {
+        event->accept();
+        return;
+    }
+    QWidget::keyReleaseEvent(event);
+}
+
 void RegionSelector::keyPressEvent(QKeyEvent* event)
 {
+    if (event->key() == Qt::Key_Alt && m_annotationLayer && m_annotationLayer->snapController().active()) {
+        m_annotationLayer->snapController().setSuspended(true);
+        if (!requestLocalizedAnnotationInteractionUpdate()) update();
+        event->accept();
+        return;
+    }
+
     if (m_exportInProgress) {
         event->ignore();
         return;
@@ -4395,6 +4632,12 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    if (m_inputHandler->handleBoundarySnapKey(
+            event->key(), true, event->isAutoRepeat(), event->modifiers())) {
+        event->accept();
+        return;
+    }
+
     if (!event->modifiers() && event->key() == Qt::Key_Comma) {
         navigateHistoryReplay(-1);
         event->accept();
@@ -4410,6 +4653,18 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     if (event->key() == Qt::Key_Escape) {
         if (hasBlockingTransientUiOpen()) {
             event->ignore();
+            return;
+        }
+
+        // Escape during a drag puts the annotation back (#237).
+        if (m_inputHandler && m_inputHandler->cancelAnnotationManipulation()) {
+            update();
+            event->accept();
+            return;
+        }
+
+        if (cancelSelectionResizeGesture()) {
+            event->accept();
             return;
         }
 
@@ -4456,6 +4711,10 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     else if (event->key() == Qt::Key_M) {
         setMultiRegionMode(!m_inputState.multiRegionMode);
     }
+    else if (event->key() == Qt::Key_I && !event->modifiers()
+             && m_toolOptionsViewModel->showColorSection()) {
+        startColorPick();
+    }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
         if (shouldShowMagnifier()) {
@@ -4477,6 +4736,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
                 .arg(c.blue());
         }
         QGuiApplication::clipboard()->setText(colorText);
+    }
+    // Drawing order of the selected annotation (#268).
+    else if (!m_inputState.multiRegionMode && m_selectionManager->isComplete()
+             && m_styleEditor && m_styleEditor->handleZOrderKey(event)) {
+        requestCaptureSceneUpdate();
     }
     else if (event->matches(QKeySequence::Undo)) {
         if (m_inputState.multiRegionMode && m_multiRegionManager) {
@@ -4510,21 +4774,23 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     // Arrow keys for precise selection adjustment
     else if (m_selectionManager->isComplete() && !m_selectionManager->selectionRect().isEmpty()) {
+        // Keyboard adjustments keep the completed selection's window context,
+        // just like mouse movement and resizing.
+        const QScopedValueRollback<bool> adjustingSelection(m_adjustingSelectionWithKeyboard, true);
         bool handled = true;
         QRect sel = m_selectionManager->selectionRect();
 
         if (event->modifiers() & Qt::ShiftModifier) {
             // Shift + Arrow: Resize selection (adjust corresponding edge)
-            QRect newRect = sel;
+            QPoint edgeDelta;
             switch (event->key()) {
-            case Qt::Key_Left:  newRect.setRight(newRect.right() - 1); break;
-            case Qt::Key_Right: newRect.setRight(newRect.right() + 1); break;
-            case Qt::Key_Up:    newRect.setBottom(newRect.bottom() - 1); break;
-            case Qt::Key_Down:  newRect.setBottom(newRect.bottom() + 1); break;
+            case Qt::Key_Left:  edgeDelta.setX(-1); break;
+            case Qt::Key_Right: edgeDelta.setX(1); break;
+            case Qt::Key_Up:    edgeDelta.setY(-1); break;
+            case Qt::Key_Down:  edgeDelta.setY(1); break;
             default: handled = false; break;
             }
-            if (handled && newRect.width() >= 10 && newRect.height() >= 10) {
-                m_selectionManager->setSelectionRect(newRect);
+            if (handled && m_selectionManager->resizeFromBottomRight(edgeDelta)) {
                 requestCaptureSceneUpdate();
             }
         }
@@ -4566,12 +4832,16 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     }
 
     m_isClosing = true;
+    m_inputHandler->setBoundarySnapSource({}, 1.0);
+    if (m_markerTextCache) m_markerTextCache->clear();
+    if (auto* marker = m_toolManager->handler(ToolId::Marker)) marker->cancelDrawing();
+    if (m_colorPickOverlay) {
+        m_colorPickOverlay->cancel();
+    }
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
     m_selectionCompletionHandoffPending = false;
     m_detachedWindowDeactivateGuardPending = false;
-    m_pendingSharePassword.clear();
-    m_pendingShareSubmission.reset();
     if (m_qmlToolbar) m_qmlToolbar->hide();
     if (m_qmlSubToolbar) m_qmlSubToolbar->hide();
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
@@ -4690,7 +4960,7 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
-            // Let the active dialog (save/share/OCR/QR) consume Esc so this
+            // Let the active dialog (save/OCR/QR) consume Esc so this
             // global handler does not cancel the entire capture session.
             if (hasBlockingTransientUiOpen()) {
                 return false;
@@ -4700,6 +4970,14 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
             if (m_textEditor->isEditing()) {
                 return false;
             }
+
+            // Escape during a drag puts the annotation back (#237).
+            if (m_inputHandler && m_inputHandler->cancelAnnotationManipulation()) {
+                update();
+                return true;
+            }
+
+            if (cancelSelectionResizeGesture()) return true;
 
             // Try to handle escape in tool first (e.g. finish polyline)
             // Note: eventFilter sees keys before keyPressEvent
@@ -4777,7 +5055,7 @@ void RegionSelector::onTextEditingFinished(const QString& text, const QPoint& po
 void RegionSelector::performOCR()
 {
     OCRManager* ocrMgr = ensureOCRManager();
-    if (!ocrMgr || m_exportInProgress || m_ocrInProgress || m_shareInProgress ||
+    if (!ocrMgr || m_exportInProgress || m_ocrInProgress ||
         !m_selectionManager->isComplete()) {
         return;
     }
@@ -4865,7 +5143,7 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
 void RegionSelector::performQRCodeScan()
 {
     QRCodeManager* qrMgr = ensureQRCodeManager();
-    if (!qrMgr || m_exportInProgress || m_qrCodeInProgress || m_shareInProgress ||
+    if (!qrMgr || m_exportInProgress || m_qrCodeInProgress ||
         !m_selectionManager->isComplete()) {
         return;
     }
@@ -4955,7 +5233,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
 
 void RegionSelector::performAutoBlur()
 {
-    if (!m_autoBlurManager || m_exportInProgress || m_autoBlurInProgress || m_shareInProgress ||
+    if (!m_autoBlurManager || m_exportInProgress || m_autoBlurInProgress ||
         !m_selectionManager->isComplete()) {
         return;
     }
@@ -5300,6 +5578,10 @@ QRect RegionSelector::floatingToolbarRectInLocalCoords() const
 
 void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_toolOptionsViewModel
+        && m_toolOptionsViewModel->routeToSelection(StyleProperty::ArrowStyle, static_cast<int>(style))) {
+        return;
+    }
     if (m_toolOptionsViewModel) {
         m_toolOptionsViewModel->setArrowStyle(static_cast<int>(style));
     }
@@ -5311,6 +5593,10 @@ void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 
 void RegionSelector::onLineStyleChanged(LineStyle style)
 {
+    if (m_toolOptionsViewModel
+        && m_toolOptionsViewModel->routeToSelection(StyleProperty::LineStyle, static_cast<int>(style))) {
+        return;
+    }
     if (m_toolOptionsViewModel) {
         m_toolOptionsViewModel->setLineStyle(static_cast<int>(style));
     }
@@ -5336,6 +5622,10 @@ void RegionSelector::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void RegionSelector::onFontSizeSelected(int size)
 {
+    if (m_toolOptionsViewModel
+        && m_toolOptionsViewModel->routeToSelection(StyleProperty::FontSize, size)) {
+        return;
+    }
     if (m_toolOptionsViewModel) {
         m_toolOptionsViewModel->setFontSize(size);
     }
@@ -5346,6 +5636,10 @@ void RegionSelector::onFontSizeSelected(int size)
 
 void RegionSelector::onFontFamilySelected(const QString& family)
 {
+    if (m_toolOptionsViewModel
+        && m_toolOptionsViewModel->routeToSelection(StyleProperty::FontFamily, family)) {
+        return;
+    }
     if (m_toolOptionsViewModel) {
         m_toolOptionsViewModel->setFontFamily(family);
     }

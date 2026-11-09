@@ -33,6 +33,12 @@ public:
 
     static Result renderFilename(const QString& templ, const Context& context);
 
+    // Pure name generation, without reserving or examining the filesystem.
+    // attempt 0 is the initial name; a non-empty uuidSuffix selects the fallback.
+    static QString collisionFilename(const QString& templ, const Context& context,
+                                      const QString& initialFilename, int attempt,
+                                      const QString& uuidSuffix = {});
+
     static QString buildUniqueFilePath(const QString& outputDir,
                                        const QString& templ,
                                        const Context& context,
@@ -43,8 +49,12 @@ public:
     static QString sanitizeFilename(const QString& raw);
 
 private:
+    friend class tst_FilenameTemplateEngine;
     static QString ensureExtension(const QString& filename, const QString& ext);
-    static QString enforceLengthLimit(const QString& filename, const QString& outputDir);
+    static QString enforceLengthLimit(const QString& filename, const QString& outputDir,
+                                      const QString& collisionSuffix = {});
+    static QString limitFilenameComponent(const QString& filename, int limit, bool utf8,
+                                          const QString& collisionSuffix = {});
     static QString appendCounter(const QString& filename, int counter);
     static bool hasCounterToken(const QString& templ);
 };

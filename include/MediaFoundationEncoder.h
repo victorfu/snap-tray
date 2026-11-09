@@ -19,6 +19,8 @@ class MediaFoundationEncoder : public IVideoEncoder
 
 public:
     explicit MediaFoundationEncoder(QObject *parent = nullptr);
+    // Explicit software selection also allows validating the fallback without a GPU.
+    MediaFoundationEncoder(bool enableHardwareTransforms, QObject *parent);
     ~MediaFoundationEncoder() override;
 
     bool isAvailable() const override;
@@ -29,20 +31,32 @@ public:
     void finish() override;
     void abort() override;
 
+    // GPU input (a SnapTray::D3D11FrameDevice): NV12 surfaces converted on
+    // the capture device, used when a probe encode on that adapter works.
+    void setNativeFrameDevice(std::shared_ptr<void> device) override;
+    bool acceptsNativeFrames() const override;
+    // Takes every D3D11 frame (read back when it is not on the GPU input's
+    // device); false only for a missing texture or a stopped encoder.
+    bool writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs) override;
+
     bool isRunning() const override;
     QString lastError() const override;
     qint64 framesWritten() const override;
     QString outputPath() const override;
 
     void setQuality(int quality) override;
+    void setRateControl(SnapTray::VideoRateControl mode, int qualityValue) override;
+    void setKeyFrameIntervalSeconds(int seconds) override;
+    SnapTray::VideoRateControl effectiveRateControl() const override;
 
     // Audio support
     void setAudioFormat(int sampleRate, int channels, int bitsPerSample) override;
     bool isAudioSupported() const override;
     bool isAudioEnabled() const override;
-    void writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs) override;
+    void writeAudioSamples(const QByteArray &pcmData, qint64 startFrame) override;
 
 private:
+    friend class MediaFoundationEncoderPrivate;  // the GPU probe drives an encoder of its own
     MediaFoundationEncoderPrivate *d;
 };
 

@@ -6,6 +6,7 @@
 #include "annotations/LineStyle.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
+#include "ui/DesignSystem.h"
 
 /**
  * @brief Unit tests for AnnotationSettingsManager singleton class.
@@ -22,6 +23,14 @@ class tst_AnnotationSettingsManager : public QObject
     Q_OBJECT
 
 private slots:
+    void testAlignmentAssistDefaultAndRoundtrip() {
+        SnapTray::getSettings().remove("annotation/alignmentAssist");
+        auto& manager = AnnotationSettingsManager::instance();
+        QVERIFY(manager.loadAlignmentAssist());
+        manager.saveAlignmentAssist(false); QVERIFY(!manager.loadAlignmentAssist());
+        manager.saveAlignmentAssist(true); QVERIFY(manager.loadAlignmentAssist());
+    }
+    void testMarkerTextSnapDefaultAndRoundtrip();
     void init();
     void cleanup();
 
@@ -39,8 +48,13 @@ private slots:
     void testLoadWidth_DefaultValue();
     void testSaveLoadWidth_Roundtrip();
     void testSaveLoadWidth_BoundaryValues();
-    void testMosaicBrushAdjustmentLearned_DefaultValue();
-    void testMosaicBrushAdjustmentLearned_Roundtrip();
+    void testLoadWidthForTool_DefaultValues();
+    void testSaveLoadMosaicBrushSize_AllPresets();
+    void testWidthSlots_AreIndependent();
+    void testLoadMosaicBrushSize_InvalidRawValueFallsBack_data();
+    void testLoadMosaicBrushSize_InvalidRawValueFallsBack();
+    void testSaveMosaicBrushSize_InvalidValueFallsBack_data();
+    void testSaveMosaicBrushSize_InvalidValueFallsBack();
 
     // Arrow style settings tests
     void testLoadArrowStyle_DefaultValue();
@@ -81,6 +95,16 @@ private:
     void clearSetting(const char* key);
 };
 
+void tst_AnnotationSettingsManager::testMarkerTextSnapDefaultAndRoundtrip()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    QVERIFY(!settings.loadMarkerTextSnap());
+    settings.saveMarkerTextSnap(true);
+    QVERIFY(settings.loadMarkerTextSnap());
+    settings.saveMarkerTextSnap(false);
+    QVERIFY(!settings.loadMarkerTextSnap());
+}
+
 void tst_AnnotationSettingsManager::init()
 {
     clearAllTestSettings();
@@ -94,9 +118,10 @@ void tst_AnnotationSettingsManager::cleanup()
 void tst_AnnotationSettingsManager::clearAllTestSettings()
 {
     auto settings = SnapTray::getSettings();
+    settings.remove("annotation/markerTextSnap");
     settings.remove("annotationColor");
     settings.remove("annotationWidth");
-    settings.remove("mosaicBrushAdjustmentLearned");
+    settings.remove("mosaicBrushSize");
     settings.remove("annotation/arrowStyle");
     settings.remove("annotation/lineStyle");
     settings.remove("stepBadgeSize");
@@ -136,7 +161,8 @@ void tst_AnnotationSettingsManager::testSingletonInstance()
 void tst_AnnotationSettingsManager::testLoadColor_DefaultValue()
 {
     QColor color = AnnotationSettingsManager::instance().loadColor();
-    QCOMPARE(color, Qt::red);
+    QCOMPARE(color, QColor(0xFF, 0x3B, 0x30));
+    QCOMPARE(color, DesignSystem::instance().annotationRed());
 }
 
 void tst_AnnotationSettingsManager::testSaveLoadColor_Roundtrip()
@@ -227,22 +253,96 @@ void tst_AnnotationSettingsManager::testSaveLoadWidth_BoundaryValues()
     QCOMPARE(manager.loadWidth(), 100);
 }
 
-void tst_AnnotationSettingsManager::testMosaicBrushAdjustmentLearned_DefaultValue()
-{
-    QCOMPARE(AnnotationSettingsManager::instance().loadMosaicBrushAdjustmentLearned(),
-             AnnotationSettingsManager::kDefaultMosaicBrushAdjustmentLearned);
-    QVERIFY(!AnnotationSettingsManager::kDefaultMosaicBrushAdjustmentLearned);
-}
-
-void tst_AnnotationSettingsManager::testMosaicBrushAdjustmentLearned_Roundtrip()
+void tst_AnnotationSettingsManager::testLoadWidthForTool_DefaultValues()
 {
     auto& manager = AnnotationSettingsManager::instance();
 
-    manager.saveMosaicBrushAdjustmentLearned(true);
-    QVERIFY(manager.loadMosaicBrushAdjustmentLearned());
+    QCOMPARE(manager.loadWidthForTool(ToolId::Pencil),
+             AnnotationSettingsManager::kDefaultWidth);
+    QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic),
+             AnnotationSettingsManager::kDefaultMosaicBrushSize);
+    QCOMPARE(AnnotationSettingsManager::kDefaultMosaicBrushSize, 10);
+}
 
-    manager.saveMosaicBrushAdjustmentLearned(false);
-    QVERIFY(!manager.loadMosaicBrushAdjustmentLearned());
+void tst_AnnotationSettingsManager::testSaveLoadMosaicBrushSize_AllPresets()
+{
+    auto& manager = AnnotationSettingsManager::instance();
+    const QList<int> presets = {
+        ToolWidthDefaults::kMosaicBrushSmall,
+        ToolWidthDefaults::kMosaicBrushMedium,
+        ToolWidthDefaults::kMosaicBrushLarge,
+    };
+
+    for (const int preset : presets) {
+        manager.saveWidthForTool(ToolId::Mosaic, preset);
+        QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic), preset);
+    }
+}
+
+void tst_AnnotationSettingsManager::testWidthSlots_AreIndependent()
+{
+    auto& manager = AnnotationSettingsManager::instance();
+
+    manager.saveWidthForTool(ToolId::Pencil, 7);
+    manager.saveWidthForTool(ToolId::Mosaic, ToolWidthDefaults::kMosaicBrushLarge);
+    QCOMPARE(manager.loadWidthForTool(ToolId::Arrow), 7);
+    QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic),
+             ToolWidthDefaults::kMosaicBrushLarge);
+
+    manager.saveWidthForTool(ToolId::Shape, 9);
+    QCOMPARE(manager.loadWidthForTool(ToolId::Pencil), 9);
+    QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic),
+             ToolWidthDefaults::kMosaicBrushLarge);
+
+    manager.saveWidthForTool(ToolId::Mosaic, ToolWidthDefaults::kMosaicBrushSmall);
+    QCOMPARE(manager.loadWidthForTool(ToolId::Polyline), 9);
+    QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic),
+             ToolWidthDefaults::kMosaicBrushSmall);
+}
+
+void tst_AnnotationSettingsManager::testLoadMosaicBrushSize_InvalidRawValueFallsBack_data()
+{
+    QTest::addColumn<int>("width");
+
+    QTest::newRow("below-small") << 9;
+    QTest::newRow("between-small-medium") << 17;
+    QTest::newRow("between-medium-large") << 29;
+    QTest::newRow("above-large") << 31;
+}
+
+void tst_AnnotationSettingsManager::testLoadMosaicBrushSize_InvalidRawValueFallsBack()
+{
+    QFETCH(int, width);
+
+    auto settings = SnapTray::getSettings();
+    settings.setValue("mosaicBrushSize", width);
+    settings.sync();
+
+    QCOMPARE(AnnotationSettingsManager::instance().loadWidthForTool(ToolId::Mosaic),
+             AnnotationSettingsManager::kDefaultMosaicBrushSize);
+}
+
+void tst_AnnotationSettingsManager::testSaveMosaicBrushSize_InvalidValueFallsBack_data()
+{
+    QTest::addColumn<int>("width");
+
+    QTest::newRow("below-small") << 9;
+    QTest::newRow("between-small-medium") << 17;
+    QTest::newRow("between-medium-large") << 29;
+    QTest::newRow("above-large") << 31;
+}
+
+void tst_AnnotationSettingsManager::testSaveMosaicBrushSize_InvalidValueFallsBack()
+{
+    QFETCH(int, width);
+
+    auto& manager = AnnotationSettingsManager::instance();
+    manager.saveWidthForTool(ToolId::Mosaic, width);
+
+    QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic),
+             AnnotationSettingsManager::kDefaultMosaicBrushSize);
+    QCOMPARE(SnapTray::getSettings().value("mosaicBrushSize").toInt(),
+             AnnotationSettingsManager::kDefaultMosaicBrushSize);
 }
 
 // ============================================================================

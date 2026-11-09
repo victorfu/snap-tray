@@ -9,12 +9,14 @@
 enum class UpdatePlatform {
     MacOS,
     Windows,
+    Linux,
     Other
 };
 
 enum class UpdateServiceKind {
     Sparkle,
     WinSparkle,
+    AppImageUpdate,
     ExternalManaged,
     Unsupported
 };
@@ -54,6 +56,7 @@ public:
 
     virtual UpdateServiceKind kind() const = 0;
     virtual InstallSource installSource() const = 0;
+    virtual bool isBusy() const { return false; }
     virtual bool isExternallyManaged() const = 0;
     virtual QString managementMessage() const = 0;
     virtual bool initialize(QString* errorMessage = nullptr) = 0;

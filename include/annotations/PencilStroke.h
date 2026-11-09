@@ -6,7 +6,10 @@
 #include <QVector>
 #include <QPointF>
 #include <QColor>
+#include <QImage>
+#include <QMap>
 #include <QPainterPath>
+#include <QRectF>
 
 /**
  * @brief Freehand pencil stroke annotation
@@ -18,13 +21,20 @@ public:
                  LineStyle lineStyle = LineStyle::Solid);
 
     void draw(QPainter &painter) const override;
+    void drawPreview(QPainter &painter) const;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
+    std::size_t estimatedRetainedBytes() const override;
 
     void addPoint(const QPointF &point);
+    // Raw cursor position drawn as a transient tail after the committed points
+    // while the stroke is active. It is not stored and finalize() drops it.
+    void setLivePoint(const QPointF &point);
     void finalize();
-    QVector<QPointF> points() const { return m_points; }
+    // Geometry that can change on the next point: newly locked segment + live tail.
+    QRect previewAffectedBoundingRect() const;
+    const QVector<QPointF>& points() const { return m_points; }
     QColor color() const { return m_color; }
     int width() const { return m_width; }
     LineStyle lineStyle() const { return m_lineStyle; }
@@ -34,18 +44,48 @@ public:
     QPainterPath strokePath() const;
 
 private:
+    struct PreviewTile {
+        QImage coverage;
+        QImage colored;
+        bool coloredDirty = true;
+    };
+
+    struct PreviewRasterCache {
+        qreal rasterScale = 1.0;
+        int renderedSegmentCount = 0;
+        QMap<QPair<int, int>, PreviewTile> tiles;
+    };
+
     QVector<QPointF> m_points;
     QColor m_color;
     int m_width;
     LineStyle m_lineStyle;
+    QPointF m_livePoint;
+    bool m_hasLivePoint = false;
 
     // Incremental Catmull-Rom spline caching
     mutable QPainterPath m_cachedPath;       // Locked segments that won't change
+    mutable QPainterPath m_tailPath;         // Stable allocation for the live tail
+    mutable QPainterPath m_previewAffectedPath; // Newly locked segment plus live tail
     mutable int m_cachedSegmentCount = 0;    // Number of segments in cached path
+    bool m_finalized = false;
+
+    // Active-stroke preview cache. Completed strokes clear this in finalize().
+    // Each render scale keeps sparse logical tiles for the immutable prefix.
+    mutable QMap<int, PreviewRasterCache> m_previewRasterCaches;
 
     // Performance optimization: cached bounding rect
     mutable QRect m_boundingRectCache;
     mutable bool m_boundingRectDirty = true;
+
+    void appendCachedSegment(int segmentIndex);
+    void appendLockableSegments();
+    void rebuildPathCaches();
+    void rebuildTailPath();
+    QPainterPath buildLivePath(int firstSegment) const;
+    int renderedPointCount() const { return m_points.size() + (m_hasLivePoint ? 1 : 0); }
+    void syncPreviewRasterCache(PreviewRasterCache& cache) const;
+    void drawPreviewTiles(QPainter& painter, PreviewRasterCache& cache) const;
 };
 
 #endif // PENCILSTROKE_H

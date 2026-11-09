@@ -291,11 +291,16 @@ QString HistoryModel::displayTitle(const HistoryEntry& entry) const
 
 QString HistoryModel::relativeDateText(const HistoryEntry& entry) const
 {
-    if (!entry.createdAt.isValid()) {
+    return relativeDateFor(entry.createdAt);
+}
+
+QString HistoryModel::relativeDateFor(const QDateTime& time)
+{
+    if (!time.isValid()) {
         return historyText("Unknown time");
     }
 
-    const int dayDelta = entry.createdAt.date().daysTo(QDate::currentDate());
+    const int dayDelta = time.date().daysTo(QDate::currentDate());
     if (dayDelta <= 0) {
         return historyText("Today");
     }

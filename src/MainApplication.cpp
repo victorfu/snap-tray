@@ -10,25 +10,48 @@
 #include "qml/QmlDialog.h"
 #include "qml/QmlHistoryWindow.h"
 #include "qml/ScreenPickerViewModel.h"
+#include "qml/RecordingRecoveryViewModel.h"
+#include "qml/LibraryModel.h"
+#include "qml/QuickSaveAction.h"
+#include "qml/QmlRecordingAreaSelector.h"
 #include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
 #include "cli/IPCProtocol.h"
+#include "cli/CLIResult.h"
+#include "cli/commands/GuiCommand.h"
 #include "hotkey/HotkeyManager.h"
+#include "settings/RegionCaptureSettingsManager.h"
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "recording/WindowTimelineSidecar.h"
+#include "recording/CursorTimeline.h"
+#include "recording/KeyTimeline.h"
+#include "recording/AudioTracks.h"
+#include "recording/RecordingProject.h"
+#include "recording/RecordingSession.h"
+#include "settings/RecordingSettingsManager.h"
+#include "ui/TrayRecordingIndicator.h"
 #include "ui/TrayTooltipFormatter.h"
 #include "update/InstallSourceDetector.h"
 #include "update/UpdateCoordinator.h"
 #include "utils/CoordinateHelper.h"
+#include "utils/TextLayoutUtils.h"
+#ifdef Q_OS_MACOS
+#include "platform/MacTrayActivationGuard.h"
+#include "platform/MacTrayAccessibility.h"
+#endif
 
+#include <QBuffer>
 #include <QFile>
+#include <QLocalSocket>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointer>
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
+#include <QActionGroup>
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QApplication>
@@ -41,14 +64,36 @@
 #include <QStandardPaths>
 #include <QFileInfo>
 #include <QImageReader>
+#include <QFutureWatcher>
 #include <QPainter>
 #include <QFont>
 #include <QFontMetrics>
 #include <QtConcurrent>
 
 #include <algorithm>
+#include <utility>
 
 namespace {
+
+SnapTray::TrayRecordingStatus trayRecordingStatusForState(RecordingManager::State state)
+{
+    using State = RecordingManager::State;
+    using Status = SnapTray::TrayRecordingStatus;
+    switch (state) {
+    case State::Preparing: return Status::Preparing;
+    case State::Countdown: return Status::Countdown;
+    case State::Recording: return Status::Recording;
+    case State::Paused: return Status::Paused;
+    case State::Encoding: return Status::Finalizing;
+    case State::Idle:
+    case State::Previewing:
+        return Status::Idle;
+    }
+    return Status::Idle;
+}
+
+constexpr qint64 kTrayElapsedResolutionMs = 1000;
+// Recording hotkeys repeated faster than this are treated as one press.
 // Text pixmap rendering constants (for paste-as-text feature)
 constexpr int kMaxTextPixmapWidth = 800;
 constexpr int kMaxTextPixmapHeight = 600;
@@ -121,6 +166,9 @@ MainApplication::MainApplication(QObject* parent)
     , m_screenPickerDialog(nullptr)
     , m_screenPickerViewModel(nullptr)
 {
+    m_historyReplayStarter = [this](const QString& entryId) {
+        return m_captureManager && m_captureManager->startHistoryReplay(entryId);
+    };
 }
 
 MainApplication::~MainApplication()
@@ -146,7 +194,25 @@ void MainApplication::activate()
     }
 }
 
-void MainApplication::handleCLICommand(const QByteArray& commandData)
+namespace {
+
+// Answer a waiting CLI. If the answer cannot be sent (too large, socket
+// error), drop the connection so the CLI exits with an error instead of
+// waiting forever.
+void sendCLIResponse(QLocalSocket* socket, const SnapTray::CLI::IPCResponse& response)
+{
+    if (!socket) {
+        return;
+    }
+    if (!SnapTray::CLI::IPCProtocol::writeResponse(socket, response)) {
+        qWarning() << "CLI: Failed to send the command result";
+        socket->disconnectFromServer();
+    }
+}
+
+} // namespace
+
+void MainApplication::handleCLICommand(const QByteArray& commandData, QLocalSocket* replySocket)
 {
     using namespace SnapTray::CLI;
 
@@ -164,57 +230,30 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
         m_captureManager->cancelCapture();
     }
 
+    // A full screen capture that already grabbed the screen is still copying or
+    // saving and cannot be cancelled. Run the command once it finishes.
+    if (m_captureManager->isFullScreenCaptureInProgress()) {
+        qDebug() << "CLI: Deferring command until full screen capture finishes";
+        m_deferredCLICommands.append({commandData, replySocket});
+        return;
+    }
+
     if (msg.command == "gui") {
-        int delay = msg.options["delay"].toInt();
-        if (delay > 0) {
-            QTimer::singleShot(delay, this, &MainApplication::onRegionCapture);
-        }
-        else {
-            onRegionCapture();
-        }
+        handleGuiCLICommand(msg.options, replySocket);
     }
     else if (msg.command == "canvas") {
         onScreenCanvas();
     }
     else if (msg.command == "pin") {
+        std::optional<QPoint> position;
+        if (msg.options.contains("x") && msg.options.contains("y")) {
+            position = QPoint(msg.options["x"].toInt(), msg.options["y"].toInt());
+        }
         if (msg.options["clipboard"].toBool()) {
-            onPasteFromClipboard();
+            pinFromClipboard(position);
         }
         else if (msg.options.contains("file")) {
-            QString filePath = msg.options["file"].toString();
-            QImage image(filePath);
-            if (!image.isNull()) {
-                QPixmap pixmap = QPixmap::fromImage(image);
-
-                // Get positioning options
-                bool hasX = msg.options.contains("x");
-                bool hasY = msg.options.contains("y");
-                bool center = msg.options["center"].toBool();
-
-                // Calculate position
-                QScreen* screen = QGuiApplication::primaryScreen();
-                if (!screen) {
-                    qCritical() << "MainApplication: No valid screen available for pin window";
-                    return;
-                }
-                QRect screenGeo = screen->availableGeometry();
-                const qreal dpr = pixmap.devicePixelRatio() > 0.0 ? pixmap.devicePixelRatio() : 1.0;
-                QSize logicalSize = CoordinateHelper::toLogical(pixmap.size(), dpr);
-                QPoint position;
-
-                if (hasX && hasY) {
-                    position = QPoint(msg.options["x"].toInt(), msg.options["y"].toInt());
-                }
-                else if (center) {
-                    position = screenGeo.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
-                }
-                else {
-                    // Default: center on screen (same as onImageLoaded)
-                    position = screenGeo.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
-                }
-
-                m_pinWindowManager->createPinWindow(pixmap, position);
-            }
+            loadImageForPin(msg.options["file"].toString(), position);
         }
     }
     else if (msg.command == "config") {
@@ -225,6 +264,141 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
     }
 }
 
+void MainApplication::runDeferredCLICommands()
+{
+    const QList<DeferredCLICommand> commands = std::exchange(m_deferredCLICommands, {});
+    for (const DeferredCLICommand& command : commands) {
+        handleCLICommand(command.data, command.replySocket);
+    }
+}
+
+void MainApplication::handleGuiCLICommand(const QJsonObject& options, QLocalSocket* replySocket)
+{
+    using SnapTray::CLI::GuiCommand;
+
+    const int delay = options[GuiCommand::kOptionDelay].toInt();
+    const bool scripted = options.contains(GuiCommand::kOptionWaitResult)
+        || options.contains(GuiCommand::kOptionInitialRegion)
+        || options.contains(GuiCommand::kOptionAcceptOnSelect);
+
+    if (!scripted) {
+        // Plain `snaptray gui`: unchanged fire-and-forget behavior.
+        if (delay > 0) {
+            QTimer::singleShot(delay, this, &MainApplication::onRegionCapture);
+        }
+        else {
+            onRegionCapture();
+        }
+        return;
+    }
+
+    const bool waitResult = options[GuiCommand::kOptionWaitResult].toBool();
+    const QPointer<QLocalSocket> reply(waitResult ? replySocket : nullptr);
+    if (waitResult && !reply) {
+        return; // The CLI already went away; nobody wants this capture.
+    }
+
+    if (delay > 0) {
+        QTimer::singleShot(delay, this, [this, options, reply, waitResult]() {
+            if (waitResult && !reply) {
+                return; // The CLI exited during the delay.
+            }
+            startScriptedGuiCapture(options, reply);
+        });
+    }
+    else {
+        startScriptedGuiCapture(options, reply);
+    }
+}
+
+void MainApplication::startScriptedGuiCapture(const QJsonObject& options, QLocalSocket* replySocket)
+{
+    using SnapTray::CLI::GuiCommand;
+    using SnapTray::CLI::IPCResponse;
+
+    auto fail = [replySocket](const QString& reason) {
+        qDebug() << "CLI gui:" << reason;
+        IPCResponse response;
+        response.code = static_cast<int>(SnapTray::CLI::CLIResult::Code::GeneralError);
+        response.error = reason;
+        sendCLIResponse(replySocket, response);
+    };
+
+    if (m_scriptedGuiReply) {
+        fail(QStringLiteral("Another scripted capture is already waiting"));
+        return;
+    }
+    if (m_captureManager->isActive()) {
+        fail(QStringLiteral("A capture is already in progress"));
+        return;
+    }
+    if (!canStartRegionCapture()) {
+        fail(QStringLiteral("Capture is unavailable while recording or Screen Canvas is active"));
+        return;
+    }
+
+    const QJsonObject region = options[GuiCommand::kOptionInitialRegion].toObject();
+    CaptureManager::ScriptedCaptureOptions captureOptions;
+    captureOptions.initialGlobalRegion = QRect(region[GuiCommand::kResultX].toInt(),
+                                               region[GuiCommand::kResultY].toInt(),
+                                               region[GuiCommand::kResultWidth].toInt(),
+                                               region[GuiCommand::kResultHeight].toInt());
+    captureOptions.acceptOnSelect = options[GuiCommand::kOptionAcceptOnSelect].toBool();
+    captureOptions.reportResult = replySocket != nullptr;
+    captureOptions.pinResult =
+        !captureOptions.reportResult || options[GuiCommand::kOptionPin].toBool();
+
+    if (!m_captureManager->startScriptedRegionCapture(captureOptions)) {
+        fail(QStringLiteral("Failed to start region capture"));
+        return;
+    }
+
+    m_scriptedGuiReply = replySocket;
+    m_scriptedGuiWantsImage = options[GuiCommand::kOptionWantImage].toBool();
+}
+
+void MainApplication::replyToScriptedGui(int code, const QString& error)
+{
+    SnapTray::CLI::IPCResponse response;
+    response.code = code;
+    response.error = error;
+    sendCLIResponse(std::exchange(m_scriptedGuiReply, nullptr), response);
+}
+
+void MainApplication::onScriptedCaptureFinished(const QPixmap& screenshot, const QRect& globalRect)
+{
+    using SnapTray::CLI::GuiCommand;
+
+    QLocalSocket* reply = std::exchange(m_scriptedGuiReply, nullptr);
+    if (!reply) {
+        return;
+    }
+
+    SnapTray::CLI::IPCResponse response;
+    response.success = true;
+    response.code = static_cast<int>(SnapTray::CLI::CLIResult::Code::Success);
+    QScreen* screen = QGuiApplication::screenAt(globalRect.center());
+    response.result = {
+        {GuiCommand::kResultX, globalRect.x()},
+        {GuiCommand::kResultY, globalRect.y()},
+        {GuiCommand::kResultWidth, globalRect.width()},
+        {GuiCommand::kResultHeight, globalRect.height()},
+        {GuiCommand::kResultScreen, static_cast<int>(QGuiApplication::screens().indexOf(screen))},
+        {GuiCommand::kResultDevicePixelRatio, screenshot.devicePixelRatio()},
+    };
+
+    if (m_scriptedGuiWantsImage) {
+        QBuffer buffer(&response.data);
+        if (!buffer.open(QIODevice::WriteOnly) || !screenshot.toImage().save(&buffer, "PNG")) {
+            response = {};
+            response.code = static_cast<int>(SnapTray::CLI::CLIResult::Code::GeneralError);
+            response.error = QStringLiteral("Failed to encode the capture");
+        }
+    }
+
+    sendCLIResponse(reply, response);
+}
+
 void MainApplication::initialize()
 {
     // Create pin window manager first (needed by capture manager)
@@ -233,11 +407,22 @@ void MainApplication::initialize()
     // Create capture manager
     m_captureManager = new CaptureManager(m_pinWindowManager, this);
 
+    connect(m_captureManager, &CaptureManager::fullScreenCaptureFinished,
+            this, &MainApplication::runDeferredCLICommands, Qt::QueuedConnection);
+    connect(m_captureManager, &CaptureManager::scriptedCaptureFinished,
+            this, &MainApplication::onScriptedCaptureFinished);
+    connect(m_captureManager, &CaptureManager::scriptedCaptureCancelled, this, [this]() {
+        replyToScriptedGui(static_cast<int>(SnapTray::CLI::CLIResult::Code::Cancelled),
+                           QStringLiteral("Capture cancelled"));
+    });
+
     // Create screen canvas manager
     m_screenCanvasManager = new ScreenCanvasManager(this);
 
     // Create recording manager
     m_recordingManager = new RecordingManager(this);
+    // Projects (#191) not changed for the chosen number of days.
+    SnapTray::RecordingProjects::removeOlderThan(RecordingSettingsManager::instance().projectCleanupDays());
 
     // Connect recording signals
     connect(m_recordingManager, &RecordingManager::recordingStopped,
@@ -248,6 +433,19 @@ void MainApplication::initialize()
                 MainApplication::tr("Saved to: %1").arg(path));
         });
 
+    // Quick mode (#193): the chosen action once the file is saved.
+    connect(m_recordingManager, &RecordingManager::quickRecordingSaved,
+        this, [](const QString& path) {
+            const int action = RecordingSettingsManager::instance().quickSaveAction();
+            if (!SnapTray::QuickSaveAction::apply(action, path)) return;
+            if (action == RecordingSettingsManager::QuickSaveCopyFile) {
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Success,
+                    MainApplication::tr("Recording Copied"),
+                    MainApplication::tr("Saved to %1 and copied: paste it into a chat or folder.").arg(path));
+            }
+        });
+
     connect(m_recordingManager, &RecordingManager::recordingError,
         this, [](const QString& error) {
             SnapTray::QmlToast::screenToast().showToast(
@@ -255,6 +453,8 @@ void MainApplication::initialize()
                 MainApplication::tr("Recording Error"),
                 error, 5000);
         });
+    connect(m_recordingManager, &RecordingManager::recordingWarning,
+        this, &MainApplication::showRecordingWarning);
 
     // Connect screenshot save signals from CaptureManager
     connect(m_captureManager, &CaptureManager::saveCompleted,
@@ -270,6 +470,20 @@ void MainApplication::initialize()
                 SnapTray::QmlToast::Level::Error,
                 MainApplication::tr("Screenshot Save Failed"),
                 MainApplication::tr("%1\n%2").arg(error).arg(path), 5000);
+        });
+    connect(m_captureManager, &CaptureManager::copyCompleted,
+        this, [](const QPixmap&) {
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Success,
+                MainApplication::tr("Screenshot Copied"),
+                MainApplication::tr("Copied to clipboard"));
+        });
+    connect(m_captureManager, &CaptureManager::copyFailed,
+        this, []() {
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Error,
+                MainApplication::tr("Copy failed"),
+                QString(), 5000);
         });
 
     // Connect screenshot save signals from PinWindowManager
@@ -307,18 +521,85 @@ void MainApplication::initialize()
             }
 
             updateRecordingActionText();
-            updateTrayToolTip();
+            updateTrayRecordingIndicator();
+            if (!holdsRecordingWarnings()) {
+                flushHeldRecordingWarnings();
+            }
+        });
+    connect(m_recordingManager, &RecordingManager::durationChanged,
+        this, &MainApplication::onRecordingDurationChanged);
+    connect(m_recordingManager, &RecordingManager::audioStatusChanged,
+        this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::droppingFramesChanged,
+        this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::lowDiskSpaceChanged,
+        this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::diagnosticsAvailable,
+        this, &MainApplication::updateRecordingActionText);
+    connect(m_recordingManager, &RecordingManager::recoveryKept, this, [this](const QString& path) {
+        if (!m_recoverablePaths.contains(path)) m_recoverablePaths.append(path);
+        updateRecoveryAction();
+    });
+    connect(m_recordingManager, &RecordingManager::recoveriesFound, this,
+        [this](const QList<SnapTray::RecordingSession::Recoverable>& found) {
+            m_recoverablePaths.clear();
+            int recoverable = 0;
+            for (const auto& item : found) {
+                m_recoverablePaths.append(item.info.videoPath);
+                if (item.decodable) ++recoverable;
+            }
+            updateRecoveryAction();
+            if (recoverable > 0) {
+                // The tray item counts every entry, including ones that can
+                // only be discarded; the notice says both when they differ (#210).
+                const int total = int(found.size());
+                const QString message = recoverable == total
+                    ? tr("SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.")
+                          .arg(total)
+                    : tr("SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.")
+                          .arg(total)
+                          .arg(recoverable);
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Info, tr("Unsaved Recordings Found"), message, 8000);
+            }
         });
 
     // Create system tray icon
-    QIcon icon = PlatformFeatures::instance().createTrayIcon();
-    m_trayIcon = new QSystemTrayIcon(icon, this);
+    m_trayBasePixmap = PlatformFeatures::instance().createTrayPixmap();
+    m_trayIcon = new QSystemTrayIcon(QIcon(m_trayBasePixmap), this);
 
     // Create context menu
     m_trayMenu = new QMenu();
 
     m_regionCaptureAction = m_trayMenu->addAction(tr("Region Capture"));
     connect(m_regionCaptureAction, &QAction::triggered, this, &MainApplication::onRegionCapture);
+
+    m_fullScreenCaptureAction = m_trayMenu->addAction(tr("Full Screen Capture"));
+    connect(m_fullScreenCaptureAction, &QAction::triggered,
+            this, &MainApplication::onFullScreenCapture);
+
+    // Delayed Capture: pick a countdown, interact with the screen, then capture.
+    m_delayedCaptureMenu = m_trayMenu->addMenu(tr("Delayed Capture"));
+    auto* delayedCaptureGroup = new QActionGroup(m_delayedCaptureMenu);
+    delayedCaptureGroup->setExclusive(true);
+    for (int seconds : RegionCaptureSettingsManager::kDelayedCapturePresetSeconds) {
+        QAction* presetAction = m_delayedCaptureMenu->addAction(
+            tr("%n seconds", nullptr, seconds));
+        presetAction->setCheckable(true);
+        presetAction->setData(seconds);
+        delayedCaptureGroup->addAction(presetAction);
+        connect(presetAction, &QAction::triggered, this, [this, seconds]() {
+            startDelayedCapture(seconds);
+        });
+        m_delayedCapturePresetActions.append(presetAction);
+    }
+    m_cancelDelayedCaptureAction = m_trayMenu->addAction(tr("Cancel Delayed Capture"));
+    m_cancelDelayedCaptureAction->setVisible(false);
+    connect(m_cancelDelayedCaptureAction, &QAction::triggered,
+            this, &MainApplication::onCancelDelayedCapture);
+    connect(m_captureManager, &CaptureManager::delayedCaptureStateChanged,
+            this, &MainApplication::onDelayedCaptureStateChanged);
+    updateDelayedCaptureMenu();
 
     m_screenCanvasAction = m_trayMenu->addAction(tr("Screen Canvas"));
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
@@ -329,7 +610,7 @@ void MainApplication::initialize()
     m_pinFromImageAction = m_trayMenu->addAction(tr("Pin from Image..."));
     connect(m_pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
 
-    m_historyAction = m_trayMenu->addAction(tr("History"));
+    m_historyAction = m_trayMenu->addAction(tr("Library"));
     connect(m_historyAction, &QAction::triggered, this, &MainApplication::onHistoryWindow);
 
     m_togglePinsVisibilityAction = m_trayMenu->addAction(tr("Hide All Pins"));
@@ -337,6 +618,16 @@ void MainApplication::initialize()
 
     m_closeAllPinsAction = m_trayMenu->addAction(tr("Close All Pins"));
     connect(m_closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
+
+    // A way out of click-through that never needs the pin itself (#225).
+    m_disableClickThroughAction = m_trayMenu->addAction(tr("Turn Off Click-through for All Pins"));
+    m_disableClickThroughAction->setVisible(false);
+    connect(m_disableClickThroughAction, &QAction::triggered, this, [this] {
+        m_pinWindowManager->disableClickThroughForAll();
+    });
+    connect(m_trayMenu, &QMenu::aboutToShow, this, [this] {
+        m_disableClickThroughAction->setVisible(m_pinWindowManager->anyClickThrough());
+    });
 
     connect(m_pinWindowManager, &PinWindowManager::windowCreated,
             this, [this](PinWindow*) { updatePinsVisibilityActionText(); });
@@ -353,6 +644,39 @@ void MainApplication::initialize()
                 &QAction::triggered,
                 this,
                 &MainApplication::onFullScreenRecording);
+        m_pauseRecordingAction = m_trayMenu->addAction(QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+        m_pauseRecordingAction->setVisible(false);
+        connect(m_pauseRecordingAction, &QAction::triggered, this, [this] {
+            if (m_recordingManager) m_recordingManager->togglePause();
+        });
+        // Recordings an earlier run left behind (crash, power loss, quit with
+        // an unsaved preview). Shown only when there is something to offer.
+        m_recoverRecordingsAction = m_trayMenu->addAction(tr("Recover Recordings..."));
+        m_recoverRecordingsAction->setVisible(false);
+        connect(m_recoverRecordingsAction, &QAction::triggered, this, &MainApplication::showRecoveryDialog);
+        // Kept editable projects (#191); always there, so the library can
+        // explain how to turn keeping on.
+        m_recordingLibraryAction = m_trayMenu->addAction(tr("Recording Library..."));
+        connect(m_recordingLibraryAction, &QAction::triggered, this, &MainApplication::showRecordingLibrary);
+        // Local diagnostics for the last recording; only copied when the user asks.
+        m_copyRecordingDiagnosticsAction = m_trayMenu->addAction(tr("Copy Recording Diagnostics"));
+        m_copyRecordingDiagnosticsAction->setVisible(false);
+        connect(m_copyRecordingDiagnosticsAction, &QAction::triggered, this, [this] {
+            if (!m_recordingManager || m_recordingManager->lastDiagnostics().isEmpty()) return;
+            QGuiApplication::clipboard()->setText(m_recordingManager->lastDiagnostics());
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Info,
+                tr("Diagnostics Copied"),
+                tr("The recording diagnostics are on the clipboard. They contain no images, audio or file names."));
+        });
+        // Platforms that keep active controls in the tray never show the bar while recording.
+        if (!PlatformFeatures::instance().capabilities().recordingControlsInTray) {
+            m_showRecordingControlsAction = m_trayMenu->addAction(tr("Show Recording Controls"));
+            m_showRecordingControlsAction->setVisible(false);
+            connect(m_showRecordingControlsAction, &QAction::triggered, this, [this] {
+                if (m_recordingManager) m_recordingManager->showRecordingControls();
+            });
+        }
     }
 
     m_trayMenu->addSeparator();
@@ -370,6 +694,9 @@ void MainApplication::initialize()
     connect(exitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
 
     // Set menu and show tray icon
+#ifdef Q_OS_MACOS
+    SnapTray::installMacTrayActivationGuard();
+#endif
     m_trayIcon->setContextMenu(m_trayMenu);
     m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
     m_trayIcon->show();
@@ -389,6 +716,8 @@ void MainApplication::initialize()
     auto& hotkeyManager = SnapTray::HotkeyManager::instance();
     connect(&hotkeyManager, &SnapTray::HotkeyManager::actionTriggered,
             this, &MainApplication::onHotkeyAction);
+    connect(&hotkeyManager, &SnapTray::HotkeyManager::actionReleased, this,
+            [this](SnapTray::HotkeyAction action) { m_recordingHotkeyHolds.release(static_cast<int>(action)); });
     connect(&hotkeyManager, &SnapTray::HotkeyManager::hotkeyChanged,
             this, &MainApplication::onHotkeyChanged);
     connect(&hotkeyManager, &SnapTray::HotkeyManager::initializationCompleted,
@@ -399,6 +728,11 @@ void MainApplication::initialize()
     updateTrayMenuHotkeyText();
     updateTrayToolTip();
     updatePinsVisibilityActionText();
+
+    // Look for recordings an earlier run could not save (off the GUI thread).
+    if (PlatformFeatures::instance().capabilities().supportsRecording) {
+        m_recordingManager->scanForRecoveries();
+    }
 
     QTimer::singleShot(0, this, [captureManager = QPointer<CaptureManager>(m_captureManager)]() {
         if (!captureManager) {
@@ -416,7 +750,7 @@ void MainApplication::initialize()
 
 bool MainApplication::canShutdownForUpdate() const
 {
-    return !m_screenPickerDialog &&
+    return !recordingSetupActive() &&
            (!m_recordingManager || !isBlockingUpdateRecordingState(m_recordingManager->state()));
 }
 
@@ -455,23 +789,21 @@ void MainApplication::prepareForUpdateShutdown()
     QCoreApplication::quit();
 }
 
+bool MainApplication::canStartRegionCapture() const
+{
+    return m_captureManager && !recordingSetupActive()
+        && (!m_screenCanvasManager || !m_screenCanvasManager->isActive())
+        && (!m_recordingManager || !m_recordingManager->blocksCapture());
+}
+
+bool MainApplication::startHistoryReplay(const QString& entryId)
+{
+    return canStartRegionCapture() && m_historyReplayStarter(entryId);
+}
+
 void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
 {
-    // Don't trigger if screen canvas is active
-    if (m_screenCanvasManager->isActive()) {
-        qDebug() << "onRegionCapture: blocked by screenCanvasManager";
-        return;
-    }
-
-    // Don't trigger if recording is active
-    if (m_recordingManager->isActive()) {
-        qDebug() << "onRegionCapture: blocked by recordingManager";
-        return;
-    }
-    if (m_screenPickerDialog) {
-        qDebug() << "onRegionCapture: blocked by screen picker";
-        return;
-    }
+    if (!canStartRegionCapture()) return;
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
     // Modal dialogs (QMessageBox) are handled by CaptureManager
@@ -483,6 +815,64 @@ void MainApplication::onRegionCapture()
     startRegionCapture(true);
 }
 
+void MainApplication::onFullScreenCapture()
+{
+    if (!canStartRegionCapture() || m_captureManager->isActive()) return;
+
+    m_captureManager->startFullScreenCapture();
+}
+
+void MainApplication::startDelayedCapture(int delaySeconds)
+{
+    if (!canStartRegionCapture() || m_captureManager->isActive()) {
+        // Re-check the menu: a preset click while a countdown runs must not move
+        // the check mark away from the delay that is actually in use.
+        updateDelayedCaptureMenu();
+        return;
+    }
+
+    // Remember the choice so the hotkey reuses it.
+    RegionCaptureSettingsManager::instance().setDelayedCaptureSeconds(delaySeconds);
+    updateDelayedCaptureMenu();
+    m_captureManager->startDelayedRegionCapture(delaySeconds, true);
+}
+
+void MainApplication::onDelayedCaptureHotkey()
+{
+    if (m_captureManager && m_captureManager->isDelayedCapturePending()) {
+        // Pressing the hotkey again during the countdown cancels it.
+        m_captureManager->cancelDelayedCapture();
+        return;
+    }
+
+    startDelayedCapture(RegionCaptureSettingsManager::instance().delayedCaptureSeconds());
+}
+
+void MainApplication::onCancelDelayedCapture()
+{
+    if (m_captureManager) {
+        m_captureManager->cancelDelayedCapture();
+    }
+}
+
+void MainApplication::onDelayedCaptureStateChanged(bool pending)
+{
+    if (m_delayedCaptureMenu) {
+        m_delayedCaptureMenu->setEnabled(!pending);
+    }
+    if (m_cancelDelayedCaptureAction) {
+        m_cancelDelayedCaptureAction->setVisible(pending);
+    }
+}
+
+void MainApplication::updateDelayedCaptureMenu()
+{
+    const int currentSeconds = RegionCaptureSettingsManager::instance().delayedCaptureSeconds();
+    for (QAction* presetAction : std::as_const(m_delayedCapturePresetActions)) {
+        presetAction->setChecked(presetAction->data().toInt() == currentSeconds);
+    }
+}
+
 void MainApplication::onQuickPin()
 {
     // Don't trigger if screen canvas is active
@@ -490,11 +880,11 @@ void MainApplication::onQuickPin()
         return;
     }
 
-    // Don't trigger if recording is active
-    if (m_recordingManager->isActive()) {
+    // Don't trigger while a recording is in flight (an open preview is fine)
+    if (m_recordingManager->blocksCapture()) {
         return;
     }
-    if (m_screenPickerDialog) {
+    if (recordingSetupActive()) {
         return;
     }
 
@@ -511,13 +901,13 @@ void MainApplication::onScreenCanvas()
         return;
     }
 
-    // Don't trigger if recording is active
-    if (m_recordingManager->isActive()) {
+    // Don't trigger while a recording is in flight (an open preview is fine)
+    if (m_recordingManager->blocksCapture()) {
         qDebug() << "onScreenCanvas: blocked by recordingManager";
         return;
     }
-    if (m_screenPickerDialog) {
-        qDebug() << "onScreenCanvas: blocked by screen picker";
+    if (recordingSetupActive()) {
+        qDebug() << "onScreenCanvas: blocked by the recording setup";
         return;
     }
 
@@ -537,6 +927,10 @@ void MainApplication::onFullScreenRecording()
 
     if (m_screenPickerDialog) {
         closeScreenPicker();
+        return;
+    }
+    if (m_areaSelector) {
+        closeAreaSelector();
         return;
     }
 
@@ -599,6 +993,11 @@ void MainApplication::onPinFromImage()
         return;
     }
 
+    loadImageForPin(filePath);
+}
+
+void MainApplication::loadImageForPin(const QString& filePath, std::optional<QPoint> position)
+{
     // Show loading toast
     SnapTray::QmlToast::screenToast().showToast(
         SnapTray::QmlToast::Level::Info,
@@ -606,22 +1005,19 @@ void MainApplication::onPinFromImage()
         QFileInfo(filePath).fileName()
     );
 
-    // Load image asynchronously (QImage is thread-safe, QPixmap is not)
-    QPointer<MainApplication> guard(this);
-    (void)QtConcurrent::run([filePath, guard]() {
+    // Keep completion ownership on the GUI thread. Destroying the application
+    // also destroys the watcher; the decoding task never holds a QObject pointer.
+    auto* watcher = new QFutureWatcher<QImage>(this);
+    connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher, filePath, position] {
+        const QImage image = watcher->result();
+        watcher->deleteLater();
+        onImageLoaded(filePath, image, position);
+    });
+    watcher->setFuture(QtConcurrent::run([filePath] {
         QImageReader reader(filePath);
         reader.setAutoTransform(true);
-        QImage image = reader.read();
-
-        // Call back to UI thread
-        if (guard) {
-            QMetaObject::invokeMethod(guard, [guard, filePath, image = std::move(image)]() {
-                if (guard) {
-                    guard->onImageLoaded(filePath, image);
-                }
-            }, Qt::QueuedConnection);
-        }
-    });
+        return reader.read();
+    }));
 }
 
 void MainApplication::onHistoryWindow()
@@ -640,16 +1036,19 @@ void MainApplication::onHistoryWindow()
 
     m_historyWindow = new SnapTray::QmlHistoryWindow(
         m_pinWindowManager,
-        [captureManager = m_captureManager](const QString& entryId) {
-            return captureManager && captureManager->startHistoryReplay(entryId);
+        [this](const QString& entryId) {
+            return startHistoryReplay(entryId);
         },
         this);
+    m_historyWindow->setOpenProjectDir(m_previewBackend ? m_previewBackend->projectDir() : QString());
+    connect(m_historyWindow, &SnapTray::QmlHistoryWindow::openProjectRequested, this,
+            &MainApplication::openRecordingProject);
     m_historyWindow->show();
     m_historyWindow->raise();
     m_historyWindow->activateWindow();
 }
 
-void MainApplication::onImageLoaded(const QString &filePath, const QImage &image)
+void MainApplication::onImageLoaded(const QString& filePath, const QImage& image, std::optional<QPoint> position)
 {
     if (image.isNull()) {
         QFileInfo fileInfo(filePath);
@@ -662,7 +1061,8 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
     }
 
     // Get screen geometry
-    QScreen *screen = QGuiApplication::primaryScreen();
+    QScreen* screen = position ? QGuiApplication::screenAt(*position) : nullptr;
+    if (!screen) screen = QGuiApplication::primaryScreen();
     if (!screen) {
         qCritical() << "MainApplication: No valid screen available for pin window";
         return;
@@ -684,11 +1084,10 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
         pixmap,
         screen->availableGeometry());
 
-    // Create pin window and apply zoom if needed
-    PinWindow *pinWindow = m_pinWindowManager->createPinWindow(pixmap, placement.position);
-    if (pinWindow && placement.zoomLevel < 1.0) {
-        pinWindow->setZoomLevel(placement.zoomLevel);
-    }
+    // Zoom before the first show: a pin shown at its full size can reach a
+    // neighbouring monitor, and Qt would then create it at that monitor's DPI.
+    m_pinWindowManager->createPinWindow(
+        pixmap, position.value_or(placement.position), true, placement.zoomLevel);
 }
 
 void MainApplication::onSettings()
@@ -745,6 +1144,12 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
             startRegionCapture(true);
         }
         break;
+    case HotkeyAction::CaptureFullScreen:
+        onFullScreenCapture();
+        break;
+    case HotkeyAction::DelayedRegionCapture:
+        onDelayedCaptureHotkey();
+        break;
     case HotkeyAction::ScreenCanvas:
         onScreenCanvas();
         break;
@@ -764,13 +1169,34 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
         onToggleAllPinsVisibility();
         break;
     case HotkeyAction::RecordFullScreen:
-        if (PlatformFeatures::instance().capabilities().supportsRecording) {
+        if (PlatformFeatures::instance().capabilities().supportsRecording
+            && acceptRecordingHotkey(action)) {
             onFullScreenRecording();
+        }
+        break;
+    case HotkeyAction::PauseResumeRecording:
+        if (m_recordingManager && acceptRecordingHotkey(action)) {
+            m_recordingManager->togglePause();
+        }
+        break;
+    case HotkeyAction::ShowRecordingControls:
+        if (m_recordingManager) {
+            m_recordingManager->showRecordingControls();
         }
         break;
     default:
         break;
     }
+}
+
+bool MainApplication::acceptRecordingHotkey(SnapTray::HotkeyAction action)
+{
+    // Key auto-repeat or a double press must not start and cancel a recording,
+    // or pause and immediately resume it: a hold is one press until release.
+    if (!m_recordingHotkeyClock.isValid()) {
+        m_recordingHotkeyClock.start();
+    }
+    return m_recordingHotkeyHolds.accept(static_cast<int>(action), m_recordingHotkeyClock.elapsed());
 }
 
 void MainApplication::onHotkeyChanged(SnapTray::HotkeyAction, const SnapTray::HotkeyConfig&)
@@ -800,16 +1226,15 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
     font.setStyleHint(QFont::SansSerif);
     QFontMetrics fm(font);
 
-    // Calculate text dimensions (support multi-line)
+    // Calculate text dimensions (support multi-line). Every line, not just the
+    // visible ones, can widen the card; measuring stops once the cap is reached.
     QStringList lines = text.split('\n');
-    int maxWidth = 0;
-    for (const QString &line : lines) {
-        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
-    }
+    const int maxWidth = TextLayoutUtils::boundedMaxLineWidth(
+        lines, kMaxTextPixmapWidth,
+        [&fm](const QString &line) { return fm.horizontalAdvance(line); });
     int totalHeight = lines.count() * fm.lineSpacing();
 
-    // Limit maximum size
-    maxWidth = qMin(maxWidth, kMaxTextPixmapWidth);
+    // Limit maximum height
     totalHeight = qMin(totalHeight, kMaxTextPixmapHeight);
 
     // Create pixmap with padding
@@ -841,7 +1266,12 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
 
 void MainApplication::onPasteFromClipboard()
 {
-    if (m_screenPickerDialog) {
+    pinFromClipboard();
+}
+
+void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
+{
+    if (recordingSetupActive()) {
         return;
     }
 
@@ -890,18 +1320,21 @@ void MainApplication::onPasteFromClipboard()
         QSize logicalSize = CoordinateHelper::toLogical(pixmap.size(), dpr);
         QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 
-        m_pinWindowManager->createPinWindow(pixmap, position);
+        m_pinWindowManager->createPinWindow(pixmap, requestedPosition.value_or(position));
     }
 }
 
-void MainApplication::showRecordingPreview(const QString& videoPath, int defaultOutputFormat)
+void MainApplication::showRecordingPreview(const QString& videoPath, int defaultOutputFormat,
+                                           bool recordedAsIntermediate)
 {
     // Prevent multiple preview windows
     if (m_previewBackend)
         return;
 
-    m_previewBackend = new RecordingPreviewBackend(videoPath, this);
+    m_previewBackend = new RecordingPreviewBackend(videoPath, recordedAsIntermediate, this);
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
+    // The area chosen before recording (#194), also for a recovered recording.
+    m_previewBackend->setInitialCrop(m_recordingManager->previewInitialCrop());
 
     // The save handler opens a native dialog. Keep it out of the QML click/key
     // handler stack so preview deleteLater() cannot run during a nested dialog
@@ -915,23 +1348,46 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
             m_recordingManager->onPreviewClosed(saved);
             m_previewBackend->deleteLater();
             m_previewBackend = nullptr;
+            // A save may have kept a new project; none is open any more.
+            if (m_historyWindow) m_historyWindow->setOpenProjectDir(QString());
         });
 
     m_previewBackend->show();
 }
 
-void MainApplication::onPreviewSaveRequested(const QString& videoPath)
+void MainApplication::onPreviewSaveRequested(const QString& videoPath, const QSize& outputSize)
 {
-    m_recordingManager->triggerSaveDialog(videoPath);
+    const QPointer<RecordingPreviewBackend> backend(m_previewBackend);
+    QString savedPath;
+    const auto outcome = m_recordingManager->triggerSaveDialog(videoPath, outputSize, &savedPath);
+    // The preview keeps the recording until it hears the outcome.
+    if (!backend) {
+        return;
+    }
+    using Outcome = RecordingPreviewBackend::SaveOutcome;
+    switch (outcome) {
+    case RecordingManager::SaveOutcome::Saved: backend->completeSave(Outcome::Saved, savedPath); break;
+    case RecordingManager::SaveOutcome::Cancelled: backend->completeSave(Outcome::Cancelled); break;
+    case RecordingManager::SaveOutcome::Failed: backend->completeSave(Outcome::Failed); break;
+    }
 }
 
 void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
 {
+    // A kept project's recording is only ever deleted from the library.
+    if (SnapTray::RecordingProjects::contains(videoPath)) {
+        return;
+    }
     if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
         if (!QFile::remove(videoPath)) {
             qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;
         }
     }
+    SnapTray::WindowTimelineSidecar::remove(videoPath);
+    SnapTray::CursorTimelineSidecar::remove(videoPath);
+    SnapTray::KeyTimelineSidecar::remove(videoPath);
+    SnapTray::AudioTracks::remove(videoPath);
+    SnapTray::RecordingSession::remove(videoPath);
 }
 
 void MainApplication::updateActionHotkeyText(QAction* action,
@@ -981,6 +1437,12 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_regionCaptureAction,
                            SnapTray::HotkeyAction::RegionCapture,
                            tr("Region Capture"));
+    updateActionHotkeyText(m_fullScreenCaptureAction,
+                           SnapTray::HotkeyAction::CaptureFullScreen,
+                           tr("Full Screen Capture"));
+    updateActionHotkeyText(m_delayedCaptureMenu ? m_delayedCaptureMenu->menuAction() : nullptr,
+                           SnapTray::HotkeyAction::DelayedRegionCapture,
+                           tr("Delayed Capture"));
     updateActionHotkeyText(m_screenCanvasAction,
                            SnapTray::HotkeyAction::ScreenCanvas,
                            tr("Screen Canvas"));
@@ -992,12 +1454,118 @@ void MainApplication::updateTrayMenuHotkeyText()
                            tr("Pin from Image..."));
     updateActionHotkeyText(m_historyAction,
                            SnapTray::HotkeyAction::HistoryWindow,
-                           tr("History"));
+                           tr("Library"));
     updateRecordingActionText();
+}
+
+void MainApplication::updateRecoveryAction()
+{
+    if (!m_recoverRecordingsAction) return;
+    m_recoverRecordingsAction->setVisible(!m_recoverablePaths.isEmpty());
+    m_recoverRecordingsAction->setText(tr("Recover Recordings (%1)...").arg(m_recoverablePaths.size()));
+}
+
+void MainApplication::showRecoveryDialog()
+{
+    if (m_recoveryDialog) {
+        m_recoveryDialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+        return;
+    }
+    // Re-scan so the dialog reflects the files as they are now.
+    auto* viewModel = new SnapTray::RecordingRecoveryViewModel(this);
+    auto* dialog = new SnapTray::QmlDialog(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingRecoveryDialog.qml")),
+        viewModel, QStringLiteral("viewModel"), this);
+    viewModel->setParent(dialog);
+    m_recoveryDialog = dialog;
+    connect(dialog, &SnapTray::QmlDialog::closed, dialog, &QObject::deleteLater);
+    const QPointer<SnapTray::RecordingRecoveryViewModel> model(viewModel);
+    auto connection = std::make_shared<QMetaObject::Connection>();
+    *connection = connect(m_recordingManager, &RecordingManager::recoveriesFound, dialog,
+        [model, connection](const QList<SnapTray::RecordingSession::Recoverable>& found) {
+            if (model) model->setRecoveries(found);
+            QObject::disconnect(*connection);
+        });
+    connect(viewModel, &SnapTray::RecordingRecoveryViewModel::recoverRequested, this,
+        [this](const QString& path) {
+            if (!m_recordingManager->openRecoveredRecording(path)) {
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Warning, tr("Recording Busy"),
+                    tr("Finish or close the current recording first."));
+                return;
+            }
+            m_recoverablePaths.removeAll(path);
+            updateRecoveryAction();
+            if (m_recoveryDialog) m_recoveryDialog->close();
+        });
+    connect(viewModel, &SnapTray::RecordingRecoveryViewModel::discarded, this,
+        [this](const QString& path) {
+            m_recoverablePaths.removeAll(path);
+            updateRecoveryAction();
+        });
+    connect(viewModel, &SnapTray::RecordingRecoveryViewModel::closeRequested, dialog, [this] {
+        if (m_recoveryDialog) m_recoveryDialog->close();
+    });
+    m_recordingManager->scanForRecoveries();
+    dialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+}
+
+void MainApplication::showRecordingLibrary()
+{
+    // The Library's Recordings section (#226): one window for every capture.
+    onHistoryWindow();
+    m_historyWindow->showSection(SnapTray::LibraryModel::Recordings);
+}
+
+void MainApplication::openRecordingProject(const QString& projectDir)
+{
+    const auto project = SnapTray::RecordingProjects::load(projectDir);
+    if (!project) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Project Unavailable"),
+            tr("This project's recording is missing or damaged."));
+        return;
+    }
+    if (m_previewBackend || !m_recordingManager->openProjectRecording(project->videoPath())) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Recording Busy"),
+            tr("Finish or close the current recording first."));
+        return;
+    }
+    // A project is always the full-quality recording: Save re-encodes as needed.
+    showRecordingPreview(project->videoPath(), RecordingSettingsManager::instance().outputFormat(), true);
+    if (m_previewBackend) m_previewBackend->setProject(*project);
+    if (m_historyWindow) m_historyWindow->setOpenProjectDir(m_previewBackend ? m_previewBackend->projectDir() : QString());
 }
 
 void MainApplication::updateRecordingActionText()
 {
+    const auto recordingState = m_recordingManager ? m_recordingManager->state() : RecordingManager::State::Idle;
+    const bool capturing = recordingState == RecordingManager::State::Recording
+        || recordingState == RecordingManager::State::Paused;
+    if (m_pauseRecordingAction) {
+        m_pauseRecordingAction->setVisible(capturing);
+        updateActionHotkeyText(m_pauseRecordingAction,
+                               SnapTray::HotkeyAction::PauseResumeRecording,
+                               recordingState == RecordingManager::State::Paused
+                                   ? QCoreApplication::translate("RecordingControlBar", "Resume Recording")
+                                   : QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+    }
+    if (m_copyRecordingDiagnosticsAction) {
+        m_copyRecordingDiagnosticsAction->setVisible(
+            m_recordingManager && !m_recordingManager->lastDiagnostics().isEmpty()
+            && (recordingState == RecordingManager::State::Idle
+                || recordingState == RecordingManager::State::Previewing));
+    }
+    if (m_showRecordingControlsAction) {
+        m_showRecordingControlsAction->setVisible(
+            capturing
+            || recordingState == RecordingManager::State::Preparing
+            || recordingState == RecordingManager::State::Countdown);
+        updateActionHotkeyText(m_showRecordingControlsAction,
+                               SnapTray::HotkeyAction::ShowRecordingControls,
+                               tr("Show Recording Controls"));
+    }
     if (!m_fullScreenRecordingAction) {
         return;
     }
@@ -1006,14 +1574,14 @@ void MainApplication::updateRecordingActionText()
     QString baseName = recordScreenText;
     bool includeHotkey = true;
 
-    if (!m_recordingManager && !m_screenPickerDialog) {
+    if (!m_recordingManager && !recordingSetupActive()) {
         updateActionHotkeyText(m_fullScreenRecordingAction,
                                SnapTray::HotkeyAction::RecordFullScreen,
                                recordScreenText);
         return;
     }
 
-    if (m_screenPickerDialog) {
+    if (recordingSetupActive()) {
         baseName = tr("Cancel Recording");
         includeHotkey = false;
     } else if (m_recordingManager) {
@@ -1050,12 +1618,7 @@ void MainApplication::updateTrayToolTip()
         return;
     }
 
-    const QString recordingSummary = m_recordingManager
-        ? m_recordingManager->activeScreenSummary()
-        : QString();
-    const QString statusLine = recordingSummary.isEmpty()
-        ? QString()
-        : tr("Record Screen") + QStringLiteral(": ") + recordingSummary;
+    const QString statusLine = trayRecordingStatusLine();
 
 #ifdef Q_OS_WIN
     const QString notSetText = tr("Not set");
@@ -1089,6 +1652,150 @@ void MainApplication::updateTrayToolTip()
         m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
     }
 #endif
+#ifdef Q_OS_MACOS
+    // The status item has only a tooltip; give VoiceOver the same text (#248).
+    // Warn once: the recording status updates this every second.
+    static bool warnedNoStatusItem = false;
+    if (!SnapTray::setMacTrayAccessibilityLabel(
+            m_trayIcon->toolTip().replace(QLatin1Char('\n'), QStringLiteral(", ")))
+        && !warnedNoStatusItem) {
+        warnedNoStatusItem = true;
+        qWarning() << "MainApplication: no macOS status item to set the tray accessibility label on";
+    }
+#endif
+}
+
+bool MainApplication::holdsRecordingWarnings() const
+{
+    if (!m_recordingManager) {
+        return false;
+    }
+    // Recording captures the whole screen, and the toast cannot be kept out
+    // of it everywhere: X11 has no capture exclusion, Windows only from 10
+    // 2004, and ScreenCaptureKit fixes its excluded windows when capture
+    // starts. Warnings wait in the tray tooltip until capture ends (#170
+    // review). From preparation on: a five-second toast shown during the
+    // countdown would still be on screen when capture starts.
+    switch (m_recordingManager->state()) {
+    case RecordingManager::State::Preparing:
+    case RecordingManager::State::Countdown:
+    case RecordingManager::State::Recording:
+    case RecordingManager::State::Paused:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void MainApplication::showRecordingWarning(const QString& warning)
+{
+    if (holdsRecordingWarnings()) {
+        if (!m_heldRecordingWarnings.contains(warning)) {
+            m_heldRecordingWarnings.append(warning);
+        }
+        updateTrayToolTip();
+        return;
+    }
+    if (m_recordingWarningToast) {
+        m_recordingWarningToast(tr("Recording Warning"), warning);
+        return;
+    }
+    SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Warning, tr("Recording Warning"),
+                                                warning, 5000);
+}
+
+void MainApplication::flushHeldRecordingWarnings()
+{
+    if (m_heldRecordingWarnings.isEmpty()) {
+        return;
+    }
+    const QString text = m_heldRecordingWarnings.join(QLatin1Char('\n'));
+    m_heldRecordingWarnings.clear();
+    updateTrayToolTip();
+    showRecordingWarning(text);
+}
+
+QString MainApplication::trayRecordingStatusLine() const
+{
+    using Status = SnapTray::TrayRecordingStatus;
+    QString statusText;
+    switch (m_trayRecordingStatus) {
+    case Status::Idle: return {};
+    case Status::Preparing: statusText = tr("Preparing to record"); break;
+    case Status::Countdown: statusText = tr("Recording starts soon"); break;
+    case Status::Recording: statusText = tr("Recording"); break;
+    case Status::Paused: statusText = tr("Recording paused"); break;
+    case Status::Finalizing: statusText = tr("Finishing recording"); break;
+    }
+
+    QStringList parts{statusText};
+    if ((m_trayRecordingStatus == Status::Recording || m_trayRecordingStatus == Status::Paused)
+        && m_trayRecordingElapsedMs >= 0) {
+        parts.append(SnapTray::formatTrayRecordingElapsed(m_trayRecordingElapsedMs));
+    }
+    const QString screenSummary = m_recordingManager
+        ? m_recordingManager->activeScreenSummary()
+        : QString();
+    if (!screenSummary.isEmpty()) {
+        parts.append(screenSummary);
+    }
+    // The mode this recording was started in (#193).
+    if (m_recordingManager && m_trayRecordingStatus != Status::Preparing) {
+        parts.append(m_recordingManager->recordingOpensPreview() ? tr("edit mode") : tr("quick mode"));
+    }
+    if (m_recordingManager && m_recordingManager->isDroppingFrames()) {
+        parts.append(tr("dropping frames"));
+    }
+    if (m_recordingManager && m_recordingManager->isLowOnDiskSpace()) {
+        parts.append(tr("low disk space"));
+    }
+    // Said for as long as keys are kept (#187): never silently.
+    if (m_recordingManager && m_recordingManager->isRecordingKeys()
+        && (m_trayRecordingStatus == Status::Recording || m_trayRecordingStatus == Status::Paused)) {
+        parts.append(tr("recording keys"));
+    }
+    QString line = parts.join(QStringLiteral(" \u00B7 "));
+    // Audio stays visible for the whole recording, including fallbacks that
+    // were announced once in a notification.
+    const QString audioLine = m_recordingManager && m_trayRecordingStatus != Status::Finalizing
+        ? SnapTray::describeRecordingAudioStatus(m_recordingManager->audioStatus())
+        : QString();
+    if (!audioLine.isEmpty()) {
+        line += QLatin1Char('\n') + audioLine;
+    }
+    // Warnings held back from the screen while capturing (shown after).
+    if (!m_heldRecordingWarnings.isEmpty()) {
+        line += QLatin1Char('\n') + tr("Warning: %1").arg(m_heldRecordingWarnings.last());
+    }
+    return line;
+}
+
+void MainApplication::updateTrayRecordingIndicator()
+{
+    const auto state = m_recordingManager ? m_recordingManager->state() : RecordingManager::State::Idle;
+    const auto status = trayRecordingStatusForState(state);
+    if (status != SnapTray::TrayRecordingStatus::Recording
+        && status != SnapTray::TrayRecordingStatus::Paused) {
+        m_trayRecordingElapsedMs = -1;
+    }
+    if (status != m_trayRecordingStatus) {
+        m_trayRecordingStatus = status;
+        if (m_trayIcon && !m_trayBasePixmap.isNull()) {
+            m_trayIcon->setIcon(QIcon(SnapTray::composeTrayRecordingPixmap(m_trayBasePixmap, status)));
+        }
+    }
+    updateTrayToolTip();
+}
+
+void MainApplication::onRecordingDurationChanged(qint64 elapsedMs)
+{
+    // durationChanged fires every 100 ms; the tooltip only shows whole seconds.
+    const qint64 previousSecond = m_trayRecordingElapsedMs < 0
+        ? -1 : m_trayRecordingElapsedMs / kTrayElapsedResolutionMs;
+    m_trayRecordingElapsedMs = qMax<qint64>(0, elapsedMs);
+    if (m_trayRecordingElapsedMs / kTrayElapsedResolutionMs != previousSecond) {
+        updateTrayToolTip();
+    }
 }
 
 void MainApplication::startScreenRecordingFlow(QScreen* preferredScreen)
@@ -1125,8 +1832,10 @@ void MainApplication::startScreenRecordingFlow(QScreen* preferredScreen)
         }
     }
 
-    if (sources.size() == 1) {
-        m_recordingManager->startScreenRecording(sources.first().screen.data());
+    // Quick recording: one screen and no setup requested starts right away
+    // with the last-used settings.
+    if (sources.size() == 1 && !RecordingSettingsManager::instance().showSetupBeforeRecording()) {
+        startRecordingOn(sources.first().screen.data());
         return;
     }
 
@@ -1176,7 +1885,45 @@ void MainApplication::onScreenPickerChosen(QScreen* screen)
         return;
     }
 
-    m_recordingManager->startScreenRecording(screen);
+    startRecordingOn(screen);
+}
+
+void MainApplication::startRecordingOn(QScreen* screen)
+{
+    if (!RecordingSettingsManager::instance().preselectArea() || !screen) {
+        m_recordingManager->startScreenRecording(screen);
+        return;
+    }
+    // Choose an area of this screen first (#194); the capture stays full
+    // screen in edit mode, where the area is the preview's initial crop.
+    closeAreaSelector();
+    auto* selector = new SnapTray::QmlRecordingAreaSelector(this);
+    m_areaSelector = selector;
+    const QPointer<QScreen> target(screen);
+    connect(selector, &SnapTray::QmlRecordingAreaSelector::areaChosen, this,
+        [this, target](const QRectF& area) {
+            closeAreaSelector();
+            if (!target) return;
+            m_recordingManager->startScreenRecording(target.data(), area);
+        });
+    connect(selector, &SnapTray::QmlRecordingAreaSelector::cancelled, this, [this]() { closeAreaSelector(); });
+    selector->start(screen);
+    updateRecordingActionText();
+}
+
+bool MainApplication::recordingSetupActive() const
+{
+    return m_screenPickerDialog || m_areaSelector;
+}
+
+void MainApplication::closeAreaSelector()
+{
+    if (!m_areaSelector) return;
+    SnapTray::QmlRecordingAreaSelector* selector = m_areaSelector;
+    m_areaSelector = nullptr;
+    selector->close();
+    selector->deleteLater();
+    updateRecordingActionText();
 }
 
 void MainApplication::onScreenPickerCancelled()

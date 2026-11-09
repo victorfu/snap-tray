@@ -46,9 +46,9 @@ Item {
 
         Repeater {
             model: [
-                { label: "B", bold: true, active: root.boldValue, action: function() { if (root.hasViewModel) root.viewModel.handleBoldToggled() } },
-                { label: "I", italic: true, active: root.italicValue, action: function() { if (root.hasViewModel) root.viewModel.handleItalicToggled() } },
-                { label: "U", underline: true, active: root.underlineValue, action: function() { if (root.hasViewModel) root.viewModel.handleUnderlineToggled() } }
+                { label: "B", name: qsTr("Bold"), bold: true, active: root.boldValue, action: function() { if (root.hasViewModel) root.viewModel.handleBoldToggled() } },
+                { label: "I", name: qsTr("Italic"), italic: true, active: root.italicValue, action: function() { if (root.hasViewModel) root.viewModel.handleItalicToggled() } },
+                { label: "U", name: qsTr("Underline"), underline: true, active: root.underlineValue, action: function() { if (root.hasViewModel) root.viewModel.handleUnderlineToggled() } }
             ]
 
             Rectangle {
@@ -58,6 +58,13 @@ Item {
                 color: modelData.active ? root.btnActiveBg
                      : biuMouse.containsMouse ? root.btnHoverBg
                      : root.btnInactiveBg
+                // Screen readers (#248): "Bold, on" rather than "B".
+                Accessible.role: Accessible.CheckBox
+                Accessible.name: modelData.name
+                Accessible.checkable: true
+                Accessible.checked: modelData.active
+                Accessible.onPressAction: modelData.action()
+                Accessible.onToggleAction: modelData.action()
 
                 Text {
                     anchors.centerIn: parent
@@ -83,6 +90,15 @@ Item {
     // Font size dropdown
     Rectangle {
         id: fontSizeBtn
+        // Screen readers (#248): opens the size menu; reads the current size.
+        Accessible.role: Accessible.ButtonMenu
+        Accessible.name: qsTr("Font size") + ", " + root.fontSizeValue
+        Accessible.onPressAction: {
+            if (!root.hasViewModel)
+                return
+            var mapped = fontSizeBtn.mapToGlobal(0, fontSizeBtn.height)
+            root.viewModel.handleFontSizeDropdown(mapped.x, mapped.y)
+        }
         anchors.left: bRow.right
         anchors.leftMargin: 8
         anchors.verticalCenter: parent.verticalCenter
@@ -126,6 +142,14 @@ Item {
     // Font family dropdown
     Rectangle {
         id: fontFamilyBtn
+        Accessible.role: Accessible.ButtonMenu
+        Accessible.name: qsTr("Font") + ", " + root.fontFamilyValue
+        Accessible.onPressAction: {
+            if (!root.hasViewModel)
+                return
+            var mapped = fontFamilyBtn.mapToGlobal(0, fontFamilyBtn.height)
+            root.viewModel.handleFontFamilyDropdown(mapped.x, mapped.y)
+        }
         anchors.left: fontSizeBtn.right
         anchors.leftMargin: 8
         anchors.verticalCenter: parent.verticalCenter

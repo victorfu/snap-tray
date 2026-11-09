@@ -3,8 +3,12 @@
 #include <QByteArray>
 #include <QColorSpace>
 #include <QImage>
+#include <QList>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QScreen>
 #include <optional>
+#include <utility>
 
 #ifdef Q_OS_MACOS
 #include <ApplicationServices/ApplicationServices.h>
@@ -15,6 +19,57 @@ namespace snaptray::capture {
 namespace {
 
 #ifdef Q_OS_MACOS
+constexpr qsizetype kIccColorSpaceCacheCapacity = 8;
+constexpr qsizetype kIccColorSpaceCacheMaxProfileBytes = 2 * 1024 * 1024;
+
+class IccColorSpaceCache
+{
+public:
+    QColorSpace resolve(const QByteArray& iccProfile)
+    {
+        // Parse unusually large profiles without retaining them. The result is
+        // unchanged, while cache memory remains bounded even for malformed data.
+        if (iccProfile.size() > kIccColorSpaceCacheMaxProfileBytes) {
+            return QColorSpace::fromIccProfile(iccProfile);
+        }
+
+        QMutexLocker locker(&m_mutex);
+        for (qsizetype index = 0; index < m_entries.size(); ++index) {
+            if (m_entries.at(index).iccProfile != iccProfile) {
+                continue;
+            }
+
+            const QColorSpace colorSpace = m_entries.at(index).colorSpace;
+            if (index > 0) {
+                m_entries.move(index, 0);
+            }
+            return colorSpace;
+        }
+
+        const QColorSpace colorSpace = QColorSpace::fromIccProfile(iccProfile);
+        if (m_entries.size() == kIccColorSpaceCacheCapacity) {
+            m_entries.removeLast();
+        }
+        m_entries.prepend({iccProfile, colorSpace});
+        return colorSpace;
+    }
+
+private:
+    struct Entry {
+        QByteArray iccProfile;
+        QColorSpace colorSpace;
+    };
+
+    QMutex m_mutex;
+    QList<Entry> m_entries;
+};
+
+IccColorSpaceCache& iccColorSpaceCache()
+{
+    static IccColorSpaceCache cache;
+    return cache;
+}
+
 QColorSpace qtColorSpaceFromCGColorSpace(CGColorSpaceRef colorSpace)
 {
     if (!colorSpace) {
@@ -31,7 +86,7 @@ QColorSpace qtColorSpaceFromCGColorSpace(CGColorSpaceRef colorSpace)
         static_cast<int>(CFDataGetLength(iccData)));
     CFRelease(iccData);
 
-    return QColorSpace::fromIccProfile(iccProfile);
+    return iccColorSpaceCache().resolve(iccProfile);
 }
 
 CGColorSpaceRef copySnapshotColorSpace(CGImageRef sourceImage,
@@ -160,13 +215,13 @@ QPixmap captureScreenViaNativeDisplay(QScreen* screen)
         return {};
     }
 
-    const QImage image = createQImageFromCGImage(displayImage, displayId);
+    QImage image = createQImageFromCGImage(displayImage, displayId);
     CGImageRelease(displayImage);
     if (image.isNull()) {
         return {};
     }
 
-    QPixmap pixmap = QPixmap::fromImage(image, Qt::NoOpaqueDetection);
+    QPixmap pixmap = QPixmap::fromImage(std::move(image), Qt::NoOpaqueDetection);
     if (pixmap.isNull()) {
         return {};
     }

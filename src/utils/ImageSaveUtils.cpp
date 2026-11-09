@@ -1,11 +1,14 @@
 #include "utils/ImageSaveUtils.h"
 
 #include <QColorSpace>
+#include <QFile>
 #include <QFileInfo>
 #include <QImageWriter>
 #include <QSaveFile>
 #include <QSet>
 #include <QStringList>
+#include <QDir>
+#include <QUuid>
 
 namespace {
 
@@ -56,6 +59,97 @@ QString formatListForError()
 }
 
 } // namespace
+
+ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUnique(
+    const QImage& image, const UniqueSaveSpec& spec, const QByteArray& explicitFormat)
+{
+    return saveImageUniqueWithHooks(image, spec, explicitFormat, {});
+}
+
+ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
+    const QImage& image, const UniqueSaveSpec& spec, const QByteArray& explicitFormat,
+    const UniqueSaveHooks& hooks)
+{
+    UniqueSaveResult result;
+    if (image.isNull()) {
+        setError(&result.error, QStringLiteral("write"), QStringLiteral("Image is null"));
+        return result;
+    }
+    if (spec.outputDir.isEmpty() || !QDir().mkpath(spec.outputDir)) {
+        setError(&result.error, QStringLiteral("open"), QStringLiteral("Unable to create output directory"));
+        return result;
+    }
+    const QDir dir(QDir(spec.outputDir).absolutePath());
+    auto context = spec.context;
+    context.outputDir = dir.path();
+    if (!context.timestamp.isValid())
+        context.timestamp = QDateTime::currentDateTime();
+    const auto initial = FilenameTemplateEngine::renderFilename(spec.filenameTemplate, context);
+    result.renderWarning = initial.error;
+    if (initial.filename.isEmpty()) {
+        setError(&result.error, QStringLiteral("open"), initial.error);
+        return result;
+    }
+    result.filePath = dir.filePath(initial.filename);
+    const QByteArray format = resolveFormat(result.filePath, explicitFormat, &result.error);
+    if (format.isEmpty())
+        return result;
+
+    struct TemporaryPath {
+        QString path;
+        ~TemporaryPath() { if (!path.isEmpty()) QFile::remove(path); }
+    } temporary;
+    {
+        // Exclusive creation keeps the staging path safe from collisions while
+        // using normal output permissions (including umask and directory ACLs).
+        QFile file(dir.filePath(QStringLiteral(".snaptray-save-")
+                                + QUuid::createUuid().toString(QUuid::Id128)));
+        if (!file.open(QIODevice::WriteOnly | QIODevice::NewOnly)) {
+            setError(&result.error, QStringLiteral("open"), file.errorString());
+            return result;
+        }
+        temporary.path = file.fileName();
+        QImageWriter writer(&file, format);
+        if (!writer.write(image)) {
+            setError(&result.error, QStringLiteral("write"), writer.errorString());
+            return result;
+        }
+        if (!file.flush()) {
+            setError(&result.error, QStringLiteral("write"), file.errorString());
+            return result;
+        }
+        // Destruction closes the native handle as well, including on Windows.
+    }
+
+    constexpr int kNumberedAttempts = 100;
+    for (int attempt = 0; attempt <= kNumberedAttempts + 1; ++attempt) {
+        const QString uuid = attempt > kNumberedAttempts
+            ? (hooks.uuidSuffix.isEmpty() ? QUuid::createUuid().toString(QUuid::Id128).left(8)
+                                         : hooks.uuidSuffix)
+            : QString();
+        const QString candidate = FilenameTemplateEngine::collisionFilename(
+            spec.filenameTemplate, context, initial.filename, attempt, uuid);
+        if (candidate.isEmpty()) {
+            setError(&result.error, QStringLiteral("commit"),
+                     QStringLiteral("Filename length limit is too small for a collision suffix"));
+            return result;
+        }
+        result.filePath = dir.filePath(candidate);
+        const auto published = hooks.publish
+            ? hooks.publish(temporary.path, result.filePath)
+            : SnapTray::publishFileNoReplace(temporary.path, result.filePath);
+        if (published.status == SnapTray::FilePublishStatus::Published) {
+            result.success = true;
+            return result;
+        }
+        if (published.status == SnapTray::FilePublishStatus::Failed) {
+            setError(&result.error, QStringLiteral("commit"), published.error);
+            return result;
+        }
+    }
+    setError(&result.error, QStringLiteral("commit"), QStringLiteral("Unable to allocate a unique filename"));
+    return result;
+}
 
 bool ImageSaveUtils::saveImageAtomically(const QImage& image,
                                          const QString& filePath,

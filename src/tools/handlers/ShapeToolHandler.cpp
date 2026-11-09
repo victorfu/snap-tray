@@ -73,14 +73,9 @@ bool ShapeToolHandler::handleEscape(ToolContext* ctx)
         return false;
     }
 
-    if (ctx->shapeAnnotationEditor->isTransforming()) {
-        ctx->shapeAnnotationEditor->finishTransformation();
-        ctx->repaint();
-        return true;
-    }
-
-    if (ctx->shapeAnnotationEditor->isDragging()) {
-        ctx->shapeAnnotationEditor->finishDragging();
+    // Escape puts a dragged or transformed shape back (#237).
+    if (ctx->shapeAnnotationEditor->isTransforming() || ctx->shapeAnnotationEditor->isDragging()) {
+        ctx->shapeAnnotationEditor->cancelInteraction();
         ctx->repaint();
         return true;
     }
@@ -196,11 +191,13 @@ bool ShapeToolHandler::handleInteractionRelease(ToolContext* ctx, const QPoint& 
 
     auto* shapeEditor = ctx->shapeAnnotationEditor;
     if (shapeEditor->isTransforming()) {
+        if (shapeEditor->activeHandle() == GizmoHandle::Body) shapeEditor->updateTransformation(pos);
         shapeEditor->finishTransformation();
         return true;
     }
 
     if (shapeEditor->isDragging()) {
+        shapeEditor->updateDragging(pos);
         shapeEditor->finishDragging();
         return true;
     }

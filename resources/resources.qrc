@@ -21,6 +21,8 @@
         <file>icons/emoji.svg</file>
         <file>icons/undo.svg</file>
         <file>icons/redo.svg</file>
+        <file>icons/reset.svg</file>
+        <file>icons/compare.svg</file>
         <file>icons/cancel.svg</file>
         <file>icons/mic.svg</file>
         <file>icons/done.svg</file>
@@ -29,7 +31,6 @@
         <file>icons/pin.svg</file>
         <file>icons/record.svg</file>
         <file>icons/scroll-capture.svg</file>
-        <file>icons/share.svg</file>
         <file>icons/save.svg</file>
         <file>icons/copy.svg</file>
         <file>icons/multi-region.svg</file>
@@ -38,7 +39,12 @@
         <file>icons/stop.svg</file>
         <file>icons/shape-filled.svg</file>
         <file>icons/shape-outline.svg</file>
+        <file>icons/bring-forward.svg</file>
+        <file>icons/bring-to-front.svg</file>
+        <file>icons/send-backward.svg</file>
+        <file>icons/send-to-back.svg</file>
         <file>icons/color-wheel.svg</file>
+        <file>icons/eyedropper.svg</file>
         <file>icons/arrow-none.svg</file>
         <file>icons/arrow-end.svg</file>
         <file>icons/arrow-end-outline.svg</file>
@@ -63,6 +69,7 @@
         <file>icons/auto-blur.svg</file>
         <file>icons/line.svg</file>
         <file>icons/highlight.svg</file>
+        <file>icons/marker-snap-text.svg</file>
         <file>icons/radius.svg</file>
         <file>icons/ratio-free.svg</file>
         <file>icons/ratio-lock.svg</file>
@@ -79,6 +86,19 @@
         <file>icons/volume-2.svg</file>
         <file>icons/volume-x.svg</file>
         <file>icons/scissors.svg</file>
+        <file>icons/zoom-in.svg</file>
+        <file>icons/film.svg</file>
+        <file>icons/mouse-pointer.svg</file>
+        <file>icons/keyboard.svg</file>
+        <file>icons/image.svg</file>
+        <file>icons/panel-right.svg</file>
+        <file>icons/chevron-left.svg</file>
+        <file>icons/chevron-right.svg</file>
+        <file>icons/chevron-down.svg</file>
+        <file>icons/upload.svg</file>
+        <file>icons/square-dashed.svg</file>
+        <file>icons/frame.svg</file>
+        <file>icons/plus.svg</file>
     </qresource>
     <qresource prefix="/cascades">
         <file>cascades/haarcascade_frontalface_default.xml</file>

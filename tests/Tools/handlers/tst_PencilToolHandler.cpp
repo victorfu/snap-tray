@@ -1,9 +1,102 @@
 #include <QtTest/QtTest>
 #include <QPainter>
 #include <QImage>
+#include <QPaintDevice>
+#include <QPaintEngine>
+#include <QPixmap>
 #include "tools/handlers/PencilToolHandler.h"
 #include "tools/ToolContext.h"
 #include "annotations/AnnotationLayer.h"
+
+namespace {
+
+class CountingPaintEngine final : public QPaintEngine
+{
+public:
+    CountingPaintEngine()
+        : QPaintEngine(QPaintEngine::PainterPaths)
+    {
+    }
+
+    bool begin(QPaintDevice* device) override
+    {
+        setPaintDevice(device);
+        setActive(true);
+        return true;
+    }
+    bool end() override
+    {
+        setActive(false);
+        return true;
+    }
+    void updateState(const QPaintEngineState&) override {}
+    void drawPath(const QPainterPath& path) override
+    {
+        m_framePathElements += path.elementCount();
+    }
+    void drawPixmap(const QRectF&, const QPixmap&, const QRectF&) override {}
+    void drawImage(const QRectF&, const QImage&, const QRectF&,
+                   Qt::ImageConversionFlags) override { ++m_frameImageCalls; }
+    Type type() const override { return User; }
+
+    void finishFrame()
+    {
+        ++m_frames;
+        m_totalPathElements += m_framePathElements;
+        m_maxFramePathElements = qMax(m_maxFramePathElements, m_framePathElements);
+        m_maxFrameImageCalls = qMax(m_maxFrameImageCalls, m_frameImageCalls);
+        m_framePathElements = 0;
+        m_frameImageCalls = 0;
+    }
+
+    int frames() const { return m_frames; }
+    qint64 totalPathElements() const { return m_totalPathElements; }
+    int maxFramePathElements() const { return m_maxFramePathElements; }
+    int maxFrameImageCalls() const { return m_maxFrameImageCalls; }
+
+private:
+    int m_frames = 0;
+    int m_framePathElements = 0;
+    int m_frameImageCalls = 0;
+    qint64 m_totalPathElements = 0;
+    int m_maxFramePathElements = 0;
+    int m_maxFrameImageCalls = 0;
+};
+
+class CountingPaintDevice final : public QPaintDevice
+{
+public:
+    QPaintEngine* paintEngine() const override
+    {
+        return const_cast<CountingPaintEngine*>(&m_engine);
+    }
+    CountingPaintEngine& engine() { return m_engine; }
+
+protected:
+    int metric(PaintDeviceMetric metric) const override
+    {
+        switch (metric) {
+        case PdmWidth: return 100000;
+        case PdmHeight: return 100000;
+        case PdmWidthMM: return 25000;
+        case PdmHeightMM: return 250;
+        case PdmNumColors: return 16777216;
+        case PdmDepth: return 32;
+        case PdmDpiX:
+        case PdmDpiY:
+        case PdmPhysicalDpiX:
+        case PdmPhysicalDpiY: return 96;
+        case PdmDevicePixelRatio: return 1;
+        case PdmDevicePixelRatioScaled: return QPaintDevice::devicePixelRatioFScale();
+        default: return 0;
+        }
+    }
+
+private:
+    CountingPaintEngine m_engine;
+};
+
+} // namespace
 
 /**
  * @brief Tests for PencilToolHandler class
@@ -48,8 +141,13 @@ private slots:
     void testDrawPreview_WhileDrawing();
     void testPreviewBounds_DuringAndAfterDrawing();
     void testPreviewBounds_StaysLocalAsStrokeGrows();
+    void testLongStrokePreview_HasBoundedPathSubmission();
+    void testLongDiagonalPreview_UsesSparseTiles();
     void testFloatInputPreservesFractionalPoints();
     void testHighDpiAllowsCloserPoints();
+    void testPointSpacingSuppressesSubPixelJitter_data();
+    void testPointSpacingSuppressesSubPixelJitter();
+    void testLiveTailReachesCursorBeforePointCommits();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -57,6 +155,7 @@ private slots:
 
     // Integration tests
     void testCompleteStroke_AddsToLayer();
+    void testCompleteStroke_PreservesAllStrokesBeyondFifty();
 
 private:
     PencilToolHandler* m_handler = nullptr;
@@ -260,6 +359,57 @@ void TestPencilToolHandler::testPreviewBounds_StaysLocalAsStrokeGrows()
     QVERIFY(previewBounds.width() < 120);
 }
 
+void TestPencilToolHandler::testLongStrokePreview_HasBoundedPathSubmission()
+{
+    constexpr int kMoveCount = 4096;
+    CountingPaintDevice device;
+    QPainter painter(&device);
+
+    m_handler->onMousePressF(m_context, QPointF(0.0, 100.0));
+    for (int i = 1; i <= kMoveCount; ++i) {
+        const int repaintCountBeforeMove = m_repaintCount;
+        m_handler->onMouseMoveF(
+            m_context, QPointF(i * 6.0, 100.0 + (i % 11)));
+        if (m_repaintCount == repaintCountBeforeMove) {
+            continue;
+        }
+
+        painter.setClipRect(m_handler->previewBounds());
+        m_handler->drawPreview(painter);
+        device.engine().finishFrame();
+    }
+    painter.end();
+
+    QVERIFY(device.engine().frames() > 4000);
+    QVERIFY(device.engine().maxFramePathElements() <= 256);
+    QVERIFY(device.engine().totalPathElements() <=
+            static_cast<qint64>(device.engine().frames()) * 128);
+}
+
+void TestPencilToolHandler::testLongDiagonalPreview_UsesSparseTiles()
+{
+    CountingPaintDevice device;
+    QPainter painter(&device);
+    m_handler->onMousePressF(m_context, QPointF(20.0, 20.0));
+
+    for (int i = 1; i <= 80; ++i) {
+        const QPointF point = (i % 2 == 0)
+            ? QPointF(20.0, 20.0)
+            : QPointF(3820.0, 2120.0);
+        m_handler->onMouseMoveF(m_context, point);
+    }
+
+    painter.setClipRect(QRect(0, 0, 4000, 2200));
+    m_handler->drawPreview(painter);
+    device.engine().finishFrame();
+    painter.end();
+
+    // A bbox-based allocator would materialize roughly 16x9=144 tiles.
+    // Sparse curve/tile intersection should follow the two diagonal bands.
+    QVERIFY(device.engine().maxFrameImageCalls() > 0);
+    QVERIFY(device.engine().maxFrameImageCalls() < 60);
+}
+
 void TestPencilToolHandler::testFloatInputPreservesFractionalPoints()
 {
     m_handler->onMousePressF(m_context, QPointF(10.25, 10.75));
@@ -283,19 +433,83 @@ void TestPencilToolHandler::testFloatInputPreservesFractionalPoints()
     QVERIFY(hasFractionalPoint);
 }
 
+namespace {
+
+QVector<QPointF> drawHorizontalStroke(PencilToolHandler* handler, ToolContext* ctx,
+                                      AnnotationLayer* layer, qreal dpr)
+{
+    // One physical pixel per event, as a slow drag delivers on Windows.
+    ctx->devicePixelRatio = dpr;
+    const qreal step = 1.0 / dpr;
+    handler->onMousePressF(ctx, QPointF(10.0, 10.0));
+    for (qreal x = 10.0 + step; x < 70.0; x += step) {
+        handler->onMouseMoveF(ctx, QPointF(x, 10.0));
+    }
+    handler->onMouseReleaseF(ctx, QPointF(70.0, 10.0));
+
+    auto* stroke = dynamic_cast<PencilStroke*>(layer->itemAt(layer->itemCount() - 1));
+    return stroke ? stroke->points() : QVector<QPointF>();
+}
+
+} // namespace
+
 void TestPencilToolHandler::testHighDpiAllowsCloserPoints()
 {
-    m_context->devicePixelRatio = 2.0;
+    const int lowDpiPoints = drawHorizontalStroke(m_handler, m_context, m_layer, 1.0).size();
+    const int highDpiPoints = drawHorizontalStroke(m_handler, m_context, m_layer, 2.0).size();
 
-    m_handler->onMousePressF(m_context, QPointF(10.0, 10.0));
-    m_handler->onMouseMoveF(m_context, QPointF(11.0, 11.0));
-    m_handler->onMouseMoveF(m_context, QPointF(11.8, 11.8));
-    m_handler->onMouseReleaseF(m_context, QPointF(12.6, 12.6));
+    QVERIFY(lowDpiPoints >= 3);
+    QVERIFY(highDpiPoints > lowDpiPoints);
+}
 
-    QCOMPARE(m_layer->itemCount(), size_t(1));
-    auto* stroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(0));
+void TestPencilToolHandler::testPointSpacingSuppressesSubPixelJitter_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<qreal>("minSpacing");
+    QTest::newRow("100%") << 1.0 << 4.0;
+    QTest::newRow("150%") << 1.5 << 4.0;
+    QTest::newRow("200%") << 2.0 << 3.0;
+}
+
+void TestPencilToolHandler::testPointSpacingSuppressesSubPixelJitter()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(qreal, minSpacing);
+
+    const QVector<QPointF> points = drawHorizontalStroke(m_handler, m_context, m_layer, dpr);
+    QVERIFY(points.size() >= 3);
+    // The release point is exempt so the stroke still ends under the cursor.
+    for (int i = 1; i < points.size() - 1; ++i) {
+        QVERIFY2(QLineF(points[i - 1], points[i]).length() >= minSpacing - 1e-6,
+                 qPrintable(QStringLiteral("points %1 and %2 are closer than %3")
+                                .arg(i - 1).arg(i).arg(minSpacing)));
+    }
+    QCOMPARE(points.last(), QPointF(70.0, 10.0));
+}
+
+void TestPencilToolHandler::testLiveTailReachesCursorBeforePointCommits()
+{
+    m_handler->onMousePressF(m_context, QPointF(20.0, 30.0));
+    for (int i = 1; i <= 20; ++i) {
+        m_handler->onMouseMoveF(m_context, QPointF(20.0 + i * 3.0, 30.0));
+    }
+    const QPointF cursor(80.0, 30.0);
+    QVERIFY(m_handler->previewBounds().contains(cursor.toPoint()));
+
+    QImage image(120, 60, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        m_handler->drawPreview(painter);
+    }
+    // The smoothed points trail the cursor, but the preview reaches it.
+    QVERIFY(qAlpha(image.pixel(cursor.toPoint())) > 0);
+    QCOMPARE(qAlpha(image.pixel(QPoint(100, 30))), 0);
+
+    m_handler->onMouseReleaseF(m_context, cursor);
+    auto* stroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(m_layer->itemCount() - 1));
     QVERIFY(stroke != nullptr);
-    QVERIFY(stroke->points().size() >= 3);
+    QCOMPARE(stroke->points().last(), cursor);
 }
 
 // ============================================================================
@@ -343,6 +557,26 @@ void TestPencilToolHandler::testCompleteStroke_AddsToLayer()
     m_handler->onMouseRelease(m_context, QPoint(180, 180));
 
     QCOMPARE(m_layer->itemCount(), initialItemCount + 1);
+}
+
+void TestPencilToolHandler::testCompleteStroke_PreservesAllStrokesBeyondFifty()
+{
+    for (int i = 0; i < 52; ++i) {
+        m_handler->onMousePressF(m_context, QPointF(10.0, i));
+        m_handler->onMouseReleaseF(m_context, QPointF(20.0, i));
+    }
+
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(52));
+
+    auto* firstStroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(0));
+    auto* secondStroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(1));
+    auto* lastStroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(51));
+    QVERIFY(firstStroke != nullptr);
+    QVERIFY(secondStroke != nullptr);
+    QVERIFY(lastStroke != nullptr);
+    QCOMPARE(firstStroke->points().first(), QPointF(10.0, 0.0));
+    QCOMPARE(secondStroke->points().first(), QPointF(10.0, 1.0));
+    QCOMPARE(lastStroke->points().first(), QPointF(10.0, 51.0));
 }
 
 QTEST_MAIN(TestPencilToolHandler)

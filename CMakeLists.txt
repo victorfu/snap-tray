@@ -6,7 +6,7 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS deployment target" FORCE)
 endif()
 
-project(SnapTray VERSION 1.0.61 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.69 LANGUAGES CXX)
 
 # ============================================================================
 # Compiler Cache (ccache/sccache) for faster incremental builds
@@ -72,7 +72,10 @@ configure_file(
 # Platform-specific version file generation
 if(APPLE)
     # Set variables for Info.plist.in template
-    set(MACOSX_BUNDLE_EXECUTABLE_NAME ${PROJECT_NAME})
+    # Must match the target's OUTPUT_NAME (SnapTray-Debug in Debug builds);
+    # this template is expanded before CMake's own Info.plist pass, so the
+    # CFBundleExecutable placeholder is already gone by then.
+    set(MACOSX_BUNDLE_EXECUTABLE_NAME "${APP_DISPLAY_NAME}")
     set(MACOSX_BUNDLE_BUNDLE_NAME "${APP_DISPLAY_NAME}")
     set(MACOSX_BUNDLE_GUI_IDENTIFIER "${APP_BUNDLE_ID}")
     set(MACOSX_BUNDLE_ICON_FILE "snaptray.icns")
@@ -297,12 +300,17 @@ add_library(snaptray_core STATIC
     src/annotations/AnnotationItem.cpp
     src/annotations/PencilStroke.cpp
     src/annotations/MarkerStroke.cpp
+    src/annotations/LineAnnotationGeometry.cpp
     src/annotations/ArrowAnnotation.cpp
+    src/annotations/AnnotationStyleLabels.cpp
+    src/annotations/AnnotationZOrderCommands.cpp
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
+    src/annotations/AnnotationStyle.cpp
+    src/annotations/AnnotationGeometry.cpp
+    src/annotation/AnnotationSnapEngine.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/EmojiStickerAnnotation.cpp
-    src/annotations/ErasedItemsGroup.cpp
     src/annotations/TextBoxAnnotation.cpp
     src/settings/AnnotationSettingsManager.cpp
     src/settings/AutoLaunchSyncPolicy.cpp
@@ -319,10 +327,20 @@ add_library(snaptray_core STATIC
     src/settings/WindowsPrintScreenSettingsManager.cpp
     src/settings/LanguageManager.cpp
     src/beautify/BeautifyRenderer.cpp
+    src/beautify/FrameStyle.cpp
+    src/beautify/FrameStyleLibrary.cpp
     src/update/UpdateSettingsManager.cpp
     src/platform/PlatformCapabilities.cpp
+    # Scroll capture core (#265): frame alignment and settle detection
+    src/scrollcapture/FrameRowHashes.cpp
+    src/scrollcapture/RowHashShiftEstimator.cpp
+    src/scrollcapture/FrameSettleDetector.cpp
+    src/platform/MacCLIInstaller.cpp
+    src/platform/CaptureExclusionPolicy.cpp
+    src/platform/AtomicFilePublish.cpp
     src/tools/ToolRegistry.cpp
     src/tools/ToolSectionConfig.cpp
+    src/tools/ToolWidthSlot.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
     src/cursor/CursorStyleCatalog.cpp
@@ -332,6 +350,32 @@ add_library(snaptray_core STATIC
     src/utils/ImageSaveUtils.cpp
     src/utils/NativeFileDialogUtils.cpp
     src/utils/ScreenCaptureRegionUtils.cpp
+    src/utils/VideoCropGeometry.cpp
+    src/recording/WindowTimeline.cpp
+    src/recording/WindowTimelineSidecar.cpp
+    src/recording/RecordingAudioStatus.cpp
+    src/recording/SessionClock.cpp
+    src/recording/FramePacer.cpp
+    src/recording/RecordingHealth.cpp
+    src/recording/DiskSpaceGuard.cpp
+    src/recording/RecordingSession.cpp
+    src/recording/RecordingInterruption.cpp
+    src/recording/CursorTimeline.cpp
+    src/recording/CursorEffects.cpp
+    src/recording/ZoomTrack.cpp
+    src/recording/RedactionTrack.cpp
+    src/recording/Mp4ExportOptions.cpp
+    src/video/Mp4VideoSamples.cpp
+    src/recording/RecordingAppearance.cpp
+    src/recording/TimelineEdit.cpp
+    src/recording/KeyTimeline.cpp
+    src/recording/KeyOverlay.cpp
+    src/recording/OverlayTrack.cpp
+    src/recording/AudioTracks.cpp
+    src/recording/RecordingProject.cpp
+    src/recording/RecordingArea.cpp
+    src/utils/OCRImageUtils.cpp
+    src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
     include/settings/AnnotationSettingsManager.h
     include/settings/AutoLaunchSyncPolicy.h
@@ -342,6 +386,7 @@ add_library(snaptray_core STATIC
     include/settings/ScreenCanvasSettingsManager.h
     include/settings/WindowsPrintScreenSettingsManager.h
     include/settings/SettingsTheme.h
+    include/beautify/FrameStyleLibrary.h
     include/cursor/CursorAuthority.h
     include/cursor/CursorPlatformApplier.h
     include/cursor/CursorStyleCatalog.h
@@ -433,8 +478,11 @@ add_library(snaptray_algorithms STATIC
     src/annotations/MosaicStroke.cpp
     src/annotations/MosaicRectAnnotation.cpp
     # Detection
+    src/detection/BoundarySnapIndex.cpp
     src/detection/FaceDetector.cpp
     src/detection/AutoBlurManager.cpp
+    src/detection/TextLineSnapper.cpp
+    src/detection/TextLineGeometryCache.cpp
     src/detection/CredentialDetector.cpp
     src/detection/TableDetector.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -478,21 +526,58 @@ target_compile_definitions(snaptray_algorithms PRIVATE
 # ----------------------------------------------------------------------------
 # snaptray_platform: Platform-specific code (capture, encoding, OS APIs)
 # ----------------------------------------------------------------------------
+set(SNAPTRAY_LINUX_RECORDING_DEFAULT OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(SNAPTRAY_LINUX_RECORDING_DEFAULT ON)
+endif()
+# Honor existing prototype build directories while migrating the option name.
+if(DEFINED SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+    set(SNAPTRAY_LINUX_RECORDING_DEFAULT ${SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE})
+    unset(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE CACHE)
+endif()
+option(SNAPTRAY_ENABLE_LINUX_RECORDING
+    "Build Linux recording using system FFmpeg and PulseAudio libraries" ${SNAPTRAY_LINUX_RECORDING_DEFAULT})
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        message(FATAL_ERROR "The FFmpeg recording backend is Linux-only")
+    endif()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SYSTEM_FFMPEG REQUIRED IMPORTED_TARGET
+        libavcodec>=58.134 libavformat>=58.76 libavutil>=56.70 libswscale>=5.9 libswresample>=3.9)
+    pkg_check_modules(LINUX_MEDIA REQUIRED IMPORTED_TARGET libpulse xcb xcb-shm xcb-randr)
+endif()
+
 add_library(snaptray_platform STATIC
     # Common sources
     src/capture/ICaptureEngine.cpp
     src/capture/IAudioCaptureEngine.cpp
+    src/capture/AudioLevelMonitor.cpp
+    include/capture/AudioLevelMonitor.h
+    src/capture/TimestampedPcmMixer.cpp
     src/capture/ScreenSnapshot.cpp
+    src/capture/OwnWindowCaptureHider.cpp
     src/capture/QtCaptureEngine.cpp
     src/encoding/EncoderFactory.cpp
     src/encoding/NativeGifEncoder.cpp
     src/encoding/WebPAnimEncoder.cpp
     src/recording/ScreenSourceService.cpp
+    src/recording/WindowTimelineRecorder.cpp
+    src/recording/CursorProbe.cpp
+    src/recording/CursorTimelineRecorder.cpp
+    src/recording/KeyProbe.cpp
+    src/video/NativeEditExport.cpp
+    src/recording/KeyTimelineRecorder.cpp
+    src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
-    src/video/VideoTrimmer.cpp
+    src/video/IVideoTranscoder.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
     src/platform/QtQuickBackendPolicy.cpp
+    # Scroll area detection and scroll injection (#265)
+    src/scrollcapture/ScrollCaptureCommon.cpp
+    $<$<NOT:$<PLATFORM_ID:Darwin,Windows>>:
+        src/scrollcapture/ScrollCapturePlatform_stub.cpp
+    >
     $<$<NOT:$<PLATFORM_ID:Darwin>>:
         src/ImageColorSpaceHelper.cpp
     >
@@ -503,26 +588,44 @@ add_library(snaptray_platform STATIC
     include/recording/ScreenSourceService.h
     include/capture/ICaptureEngine.h
     include/capture/IAudioCaptureEngine.h
+    include/capture/TimestampedPcmMixer.h
     include/capture/ScreenSnapshot.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
-    include/video/VideoTrimmer.h
+    include/recording/WindowTimelineRecorder.h
+    include/recording/CursorProbe.h
+    include/recording/CursorTimelineRecorder.h
+    include/recording/KeyProbe.h
+    include/recording/KeyTimelineRecorder.h
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
     include/platform/QtQuickBackendPolicy.h
+    include/platform/WindowDragPolicy.h
+    src/platform/LinuxClipboardOwner.cpp
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:
         src/ImageColorSpaceHelper_mac.mm
         src/platform/WindowLevel_mac.mm
+        src/platform/MacDockPresence_mac.mm
+        src/platform/MacTrayActivationGuard_mac.mm
+        src/platform/MacTrayAccessibility_mac.mm
         src/platform/PlatformFeatures_mac.mm
+        src/platform/MacAXElement_mac.mm
+        src/scrollcapture/ScrollCapturePlatform_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
         src/capture/SCKCaptureEngine_mac.mm
         src/capture/CoreAudioCaptureEngine_mac.mm
         src/AVFoundationEncoder.mm
+        src/video/AVFoundationFrameReader_mac.mm
         src/video/AVFoundationPlayer_mac.mm
+        src/video/AVFoundationTranscoder_mac.mm
+        src/recording/KeyProbe_mac.mm
+        src/video/NativeEditMedia_mac.mm
+        src/video/PreviewPcmOutput_mac.mm
+        src/video/RemixedAudioPreview.cpp
     >
     # macOS headers with Q_OBJECT
     $<$<PLATFORM_ID:Darwin>:
@@ -540,17 +643,28 @@ add_library(snaptray_platform STATIC
         src/platform/WindowLevel_win.cpp
         src/platform/PathEnvUtils_win.cpp
         src/platform/PlatformFeatures_win.cpp
+        src/scrollcapture/ScrollCapturePlatform_win.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
+        src/capture/D3D11Frame_win.cpp
         src/capture/DXGICaptureEngine_win.cpp
+        src/capture/WGCCaptureEngine_win.cpp
         src/capture/WASAPIAudioCaptureEngine_win.cpp
+        src/encoding/D3D11Nv12Converter_win.cpp
+        src/encoding/MFSampleTimes_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
+        src/recording/KeyProbe_win.cpp
+        src/video/PreviewPcmOutput_win.cpp
+        src/video/RemixedAudioPreview.cpp
+        src/video/MediaFoundationTranscoder_win.cpp
     >
     # Linux sources
     $<$<PLATFORM_ID:Linux>:
         src/platform/LinuxDesktopEnvironment_linux.cpp
+        src/platform/LinuxQtQuickSmokeCheck.cpp
+        src/platform/LinuxRecordingSmokeCheck.cpp
         src/platform/WindowLevel_linux.cpp
         src/platform/PlatformFeatures_linux.cpp
         src/WindowDetector_linux.cpp
@@ -561,9 +675,23 @@ add_library(snaptray_platform STATIC
     $<$<PLATFORM_ID:Windows>:
         include/MediaFoundationEncoder.h
         include/capture/DXGICaptureEngine.h
+        include/capture/WGCCaptureEngine.h
         include/capture/WASAPIAudioCaptureEngine.h
     >
 )
+
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_compile_definitions(snaptray_core PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_sources(snaptray_platform PRIVATE
+        src/encoding/FFmpegEncoder_linux.cpp
+        src/capture/X11CaptureEngine_linux.cpp
+        src/capture/PulseAudioCaptureEngine_linux.cpp
+        src/video/FFmpegMedia_linux.cpp
+        src/video/FFmpegPlayer_linux.cpp
+        src/video/FFmpegTranscoder_linux.cpp)
+    target_link_libraries(snaptray_platform PRIVATE PkgConfig::SYSTEM_FFMPEG PkgConfig::LINUX_MEDIA)
+    target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
+endif()
 
 # These Objective-C++ sources keep Cocoa/AVFoundation/ScreenCaptureKit objects
 # in C++ storage or across asynchronous callbacks. Compile them with ARC so
@@ -574,7 +702,13 @@ set_source_files_properties(
     src/capture/SCKCaptureEngine_mac.mm
     src/capture/CoreAudioCaptureEngine_mac.mm
     src/AVFoundationEncoder.mm
+    src/video/AVFoundationFrameReader_mac.mm
     src/video/AVFoundationPlayer_mac.mm
+    src/video/AVFoundationTranscoder_mac.mm
+    src/video/NativeEditMedia_mac.mm
+    src/video/PreviewPcmOutput_mac.mm
+    src/recording/KeyProbe_mac.mm
+    src/scrollcapture/ScrollCapturePlatform_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"
 )
 
@@ -607,11 +741,13 @@ if(APPLE)
         PRIVATE
             "-framework CoreGraphics"
             "-framework ApplicationServices"
+            "-framework Carbon"
             "-framework AppKit"
             "-framework Vision"
             "-framework ServiceManagement"
             "-framework CoreMedia"
             "-framework CoreVideo"
+            "-framework VideoToolbox"
             "-framework AVFoundation"
             "-framework CoreAudio"
             "-framework AudioToolbox"
@@ -625,18 +761,35 @@ elseif(WIN32)
             windowsapp
             d3d11
             dxgi
+            uiautomationcore
+            imm32
+            winmm
             mfreadwrite
             mfplat
             mfuuid
             ole32
             propsys
+            version
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_package(X11 REQUIRED)
     target_link_libraries(snaptray_platform
         PRIVATE
             X11::X11
+            X11::Xext
     )
+    # Pointer shape (XFixes) and passive click events (XInput2) for the
+    # recording cursor sidecar; without them only positions are recorded.
+    if(X11_Xfixes_FOUND AND X11_Xi_FOUND)
+        target_sources(snaptray_platform PRIVATE src/recording/X11CursorProbe_linux.cpp)
+        target_link_libraries(snaptray_platform PRIVATE X11::Xfixes X11::Xi)
+        target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_HAS_X11_CURSOR_PROBE)
+        # Key presses for shortcut hints (#187), through XInput2 raw events.
+        target_sources(snaptray_platform PRIVATE src/recording/X11KeyProbe_linux.cpp)
+        target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_HAS_X11_KEY_PROBE)
+    else()
+        message(STATUS "libXfixes/libXi not found: recordings keep pointer positions only")
+    endif()
 endif()
 
 target_compile_definitions(snaptray_platform PRIVATE
@@ -707,6 +860,9 @@ add_library(snaptray_ui STATIC
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp
+    src/annotation/AnnotationSnapController.cpp
+    src/annotation/AnnotationStyleEditor.cpp
+    src/annotation/ColorPickOverlay.cpp
     src/annotation/AnnotationRenderHelper.cpp
     src/cursor/CursorManager.cpp
 
@@ -734,6 +890,7 @@ add_library(snaptray_ui STATIC
 
     # Region selection
     src/RegionSelector.cpp
+    src/region/BoundarySnapController.cpp
     src/region/SelectionStateManager.cpp
     src/region/MagnifierPanel.cpp
     src/region/MagnifierOverlay.cpp
@@ -763,10 +920,12 @@ add_library(snaptray_ui STATIC
     src/PinWindowManager.cpp
     src/qml/HistoryModel.cpp
     src/qml/HistoryBackend.cpp
+    src/qml/LibraryModel.cpp
     src/qml/QmlHistoryWindow.cpp
     src/pinwindow/PinWindowPlacement.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
+    src/pinwindow/PinHoverBar.cpp
     src/pinwindow/ClickThroughExitButton.cpp
     src/pinwindow/RegionLayoutManager.cpp
     src/pinwindow/RegionLayoutRenderer.cpp
@@ -785,16 +944,13 @@ add_library(snaptray_ui STATIC
     src/WatermarkRenderer.cpp
     src/LoadingSpinnerRenderer.cpp
 
-    # Beautify
-    # Share
-    src/share/ShareUploadClient.cpp
-
     # Global UI components
     src/ui/DesignTokens.cpp
     src/ui/TrayTooltipFormatter.cpp
+    src/ui/TrayRecordingIndicator.cpp
     include/ui/DesignTokens.h
     include/ui/TrayTooltipFormatter.h
-    include/share/ShareUploadClient.h
+    include/ui/TrayRecordingIndicator.h
     include/region/MagnifierOverlay.h
 
     # Update system
@@ -809,6 +965,7 @@ add_library(snaptray_ui STATIC
     $<$<PLATFORM_ID:Darwin>:
         src/update/InstallSourceDetector_mac.mm
         src/update/SparkleUpdateService_mac.mm
+        include/update/SparkleReadyToInstallRaise.h
     >
     $<$<PLATFORM_ID:Windows>:
         src/update/InstallSourceDetector_win.cpp
@@ -817,12 +974,16 @@ add_library(snaptray_ui STATIC
     $<$<PLATFORM_ID:Linux>:
         src/update/InstallSourceDetector_linux.cpp
         src/update/UpdateServiceFactory_linux.cpp
+        src/update/AppImageUpdateService_linux.cpp
+        include/update/AppImageUpdateService.h
     >
 
     # macOS-only UI
 
     # Headers with Q_OBJECT for MOC processing
     include/annotations/AnnotationLayer.h
+    include/annotation/AnnotationStyleEditor.h
+    include/annotation/ColorPickOverlay.h
     include/cursor/CursorManager.h
     include/InlineTextEditor.h
     include/TransformationGizmo.h
@@ -846,11 +1007,13 @@ add_library(snaptray_ui STATIC
     include/PinWindow.h
     include/PinWindowManager.h
     include/qml/HistoryModel.h
+    include/qml/LibraryModel.h
     include/qml/HistoryBackend.h
     include/qml/QmlHistoryWindow.h
     include/pinwindow/PinWindowPlacement.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
+    include/pinwindow/PinHoverBar.h
     include/pinwindow/ClickThroughExitButton.h
     include/pinwindow/RegionLayoutManager.h
     include/pinwindow/PinMergeHelper.h
@@ -910,6 +1073,7 @@ set_source_files_properties(
     src/qml/tokens/PrimitiveTokens.qml
     src/qml/tokens/SemanticTokens.qml
     src/qml/tokens/ComponentTokens.qml
+    src/qml/tokens/CursorTokens.qml
     PROPERTIES
         QT_QML_SINGLETON_TYPE TRUE
 )
@@ -924,6 +1088,8 @@ set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_
 set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
 set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOURCE_ALIAS components/Countdown.qml)
+set_source_files_properties(src/qml/components/RecordingAreaSelector.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingAreaSelector.qml)
+set_source_files_properties(src/qml/components/DelayedCaptureIndicator.qml PROPERTIES QT_RESOURCE_ALIAS components/DelayedCaptureIndicator.qml)
 set_source_files_properties(src/qml/components/RecordingTooltip.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingTooltip.qml)
 set_source_files_properties(src/qml/components/GlassSurface.qml PROPERTIES QT_RESOURCE_ALIAS components/GlassSurface.qml)
 set_source_files_properties(src/qml/components/ToolbarButton.qml PROPERTIES QT_RESOURCE_ALIAS components/ToolbarButton.qml)
@@ -933,6 +1099,10 @@ set_source_files_properties(src/qml/components/ThumbnailCard.qml PROPERTIES QT_R
 
 # Floating toolbar
 set_source_files_properties(src/qml/toolbar/FloatingToolbar.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/FloatingToolbar.qml)
+set_source_files_properties(src/qml/toolbar/ToolbarOverflowMenu.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolbarOverflowMenu.qml)
+set_source_files_properties(src/qml/pin/PinHoverBar.qml PROPERTIES QT_RESOURCE_ALIAS pin/PinHoverBar.qml)
+set_source_files_properties(src/qml/pin/PinValuePanel.qml PROPERTIES QT_RESOURCE_ALIAS pin/PinValuePanel.qml)
+set_source_files_properties(src/qml/toolbar/ToolbarButtonState.js PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolbarButtonState.js)
 set_source_files_properties(src/qml/toolbar/ToolOptionsStrip.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolOptionsStrip.qml)
 set_source_files_properties(src/qml/toolbar/ColorPaletteSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ColorPaletteSection.qml)
 set_source_files_properties(src/qml/toolbar/WidthSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/WidthSection.qml)
@@ -942,10 +1112,12 @@ set_source_files_properties(src/qml/toolbar/ArrowStyleSection.qml PROPERTIES QT_
 set_source_files_properties(src/qml/toolbar/LineStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/LineStyleSection.qml)
 set_source_files_properties(src/qml/toolbar/SizeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/SizeSection.qml)
 set_source_files_properties(src/qml/toolbar/AutoBlurSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/AutoBlurSection.qml)
+set_source_files_properties(src/qml/toolbar/ArrangeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ArrangeSection.qml)
 
 # Settings controls
 set_source_files_properties(src/qml/controls/SettingsSection.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSection.qml)
 set_source_files_properties(src/qml/controls/SettingsRow.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsRow.qml)
+set_source_files_properties(src/qml/controls/SettingsPageHeader.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsPageHeader.qml)
 set_source_files_properties(src/qml/controls/SettingsToggle.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsToggle.qml)
 set_source_files_properties(src/qml/controls/SettingsSlider.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSlider.qml)
 set_source_files_properties(src/qml/controls/SettingsCombo.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsCombo.qml)
@@ -963,26 +1135,31 @@ set_source_files_properties(src/qml/settings/SettingsWindow.qml PROPERTIES QT_RE
 set_source_files_properties(src/qml/settings/SettingsSidebar.qml PROPERTIES QT_RESOURCE_ALIAS settings/SettingsSidebar.qml)
 set_source_files_properties(src/qml/settings/GeneralSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/GeneralSettings.qml)
 set_source_files_properties(src/qml/settings/HotkeySettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/HotkeySettings.qml)
-set_source_files_properties(src/qml/settings/AdvancedSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/AdvancedSettings.qml)
-set_source_files_properties(src/qml/settings/WatermarkSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/WatermarkSettings.qml)
+set_source_files_properties(src/qml/settings/CaptureSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/CaptureSettings.qml)
+set_source_files_properties(src/qml/settings/PinWindowSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/PinWindowSettings.qml)
 set_source_files_properties(src/qml/settings/OCRSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/OCRSettings.qml)
 set_source_files_properties(src/qml/settings/RecordingSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/RecordingSettings.qml)
-set_source_files_properties(src/qml/settings/FilesSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/FilesSettings.qml)
+set_source_files_properties(src/qml/settings/SavingSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/SavingSettings.qml)
 set_source_files_properties(src/qml/settings/UpdatesSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/UpdatesSettings.qml)
 set_source_files_properties(src/qml/settings/AboutSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/AboutSettings.qml)
 
 # Dialog components
 set_source_files_properties(src/qml/components/DialogBase.qml PROPERTIES QT_RESOURCE_ALIAS components/DialogBase.qml)
 set_source_files_properties(src/qml/controls/DialogButton.qml PROPERTIES QT_RESOURCE_ALIAS controls/DialogButton.qml)
-set_source_files_properties(src/qml/dialogs/SharePasswordDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/SharePasswordDialog.qml)
-set_source_files_properties(src/qml/dialogs/ShareResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ShareResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/OCRResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/OCRResultDialog.qml)
+set_source_files_properties(src/qml/dialogs/AppImageUpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/AppImageUpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
+set_source_files_properties(src/qml/dialogs/RecordingRecoveryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingRecoveryDialog.qml)
 
 # Recording preview
+set_source_files_properties(src/qml/recording/EditorChoice.qml PROPERTIES QT_RESOURCE_ALIAS recording/EditorChoice.qml)
+set_source_files_properties(src/qml/recording/EditorTimelineSegment.qml PROPERTIES QT_RESOURCE_ALIAS recording/EditorTimelineSegment.qml)
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
+set_source_files_properties(src/qml/recording/RecordingExportPanel.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingExportPanel.qml)
+set_source_files_properties(src/qml/recording/RecordingEditorShell.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingEditorShell.qml)
+set_source_files_properties(src/qml/recording/RecordingCropOverlay.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingCropOverlay.qml)
 
 # Recording control bar
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
@@ -1002,6 +1179,7 @@ set(SNAPTRAY_QML_NATIVE_SOURCES
     src/qml/QmlCountdownOverlay.mm
     src/qml/RecordingPreviewBackend.mm
     src/qml/QmlWindowedToolbar.mm
+    src/qml/ToolbarOverflowPopup.mm
     src/qml/QmlFloatingToolbar.mm
     src/qml/QmlFloatingSubToolbar.mm
     src/qml/ToolbarTooltipController.mm
@@ -1028,6 +1206,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/Badge.qml
         src/qml/components/RecordingBoundary.qml
         src/qml/components/Countdown.qml
+        src/qml/components/RecordingAreaSelector.qml
+        src/qml/components/DelayedCaptureIndicator.qml
         src/qml/components/RecordingTooltip.qml
         src/qml/components/GlassSurface.qml
         src/qml/components/ToolbarButton.qml
@@ -1038,6 +1218,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/DialogBase.qml
         src/qml/controls/SettingsSection.qml
         src/qml/controls/SettingsRow.qml
+        src/qml/controls/SettingsPageHeader.qml
         src/qml/controls/SettingsToggle.qml
         src/qml/controls/SettingsSlider.qml
         src/qml/controls/SettingsCombo.qml
@@ -1054,25 +1235,33 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/SettingsSidebar.qml
         src/qml/settings/GeneralSettings.qml
         src/qml/settings/HotkeySettings.qml
-        src/qml/settings/AdvancedSettings.qml
-        src/qml/settings/WatermarkSettings.qml
+        src/qml/settings/CaptureSettings.qml
+        src/qml/settings/PinWindowSettings.qml
         src/qml/settings/OCRSettings.qml
         src/qml/settings/RecordingSettings.qml
-        src/qml/settings/FilesSettings.qml
+        src/qml/settings/SavingSettings.qml
         src/qml/settings/UpdatesSettings.qml
         src/qml/settings/AboutSettings.qml
+        src/qml/recording/RecordingEditorShell.qml
+        src/qml/recording/RecordingExportPanel.qml
+        src/qml/recording/EditorChoice.qml
+        src/qml/recording/EditorTimelineSegment.qml
         src/qml/recording/RecordingPreview.qml
+        src/qml/recording/RecordingCropOverlay.qml
         src/qml/recording/RecordingControlBar.qml
         src/qml/panels/BeautifyPanel.qml
         src/qml/panels/EmojiPickerPopup.qml
         src/qml/panels/HistoryWindow.qml
-        src/qml/dialogs/SharePasswordDialog.qml
-        src/qml/dialogs/ShareResultDialog.qml
         src/qml/dialogs/OCRResultDialog.qml
         src/qml/dialogs/UpdateDialog.qml
+        src/qml/dialogs/AppImageUpdateDialog.qml
         src/qml/dialogs/QRCodeResultDialog.qml
         src/qml/dialogs/ScreenPickerDialog.qml
+        src/qml/dialogs/RecordingRecoveryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
+        src/qml/toolbar/ToolbarOverflowMenu.qml
+        src/qml/pin/PinHoverBar.qml
+        src/qml/pin/PinValuePanel.qml
         src/qml/toolbar/ToolOptionsStrip.qml
         src/qml/toolbar/ColorPaletteSection.qml
         src/qml/toolbar/WidthSection.qml
@@ -1082,9 +1271,12 @@ qt_add_qml_module(snaptray_qml
         src/qml/toolbar/LineStyleSection.qml
         src/qml/toolbar/SizeSection.qml
         src/qml/toolbar/AutoBlurSection.qml
+        src/qml/toolbar/ArrangeSection.qml
         src/qml/panels/ShortcutHintsPanel.qml
         src/qml/panels/RegionControlPanel.qml
         src/qml/panels/MultiRegionListPanel.qml
+    RESOURCES
+        src/qml/toolbar/ToolbarButtonState.js
     SOURCES
         src/ui/DesignSystem.cpp
         include/ui/DesignSystem.h
@@ -1107,11 +1299,21 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlToast.h
         src/qml/QmlBadge.cpp
         include/qml/QmlBadge.h
+        src/qml/QmlDelayedCaptureIndicator.cpp
+        include/qml/QmlDelayedCaptureIndicator.h
         include/qml/QmlRecordingBoundary.h
         include/qml/QmlRecordingControlBar.h
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
         include/qml/VideoPlaybackItem.h
+        src/qml/RecordingCursorOverlay.cpp
+        include/qml/RecordingCursorOverlay.h
+        src/qml/RecordingAppearanceOverlay.cpp
+        include/qml/RecordingAppearanceOverlay.h
+        src/qml/RecordingKeyOverlay.cpp
+        include/qml/RecordingKeyOverlay.h
+        src/qml/RecordingOverlayItem.cpp
+        include/qml/RecordingOverlayItem.h
         src/qml/SvgIconItem.cpp
         include/qml/SvgIconItem.h
         include/qml/RecordingPreviewBackend.h
@@ -1119,7 +1321,10 @@ qt_add_qml_module(snaptray_qml
         include/qml/ToolbarViewModelBase.h
         src/qml/PinToolbarViewModel.cpp
         include/qml/PinToolbarViewModel.h
+        src/qml/PinHoverBarViewModel.cpp
+        include/qml/PinHoverBarViewModel.h
         include/qml/QmlWindowedToolbar.h
+        include/qml/ToolbarOverflowPopup.h
         src/qml/PinToolOptionsViewModel.cpp
         include/qml/PinToolOptionsViewModel.h
         src/qml/RegionToolbarViewModel.cpp
@@ -1133,10 +1338,14 @@ qt_add_qml_module(snaptray_qml
         include/qml/DialogImageProvider.h
         src/qml/ScreenPickerViewModel.cpp
         include/qml/ScreenPickerViewModel.h
-        src/qml/SharePasswordViewModel.cpp
-        include/qml/SharePasswordViewModel.h
-        src/qml/ShareResultViewModel.cpp
-        include/qml/ShareResultViewModel.h
+        src/qml/RecordingRecoveryViewModel.cpp
+        include/qml/RecordingRecoveryViewModel.h
+        src/qml/RecordingLibraryViewModel.cpp
+        src/qml/QuickSaveAction.cpp
+        include/qml/QuickSaveAction.h
+        src/qml/QmlRecordingAreaSelector.cpp
+        include/qml/QmlRecordingAreaSelector.h
+        include/qml/RecordingLibraryViewModel.h
         src/qml/OCRResultViewModel.cpp
         include/qml/OCRResultViewModel.h
         src/qml/UpdateDialogViewModel.cpp
@@ -1328,6 +1537,19 @@ qt_add_translations(${PROJECT_NAME}
 # ============================================================================
 # Testing Configuration
 # ============================================================================
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_executable(SnapTrayRecordingPrototype tools/recording-prototype/main.cpp)
+    target_link_libraries(SnapTrayRecordingPrototype PRIVATE snaptray_ui)
+endif()
+
 if(BUILD_TESTING)
+    # Developer tool: prints a recording's pointer sidecar.
+    add_executable(SnapTrayCursorInspector tools/cursor-inspector/main.cpp)
+    target_link_libraries(SnapTrayCursorInspector PRIVATE snaptray_core)
+    # Developer tool: probes system-reported scroll areas and programmatic
+    # scrolling, writing JSON lines for the #265 measurements.
+    add_executable(SnapTrayScrollProbe tools/scroll-probe/main.cpp)
+    target_include_directories(SnapTrayScrollProbe PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(SnapTrayScrollProbe PRIVATE snaptray_platform Qt6::Widgets)
     add_subdirectory(tests)
 endif()

@@ -17,6 +17,9 @@ struct CaptureOutputOptions
     QString outputFile;
     bool toClipboard = false;
     bool toRaw = false;
+    // Keep the alpha channel in file and raw PNG output. GUI captures can have
+    // transparent rounded corners; screen grabs stay opaque RGB32 by default.
+    bool preserveAlpha = false;
 };
 
 struct CaptureMetadata
@@ -26,6 +29,7 @@ struct CaptureMetadata
 };
 
 void applyOptionalDelay(int delayMs);
+bool writeRawOutputToStdout(const QByteArray& data);
 CLIResult emitCaptureOutput(
     const QPixmap& screenshot,
     const CaptureOutputOptions& options,

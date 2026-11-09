@@ -55,6 +55,8 @@
     <true/>
     <key>NSScreenCaptureUsageDescription</key>
     <string>SnapTray needs screen recording permission to capture screenshots.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>SnapTray needs microphone access when you choose to include microphone audio in a screen recording.</string>
     <key>NSAccessibilityUsageDescription</key>
     <string>SnapTray needs accessibility permission to detect windows for smart capture.</string>
     <key>SUFeedURL</key>

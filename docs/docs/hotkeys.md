@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-17
+last_modified_at: 2026-11-06
 layout: docs
 title: Hotkeys
 seo_title: "SnapTray Hotkeys: Capture and Platform-Specific Recording Shortcuts"
@@ -22,10 +22,33 @@ doc_order: 3
 
 ## Additional configurable actions (no default)
 
+- Full Screen Capture
+- Delayed Capture
 - Pin from Image
-- Pin History
+- Library
 - Toggle Hide/Show All Pins
-- Record Screen (macOS/Windows only)
+- Record Screen: starts a recording; pressing it again stops (or cancels while preparing)
+- Pause/Resume Recording
+- Show Recording Controls: brings the floating control bar back onto the recorded screen (macOS/Windows)
+
+Recording actions appear only where recording is available. A recording hotkey pressed again within a fraction of a second, for example through key repeat, counts as one press.
+
+## Keys inside an editor
+
+The hotkeys above work anywhere. Inside Region Capture, a Pin Window, or Screen Canvas, single keys act on that editor and cannot be rebound, for example `I` to pick a color from the screen (see [Annotation Tools](/docs/annotation-tools/#picking-a-color-from-the-screen)). Each page lists its own keys.
+
+## Annotation shortcuts
+
+While you annotate (Region Capture, a pin, or Screen Canvas), these shortcuts change the drawing order of the selected annotation. They are not global and cannot be rebound.
+
+| Action | macOS | Windows / Linux |
+|---|---|---|
+| Bring Forward | `⌘]` | `Ctrl+]` |
+| Send Backward | `⌘[` | `Ctrl+[` |
+| Bring to Front | `⌥⌘]` | `Ctrl+Shift+]` |
+| Send to Back | `⌥⌘[` | `Ctrl+Shift+[` |
+
+On a pin, `Ctrl/Cmd + ]` resets opacity when no annotation is selected. See [Annotation Tools](/docs/annotation-tools/#putting-one-annotation-above-another).
 
 ## Hotkey categories
 
@@ -35,7 +58,7 @@ Hotkeys are managed by category inside Settings:
 - Canvas
 - Clipboard
 - Pin
-- Recording (macOS/Windows only; hidden in Linux beta)
+- Recording (shown where recording is available)
 
 ## Conflict strategy
 

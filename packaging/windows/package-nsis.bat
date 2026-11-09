@@ -14,7 +14,7 @@ REM   - NSIS (winget install NSIS.NSIS)
 REM   - Visual Studio Build Tools or Visual Studio
 REM
 REM Environment variables:
-REM   QT_PATH              - Path to Qt installation (e.g., C:\Qt\6.6.1\msvc2019_64)
+REM   QT_PATH              - Path to Qt installation (e.g., C:\Qt\6.12.0\msvc2022_64)
 REM   CODESIGN_CERT        - Path to .pfx certificate file (optional)
 REM   CODESIGN_PASSWORD    - Certificate password (optional)
 REM   WINSPARKLE_DLL       - Absolute path to WinSparkle.dll
@@ -69,21 +69,9 @@ if not exist "%WINSPARKLE_DLL%" (
     exit /b 1
 )
 
-REM Check for Qt
-if "%QT_PATH%"=="" (
-    if exist "C:\Qt\6.10.1\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.10.1\msvc2022_64
-    ) else if exist "C:\Qt\6.8.0\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.8.0\msvc2022_64
-    ) else if exist "C:\Qt\6.7.0\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.7.0\msvc2022_64
-    ) else if exist "C:\Qt\6.6.1\msvc2019_64" (
-        set QT_PATH=C:\Qt\6.6.1\msvc2019_64
-    ) else (
-        echo ERROR: Qt not found. Please set QT_PATH environment variable.
-        exit /b 1
-    )
-)
+REM Use the same Qt selection policy as the Windows build scripts.
+call "%PROJECT_ROOT%\scripts\detect-qt.bat"
+if errorlevel 1 exit /b 1
 echo Qt path: %QT_PATH%
 
 REM Check for NSIS
@@ -156,24 +144,37 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM These QImageReader decoders come from the Qt Image Formats add-on.
+for %%P in (qwebp qtiff) do (
+    if not exist "%STAGING_DIR%\imageformats\%%P.dll" (
+        echo ERROR: Missing imageformats\%%P.dll. Install Qt Image Formats ^(qtimageformats^) for this Qt SDK.
+        exit /b 1
+    )
+)
+
 REM Step 4: Code signing (optional)
 echo.
 if defined CODESIGN_CERT (
     echo [4/5] Signing executable...
-    signtool sign /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
+    signtool sign /fd SHA256 /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
         /t http://timestamp.digicert.com ^
         /d "%APP_NAME%" ^
         "%STAGING_DIR%\%APP_NAME%.exe"
     if errorlevel 1 (
-        echo WARNING: Code signing failed, continuing without signature
+        echo ERROR: Executable signing failed
+        exit /b 1
     ) else (
         echo Executable signed successfully
     )
     echo Signing WinSparkle.dll...
-    signtool sign /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
+    signtool sign /fd SHA256 /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
         /t http://timestamp.digicert.com ^
         /d "WinSparkle" ^
         "%STAGING_DIR%\WinSparkle.dll"
+    if errorlevel 1 (
+        echo ERROR: WinSparkle.dll signing failed
+        exit /b 1
+    )
 ) else (
     echo [4/5] Skipping code signing (CODESIGN_CERT not set)
 )
@@ -200,10 +201,14 @@ if errorlevel 1 (
 REM Sign installer if certificate provided
 if defined CODESIGN_CERT (
     echo Signing installer...
-    signtool sign /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
+    signtool sign /fd SHA256 /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
         /t http://timestamp.digicert.com ^
         /d "%APP_NAME% Setup" ^
         "%OUTPUT_DIR%\%APP_NAME%-%VERSION%-Setup.exe"
+    if errorlevel 1 (
+        echo ERROR: Installer signing failed
+        exit /b 1
+    )
 )
 
 echo.

@@ -1,5 +1,7 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/Settings.h"
+#include <QDir>
+#include <QFileInfo>
 #include <QStandardPaths>
 
 FileSettingsManager& FileSettingsManager::instance()
@@ -120,4 +122,53 @@ void FileSettingsManager::saveAutoSaveRecordings(bool enabled)
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyAutoSaveRecordings, enabled);
+}
+
+bool FileSettingsManager::loadUseLastScreenshotSaveLocation() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyUseLastScreenshotSaveLocation,
+                          defaultUseLastScreenshotSaveLocation()).toBool();
+}
+
+void FileSettingsManager::saveUseLastScreenshotSaveLocation(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyUseLastScreenshotSaveLocation, enabled);
+}
+
+QString FileSettingsManager::resolveManualScreenshotSaveDirectory(bool useLastSaveLocation) const
+{
+    if (useLastSaveLocation) {
+        auto settings = SnapTray::getSettings();
+        const QString rememberedPath =
+            settings.value(kSettingsKeyLastScreenshotSaveDirectory).toString();
+        const QFileInfo rememberedDirectory(rememberedPath);
+        if (!rememberedPath.isEmpty() && rememberedDirectory.isDir()) {
+            return QDir::cleanPath(rememberedDirectory.absoluteFilePath());
+        }
+    }
+
+    return loadScreenshotPath();
+}
+
+void FileSettingsManager::rememberManualScreenshotSaveDirectory(const QString& savedFilePath)
+{
+    if (savedFilePath.isEmpty()) {
+        return;
+    }
+
+    const QFileInfo savedFile(savedFilePath);
+    const QDir parentDirectory = savedFile.absoluteDir();
+    if (!parentDirectory.exists()) {
+        return;
+    }
+
+    const QString absoluteParentPath = QDir::cleanPath(parentDirectory.absolutePath());
+    if (absoluteParentPath.isEmpty()) {
+        return;
+    }
+
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyLastScreenshotSaveDirectory, absoluteParentPath);
 }

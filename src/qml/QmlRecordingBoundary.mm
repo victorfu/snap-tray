@@ -1,3 +1,4 @@
+#include "platform/WindowLevel.h"
 #include "qml/QmlRecordingBoundary.h"
 #include "qml/QmlOverlayManager.h"
 
@@ -148,19 +149,23 @@ void QmlRecordingBoundary::setExcludedFromCapture(bool excluded)
         }
     }
 #elif defined(Q_OS_WIN)
-    if (!m_view)
-        return;
-
-    HWND hwnd = reinterpret_cast<HWND>(m_view->winId());
-    if (!hwnd)
-        return;
-
-    // WDA_EXCLUDEFROMCAPTURE (0x11) is supported on Windows 10 2004+.
-    constexpr DWORD kExcludeFromCapture = 0x00000011;
-    const DWORD affinity = excluded ? kExcludeFromCapture : WDA_NONE;
-    SetWindowDisplayAffinity(hwnd, affinity);
+    setWindowExcludedFromCapture(m_view, excluded);
 #else
     Q_UNUSED(excluded)
+#endif
+}
+
+quintptr QmlRecordingBoundary::captureExclusionId() const
+{
+    if (!m_view)
+        return 0;
+#ifdef Q_OS_MACOS
+    NSView* view = reinterpret_cast<NSView*>(m_view->winId());
+    NSWindow* window = view ? [view window] : nil;
+    const NSInteger number = window ? [window windowNumber] : 0;
+    return number > 0 ? static_cast<quintptr>(number) : 0;
+#else
+    return static_cast<quintptr>(m_view->winId());
 #endif
 }
 

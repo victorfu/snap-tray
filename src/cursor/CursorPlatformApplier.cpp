@@ -47,7 +47,7 @@ void CursorPlatformApplier::applyWindowCursor(QWindow* window, const CursorStyle
 
 void CursorPlatformApplier::reassertNativeStyle(const CursorStyleSpec& spec, QWidget* widget, QWindow*)
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     switch (spec.styleId) {
     case CursorStyleId::Arrow:
     case CursorStyleId::Crosshair:

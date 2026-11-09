@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-17
+last_modified_at: 2026-11-06
 layout: docs
 title: Screen Canvas
 seo_title: "SnapTray Screen Canvas: Annotate Your Screen for Demos"
@@ -35,6 +35,7 @@ Better contrast when highlighting bright colors.
 
 - Undo / Redo
 - Clear canvas
+- `I` to pick a color from the screen ([details](/docs/annotation-tools/#picking-a-color-from-the-screen))
 - `Esc` to exit
 
 ## When to use canvas vs capture

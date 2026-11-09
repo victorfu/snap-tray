@@ -19,8 +19,6 @@
 #include "qml/QmlDialog.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QRCodeResultViewModel.h"
-#include "qml/ShareResultViewModel.h"
-#include "share/ShareUploadClient.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
@@ -218,8 +216,6 @@ private slots:
     void testApplicationDeactivateCancelsWithoutGuard();
     void testWidgetEscapeIgnoredWhenBlockingUiOpen();
     void testEmojiPickerIsNotBlockingTransientUi();
-    void testSharePasswordUsesCenteredScreenApi();
-    void testShareResultCloseKeepsCaptureSession();
     void testOCRResultCloseKeepsCaptureSession();
     void testOCRResultCopyTextClosesViewModel();
     void testOCRResultCopyAsTsvClosesViewModel();
@@ -388,63 +384,6 @@ void tst_RegionSelectorTransientUiCancelGuard::testEmojiPickerIsNotBlockingTrans
     QVERIFY(selector->m_emojiPickerPopup);
     QVERIFY(selector->m_emojiPickerPopup->isVisible());
     QVERIFY(!selector->hasBlockingTransientUiOpen());
-}
-
-void tst_RegionSelectorTransientUiCancelGuard::testSharePasswordUsesCenteredScreenApi()
-{
-    QScreen* screen = primaryOrSkip();
-    if (!screen) {
-        QSKIP("No screens available for RegionSelector share password test.");
-    }
-
-    RegionSelector selector;
-    selector.setAttribute(Qt::WA_DeleteOnClose, false);
-    installHeadlessTransientUi(selector);
-
-    const QSize preCaptureSize = screen->geometry().size().boundedTo(QSize(320, 240));
-    selector.initializeForScreen(screen, makePreCapture(preCaptureSize, Qt::darkGreen));
-    RegionSelectorTestAccess::setSelectionRect(selector, QRect(20, 20, 80, 60));
-
-    selector.shareToUrl();
-    QCoreApplication::processEvents();
-
-    auto* dialog = findHeadlessDialog(selector, QStringLiteral("SharePasswordDialog.qml"));
-    QVERIFY(dialog);
-    QCOMPARE(dialog->showMode(), HeadlessQmlDialog::ShowMode::CenteredOnScreen);
-    QCOMPARE(dialog->lastScreen(), screen);
-}
-
-void tst_RegionSelectorTransientUiCancelGuard::testShareResultCloseKeepsCaptureSession()
-{
-    RegionSelector selector;
-    selector.setAttribute(Qt::WA_DeleteOnClose, false);
-    installHeadlessTransientUi(selector);
-
-    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
-
-    QVERIFY(selector.m_shareClient);
-    const bool invoked = QMetaObject::invokeMethod(
-        selector.m_shareClient,
-        "uploadSucceeded",
-        Qt::DirectConnection,
-        Q_ARG(QString, QStringLiteral("https://example.com/share/abc")),
-        Q_ARG(QDateTime, QDateTime::currentDateTimeUtc().addDays(1)),
-        Q_ARG(bool, true));
-    QVERIFY(invoked);
-    QCoreApplication::processEvents();
-
-    auto* vm = selector.findChild<ShareResultViewModel*>();
-    QVERIFY(vm);
-    auto* dialog = findHeadlessDialog(selector, QStringLiteral("ShareResultDialog.qml"));
-    QVERIFY(dialog);
-    QCOMPARE(dialog->showMode(), HeadlessQmlDialog::ShowMode::CenteredOnScreen);
-    QVERIFY(selector.m_openBlockingDialogCount > 0);
-
-    vm->close();
-    QCoreApplication::processEvents();
-
-    QCOMPARE(cancelledSpy.count(), 0);
-    QCOMPARE(selector.m_openBlockingDialogCount, 0);
 }
 
 void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCloseKeepsCaptureSession()

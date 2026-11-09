@@ -11,6 +11,7 @@
 #include <QPointer>
 #include <QVector>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 
 
@@ -40,15 +41,21 @@ struct OCRResult;
 class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
+class PinHoverBar;
+class PinHoverBarViewModel;
 namespace SnapTray {
 class QmlToast;
 class QmlWindowedToolbar;
 class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
+class ToolbarTooltipController;
 }
 class PinToolbarViewModel;
 class PinToolOptionsViewModel;
+class AnnotationStyleEditor;
+class ColorPickOverlay;
+struct ColorPickSource;
 class AnnotationLayer;
 class AnnotationItem;
 class ToolManager;
@@ -66,7 +73,6 @@ struct LayoutRegion;
 class AnnotationContext;
 struct BeautifySettings;
 class TestPinWindowCropUndo;
-class ShareUploadClient;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -92,6 +98,10 @@ public:
 
     void setOpacity(qreal opacity);
     qreal opacity() const { return m_opacity; }
+    // User-facing value changes (#225): apply and show the named badge.
+    void resetZoom();
+    void resetOpacity();
+    void zoomByStep(int direction);
 
     void rotateRight();  // Rotate clockwise by 90 degrees
     void rotateLeft();   // Rotate counter-clockwise by 90 degrees
@@ -124,6 +134,7 @@ public:
     void setSourceRegion(const QRect& region, QScreen* screen);
     void startLiveCapture();
     void stopLiveCapture();
+    QList<WId> liveCaptureExcludedWindowIds();
     void pauseLiveCapture();
     void resumeLiveCapture();
     bool isLiveMode() const { return m_isLiveMode; }
@@ -141,6 +152,7 @@ public:
     bool isRegionLayoutMode() const;
     void prepareForMerge();
     QPixmap exportPixmapForMerge() const;
+    bool isAutoBlurInProgress() const { return m_autoBlurInProgress; }
 
 signals:
     void closed(PinWindow* window);
@@ -152,6 +164,12 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    bool event(QEvent* event) override;
+    // The Live dot's hint (#225), only over the dot; empty elsewhere.
+    QString liveToolTipAt(const QPoint& pos) const;
+    void focusInEvent(QFocusEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -159,13 +177,21 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     void moveEvent(QMoveEvent* event) override;
 
 private:
     friend class TestPinWindowCropUndo;
+    friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
+    friend class TestPinWindowTransform;
+    friend class TestPinHoverIntegration;
+    friend class TestPinContextMenuLayout;
+    friend class TestPinWindowEvidence;
     friend class TestPinWindowTextToolFormatting;
+    friend class TestEraserHostRouting;
     struct CropUndoEntry;
 
     // AnnotationHostAdapter implementation
@@ -184,7 +210,7 @@ private:
     void onContextTextEditingCancelled() override;
 
 
-    void updateSize();
+    void updateSize(bool liveFrame = false);
     void createContextMenu();
     void refreshMoveToScreenMenu();
     void moveToScreen(QScreen* targetScreen);
@@ -195,7 +221,6 @@ private:
     void adjustOpacityByStep(int direction);
     void saveToFile();
     void copyToClipboard();
-    void shareToUrl();
     bool ensureAutoBlurReadyForExport();
     QPixmap getExportPixmapCore(bool includeDisplayEffects) const;
     void drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize) const;
@@ -204,6 +229,8 @@ private:
     // Performance optimization: ensure transform cache is valid
     void ensureTransformCacheValid() const;
     void onResizeFinished();
+    void applyPendingDragPosition();
+    void endWindowDrag();
 
     // Rounded corner handling
     int effectiveCornerRadius(const QSize& contentSize) const;
@@ -244,6 +271,7 @@ private:
     QSize baseContentLogicalSize() const;
     QSize transformedContentLogicalSize() const;
     void setContentLogicalSize(const QSize& logicalSize);
+    void updateAccessibleName();
     static QRectF preciseSourceSampleRectForRegion(const QRect& globalRegion,
                                                    const QRect& screenGeometry,
                                                    qreal dpr);
@@ -265,6 +293,7 @@ private:
     void hideToolbar();
     void hideToolbarPreservingToolState();
     void initializeAnnotationComponents();
+    void refreshMosaicSources(bool liveFrame = false);
     void dismissBeautifyPanelIfVisible();
     void clearSelectedToolForBeautify();
     void syncToolbarActiveButtonForVisibleState();
@@ -280,6 +309,16 @@ private:
     void updateUndoRedoState();
     bool isAnnotationTool(ToolId toolId) const;
     QPixmap getExportPixmapWithAnnotations() const;
+    QSize regionLayoutContentViewSize(const QSize& layoutSize) const;
+    QSize regionLayoutViewportSize(const QSize& layoutSize) const;
+    QRect regionLayoutControlsRect(const QSize& layoutSize) const;
+    QTransform regionLayoutViewTransform(const QSize& layoutSize) const;
+    QPoint regionLayoutPositionFromWidget(const QPointF& widgetPos) const;
+    ResizeHandler::Edge regionLayoutHandleAtWidget(const QPoint& widgetPos) const;
+    void keepRegionLayoutControlsOnScreen();
+    void drawRegionLayoutAnnotations(QPainter& painter,
+                                     const QSize& layoutSize,
+                                     bool normalizeToRecomposedOrigin) const;
     void updateSubToolbarPosition();
     void hideSubToolbar();
     void showEmojiPickerPopup();
@@ -290,11 +329,11 @@ private:
     void applyCrop(const QRect& cropRect);
     void undoCrop();
     void redoCrop();
-    bool canUndoCrop() const;
-    bool canRedoCrop() const;
+    bool canUndoCrop();
+    bool canRedoCrop();
     void clearCropUndoHistory();
     bool matchesCropAnnotationBoundary(const CropUndoEntry& entry) const;
-    void pruneInvalidCropRedoState();
+    void pruneInvalidCropHistory();
     void onColorSelected(const QColor& color);
     void onWidthChanged(int width);
     void onEmojiSelected(const QString& emoji);
@@ -309,6 +348,10 @@ private:
     void onFontFamilySelected(const QString& family);
     void onAutoBlurRequested();
     void onMoreColorsRequested();
+    // Eyedropper (#271): picks from the pinned image, not its annotations.
+    void startColorPick();
+    ColorPickSource colorPickSource() const;
+    void applyPickedColor(const QColor& color);
 
     // Text annotation helper methods
     bool handleTextEditorPress(const QPoint& pos);
@@ -337,6 +380,7 @@ private:
     bool m_isArrowDragging = false;
     GizmoHandle m_arrowDragHandle = GizmoHandle::None;
     bool m_isPolylineDragging = false;
+    bool m_undoStateShowsGesture = false;   // #237: toolbar Undo/Redo reflect a drag
     int m_activePolylineVertexIndex = -1;
     // Note: m_dragStartPos is used for window dragging (global coords)
     QPoint m_annotationDragStartPos; // For annotation dragging (original coords)
@@ -356,6 +400,9 @@ private:
     // Cursor update helper
     void updateAnnotationCursor(const QPoint& pos);
     bool hasActiveAnnotationInteraction() const;
+    // Escape during a drag of an existing annotation (#237): puts it back
+    // without an undo step. Returns true if one was in progress.
+    bool cancelAnnotationGesture();
     QRect mappedAnnotationRect(const QRect& originalRect) const;
     QRect selectedAnnotationInteractionVisualRect() const;
     bool requestLocalizedToolRepaint();
@@ -378,6 +425,8 @@ private:
     // Original members
     QPixmap m_originalPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
+    bool m_mosaicSourceDirty = false;
+    bool m_hasVisibleMosaicAnnotations = false;
     QPixmap m_displayPixmap;
     QSize m_contentLogicalSize;
     QRectF m_sourceSampleRect;
@@ -387,9 +436,13 @@ private:
     QPoint m_initialPosition;
     bool m_hasPerformedInitialShow = false;
     bool m_isDragging;
+    QTimer* m_dragMoveTimer = nullptr;
+    QPoint m_pendingDragPosition;
+    bool m_hasPendingDragPosition = false;
     QMenu* m_contextMenu;
     QMenu* m_moveToScreenMenu = nullptr;
     QMenu* m_infoMenu = nullptr;
+    QMenu* m_arrangeMenu = nullptr;   // drawing order of the selected annotation (#268)
     QAction* m_showToolbarAction = nullptr;
     QAction* m_clickThroughAction = nullptr;
     QAction* m_showBorderAction = nullptr;
@@ -409,11 +462,25 @@ private:
 
     // Zoom menu members
     QAction* m_currentZoomAction;
+    QAction* m_currentOpacityAction = nullptr;
     bool m_smoothing;
 
     // Components
     ResizeHandler* m_resizeHandler;
     UIIndicators* m_uiIndicators;
+    // The hover bar (#225), created on first hover or focus.
+    PinHoverBarViewModel* m_hoverBarViewModel = nullptr;
+    PinHoverBar* m_hoverBar = nullptr;
+    SnapTray::ToolbarTooltipController* m_liveTooltip = nullptr;
+    void ensureHoverBar();
+    void ensureLiveTooltip();
+    void syncHoverBar();
+    bool hoverBarSuppressed() const;
+    void applyUserZoom(qreal zoom);
+    void applyUserOpacity(qreal opacity);
+    void showZoomBadge();
+    void showOpacityBadge();
+    void refreshContextMenuState();
     SnapTray::QmlToast* m_toast;
 
     // Resize state
@@ -440,8 +507,6 @@ private:
     // OCR members
     OCRManager* m_ocrManager;
     bool m_ocrInProgress;
-    bool m_shareInProgress = false;
-    QString m_pendingSharePassword;
     LoadingSpinnerRenderer* m_loadingSpinner;
 
     // QR Code members
@@ -478,6 +543,7 @@ private:
     RegionSettingsHelper* m_settingsHelper = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;
+    AnnotationStyleEditor* m_styleEditor = nullptr;   // Qt parent owns lifetime
     struct CropUndoEntry {
         QPixmap pixmap;
         QSize contentLogicalSize;
@@ -496,7 +562,7 @@ private:
         QVector<LayoutRegion> croppedStoredRegions;
         bool croppedHasMultiRegionData = false;
         QPoint annotationOffsetDisplay;
-        const AnnotationItem* annotationTopItem = nullptr;
+        std::uint64_t annotationHistoryState = 0;
     };
     QVector<CropUndoEntry> m_cropUndoStack;
     QVector<CropUndoEntry> m_cropRedoStack;
@@ -514,16 +580,18 @@ private:
 
     // Color picker dialog
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
+    QPointer<ColorPickOverlay> m_colorPickOverlay;
 
     // Shared annotation setup/signals helper
     std::unique_ptr<AnnotationContext> m_annotationContext;
-    ShareUploadClient* m_shareClient = nullptr;
 
     // Region Layout Mode
     RegionLayoutManager* m_regionLayoutManager = nullptr;
     QVector<LayoutRegion> m_storedRegions;
     bool m_hasMultiRegionData = false;
-    QPoint m_layoutModeMousePos;  // For hover effects in layout mode
+    QPoint m_layoutModeMousePos;  // Widget/view coordinates for layout chrome hover
+    QPoint m_regionLayoutOriginalWindowPos;
+    bool m_hasRegionLayoutOriginalWindowPos = false;
 
     // Live capture mode
     QRect m_sourceRegion;
@@ -568,6 +636,7 @@ private:
     static constexpr int kMosaicBlockSize = 12;
 
     void updateLiveFrame();
+    void connectLiveCaptureEngineSignals();
 };
 
 #endif // PINWINDOW_H

@@ -11,6 +11,7 @@
 
 // Sets the window level above the menu bar (macOS) or does nothing (Windows)
 void raiseWindowAboveMenuBar(QWidget *widget);
+void raiseWindowAboveMenuBar(QWindow *window);
 
 // Sets click-through mode for a window (mouse events pass through to windows underneath)
 void setWindowClickThrough(QWidget *widget, bool enabled);
@@ -22,6 +23,7 @@ void setWindowFloatingWithoutFocus(QWidget *widget);
 
 // Excludes a window from screen capture
 // On Windows: Uses SetWindowDisplayAffinity with WDA_EXCLUDEFROMCAPTURE (Windows 10 2004+)
+//   - Older Windows keeps the window visible instead of producing a blank capture placeholder.
 // On macOS: Uses NSWindow.sharingType = NSWindowSharingNone
 //   - Works with QScreen::grabWindow() and legacy CGWindowList APIs (macOS 10.5+)
 //   - Does NOT affect ScreenCaptureKit on macOS 15+ (use SCContentFilter's
@@ -64,6 +66,10 @@ void reinforceFramelessToolWindow(QWindow *window);
 // On Linux/X11: uses XSetInputFocus because Qt activation alone does not focus
 // override-redirect windows. No declaration is exposed on other platforms.
 void requestNativeWindowFocus(QWidget *widget);
+
+// Sets only the X11 input shape, leaving the visible bounding shape unchanged.
+// Region coordinates are widget-local logical pixels. Returns false if unavailable.
+bool setWindowInputRegion(QWidget* widget, const QRegion& region);
 #endif
 
 // Hides the native title-bar icon for standard top-level QWindows.

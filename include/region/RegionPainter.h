@@ -23,6 +23,7 @@ class ShapeAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
 class MultiRegionManager;
+class tst_RegionPainterChrome;
 
 /**
  * @brief Handles all painting operations for RegionSelector.
@@ -78,6 +79,14 @@ public:
     QRect lastDimensionInfoRect() const { return m_lastDimensionInfoRect; }
 
 private:
+    friend class tst_RegionPainterChrome;
+
+    enum class DimmingComposition {
+        PlatformDefault,
+        Cached,
+        Direct,
+    };
+
     // Drawing methods (extracted from RegionSelector)
     void drawOverlay(QPainter& painter);
     void drawDimmingOverlay(QPainter& painter, const QRect& clearRect, const QColor& dimColor);
@@ -125,12 +134,14 @@ private:
     QRect m_replacePreviewRect;
 
     QRect m_lastDimensionInfoRect;
+    DimmingComposition m_dimmingComposition = DimmingComposition::PlatformDefault;
 
     mutable QPixmap m_dimmedBackgroundCache;
     mutable qint64 m_dimmedBackgroundCacheKey = 0;
     mutable qreal m_dimmedBackgroundCacheDpr = 0.0;
 
     void ensureDimmedBackgroundCache(const QPixmap& background) const;
+    void drawDimmingTiles(QPainter& painter, const QRegion& updateRegion) const;
     void drawBackgroundTiles(QPainter& painter, const QPixmap& background,
                              const QRegion& updateRegion) const;
 };

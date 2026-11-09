@@ -77,6 +77,7 @@ void ColorDialog::setupUi()
     // Hue (0-359)
     slidersLayout->addWidget(new QLabel(tr("Hue"), this), row, 0);
     m_hueSlider = createSlider();
+    m_hueSlider->setObjectName(QStringLiteral("hueSlider"));
     m_hueSlider->setRange(0, 359);
     slidersLayout->addWidget(m_hueSlider, row, 1);
     m_hueSpin = createSpinBox(359);
@@ -86,6 +87,7 @@ void ColorDialog::setupUi()
     // Saturation (0-255)
     slidersLayout->addWidget(new QLabel(tr("Saturation"), this), row, 0);
     m_satSlider = createSlider();
+    m_satSlider->setObjectName(QStringLiteral("saturationSlider"));
     m_satSlider->setRange(0, 255);
     slidersLayout->addWidget(m_satSlider, row, 1);
     m_satSpin = createSpinBox(255);
@@ -95,6 +97,7 @@ void ColorDialog::setupUi()
     // Value (0-255)
     slidersLayout->addWidget(new QLabel(tr("Value"), this), row, 0);
     m_valSlider = createSlider();
+    m_valSlider->setObjectName(QStringLiteral("valueSlider"));
     m_valSlider->setRange(0, 255);
     slidersLayout->addWidget(m_valSlider, row, 1);
     m_valSpin = createSpinBox(255);
@@ -105,6 +108,7 @@ void ColorDialog::setupUi()
     // Red (0-255)
     slidersLayout->addWidget(new QLabel(tr("Red"), this), row, 0);
     m_redSlider = createSlider();
+    m_redSlider->setObjectName(QStringLiteral("redSlider"));
     m_redSlider->setRange(0, 255);
     slidersLayout->addWidget(m_redSlider, row, 1);
     m_redSpin = createSpinBox(255);
@@ -114,6 +118,7 @@ void ColorDialog::setupUi()
     // Green (0-255)
     slidersLayout->addWidget(new QLabel(tr("Green"), this), row, 0);
     m_greenSlider = createSlider();
+    m_greenSlider->setObjectName(QStringLiteral("greenSlider"));
     m_greenSlider->setRange(0, 255);
     slidersLayout->addWidget(m_greenSlider, row, 1);
     m_greenSpin = createSpinBox(255);
@@ -123,6 +128,7 @@ void ColorDialog::setupUi()
     // Blue (0-255)
     slidersLayout->addWidget(new QLabel(tr("Blue"), this), row, 0);
     m_blueSlider = createSlider();
+    m_blueSlider->setObjectName(QStringLiteral("blueSlider"));
     m_blueSlider->setRange(0, 255);
     slidersLayout->addWidget(m_blueSlider, row, 1);
     m_blueSpin = createSpinBox(255);
@@ -288,6 +294,7 @@ void ColorDialog::onHsvSliderChanged()
                                m_color.alpha());
     m_wheel->setColor(m_color);
     updateSpinBoxes();
+    updateSliders();
     updateSliderGradients();
     updateHexEdit();
     updatePreview();
@@ -307,6 +314,7 @@ void ColorDialog::onRgbSliderChanged()
                    m_color.alpha());
     m_wheel->setColor(m_color);
     updateSpinBoxes();
+    updateSliders();
     updateSliderGradients();
     updateHexEdit();
     updatePreview();

@@ -251,6 +251,8 @@ std::optional<HistoryEntry> HistoryStore::writeCaptureSession(const CaptureSessi
     manifest.insert(QStringLiteral("canvasLogicalSize"), serializeSize(request.canvasLogicalSize));
     manifest.insert(QStringLiteral("resultSize"), serializeSize(request.resultImage.size()));
     manifest.insert(QStringLiteral("cornerRadius"), request.cornerRadius);
+    manifest.insert(QStringLiteral("windowTitle"), request.windowTitle);
+    manifest.insert(QStringLiteral("ownerApp"), request.ownerApp);
 
     const QString manifestPath = entryDir.filePath(fileNameString(kManifestFileName));
     if (!writeTextFile(manifestPath, QJsonDocument(manifest).toJson(QJsonDocument::Indented))) {
@@ -311,6 +313,8 @@ std::optional<HistoryEntry> HistoryStore::loadEntryFromDirectory(const QString& 
     entry.captureRegions = deserializeCaptureRegions(manifest.value(QStringLiteral("captureRegions")));
     entry.canvasLogicalSize = deserializeSize(manifest.value(QStringLiteral("canvasLogicalSize")));
     entry.cornerRadius = manifest.value(QStringLiteral("cornerRadius")).toInt();
+    entry.windowTitle = manifest.value(QStringLiteral("windowTitle")).toString();
+    entry.ownerApp = manifest.value(QStringLiteral("ownerApp")).toString();
 
     return entry;
 }

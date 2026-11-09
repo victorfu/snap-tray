@@ -28,6 +28,7 @@ Column {
             spacing: SemanticTokens.spacing8
 
             Text {
+                id: statusText
                 text: root.granted ? qsTr("Granted") : qsTr("Not Granted")
                 color: root.granted ? SemanticTokens.statusSuccess : SemanticTokens.statusError
                 font.pixelSize: SemanticTokens.fontSizeBody
@@ -38,6 +39,10 @@ Column {
 
             SettingsButton {
                 text: qsTr("Open Settings")
+                // Every permission row has this button (#238): say which
+                // permission it opens and its status, which is otherwise
+                // only shown as colored text.
+                Accessible.name: text + ", " + root.label + ", " + statusText.text
                 onClicked: root.openSettingsClicked()
             }
         }

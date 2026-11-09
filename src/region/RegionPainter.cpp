@@ -28,6 +28,8 @@
 namespace {
 
 constexpr qreal kSelectionBorderWidth = 2.0;
+constexpr qreal kSnapGuidePenWidth = 3.0;
+constexpr int kSnapGuideHalfLength = 16;
 constexpr int kSelectionHandleDiameter = 8;
 constexpr int kSelectionHandleRadius = kSelectionHandleDiameter / 2;
 constexpr int kSelectionChromeMargin = kSelectionHandleRadius + 1;
@@ -138,8 +140,27 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         !background.isNull();
 
     if (singleRegionFastPath) {
-        ensureDimmedBackgroundCache(background);
-        drawBackgroundTiles(painter, m_dimmedBackgroundCache, updateRegion);
+        bool useDirectDimming = m_dimmingComposition == DimmingComposition::Direct;
+        if (m_dimmingComposition == DimmingComposition::PlatformDefault) {
+#ifdef Q_OS_MACOS
+            useDirectDimming = true;
+#else
+            useDirectDimming = false;
+#endif
+        }
+
+        if (useDirectDimming) {
+            // macOS screen snapshots are opaque. Composite the same background +
+            // dim color directly into the widget's dirty region instead of first
+            // materializing another full-screen Retina pixmap. The clear region is
+            // restored from the original background below, preserving the cached
+            // path's paint order and pixels while avoiding its cold allocation.
+            drawBackgroundTiles(painter, background, updateRegion);
+            drawDimmingTiles(painter, updateRegion);
+        } else {
+            ensureDimmedBackgroundCache(background);
+            drawBackgroundTiles(painter, m_dimmedBackgroundCache, updateRegion);
+        }
 
         QRegion clearRegion;
         if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
@@ -231,6 +252,19 @@ void RegionPainter::ensureDimmedBackgroundCache(const QPixmap& background) const
     m_dimmedBackgroundCache = dimmed;
     m_dimmedBackgroundCacheKey = cacheKey;
     m_dimmedBackgroundCacheDpr = dpr;
+}
+
+void RegionPainter::drawDimmingTiles(QPainter& painter,
+                                     const QRegion& updateRegion) const
+{
+    if (updateRegion.isEmpty()) {
+        return;
+    }
+
+    painter.save();
+    painter.setClipRegion(updateRegion, Qt::IntersectClip);
+    painter.fillRect(updateRegion.boundingRect(), kRegionDimColor);
+    painter.restore();
 }
 
 void RegionPainter::drawBackgroundTiles(QPainter& painter,
@@ -360,6 +394,25 @@ void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectio
     drawHandle(sel.center().x(), sel.bottom());
     drawHandle(sel.left(), sel.center().y());
     drawHandle(sel.right(), sel.center().y());
+
+    // Interaction-only guides share the host and detached chrome renderer;
+    // exports and history render the untouched source/annotation layers.
+    if (m_selectionManager && m_selectionManager->isResizing() && !m_multiRegionMode) {
+        const auto edges = m_selectionManager->snappedEdges();
+        painter.setPen(QPen(selectionAccent, kSnapGuidePenWidth));
+        const int halfY = qMin(kSnapGuideHalfLength, sel.height() / 2);
+        const int halfX = qMin(kSnapGuideHalfLength, sel.width() / 2);
+        for (Qt::Edge edge : {Qt::LeftEdge, Qt::RightEdge}) {
+            if (!edges.testFlag(edge)) continue;
+            const int x = edge == Qt::LeftEdge ? sel.x() : sel.x() + sel.width();
+            painter.drawLine(x, sel.center().y() - halfY, x, sel.center().y() + halfY);
+        }
+        for (Qt::Edge edge : {Qt::TopEdge, Qt::BottomEdge}) {
+            if (!edges.testFlag(edge)) continue;
+            const int y = edge == Qt::TopEdge ? sel.y() : sel.y() + sel.height();
+            painter.drawLine(sel.center().x() - halfX, y, sel.center().x() + halfX, y);
+        }
+    }
 }
 
 void RegionPainter::drawDimensionInfo(QPainter& painter)
@@ -591,18 +644,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
     if (m_parentWidget) {
         QRect annotationViewport = m_annotationViewport.normalized();
         if (annotationViewport.isValid() && !annotationViewport.isEmpty()) {
-            QRect itemBounds;
-            m_annotationLayer->forEachItem([&itemBounds](const AnnotationItem* item) {
-                if (!item || !item->isVisible()) {
-                    return;
-                }
-
-                if (itemBounds.isValid()) {
-                    itemBounds = itemBounds.united(item->boundingRect());
-                } else {
-                    itemBounds = item->boundingRect();
-                }
-            });
+            const QRect itemBounds = m_annotationLayer->contentBoundingRect();
 
             if (itemBounds.isValid() && !itemBounds.isEmpty()) {
                 annotationViewport = annotationViewport.united(itemBounds);
@@ -615,6 +657,10 @@ void RegionPainter::drawAnnotations(QPainter& painter)
             ? annotationViewport.size()
             : m_parentWidget->size();
         const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+        // Lift the selected annotation above the cached rest only while a
+        // drag or transform gesture is live. An idle selection draws in
+        // layer order, so arranging it (#268) shows at once and matches
+        // the exported image.
         snaptray::annotation::SelectedAnnotationItems selectedItems;
         selectedItems.text = getSelectedTextAnnotation();
         selectedItems.emoji = getSelectedEmojiStickerAnnotation();
@@ -630,7 +676,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
                 canvasSize,
                 dpr,
                 annotationViewport.topLeft(),
-                m_annotationLayer->selectedIndex() >= 0,
+                m_annotationLayer->isGestureActive(),
                 selectedItems);
             painter.restore();
         } else {
@@ -640,7 +686,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
                 canvasSize,
                 dpr,
                 QPoint(0, 0),
-                m_annotationLayer->selectedIndex() >= 0,
+                m_annotationLayer->isGestureActive(),
                 selectedItems);
         }
     } else {
@@ -648,6 +694,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
                       "falling back to uncached draw";
         m_annotationLayer->draw(painter);
     }
+    if (m_annotationLayer) m_annotationLayer->snapController().draw(painter);
 }
 
 void RegionPainter::drawCurrentAnnotation(QPainter& painter)
@@ -659,12 +706,18 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
     // Use ToolManager for tools it handles.
     ToolId tool = static_cast<ToolId>(m_currentTool);
     if (ToolTraits::isToolManagerHandledTool(tool)) {
-        if (m_annotationViewport.isValid() && !m_annotationViewport.isEmpty()) {
+        if (tool != ToolId::Pencil &&
+            m_annotationViewport.isValid() && !m_annotationViewport.isEmpty()) {
             painter.save();
             painter.setClipRect(m_annotationViewport);
             m_toolManager->drawCurrentPreview(painter);
             painter.restore();
         } else {
+            // Pencil owns a localized QPaintEvent dirty clip supplied by the
+            // host. Replacing it with the detached selection viewport hides
+            // live points beyond selection + 64 px and can expand tail-only
+            // paints. Preserve the caller clip; a full repaint then redraws
+            // the entire in-progress stroke.
             m_toolManager->drawCurrentPreview(painter);
         }
     }

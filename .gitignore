@@ -12,6 +12,8 @@ cmake_install.cmake
 Makefile
 *.cmake
 !CMakeLists.txt
+!scripts/configure-windows.cmake
+!scripts/deploy-windows-qt.cmake
 
 # Qt generated files
 *_autogen/

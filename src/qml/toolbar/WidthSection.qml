@@ -2,84 +2,158 @@ import QtQuick
 import SnapTrayQml
 
 /**
- * WidthSection: Stroke width preview circle.
+ * WidthSection: Stroke width preview and Mosaic width presets.
  *
- * Blue square container with white dot that scales based on current width.
- * Mouse wheel adjusts width.
+ * Non-Mosaic tools use the original 28x28 preview. Mosaic replaces it with
+ * three common-width shortcuts.
  */
 Item {
     id: root
+    objectName: "widthSection"
     property var viewModel: null
-    property bool hintActive: false
-    property bool hoverHintEnabled: false
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int currentWidthValue: root.hasViewModel ? root.viewModel.currentWidth : 1
     readonly property int minWidthValue: root.hasViewModel ? root.viewModel.minWidth : 1
     readonly property int maxWidthValue: root.hasViewModel ? root.viewModel.maxWidth : 1
-    signal previewHovered(real anchorX, real anchorY, real anchorW, real anchorH)
-    signal previewHoverExited()
+    readonly property bool mosaicActive: root.hasViewModel && root.viewModel.mosaicActive
+    readonly property var mosaicWidthPresetModel: root.hasViewModel
+                                                    ? root.viewModel.mosaicWidthPresetOptions
+                                                    : []
+    readonly property int controlSpacing: 2
+    readonly property int sectionPadding: 3
+    readonly property int sectionTrailingPadding: 1
 
-    implicitWidth: 28
+    implicitWidth: root.mosaicActive
+        ? root.sectionPadding + mosaicWidthPresetRow.width + root.sectionTrailingPadding
+        : previewSlot.width
     implicitHeight: 28
     width: implicitWidth
     height: implicitHeight
 
-    // Blue container
-    Rectangle {
-        id: widthPreviewContainer
-        objectName: "widthPreviewContainer"
-        anchors.centerIn: parent
-        width: 22
-        height: 22
-        radius: 5
-        readonly property bool emphasized: root.hintActive
-                                           || (root.hoverHintEnabled && previewHover.hovered)
-        color: emphasized ? DesignSystem.accentHover : DesignSystem.accentDefault
-        border.width: emphasized ? 1 : 0
-        border.color: DesignSystem.textOnAccent
-        scale: emphasized ? 1.06 : 1.0
+    Row {
+        anchors.left: parent.left
+        anchors.leftMargin: root.mosaicActive ? root.sectionPadding : 0
+        anchors.verticalCenter: parent.verticalCenter
+        height: root.height
+        spacing: root.controlSpacing
 
-        Behavior on color {
-            ColorAnimation { duration: 100 }
-        }
+        Item {
+            id: previewSlot
+            objectName: "widthPreviewSlot"
+            visible: !root.mosaicActive
+            width: 28
+            height: 28
 
-        Behavior on scale {
-            NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
-        }
+            // Screen readers (#248): the width is only adjustable with the
+            // mouse wheel, so offer it as a slider with increase/decrease.
+            // Qt's accessibility value interface reads value, minimumValue,
+            // maximumValue and stepSize from the item for the Slider role.
+            readonly property real value: root.currentWidthValue
+            readonly property real minimumValue: root.minWidthValue
+            readonly property real maximumValue: root.maxWidthValue
+            readonly property real stepSize: 1
+            Accessible.role: Accessible.Slider
+            Accessible.name: qsTr("Width") + ", " + root.currentWidthValue
+            Accessible.onIncreaseAction: if (root.hasViewModel) root.viewModel.handleWidthWheelDelta(1)
+            Accessible.onDecreaseAction: if (root.hasViewModel) root.viewModel.handleWidthWheelDelta(-1)
 
-        HoverHandler {
-            id: previewHover
-            objectName: "widthPreviewHoverHandler"
-            enabled: root.hoverHintEnabled
+            // Blue container
+            Rectangle {
+                id: widthPreviewContainer
+                objectName: "widthPreviewContainer"
+                anchors.centerIn: parent
+                width: 22
+                height: 22
+                radius: 5
+                color: DesignSystem.accentDefault
 
-            onHoveredChanged: {
-                if (hovered) {
-                    var anchor = widthPreviewContainer.mapToGlobal(0, 0)
-                    root.previewHovered(anchor.x, anchor.y,
-                                        widthPreviewContainer.width,
-                                        widthPreviewContainer.height)
-                } else {
-                    root.previewHoverExited()
+                // Width preview dot
+                Rectangle {
+                    id: widthDot
+                    objectName: "widthPreviewDot"
+
+                    readonly property real minDot: 4
+                    readonly property real maxDot: 20
+                    readonly property real ratio: (root.currentWidthValue - root.minWidthValue) /
+                                                  Math.max(1, root.maxWidthValue - root.minWidthValue)
+
+                    // Even diameters keep the dot on whole pixels inside the
+                    // 22px container; half-pixel offsets render lopsided on
+                    // the software scene graph (Windows 10).
+                    width: 2 * Math.round((minDot + ratio * (maxDot - minDot)) / 2)
+                    height: width
+                    x: (parent.width - width) / 2
+                    y: (parent.height - height) / 2
+                    radius: width / 2
+                    color: "white"
                 }
             }
         }
 
-        // Width preview dot
-        Rectangle {
-            id: widthDot
-            objectName: "widthPreviewDot"
+        Row {
+            id: mosaicWidthPresetRow
+            objectName: "mosaicWidthPresetRow"
+            visible: root.mosaicActive
+            spacing: root.controlSpacing
+            anchors.verticalCenter: parent.verticalCenter
 
-            readonly property real minDot: 4
-            readonly property real maxDot: 20
-            readonly property real ratio: (root.currentWidthValue - root.minWidthValue) /
-                                          Math.max(1, root.maxWidthValue - root.minWidthValue)
+            Repeater {
+                model: root.mosaicWidthPresetModel
 
-            width: Math.round(minDot + ratio * (maxDot - minDot))
-            height: width
-            x: (parent.width - width) / 2
-            y: (parent.height - height) / 2
-            radius: width / 2
-            color: "white"
+                Rectangle {
+                    required property var modelData
+
+                    objectName: "mosaicWidthPresetButton_" + modelData.value
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: qsTr("Width") + ", " + modelData.value
+                    Accessible.checkable: true
+                    Accessible.checked: selected
+                    Accessible.onPressAction: {
+                        if (root.hasViewModel)
+                            root.viewModel.handleMosaicWidthPresetSelected(modelData.value)
+                    }
+                    width: 22
+                    height: 22
+                    radius: 4
+                    readonly property bool selected: root.currentWidthValue === modelData.value
+                    color: selected ? DesignSystem.accentDefault
+                                    : presetMouse.containsMouse ? root.btnHoverBg
+                                    : "transparent"
+
+                    Rectangle {
+                        objectName: "mosaicWidthPresetDot_" + modelData.value
+                        anchors.centerIn: parent
+                        width: modelData.previewDiameter
+                        height: width
+                        radius: width / 2
+                        color: parent.selected
+                            ? ComponentTokens.toolbarIconActive
+                            : ComponentTokens.toolbarIcon
+                    }
+
+                    MouseArea {
+                        id: presetMouse
+                        objectName: "mosaicWidthPresetMouseArea_" + modelData.value
+                        anchors.fill: parent
+                        cursorShape: CursorTokens.toolbarControl
+                        hoverEnabled: true
+
+                        onClicked: {
+                            if (root.hasViewModel)
+                                root.viewModel.handleMosaicWidthPresetSelected(modelData.value)
+                        }
+
+                        // Let ToolOptionsStrip consume Mosaic wheel events.
+                        onWheel: function(wheel) {
+                            wheel.accepted = false
+                        }
+                    }
+                }
+            }
         }
     }
+
+    readonly property color btnHoverBg: SemanticTokens.isDarkMode
+        ? Qt.rgba(80 / 255, 80 / 255, 80 / 255, 1.0)
+        : Qt.rgba(232 / 255, 232 / 255, 232 / 255, 1.0)
 }

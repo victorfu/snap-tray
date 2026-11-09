@@ -12,10 +12,14 @@
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
+#include "settings/AnnotationSettingsManager.h"
 
 #include <QFont>
 #include <QImage>
+#include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QScopeGuard>
 
 namespace {
 
@@ -114,8 +118,88 @@ class tst_AnnotationSerializer : public QObject
     Q_OBJECT
 
 private slots:
+    void testSnappedShapeHistoryRoundtrip_data();
+    void testSnappedShapeHistoryRoundtrip();
+    void testFractionalEmojiHistory() {
+        AnnotationLayer layer;
+        auto emoji = std::make_unique<EmojiStickerAnnotation>(QPoint(40,50),QString::fromUtf8("🙂"));
+        layer.addItem(std::move(emoji)); layer.setSelectedIndex(0);
+        layer.ensureGesture(); layer.selectedItem()->translate(QPointF(0.25,0.5));
+        layer.commitGesture(AnnotationLayer::ModifyGeometry);
+        layer.undo(); QCOMPARE(static_cast<EmojiStickerAnnotation*>(layer.itemAt(0))->precisePosition(),QPointF(40,50));
+        layer.redo(); QCOMPARE(static_cast<EmojiStickerAnnotation*>(layer.itemAt(0))->precisePosition(),QPointF(40.25,50.5));
+        AnnotationLayer restored; QString error;
+        QVERIFY(SnapTray::deserializeAnnotationLayer(SnapTray::serializeAnnotationLayer(layer),&restored,makeSharedPixmap(),&error));
+        QCOMPARE(static_cast<EmojiStickerAnnotation*>(restored.itemAt(0))->precisePosition(),QPointF(40.25,50.5));
+    }
     void testRoundtripPreservesSupportedAnnotations();
+    void testRoundtripKeepsDrawingOrderAndStepNumbers();
+    void testBulkRoundtripPreservesVisibleSceneAndBoundedUndo();
+    void testSerializeExcludesRemovedCommandPayload();
+    void testDeserializeFailureClearsLayerOnce();
+    void testArrowControlPointPrecision_data();
+    void testArrowControlPointPrecision();
 };
+
+void tst_AnnotationSerializer::testSnappedShapeHistoryRoundtrip_data()
+{
+    QTest::addColumn<bool>("vertical");
+    QTest::addColumn<bool>("ellipse");
+    QTest::newRow("rectangle-horizontal") << false << false;
+    QTest::newRow("rectangle-vertical") << true << false;
+    QTest::newRow("ellipse-horizontal") << false << true;
+    QTest::newRow("ellipse-vertical") << true << true;
+}
+
+void tst_AnnotationSerializer::testSnappedShapeHistoryRoundtrip()
+{
+    QFETCH(bool, vertical);
+    QFETCH(bool, ellipse);
+    auto& settings = AnnotationSettingsManager::instance();
+    const bool previousAssist = settings.loadAlignmentAssist();
+    const auto restoreSettings = qScopeGuard([&] { settings.saveAlignmentAssist(previousAssist); });
+    settings.saveAlignmentAssist(true);
+
+    const auto orient = [vertical](const QRect& rect) {
+        return vertical ? QRect(rect.y(), rect.x(), rect.height(), rect.width()) : rect;
+    };
+    const ShapeType type = ellipse ? ShapeType::Ellipse : ShapeType::Rectangle;
+    AnnotationLayer original;
+    for (const QRect& rect : {QRect(100, 100, 20, 20), QRect(161, 100, 30, 20),
+                              QRect(130, 100, 10, 20)}) {
+        original.addItem(std::make_unique<ShapeAnnotation>(orient(rect), type, Qt::red, 2, true));
+    }
+    original.setSelectedIndex(2);
+    auto* shape = static_cast<ShapeAnnotation*>(original.selectedItem());
+    const QRectF initial = shape->rectF();
+    auto& snap = original.snapController();
+    snap.setEnabled(true);
+    snap.begin(&original, initial.center());
+    QVERIFY(snap.move(initial.center() + (vertical ? QPointF(0, 7) : QPointF(7, 0)), false));
+    snap.end();
+    QVERIFY(original.commitGesture(AnnotationLayer::ModifyGeometry));
+    const QRectF expected = vertical ? QRectF(100, 135.5, 20, 10) : QRectF(135.5, 100, 10, 20);
+    QCOMPARE(shape->rectF(), expected);
+    original.undo();
+    QCOMPARE(shape->rectF(), initial);
+    original.redo();
+    QCOMPARE(shape->rectF(), expected);
+
+    // History replay restores this serialized scene, including fractional placement.
+    const QByteArray serialized = SnapTray::serializeAnnotationLayer(original);
+    AnnotationLayer restored;
+    QString error;
+    QVERIFY2(SnapTray::deserializeAnnotationLayer(serialized, &restored, {}, &error), qPrintable(error));
+    QCOMPARE(restored.itemCount(), original.itemCount());
+    for (int i = 0; i < static_cast<int>(original.itemCount()); ++i) {
+        auto* restoredShape = dynamic_cast<ShapeAnnotation*>(restored.itemAt(i));
+        QVERIFY(restoredShape);
+        QCOMPARE(restoredShape->rectF(), static_cast<ShapeAnnotation*>(original.itemAt(i))->rectF());
+        QCOMPARE(restoredShape->shapeType(), type);
+    }
+    QCOMPARE(QJsonDocument::fromJson(SnapTray::serializeAnnotationLayer(restored)),
+             QJsonDocument::fromJson(serialized));
+}
 
 void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
 {
@@ -133,6 +217,176 @@ void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
 
     const QByteArray roundtrip = SnapTray::serializeAnnotationLayer(restored);
     QCOMPARE(QJsonDocument::fromJson(roundtrip), QJsonDocument::fromJson(serialized));
+}
+
+void tst_AnnotationSerializer::testArrowControlPointPrecision_data()
+{
+    QTest::addColumn<QPointF>("control");
+    QTest::newRow("legacy-integer") << QPointF(70, 10);
+    QTest::newRow("fractional") << QPointF(70.5, -10.5);
+}
+
+void tst_AnnotationSerializer::testArrowControlPointPrecision()
+{
+    QFETCH(QPointF, control);
+    AnnotationLayer original;
+    auto arrow = std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(121, 41), Qt::red, 5);
+    arrow->setControlPoint(control);
+    original.addItem(std::move(arrow));
+    const QByteArray data = SnapTray::serializeAnnotationLayer(original);
+    AnnotationLayer restored;
+    QVERIFY(SnapTray::deserializeAnnotationLayer(data, &restored, {}));
+    auto* restoredArrow = dynamic_cast<ArrowAnnotation*>(restored.itemAt(0));
+    QVERIFY(restoredArrow);
+    QCOMPARE(restoredArrow->controlPoint(), control);
+    restoredArrow->setEnd(QPoint(122, 40));
+    QCOMPARE(restoredArrow->controlPoint(), control + QPointF(0.5, -0.5));
+    restored.undo();
+    QVERIFY(restored.isEmpty());
+    restored.redo();
+    restoredArrow = dynamic_cast<ArrowAnnotation*>(restored.itemAt(0));
+    QVERIFY(restoredArrow);
+    QCOMPARE(restoredArrow->controlPoint(), control + QPointF(0.5, -0.5));
+}
+
+void tst_AnnotationSerializer::testBulkRoundtripPreservesVisibleSceneAndBoundedUndo()
+{
+    constexpr int kItemCount = 102;
+    AnnotationLayer original;
+    for (int i = 0; i < kItemCount; ++i) {
+        original.addItem(std::make_unique<PencilStroke>(
+            QVector<QPointF>{QPointF(10.0, i), QPointF(30.0, i)},
+            QColor(Qt::red),
+            3,
+            LineStyle::Solid));
+    }
+    QCOMPARE(original.itemCount(), static_cast<size_t>(kItemCount));
+
+    const QByteArray serialized = SnapTray::serializeAnnotationLayer(original);
+    AnnotationLayer restored;
+    QSignalSpy changedSpy(&restored, &AnnotationLayer::changed);
+    QString errorMessage;
+    QVERIFY2(SnapTray::deserializeAnnotationLayer(
+                 serialized, &restored, SharedPixmap(), &errorMessage),
+             qPrintable(errorMessage));
+    QCOMPARE(changedSpy.count(), 1);
+    QCOMPARE(restored.itemCount(), static_cast<size_t>(kItemCount));
+    QCOMPARE(restored.historyCommandCount(), AnnotationLayer::kMaxHistoryCommands);
+    QCOMPARE(QJsonDocument::fromJson(SnapTray::serializeAnnotationLayer(restored)),
+             QJsonDocument::fromJson(serialized));
+
+    auto* firstStroke = dynamic_cast<PencilStroke*>(restored.itemAt(0));
+    auto* lastStroke = dynamic_cast<PencilStroke*>(restored.itemAt(kItemCount - 1));
+    QVERIFY(firstStroke != nullptr);
+    QVERIFY(lastStroke != nullptr);
+    QCOMPARE(firstStroke->points().first(), QPointF(10.0, 0.0));
+    QCOMPARE(lastStroke->points().first(), QPointF(10.0, kItemCount - 1));
+
+    for (std::size_t i = 0; i < AnnotationLayer::kMaxHistoryCommands; ++i) {
+        QVERIFY(restored.canUndo());
+        restored.undo();
+    }
+    QVERIFY(!restored.canUndo());
+    QCOMPARE(restored.itemCount(), static_cast<size_t>(2));
+    firstStroke = dynamic_cast<PencilStroke*>(restored.itemAt(0));
+    lastStroke = dynamic_cast<PencilStroke*>(restored.itemAt(1));
+    QVERIFY(firstStroke != nullptr);
+    QVERIFY(lastStroke != nullptr);
+    QCOMPARE(firstStroke->points().first(), QPointF(10.0, 0.0));
+    QCOMPARE(lastStroke->points().first(), QPointF(10.0, 1.0));
+}
+
+void tst_AnnotationSerializer::testSerializeExcludesRemovedCommandPayload()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 3; ++i) {
+        layer.addItem(std::make_unique<PencilStroke>(
+            QVector<QPointF>{QPointF(10.0, i * 10.0), QPointF(30.0, i * 10.0)},
+            QColor(Qt::red),
+            3,
+            LineStyle::Solid));
+    }
+
+    layer.setSelectedIndex(1);
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+
+    QJsonObject root = QJsonDocument::fromJson(
+        SnapTray::serializeAnnotationLayer(layer)).object();
+    QCOMPARE(root.keys(), QStringList{QStringLiteral("items")});
+    QCOMPARE(root.value(QStringLiteral("items")).toArray().size(), 2);
+    for (const QJsonValue& value : root.value(QStringLiteral("items")).toArray()) {
+        const QJsonObject object = value.toObject();
+        QVERIFY(!object.contains(QStringLiteral("id")));
+        QVERIFY(!object.contains(QStringLiteral("history")));
+    }
+
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(3));
+    auto* restoredMiddle = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    QVERIFY(restoredMiddle != nullptr);
+    QCOMPARE(restoredMiddle->points().first(), QPointF(10.0, 10.0));
+    QCOMPARE(QJsonDocument::fromJson(SnapTray::serializeAnnotationLayer(layer))
+                 .object().value(QStringLiteral("items")).toArray().size(),
+             3);
+
+    layer.redo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(QJsonDocument::fromJson(SnapTray::serializeAnnotationLayer(layer))
+                 .object().value(QStringLiteral("items")).toArray().size(),
+             2);
+}
+
+void tst_AnnotationSerializer::testDeserializeFailureClearsLayerOnce()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<PencilStroke>(
+        QVector<QPointF>{QPointF(10.0, 10.0), QPointF(30.0, 10.0)},
+        QColor(Qt::red),
+        3,
+        LineStyle::Solid));
+    QSignalSpy changedSpy(&layer, &AnnotationLayer::changed);
+
+    QString errorMessage;
+    QVERIFY(!SnapTray::deserializeAnnotationLayer(
+        QByteArrayLiteral("{"), &layer, SharedPixmap(), &errorMessage));
+    QVERIFY(!errorMessage.isEmpty());
+    QCOMPARE(changedSpy.count(), 1);
+    QVERIFY(layer.isEmpty());
+    QVERIFY(!layer.canUndo());
+}
+
+// #268: a rearranged scene reopens in the same drawing order with the same
+// step numbers, which follow placement order rather than drawing order.
+void tst_AnnotationSerializer::testRoundtripKeepsDrawingOrderAndStepNumbers()
+{
+    AnnotationLayer source;
+    for (int i = 1; i <= 3; ++i) {
+        source.addItem(std::make_unique<StepBadgeAnnotation>(QPoint(20 * i, 20), Qt::red, i));
+    }
+    source.setSelectedIndex(0);
+    QVERIFY(source.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));   // 2, 3, 1
+
+    const auto numbersOf = [](AnnotationLayer& layer) {
+        QList<int> numbers;
+        for (int i = 0; i < static_cast<int>(layer.itemCount()); ++i) {
+            numbers.append(static_cast<StepBadgeAnnotation*>(layer.itemAt(i))->number());
+        }
+        return numbers;
+    };
+    QCOMPARE(numbersOf(source), QList<int>({2, 3, 1}));
+
+    AnnotationLayer restored;
+    QString error;
+    QVERIFY2(SnapTray::deserializeAnnotationLayer(
+                 SnapTray::serializeAnnotationLayer(source), &restored, makeSharedPixmap(), &error),
+             qPrintable(error));
+    QCOMPARE(numbersOf(restored), QList<int>({2, 3, 1}));
+
+    // Deleting badge 2 renumbers by placement: badge 3 becomes 2.
+    restored.setSelectedIndex(0);
+    QVERIFY(restored.removeSelectedItem());
+    QCOMPARE(numbersOf(restored), QList<int>({2, 1}));
 }
 
 QTEST_MAIN(tst_AnnotationSerializer)

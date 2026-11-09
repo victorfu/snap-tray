@@ -55,6 +55,29 @@ SnapTray は macOS、Windows、Ubuntu 22.04 X11 beta に対応した Qt 6 のス
 
 macOS/Windows では、トレイメニューまたは録画ホットキーから開始し、必要に応じて画面を選び、フローティングコントロールバーで時間を確認して録画を停止します。
 
+## Linux：古い AppImageLauncher
+
+古い AppImageLauncher（Ubuntu PPA の 2022 年版を含む）がインストールされていると、SnapTray の AppImage が起動せず、`fuse: memory allocation failed`、`Can't open squashfs image: Bad address`、`execv error: No such file or directory` などが表示されることがあります。これらはメモリ不足ではなく、[AppImageLauncher の互換性の問題](https://github.com/AppImage/type2-runtime/issues/121)を示している場合があります。
+
+AppImageLauncher を使用している場合は、[公式リリース](https://github.com/TheAssassin/AppImageLauncher/releases)からシステムに合った `.deb` をダウンロードして更新してください。Ubuntu x86_64 では `amd64.deb` を選びます。古い PPA では問題のあるバージョンが提供される場合があるため、[公式の Ubuntu インストール手順](https://github.com/TheAssassin/AppImageLauncher/wiki/Install-on-Ubuntu-or-Debian)に従ってください。
+
+更新後に起動が止まったように見える場合は、その端末で `Ctrl+C` を押し、再起動せずにユーザーサービスを再読み込みしてみてください。
+
+```bash
+systemctl --user daemon-reload
+systemctl --user restart appimagelauncherd.service
+# <version> とパスを、ダウンロードした AppImage に合わせて置き換えてください。
+timeout 15s ./SnapTray-<version>-x86_64.AppImage --version
+```
+
+`Created symlink ... appimagelauncherd.service` は正常なサービス設定メッセージです。バージョン確認が成功したら、通常どおり起動できます。端末を使い続けたい場合は、バックグラウンドで起動します。
+
+```bash
+nohup ./SnapTray-<version>-x86_64.AppImage > /tmp/snaptray.log 2>&1 &
+```
+
+SnapTray はシステムトレイに常駐し、メインウィンドウは自動で開きません。トレイアイコンを確認してください。サービスを再起動しても解決しない場合は、[展開して実行する方法](docs/developer/release-packaging.md#linux)（英語）を参照してください。
+
 ## さらに詳しく
 
 - リリース：[GitHub Releases](https://github.com/victorfu/snap-tray/releases)

@@ -1,7 +1,11 @@
 #include "IVideoEncoder.h"
 #include <QDebug>
 
-#ifdef Q_OS_MAC
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+#include "encoding/FFmpegEncoder.h"
+#endif
+
+#ifdef Q_OS_MACOS
 #include "AVFoundationEncoder.h"
 #endif
 
@@ -11,7 +15,14 @@
 
 IVideoEncoder* IVideoEncoder::createNativeEncoder(QObject *parent)
 {
-#ifdef Q_OS_MAC
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    auto encoder = new FFmpegEncoder(parent);
+    if (encoder->isAvailable()) {
+        return encoder;
+    }
+    delete encoder;
+#endif
+#ifdef Q_OS_MACOS
     auto encoder = new AVFoundationEncoder(parent);
     if (encoder->isAvailable()) {
         qDebug() << "VideoEncoderFactory: Using AVFoundation encoder";

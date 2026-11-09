@@ -49,7 +49,16 @@ public:
         EncoderFactory::Format outputFormat = EncoderFactory::Format::MP4;
         QSize frameSize;
         int quality = 55;
-        QList<WId> excludedWindowIds;  // Windows to exclude from capture (e.g., recording UI)
+        // Preview recordings capture a high-quality intermediate (constant
+        // quality where supported, 1 s keyframes); the user's quality is then
+        // applied when the preview saves. See IntermediateQuality.h.
+        bool intermediateQuality = false;
+        QList<quintptr> excludedCaptureWindowIds; // Native capture IDs resolved on the GUI thread
+        // Windows: try Windows Graphics Capture first (experimental, #152);
+        // the default engine is used when it is unavailable or fails to start.
+        bool preferGraphicsCapture = false;
+        // Hand GPU frames to the MP4 encoder when it can take them (#155).
+        bool gpuEncoding = true;
     };
 
     /**
@@ -66,6 +75,9 @@ public:
         std::unique_ptr<WebPAnimationEncoder> webpEncoder;
 
         bool usingNativeEncoder = false;
+        bool fragmentedOutput = false;  // crash leaves a playable prefix
+        bool audioEnabled = false;
+        QString audioWarning;
 
         // Track started state for safe cleanup
         bool captureEngineStarted = false;
@@ -129,13 +141,19 @@ signals:
     void finished();
 
 private:
+    friend class TestRecordingStartup;
+    friend class TestRecordingInitTask;
     bool initializeCaptureEngine();
+    // Region, frame rate, exclusions and start() for m_result.captureEngine.
+    bool configureAndStartCaptureEngine();
     bool initializeAudioEngine();
     bool initializeEncoder();
 
     Config m_config;
     Result m_result;
     QAtomicInt m_cancelled;
+    std::function<EncoderFactory::EncoderResult(const EncoderFactory::EncoderConfig&, QObject*)>
+        m_createEncoder = &EncoderFactory::create;
 };
 
 #endif // RECORDINGINITTASK_H

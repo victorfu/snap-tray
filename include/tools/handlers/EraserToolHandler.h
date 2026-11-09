@@ -2,7 +2,7 @@
 #define ERASERTOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "annotations/ErasedItemsGroup.h"
+#include "annotations/RemovedAnnotationItem.h"
 
 #include <QPoint>
 #include <QCursor>
@@ -38,7 +38,7 @@ private:
     static constexpr int kMaxWidth = 100;
     static constexpr int kDefaultWidth = 20;
 
-    void eraseAt(ToolContext* ctx, const QPoint& pos);
+    void eraseSegment(ToolContext* ctx, const QPoint& from, const QPoint& to);
     size_t mapToOriginalIndex(size_t currentIndex) const;
 
     bool m_isErasing = false;
@@ -49,7 +49,7 @@ private:
     mutable int m_cachedCursorWidth = 0;
 
     QPointer<AnnotationLayer> m_activeLayer;
-    std::vector<ErasedItemsGroup::IndexedItem> m_currentStrokeErasedItems;
+    std::vector<RemovedAnnotationItem> m_currentStrokeErasedItems;
     std::vector<size_t> m_removedOriginalIndices;
 };
 

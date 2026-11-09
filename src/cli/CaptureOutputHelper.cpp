@@ -10,15 +10,35 @@
 #include <QBuffer>
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
 #include <QPixmap>
 #include <QScreen>
 #include <QThread>
+#include <cstdio>
+#ifdef Q_OS_WIN
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 namespace SnapTray {
 namespace CLI {
+bool writeRawOutputToStdout(const QByteArray& data)
+{
+#ifdef Q_OS_WIN
+    // QIODevice's binary mode does not disable the CRT's LF translation.
+    if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
+        return false;
+    }
+#endif
+    QFile output;
+    return output.open(stdout, QIODevice::WriteOnly)
+        && output.write(data) == data.size()
+        && output.flush();
+}
+
 namespace {
 
 QString resolveCaptureType(const CaptureMetadata& metadata)
@@ -26,10 +46,13 @@ QString resolveCaptureType(const CaptureMetadata& metadata)
     return metadata.captureType.isEmpty() ? QStringLiteral("Screenshot") : metadata.captureType;
 }
 
-QImage prepareImageForRawOrSave(const QPixmap& screenshot, QScreen* sourceScreen)
+QImage prepareImageForRawOrSave(const QPixmap& screenshot,
+                                QScreen* sourceScreen,
+                                bool preserveAlpha)
 {
+    const QImage::Format format = preserveAlpha ? QImage::Format_ARGB32 : QImage::Format_RGB32;
     return tagImageWithScreenColorSpace(
-        screenshot.toImage().convertToFormat(QImage::Format_RGB32), sourceScreen);
+        screenshot.toImage().convertToFormat(format), sourceScreen);
 }
 
 QImage prepareImageForClipboard(const QPixmap& screenshot, QScreen* sourceScreen)
@@ -39,7 +62,8 @@ QImage prepareImageForClipboard(const QPixmap& screenshot, QScreen* sourceScreen
 }
 
 QString resolveOutputFilePath(
-    const QPixmap& screenshot, const CaptureOutputOptions& options, const CaptureMetadata& metadata)
+    const QPixmap& screenshot, const CaptureOutputOptions& options, const CaptureMetadata& metadata,
+    ImageSaveUtils::UniqueSaveSpec* uniqueSpec)
 {
     if (!options.outputFile.isEmpty()) {
         return options.outputFile;
@@ -69,9 +93,10 @@ QString resolveOutputFilePath(
     context.ext = QStringLiteral("png");
     context.dateFormat = fileSettings.loadDateFormat();
     context.outputDir = savePath;
+    *uniqueSpec = {savePath, fileSettings.loadFilenameTemplate(), context};
 
     return FilenameTemplateEngine::buildUniqueFilePath(
-        savePath, fileSettings.loadFilenameTemplate(), context);
+        savePath, uniqueSpec->filenameTemplate, context);
 }
 
 } // namespace
@@ -90,7 +115,8 @@ CLIResult emitCaptureOutput(
     QCoreApplication::processEvents();
 
     if (options.toRaw) {
-        QImage rawImage = prepareImageForRawOrSave(screenshot, metadata.sourceScreen);
+        QImage rawImage =
+            prepareImageForRawOrSave(screenshot, metadata.sourceScreen, options.preserveAlpha);
 
         QByteArray data;
         QBuffer buffer(&data);
@@ -109,14 +135,25 @@ CLIResult emitCaptureOutput(
         return CLIResult::error(CLIResult::Code::GeneralError, "Failed to copy to clipboard");
     }
 
-    const QString filePath = resolveOutputFilePath(screenshot, options, metadata);
+    ImageSaveUtils::UniqueSaveSpec uniqueSpec;
+    QString filePath = resolveOutputFilePath(screenshot, options, metadata, &uniqueSpec);
 
     // Ensure directory exists
     QDir().mkpath(QFileInfo(filePath).absolutePath());
 
-    QImage image = prepareImageForRawOrSave(screenshot, metadata.sourceScreen);
+    QImage image =
+        prepareImageForRawOrSave(screenshot, metadata.sourceScreen, options.preserveAlpha);
     ImageSaveUtils::Error saveError;
-    if (!ImageSaveUtils::saveImageAtomically(image, filePath, QByteArrayLiteral("PNG"), &saveError)) {
+    bool success;
+    if (options.outputFile.isEmpty()) {
+        const auto saved = ImageSaveUtils::saveImageUnique(image, uniqueSpec, QByteArrayLiteral("PNG"));
+        filePath = saved.filePath;
+        saveError = saved.error;
+        success = saved.success;
+    } else {
+        success = ImageSaveUtils::saveImageAtomically(image, filePath, QByteArrayLiteral("PNG"), &saveError);
+    }
+    if (!success) {
         const QString detail = saveError.stage.isEmpty()
             ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
             : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);

@@ -17,7 +17,13 @@ Packaging scripts run Release builds, deploy Qt dependencies, and produce instal
 
 ### macOS
 
+The macOS CI and release workflows both install Qt 6.12.0 (`clang_64`, including
+`qtimageformats`). Packaging requires `QT_ROOT_DIR` pointing to that SDK and
+rejects other versions; it does not select Qt from Homebrew. CMake and
+`macdeployqt` use the same SDK root.
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/macos"
 ./packaging/macos/package.sh
 # Output: dist/SnapTray-<version>-macOS.dmg
 ```
@@ -40,41 +46,191 @@ Typical outputs:
 
 - `dist\SnapTray-<version>-Setup.exe`
 - `dist\SnapTray-<version>.msix`
-- `dist\SnapTray-<version>.msixupload`
+
+### Linux-only CI builds and releases
+
+In GitHub Actions, choose **Release → Run workflow**, select the source branch,
+and set `platform` to `linux`. The workflow uses the same signed AppImage build
+as a full release, including its matching `.zsync` file.
+
+- Disable `publish_release` to build only. Download the `linux-appimage` artifact
+  from the completed run. No GitHub Release or appcast is published.
+- Enable `publish_release` to publish a Linux-only **formal, latest** GitHub
+  Release. Its version must match `CMakeLists.txt` and have a corresponding
+  `CHANGELOG.md` entry. Use a new version/tag; do not replace an existing release.
+  The release targets the selected workflow commit.
+
+The optional `version` input validates the source version; it does not change
+`CMakeLists.txt`. Both modes require the AppImage signing secret and variable
+listed below. Linux-only mode skips macOS, Windows, appcasts, and the website
+release page deployment. Existing macOS/Windows appcast feeds remain unchanged,
+but the repository's latest GitHub Release becomes the Linux release.
+
+For an A → B update test, build signed A with publishing disabled, install it
+locally, then run again from the higher-version B commit with publishing enabled.
+Both commits must contain the AppImage updater and use the same signing key.
+Drafts and prereleases are not discovered by the updater. Build-only CI does not
+replace manual X11 download/restart/rollback validation.
+
+Use manual dispatch for Linux-only releases: pushing a `v*` tag still triggers
+the full, all-platform release workflow. The dispatch form becomes available
+with the new inputs after this workflow is present on the default branch.
 
 ### Linux
 
+Linux CI and AppImage packaging use Qt 6.12.0 (`linux_gcc_64`, including
+`qtimageformats`). Packaging defaults to `$HOME/Qt/6.12.0/gcc_64`, accepts
+`QT_ROOT_DIR` for another installation location, and rejects other versions.
+CMake and linuxdeploy use the same SDK; cached Qt package paths are refreshed.
+For clean release validation, start with a fresh `release-linux` directory.
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/gcc_64"
 ./packaging/linux/package-appimage.sh
 # Output: dist/SnapTray-<version>-x86_64.AppImage
 ```
 
-The Linux beta artifact targets Ubuntu 22.04 X11. It does not include in-app
-updates; users download a newer AppImage for upgrades.
+The Linux beta artifact targets Ubuntu 22.04 X11. Recording is enabled in the
+AppImage build. Install `libavcodec-dev`, `libavformat-dev`, `libavutil-dev`,
+`libswscale-dev`, `libswresample-dev`, `libpulse-dev`, and `libxcb-shm0-dev` on the
+build host. linuxdeploy bundles the linked media libraries and their runtime
+dependencies; this avoids depending on the target distribution's FFmpeg SONAME.
+PulseAudio/PipeWire services and GPU drivers remain supplied by the host. The
+extracted artifact must pass an H.264/AAC encode/decode/crop-export smoke check
+in addition to the normal startup and rendering checks.
 
-The packaging script masks the AppImage type marker after creation so Ubuntu
-22.04 systems with AppImageLauncher `binfmt_misc` handlers run the embedded
-AppImage runtime directly instead of routing through AppImageLauncher.
+
+The Linux beta artifact targets Ubuntu 22.04 X11 (x86_64). Signed AppImages
+include an in-app updater based on AppImageUpdate. The release must include both
+`SnapTray-<version>-x86_64.AppImage` and its matching `.AppImage.zsync`. Existing
+unsigned releases require one manual download of a signed version first.
+
+The updater is built separately from `src/update/appimage` with CMake 3.20+.
+Install `libgpgme-dev`, `libgcrypt20-dev`, `nlohmann-json3-dev`, `libxpm-dev`,
+`libssl-dev`, and `gnupg` in addition to the normal build prerequisites.
+The helper uses the system GnuPG engine on Ubuntu 22.04 to verify signatures.
+AppImageUpdate and its bundled source dependencies are fixed by the helper's
+CMake configuration; the GUI does not link the updater library.
+
+Before publishing the first update-enabled release, configure:
+
+- GitHub Actions secret `APPIMAGE_PRIVATE_KEY`: an ASCII-armored OpenPGP secret
+  signing key usable non-interactively. Use a dedicated release key, not the
+  Sparkle/WinSparkle EdDSA key. Never commit this key or write it to build logs.
+- Repository variable `APPIMAGE_SIGN_KEY`: the full public signing fingerprint.
+
+The release workflow imports the key into a temporary GnuPG home. Missing signing
+configuration fails the Linux release build. For local signed packaging, set
+`GNUPGHOME` and `SNAPTRAY_APPIMAGE_SIGN_KEY`; set
+`SNAPTRAY_REQUIRE_APPIMAGE_SIGNATURE=1` to require signing. Unsigned local builds
+can be packaged for development, but the in-app installer rejects them.
+
+`LDAI_UPDATE_INFORMATION` selects the latest **formal GitHub release**, excluding
+prereleases. The selected release and architecture are fixed when the user
+confirms a download. The final AppImage is signed before the zsync checksum is
+produced. `verify-update-artifacts.py` checks the embedded source and final
+checksum; do not modify either artifact after that check.
+
+The updater requires a valid signature from the same key as the running signed
+AppImage. Key rotation is not automatic: distribute a new trusted version
+manually when changing the signing key. A `.zsync` checksum alone is insufficient.
+
+Updates are staged next to the original AppImage, so that installation can use
+same-filesystem renames. The original launch path and executable permissions are
+retained; the previous version remains at `<AppImage>.snaptray-backup`. The
+private `<AppImage>.snaptray-update` directory holds pending downloads and an
+interrupted-install journal. A failed startup confirmation triggers rollback.
+Replacement uses an atomic rename after creating the backup, keeping the original
+launch path present throughout installation. The next update operation detects
+and recovers interrupted transactions before doing any new work.
+
+For helper integration tests, build a small signed AppImage with a **temporary
+non-production key**, then run:
+
+```bash
+python3 tests/Update/tst_appimage_helper.py \
+  release-linux/appimage-updater/snaptray-appimage-updater /path/to/signed-fixture.AppImage
+```
+
+To exercise successful restart acknowledgement and rollback without FUSE, build
+with `-DSNAPTRAY_BUILD_UPDATER_TESTS=ON`, build the additional
+`snaptray-appimage-updater-test` target, and set `SNAPTRAY_TEST_HELPER` to that
+executable when running the same Python suite. Its injected launcher exists
+only in the test executable; never package that executable.
+
+Before release, additionally exercise two different signed versions end to end
+on Ubuntu 22.04 X11: confirm download, cancel, defer, restart, preserve shortcuts,
+and recover when the new version fails to acknowledge startup. Verify externally
+with AppImageUpdate too. These network/mount/UI checks are distinct from unit tests.
+
+The packaging script preserves and checks the ELF header and the type 2
+AppImage marker (`AI\x02` at byte offset 8), as required by the
+[AppImage specification](https://github.com/AppImage/AppImageSpec/blob/master/draft.md#type-2-image-format).
+It also checks the extracted root desktop entry, icons, and executable `AppRun`.
+The marker must not be masked: AppImage catalogs and desktop integration tools
+need it to recognize the artifact and extract its metadata.
+
+If an older AppImageLauncher `binfmt_misc` handler prevents launching on Ubuntu
+22.04, update or disable that handler locally. From a repository checkout, you
+can also extract and run the application without invoking AppImageLauncher or
+FUSE (requires `squashfs-tools`):
+
+```bash
+source packaging/linux/appimage-helpers.sh
+appimage="$(realpath dist/SnapTray-<version>-x86_64.AppImage)"
+unsquashfs -o "$(appimage_squashfs_offset "$appimage")" -d "$appimage.AppDir" "$appimage"
+"$appimage.AppDir/AppRun"
+```
+
+Qt 6.10's software scene graph is [built into Qt Quick](https://doc.qt.io/qt-6.10/qtquick-visualcanvas-adaptations.html),
+so there is no separate `libqsgsoftwarebackend.so` to bundle. After extracting
+the final AppImage, packaging checks both `--version` and a rendered QML surface
+using the bundled Qt runtime with `QT_QPA_PLATFORM=offscreen`. The rendering check
+uses the application's normal backend policy, verifies that the actual renderer
+is software, and checks the resulting pixels. A failed QML load, backend fallback,
+unexpected pixels, or a rendering timeout fail the package build.
+The package explicitly includes the offscreen QPA plugin for this headless check.
+
+Packaging also runs the extracted application's normal CLI and tray startup
+under Xvfb without `XDG_SESSION_TYPE`, matching the AppImage catalog's X11
+environment. It checks that Wayland and offscreen sessions remain unsupported.
+These startup checks require `python3`, `xvfb`, and `xauth` on the build host.
 
 ## Packaging prerequisites
 
+Windows and Linux Qt SDKs must include the **Qt Image Formats** add-on
+(`qtimageformats`). It provides the WebP and TIFF plugins used by
+`QImageReader` when pinning images. SnapTray's separately linked libwebp encoder
+does not provide those Qt decoders. With `jurplel/install-qt-action@v4`, use
+`modules: 'qtimageformats'`; for local SDKs, select Qt Image Formats in the Qt
+installer. Homebrew's Qt installation includes these plugins.
+
+NSIS/MSIX staging and the extracted AppImage are checked for the WebP and TIFF
+plugin files before packaging succeeds. Windows development deployment also
+retries if either plugin is missing. The `Packaging_ImageFormatDecoding` CTest
+reads fixed `.webp`, `.tiff`, and `.tif` fixtures using `QImageReader` and checks
+the decoded pixels. This test exercises the test runtime; the packaging file
+checks separately guard against missing plugins in distributable artifacts.
+
 ### macOS
 
-- Qt 6 installed
+- Qt 6.12.0 macOS SDK with `qtimageformats`; set `QT_ROOT_DIR` to its root
 - Xcode Command Line Tools
 - Optional `create-dmg` for nicer DMG presentation
 
 ### Windows
 
-- Qt 6 installed
+- Qt 6.12.0 MSVC 2022 installed
 - Visual Studio Build Tools or Visual Studio
 - NSIS for NSIS installers
 - Windows 10 SDK for MSIX packaging
 
+Windows builds and NSIS/MSIX packaging share `scripts/detect-qt.bat`.
+They default to Qt 6.12.0 and report an error instead of falling back to older SDKs.
 If Qt is not installed in the default location, set:
 
 ```batch
-set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+set QT_PATH=C:\Qt\6.12.0\msvc2022_64
 ```
 
 ## Release notes and versioning
@@ -163,6 +319,11 @@ set CODESIGN_PASSWORD=your-password
 packaging\windows\package.bat nsis
 ```
 
+When `CODESIGN_CERT` is set, NSIS packaging signs the staged executable,
+WinSparkle DLL, and installer using SHA256. Any signing failure stops packaging
+with a nonzero exit code; do not distribute artifacts left by a failed run.
+Without `CODESIGN_CERT`, NSIS packaging skips signing.
+
 MSIX sideload / enterprise signing:
 
 ```batch
@@ -193,7 +354,7 @@ Get-AppPackage SnapTray* | Remove-AppPackage
 1. Sign in to Partner Center
 2. Create or select the app reservation
 3. Create a new submission
-4. Upload the `.msixupload`
+4. Upload the `.msix`
 5. Complete listing, pricing, and age rating details
 6. Submit for certification
 

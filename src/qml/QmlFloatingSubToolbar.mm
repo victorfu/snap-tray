@@ -3,7 +3,6 @@
 #include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolOptionsViewModel.h"
-#include "settings/AnnotationSettingsManager.h"
 
 #include <QQuickView>
 #include <QQuickItem>
@@ -27,7 +26,8 @@ namespace SnapTray {
 namespace {
 constexpr int kParentCursorRestoreRetryDelayMs = 16;
 constexpr int kParentCursorRestoreMaxAttempts = 6;
-constexpr int kMosaicCoachmarkDurationMs = 3000;
+// The auto-blur button is also emphasized while its tooltip shows.
+const QLatin1String kAutoBlurButtonName("autoBlurButton");
 
 QSize resolvedViewSize(QQuickView* view, QQuickItem* rootItem)
 {
@@ -75,7 +75,6 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(PinToolOptionsViewModel* viewModel,
 {
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
             this, &QmlFloatingSubToolbar::emojiPickerRequested);
-    initializeHintConnections();
 }
 
 QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
@@ -84,33 +83,16 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
 {
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
             this, &QmlFloatingSubToolbar::emojiPickerRequested);
-    initializeHintConnections();
 }
 
 QmlFloatingSubToolbar::~QmlFloatingSubToolbar()
 {
-    deactivateMosaicHint();
+    hideControlTooltip();
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
     }
     destroyQuickView(m_view, m_rootItem);
-}
-
-void QmlFloatingSubToolbar::initializeHintConnections()
-{
-    m_mosaicCoachmarkTimer.setSingleShot(true);
-    m_mosaicCoachmarkTimer.setInterval(kMosaicCoachmarkDurationMs);
-    connect(&m_mosaicCoachmarkTimer, &QTimer::timeout, this, [this]() {
-        if (m_mosaicHintDisplay == MosaicHintDisplay::Coachmark) {
-            hideMosaicHint();
-        }
-    });
-
-    connect(m_viewModel, &PinToolOptionsViewModel::activeToolChanged,
-            this, &QmlFloatingSubToolbar::onActiveToolChanged);
-    connect(m_viewModel, &PinToolOptionsViewModel::mosaicBrushAdjustmentLearned,
-            this, &QmlFloatingSubToolbar::onMosaicBrushAdjustmentLearned);
 }
 
 void QmlFloatingSubToolbar::ensureView()
@@ -135,24 +117,15 @@ void QmlFloatingSubToolbar::ensureView()
         m_rootItem->setProperty(
             "viewModel",
             QVariant::fromValue(static_cast<QObject*>(m_viewModel)));
-        m_rootItem->setProperty("mosaicBrushHintActive", false);
         m_rootItem->setProperty("autoBlurHintActive", false);
         connect(m_rootItem,
-                SIGNAL(mosaicBrushPreviewHovered(double,double,double,double)),
+                SIGNAL(controlTooltipRequested(QString,QString)),
                 this,
-                SLOT(onMosaicBrushPreviewHovered(double,double,double,double)));
+                SLOT(onControlTooltipRequested(QString,QString)));
         connect(m_rootItem,
-                SIGNAL(mosaicBrushPreviewHoverExited()),
+                SIGNAL(controlTooltipDismissed(QString)),
                 this,
-                SLOT(onMosaicBrushPreviewHoverExited()));
-        connect(m_rootItem,
-                SIGNAL(autoBlurButtonHovered(double,double,double,double)),
-                this,
-                SLOT(onAutoBlurButtonHovered(double,double,double,double)));
-        connect(m_rootItem,
-                SIGNAL(autoBlurButtonHoverExited()),
-                this,
-                SLOT(onAutoBlurButtonHoverExited()));
+                SLOT(onControlTooltipDismissed(QString)));
     }
 
     m_view->installEventFilter(this);
@@ -221,10 +194,7 @@ void QmlFloatingSubToolbar::show()
 
 void QmlFloatingSubToolbar::hide()
 {
-    // Visibility can be suppressed temporarily while the active tool is kept
-    // (for example, during a Region Capture selection drag). Preserve the
-    // activation so reopening the same tool does not replay its coachmark.
-    suspendMosaicHint();
+    hideControlTooltip();
     if (m_view) {
         m_view->hide();
         m_view->unsetCursor();
@@ -239,7 +209,7 @@ void QmlFloatingSubToolbar::hide()
 
 void QmlFloatingSubToolbar::close()
 {
-    deactivateMosaicHint();
+    hideControlTooltip();
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
@@ -379,18 +349,19 @@ bool QmlFloatingSubToolbar::eventFilter(QObject* obj, QEvent* event)
             syncCursorSurface();
             break;
         case QEvent::Leave:
+            hideControlTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             m_view->unsetCursor();
             scheduleParentCursorRestore();
             break;
         case QEvent::Hide:
-            suspendMosaicHint();
+            hideControlTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             m_view->unsetCursor();
             scheduleParentCursorRestore();
             break;
         case QEvent::Close:
-            deactivateMosaicHint();
+            hideControlTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             m_view->unsetCursor();
             scheduleParentCursorRestore();
@@ -409,16 +380,6 @@ void QmlFloatingSubToolbar::showForTool(int toolId)
 {
     m_viewModel->showForTool(toolId);
 
-    if (m_viewModel->isMosaicActive()) {
-        // activeToolChanged handles genuine tool transitions. This branch also
-        // covers reopening a hidden overlay whose ViewModel still says Mosaic.
-        if (!m_mosaicHintActivationActive) {
-            activateMosaicHint();
-        }
-    } else if (m_mosaicHintActivationActive) {
-        deactivateMosaicHint();
-    }
-
     if (m_viewModel->hasContent()) {
         show();
     } else {
@@ -426,211 +387,70 @@ void QmlFloatingSubToolbar::showForTool(int toolId)
     }
 }
 
-void QmlFloatingSubToolbar::onActiveToolChanged()
+void QmlFloatingSubToolbar::onControlTooltipRequested(const QString& controlName,
+                                                      const QString& text)
 {
-    if (m_viewModel->isMosaicActive()) {
-        if (!m_mosaicHintActivationActive) {
-            activateMosaicHint();
-        }
+    // A hidden control (say, the eyedropper while Mosaic shows) cannot take
+    // the tooltip from the one showing it.
+    QQuickItem* control = visibleControl(controlName);
+    if (!control || text.isEmpty()) {
         return;
     }
 
-    deactivateMosaicHint();
+    // One tooltip at a time: the latest control takes it over without a flicker.
+    if (control != m_tooltipControl) {
+        disconnect(m_tooltipControlVisibility);
+        m_tooltipControl = control;
+        // A tool or selection change can hide the control under a still
+        // pointer, which sends no hover exit.
+        m_tooltipControlVisibility = connect(
+            control, &QQuickItem::visibleChanged, this, [this]() {
+                if (!m_tooltipControl || !m_tooltipControl->isVisible()) {
+                    hideControlTooltip();
+                }
+            });
+    }
+    m_tooltipText = text;
+    showControlTooltip();
 }
 
-void QmlFloatingSubToolbar::activateMosaicHint()
+void QmlFloatingSubToolbar::onControlTooltipDismissed(const QString& controlName)
 {
-    m_mosaicHintActivationActive = true;
-    m_mosaicPreviewHovered = false;
-    m_suppressHoverReminderUntilExit = false;
-    m_mosaicBrushAdjustmentLearned = AnnotationSettingsManager::instance()
-        .loadMosaicBrushAdjustmentLearned();
-    m_mosaicCoachmarkPending = !m_mosaicBrushAdjustmentLearned;
-    m_mosaicCoachmarkTimer.stop();
-    hideMosaicHint();
+    if (m_tooltipControl && m_tooltipControl->objectName() == controlName) {
+        hideControlTooltip();
+    }
 }
 
-void QmlFloatingSubToolbar::deactivateMosaicHint()
+void QmlFloatingSubToolbar::showControlTooltip()
 {
-    m_mosaicCoachmarkTimer.stop();
-    m_mosaicCoachmarkPending = false;
-    m_mosaicHintActivationActive = false;
-    m_mosaicPreviewHovered = false;
-    m_suppressHoverReminderUntilExit = false;
-    hideMosaicHint();
-}
-
-void QmlFloatingSubToolbar::suspendMosaicHint()
-{
-    m_mosaicCoachmarkTimer.stop();
-    m_mosaicPreviewHovered = false;
-    m_suppressHoverReminderUntilExit = false;
-    hideMosaicHint();
-}
-
-void QmlFloatingSubToolbar::onMosaicBrushAdjustmentLearned()
-{
-    if (!m_mosaicHintActivationActive || !m_viewModel->isMosaicActive()) {
+    if (!m_tooltipControl) {
         return;
     }
 
-    if (!m_mosaicBrushAdjustmentLearned) {
-        AnnotationSettingsManager::instance()
-            .saveMosaicBrushAdjustmentLearned(true);
-        m_mosaicBrushAdjustmentLearned = true;
-    }
-
-    m_mosaicCoachmarkPending = false;
-    m_mosaicCoachmarkTimer.stop();
-    // The wheel gesture normally occurs while the preview is hovered. Keep the
-    // newly learned reminder dismissed until the pointer leaves and re-enters.
-    m_suppressHoverReminderUntilExit = m_mosaicPreviewHovered;
-    hideMosaicHint();
-}
-
-void QmlFloatingSubToolbar::onMosaicBrushPreviewHovered(double globalX,
-                                                        double globalY,
-                                                        double width,
-                                                        double height)
-{
-    m_mosaicPreviewHovered = true;
-    if (!m_mosaicHintActivationActive || !m_viewModel->isMosaicActive()
-        || m_suppressHoverReminderUntilExit) {
-        return;
-    }
-
-    const QRect anchor(QPoint(qRound(globalX), qRound(globalY)),
-                       QSize(qMax(1, qRound(width)), qMax(1, qRound(height))));
-
-    if (m_mosaicHintDisplay == MosaicHintDisplay::Coachmark) {
-        showMosaicHint(MosaicHintDisplay::Coachmark, anchor);
-        return;
-    }
-
-    // A pending coachmark is deliberately left for positionBelow(); showing it
-    // here could briefly place it at the overlay's pre-layout origin.
-    if (!m_mosaicCoachmarkPending) {
-        showMosaicHint(MosaicHintDisplay::HoverReminder, anchor);
-    }
-}
-
-void QmlFloatingSubToolbar::onMosaicBrushPreviewHoverExited()
-{
-    m_mosaicPreviewHovered = false;
-    m_suppressHoverReminderUntilExit = false;
-    if (m_mosaicHintDisplay == MosaicHintDisplay::HoverReminder) {
-        hideMosaicHint();
-    }
-}
-
-void QmlFloatingSubToolbar::onAutoBlurButtonHovered(double globalX,
-                                                    double globalY,
-                                                    double width,
-                                                    double height)
-{
-    if (!m_mosaicHintActivationActive || !m_viewModel->isMosaicActive()) {
-        return;
-    }
-
-    const QRect anchor(QPoint(qRound(globalX), qRound(globalY)),
-                       QSize(qMax(1, qRound(width)), qMax(1, qRound(height))));
-    // A deliberate hover takes priority over the automatic brush coachmark.
-    // It does not mark the brush gesture as learned, so that instruction can
-    // still return on the next Mosaic activation.
-    m_mosaicCoachmarkPending = false;
-    m_mosaicCoachmarkTimer.stop();
-    showAutoBlurHint(anchor);
-}
-
-void QmlFloatingSubToolbar::onAutoBlurButtonHoverExited()
-{
-    if (m_mosaicHintDisplay == MosaicHintDisplay::AutoBlurHoverReminder) {
-        hideMosaicHint();
-    }
-}
-
-void QmlFloatingSubToolbar::showPendingMosaicCoachmark()
-{
-    if (!m_mosaicCoachmarkPending || !m_mosaicHintActivationActive
-        || m_mosaicBrushAdjustmentLearned || !m_viewModel->isMosaicActive()
-        || !m_view || !m_view->isVisible()) {
-        return;
-    }
-
-    const QRect anchor = mosaicPreviewGlobalRect();
-    if (anchor.isEmpty()) {
-        return;
-    }
-
-    m_mosaicCoachmarkPending = false;
-    showMosaicHint(MosaicHintDisplay::Coachmark, anchor);
-    m_mosaicCoachmarkTimer.start();
-}
-
-void QmlFloatingSubToolbar::showMosaicHint(MosaicHintDisplay display,
-                                           const QRect& anchorGlobalRect)
-{
+    const QRect anchorGlobalRect = controlGlobalRect(m_tooltipControl->objectName());
     if (!m_view || !m_view->isVisible() || anchorGlobalRect.isEmpty()) {
+        hideControlTooltip();
         return;
     }
 
-    const QString text = m_viewModel->mosaicBrushHintText();
-    if (text.isEmpty()) {
-        hideMosaicHint();
-        return;
-    }
-
-    // Keep the tooltip outside the whole strip while preserving the preview's
+    // Keep the tooltip outside the whole strip while preserving the control's
     // horizontal center as its visual anchor.
     QRect placementAnchor = anchorGlobalRect;
     placementAnchor.setTop(qMin(placementAnchor.top(), m_view->y()));
     placementAnchor.setBottom(qMax(placementAnchor.bottom(),
                                    m_view->y() + m_view->height() - 1));
 
-    m_mosaicHintDisplay = display;
-    setAutoBlurHintEmphasis(false);
-    setMosaicHintEmphasis(true);
-    m_tooltip.showFor(text, placementAnchor, m_view, m_tooltipPlacement);
+    setAutoBlurHintEmphasis(m_tooltipControl->objectName() == kAutoBlurButtonName);
+    m_tooltip.showFor(m_tooltipText, placementAnchor, m_view, m_tooltipPlacement);
 }
 
-void QmlFloatingSubToolbar::showAutoBlurHint(const QRect& anchorGlobalRect)
-{
-    if (!m_view || !m_view->isVisible() || anchorGlobalRect.isEmpty()) {
-        return;
-    }
-
-    const QString text = m_viewModel->autoBlurHintText();
-    if (text.isEmpty()) {
-        hideMosaicHint();
-        return;
-    }
-
-    // Keep the tooltip outside the whole strip while preserving the button's
-    // horizontal center as its visual anchor.
-    QRect placementAnchor = anchorGlobalRect;
-    placementAnchor.setTop(qMin(placementAnchor.top(), m_view->y()));
-    placementAnchor.setBottom(qMax(placementAnchor.bottom(),
-                                   m_view->y() + m_view->height() - 1));
-
-    m_mosaicHintDisplay = MosaicHintDisplay::AutoBlurHoverReminder;
-    setMosaicHintEmphasis(false);
-    setAutoBlurHintEmphasis(true);
-    m_tooltip.showFor(text, placementAnchor, m_view, m_tooltipPlacement);
-}
-
-void QmlFloatingSubToolbar::hideMosaicHint()
+void QmlFloatingSubToolbar::hideControlTooltip()
 {
     m_tooltip.hide();
-    m_mosaicHintDisplay = MosaicHintDisplay::None;
-    setMosaicHintEmphasis(false);
+    disconnect(m_tooltipControlVisibility);
+    m_tooltipControl.clear();
+    m_tooltipText.clear();
     setAutoBlurHintEmphasis(false);
-}
-
-void QmlFloatingSubToolbar::setMosaicHintEmphasis(bool active)
-{
-    if (m_rootItem) {
-        m_rootItem->setProperty("mosaicBrushHintActive", active);
-    }
 }
 
 void QmlFloatingSubToolbar::setAutoBlurHintEmphasis(bool active)
@@ -640,42 +460,28 @@ void QmlFloatingSubToolbar::setAutoBlurHintEmphasis(bool active)
     }
 }
 
-QRect QmlFloatingSubToolbar::mosaicPreviewGlobalRect() const
+QQuickItem* QmlFloatingSubToolbar::visibleControl(const QString& controlName) const
 {
-    if (!m_rootItem) {
-        return {};
+    if (!m_rootItem || controlName.isEmpty()) {
+        return nullptr;
     }
 
-    auto* preview = m_rootItem->findChild<QQuickItem*>(
-        QStringLiteral("widthPreviewContainer"));
-    if (!preview || !preview->isVisible()) {
-        return {};
-    }
-
-    const QPointF topLeft = preview->mapToGlobal(QPointF(0.0, 0.0));
-    return QRect(qRound(topLeft.x()),
-                 qRound(topLeft.y()),
-                 qMax(1, qRound(preview->width())),
-                 qMax(1, qRound(preview->height())));
+    auto* control = m_rootItem->findChild<QQuickItem*>(controlName);
+    return control && control->isVisible() ? control : nullptr;
 }
 
-QRect QmlFloatingSubToolbar::autoBlurButtonGlobalRect() const
+QRect QmlFloatingSubToolbar::controlGlobalRect(const QString& controlName) const
 {
-    if (!m_rootItem) {
+    const QQuickItem* control = visibleControl(controlName);
+    if (!control) {
         return {};
     }
 
-    auto* button = m_rootItem->findChild<QQuickItem*>(
-        QStringLiteral("autoBlurButton"));
-    if (!button || !button->isVisible()) {
-        return {};
-    }
-
-    const QPointF topLeft = button->mapToGlobal(QPointF(0.0, 0.0));
+    const QPointF topLeft = control->mapToGlobal(QPointF(0.0, 0.0));
     return QRect(qRound(topLeft.x()),
                  qRound(topLeft.y()),
-                 qMax(1, qRound(button->width())),
-                 qMax(1, qRound(button->height())));
+                 qMax(1, qRound(control->width())),
+                 qMax(1, qRound(control->height())));
 }
 
 // ── Positioning ──
@@ -721,21 +527,8 @@ void QmlFloatingSubToolbar::positionBelow(const QRect& toolbarRect)
         : TooltipPlacement::Above;
     syncCursorSurface();
 
-    if (m_mosaicCoachmarkPending) {
-        showPendingMosaicCoachmark();
-    } else if (m_mosaicHintDisplay != MosaicHintDisplay::None) {
-        if (m_mosaicHintDisplay == MosaicHintDisplay::AutoBlurHoverReminder) {
-            const QRect anchor = autoBlurButtonGlobalRect();
-            if (!anchor.isEmpty()) {
-                showAutoBlurHint(anchor);
-            }
-        } else {
-            const QRect anchor = mosaicPreviewGlobalRect();
-            if (!anchor.isEmpty()) {
-                showMosaicHint(m_mosaicHintDisplay, anchor);
-            }
-        }
-    }
+    // Re-anchor a showing tooltip to the moved strip.
+    showControlTooltip();
 }
 
 } // namespace SnapTray

@@ -22,7 +22,7 @@ const std::map<ToolId, RegionToolbarHandler::ToolDispatchEntry>& RegionToolbarHa
         {ToolId::Text, {&RegionToolbarHandler::handleAnnotationTool}},
         {ToolId::Eraser, {&RegionToolbarHandler::handleAnnotationTool}},
         {ToolId::EmojiSticker, {&RegionToolbarHandler::handleAnnotationTool}},
-        {ToolId::StepBadge, {&RegionToolbarHandler::handleStepBadgeTool}},
+        {ToolId::StepBadge, {&RegionToolbarHandler::handleAnnotationTool}},
         {ToolId::Mosaic, {&RegionToolbarHandler::handleMosaicTool}},
         {ToolId::Undo, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::Redo, {&RegionToolbarHandler::handleActionButton}},
@@ -30,7 +30,6 @@ const std::map<ToolId, RegionToolbarHandler::ToolDispatchEntry>& RegionToolbarHa
         {ToolId::OCR, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::QRCode, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::Pin, {&RegionToolbarHandler::handleActionButton}},
-        {ToolId::Share, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::Save, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::Copy, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::MultiRegion, {&RegionToolbarHandler::handleMultiRegionToggle}},
@@ -48,7 +47,6 @@ const std::map<ToolId, RegionToolbarHandler::ClickHandler>& RegionToolbarHandler
         {ToolId::OCR, &RegionToolbarHandler::handleOcrAction},
         {ToolId::QRCode, &RegionToolbarHandler::handleQrCodeAction},
         {ToolId::Pin, &RegionToolbarHandler::handlePinAction},
-        {ToolId::Share, &RegionToolbarHandler::handleShareAction},
         {ToolId::Save, &RegionToolbarHandler::handleSaveAction},
         {ToolId::Copy, &RegionToolbarHandler::handleCopyAction},
     };
@@ -111,30 +109,13 @@ void RegionToolbarHandler::handleAnnotationTool(ToolId button)
     emit updateRequested();
 }
 
-void RegionToolbarHandler::handleStepBadgeTool(ToolId button)
-{
-    if (m_currentTool == button) {
-        m_currentTool = ToolId::Selection;
-        m_showSubToolbar = true;
-        emit toolChanged(m_currentTool, m_showSubToolbar);
-        emit updateRequested();
-        return;
-    } else {
-        // Different tool - select it and show sub-toolbar
-        m_currentTool = button;
-        if (m_toolManager) {
-            m_toolManager->setCurrentTool(button);
-        }
-        m_showSubToolbar = true;
-    }
-    emit toolChanged(m_currentTool, m_showSubToolbar);
-    emit updateRequested();
-}
-
 void RegionToolbarHandler::handleMosaicTool(ToolId button)
 {
     if (m_currentTool == button) {
         m_currentTool = ToolId::Selection;
+        if (m_toolManager) {
+            m_toolManager->setCurrentTool(m_currentTool);
+        }
         m_showSubToolbar = true;
         emit toolChanged(m_currentTool, m_showSubToolbar);
         emit updateRequested();
@@ -146,9 +127,6 @@ void RegionToolbarHandler::handleMosaicTool(ToolId button)
             m_toolManager->setCurrentTool(button);
         }
         m_showSubToolbar = true;
-    }
-    if (m_toolManager) {
-        m_toolManager->setWidth(m_annotationWidth);
     }
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
@@ -202,14 +180,6 @@ void RegionToolbarHandler::handleQrCodeAction(ToolId)
 void RegionToolbarHandler::handlePinAction(ToolId)
 {
     emit pinRequested();
-}
-
-void RegionToolbarHandler::handleShareAction(ToolId)
-{
-    if (m_shareInProgress) {
-        return;
-    }
-    emit shareRequested();
 }
 
 void RegionToolbarHandler::handleSaveAction(ToolId)

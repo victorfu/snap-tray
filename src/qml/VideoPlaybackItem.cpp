@@ -1,5 +1,6 @@
 #include "qml/VideoPlaybackItem.h"
 #include "video/IVideoPlayer.h"
+#include "utils/VideoCropGeometry.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -38,6 +39,11 @@ void VideoPlaybackItem::createPlayer()
             this, &VideoPlaybackItem::stateChanged);
     connect(m_player, &IVideoPlayer::positionChanged,
             this, &VideoPlaybackItem::positionChanged);
+    // Paused or seeking without a new frame: the reported position is the
+    // frame on screen. While playing, frames carry their own time.
+    connect(m_player, &IVideoPlayer::positionChanged, this, [this](qint64 positionMs) {
+        if (!isPlaying()) setFramePosition(positionMs);
+    });
     connect(m_player, &IVideoPlayer::durationChanged,
             this, &VideoPlaybackItem::durationChanged);
     connect(m_player, &IVideoPlayer::error,
@@ -50,10 +56,18 @@ void VideoPlaybackItem::createPlayer()
             this, [this]() { emit playbackRateChanged(); });
 }
 
+void VideoPlaybackItem::setBackgroundColor(const QColor& color)
+{
+    if (m_backgroundColor == color) return;
+    m_backgroundColor = color;
+    emit backgroundColorChanged();
+    update();
+}
+
 void VideoPlaybackItem::paint(QPainter *painter)
 {
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
-    painter->fillRect(contentsBoundingRect(), Qt::black);
+    painter->fillRect(contentsBoundingRect(), m_backgroundColor);
 
     if (m_scaledFrame.isNull()) {
         painter->setPen(Qt::gray);
@@ -61,10 +75,7 @@ void VideoPlaybackItem::paint(QPainter *painter)
         return;
     }
 
-    // Center the scaled frame (letterboxing)
-    int x = (width() - m_scaledFrame.width()) / 2;
-    int y = (height() - m_scaledFrame.height()) / 2;
-    painter->drawImage(x, y, m_scaledFrame);
+    painter->drawImage(m_contentRect.topLeft().toPoint(), m_scaledFrame);
 }
 
 void VideoPlaybackItem::setSource(const QString &source)
@@ -78,9 +89,7 @@ void VideoPlaybackItem::setSource(const QString &source)
     if (!m_player || source.isEmpty())
         return;
 
-    m_currentFrame = QImage();
-    m_scaledFrame = QImage();
-    update();
+    clearFrame();
 
     if (!m_player->load(source)) {
         const QString message = QStringLiteral("Failed to load: %1").arg(source);
@@ -109,6 +118,11 @@ qint64 VideoPlaybackItem::duration() const
     return m_player ? m_player->duration() : 0;
 }
 
+bool VideoPlaybackItem::audioPlaybackSupported() const
+{
+    return m_player && m_player->supportsAudioPlayback();
+}
+
 bool VideoPlaybackItem::isMuted() const
 {
     return m_player ? m_player->isMuted() : false;
@@ -116,7 +130,7 @@ bool VideoPlaybackItem::isMuted() const
 
 void VideoPlaybackItem::setMuted(bool muted)
 {
-    if (!m_player || m_player->isMuted() == muted)
+    if (!audioPlaybackSupported() || m_player->isMuted() == muted)
         return;
     m_player->setMuted(muted);
     emit mutedChanged();
@@ -129,7 +143,8 @@ qreal VideoPlaybackItem::volume() const
 
 void VideoPlaybackItem::setVolume(qreal vol)
 {
-    if (!m_player || qFuzzyCompare(m_player->volume(), static_cast<float>(vol)))
+    if (!audioPlaybackSupported()
+        || qFuzzyCompare(m_player->volume(), static_cast<float>(vol)))
         return;
     m_player->setVolume(static_cast<float>(vol));
     emit volumeChanged();
@@ -188,10 +203,26 @@ void VideoPlaybackItem::stop()
 {
     if (m_player) {
         m_player->stop();
-        m_currentFrame = QImage();
-        m_scaledFrame = QImage();
-        update();
     }
+    clearFrame();
+}
+
+void VideoPlaybackItem::clearFrame()
+{
+    m_currentFrame = QImage();
+    m_rawFrame = QImage();
+    m_scaledFrame = QImage();
+    m_lastFrameSize = QSize();
+    if (m_framePosition != 0) {
+        m_framePosition = 0;
+        emit framePositionChanged();
+    }
+    // No frame, no content: overlays placed by contentRect must know.
+    if (!m_contentRect.isEmpty()) {
+        m_contentRect = QRectF();
+        emit contentRectChanged();
+    }
+    update();
 }
 
 void VideoPlaybackItem::seek(qint64 positionMs)
@@ -208,16 +239,59 @@ void VideoPlaybackItem::setLooping(bool loop)
         m_player->setLooping(loop);
 }
 
-void VideoPlaybackItem::onFrameReady(const QImage &frame)
+void VideoPlaybackItem::stepForward()
+{
+    if (m_player)
+        m_player->stepForward();
+}
+
+void VideoPlaybackItem::setFramePosition(qint64 positionMs)
+{
+    if (positionMs < 0 || positionMs == m_framePosition)
+        return;
+    m_framePosition = positionMs;
+    emit framePositionChanged();
+}
+
+void VideoPlaybackItem::onFrameReady(const QImage &frame, qint64 positionMs)
 {
     if (frame.isNull())
         return;
 
+    m_rawFrame = frame;
+    setFramePosition(positionMs >= 0 ? positionMs : position());
     m_currentFrame = frame;
+    if (m_frameProcessor) {
+        m_frameProcessor(m_currentFrame, m_framePosition);
+    }
     refreshScaledFrameForCurrentSize();
 
     // Re-emit for external consumers (format conversion)
     emit frameReady(frame);
+}
+
+bool VideoPlaybackItem::setAudioSource(std::function<QByteArray(qint64 startFrame, int frames)> source)
+{
+    const bool before = audioPlaybackSupported();
+    const bool accepted = m_player && m_player->setAudioSource(std::move(source));
+    if (before != audioPlaybackSupported()) emit audioPlaybackSupportedChanged();
+    return accepted;
+}
+
+void VideoPlaybackItem::setFrameProcessor(FrameProcessor processor)
+{
+    m_frameProcessor = std::move(processor);
+    reprocessFrame();
+}
+
+void VideoPlaybackItem::reprocessFrame()
+{
+    if (m_rawFrame.isNull()) return;
+    m_currentFrame = m_rawFrame;
+    if (m_frameProcessor) {
+        m_frameProcessor(m_currentFrame, m_framePosition);
+    }
+    refreshScaledFrameForCurrentSize();
 }
 
 void VideoPlaybackItem::onMediaLoaded()
@@ -240,6 +314,13 @@ void VideoPlaybackItem::refreshScaledFrameForCurrentSize()
         m_lastItemSize = itemSize;
         m_lastFrameSize = m_currentFrame.size();
         m_targetScaledSize = m_currentFrame.size().scaled(itemSize, Qt::KeepAspectRatio);
+
+        const QRectF contentRect = SnapTray::VideoCropGeometry::aspectFitRect(
+            m_currentFrame.size(), QSizeF(width(), height()));
+        if (contentRect != m_contentRect) {
+            m_contentRect = contentRect;
+            emit contentRectChanged();
+        }
     }
 
     // Scale only if needed

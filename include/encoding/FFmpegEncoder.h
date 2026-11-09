@@ -1,0 +1,64 @@
+#pragma once
+
+#include "IVideoEncoder.h"
+#include <memory>
+
+// Linux H.264/AAC encoding through the distribution's FFmpeg libraries.
+// Calls must be serialized on the owning encoding thread, like EncodingWorker.
+class FFmpegEncoder final : public IVideoEncoder
+{
+public:
+    explicit FFmpegEncoder(QObject* parent = nullptr);
+    ~FFmpegEncoder() override;
+
+    bool isAvailable() const override;
+    QString encoderName() const override;
+    bool start(const QString& path, const QSize& size, int frameRate) override;
+    void writeFrame(const QImage& frame, qint64 timestampMs = -1) override;
+    void finish() override;
+    void abort() override;
+    bool isRunning() const override;
+    QString lastError() const override;
+    qint64 framesWritten() const override;
+    QString outputPath() const override;
+    void setQuality(int quality) override;
+    void setKeyFrameIntervalSeconds(int seconds) override;
+    bool setFragmentedOutput(bool enabled) override { m_fragmented = enabled; return true; }
+    bool isFragmentedOutput() const override { return m_fragmented; }
+    void setRateControl(SnapTray::VideoRateControl mode, int quality) override;
+    SnapTray::VideoRateControl effectiveRateControl() const override;
+    void setBitrate(int bitrate) { m_bitrate = qMax(0, bitrate); }
+    // H.264 (default) or HEVC (#190); set before start().
+    void setHevc(bool hevc) { m_hevc = hevc; }
+    // True when this FFmpeg can encode HEVC in software (hardware may add more).
+    static bool isHevcAvailable();
+    void setAudioFormat(int sampleRate, int channels, int bitsPerSample) override;
+    bool isAudioSupported() const override;
+    bool isAudioEnabled() const override;
+    void writeAudioSamples(const QByteArray& pcm, qint64 startFrame) override;
+    // Output is a temporary file until finish(): its size so far.
+    ByteCounter writtenBytesCounter() const override { return m_writtenBytes; }
+
+private:
+    struct State;
+    std::unique_ptr<State> m_state;
+    ByteCounter m_writtenBytes = std::make_shared<std::atomic<qint64>>(0);
+    bool drainPackets(bool audio = false);
+    bool encodeAudio(bool flushPartial);
+    void fail(const QString& message);
+    // `keepDirectOutput`: leave a fragmented recording's file on disk (failure,
+    // teardown); false removes it (abort).
+    void release(bool keepDirectOutput = true);
+    QString m_error;
+    QString m_outputPath;
+    qint64 m_framesWritten = 0;
+    int m_quality = 80;
+    int m_bitrate = 0;
+    int m_audioRate = 0;
+    int m_audioChannels = 0;
+    SnapTray::VideoRateControl m_rateControl = SnapTray::VideoRateControl::Bitrate;
+    QString m_encoderName;
+    int m_keyframeSeconds = 2;
+    bool m_fragmented = false;
+    bool m_hevc = false;
+};

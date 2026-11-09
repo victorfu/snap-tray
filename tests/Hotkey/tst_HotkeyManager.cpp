@@ -48,6 +48,7 @@ private slots:
     void testUpdateHotkey_DisabledRollbackStatus();
     void testUpdateHotkey_ConflictPersistsDesiredSequence();
     void testUpdateHotkey_ReleasesPersistedConflictForOtherAction();
+    void testUpdateHotkey_ReleasesPersistedConflictForOtherAction_data();
 
     // Conflict detection tests
     void testHasConflict_NoConflict();
@@ -109,6 +110,9 @@ void tst_HotkeyManager::clearAllTestSettings()
     clearSetting(SnapTray::kSettingsKeyHistoryWindowHotkey);
     clearSetting(SnapTray::kSettingsKeyTogglePinsVisibilityHotkey);
     clearSetting(SnapTray::kSettingsKeyRecordFullScreenHotkey);
+    clearSetting(SnapTray::kSettingsKeyPauseResumeRecordingHotkey);
+    clearSetting(SnapTray::kSettingsKeyShowRecordingControlsHotkey);
+    clearSetting(SnapTray::kSettingsKeyDelayedRegionCaptureHotkey);
 
     auto settings = SnapTray::getSettings();
     settings.remove(QString::fromLatin1(SnapTray::kSettingsKeyHotkeyRegistrationCounter));
@@ -202,6 +206,10 @@ void tst_HotkeyManager::testGetConfig_AllActionsExist()
     QVERIFY(!manager().getConfig(HotkeyAction::HistoryWindow).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::TogglePinsVisibility).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::RecordFullScreen).displayName.isEmpty());
+    QVERIFY(!manager().getConfig(HotkeyAction::PauseResumeRecording).displayName.isEmpty());
+    QVERIFY(!manager().getConfig(HotkeyAction::ShowRecordingControls).displayName.isEmpty());
+    QVERIFY(manager().getConfig(HotkeyAction::PauseResumeRecording).isOptional());
+    QVERIFY(manager().getConfig(HotkeyAction::ShowRecordingControls).isOptional());
 }
 
 void tst_HotkeyManager::testGetConfig_HasCorrectDefaults()
@@ -227,6 +235,8 @@ void tst_HotkeyManager::testGetConfig_CategoryAssignment()
     QCOMPARE(manager().getConfig(HotkeyAction::HistoryWindow).category, HotkeyCategory::Pin);
     QCOMPARE(manager().getConfig(HotkeyAction::TogglePinsVisibility).category, HotkeyCategory::Pin);
     QCOMPARE(manager().getConfig(HotkeyAction::RecordFullScreen).category, HotkeyCategory::Recording);
+    QCOMPARE(manager().getConfig(HotkeyAction::PauseResumeRecording).category, HotkeyCategory::Recording);
+    QCOMPARE(manager().getConfig(HotkeyAction::ShowRecordingControls).category, HotkeyCategory::Recording);
 }
 
 // ============================================================================
@@ -244,8 +254,12 @@ void tst_HotkeyManager::testGetConfigsByCategory_FilterCorrectly()
     using namespace SnapTray;
 
     auto captureConfigs = manager().getConfigsByCategory(HotkeyCategory::Capture);
-    QCOMPARE(captureConfigs.size(), 1);
+    QCOMPARE(captureConfigs.size(), 3);  // RegionCapture, CaptureFullScreen, DelayedRegionCapture
     QCOMPARE(captureConfigs.first().action, HotkeyAction::RegionCapture);
+    QCOMPARE(captureConfigs.at(1).action, HotkeyAction::CaptureFullScreen);
+    QVERIFY(captureConfigs.at(1).defaultKeySequence.isEmpty());
+    QCOMPARE(captureConfigs.at(2).action, HotkeyAction::DelayedRegionCapture);
+    QVERIFY(captureConfigs.at(2).defaultKeySequence.isEmpty());
 
     auto pinConfigs = manager().getConfigsByCategory(HotkeyCategory::Pin);
     QCOMPARE(pinConfigs.size(), 4);  // QuickPin, PinFromImage, HistoryWindow, TogglePinsVisibility
@@ -348,9 +362,17 @@ void tst_HotkeyManager::testUpdateHotkey_ConflictPersistsDesiredSequence()
     QVERIFY(config.enabled);
 }
 
+void tst_HotkeyManager::testUpdateHotkey_ReleasesPersistedConflictForOtherAction_data()
+{
+    QTest::addColumn<QString>("replacement");
+    QTest::newRow("change-owner") << QStringLiteral("Ctrl+Alt+2");
+    QTest::newRow("clear-owner") << QString();
+}
+
 void tst_HotkeyManager::testUpdateHotkey_ReleasesPersistedConflictForOtherAction()
 {
     using namespace SnapTray;
+    QFETCH(QString, replacement);
 
     manager().shutdown();
     clearAllTestSettings();
@@ -367,7 +389,7 @@ void tst_HotkeyManager::testUpdateHotkey_ReleasesPersistedConflictForOtherAction
     QVERIFY(!manager().updateHotkey(blocked, sharedSequence));
     QCOMPARE(manager().getConfig(blocked).status, HotkeyStatus::Failed);
 
-    QVERIFY(manager().updateHotkey(owner, QStringLiteral("Ctrl+Alt+2")));
+    QVERIFY(manager().updateHotkey(owner, replacement));
 
     const HotkeyConfig recovered = manager().getConfig(blocked);
     QCOMPARE(recovered.keySequence, sharedSequence);

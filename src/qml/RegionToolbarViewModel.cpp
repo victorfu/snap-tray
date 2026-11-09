@@ -21,16 +21,11 @@ void RegionToolbarViewModel::buildButtonList()
         if (toolId == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
             continue;
         }
-        // Share is intentionally hidden from the toolbar. The underlying
-        // share implementation (tool registration, signals, handlers) is kept
-        // intact so the feature can be re-enabled by removing this guard.
-        if (toolId == ToolId::Share) {
-            continue;
-        }
 
         auto options = defaultToolButtonOptions(toolId);
-        options.separatorBefore = registry.get(toolId).showSeparatorBefore
-                                  || toolId == ToolId::OCR;
+        // Group boundaries (ToolbarTraits) supply the separators; OCR keeps the
+        // sub-block break inside Assist (Undo/Redo | OCR/QR/Multi-Region).
+        options.separatorBefore = (toolId == ToolId::OCR);
         options.isAction = (toolId == ToolId::Pin
                             || toolId == ToolId::Save
                             || toolId == ToolId::Copy);
@@ -89,7 +84,6 @@ void RegionToolbarViewModel::handleButtonClicked(int buttonId)
     case static_cast<int>(ToolId::OCR):              emit ocrClicked(); break;
     case static_cast<int>(ToolId::QRCode):           emit qrCodeClicked(); break;
     case static_cast<int>(ToolId::Pin):              emit pinClicked(); break;
-    case static_cast<int>(ToolId::Share):            emit shareClicked(); break;
     case static_cast<int>(ToolId::Save):             emit saveClicked(); break;
     case static_cast<int>(ToolId::Copy):             emit copyClicked(); break;
     case static_cast<int>(ToolId::MultiRegion):      emit multiRegionToggled(); break;

@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QFile>
 #include <QTemporaryDir>
 #include <QUuid>
 #include <utility>
@@ -11,6 +12,16 @@ namespace {
 constexpr auto kProbeKey = "tests/settingsStorageLocation/probe";
 constexpr auto kLegacyProbeValue = "legacy";
 constexpr auto kSiblingProbeKey = "unrelated/probe";
+constexpr int kTestCleanupVersion = 42;
+
+bool writeBytes(const QString& path, const QByteArray& bytes)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
+        return false;
+    }
+    return file.write(bytes) == bytes.size();
+}
 
 bool isDebugSettingsNamespace()
 {
@@ -32,7 +43,7 @@ QString normalizeSettingsLocation(QString location)
     return location;
 }
 
-QStringList legacyMigrationSources()
+QStringList legacySettingsSources()
 {
 #if defined(Q_OS_WIN)
     return SnapTray::windowsLegacySettingsPaths();
@@ -60,7 +71,8 @@ QSettings settingsStoreUnderTest()
 #if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
     return platformSettingsStore();
 #else
-    return SnapTray::getSettings();
+    return QSettings(QString::fromLatin1(SnapTray::kOrganizationName),
+                     QString::fromLatin1(SnapTray::kApplicationName));
 #endif
 }
 
@@ -105,15 +117,20 @@ class tst_SettingsStorageLocation : public QObject
 private slots:
     void testLegacySettingsMigration();
     void testLegacySourceCoverage();
+    void testLegacyFileCleanupRemovesAnyContents();
+    void testLegacyFileCleanupDoesNotMarkFailedDeletion();
+    void testLegacyFileCleanupProtectsActiveStore();
+    void testLegacyFileCleanupIsIdempotent();
     void testWindowsLegacyCleanupPreservesSiblingKeys();
     void testWindowsNamespaceStoresAreNotCleanupTargets();
+    void testGetSettingsUsesIsolatedTestStore();
     void testStorageLocation();
     void testRoundtripSetReadRemove();
 };
 
 void tst_SettingsStorageLocation::testLegacySettingsMigration()
 {
-#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+#if defined(Q_OS_WIN)
     QTemporaryDir testDirectory;
     QVERIFY(testDirectory.isValid());
 
@@ -134,21 +151,22 @@ void tst_SettingsStorageLocation::testLegacySettingsMigration()
     QVERIFY(SnapTray::clearSettingsStoreIfSeparate(platform, legacy));
     QVERIFY(!legacy.contains(kProbeKey));
 #else
-    QSKIP("Legacy-to-platform settings migration applies only to Windows/macOS");
+    QSKIP("Legacy-to-platform settings migration applies only to Windows");
 #endif
 }
 
 void tst_SettingsStorageLocation::testLegacySourceCoverage()
 {
 #if defined(Q_OS_MACOS)
-    const QStringList sources = legacyMigrationSources();
+    const QStringList sources = legacySettingsSources();
     QCOMPARE(sources.size(), 4);
     QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victor-fu.SnapTray.plist")));
     QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victor-fu.SnapTray-Debug.plist")));
     QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victorfu.snaptray.plist")));
     QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victorfu.snaptray.debug.plist")));
+    QVERIFY(!sources.contains(SnapTray::macSettingsPath()));
 #elif defined(Q_OS_WIN)
-    const QStringList sources = legacyMigrationSources();
+    const QStringList sources = legacySettingsSources();
     if (isDebugSettingsNamespace()) {
         QCOMPARE(sources.size(), 4);
         QVERIFY(sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray-Debug")));
@@ -164,6 +182,111 @@ void tst_SettingsStorageLocation::testLegacySourceCoverage()
     }
 #else
     QSKIP("Legacy source coverage applies only to Windows/macOS");
+#endif
+}
+
+void tst_SettingsStorageLocation::testLegacyFileCleanupRemovesAnyContents()
+{
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+    QTemporaryDir testDirectory;
+    QVERIFY(testDirectory.isValid());
+
+    const QString validPath = testDirectory.filePath(QStringLiteral("valid.plist"));
+    const QString malformedPath = testDirectory.filePath(QStringLiteral("malformed.plist"));
+    const QString missingPath = testDirectory.filePath(QStringLiteral("missing.plist"));
+    const QString targetPath = testDirectory.filePath(QStringLiteral("target.ini"));
+    QVERIFY(writeBytes(validPath,
+                       QByteArrayLiteral("<?xml version=\"1.0\"?><plist><dict/></plist>")));
+    QVERIFY(writeBytes(malformedPath, QByteArrayLiteral("not a plist\x00\x01")));
+
+    QSettings target(targetPath, QSettings::IniFormat);
+    QVERIFY(SnapTray::cleanupLegacySettingsFiles(target,
+                                                  {validPath, malformedPath, missingPath},
+                                                  targetPath,
+                                                  kTestCleanupVersion));
+    QVERIFY(!QFileInfo::exists(validPath));
+    QVERIFY(!QFileInfo::exists(malformedPath));
+    QVERIFY(!QFileInfo::exists(missingPath));
+    QCOMPARE(target.value(SnapTray::kSettingsCleanupVersionKey).toInt(), kTestCleanupVersion);
+#else
+    QSKIP("Legacy plist cleanup applies only to Windows/macOS builds");
+#endif
+}
+
+void tst_SettingsStorageLocation::testLegacyFileCleanupDoesNotMarkFailedDeletion()
+{
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+    QTemporaryDir testDirectory;
+    QVERIFY(testDirectory.isValid());
+
+    const QString directorySource = testDirectory.filePath(QStringLiteral("not-a-file"));
+    QVERIFY(QDir().mkpath(directorySource));
+    QVERIFY(writeBytes(QDir(directorySource).filePath(QStringLiteral("keep.txt")),
+                       QByteArrayLiteral("keep")));
+    const QString removableSource = testDirectory.filePath(QStringLiteral("remove.plist"));
+    QVERIFY(writeBytes(removableSource, QByteArrayLiteral("remove")));
+    const QString targetPath = testDirectory.filePath(QStringLiteral("target.ini"));
+    QSettings target(targetPath, QSettings::IniFormat);
+
+    QVERIFY(!SnapTray::cleanupLegacySettingsFiles(target,
+                                                   {removableSource, directorySource},
+                                                   targetPath,
+                                                   kTestCleanupVersion));
+    QVERIFY(!QFileInfo::exists(removableSource));
+    QVERIFY(QFileInfo::exists(directorySource));
+    QCOMPARE(target.value(SnapTray::kSettingsCleanupVersionKey, 0).toInt(), 0);
+#else
+    QSKIP("Legacy plist cleanup applies only to Windows/macOS builds");
+#endif
+}
+
+void tst_SettingsStorageLocation::testLegacyFileCleanupProtectsActiveStore()
+{
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+    QTemporaryDir testDirectory;
+    QVERIFY(testDirectory.isValid());
+
+    const QString targetPath = testDirectory.filePath(QStringLiteral("target.ini"));
+    QSettings target(targetPath, QSettings::IniFormat);
+    target.setValue(kProbeKey, QStringLiteral("keep"));
+    target.sync();
+    QCOMPARE(target.status(), QSettings::NoError);
+
+    QVERIFY(!SnapTray::cleanupLegacySettingsFiles(target,
+                                                   {targetPath},
+                                                   targetPath,
+                                                   kTestCleanupVersion));
+    QVERIFY(QFileInfo::exists(targetPath));
+    QCOMPARE(target.value(kProbeKey).toString(), QStringLiteral("keep"));
+    QCOMPARE(target.value(SnapTray::kSettingsCleanupVersionKey, 0).toInt(), 0);
+#else
+    QSKIP("Legacy plist cleanup applies only to Windows/macOS builds");
+#endif
+}
+
+void tst_SettingsStorageLocation::testLegacyFileCleanupIsIdempotent()
+{
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+    QTemporaryDir testDirectory;
+    QVERIFY(testDirectory.isValid());
+
+    const QString legacyPath = testDirectory.filePath(QStringLiteral("legacy.plist"));
+    const QString targetPath = testDirectory.filePath(QStringLiteral("target.ini"));
+    QVERIFY(writeBytes(legacyPath, QByteArrayLiteral("legacy")));
+    QSettings target(targetPath, QSettings::IniFormat);
+
+    QVERIFY(SnapTray::cleanupLegacySettingsFiles(target,
+                                                  {legacyPath, legacyPath},
+                                                  targetPath,
+                                                  kTestCleanupVersion));
+    QVERIFY(!QFileInfo::exists(legacyPath));
+    QVERIFY(SnapTray::cleanupLegacySettingsFiles(target,
+                                                  {legacyPath},
+                                                  targetPath,
+                                                  kTestCleanupVersion));
+    QCOMPARE(target.value(SnapTray::kSettingsCleanupVersionKey).toInt(), kTestCleanupVersion);
+#else
+    QSKIP("Legacy plist cleanup applies only to Windows/macOS builds");
 #endif
 }
 
@@ -220,6 +343,24 @@ void tst_SettingsStorageLocation::testWindowsNamespaceStoresAreNotCleanupTargets
 #endif
 }
 
+void tst_SettingsStorageLocation::testGetSettingsUsesIsolatedTestStore()
+{
+    auto settings = SnapTray::getSettings();
+    QCOMPARE(settings.format(), QSettings::IniFormat);
+
+    const QString actual = normalizeSettingsLocation(settings.fileName());
+    const QString expectedRoot = normalizeSettingsLocation(
+        QDir::tempPath() + QStringLiteral("/snaptray-test-settings-"));
+    QVERIFY2(actual.startsWith(expectedRoot),
+             qPrintable(QStringLiteral("Expected isolated test settings under %1, actual: %2")
+                            .arg(expectedRoot, actual)));
+
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+    const auto platformSettings = platformSettingsStore();
+    QVERIFY(!SnapTray::isSameSettingsStore(settings, platformSettings));
+#endif
+}
+
 void tst_SettingsStorageLocation::testStorageLocation()
 {
     auto settings = settingsStoreUnderTest();
@@ -261,5 +402,5 @@ void tst_SettingsStorageLocation::testRoundtripSetReadRemove()
     QVERIFY(!settings.contains(probeKey));
 }
 
-QTEST_MAIN(tst_SettingsStorageLocation)
+QTEST_GUILESS_MAIN(tst_SettingsStorageLocation)
 #include "tst_SettingsStorageLocation.moc"

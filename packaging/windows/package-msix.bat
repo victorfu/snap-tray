@@ -14,7 +14,7 @@ REM   - Windows SDK 10.0.17763.0+ (includes MakeAppx.exe)
 REM   - Visual Studio Build Tools or Visual Studio
 REM
 REM Environment variables:
-REM   QT_PATH              - Path to Qt installation (e.g., C:\Qt\6.6.1\msvc2019_64)
+REM   QT_PATH              - Path to Qt installation (e.g., C:\Qt\6.12.0\msvc2022_64)
 REM   IDENTITY_NAME        - MSIX Identity Name (default: SnapTray.Dev)
 REM   PUBLISHER_ID         - MSIX Publisher ID (default: CN=SnapTray Dev)
 REM   MSIX_SIGN_CERT       - Path to .pfx certificate file (optional)
@@ -49,21 +49,9 @@ echo Build directory: %BUILD_DIR%
 echo Output directory: %OUTPUT_DIR%
 echo.
 
-REM Check for Qt
-if "%QT_PATH%"=="" (
-    if exist "C:\Qt\6.10.1\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.10.1\msvc2022_64
-    ) else if exist "C:\Qt\6.8.0\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.8.0\msvc2022_64
-    ) else if exist "C:\Qt\6.7.0\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.7.0\msvc2022_64
-    ) else if exist "C:\Qt\6.6.1\msvc2019_64" (
-        set QT_PATH=C:\Qt\6.6.1\msvc2019_64
-    ) else (
-        echo ERROR: Qt not found. Please set QT_PATH environment variable.
-        exit /b 1
-    )
-)
+REM Use the same Qt selection policy as the Windows build scripts.
+call "%PROJECT_ROOT%\scripts\detect-qt.bat"
+if errorlevel 1 exit /b 1
 echo Qt path: %QT_PATH%
 
 REM Check for Windows SDK (MakeAppx.exe)
@@ -133,6 +121,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM These QImageReader decoders come from the Qt Image Formats add-on.
+for %%P in (qwebp qtiff) do (
+    if not exist "%STAGING_DIR%\imageformats\%%P.dll" (
+        echo ERROR: Missing imageformats\%%P.dll. Install Qt Image Formats ^(qtimageformats^) for this Qt SDK.
+        exit /b 1
+    )
+)
+
 REM Step 4: Generate Store assets
 echo.
 echo [4/7] Generating Store assets...
@@ -186,17 +182,11 @@ if defined MSIX_SIGN_CERT (
     echo [7/7] Skipping signing (MSIX_SIGN_CERT not set)
 )
 
-REM Create .msixupload for Store submission
-echo.
-echo Creating .msixupload for Store submission...
-copy "%MSIX_OUTPUT%" "%OUTPUT_DIR%\%APP_NAME%-%VERSION%.msixupload" >nul
-
 echo.
 echo =======================================
 echo   Build Complete
 echo =======================================
 echo Package: %MSIX_OUTPUT%
-echo Upload:  %OUTPUT_DIR%\%APP_NAME%-%VERSION%.msixupload
 echo.
 echo For local testing (unsigned):
 echo   Add-AppPackage -Path "%MSIX_OUTPUT%" -AllowUnsigned
@@ -204,6 +194,6 @@ echo.
 echo For Microsoft Store submission:
 echo   1. Sign in to Partner Center (https://partner.microsoft.com)
 echo   2. Create or update your app submission
-echo   3. Upload the .msixupload file
+echo   3. Upload the .msix file
 
 endlocal

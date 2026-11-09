@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include "tools/ToolbarTraits.h"
 
 #include "qml/PinToolbarViewModel.h"
 
@@ -49,7 +50,9 @@ private slots:
     void testBeautifyUsesDefaultIconStyling();
     void testBeautifyTooltipUsesPinWindowTranslation();
     void testBeautifyButtonEmitsBeautifySignal();
-    void testShareButtonIsHiddenFromToolbar();
+    void testExportActionsRemainAvailable_data();
+    void testExportActionsRemainAvailable();
+    void buttonsCarryGroups();
 };
 
 void tst_PinToolbarViewModel::testBeautifyStartsProcessingSectionBeforeCropAndMeasure()
@@ -129,15 +132,53 @@ void tst_PinToolbarViewModel::testBeautifyButtonEmitsBeautifySignal()
     QCOMPARE(beautifySpy.count(), 1);
 }
 
-void tst_PinToolbarViewModel::testShareButtonIsHiddenFromToolbar()
+void tst_PinToolbarViewModel::testExportActionsRemainAvailable_data()
 {
-    // Share is intentionally hidden from the pin window toolbar while its
-    // implementation is kept intact.
-    PinToolbarViewModel viewModel;
-    const QVariantMap shareButton = findButtonById(
-        viewModel.buttons(), static_cast<int>(ToolId::Share));
+    QTest::addColumn<int>("toolId");
+    QTest::addColumn<QByteArray>("signal");
+    QTest::newRow("save") << static_cast<int>(ToolId::Save) << QByteArray(SIGNAL(saveClicked()));
+    QTest::newRow("copy") << static_cast<int>(ToolId::Copy) << QByteArray(SIGNAL(copyClicked()));
+}
 
-    QVERIFY(shareButton.isEmpty());
+void tst_PinToolbarViewModel::testExportActionsRemainAvailable()
+{
+    QFETCH(int, toolId);
+    QFETCH(QByteArray, signal);
+    PinToolbarViewModel viewModel;
+    const QVariantList buttons = viewModel.buttons();
+    for (const QVariant& button : buttons) {
+        QVERIFY(button.toMap().value(QStringLiteral("iconKey")).toString() != QStringLiteral("share"));
+    }
+    const QVariantMap exportButton = findButtonById(buttons, toolId);
+    QVERIFY(!exportButton.isEmpty());
+    QVERIFY(exportButton.value(QStringLiteral("isAction")).toBool());
+    QVERIFY(exportButton.value(QStringLiteral("isExportAction")).toBool());
+
+    QSignalSpy actionSpy(&viewModel, signal.constData());
+    QSignalSpy drawingSpy(&viewModel, &PinToolbarViewModel::toolSelected);
+    QVERIFY(actionSpy.isValid());
+    viewModel.handleButtonClicked(toolId);
+    QCOMPARE(actionSpy.count(), 1);
+    QCOMPARE(drawingSpy.count(), 0);
+}
+
+
+void tst_PinToolbarViewModel::buttonsCarryGroups()
+{
+    PinToolbarViewModel vm;
+    QHash<int, QVariantMap> byId;
+    for (const QVariant& v : vm.buttons()) byId.insert(v.toMap().value("id").toInt(), v.toMap());
+    QCOMPARE(byId.value(int(ToolId::Beautify)).value("group").toInt(), int(ToolbarGroup::Assist));
+    QVERIFY(byId.value(int(ToolId::Beautify)).value("groupStart").toBool());
+    // Crop stays in Beautify's block with no separator, as today.
+    QVERIFY(!byId.value(int(ToolId::Crop)).value("separatorBefore").toBool());
+    // Undo keeps its intra-group separator.
+    QVERIFY(byId.value(int(ToolId::Undo)).value("separatorBefore").toBool());
+    QVERIFY(!byId.value(int(ToolId::Undo)).value("groupStart").toBool());
+    const QVariantMap done = byId.value(PinToolbarViewModel::ButtonDone);
+    QCOMPARE(done.value("group").toInt(), int(ToolbarGroup::Finish));
+    QCOMPARE(done.value("collapsePriority").toInt(), kNeverCollapse);
+    QCOMPARE(byId.value(int(ToolId::Save)).value("group").toInt(), int(ToolbarGroup::Finish));
 }
 
 QTEST_MAIN(tst_PinToolbarViewModel)

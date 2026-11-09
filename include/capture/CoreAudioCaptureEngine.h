@@ -2,11 +2,13 @@
 #define COREAUDIOCAPTUREENGINE_H
 
 #include "IAudioCaptureEngine.h"
+#include "capture/TimestampedPcmMixer.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 #include <QMutex>
 #include <atomic>
+#include <memory>
 
 /**
  * @brief macOS CoreAudio/AVFoundation-based audio capture engine
@@ -22,6 +24,8 @@ public:
     explicit CoreAudioCaptureEngine(QObject *parent = nullptr);
     ~CoreAudioCaptureEngine() override;
 
+    bool supportsSeparateTracks() const override { return true; }
+
     // IAudioCaptureEngine interface
     bool setAudioSource(AudioSource source) override;
     AudioSource audioSource() const override { return m_source; }
@@ -33,6 +37,7 @@ public:
 
     bool start() override;
     void stop() override;
+    void disposeAsync() override;
     void pause() override;
     void resume() override;
     bool isRunning() const override { return m_running; }
@@ -42,9 +47,39 @@ public:
     bool isAvailable() const override;
     bool isSystemAudioSupported() const override;
 
+    // Internal bridge used by the Objective-C capture delegates.
+    void processCapturedAudio(SnapTray::Audio::Source source,
+                              const QByteArray& pcm,
+                              const SnapTray::Audio::Pcm16Format& format,
+                              qint64 timestampNs,
+                              qint64 activeTimeNs);
+    void reportCapturedAudioFormatFailure(SnapTray::Audio::Source source,
+                                          qint64 effectiveTimeNs);
+    void handleSystemAudioCaptureFailure(const QString& details);
+
 private:
+    friend class TestCoreAudioRuntime;
+    void installMicrophoneObservers(void* session, void* device);
+    void handleMicrophoneCaptureFailure(const QString& details);
+    AudioSource activeAudioSource() const;
+    void notifyActiveSourceChanged();
+    void deliverMixerOutput(
+        const SnapTray::Audio::TimestampedPcmMixer::ProcessResult& result);
+
     class Private;
     Private *d;
+    std::unique_ptr<SnapTray::Audio::TimestampedPcmMixer> m_mixer;
+    bool m_reportedMixerDrop = false;
+    std::atomic<bool> m_reportedMicrophoneFormatFailure{false};
+    std::atomic<bool> m_reportedSystemFormatFailure{false};
+    std::atomic<bool> m_microphoneActive{false};
+    std::atomic<bool> m_systemAudioActive{false};
+    std::atomic<int> m_lastNotifiedActiveSource{
+        static_cast<int>(AudioSource::None)};
+    std::atomic<bool> m_starting{false};
+    std::atomic<bool> m_stopping{false};
+    bool m_systemAudioFailed = false;
+    bool m_microphoneFailed = false;
 
     std::atomic<bool> m_running{false};
     std::atomic<bool> m_paused{false};
@@ -56,6 +91,6 @@ private:
     mutable QMutex m_timingMutex;
 };
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS
 
 #endif // COREAUDIOCAPTUREENGINE_H

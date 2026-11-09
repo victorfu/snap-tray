@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 
 #include <QDir>
+#include <QList>
+#include <QPair>
 #include <QTranslator>
 
 namespace {
@@ -24,8 +26,15 @@ private slots:
     void testPhase4PanelContexts();
     void testMainApplicationTrayContext();
     void testHotkeyConflictGuidanceTranslatedForAllLocales();
-    void testMosaicBrushSizeHintTranslatedForAllLocales();
+    void testRememberLastFolderTranslatedForAllLocales();
+    void testTaskSettingsAndBeautifyTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
+    void testStyleStripNamesTranslatedForAllLocales();
+    void testSharedFrameStylesTranslatedForAllLocales();
+    void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
+    void testRecordingPreviewCropTranslatedForAllLocales();
+    void testRecordingWarningTitleTranslatedForAllLocales();
+    void testRecordingAudioWarningsTranslatedForAllLocales();
 
 private:
     QTranslator m_translator;
@@ -45,14 +54,24 @@ void tst_QmlTranslations::testQmlSettingsContexts()
              QString::fromUtf8("設定"));
     QCOMPARE(QCoreApplication::translate("GeneralSettings", "Start on login"),
              QString::fromUtf8("登入時啟動"));
-    QCOMPARE(QCoreApplication::translate("AdvancedSettings", "Cursor companion"),
+    QCOMPARE(QCoreApplication::translate("CaptureSettings", "Cursor companion"),
              QString::fromUtf8("游標旁輔助視覺"));
-    QCOMPARE(QCoreApplication::translate("AdvancedSettings", "Beaver"),
+    QCOMPARE(QCoreApplication::translate("CaptureSettings", "Beaver"),
              QString::fromUtf8("海狸"));
     QCOMPARE(QCoreApplication::translate("SettingsSidebar", "General"),
              QString::fromUtf8("一般"));
     QCOMPARE(QCoreApplication::translate("SettingsPermissionRow", "Granted"),
              QString::fromUtf8("已授權"));
+    QCOMPARE(QCoreApplication::translate("SavingSettings", "Remember last folder"),
+             QString::fromUtf8("記住上次使用的資料夾"));
+    QCOMPARE(
+        QCoreApplication::translate(
+            "SavingSettings",
+            "When saving an image manually, the dialog opens in the folder of the last "
+            "successful save. Auto-save still uses the Screenshots folder above."),
+        QString::fromUtf8(
+            "手動儲存圖片時，對話框會以上次成功儲存的資料夾開啟。"
+            "自動儲存仍會使用上方的「螢幕截圖」資料夾。"));
     QCOMPARE(QCoreApplication::translate("SnapTray::QmlSettingsWindow",
                                          "Settings saved. Language change will apply after restart."),
              QString::fromUtf8("設定已儲存。語言變更將在重新啟動後生效。"));
@@ -82,8 +101,12 @@ void tst_QmlTranslations::testPhase4PanelContexts()
              QString::fromUtf8("選擇顏色"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "Open History Folder"),
              QString::fromUtf8("開啟歷程資料夾"));
-    QCOMPARE(QCoreApplication::translate("HistoryWindow", "No history items yet"),
-             QString::fromUtf8("尚無歷程項目"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "All Captures"),
+             QString::fromUtf8("所有擷取"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Delete this editable project? Its full recording and edits are removed. The file you saved from it stays."),
+             QString::fromUtf8("要刪除這個可編輯專案嗎？完整錄影和編輯內容都會移除，你從中儲存的檔案會保留。"));
+    QCOMPARE(QCoreApplication::translate("SnapTray::LibraryModel", "Editable project"),
+             QString::fromUtf8("可編輯專案"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "Smart Folders"),
              QString::fromUtf8("智慧資料夾"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "Last 7 Days"),
@@ -100,16 +123,16 @@ void tst_QmlTranslations::testPhase4PanelContexts()
              QString::fromUtf8("最大檔案優先"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "No results"),
              QString::fromUtf8("沒有結果"));
-    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Try a different smart folder."),
-             QString::fromUtf8("試試其他智慧資料夾。"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Try a different section or smart folder."),
+             QString::fromUtf8("試試其他分類或智慧資料夾。"));
 }
 
 void tst_QmlTranslations::testMainApplicationTrayContext()
 {
     QCOMPARE(QCoreApplication::translate("MainApplication", "Paste"),
              QString::fromUtf8("貼上"));
-    QCOMPARE(QCoreApplication::translate("MainApplication", "History"),
-             QString::fromUtf8("歷程"));
+    QCOMPARE(QCoreApplication::translate("MainApplication", "Library"),
+             QString::fromUtf8("素材庫"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "Record Screen"),
              QString::fromUtf8("錄製全螢幕"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "Region Capture hotkey"),
@@ -168,8 +191,106 @@ void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
                                     .arg(qmFile, QString::fromUtf8(source))));
             if (source.contains("%1")) {
                 QVERIFY2(translated.contains(QStringLiteral("%1")),
-                         qPrintable(QStringLiteral("%1 translation dropped the %%1 placeholder")
-                                        .arg(qmFile)));
+                         qPrintable(QStringLiteral("%1 translation dropped the %2 placeholder")
+                                        .arg(qmFile, QStringLiteral("%1"))));
+            }
+        }
+    }
+}
+
+void tst_QmlTranslations::testRememberLastFolderTranslatedForAllLocales()
+{
+    const QByteArray context = "SavingSettings";
+    const QList<QByteArray> sources = {
+        QByteArray("Remember last folder"),
+        QByteArray(
+            "When saving an image manually, the dialog opens in the folder of the last "
+            "successful save. Auto-save still uses the Screenshots folder above."),
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const QByteArray& source : sources) {
+            const QString translated = translator.translate(context.constData(),
+                                                            source.constData());
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing the remember-folder text: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral(
+                                    "%1 fell back to English for the remember-folder text: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+        }
+    }
+}
+
+void tst_QmlTranslations::testTaskSettingsAndBeautifyTranslatedForAllLocales()
+{
+    // #227: settings moved to task pages keep their translations under the new
+    // contexts, and the new page names and Beautify strings are translated.
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"CaptureSettings", "Cursor companion"},
+        {"CaptureSettings", "After full screen capture"},
+        {"CaptureSettings", "Auto Blur"},
+        {"PinWindowSettings", "Default opacity"},
+        {"PinWindowSettings", "Show controls on hover"},
+        {"PinWindowSettings", "Pin Windows"},
+        {"SavingSettings", "Apply to images"},
+        {"SavingSettings", "Filename Format"},
+        {"SavingSettings", "Screenshots kept in Library"},
+        {"SettingsSidebar", "Capture"},
+        {"SettingsSidebar", "Pin Windows"},
+        {"SettingsSidebar", "Saving"},
+        {"SettingsSidebar", "Text Recognition"},
+        {"BeautifyPanel", "Customize"},
+        {"BeautifyPanel", "Standard"},
+        {"BeautifyPanel", "Style: %1"},
+        {"BeautifyPanel", "Shadow blur"},
+        {"BeautifyPanel", "Save style…"},
+        {"BeautifyPanel", "My style %1"},
+        {"BeautifyPanel", "Rename style %1"},
+        {"BeautifyPanel", "Another saved style already has this name."},
+        {"SettingsSidebar", "Search settings"},
+        {"SettingsSidebar", "No settings match “%1”"},
+        {"SettingsRow", "Reset to default"},
+        {"SettingsRow", "Reset %1 to default"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            // Empty means missing or unfinished. Some languages keep the English
+            // word (German "Standard", French "Capture"), so equality is allowed.
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 / %3")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+            if (source.contains("%1")) {
+                QVERIFY2(translated.contains(QStringLiteral("%1")),
+                         qPrintable(QStringLiteral("%1 dropped %2 in %3")
+                                        .arg(qmFile, QStringLiteral("%1"), QString::fromUtf8(source))));
             }
         }
     }
@@ -204,17 +325,107 @@ void tst_QmlTranslations::testAutoBlurHintTranslatedForAllLocales()
     }
 }
 
-void tst_QmlTranslations::testMosaicBrushSizeHintTranslatedForAllLocales()
+// #248: the names screen readers hear for the style strip, the pin window and
+// the arrow/line style menus (which were English-only before) are translated.
+void tst_QmlTranslations::testStyleStripNamesTranslatedForAllLocales()
 {
-    const QByteArray context = "PinToolOptionsViewModel";
-    const QByteArray source = "Scroll here to adjust the mosaic brush size";
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"PinToolOptionsViewModel", "Red"},
+        {"PinToolOptionsViewModel", "Yellow"},
+        {"PinToolOptionsViewModel", "Green"},
+        {"PinToolOptionsViewModel", "Purple"},
+        {"PinToolOptionsViewModel", "Black"},
+        {"PinToolOptionsViewModel", "White"},
+        {"ColorPaletteSection", "Custom color"},
+        {"ColorPaletteSection", "Pick color from screen"},
+        {"ColorPaletteSection", "Shortcut: I"},
+        {"ColorPickOverlay", "Pick color from screen"},
+        {"ColorPickOverlay", "Click or Enter: Use color"},
+        {"ColorPickOverlay", "Arrow keys: 1 px, Esc: Cancel"},
+        {"ColorPickOverlay", "Color set to %1"},
+        {"WidthSection", "Width"},
+        {"ArrowStyleSection", "Arrow style"},
+        {"LineStyleSection", "Line style"},
+        {"ShapeSection", "Filled"},
+        {"ToolOptionsStrip", "Snap to text"},
+        {"ToolOptionsStrip", "Snap to text: marker strokes align to detected text lines"},
+        {"TextFormattingSection", "Bold"},
+        {"TextFormattingSection", "Font size"},
+        {"AnnotationStyleLabels", "Both Ends Outline"},
+        {"AnnotationStyleLabels", "Dashed"},
+        {"PinWindow", "Pinned image"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")}, QDir::Files, QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+        }
+    }
+}
+
+void tst_QmlTranslations::testSharedFrameStylesTranslatedForAllLocales()
+{
+    // #269: saved styles in the recording editor, and the Beautify border.
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"BeautifyPanel", "Border"},
+        {"RecordingPreview", "Saved styles"},
+        {"RecordingPreview", "Styles you save here or in Beautify appear in both places."},
+        {"RecordingPreview", "Save style…"},
+        {"RecordingPreview", "Save this frame as a style for recordings and screenshots"},
+        {"RecordingPreview", "You can keep up to %1 saved styles. Delete one to save another."},
+        {"RecordingPreview", "Saved style: %1"},
+        {"RecordingPreview", "Rename"},
+        {"RecordingPreview", "Rename style %1"},
+        {"RecordingPreview", "Delete style %1"},
+        {"RecordingPreview", "Style name"},
+        {"RecordingPreview", "Save"},
+        {"RecordingPreview", "Another saved style already has this name."},
+        {"RecordingPreview", "Background: Custom gradient"},
+        {"RecordingPreview", "Custom"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")}, QDir::Files, QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+        }
+    }
+}
+
+void tst_QmlTranslations::testRecordingPreviewAudioNoticeTranslatedForAllLocales()
+{
+    const QByteArray context = "RecordingPreview";
+    const QByteArray source = "Audio playback is unavailable in this preview.";
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
     const QStringList qmFiles = translationsDir.entryList(
         {QStringLiteral("snaptray_*.qm")},
         QDir::Files,
         QDir::Name);
-    QVERIFY(!qmFiles.isEmpty());
+    QCOMPARE(qmFiles.size(), 24);
 
     for (const QString& qmFile : qmFiles) {
         QTranslator translator;
@@ -225,12 +436,143 @@ void tst_QmlTranslations::testMosaicBrushSizeHintTranslatedForAllLocales()
         const QString translated = translator.translate(context.constData(),
                                                         source.constData());
         QVERIFY2(!translated.isEmpty(),
-                 qPrintable(QStringLiteral("%1 is missing the Mosaic brush size hint")
+                 qPrintable(QStringLiteral("%1 is missing the preview-audio notice")
+                                .arg(qmFile)));
+        QVERIFY2(translated != QString::fromUtf8(source),
+                 qPrintable(QStringLiteral("%1 fell back to English for the preview-audio notice")
+                                .arg(qmFile)));
+    }
+}
+
+void tst_QmlTranslations::testRecordingPreviewCropTranslatedForAllLocales()
+{
+    const QList<QPair<const char*, const char*>> strings = {
+        {"RecordingPreview", "Crop Recording"},
+        {"RecordingPreview", "Edit Crop"},
+        {"RecordingPreview", "Apply Crop (Enter)"},
+        {"RecordingPreview", "Clear Crop"},
+        {"RecordingPreview", "Click a window to crop to it, or drag to draw"},
+        {"RecordingPreview", "Cancel"},
+        {"RecordingPreviewBackend", "Exporting video..."},
+        {"RecordingPreviewBackend", "Video export is not supported on this platform"},
+        {"RecordingPreviewBackend", "Export failed: %1"},
+        {"RecordingPreviewBackend", "Export failed; the original recording was kept."},
+        {"RecordingPreviewBackend", "Cancelling..."},
+        {"RecordingSettings", "Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save."},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const auto& [context, source] : strings) {
+            const QString translated = translator.translate(context, source);
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing a recording-crop string: %2/%3")
+                                    .arg(qmFile, QString::fromUtf8(context),
+                                         QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral(
+                                    "%1 fell back to English for a recording-crop string: %2/%3")
+                                    .arg(qmFile, QString::fromUtf8(context),
+                                         QString::fromUtf8(source))));
+            if (QByteArray(source).contains("%1")) {
+                QVERIFY2(translated.contains(QStringLiteral("%1")),
+                         qPrintable(QStringLiteral(
+                                        "%1 dropped the argument placeholder for: %2/%3")
+                                        .arg(qmFile, QString::fromUtf8(context),
+                                             QString::fromUtf8(source))));
+            }
+        }
+    }
+}
+
+void tst_QmlTranslations::testRecordingWarningTitleTranslatedForAllLocales()
+{
+    const QByteArray context = "MainApplication";
+    const QByteArray source = "Recording Warning";
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        const QString translated = translator.translate(context.constData(),
+                                                        source.constData());
+        QVERIFY2(!translated.isEmpty(),
+                 qPrintable(QStringLiteral("%1 is missing the recording warning title")
                                 .arg(qmFile)));
         QVERIFY2(translated != QString::fromUtf8(source),
                  qPrintable(QStringLiteral(
-                                "%1 fell back to English for the Mosaic brush size hint")
+                                "%1 fell back to English for the recording warning title")
                                 .arg(qmFile)));
+    }
+}
+
+void tst_QmlTranslations::testRecordingAudioWarningsTranslatedForAllLocales()
+{
+    const QByteArray context = "RecordingManager";
+    const QList<QByteArray> sources = {
+        QByteArray(
+            "Audio capture encountered a problem. This recording may contain missing audio."),
+        QByteArray(
+            "System audio is unavailable. Recording microphone only. "
+            "Check Screen Recording permission in System Settings."),
+        QByteArray(
+            "System audio is unavailable. Recording microphone only. "
+            "Check the default playback device."),
+        QByteArray(
+            "Microphone is unavailable. Recording system audio only. "
+            "Check microphone permission and the selected input device."),
+        QByteArray(
+            "Audio is unavailable. This recording will be silent. "
+            "Check system permissions and the selected audio device."),
+        QByteArray(
+            "Not enough free disk space for high-quality recording. "
+            "Recording at the selected quality instead."),
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const QByteArray& source : sources) {
+            const QString translated = translator.translate(context.constData(),
+                                                            source.constData());
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing a recording-audio warning: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral(
+                                    "%1 fell back to English for a recording-audio warning: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+        }
     }
 }
 

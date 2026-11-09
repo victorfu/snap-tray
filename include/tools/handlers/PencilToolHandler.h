@@ -4,6 +4,7 @@
 #include "../IToolHandler.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/PencilStroke.h"
+#include "tools/handlers/FreehandSmoother.h"
 
 #include <QVector>
 #include <QPointF>
@@ -12,8 +13,8 @@
 /**
  * @brief Tool handler for freehand pencil drawing with real-time smoothing.
  *
- * Uses exponential moving average (EMA) for input smoothing while maintaining
- * zero visual latency by drawing directly to the current cursor position.
+ * Committed points are smoothed and spaced by FreehandSmoother; the stroke's
+ * live tail follows the raw cursor so drawing shows without latency.
  */
 class PencilToolHandler : public IToolHandler {
 public:
@@ -39,29 +40,15 @@ public:
     bool supportsLineStyle() const override { return true; }
 
 private:
+    void updateStraightStroke(const QPointF& pos);
+
     bool m_isDrawing = false;
-    QVector<QPointF> m_currentPath;
+    // Latch Shift at press so modifier changes cannot reshape an active stroke.
+    bool m_straightStroke = false;
     std::unique_ptr<PencilStroke> m_currentStroke;
     QRect m_previewDirtyRect;
 
-    // Smoothing state
-    QPointF m_smoothedPoint;      // EMA-smoothed position
-    QPointF m_smoothedVelocity;   // EMA-smoothed velocity for direction stability
-    QPointF m_lastRawPoint;       // Previous raw input for velocity calculation
-    bool m_hasSmoothedPoint = false;
-
-    // Minimum physical distance threshold before committing another point.
-    // Keep spacing stable across mixed-DPI setups instead of hard-coding logical pixels.
-    static constexpr qreal kMinPointDistancePhysical = 2.0;
-
-    // Smoothing parameters
-    // Base smoothing factor (0 = max smooth, 1 = no smooth)
-    static constexpr qreal kBaseSmoothing = 0.3;
-    // Velocity smoothing factor
-    static constexpr qreal kVelocitySmoothing = 0.4;
-    // Speed threshold for adaptive smoothing (pixels per event)
-    static constexpr qreal kSpeedThresholdLow = 3.0;
-    static constexpr qreal kSpeedThresholdHigh = 15.0;
+    FreehandSmoother m_smoother;
 };
 
 #endif // PENCILTOOLHANDLER_H

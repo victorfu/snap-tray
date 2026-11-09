@@ -3,7 +3,7 @@
 
 #include "IVideoEncoder.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 class AVFoundationEncoderPrivate;
 
@@ -26,6 +26,8 @@ public:
 
     bool start(const QString &outputPath, const QSize &frameSize, int frameRate) override;
     void writeFrame(const QImage &frame, qint64 timestampMs = -1) override;
+    // Encodes a BGRA CVPixelBuffer of the encoder's frame size without a copy.
+    bool writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs) override;
     void finish() override;
     void abort() override;
 
@@ -35,16 +37,19 @@ public:
     QString outputPath() const override;
 
     void setQuality(int quality) override;
+    void setRateControl(SnapTray::VideoRateControl mode, int qualityValue) override;
+    void setKeyFrameIntervalSeconds(int seconds) override;
+    SnapTray::VideoRateControl effectiveRateControl() const override;
 
     // Audio support
     void setAudioFormat(int sampleRate, int channels, int bitsPerSample) override;
     bool isAudioSupported() const override;
     bool isAudioEnabled() const override;
-    void writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs) override;
+    void writeAudioSamples(const QByteArray &pcmData, qint64 startFrame) override;
 
 private:
     AVFoundationEncoderPrivate *d;
 };
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS
 #endif // AVFOUNDATIONENCODER_H

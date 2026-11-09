@@ -268,25 +268,27 @@ void ColorWheel::renderTriangle()
     }
     size *= dpr;
 
-    qreal ycenter = size.height() / 2;
     QSize isize = size.toSize();
+    const qreal xExtent = qMax(1, isize.width() - 1);
+    const qreal yExtent = qMax(1, isize.height() - 1);
+    const qreal ycenter = yExtent / 2;
 
     m_selectorImage = QImage(isize, QImage::Format_RGB32);
     m_selectorImage.setDevicePixelRatio(dpr);
 
     for (int x = 0; x < isize.width(); ++x) {
-        qreal pval = double(x) / size.height();
-        qreal sliceH = size.height() * pval;
+        const qreal pval = x / xExtent;
+        const qreal sliceH = yExtent * pval;
         for (int y = 0; y < isize.height(); ++y) {
             qreal ymin = ycenter - sliceH / 2;
-            qreal psat = qBound(0.0, (y - ymin) / sliceH, 1.0);
+            const qreal psat = sliceH > 0.0 ? qBound(0.0, (y - ymin) / sliceH, 1.0) : 0.0;
             QColor c;
             switch (m_colorSpace) {
                 case ColorHSV:
-                    c = QColor::fromHsvF(m_hue / 359.0, psat, pval);
+                    c = QColor::fromHsv(m_hue, qRound(psat * 255), qRound(pval * 255));
                     break;
                 case ColorHSL:
-                    c = QColor::fromHslF(m_hue / 359.0, psat, pval);
+                    c = QColor::fromHsl(m_hue, qRound(psat * 255), qRound(pval * 255));
                     break;
                 case ColorLCH:
                     c = ColorUtils::fromLch(pval * 100, psat * 150, m_hue);

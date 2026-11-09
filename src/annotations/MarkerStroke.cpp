@@ -89,7 +89,7 @@ void MarkerStroke::draw(QPainter &painter) const
 
 void MarkerStroke::drawPreview(QPainter &painter) const
 {
-    if (m_points.size() < 2) {
+    if (m_points.isEmpty() || (m_points.size() < 2 && !m_hasLivePoint)) {
         return;
     }
 
@@ -98,25 +98,45 @@ void MarkerStroke::drawPreview(QPainter &painter) const
     painter.setPen(QPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     painter.setBrush(Qt::NoBrush);
     painter.setOpacity(0.4);
-
-    if (m_points.size() == 2) {
-        painter.drawLine(m_points[0], m_points[1]);
-        painter.restore();
-        return;
-    }
-
-    if (m_cachedPreviewPath.isEmpty() ||
-        m_cachedPreviewLastControlIndex != m_points.size() - 2) {
-        rebuildPreviewPath();
-    }
-
-    if (!m_cachedPreviewPath.isEmpty()) {
-        QPainterPath previewPath = m_cachedPreviewPath;
-        previewPath.quadTo(m_points.last(), m_points.last());
-        painter.drawPath(previewPath);
-    }
-
+    painter.drawPath(buildPreviewPath());
     painter.restore();
+}
+
+QPainterPath MarkerStroke::buildPreviewPath() const
+{
+    // The live cursor acts as one more input point so the body and tail stay
+    // a single path; separate paths would double-blend where they overlap.
+    QPainterPath path;
+    if (m_points.size() == 1) {
+        path.moveTo(m_points.first());
+        path.lineTo(m_livePoint);
+        return path;
+    }
+    if (m_points.size() == 2 && !m_hasLivePoint) {
+        path.moveTo(m_points[0]);
+        path.lineTo(m_points[1]);
+        return path;
+    }
+
+    if (m_points.size() >= 3) {
+        if (m_cachedPreviewPath.isEmpty() ||
+            m_cachedPreviewLastControlIndex != m_points.size() - 2) {
+            rebuildPreviewPath();
+        }
+        path = m_cachedPreviewPath;
+    } else {
+        path.moveTo(m_points[0]);
+        path.lineTo((m_points[0] + m_points[1]) / 2.0);
+    }
+
+    const QPointF& last = m_points.last();
+    if (m_hasLivePoint) {
+        path.quadTo(last, (last + m_livePoint) / 2.0);
+        path.lineTo(m_livePoint);
+    } else {
+        path.quadTo(last, last);
+    }
+    return path;
 }
 
 QRect MarkerStroke::boundingRect() const
@@ -160,6 +180,7 @@ void MarkerStroke::translate(const QPointF& delta)
     for (QPointF& point : m_points) {
         point += delta;
     }
+    m_livePoint += delta;
 
     // Translation changes both geometry and rendered placement.
     m_boundingRectDirty = true;
@@ -193,6 +214,24 @@ void MarkerStroke::addPoint(const QPointF &point)
             m_cachedPreviewLastControlIndex = controlIndex;
         }
     }
+}
+
+void MarkerStroke::moveLastPoint(const QPointF &point)
+{
+    if (m_points.isEmpty()) {
+        return;
+    }
+    m_points.last() = point;
+    // The cached preview ends at the midpoint toward the last point.
+    m_cachedPreviewPath = QPainterPath();
+    m_cachedPreviewLastControlIndex = 0;
+    m_boundingRectDirty = true;
+}
+
+void MarkerStroke::setLivePoint(const QPointF &point)
+{
+    m_livePoint = point;
+    m_hasLivePoint = true;
 }
 
 QPainterPath MarkerStroke::strokePath() const

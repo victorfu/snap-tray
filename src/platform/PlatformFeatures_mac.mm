@@ -1,8 +1,11 @@
 #include "PlatformFeatures.h"
+#include "platform/MacCLIInstaller.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
 #include <QBuffer>
+#include <QClipboard>
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -10,11 +13,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
-#include <QPointer>
 #include <QProcess>
-#include <QtConcurrent/QtConcurrentRun>
-
-#include <atomic>
 
 #import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
@@ -26,15 +25,6 @@
 #endif
 
 namespace {
-
-std::atomic<quint64> g_guiClipboardGeneration{0};
-
-QString escapeForSingleQuotedShellLiteral(const QString& value)
-{
-    QString escaped = value;
-    escaped.replace('\'', QStringLiteral("'\"'\"'"));
-    return escaped;
-}
 
 QByteArray encodePngImage(const QImage& image)
 {
@@ -70,25 +60,6 @@ bool writePngDataToGeneralPasteboard(const QByteArray& pngData)
 bool writePngImageToGeneralPasteboard(const QImage& image)
 {
     return writePngDataToGeneralPasteboard(encodePngImage(image));
-}
-
-void invokeClipboardCompletion(QObject* context,
-                               PlatformFeatures::ClipboardCopyCompletion completion,
-                               PlatformFeatures::ClipboardCopyResult result)
-{
-    if (!completion) {
-        return;
-    }
-
-    QObject* target = context ? context : QCoreApplication::instance();
-    if (!target) {
-        completion(result);
-        return;
-    }
-
-    QMetaObject::invokeMethod(target, [completion = std::move(completion), result]() mutable {
-        completion(result);
-    }, Qt::QueuedConnection);
 }
 
 } // namespace
@@ -134,7 +105,7 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
     return new WindowDetector(parent);
 }
 
-QIcon PlatformFeatures::createTrayIcon() const
+QPixmap PlatformFeatures::createTrayPixmap() const
 {
     // Render the 32pt-grid design into a narrower canvas so the menu bar item
     // (and thus the system highlight pill) matches widths like Google Drive.
@@ -167,7 +138,7 @@ QIcon PlatformFeatures::createTrayIcon() const
     painter.setBrush(Qt::white);
     painter.drawPath(finalPath);
 
-    return QIcon(pixmap);
+    return pixmap;
 }
 
 bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const
@@ -177,9 +148,15 @@ bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) con
 
 bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
 {
-    // Qt 6.11/macOS can trap later while fulfilling promised TIFF data from
-    // QColorSpace-tagged QImages. Eager PNG pasteboard data avoids that path.
-    return writePngImageToGeneralPasteboard(image);
+    if (image.isNull()) {
+        return false;
+    }
+
+    if (QClipboard* clipboard = QGuiApplication::clipboard()) {
+        clipboard->setImage(image);
+        return true;
+    }
+    return false;
 }
 
 void PlatformFeatures::copyImageToClipboardForGuiAsync(
@@ -187,15 +164,6 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
     QObject* context,
     ClipboardCopyCompletion completion) const
 {
-    const quint64 requestGeneration =
-        g_guiClipboardGeneration.fetch_add(1, std::memory_order_acq_rel) + 1;
-
-    if (image.isNull()) {
-        invokeClipboardCompletion(
-            context, std::move(completion), ClipboardCopyResult::Failed);
-        return;
-    }
-
     QObject* target = context ? context : QCoreApplication::instance();
     if (!target) {
         const bool success = copyImageToClipboardForGui(image);
@@ -205,34 +173,14 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
         return;
     }
 
-    const QImage imageForClipboard = image;
-    const QPointer<QObject> targetGuard(target);
-    (void)QtConcurrent::run([imageForClipboard,
-                             targetGuard,
-                             completion = std::move(completion),
-                             requestGeneration]() mutable {
-        QByteArray pngData = encodePngImage(imageForClipboard);
-        QObject* guardedTarget = targetGuard.data();
-        if (!guardedTarget) {
-            return;
-        }
-
-        QMetaObject::invokeMethod(guardedTarget,
-            [pngData = std::move(pngData), completion = std::move(completion), requestGeneration]() mutable {
-                if (requestGeneration != g_guiClipboardGeneration.load(std::memory_order_acquire)) {
-                    if (completion) {
-                        completion(ClipboardCopyResult::Superseded);
-                    }
-                    return;
-                }
-
-                const bool success = writePngDataToGeneralPasteboard(pngData);
-                if (completion) {
-                    completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
-                }
-            },
-            Qt::QueuedConnection);
-    });
+    QMetaObject::invokeMethod(target,
+        [this, image, completion = std::move(completion)]() mutable {
+            const bool success = copyImageToClipboardForGui(image);
+            if (completion) {
+                completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
+            }
+        },
+        Qt::QueuedConnection);
 }
 
 QString PlatformFeatures::getAppExecutablePath() const
@@ -249,43 +197,23 @@ QString PlatformFeatures::getAppExecutablePath() const
 
 bool PlatformFeatures::isCLIInstalled() const
 {
-    QFileInfo cliFile("/usr/local/bin/snaptray");
-    if (!cliFile.exists()) {
-        return false;
-    }
-
-    // Read the script and check if it references our app
-    QFile file("/usr/local/bin/snaptray");
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return false;
-    }
-    QString content = QString::fromUtf8(file.readAll());
-    return content.contains(getAppExecutablePath());
+    return SnapTray::isMacCLIWrapperInstalled(QStringLiteral("/usr/local/bin/snaptray"),
+        QCoreApplication::applicationFilePath(), getAppExecutablePath());
 }
 
 bool PlatformFeatures::installCLI() const
 {
-    QString appPath = getAppExecutablePath();
-    const QString escapedAppPath = escapeForSingleQuotedShellLiteral(appPath);
-
-    // Create shell script content that sets up Qt environment
-    // Using printf for proper newline handling in shell
-    QString script = QString(
-        "do shell script \"mkdir -p /usr/local/bin && "
-        "printf '#!/bin/bash\\n"
-        "APP_PATH=\\\"%1\\\"\\n"
-        "export QT_PLUGIN_PATH=\\\"$APP_PATH/Contents/PlugIns\\\"\\n"
-        "exec \\\"$APP_PATH/Contents/MacOS/SnapTray\\\" \\\"$@\\\"\\n' > /usr/local/bin/snaptray && "
-        "chmod +x /usr/local/bin/snaptray\" "
-        "with administrator privileges"
-    ).arg(escapedAppPath);
-
-    QProcess process;
-    process.start("osascript", {"-e", script});
-    process.waitForFinished(-1);
-    return process.exitCode() == 0;
+    return SnapTray::installMacCLIWrapper(QStringLiteral("/usr/local/bin/snaptray"),
+        QCoreApplication::applicationFilePath(), getAppExecutablePath(), [](const QString& command) {
+            QProcess process;
+            process.start(QStringLiteral("/usr/bin/osascript"),
+                {QStringLiteral("-e"), QStringLiteral("do shell script ")
+                    + SnapTray::quoteAppleScriptString(command)
+                    + QStringLiteral(" with administrator privileges")});
+            return process.waitForFinished(-1) && process.exitStatus() == QProcess::NormalExit
+                && process.exitCode() == 0;
+        });
 }
-
 bool PlatformFeatures::uninstallCLI() const
 {
     QString script = "do shell script \"rm -f /usr/local/bin/snaptray\" with administrator privileges";
@@ -344,19 +272,5 @@ void PlatformFeatures::activateApp()
 {
     @autoreleasepool {
         [NSApp activateIgnoringOtherApps:YES];
-    }
-}
-
-void PlatformFeatures::setActivationPolicyRegular()
-{
-    @autoreleasepool {
-        [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-    }
-}
-
-void PlatformFeatures::setActivationPolicyAccessory()
-{
-    @autoreleasepool {
-        [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
     }
 }

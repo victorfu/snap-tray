@@ -3,29 +3,10 @@
 
 #include <QPainter>
 
-// Marker uses fixed width
+// Ordinary marker strokes use a fixed width
 static constexpr int kMarkerWidth = 20;
 
 namespace {
-
-qreal effectiveMinPointDistance(const ToolContext* ctx, qreal targetPhysicalDistance)
-{
-    const qreal dpr = (ctx && ctx->devicePixelRatio > 0.0) ? ctx->devicePixelRatio : 1.0;
-    return targetPhysicalDistance / dpr;
-}
-
-constexpr qreal kMarkerMinPointDistancePhysical = 2.5;
-
-bool shouldAppendPoint(const ToolContext* ctx, const QVector<QPointF>& points, const QPointF& point)
-{
-    if (points.isEmpty()) {
-        return true;
-    }
-
-    const QPointF delta = point - points.last();
-    const qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-    return distance >= effectiveMinPointDistance(ctx, kMarkerMinPointDistancePhysical);
-}
 
 QRect tailDirtyRect(const QVector<QPointF>& points, int width, int tailPointCount = 4)
 {
@@ -62,14 +43,26 @@ void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
 }
 
 void MarkerToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
+    const QRect previousHoverBounds = hoverBounds();
+    m_hover.reset();
+    m_snap.reset();
+    m_snapshot.reset();
+    m_snapStart = pos;
+    if (ctx->markerTextLines) {
+        m_snapshot = ctx->markerTextLines();
+        if (m_snapshot) m_snap = m_snapshot->query(pos).line;
+    }
     m_isDrawing = true;
+    m_straightStroke = ctx->shiftPressed;
     m_currentPath.clear();
-    m_currentPath.append(pos);
+    m_currentPath.append(m_snap ? QPointF(pos.x(), m_snap->rect.center().y()) : pos);
+    m_smoother.reset(pos);
+    m_hasLivePoint = false;
 
     m_currentStroke = std::make_unique<MarkerStroke>(
-        m_currentPath, ctx->color, kMarkerWidth
+        m_currentPath, ctx->color, m_snap ? m_snap->width : kMarkerWidth
     );
-    m_previewDirtyRect = tailDirtyRect(m_currentPath, kMarkerWidth);
+    m_previewDirtyRect = previousHoverBounds.united(tailDirtyRect(m_currentPath, m_currentStroke->width()));
 
     ctx->repaint();
 }
@@ -79,21 +72,44 @@ void MarkerToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 }
 
 void MarkerToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
-    if (!m_isDrawing || !m_currentStroke) {
+    if (!m_isDrawing) {
+        const QRect old = hoverBounds();
+        m_hover.reset();
+        if (ctx->markerTextLines) {
+            if (auto snapshot = ctx->markerTextLines()) m_hover = snapshot->query(pos).line;
+        }
+        m_previewDirtyRect = old.united(hoverBounds());
+        if (!m_previewDirtyRect.isEmpty()) ctx->repaint();
+        return;
+    }
+    if (!m_currentStroke) return;
+    tryLockTextLine(pos);
+    if (m_snap) {
+        updateSnappedStroke(pos);
+        ctx->repaint();
         return;
     }
 
-    if (!shouldAppendPoint(ctx, m_currentPath, pos)) {
+    if (m_straightStroke) {
+        updateStraightStroke(pos);
+        ctx->repaint();
         return;
     }
 
-    const QRect oldTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
+    const QRect oldTailBounds = liveTailDirtyRect();
 
-    m_currentPath.append(pos);
-    m_currentStroke->addPoint(pos);
-    const QRect newTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
-    m_previewDirtyRect = oldTailBounds.united(newTailBounds);
+    const QPointF smoothedPoint = m_smoother.smooth(pos);
+    if (FreehandSmoother::shouldCommit(m_currentPath.last(), smoothedPoint, ctx->devicePixelRatio)) {
+        m_currentPath.append(smoothedPoint);
+        m_currentStroke->addPoint(smoothedPoint);
+    }
+    // Repaint on every move: the live tail reaches the raw cursor even when no
+    // point was committed, so the stroke never trails behind it.
+    m_livePoint = pos;
+    m_hasLivePoint = true;
+    m_currentStroke->setLivePoint(pos);
 
+    m_previewDirtyRect = oldTailBounds.united(liveTailDirtyRect());
     ctx->repaint();
 }
 
@@ -106,13 +122,25 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
         return;
     }
 
-    // Avoid a tiny release-only terminal segment; with a wide round-cap marker
-    // that can show up as a visible end bump.
-    if (shouldAppendPoint(ctx, m_currentPath, pos)) {
-        m_currentPath.append(pos);
-        if (m_currentStroke) {
+    tryLockTextLine(pos);
+    // End exactly where the live tail ended. A tiny terminal segment shows as a
+    // bump under the wide round cap, so a close release moves the last point.
+    if (m_snap && m_currentStroke) {
+        updateSnappedStroke(pos);
+    } else if (m_straightStroke && m_currentStroke) {
+        updateStraightStroke(pos);
+    } else if (m_currentStroke && pos != m_currentPath.last()) {
+        if (m_currentPath.size() >= 2 &&
+            !FreehandSmoother::shouldCommit(m_currentPath.last(), pos, ctx->devicePixelRatio)) {
+            m_currentPath.last() = pos;
+            m_currentStroke->moveLastPoint(pos);
+        } else {
+            m_currentPath.append(pos);
             m_currentStroke->addPoint(pos);
         }
+    }
+    if (m_currentStroke) {
+        m_currentStroke->clearLivePoint();
     }
 
     // Add to annotation layer if we have a valid stroke
@@ -124,31 +152,95 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
 
     // Reset state
     m_isDrawing = false;
+    m_snapshot.reset();
+    m_snap.reset();
+    m_straightStroke = false;
     m_currentPath.clear();
     m_currentStroke.reset();
     m_previewDirtyRect = QRect();
+    m_hasLivePoint = false;
 
     if (!committedStroke) {
         ctx->repaint();
     }
 }
 
+void MarkerToolHandler::tryLockTextLine(const QPointF& pos)
+{
+    if (!m_snap && m_snapshot) m_snap = m_snapshot->query(m_snapStart, pos.x()).line;
+}
+
+void MarkerToolHandler::updateSnappedStroke(const QPointF& pos)
+{
+    const QRect old = m_currentStroke->boundingRect().united(m_hasLivePoint ? liveTailDirtyRect() : QRect());
+    m_hasLivePoint = false;
+    const QPointF start(m_snapStart.x(), m_snap->rect.center().y());
+    const QPointF end(pos.x(), m_snap->rect.center().y());
+    m_currentPath = {start};
+    if (end != start) m_currentPath.append(end);
+    m_currentStroke = std::make_unique<MarkerStroke>(m_currentPath, m_currentStroke->color(), m_snap->width);
+    m_previewDirtyRect = old.united(m_currentStroke->boundingRect()).adjusted(-4,-4,4,4);
+}
+
+void MarkerToolHandler::updateStraightStroke(const QPointF& pos)
+{
+    const QRect oldBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
+    const QPointF start = m_currentPath.first();
+    m_currentPath = {start};
+    if (pos != start) {
+        m_currentPath.append(pos);
+    }
+    m_currentStroke = std::make_unique<MarkerStroke>(
+        m_currentPath, m_currentStroke->color(), m_currentStroke->width());
+    m_previewDirtyRect = oldBounds.united(tailDirtyRect(m_currentPath, kMarkerWidth));
+}
+
+QRect MarkerToolHandler::liveTailDirtyRect() const
+{
+    // The preview tail spans the last committed points plus the live cursor.
+    QVector<QPointF> tail = m_currentPath.mid(qMax(0, m_currentPath.size() - 4));
+    if (m_hasLivePoint) {
+        tail.append(m_livePoint);
+    }
+    return tailDirtyRect(tail, kMarkerWidth);
+}
+
+QRect MarkerToolHandler::hoverBounds() const
+{
+    if (!m_hover) return {};
+    return QRectF(m_hover->rect.left(), m_hover->rect.center().y()-m_hover->width/2.0,
+                  m_hover->rect.width(), m_hover->width).toAlignedRect().adjusted(-4,-4,4,4);
+}
+
 void MarkerToolHandler::drawPreview(QPainter& painter) const {
     if (m_isDrawing && m_currentStroke) {
         m_currentStroke->drawPreview(painter);
+    } else if (m_hover) {
+        painter.save();
+        painter.setPen(QPen(QColor(70, 140, 230, 180), 1, Qt::DashLine));
+        painter.setBrush(QColor(70, 140, 230, 35));
+        const QRectF preview(m_hover->rect.left(), m_hover->rect.center().y()-m_hover->width/2.0,
+                             m_hover->rect.width(), m_hover->width);
+        painter.drawRect(preview);
+        painter.restore();
     }
 }
 
 QRect MarkerToolHandler::previewBounds() const
 {
-    if (!m_isDrawing || m_previewDirtyRect.isEmpty()) {
+    if (m_previewDirtyRect.isEmpty()) {
         return QRect();
     }
     return m_previewDirtyRect;
 }
 
 void MarkerToolHandler::cancelDrawing() {
+    m_snapshot.reset();
+    m_snap.reset();
+    m_hover.reset();
     m_isDrawing = false;
+    m_hasLivePoint = false;
+    m_straightStroke = false;
     m_currentPath.clear();
     m_currentStroke.reset();
     m_previewDirtyRect = QRect();

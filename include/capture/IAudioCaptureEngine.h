@@ -194,9 +194,17 @@ signals:
     /**
      * @brief Emitted when audio data is available
      * @param data Raw PCM audio data
-     * @param timestampMs Timestamp in milliseconds since capture start
+     * @param startFrame First frame on the canonical 48 kHz capture timeline
      */
-    void audioDataReady(const QByteArray &data, qint64 timestampMs);
+    void audioDataReady(const QByteArray &data, qint64 startFrame);
+
+    /**
+     * @brief Each source on its own (#189), when separate tracks were asked
+     *        for and the engine supports them: the same frames as the
+     *        audioDataReady() chunk at startFrame, silence where a source has
+     *        nothing. Emitted on the capture thread, right after it.
+     */
+    void sourceAudioReady(const QByteArray &microphone, const QByteArray &systemAudio, qint64 startFrame);
 
     /**
      * @brief Emitted when an error occurs
@@ -211,9 +219,20 @@ signals:
     void warning(const QString &message);
 
     /**
-     * @brief Emitted when the audio device is disconnected
+     * @brief Emitted when capture continues with a different effective source
+     *
+     * This reports the sources that are actually producing audio, rather than
+     * the configured preference. AudioSource::None means capture will be
+     * silent until the recording stops.
      */
-    void deviceLost();
+    void activeSourceChanged(AudioSource source);
+
+    /**
+     * @brief Emitted when a capture device is disconnected
+     * @param source The source whose device was lost (Microphone or
+     *        SystemAudio); capture may continue with the other one.
+     */
+    void deviceLost(IAudioCaptureEngine::AudioSource source);
 
     /**
      * @brief Emitted with audio level for UI visualization
@@ -221,7 +240,14 @@ signals:
      */
     void levelChanged(float level);
 
+public:
+    // Separate tracks (#189): set before start(); only engines that return
+    // true from supportsSeparateTracks() emit sourceAudioReady().
+    virtual bool supportsSeparateTracks() const { return false; }
+    void setSeparateTracks(bool enabled) { m_separateTracks = enabled; }
+
 protected:
+    bool m_separateTracks = false;
     AudioSource m_source = AudioSource::None;
     AudioFormat m_format;
     QString m_deviceId;

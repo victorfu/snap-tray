@@ -1,3 +1,4 @@
+#include "settings/AnnotationSettingsManager.h"
 #include "qml/SettingsBackend.h"
 
 #include "AutoLaunchManager.h"
@@ -26,10 +27,14 @@
 #include "version.h"
 #include "widgets/TypeHotkeyDialog.h"
 
+#include <QCoreApplication>
 #include <QFileDialog>
+#include "recording/KeyProbe.h"
 #include <QFutureWatcher>
 #include <QLocale>
+#include <QMetaProperty>
 #include <QMessageBox>
+#include <QPointer>
 #include <QPushButton>
 #include <QSettings>
 #include <QUrl>
@@ -112,6 +117,69 @@ CursorCompanionStyle cursorCompanionStyleFromUiValue(int value)
     default:
         return RegionCaptureSettingsManager::kDefaultCursorCompanionStyle;
     }
+}
+
+// Settings with a per-setting reset (#227). The key is the SettingsBackend
+// property; the default comes from the subsystem manager, in the property's
+// UI units (percent, list index). Resetting writes it through the property's
+// setter, so the manager stores it as usual.
+struct ResettableSetting {
+    const char* property;
+    QVariant (*defaultValue)();
+};
+
+const ResettableSetting kResettableSettings[] = {
+    // Capture
+    {"fullScreenCaptureAction", [] { return QVariant(int(RegionCaptureSettingsManager::kDefaultFullScreenCaptureAction)); }},
+    {"cursorCompanionStyle", [] { return QVariant(cursorCompanionStyleToUiValue(RegionCaptureSettingsManager::kDefaultCursorCompanionStyle)); }},
+    {"shortcutHintsEnabled", [] { return QVariant(RegionCaptureSettingsManager::kDefaultShortcutHintsEnabled); }},
+    {"blurType", [] { return QVariant(blurTypeToUiIndex(AutoBlurSettingsManager::kDefaultBlurType)); }},
+    {"blurIntensity", [] { return QVariant(AutoBlurSettingsManager::kDefaultBlurIntensity); }},
+    // Pin Windows and Library
+    {"pinDefaultOpacity", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultOpacity * 100.0)); }},
+    {"pinShowHoverControls", [] { return QVariant(PinWindowSettingsManager::kDefaultShowHoverControls); }},
+    {"pinOpacityStep", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultOpacityStep * 100.0)); }},
+    {"pinZoomStep", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultZoomStep * 100.0)); }},
+    {"pinMaxCacheFiles", [] { return QVariant(PinWindowSettingsManager::kDefaultMaxCacheFiles); }},
+    // Saving
+    {"screenshotPath", [] { return QVariant(FileSettingsManager::defaultScreenshotPath()); }},
+    {"recordingPath", [] { return QVariant(FileSettingsManager::defaultRecordingPath()); }},
+    {"filenameTemplate", [] { return QVariant(FileSettingsManager::defaultFilenameTemplate()); }},
+    {"autoSaveScreenshots", [] { return QVariant(FileSettingsManager::defaultAutoSaveScreenshots()); }},
+    {"useLastScreenshotSaveLocation", [] { return QVariant(FileSettingsManager::defaultUseLastScreenshotSaveLocation()); }},
+    {"autoSaveRecordings", [] { return QVariant(FileSettingsManager::defaultAutoSaveRecordings()); }},
+    {"watermarkEnabled", [] { return QVariant(WatermarkSettingsManager::kDefaultEnabled); }},
+    {"watermarkApplyToRecording", [] { return QVariant(WatermarkSettingsManager::kDefaultApplyToRecording); }},
+    {"watermarkScale", [] { return QVariant(WatermarkSettingsManager::kDefaultImageScale); }},
+    {"watermarkOpacity", [] { return QVariant(qRound(WatermarkSettingsManager::kDefaultOpacity * 100.0)); }},
+    {"watermarkMargin", [] { return QVariant(WatermarkSettingsManager::kDefaultMargin); }},
+    {"watermarkPosition", [] { return QVariant(int(WatermarkSettingsManager::kDefaultPosition)); }},
+    // Recording
+    {"recordingFrameRate", [] { return QVariant(RecordingSettingsManager::kDefaultFrameRate); }},
+    {"recordingOutputFormat", [] { return QVariant(RecordingSettingsManager::kDefaultOutputFormat); }},
+    {"recordingQuality", [] { return QVariant(RecordingSettingsManager::kDefaultQuality); }},
+    {"recordingAudioEnabled", [] { return QVariant(RecordingSettingsManager::kDefaultAudioEnabled); }},
+    {"recordingAudioSource", [] { return QVariant(RecordingSettingsManager::kDefaultAudioSource); }},
+    {"recordingShowSetup", [] { return QVariant(RecordingSettingsManager::kDefaultShowSetupBeforeRecording); }},
+    {"recordingShowPreview", [] { return QVariant(RecordingSettingsManager::kDefaultShowPreview); }},
+    {"recordingPreselectArea", [] { return QVariant(RecordingSettingsManager::kDefaultPreselectArea); }},
+    {"recordingKeepProjects", [] { return QVariant(RecordingSettingsManager::kDefaultKeepProjects); }},
+    {"recordingProjectCleanupDays", [] { return QVariant(RecordingSettingsManager::kDefaultProjectCleanupDays); }},
+    {"countdownEnabled", [] { return QVariant(RecordingSettingsManager::kDefaultCountdownEnabled); }},
+    {"countdownSeconds", [] { return QVariant(RecordingSettingsManager::kDefaultCountdownSeconds); }},
+    // Updates
+    {"autoCheckUpdates", [] { return QVariant(UpdateSettingsManager::kDefaultAutoCheck); }},
+    {"checkFrequencyHours", [] { return QVariant(UpdateSettingsManager::kDefaultCheckIntervalHours); }},
+};
+
+const ResettableSetting* findResettable(const QString& key)
+{
+    for (const auto& setting : kResettableSettings) {
+        if (key == QLatin1String(setting.property)) {
+            return &setting;
+        }
+    }
+    return nullptr;
 }
 
 bool isWindowsBuild()
@@ -241,12 +309,71 @@ void SettingsBackend::checkWindowsPrintScreenSnippingConflict()
 SettingsBackend::SettingsBackend(QObject* parent)
     : QObject(parent)
 {
+    connect(&UpdateCoordinator::instance(), &UpdateCoordinator::updateStateChanged,
+            this, &SettingsBackend::isCheckingForUpdatesChanged);
+
     connect(&UpdateCoordinator::instance(), &UpdateCoordinator::lastCheckTimeChanged,
             this, &SettingsBackend::lastCheckedTextChanged);
     loadAllSettings();
+    watchResettableSettings();
 }
 
 SettingsBackend::~SettingsBackend() = default;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-setting reset (#227)
+// ─────────────────────────────────────────────────────────────────────────────
+
+void SettingsBackend::watchResettableSettings()
+{
+    const QMetaObject* meta = metaObject();
+    const QMetaMethod refresh = meta->method(meta->indexOfSlot("refreshChangedSettings()"));
+    for (const auto& setting : kResettableSettings) {
+        const QMetaProperty property = meta->property(meta->indexOfProperty(setting.property));
+        Q_ASSERT_X(property.isValid() && property.isWritable() && property.hasNotifySignal(),
+                   "SettingsBackend", setting.property);
+        if (property.hasNotifySignal()) {
+            connect(this, property.notifySignal(), this, refresh, Qt::UniqueConnection);
+        }
+    }
+    refreshChangedSettings();
+}
+
+void SettingsBackend::refreshChangedSettings()
+{
+    QStringList changed;
+    const QMetaObject* meta = metaObject();
+    for (const auto& setting : kResettableSettings) {
+        const QMetaProperty property = meta->property(meta->indexOfProperty(setting.property));
+        if (!property.isValid()) {
+            continue;
+        }
+        QVariant defaultValue = setting.defaultValue();
+        defaultValue.convert(property.metaType());
+        if (property.read(this) != defaultValue) {
+            changed.append(QString::fromLatin1(setting.property));
+        }
+    }
+    if (changed != m_changedSettings) {
+        m_changedSettings = changed;
+        emit changedSettingsChanged();
+    }
+}
+
+bool SettingsBackend::canResetSetting(const QString& key) const
+{
+    return findResettable(key) != nullptr;
+}
+
+void SettingsBackend::resetSetting(const QString& key)
+{
+    const ResettableSetting* setting = findResettable(key);
+    if (!setting) {
+        qWarning() << "SettingsBackend: no reset for" << key;
+        return;
+    }
+    setProperty(setting->property, setting->defaultValue());
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Load all settings from managers into the current view model state
@@ -255,12 +382,13 @@ SettingsBackend::~SettingsBackend() = default;
 void SettingsBackend::loadAllSettings()
 {
     // General
-    m_startOnLogin = AutoLaunchManager::syncWithPreference();
+    m_startOnLogin = false;
+    refreshStartOnLogin();
     m_language = LanguageManager::instance().loadLanguage();
     m_appTheme = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     m_hasScreenRecordingPermission = PlatformFeatures::hasScreenRecordingPermission();
     m_hasAccessibilityPermission = PlatformFeatures::hasAccessibilityPermission();
 #endif
@@ -269,6 +397,8 @@ void SettingsBackend::loadAllSettings()
     m_cursorCompanionStyle = cursorCompanionStyleToUiValue(
         RegionCaptureSettingsManager::instance().cursorCompanionStyle());
     m_shortcutHintsEnabled = RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
+    m_fullScreenCaptureAction =
+        static_cast<int>(RegionCaptureSettingsManager::instance().fullScreenCaptureAction());
 
     auto blurOpts = AutoBlurSettingsManager::instance().load();
     m_blurIntensity = blurOpts.blurIntensity;
@@ -278,6 +408,7 @@ void SettingsBackend::loadAllSettings()
     m_pinDefaultOpacity = qRound(pinMgr.loadDefaultOpacity() * 100.0);
     m_pinOpacityStep = qRound(pinMgr.loadOpacityStep() * 100.0);
     m_pinZoomStep = qRound(pinMgr.loadZoomStep() * 100.0);
+    m_pinShowHoverControls = pinMgr.loadShowHoverControls();
     m_pinMaxCacheFiles = pinMgr.loadMaxCacheFiles();
 
     // Watermark
@@ -296,6 +427,7 @@ void SettingsBackend::loadAllSettings()
     m_recordingOutputFormat = recMgr.outputFormat();
     m_recordingQuality = recMgr.quality();
     m_recordingShowPreview = recMgr.showPreview();
+    m_recordingShowSetup = recMgr.showSetupBeforeRecording();
     m_recordingAudioEnabled = recMgr.audioEnabled();
     m_recordingAudioSource = recMgr.audioSource();
     m_recordingAudioDevice = recMgr.audioDevice();
@@ -308,6 +440,7 @@ void SettingsBackend::loadAllSettings()
     m_recordingPath = fileMgr.loadRecordingPath();
     m_filenameTemplate = fileMgr.loadFilenameTemplate();
     m_autoSaveScreenshots = fileMgr.loadAutoSaveScreenshots();
+    m_useLastScreenshotSaveLocation = fileMgr.loadUseLastScreenshotSaveLocation();
     m_autoSaveRecordings = fileMgr.loadAutoSaveRecordings();
 
     // Updates
@@ -321,17 +454,131 @@ void SettingsBackend::loadAllSettings()
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool SettingsBackend::startOnLogin() const { return m_startOnLogin; }
-void SettingsBackend::setStartOnLogin(bool v) {
-    if (m_startOnLogin != v) {
-        AutoLaunchSettingsManager::instance().savePreferredEnabled(v);
-        (void)AutoLaunchManager::setEnabled(v);
-        const bool actualValue = AutoLaunchManager::isEnabled();
-        const bool shouldNotify = (m_startOnLogin != actualValue) || (actualValue != v);
-        m_startOnLogin = actualValue;
-        if (shouldNotify) {
-            emit startOnLoginChanged();
+bool SettingsBackend::startOnLoginBusy() const { return m_startOnLoginBusy; }
+bool SettingsBackend::startOnLoginCanChange() const { return m_startOnLoginCanChange; }
+QString SettingsBackend::startOnLoginStatusText() const { return m_startOnLoginStatusText; }
+
+void SettingsBackend::refreshStartOnLogin()
+{
+    if (m_startOnLoginBusy) {
+        return;
+    }
+
+    m_startOnLoginBusy = true;
+    m_startOnLoginCanChange = false;
+    m_startOnLoginStatusText = tr("Checking start on login status...");
+    emit startOnLoginStateChanged();
+    refreshStartOnLoginStatus();
+}
+
+void SettingsBackend::setStartOnLogin(bool v)
+{
+    setStartOnLoginWithSetter(
+        v,
+        [](bool enabled, StartOnLoginCompletion completion) {
+            AutoLaunchManager::setEnabledAsync(enabled, std::move(completion));
+        });
+}
+
+void SettingsBackend::setStartOnLoginWithSetter(
+    bool v,
+    const StartOnLoginSetter& setter)
+{
+    if (!setter || m_startOnLogin == v || m_startOnLoginBusy
+        || !m_startOnLoginCanChange) {
+        return;
+    }
+
+    // Record the accepted intent before the OS can answer with a non-mutable
+    // intermediate state such as macOS RequiresApproval.
+    AutoLaunchSettingsManager::instance().savePreferredEnabled(v);
+    m_startOnLoginBusy = true;
+    m_startOnLoginCanChange = false;
+    m_startOnLoginStatusText = tr("Updating start on login status...");
+    emit startOnLoginStateChanged();
+
+    QPointer<SettingsBackend> safeThis(this);
+    QPointer<QCoreApplication> dispatcher(QCoreApplication::instance());
+    setter(
+        v,
+        [safeThis, dispatcher](AutoLaunchStatus status) mutable {
+            if (!dispatcher) {
+                return;
+            }
+            QMetaObject::invokeMethod(
+                dispatcher.data(),
+                [safeThis, status = std::move(status)]() mutable {
+                    if (safeThis) {
+                        safeThis->applyStartOnLoginStatus(status);
+                    }
+                },
+                Qt::QueuedConnection);
+        });
+}
+
+void SettingsBackend::refreshStartOnLoginStatus()
+{
+    QPointer<SettingsBackend> safeThis(this);
+    QPointer<QCoreApplication> dispatcher(QCoreApplication::instance());
+    AutoLaunchManager::queryStatus(
+        [safeThis, dispatcher](AutoLaunchStatus status) mutable {
+            if (!dispatcher) {
+                return;
+            }
+            QMetaObject::invokeMethod(
+                dispatcher.data(),
+                [safeThis, status = std::move(status)]() mutable {
+                    if (safeThis) {
+                        safeThis->applyStartOnLoginStatus(status);
+                    }
+                },
+                Qt::QueuedConnection);
+        });
+}
+
+void SettingsBackend::applyStartOnLoginStatus(const AutoLaunchStatus& status)
+{
+    const bool enabledChanged = m_startOnLogin != status.isEnabled();
+
+    m_startOnLogin = status.isEnabled();
+    m_startOnLoginBusy = false;
+    m_startOnLoginCanChange = status.canChange();
+
+    if (!status.errorMessage.isEmpty()) {
+        m_startOnLoginStatusText = tr("Start on login status error: %1")
+                                       .arg(status.errorMessage);
+    } else {
+        switch (status.state) {
+        case AutoLaunchState::Disabled:
+        case AutoLaunchState::Enabled:
+            m_startOnLoginStatusText.clear();
+            break;
+        case AutoLaunchState::DisabledByUser:
+            m_startOnLoginStatusText =
+                tr("Disabled in system startup settings. Re-enable it there.");
+            break;
+        case AutoLaunchState::DisabledByPolicy:
+            m_startOnLoginStatusText = tr("Disabled by your organization.");
+            break;
+        case AutoLaunchState::EnabledByPolicy:
+            m_startOnLoginStatusText = tr("Enabled by your organization.");
+            break;
+        case AutoLaunchState::Unavailable:
+            m_startOnLoginStatusText = tr("Start on login is unavailable for this package.");
+            break;
         }
     }
+
+    // Only authoritative mutable states may reconcile the saved intent. User-
+    // or policy-managed states can differ from the preference temporarily.
+    if (status.canChange() && status.errorMessage.isEmpty()) {
+        AutoLaunchSettingsManager::instance().savePreferredEnabled(m_startOnLogin);
+    }
+
+    if (enabledChanged) {
+        emit startOnLoginChanged();
+    }
+    emit startOnLoginStateChanged();
 }
 
 QString SettingsBackend::language() const { return m_language; }
@@ -370,7 +617,7 @@ bool SettingsBackend::cliInstalled() const { return m_cliInstalled; }
 
 bool SettingsBackend::isMacOS() const
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     return true;
 #else
     return false;
@@ -381,7 +628,7 @@ bool SettingsBackend::isMacOS() const
 // macOS Permissions
 // ─────────────────────────────────────────────────────────────────────────────
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 bool SettingsBackend::hasScreenRecordingPermission() const { return m_hasScreenRecordingPermission; }
 bool SettingsBackend::hasAccessibilityPermission() const { return m_hasAccessibilityPermission; }
 #endif
@@ -435,6 +682,26 @@ void SettingsBackend::setShortcutHintsEnabled(bool v) {
     }
 }
 
+int SettingsBackend::fullScreenCaptureAction() const { return m_fullScreenCaptureAction; }
+
+void SettingsBackend::setFullScreenCaptureAction(int v)
+{
+    using FullScreenCaptureAction = RegionCaptureSettingsManager::FullScreenCaptureAction;
+    v = qBound(
+        static_cast<int>(FullScreenCaptureAction::CopyToClipboard),
+        v,
+        static_cast<int>(FullScreenCaptureAction::Edit));
+
+    if (m_fullScreenCaptureAction == v) {
+        return;
+    }
+
+    m_fullScreenCaptureAction = v;
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        static_cast<FullScreenCaptureAction>(v));
+    emit fullScreenCaptureActionChanged();
+}
+
 int SettingsBackend::blurIntensity() const { return m_blurIntensity; }
 void SettingsBackend::setBlurIntensity(int v) {
     if (m_blurIntensity != v) {
@@ -478,6 +745,15 @@ void SettingsBackend::setPinZoomStep(int v) {
         m_pinZoomStep = v;
         PinWindowSettingsManager::instance().saveZoomStep(v / 100.0);
         emit pinZoomStepChanged();
+    }
+}
+
+bool SettingsBackend::pinShowHoverControls() const { return m_pinShowHoverControls; }
+void SettingsBackend::setPinShowHoverControls(bool v) {
+    if (m_pinShowHoverControls != v) {
+        m_pinShowHoverControls = v;
+        PinWindowSettingsManager::instance().saveShowHoverControls(v);
+        emit pinShowHoverControlsChanged();
     }
 }
 
@@ -578,8 +854,9 @@ void SettingsBackend::setRecordingFrameRate(int v) {
     }
 }
 
-int SettingsBackend::recordingOutputFormat() const { return m_recordingOutputFormat; }
+int SettingsBackend::recordingOutputFormat() const { return recordingDirectMp4Only() ? 0 : m_recordingOutputFormat; }
 void SettingsBackend::setRecordingOutputFormat(int v) {
+    if (recordingDirectMp4Only()) return;
     v = qBound(0, v, 2);
     if (m_recordingOutputFormat == v)
         return;
@@ -598,8 +875,105 @@ void SettingsBackend::setRecordingQuality(int v) {
     }
 }
 
-bool SettingsBackend::recordingShowPreview() const { return m_recordingShowPreview; }
+int SettingsBackend::recordingKeyMode() const
+{
+    return recordingKeysSupported() ? RecordingSettingsManager::instance().keyRecordingMode() : 0;
+}
+
+void SettingsBackend::setRecordingKeyMode(int mode)
+{
+    if (!recordingKeysSupported() || recordingKeyMode() == mode) return;
+    RecordingSettingsManager::instance().setKeyRecordingMode(mode);
+    emit recordingKeyModeChanged();
+}
+
+bool SettingsBackend::recordingKeysSupported() const
+{
+    return SnapTray::keyRecordingSupported();
+}
+
+bool SettingsBackend::recordingPreselectArea() const
+{
+    return RecordingSettingsManager::instance().preselectArea();
+}
+
+void SettingsBackend::setRecordingPreselectArea(bool value)
+{
+    if (recordingPreselectArea() == value) return;
+    RecordingSettingsManager::instance().setPreselectArea(value);
+    emit recordingPreselectAreaChanged();
+}
+
+int SettingsBackend::recordingQuickSaveAction() const
+{
+    return RecordingSettingsManager::instance().quickSaveAction();
+}
+
+void SettingsBackend::setRecordingQuickSaveAction(int action)
+{
+    if (recordingQuickSaveAction() == action) return;
+    RecordingSettingsManager::instance().setQuickSaveAction(action);
+    emit recordingQuickSaveActionChanged();
+}
+
+void SettingsBackend::refreshRecordingMode()
+{
+    const bool showPreview = RecordingSettingsManager::instance().showPreview();
+    if (m_recordingShowPreview != showPreview) {
+        m_recordingShowPreview = showPreview;
+        emit recordingShowPreviewChanged();
+    }
+    const auto& settings = RecordingSettingsManager::instance();
+    const auto refresh = [](auto& cached, const auto& current, auto notify) {
+        if (cached != current) {
+            cached = current;
+            notify();
+        }
+    };
+    refresh(m_recordingAudioEnabled, settings.audioEnabled(), [this] { emit recordingAudioEnabledChanged(); });
+    refresh(m_recordingAudioSource, settings.audioSource(), [this] { emit recordingAudioSourceChanged(); });
+    refresh(m_recordingAudioDevice, settings.audioDevice(), [this] { emit recordingAudioDeviceChanged(); });
+    refresh(m_recordingShowSetup, settings.showSetupBeforeRecording(), [this] { emit recordingShowSetupChanged(); });
+    emit recordingQuickSaveActionChanged();
+    emit recordingPreselectAreaChanged();
+    emit recordingKeyModeChanged();
+}
+
+bool SettingsBackend::recordingKeepProjects() const
+{
+    return RecordingSettingsManager::instance().keepProjects();
+}
+
+void SettingsBackend::setRecordingKeepProjects(bool value)
+{
+    if (recordingKeepProjects() == value) return;
+    RecordingSettingsManager::instance().setKeepProjects(value);
+    emit recordingKeepProjectsChanged();
+}
+
+int SettingsBackend::recordingProjectCleanupDays() const
+{
+    return RecordingSettingsManager::instance().projectCleanupDays();
+}
+
+void SettingsBackend::setRecordingProjectCleanupDays(int days)
+{
+    if (recordingProjectCleanupDays() == days) return;
+    RecordingSettingsManager::instance().setProjectCleanupDays(days);
+    emit recordingProjectCleanupDaysChanged();
+}
+
+void SettingsBackend::setRecordingShowSetup(bool v) {
+    if (m_recordingShowSetup == v)
+        return;
+    m_recordingShowSetup = v;
+    RecordingSettingsManager::instance().setShowSetupBeforeRecording(v);
+    emit recordingShowSetupChanged();
+}
+
+bool SettingsBackend::recordingShowPreview() const { return !recordingDirectMp4Only() && m_recordingShowPreview; }
 void SettingsBackend::setRecordingShowPreview(bool v) {
+    if (recordingDirectMp4Only()) return;
     if (m_recordingShowPreview == v)
         return;
 
@@ -608,8 +982,9 @@ void SettingsBackend::setRecordingShowPreview(bool v) {
     emit recordingShowPreviewChanged();
 }
 
-bool SettingsBackend::recordingAudioEnabled() const { return m_recordingAudioEnabled; }
+bool SettingsBackend::recordingAudioEnabled() const { return !recordingDirectMp4Only() && m_recordingAudioEnabled; }
 void SettingsBackend::setRecordingAudioEnabled(bool v) {
+    if (recordingDirectMp4Only()) return;
     if (m_recordingAudioEnabled != v) {
         m_recordingAudioEnabled = v;
         RecordingSettingsManager::instance().setAudioEnabled(v);
@@ -714,6 +1089,22 @@ void SettingsBackend::setAutoSaveScreenshots(bool v) {
     }
 }
 
+bool SettingsBackend::useLastScreenshotSaveLocation() const
+{
+    return m_useLastScreenshotSaveLocation;
+}
+
+void SettingsBackend::setUseLastScreenshotSaveLocation(bool v)
+{
+    if (m_useLastScreenshotSaveLocation == v) {
+        return;
+    }
+
+    m_useLastScreenshotSaveLocation = v;
+    FileSettingsManager::instance().saveUseLastScreenshotSaveLocation(v);
+    emit useLastScreenshotSaveLocationChanged();
+}
+
 bool SettingsBackend::autoSaveRecordings() const { return m_autoSaveRecordings; }
 void SettingsBackend::setAutoSaveRecordings(bool v) {
     if (m_autoSaveRecordings != v) {
@@ -760,7 +1151,7 @@ QString SettingsBackend::lastCheckedText() const
     return QLocale().toString(lastCheck, QLocale::ShortFormat);
 }
 
-bool SettingsBackend::isCheckingForUpdates() const { return m_isCheckingForUpdates; }
+bool SettingsBackend::isCheckingForUpdates() const { return m_isCheckingForUpdates || UpdateCoordinator::instance().isBusy(); }
 
 bool SettingsBackend::updatesExternallyManaged() const
 {
@@ -796,6 +1187,11 @@ bool SettingsBackend::recordingSupported() const
     return PlatformFeatures::instance().capabilities().supportsRecording;
 }
 
+bool SettingsBackend::recordingDirectMp4Only() const
+{
+    return PlatformFeatures::instance().capabilities().recordingDirectMp4Only;
+}
+
 bool SettingsBackend::ocrSettingsVisible() const
 {
     return PlatformFeatures::instance().capabilities().supportsOCR;
@@ -823,25 +1219,31 @@ bool SettingsBackend::ocrAvailableLanguagesLoaded() const
 
 void SettingsBackend::installCLI()
 {
-    if (PlatformFeatures::instance().installCLI()) {
-        m_cliInstalled = true;
-        emit cliInstalledChanged();
-    }
+    changeCLIInstallation(true, [] { return PlatformFeatures::instance().installCLI(); });
 }
 
 void SettingsBackend::uninstallCLI()
 {
-    if (PlatformFeatures::instance().uninstallCLI()) {
-        m_cliInstalled = false;
+    changeCLIInstallation(false, [] { return PlatformFeatures::instance().uninstallCLI(); });
+}
+
+void SettingsBackend::changeCLIInstallation(bool installed, const std::function<bool()>& operation)
+{
+    const bool success = operation();
+    if (success && m_cliInstalled != installed) {
+        m_cliInstalled = installed;
         emit cliInstalledChanged();
     }
+    emit cliOperationFinished(success, success ? QString() : installed
+        ? tr("Could not install the CLI. Check permissions and try again.")
+        : tr("Could not uninstall the CLI. Check permissions and try again."));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // macOS Permissions
 // ─────────────────────────────────────────────────────────────────────────────
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 void SettingsBackend::openScreenRecordingSettings()
 {
     PlatformFeatures::openScreenRecordingSettings();
@@ -1248,4 +1650,14 @@ QString SettingsBackend::ocrDisplayNameForCode(const QString& code) const
     return code;
 }
 
+bool SettingsBackend::alignmentAssist() const
+{
+    return AnnotationSettingsManager::instance().loadAlignmentAssist();
+}
+void SettingsBackend::setAlignmentAssist(bool enabled)
+{
+    if (alignmentAssist() == enabled) return;
+    AnnotationSettingsManager::instance().saveAlignmentAssist(enabled);
+    emit alignmentAssistChanged();
+}
 } // namespace SnapTray

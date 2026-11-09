@@ -45,7 +45,7 @@ CLIResult FullCommand::execute(const QCommandLineParser& parser)
         const QString screenValue = parser.value("screen");
         bool screenOk = false;
         screenNum = screenValue.toInt(&screenOk);
-        if (!screenOk) {
+        if (!screenOk || screenNum < 0) {
             return CLIResult::error(
                 CLIResult::Code::InvalidArguments,
                 QString("Invalid screen number: %1").arg(screenValue));

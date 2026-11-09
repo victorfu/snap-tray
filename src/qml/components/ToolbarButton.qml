@@ -22,12 +22,15 @@ Item {
 
     property int buttonId: -1
     property string iconSource: ""
+    property string textLabel: ""
     property bool isAction: false
     property bool isCancel: false
     property bool isActive: false
     property bool isDisabled: false
     property string tooltipText: ""
     property bool separatorBefore: false
+    // Drawing tools report isActive as their checked state; actions do not.
+    property bool accessibleCheckable: false
 
     // Icon color overrides (default to toolbar tokens)
     property color iconNormalColor: ComponentTokens.toolbarIcon
@@ -46,10 +49,23 @@ Item {
     width: 28
     height: 24
     opacity: root.isDisabled ? 0.4 : 1.0
+    // Screen readers read a disabled button as unavailable (#248). A disabled
+    // item gets no hover, so a toolbar that wants tooltips on disabled
+    // buttons covers them itself (see the disabled-button hover MouseArea in
+    // FloatingToolbar.qml).
+    enabled: !root.isDisabled
 
     signal clicked(int buttonId)
     signal hovered(int buttonId, real globalX, real globalY, real w, real h)
     signal unhovered()
+
+    // Screen readers (#238): the tooltip (tool name and shortcut) is the
+    // name, since the button shows only an icon.
+    Accessible.role: Accessible.Button
+    Accessible.name: root.tooltipText !== "" ? root.tooltipText : root.textLabel
+    Accessible.checkable: root.accessibleCheckable
+    Accessible.checked: root.accessibleCheckable && root.isActive
+    Accessible.onPressAction: if (!root.isDisabled) root.clicked(root.buttonId)
 
     // Active background
     Rectangle {
@@ -71,6 +87,7 @@ Item {
 
     // Icon
     SvgIcon {
+        visible: root.textLabel.length === 0
         anchors.centerIn: parent
         source: root.iconSource
         iconSize: root.iconSize
@@ -82,6 +99,25 @@ Item {
             if (root.isAction)
                 return root.iconActionColor;
             return root.iconNormalColor;
+        }
+    }
+
+    // Defer first-use text initialization, then retain it across visibility changes.
+    property bool textLabelNeeded: false
+    Binding on textLabelNeeded {
+        when: root.visible && root.textLabel.length > 0
+        value: true
+        restoreMode: Binding.RestoreNone
+    }
+
+    Loader {
+        anchors.centerIn: parent
+        active: root.textLabelNeeded && root.textLabel.length > 0
+        sourceComponent: Text {
+            objectName: "toolbarTextLabel"
+            text: root.textLabel
+            font.pixelSize: 20
+            color: root.isActive ? root.iconActiveColor : root.iconNormalColor
         }
     }
 

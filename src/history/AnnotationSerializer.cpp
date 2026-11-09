@@ -4,7 +4,6 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
-#include "annotations/ErasedItemsGroup.h"
 #include "annotations/MarkerStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "annotations/MosaicStroke.h"
@@ -21,6 +20,8 @@
 #include <QJsonParseError>
 #include <QPoint>
 #include <QPointF>
+
+#include <vector>
 
 namespace {
 
@@ -141,6 +142,7 @@ QJsonObject serializeAnnotationItem(const AnnotationItem* item)
             {"type", QStringLiteral("text_box")},
             {"position", serializePointF(text->position())},
             {"box", serializeRectF(text->box())},
+            {"wrapWidth", text->wrapWidth()},
             {"text", text->text()},
             {"font", text->font().toString()},
             {"color", serializeColor(text->color())},
@@ -170,7 +172,7 @@ QJsonObject serializeAnnotationItem(const AnnotationItem* item)
             {"type", QStringLiteral("arrow")},
             {"start", serializePoint(arrow->start())},
             {"end", serializePoint(arrow->end())},
-            {"controlPoint", serializePoint(arrow->controlPoint())},
+            {"controlPoint", serializePointF(arrow->controlPoint())},
             {"color", serializeColor(arrow->color())},
             {"width", arrow->width()},
             {"lineEndStyle", static_cast<int>(arrow->lineEndStyle())},
@@ -243,7 +245,7 @@ QJsonObject serializeAnnotationItem(const AnnotationItem* item)
     if (const auto* emoji = dynamic_cast<const EmojiStickerAnnotation*>(item)) {
         return QJsonObject{
             {"type", QStringLiteral("emoji")},
-            {"position", serializePoint(emoji->position())},
+            {"position", serializePointF(emoji->precisePosition())},
             {"emoji", emoji->emoji()},
             {"scale", emoji->scale()},
             {"rotation", emoji->rotation()},
@@ -273,17 +275,20 @@ std::unique_ptr<AnnotationItem> deserializeAnnotationItem(const QJsonObject& obj
         item->setScale(object.value(QStringLiteral("scale")).toDouble(1.0));
         item->setMirror(object.value(QStringLiteral("mirrorX")).toBool(),
                         object.value(QStringLiteral("mirrorY")).toBool());
+        item->setWrapWidth(object.value(QStringLiteral("wrapWidth")).toDouble());
         item->setBox(deserializeRectF(object.value(QStringLiteral("box"))));
         return item;
     }
 
     if (type == QStringLiteral("shape")) {
+        const QRectF rect = deserializeRectF(object.value(QStringLiteral("rect")));
         auto item = std::make_unique<ShapeAnnotation>(
-            deserializeRectF(object.value(QStringLiteral("rect"))).toAlignedRect(),
+            rect.toAlignedRect(),
             static_cast<ShapeType>(object.value(QStringLiteral("shapeType")).toInt()),
             deserializeColor(object.value(QStringLiteral("color"))),
             object.value(QStringLiteral("width")).toInt(),
             object.value(QStringLiteral("filled")).toBool());
+        item->setRectF(rect);
         item->setRotation(object.value(QStringLiteral("rotation")).toDouble());
         item->setScale(object.value(QStringLiteral("scaleX")).toDouble(1.0),
                        object.value(QStringLiteral("scaleY")).toDouble(1.0));
@@ -298,7 +303,7 @@ std::unique_ptr<AnnotationItem> deserializeAnnotationItem(const QJsonObject& obj
             object.value(QStringLiteral("width")).toInt(),
             static_cast<LineEndStyle>(object.value(QStringLiteral("lineEndStyle")).toInt()),
             static_cast<LineStyle>(object.value(QStringLiteral("lineStyle")).toInt()));
-        item->setControlPoint(deserializePoint(object.value(QStringLiteral("controlPoint"))));
+        item->setControlPoint(deserializePointF(object.value(QStringLiteral("controlPoint"))));
         return item;
     }
 
@@ -372,6 +377,7 @@ std::unique_ptr<AnnotationItem> deserializeAnnotationItem(const QJsonObject& obj
             deserializePoint(object.value(QStringLiteral("position"))),
             object.value(QStringLiteral("emoji")).toString(),
             object.value(QStringLiteral("scale")).toDouble(1.0));
+        item->setPrecisePosition(deserializePointF(object.value(QStringLiteral("position"))));
         item->setRotation(object.value(QStringLiteral("rotation")).toDouble());
         item->setMirror(object.value(QStringLiteral("mirrorX")).toBool(),
                         object.value(QStringLiteral("mirrorY")).toBool());
@@ -392,7 +398,7 @@ QByteArray serializeAnnotationLayer(const AnnotationLayer& layer)
 {
     QJsonArray items;
     layer.forEachItem([&items](const AnnotationItem* item) {
-        if (!item || !item->isVisible() || dynamic_cast<const ErasedItemsGroup*>(item) != nullptr) {
+        if (!item || !item->isVisible()) {
             return;
         }
 
@@ -426,22 +432,25 @@ bool deserializeAnnotationLayer(const QByteArray& data,
                 ? parseError.errorString()
                 : QStringLiteral("Annotation payload is not an object");
         }
+        layer->replaceItems({});
         return false;
     }
 
     const QJsonArray items = document.object().value(QStringLiteral("items")).toArray();
-    layer->clear();
+    std::vector<std::unique_ptr<AnnotationItem>> decodedItems;
+    decodedItems.reserve(static_cast<std::size_t>(items.size()));
 
     for (const QJsonValue& value : items) {
         const QJsonObject object = value.toObject();
         auto item = deserializeAnnotationItem(object, sourcePixmap, errorMessage);
         if (!item) {
-            layer->clear();
+            layer->replaceItems({});
             return false;
         }
-        layer->addItem(std::move(item));
+        decodedItems.push_back(std::move(item));
     }
 
+    layer->replaceItems(std::move(decodedItems));
     return true;
 }
 

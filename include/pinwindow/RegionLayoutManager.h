@@ -73,15 +73,6 @@ struct RegionLayoutState {
 };
 
 /**
- * @brief Binding between an annotation and its containing region.
- */
-struct AnnotationRegionBinding {
-    AnnotationItem* annotation = nullptr;  ///< Pointer to the annotation
-    int regionIndex = -1;                  ///< Index of containing region (-1 = unbound)
-    QPointF offsetFromRegion;              ///< Offset from region's top-left corner
-};
-
-/**
  * @brief Manages the Region Layout Mode for repositioning regions in multi-region captures.
  *
  * This class handles:
@@ -253,30 +244,36 @@ public:
     /**
      * @brief Recompose the regions into a single image.
      * @param dpr Device pixel ratio
+     * @param committedRegions Optional normalized snapshot whose per-region
+     * images are materialized at their final physical sizes. The output is
+     * assigned only when recomposition succeeds.
      * @return The composited pixmap
      */
-    QPixmap recomposeImage(qreal dpr) const;
+    QPixmap recomposeImage(
+        qreal dpr,
+        QVector<LayoutRegion>* committedRegions = nullptr) const;
 
     // ========================================================================
     // Annotation Integration
     // ========================================================================
 
     /**
-     * @brief Bind annotations to their containing regions.
-     * @param layer The annotation layer containing annotations
+     * @brief Update every owned annotation based on the final region layout.
+     * @param layer The annotation layer containing annotations and history
+     * @param viewScale Scale from layout model coordinates to annotation
+     * coordinates (the PinWindow zoom level)
      */
-    void bindAnnotations(AnnotationLayer* layer);
+    void updateAnnotationPositions(AnnotationLayer* layer,
+                                   qreal viewScale = 1.0) const;
 
     /**
-     * @brief Update annotation positions based on region movements.
+     * @brief Translation for one annotation in its current view coordinate space.
+     * @param normalizeToRecomposedOrigin Subtract the final region-union
+     * origin for committed/export output; false keeps live canvas coordinates
      */
-    void updateAnnotationPositions();
-
-    /**
-     * @brief Restore annotations to their original positions (for cancel).
-     * @param layer The annotation layer to restore
-     */
-    void restoreAnnotations(AnnotationLayer* layer);
+    QPointF annotationTranslation(const AnnotationItem& annotation,
+                                  qreal viewScale = 1.0,
+                                  bool normalizeToRecomposedOrigin = true) const;
 
     // ========================================================================
     // Serialization
@@ -342,8 +339,6 @@ private:
 
     bool m_active = false;
     RegionLayoutState m_state;
-    QVector<AnnotationRegionBinding> m_annotationBindings;
-    QVector<QRectF> m_annotationOriginalRects;  ///< Original annotation rects for restore
 };
 
 #endif // REGIONLAYOUTMANAGER_H

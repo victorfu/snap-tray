@@ -6,6 +6,10 @@
 #include <QRegularExpression>
 #include <QStringList>
 #include <QUuid>
+#include <QTextBoundaryFinder>
+#ifdef Q_OS_LINUX
+#include <unistd.h>
+#endif
 
 namespace {
 
@@ -250,9 +254,48 @@ FilenameTemplateEngine::Result FilenameTemplateEngine::renderFilename(const QStr
     }
 
     filename = ensureExtension(filename, normalizedContext.ext);
-    filename = enforceLengthLimit(filename, normalizedContext.outputDir);
+    QString counterSuffix;
+    if (!result.usedFallback && normalizedContext.counter > 0) {
+        // Reserve a terminal counter declared by the template, never an
+        // arbitrary numeric suffix that came from a window title or app name.
+        static const QRegularExpression terminalCounter(
+            QStringLiteral(R"(([_\-.]?)\{#(?::(\d+))?\}(?:\.(?:\{ext\}|[^{}]+))?$)"));
+        const auto match = terminalCounter.match(templateToUse);
+        if (match.hasMatch()) {
+            counterSuffix = match.captured(1) + QString::number(normalizedContext.counter)
+                .rightJustified(match.captured(2).toInt(), QChar('0'));
+            if (!QFileInfo(filename).completeBaseName().endsWith(counterSuffix)) counterSuffix.clear();
+        }
+    }
+    filename = enforceLengthLimit(filename, normalizedContext.outputDir, counterSuffix);
+    if (filename.isEmpty()) {
+        result.error = QStringLiteral("Filename length limit is too small for the required suffix");
+    }
     result.filename = filename;
     return result;
+}
+
+QString FilenameTemplateEngine::collisionFilename(const QString& templ, const Context& context,
+                                                   const QString& initialFilename, int attempt,
+                                                   const QString& uuidSuffix)
+{
+    if (!uuidSuffix.isEmpty()) {
+        const QFileInfo info(initialFilename);
+        QString name = info.completeBaseName() + QChar('_') + uuidSuffix;
+        if (!info.suffix().isEmpty())
+            name += QChar('.') + info.suffix();
+        return enforceLengthLimit(name, context.outputDir, QChar('_') + uuidSuffix);
+    }
+    if (attempt == 0)
+        return initialFilename;
+    const QString effectiveTemplate = templ.trimmed().isEmpty() ? defaultTemplate() : templ.trimmed();
+    if (hasCounterToken(effectiveTemplate)) {
+        Context numbered = context;
+        numbered.counter = attempt;
+        return renderFilename(effectiveTemplate, numbered).filename;
+    }
+    return enforceLengthLimit(appendCounter(initialFilename, attempt), context.outputDir,
+                              QChar('_') + QString::number(attempt));
 }
 
 QString FilenameTemplateEngine::buildUniqueFilePath(const QString& outputDir,
@@ -272,6 +315,7 @@ QString FilenameTemplateEngine::buildUniqueFilePath(const QString& outputDir,
     if (error) {
         *error = initialResult.error;
     }
+    if (initialResult.filename.isEmpty()) return {};
 
     const QDir dir(outputDir);
     const QString initialPath = dir.filePath(initialResult.filename);
@@ -279,19 +323,12 @@ QString FilenameTemplateEngine::buildUniqueFilePath(const QString& outputDir,
         return initialPath;
     }
 
-    const QString templateToUse = templ.trimmed().isEmpty() ? defaultTemplate() : templ.trimmed();
-    const bool counterInTemplate = hasCounterToken(templateToUse);
-
     for (int attempt = 1; attempt <= maxAttempts; ++attempt) {
-        QString candidateName;
-        if (counterInTemplate) {
-            localContext.counter = attempt;
-            candidateName = renderFilename(templateToUse, localContext).filename;
-        } else {
-            candidateName = appendCounter(initialResult.filename, attempt);
-            candidateName = enforceLengthLimit(candidateName, outputDir);
+        const QString candidateName = collisionFilename(templ, localContext, initialResult.filename, attempt);
+        if (candidateName.isEmpty()) {
+            if (error) *error = QStringLiteral("Filename length limit is too small for a collision suffix");
+            return {};
         }
-
         const QString candidatePath = dir.filePath(candidateName);
         if (!QFile::exists(candidatePath)) {
             return candidatePath;
@@ -299,13 +336,12 @@ QString FilenameTemplateEngine::buildUniqueFilePath(const QString& outputDir,
     }
 
     const QString uuid = QUuid::createUuid().toString(QUuid::Id128).left(8);
-    const QFileInfo fallbackInfo(initialResult.filename);
-    QString fallbackName = QStringLiteral("%1_%2").arg(fallbackInfo.completeBaseName()).arg(uuid);
-    if (!fallbackInfo.suffix().isEmpty()) {
-        fallbackName += QStringLiteral(".") + fallbackInfo.suffix();
+    const QString uuidName = collisionFilename(templ, localContext, initialResult.filename, 0, uuid);
+    if (uuidName.isEmpty()) {
+        if (error) *error = QStringLiteral("Filename length limit is too small for a UUID suffix");
+        return {};
     }
-    fallbackName = enforceLengthLimit(fallbackName, outputDir);
-    return dir.filePath(ensureExtension(fallbackName, localContext.ext));
+    return dir.filePath(uuidName);
 }
 
 QString FilenameTemplateEngine::sanitizeFilename(const QString& raw)
@@ -357,9 +393,11 @@ QString FilenameTemplateEngine::ensureExtension(const QString& filename, const Q
     return output + QStringLiteral(".") + normalizedExt;
 }
 
-QString FilenameTemplateEngine::enforceLengthLimit(const QString& filename, const QString& outputDir)
+QString FilenameTemplateEngine::enforceLengthLimit(const QString& filename, const QString& outputDir,
+                                                   const QString& collisionSuffix)
 {
-    int maxNameLength = 255;
+    constexpr int kDefaultComponentLimit = 255;
+    int maxNameLength = kDefaultComponentLimit;
 #ifdef Q_OS_WIN
     if (!outputDir.isEmpty()) {
         const int maxFromPath = 240 - outputDir.length() - 1;
@@ -367,25 +405,56 @@ QString FilenameTemplateEngine::enforceLengthLimit(const QString& filename, cons
             maxNameLength = qMin(maxNameLength, maxFromPath);
         }
     }
+#elif defined(Q_OS_LINUX)
+    if (!outputDir.isEmpty()) {
+        const long filesystemLimit = ::pathconf(QFile::encodeName(outputDir).constData(), _PC_NAME_MAX);
+        if (filesystemLimit > 0) {
+            maxNameLength = static_cast<int>(qMin<long>(maxNameLength, filesystemLimit));
+        }
+    }
 #else
     Q_UNUSED(outputDir);
 #endif
+#ifdef Q_OS_LINUX
+    constexpr bool kUseUtf8Bytes = true;
+#else
+    constexpr bool kUseUtf8Bytes = false;
+#endif
+    return limitFilenameComponent(filename, maxNameLength, kUseUtf8Bytes, collisionSuffix);
+}
 
-    if (filename.length() <= maxNameLength) {
+QString FilenameTemplateEngine::limitFilenameComponent(const QString& filename, int limit, bool utf8,
+                                                       const QString& collisionSuffix)
+{
+    const auto length = [utf8](const QString& text) {
+        return utf8 ? text.toUtf8().size() : text.size();
+    };
+    if (length(filename) <= limit) {
         return filename;
     }
 
     const int dotPos = filename.lastIndexOf(QChar('.'));
     const QString ext = dotPos > 0 ? filename.mid(dotPos) : QString();
-    const QString base = dotPos > 0 ? filename.left(dotPos) : filename;
+    QString base = dotPos > 0 ? filename.left(dotPos) : filename;
     const QString hash = QString::number(qHash(filename), 16).rightJustified(6, QChar('0')).right(6);
-
-    int keepChars = maxNameLength - ext.length() - hash.length() - 1;
-    if (keepChars < 1) {
-        keepChars = 1;
+    QString suffix = collisionSuffix;
+    if (!suffix.isEmpty() && base.endsWith(suffix)) {
+        base.chop(suffix.size());
     }
+    const QString tail = QChar('~') + hash + suffix + ext;
+    const qsizetype budget = limit - length(tail);
+    if (budget < 0) return {};
 
-    return base.left(keepChars) + QStringLiteral("~") + hash + ext;
+    // Do not split surrogate pairs, combining marks or ZWJ emoji sequences.
+    QTextBoundaryFinder finder(QTextBoundaryFinder::Grapheme, base);
+    qsizetype used = 0;
+    qsizetype end = 0;
+    for (qsizetype next = finder.toNextBoundary(); next >= 0; next = finder.toNextBoundary()) {
+        used += length(base.mid(end, next - end));
+        if (used > budget) break;
+        end = next;
+    }
+    return base.left(end) + tail;
 }
 
 QString FilenameTemplateEngine::appendCounter(const QString& filename, int counter)

@@ -3,9 +3,16 @@
 #include "encoding/WebPAnimEncoder.h"
 #include "IVideoEncoder.h"
 #include <QDebug>
+#include <QCoreApplication>
 
 EncoderFactory::EncoderResult EncoderFactory::create(
     const EncoderConfig& config, QObject* parent)
+{
+    return createWithNativeFactory(config, parent, &IVideoEncoder::createNativeEncoder);
+}
+
+EncoderFactory::EncoderResult EncoderFactory::createWithNativeFactory(
+    const EncoderConfig& config, QObject* parent, const NativeEncoderFactory& factory)
 {
     EncoderResult result;
 
@@ -54,10 +61,16 @@ EncoderFactory::EncoderResult EncoderFactory::create(
     switch (config.priority) {
     case Priority::NativeFirst:
     case Priority::NativeOnly:
-        result.nativeEncoder = tryCreateNativeEncoder(config, parent);
+        result.nativeEncoder = tryCreateNativeEncoder(config, parent, factory);
         if (result.nativeEncoder) {
             result.success = true;
             result.isNative = true;
+            result.fragmentedOutput = result.nativeEncoder->isFragmentedOutput();
+            result.audioEnabled = result.nativeEncoder->isAudioEnabled();
+            if (config.enableAudio && !result.audioEnabled) {
+                result.audioWarning = QCoreApplication::translate("EncoderFactory",
+                    "Audio encoding is unavailable. This recording will be silent.");
+            }
             qDebug() << "EncoderFactory: Using native encoder for MP4";
         } else {
             result.errorMessage = "Native encoder is not available on this platform.";
@@ -81,9 +94,9 @@ bool EncoderFactory::isNativeEncoderAvailable()
 }
 
 IVideoEncoder* EncoderFactory::tryCreateNativeEncoder(
-    const EncoderConfig& config, QObject* parent)
+    const EncoderConfig& config, QObject* parent, const NativeEncoderFactory& factory)
 {
-    IVideoEncoder* encoder = IVideoEncoder::createNativeEncoder(parent);
+    IVideoEncoder* encoder = factory ? factory(parent) : nullptr;
     if (!encoder) {
         qDebug() << "EncoderFactory: Native encoder not available on this platform";
         return nullptr;
@@ -98,6 +111,14 @@ IVideoEncoder* EncoderFactory::tryCreateNativeEncoder(
     // Set quality
     encoder->setQuality(config.quality);
     qDebug() << "EncoderFactory: Native encoder quality set to" << config.quality;
+    encoder->setRateControl(config.rateControl, config.quality);
+    encoder->setKeyFrameIntervalSeconds(config.keyFrameIntervalSeconds);
+    if (config.fragmentedOutput && !encoder->setFragmentedOutput(true)) {
+        qDebug() << "EncoderFactory: Native encoder cannot write fragmented MP4";
+    }
+    qDebug() << "EncoderFactory: Native encoder rate control"
+             << (config.rateControl == SnapTray::VideoRateControl::ConstantQuality ? "constant quality" : "bitrate")
+             << "keyframe interval (s):" << config.keyFrameIntervalSeconds;
 
     // Configure audio format before start() - this is critical
     if (config.enableAudio && encoder->isAudioSupported()) {
@@ -111,6 +132,10 @@ IVideoEncoder* EncoderFactory::tryCreateNativeEncoder(
                  << config.audioBitsPerSample << "bits";
     }
 
+    if (config.nativeFrameDevice) {
+        encoder->setNativeFrameDevice(config.nativeFrameDevice);
+    }
+
     // Start the encoder
     if (!encoder->start(config.outputPath, config.frameSize, config.frameRate)) {
         qWarning() << "EncoderFactory: Native encoder failed to start:"
@@ -120,7 +145,8 @@ IVideoEncoder* EncoderFactory::tryCreateNativeEncoder(
     }
 
     qDebug() << "EncoderFactory: Native encoder started successfully:"
-             << encoder->encoderName();
+             << encoder->encoderName()
+             << (encoder->acceptsNativeFrames() ? "(GPU frames)" : "(CPU frames)");
     return encoder;
 }
 

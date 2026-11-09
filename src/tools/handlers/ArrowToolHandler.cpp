@@ -69,24 +69,29 @@ void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 
     // Check if mouse has moved enough to be considered a drag
     QPoint diff = pos - m_startPoint;
-    if (diff.manhattanLength() > 3) {
-        m_hasDragged = true;
-
-        // Apply angle snapping if Shift is held
-        QPoint endPos = ctx->shiftPressed
-            ? AngleSnap::snapTo45Degrees(m_startPoint, pos)
-            : pos;
-
-        // Create or update straight arrow
-        if (!m_currentArrow) {
-            m_currentArrow = std::make_unique<ArrowAnnotation>(
-                m_startPoint, endPos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
-            );
-        } else {
-            m_currentArrow->setEnd(endPos);
-        }
-        ctx->repaint();
+    const bool beyondDragThreshold = diff.manhattanLength() > kDragThreshold;
+    if (!m_hasDragged && !beyondDragThreshold) {
+        return;
     }
+    m_hasDragged = true;
+
+    // Apply angle snapping if Shift is held
+    QPoint endPos = ctx->shiftPressed
+        ? AngleSnap::snapTo45Degrees(m_startPoint, pos)
+        : pos;
+
+    // Create or update straight arrow. Once a drag has crossed the threshold,
+    // keep updating its preview even if the pointer moves back near the press
+    // point; release policy remains sticky and will cancel instead of entering
+    // polyline mode.
+    if (!m_currentArrow) {
+        m_currentArrow = std::make_unique<ArrowAnnotation>(
+            m_startPoint, endPos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
+        );
+    } else {
+        m_currentArrow->setEnd(endPos);
+    }
+    ctx->repaint();
 }
 
 void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
@@ -100,19 +105,31 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     }
 
     bool committedAnnotation = false;
-    if (m_hasDragged) {
+    const QPoint releaseDelta = pos - m_startPoint;
+    const bool releaseIsDrag = releaseDelta.manhattanLength() > kDragThreshold;
+    if (m_hasDragged || releaseIsDrag) {
         // This was a drag - finalize the arrow
-        QPoint diff = pos - m_startPoint;
-        if (diff.manhattanLength() > 5) {
-            if (m_currentArrow) {
-                // Apply angle snapping if Shift is held
-                QPoint endPos = ctx->shiftPressed
-                    ? AngleSnap::snapTo45Degrees(m_startPoint, pos)
-                    : pos;
+        if (releaseIsDrag) {
+            // Apply angle snapping if Shift is held
+            QPoint endPos = ctx->shiftPressed
+                ? AngleSnap::snapTo45Degrees(m_startPoint, pos)
+                : pos;
+            if (!m_currentArrow) {
+                // Some platforms can deliver press/release without an
+                // intermediate move event. Build the straight arrow from the
+                // release displacement instead of misclassifying it as a click.
+                m_currentArrow = std::make_unique<ArrowAnnotation>(
+                    m_startPoint,
+                    endPos,
+                    ctx->color,
+                    ctx->width,
+                    ctx->arrowStyle,
+                    ctx->lineStyle);
+            } else {
                 m_currentArrow->setEnd(endPos);
-                ctx->addItem(std::move(m_currentArrow));
-                committedAnnotation = true;
             }
+            ctx->addItem(std::move(m_currentArrow));
+            committedAnnotation = true;
         }
 
         // Reset to initial state

@@ -1,11 +1,9 @@
 #include "update/UpdateServiceFactory.h"
+#include "update/AppImageUpdateService.h"
 
-#include <QtGlobal>
-
-std::unique_ptr<IUpdateService> createPlatformUpdateService(UpdateServiceKind kind,
-                                                            InstallSource source)
+std::unique_ptr<IUpdateService> createPlatformUpdateService(UpdateServiceKind kind, InstallSource source)
 {
-    Q_UNUSED(kind);
-    Q_UNUSED(source);
+    if (kind == UpdateServiceKind::AppImageUpdate && source == InstallSource::AppImage)
+        return std::make_unique<AppImageUpdateService>();
     return nullptr;
 }

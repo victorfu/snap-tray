@@ -4,23 +4,149 @@
 #include <QFont>
 
 #include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
 #include "annotations/MarkerStroke.h"
 #include "annotations/PencilStroke.h"
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
-#include "annotations/ErasedItemsGroup.h"
+#include "annotations/StepBadgeAnnotation.h"
+
+namespace {
+
+struct CountingAnnotationState {
+    int drawCalls = 0;
+    int boundingRectCalls = 0;
+};
+
+class CountingAnnotation final : public AnnotationItem
+{
+public:
+    CountingAnnotation(const QRect& bounds, std::shared_ptr<CountingAnnotationState> state)
+        : m_bounds(bounds)
+        , m_state(std::move(state))
+    {
+    }
+
+    void draw(QPainter&) const override { ++m_state->drawCalls; }
+    QRect boundingRect() const override
+    {
+        ++m_state->boundingRectCalls;
+        return m_bounds;
+    }
+    std::unique_ptr<AnnotationItem> clone() const override
+    {
+        return std::make_unique<CountingAnnotation>(m_bounds, m_state);
+    }
+    void setBounds(const QRect& bounds) { m_bounds = bounds; }
+
+private:
+    QRect m_bounds;
+    std::shared_ptr<CountingAnnotationState> m_state;
+};
+
+class CountingPencilStroke final : public PencilStroke
+{
+public:
+    CountingPencilStroke(const QVector<QPointF>& points,
+                         std::shared_ptr<CountingAnnotationState> state)
+        : PencilStroke(points, Qt::red, 3, LineStyle::Solid)
+        , m_state(std::move(state))
+    {
+    }
+
+    void draw(QPainter&) const override { ++m_state->drawCalls; }
+
+private:
+    std::shared_ptr<CountingAnnotationState> m_state;
+};
+
+class SizedAnnotation final : public AnnotationItem
+{
+public:
+    explicit SizedAnnotation(std::size_t retainedBytes)
+        : m_retainedBytes(retainedBytes)
+    {
+    }
+
+    void draw(QPainter&) const override {}
+    QRect boundingRect() const override { return QRect(0, 0, 1, 1); }
+    std::unique_ptr<AnnotationItem> clone() const override
+    {
+        return std::make_unique<SizedAnnotation>(m_retainedBytes);
+    }
+    std::size_t estimatedRetainedBytes() const override { return m_retainedBytes; }
+    void setRetainedBytes(std::size_t bytes) { m_retainedBytes = bytes; }
+
+private:
+    std::size_t m_retainedBytes;
+};
+
+} // namespace
 
 class TestAnnotationLayer : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void zOrderForwardStepsPastNextOverlapping();
+    void zOrderBackwardStepsPastNextOverlapping();
+    void zOrderWithoutOverlapGoesToTheEnd();
+    void zOrderToFrontAndToBack();
+    void zOrderAtTheEndIsNoOp();
+    void zOrderNeedsSelection();
+    void zOrderUndoRedoKeepsSelection();
+    void zOrderRepeatsCoalesceIntoOneStep();
+    void zOrderCoalescingEndsOnOtherMove();
+    void zOrderRefusedDuringGestureAndErase();
+    void zOrderKeepsStepBadgeNumbers();
+    void stepBadgeNumbersStayContinuousAfterRemoveAndUndo();
+    void replaceItemsKeepsReorderedStepBadgeNumbers();
+    void replaceItemsKeepsLegacyStepBadgeNumbers();
+    void gestureCommitIsOneStep();
+    void unchangedGestureRecordsNothing();
+    void cancelGestureRestoresWithoutHistory();
+    void styleThenMoveUndoIndependently();
+    void moveThenStyleUndoIndependently();
+    void undoRefusedDuringGesture();            // [RF 5]
+    void gestureRefusedDuringErase();
+    void destructiveOpsDropGesture();
+    void staleGestureIsCommittedByNextBegin();  // [RF 1]
+    void translatedSnapshotUndoesToTranslatedPosition();  // [RF 3]
+    void gestureAdvancesStateToken();
+    void geometryUndoKeepsSelection();
+    void ensureGestureOnAnotherItemCommitsStale();
+    void newAnnotationCommitsStaleGesture();
+    void hiddenReEditGestureIsNotTakenOver();
+    void gestureSnapshotKeepsFractionalShapeRect();
+    void cancelGestureKeepsStyleEditMadeDuringDrag();
+    void modifyIsUndoable();
+    void modifyKeepsSelectionAcrossUndo();
+    void modifyCoalesces();
+    void modifyCoalescingEndsOnUndo();
+    void modifyRefusedDuringErase();
+    void modifyRejectedMutationLeavesNoHistory();
+    void selectionChangedSignal();
+    void selectionFollowsItemAfterErase();
+    void modifyUndoKeepsLaterGeometry();
+    void modifyUndoKeepsVisibility();
+    void testAddItem_PreservesAnnotationsBeyondFifty();
+    void testDraw_CullsPencilStrokesOutsidePainterClip();
+    void testDrawCached_AppendsWithoutRebuildingExistingItems();
+    void testContentBoundingRect_ReflectsInPlaceMutation();
     void testDrawWithDirtyRegion_ExcludesDraggedItemFromFullCache();
     void testDrawCached_RebuildsAfterExcludeCache();
     void testDrawCached_RebuildsAfterDraggedItemMoved();
     void testDrawCached_AppliesViewportOrigin();
+    void testPencilCommitPreservesPixelAlignment_data();
+    void testPencilCommitPreservesPixelAlignment();
+    void testViewportCacheStressPreservesPixelsAndHistory();
+    void testViewportCacheLruAndTransientPriority();
+    void testViewportCacheByteBudgetAndOversizedEntry();
+    void testViewportCacheAccountingAndNullFallback();
+    void testLinePaintedGeometry_data();
+    void testLinePaintedGeometry();
     void testHitTestText_IgnoresHiddenItems();
     void testHitTestEmojiSticker_IgnoresHiddenItems();
     void testHitTestEmojiSticker_ReturnsTopMostVisible();
@@ -28,12 +154,26 @@ private slots:
     void testHitTestShape_ReturnsTopMostVisible();
     void testSetSelectedIndex_InvalidOrHiddenClearsSelection();
     void testTranslateAll_AlsoTranslatesRedoStackItems();
-    void testTranslateAll_TranslatesErasedItemsGroupContents();
-    void testRedo_ErasedItemsGroup_ReappliesDeletion();
+    void testTranslateAll_TranslatesRemoveCommandContents();
+    void testRedo_RemoveCommand_ReappliesDeletion();
     void testRemoveItemsIntersecting_AdjacentRemovals_TrackOriginalIndices();
     void testRemoveItemsIntersecting_MarkerRemovals_TrackOriginalIndices();
-    void testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOrder();
-    void testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOverDelete();
+    void testRedo_RemoveCommand_AdjacentRemovals_PreservesOrder();
+    void testRedo_RemoveCommand_UsesStableIds();
+    void testHistoryCountLimit_CommitsOldestVisibleItem();
+    void testHistoryByteLimit_PreservesLatestOversizeCommand();
+    void testHistoryByteLimit_PreservesNearestUndoAndRedo();
+    void testHistoryBranch_DropsRedoOwnedBytes();
+    void testHistoryStateToken_TracksUndoRedoAndBranches();
+    void testRemoveOutsideEraseTransaction_IsNoOp();
+    void testDeleteDuringEraseTransaction_IsRejected();
+    void testAddDuringEraseTransaction_DefersUntilCommit();
+    void testAddDuringEraseTransaction_DefersUntilEmptyCommit();
+    void testAddDuringEraseTransaction_DefersUntilCancel();
+    void testDeferredAdds_FlushAsSingleBatch();
+    void testDeferredAddAfterCancel_ClearsRedoBranch();
+    void testClearDuringEraseTransaction_DiscardsDeferredItems();
+    void testOwnedVisitor_RefreshesHistoryBytes();
 
 private:
     static bool hasVisiblePixel(const QImage& image, const QRect& probe);
@@ -91,6 +231,95 @@ std::unique_ptr<TextBoxAnnotation> TestAnnotationLayer::createTextBox(const QPoi
     font.setPointSize(16);
     font.setBold(true);
     return std::make_unique<TextBoxAnnotation>(pos, text, font, QColor(Qt::red));
+}
+
+void TestAnnotationLayer::testAddItem_PreservesAnnotationsBeyondFifty()
+{
+    AnnotationLayer layer;
+
+    for (int i = 0; i < 52; ++i) {
+        layer.addItem(createPencil(i));
+    }
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(52));
+
+    auto* firstStroke = dynamic_cast<PencilStroke*>(layer.itemAt(0));
+    auto* secondStroke = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    auto* lastStroke = dynamic_cast<PencilStroke*>(layer.itemAt(51));
+    QVERIFY(firstStroke != nullptr);
+    QVERIFY(secondStroke != nullptr);
+    QVERIFY(lastStroke != nullptr);
+    QCOMPARE(firstStroke->points().first(), QPointF(20.0, 0.0));
+    QCOMPARE(secondStroke->points().first(), QPointF(20.0, 1.0));
+    QCOMPARE(lastStroke->points().first(), QPointF(20.0, 51.0));
+
+    layer.undo();
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(50));
+    QCOMPARE(layer.itemAt(0), firstStroke);
+
+    layer.redo();
+    layer.redo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(52));
+    QCOMPARE(layer.itemAt(0), firstStroke);
+}
+
+void TestAnnotationLayer::testDraw_CullsPencilStrokesOutsidePainterClip()
+{
+    AnnotationLayer layer;
+    auto inside = std::make_shared<CountingAnnotationState>();
+    auto outside = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingPencilStroke>(
+        QVector<QPointF>{QPointF(10, 20), QPointF(30, 20)}, inside));
+    layer.addItem(std::make_unique<CountingPencilStroke>(
+        QVector<QPointF>{QPointF(200, 210), QPointF(220, 210)}, outside));
+
+    QImage image(260, 260, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setClipRect(QRect(0, 0, 80, 80));
+    layer.draw(painter);
+    painter.end();
+
+    QCOMPARE(inside->drawCalls, 1);
+    QCOMPARE(outside->drawCalls, 0);
+}
+
+void TestAnnotationLayer::testDrawCached_AppendsWithoutRebuildingExistingItems()
+{
+    AnnotationLayer layer;
+    auto first = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(10, 10, 20, 20), first));
+
+    QImage image(120, 120, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    layer.drawCached(painter, image.size(), 1.0);
+    QCOMPARE(first->drawCalls, 1);
+
+    layer.addItem(createPencil(60));
+    QCOMPARE(first->drawCalls, 1);
+
+    layer.drawCached(painter, image.size(), 1.0);
+    QCOMPARE(first->drawCalls, 1);
+}
+
+void TestAnnotationLayer::testContentBoundingRect_ReflectsInPlaceMutation()
+{
+    AnnotationLayer layer;
+    auto first = std::make_shared<CountingAnnotationState>();
+    auto second = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(10, 10, 20, 20), first));
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(80, 70, 30, 40), second));
+
+    QCOMPARE(layer.contentBoundingRect(), QRect(10, 10, 100, 100));
+    auto* mutableFirst = dynamic_cast<CountingAnnotation*>(layer.itemAt(0));
+    QVERIFY(mutableFirst != nullptr);
+    mutableFirst->setBounds(QRect(140, 130, 20, 20));
+
+    QCOMPARE(layer.contentBoundingRect(), QRect(80, 70, 80, 80));
+    QCOMPARE(first->boundingRectCalls, 2);
+    QCOMPARE(second->boundingRectCalls, 2);
 }
 
 void TestAnnotationLayer::testDrawWithDirtyRegion_ExcludesDraggedItemFromFullCache()
@@ -191,6 +420,85 @@ void TestAnnotationLayer::testDrawCached_RebuildsAfterDraggedItemMoved()
     QVERIFY(hasVisiblePixel(cachedFrame, QRect(70, 42, 24, 16)));
 }
 
+void TestAnnotationLayer::testPencilCommitPreservesPixelAlignment_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<QPoint>("origin");
+    for (qreal dpr : {1.0, 1.25, 1.5, 1.75, 2.0}) {
+        for (QPoint origin : {QPoint(64, 64), QPoint(65, 67), QPoint(66, 65)}) {
+            QTest::addRow("dpr-%g-origin-%d-%d", dpr, origin.x(), origin.y())
+                << dpr << origin;
+        }
+    }
+}
+
+void TestAnnotationLayer::testPencilCommitPreservesPixelAlignment()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(QPoint, origin);
+    const QSize viewport(330, 230);
+    const auto makeImage = [&] {
+        QImage image(QSize(qRound(480 * dpr), qRound(360 * dpr)),
+                     QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+        return image;
+    };
+    AnnotationLayer layer;
+    auto stroke = std::make_unique<PencilStroke>(QVector<QPointF>{
+        {120.25, 120.5}, {170.25, 160.5}, {225.25, 125.5}, {280.25, 170.5}},
+        Qt::red, 3);
+    QImage preview = makeImage();
+    {
+        QPainter painter(&preview);
+        stroke->drawPreview(painter);
+    }
+    stroke->finalize();
+    layer.addItem(std::move(stroke));
+    const auto render = [&](int excluded, QPoint destination) {
+        QImage image = makeImage();
+        QPainter painter(&image);
+        painter.translate(destination);
+        if (excluded < 0)
+            layer.drawCached(painter, viewport, dpr, origin);
+        else
+            layer.drawWithDirtyRegion(painter, viewport, dpr, excluded, origin);
+        return image;
+    };
+    QCOMPARE(render(-1, origin), preview);
+    QCOMPARE(render(-1, origin), preview); // Cache hit.
+    QImage fallback = makeImage();
+    {
+        QPainter painter(&fallback);
+        painter.translate(origin);
+        layer.drawCached(painter, QSize(0, 0), dpr, origin);
+    }
+    QCOMPARE(fallback, preview); // Empty cache dimensions still use vector fallback.
+    QCOMPARE(render(0, origin), preview); // Direct selected item.
+    QCOMPARE(render(-1, origin), preview); // Restore the full cache before appending.
+
+    auto second = std::make_unique<PencilStroke>(QVector<QPointF>{
+        {130.25, 200.5}, {180.25, 230.5}, {270.25, 210.5}}, Qt::blue, 3);
+    {
+        QPainter painter(&preview);
+        second->drawPreview(painter);
+    }
+    second->finalize();
+    layer.addItem(std::move(second)); // Incrementally update the full cache.
+    QCOMPARE(render(-1, origin), preview);
+    QCOMPARE(render(1, origin), preview); // Cached first item plus selected second.
+
+    // The same viewport can be drawn at a different destination pixel phase.
+    const QPoint destination = origin + QPoint(1, 1);
+    QImage translated = makeImage();
+    {
+        QPainter painter(&translated);
+        painter.translate(destination - origin);
+        layer.draw(painter);
+    }
+    QCOMPARE(render(-1, destination), translated);
+}
+
 void TestAnnotationLayer::testDrawCached_AppliesViewportOrigin()
 {
     const QSize canvasSize(180, 100);
@@ -211,6 +519,254 @@ void TestAnnotationLayer::testDrawCached_AppliesViewportOrigin()
     }
 
     QVERIFY(hasVisiblePixel(cachedFrame, QRect(70, 32, 24, 16)));
+}
+
+void TestAnnotationLayer::testViewportCacheStressPreservesPixelsAndHistory()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(10, 25), QPoint(70, 60), QPoint(95, 20)}, Qt::red, 7));
+    layer.addItem(std::make_unique<MarkerStroke>(
+        QVector<QPointF>{QPointF(20, 40), QPointF(85, 40)}, QColor(20, 80, 220, 110), 12));
+    const auto revision = layer.revision();
+    const auto historyState = layer.historyStateToken();
+    const auto historyBytes = layer.historyOwnedBytes();
+    const auto historyCount = layer.historyCommandCount();
+    const qreal ratios[] = {1.0, 1.5, 2.0};
+    for (int i = 0; i < 5000; ++i) {
+        const QSize size(64 + i % 13, 64 + i % 11);
+        const QPoint origin(i % 75, i / 75);
+        const qreal dpr = ratios[i % 3];
+        QImage actual(QSize(qRound(size.width() * dpr), qRound(size.height() * dpr)),
+                      QImage::Format_ARGB32_Premultiplied);
+        actual.setDevicePixelRatio(dpr);
+        actual.fill(Qt::transparent);
+        QImage expected = actual.copy();
+        const int excluded = i % 2 == 0 ? -1 : 0;
+        {
+            QPainter painter(&actual);
+            if (excluded < 0) layer.drawCached(painter, size, dpr, origin);
+            else layer.drawWithDirtyRegion(painter, size, dpr, excluded, origin);
+        }
+        {
+            QPainter painter(&expected);
+            painter.setRenderHint(QPainter::Antialiasing);
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
+            painter.translate(-origin);
+            for (int j = 0; j < int(layer.itemCount()); ++j)
+                if (j != excluded) layer.itemAt(j)->draw(painter);
+            if (excluded >= 0) layer.itemAt(excluded)->draw(painter);
+        }
+        QCOMPARE(actual, expected);
+        QVERIFY(layer.cacheStats().entryCount <= AnnotationLayer::kMaxAnnotationCacheEntries);
+        QVERIFY(layer.cacheStats().retainedBytes <= AnnotationLayer::kMaxAnnotationCacheBytes);
+    }
+    QCOMPARE(layer.itemCount(), size_t(2));
+    QCOMPARE(layer.revision(), revision);
+    QCOMPARE(layer.historyStateToken(), historyState);
+    QCOMPARE(layer.historyOwnedBytes(), historyBytes);
+    QCOMPARE(layer.historyCommandCount(), historyCount);
+    layer.undo();
+    QCOMPARE(layer.itemCount(), size_t(1));
+    layer.redo();
+    QCOMPARE(layer.itemCount(), size_t(2));
+}
+
+void TestAnnotationLayer::testViewportCacheLruAndTransientPriority()
+{
+    AnnotationLayer layer;
+    auto state = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(0, 0, 10, 10), state));
+    QImage output(32, 32, QImage::Format_ARGB32_Premultiplied);
+    auto draw = [&](int origin, int excluded = -1) {
+        output.fill(Qt::transparent);
+        QPainter painter(&output);
+        if (excluded < 0) layer.drawCached(painter, output.size(), 1, QPoint(origin, 0));
+        else layer.drawWithDirtyRegion(painter, output.size(), 1, excluded, QPoint(origin, 0));
+    };
+    for (int i = 0; i < 8; ++i) draw(i);
+    state->drawCalls = 0;
+    draw(0); // Refresh the oldest entry.
+    QCOMPARE(state->drawCalls, 0);
+    draw(8);
+    QCOMPARE(state->drawCalls, 1);
+    draw(0);
+    QCOMPARE(state->drawCalls, 1);
+    draw(1); // Entry 1, not recently used entry 0, must have been evicted.
+    QCOMPARE(state->drawCalls, 2);
+
+    layer.invalidateCache();
+    for (int i = 0; i < 7; ++i) draw(i);
+    draw(7, 0); // Newest cache, but transient entries are evicted first.
+    draw(8);
+    state->drawCalls = 0;
+    draw(0);
+    QCOMPARE(state->drawCalls, 0);
+    QCOMPARE(layer.cacheStats().entryCount, size_t(8));
+}
+
+void TestAnnotationLayer::testViewportCacheByteBudgetAndOversizedEntry()
+{
+    AnnotationLayer layer;
+    auto state = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(0, 0, 1, 1), state));
+    QImage output(8, 8, QImage::Format_ARGB32_Premultiplied);
+    auto draw = [&](const QSize& size, int origin) {
+        output.fill(Qt::transparent);
+        QPainter painter(&output);
+        layer.drawCached(painter, size, 1, QPoint(origin, 0));
+    };
+    draw(QSize(2304, 2048), 0);
+    const auto entryBytes = layer.cacheStats().retainedBytes;
+    QVERIFY(entryBytes > 0);
+    for (int i = 1; i < 9; ++i) {
+        draw(QSize(2304, 2048), i);
+        QVERIFY(layer.cacheStats().retainedBytes <= AnnotationLayer::kMaxAnnotationCacheBytes);
+    }
+    QCOMPARE(layer.cacheStats().entryCount,
+             qMin(AnnotationLayer::kMaxAnnotationCacheEntries,
+                  size_t(AnnotationLayer::kMaxAnnotationCacheBytes / entryBytes)));
+    QCOMPARE(layer.cacheStats().retainedBytes, entryBytes * layer.cacheStats().entryCount);
+
+    draw(QSize(6000, 6000), 10);
+    QCOMPARE(layer.cacheStats().entryCount, size_t(1));
+    QVERIFY(layer.cacheStats().retainedBytes > AnnotationLayer::kMaxAnnotationCacheBytes);
+    const int draws = state->drawCalls;
+    draw(QSize(6000, 6000), 10);
+    QCOMPARE(state->drawCalls, draws);
+    draw(QSize(32, 32), 11);
+    QCOMPARE(layer.cacheStats().entryCount, size_t(1));
+    QVERIFY(layer.cacheStats().retainedBytes <= AnnotationLayer::kMaxAnnotationCacheBytes);
+}
+
+void TestAnnotationLayer::testLinePaintedGeometry_data()
+{
+    QTest::addColumn<bool>("polyline");
+    QTest::addColumn<int>("style");
+    QTest::addColumn<int>("width");
+    QTest::addColumn<int>("angle");
+    QTest::addColumn<qreal>("dpr");
+    for (bool polyline : {false, true}) {
+        for (int style = 0; style <= int(LineEndStyle::BothArrowOutline); ++style) {
+            for (int width : {1, 30, 100}) {
+                for (int angle : {0, 45, 90, 225}) {
+                    for (qreal dpr : {1.0, 1.5, 2.0}) {
+                        QTest::addRow("poly-%d-style-%d-width-%d-angle-%d-dpr-%g",
+                                      polyline, style, width, angle, dpr)
+                            << polyline << style << width << angle << dpr;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void TestAnnotationLayer::testLinePaintedGeometry()
+{
+    QFETCH(bool, polyline);
+    QFETCH(int, style);
+    QFETCH(int, width);
+    QFETCH(int, angle);
+    QFETCH(qreal, dpr);
+    QTransform rotation;
+    rotation.rotate(angle);
+    const QPoint start = rotation.map(QPoint(-100, 0));
+    const QPoint end = rotation.map(QPoint(100, 0));
+    const QPoint middle = rotation.map(QPoint(0, -50));
+    AnnotationLayer layer;
+    const auto lineStyle = static_cast<LineStyle>(style % 3);
+    if (polyline) {
+        layer.addItem(std::make_unique<PolylineAnnotation>(
+            QVector<QPoint>{start, middle, end}, Qt::red, width,
+            static_cast<LineEndStyle>(style), lineStyle));
+    } else {
+        auto arrow = std::make_unique<ArrowAnnotation>(start, end, Qt::red, width,
+            static_cast<LineEndStyle>(style), lineStyle);
+        arrow->setControlPoint(middle);
+        layer.addItem(std::move(arrow));
+    }
+    const QRect viewport(-400, -400, 800, 800);
+    const QRect bounds = layer.itemAt(0)->boundingRect();
+    QVERIFY(viewport.contains(bounds));
+    auto render = [&](int mode) {
+        QImage image(QSize(qRound(viewport.width() * dpr), qRound(viewport.height() * dpr)),
+                     QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        if (mode == 1) {
+            layer.drawCached(painter, viewport.size(), dpr, viewport.topLeft());
+        } else if (mode == 2) {
+            layer.drawWithDirtyRegion(painter, viewport.size(), dpr, 0, viewport.topLeft());
+        } else {
+            painter.translate(-viewport.topLeft());
+            if (mode == 3) painter.setClipRect(bounds);
+            layer.draw(painter);
+        }
+        return image;
+    };
+    const QImage direct = render(0);
+    // Bounds are actually used as a repaint clip, not just compared to a formula.
+    QCOMPARE(render(3), direct);
+    QCOMPARE(render(1), direct);
+    QCOMPARE(render(2), direct);
+    int inkSamples = 0;
+    for (int y = 0; y < direct.height(); y += 3) {
+        const auto* row = reinterpret_cast<const QRgb*>(direct.constScanLine(y));
+        for (int x = 0; x < direct.width(); x += 3) {
+            if (qAlpha(row[x]) < 128) continue;
+            const QPoint point = (QPointF(x + 0.5, y + 0.5) / dpr).toPoint() + viewport.topLeft();
+            const bool hit = polyline
+                ? static_cast<PolylineAnnotation*>(layer.itemAt(0))->containsPoint(point)
+                : static_cast<ArrowAnnotation*>(layer.itemAt(0))->containsPoint(point);
+            QVERIFY2(hit, qPrintable(QString("painted point (%1, %2) was not selectable")
+                                        .arg(point.x()).arg(point.y())));
+            ++inkSamples;
+        }
+    }
+    QVERIFY(inkSamples > 0);
+}
+
+void TestAnnotationLayer::testViewportCacheAccountingAndNullFallback()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(10));
+    QImage image(120, 120, QImage::Format_ARGB32_Premultiplied);
+    auto draw = [&](const QSize& viewport, int exclude = -1, QPoint origin = {}) {
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        if (exclude < 0) layer.drawCached(painter, viewport, 1, origin);
+        else layer.drawWithDirtyRegion(painter, viewport, 1, exclude, origin);
+    };
+    draw(image.size());
+    const auto bytes = layer.cacheStats().retainedBytes;
+    draw(image.size(), 0);
+    QCOMPARE(layer.cacheStats().entryCount, size_t(1));
+    QCOMPARE(layer.cacheStats().retainedBytes, bytes);
+    draw(image.size(), -1, QPoint(1, 0));
+    QCOMPARE(layer.cacheStats().retainedBytes, bytes * 2);
+    layer.addItem(createPencil(20)); // Append preserves full caches, removes exclude caches.
+    QCOMPARE(layer.cacheStats().entryCount, size_t(1));
+    QCOMPARE(layer.cacheStats().retainedBytes, bytes);
+
+    draw(image.size());
+    const QImage reference = image.copy();
+    draw(QSize()); // A null pixmap cannot be retained; draw vectors directly.
+    QCOMPARE(image, reference);
+    draw(QSize(), 0);
+    QCOMPARE(image, reference); // Non-overlapping strokes, including the live excluded item.
+    layer.invalidateCache();
+    QCOMPARE(layer.cacheStats().entryCount, size_t(0));
+    QCOMPARE(layer.cacheStats().retainedBytes, std::uint64_t(0));
+    draw(image.size());
+    std::vector<std::unique_ptr<AnnotationItem>> replacement;
+    replacement.push_back(createPencil(30));
+    layer.replaceItems(std::move(replacement));
+    QCOMPARE(layer.cacheStats().retainedBytes, std::uint64_t(0));
+    draw(image.size());
+    layer.clear();
+    QCOMPARE(layer.cacheStats().entryCount, size_t(0));
+    QCOMPARE(layer.cacheStats().retainedBytes, std::uint64_t(0));
 }
 
 void TestAnnotationLayer::testHitTestText_IgnoresHiddenItems()
@@ -337,7 +893,7 @@ void TestAnnotationLayer::testTranslateAll_AlsoTranslatesRedoStackItems()
     QCOMPARE(translatedPoints[1], originalPoints[1] + QPoint(7, 11));
 }
 
-void TestAnnotationLayer::testTranslateAll_TranslatesErasedItemsGroupContents()
+void TestAnnotationLayer::testTranslateAll_TranslatesRemoveCommandContents()
 {
     AnnotationLayer layer;
 
@@ -359,7 +915,7 @@ void TestAnnotationLayer::testTranslateAll_TranslatesErasedItemsGroupContents()
     QVERIFY(layer.removeSelectedItem());
 
     layer.translateAll(QPointF(9.0, 5.0));
-    layer.undo();  // Restores erased item from ErasedItemsGroup
+    layer.undo();
 
     auto* restored = dynamic_cast<PolylineAnnotation*>(layer.itemAt(0));
     QVERIFY(restored != nullptr);
@@ -370,7 +926,7 @@ void TestAnnotationLayer::testTranslateAll_TranslatesErasedItemsGroupContents()
     QCOMPARE(restoredPoints[1], firstPoints[1] + QPoint(9, 5));
 }
 
-void TestAnnotationLayer::testRedo_ErasedItemsGroup_ReappliesDeletion()
+void TestAnnotationLayer::testRedo_RemoveCommand_ReappliesDeletion()
 {
     AnnotationLayer layer;
 
@@ -383,7 +939,8 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_ReappliesDeletion()
 
     layer.setSelectedIndex(0);
     QVERIFY(layer.removeSelectedItem());
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(1)) != nullptr);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QVERIFY(layer.canUndo());
 
     layer.undo();
     QVERIFY(layer.canRedo());
@@ -391,12 +948,11 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_ReappliesDeletion()
 
     layer.redo();
 
-    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
     QVERIFY(!layer.canRedo());
     auto* remaining = dynamic_cast<PolylineAnnotation*>(layer.itemAt(0));
     QVERIFY(remaining != nullptr);
     QCOMPARE(remaining->points(), secondPoints);
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(1)) != nullptr);
 }
 
 void TestAnnotationLayer::testRemoveItemsIntersecting_AdjacentRemovals_TrackOriginalIndices()
@@ -407,6 +963,7 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_AdjacentRemovals_TrackOrig
     layer.addItem(createPencil(60));
     layer.addItem(createPencil(80));
 
+    layer.beginEraseTransaction();
     auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
 
     QCOMPARE(removed.size(), static_cast<size_t>(2));
@@ -420,6 +977,7 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_AdjacentRemovals_TrackOrig
     QVERIFY(secondRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
     QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
 }
 
 void TestAnnotationLayer::testRemoveItemsIntersecting_MarkerRemovals_TrackOriginalIndices()
@@ -430,6 +988,7 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_MarkerRemovals_TrackOrigin
     layer.addItem(createMarker(60));
     layer.addItem(createMarker(80));
 
+    layer.beginEraseTransaction();
     auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
 
     QCOMPARE(removed.size(), static_cast<size_t>(2));
@@ -443,9 +1002,10 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_MarkerRemovals_TrackOrigin
     QVERIFY(secondRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
     QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
 }
 
-void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOrder()
+void TestAnnotationLayer::testRedo_RemoveCommand_AdjacentRemovals_PreservesOrder()
 {
     AnnotationLayer layer;
     layer.addItem(createPencil(20));
@@ -453,12 +1013,12 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOr
     layer.addItem(createPencil(60));
     layer.addItem(createPencil(80));
 
+    layer.beginEraseTransaction();
     auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
     QCOMPARE(removed.size(), static_cast<size_t>(2));
-    layer.addItem(std::make_unique<ErasedItemsGroup>(std::move(removed)));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
 
-    QCOMPARE(layer.itemCount(), static_cast<size_t>(3));
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(2)) != nullptr);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
 
     layer.undo();
 
@@ -479,7 +1039,7 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOr
 
     layer.redo();
 
-    QCOMPARE(layer.itemCount(), static_cast<size_t>(3));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
     QVERIFY(!layer.canRedo());
 
     auto* firstRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(0));
@@ -488,10 +1048,9 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOr
     QVERIFY(secondRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
     QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(2)) != nullptr);
 }
 
-void TestAnnotationLayer::testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOverDelete()
+void TestAnnotationLayer::testRedo_RemoveCommand_UsesStableIds()
 {
     AnnotationLayer layer;
     layer.addItem(createPencil(20));
@@ -499,37 +1058,1100 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOver
     layer.addItem(createPencil(60));
     layer.addItem(createPencil(80));
 
+    AnnotationItem* erasedFirst = layer.itemAt(1);
+    AnnotationItem* erasedSecond = layer.itemAt(2);
+
+    layer.beginEraseTransaction();
     auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
     QCOMPARE(removed.size(), static_cast<size_t>(2));
-    layer.addItem(std::make_unique<ErasedItemsGroup>(std::move(removed)));
+    QVERIFY(removed[0].id != 0);
+    QVERIFY(removed[1].id != 0);
+    QVERIFY(removed[0].id != removed[1].id);
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
 
     layer.undo();
     QCOMPARE(layer.itemCount(), static_cast<size_t>(4));
     QVERIFY(layer.canRedo());
-
-    ErasedItemsGroup* redoGroup = nullptr;
-    layer.forEachItem([&redoGroup](AnnotationItem* item) {
-        if (auto* group = dynamic_cast<ErasedItemsGroup*>(item)) {
-            redoGroup = group;
-        }
-    }, true);
-
-    QVERIFY(redoGroup != nullptr);
-    redoGroup->setOriginalIndices({1, 1});
+    QCOMPARE(layer.itemAt(1), erasedFirst);
+    QCOMPARE(layer.itemAt(2), erasedSecond);
 
     layer.redo();
 
-    QCOMPARE(layer.itemCount(), static_cast<size_t>(4));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
     auto* firstRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(0));
     auto* secondRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(1));
-    auto* thirdRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(2));
     QVERIFY(firstRemaining != nullptr);
     QVERIFY(secondRemaining != nullptr);
-    QVERIFY(thirdRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
-    QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 60), 1));
-    QVERIFY(thirdRemaining->intersectsCircle(QPoint(80, 80), 1));
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(3)) != nullptr);
+    QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+}
+
+void TestAnnotationLayer::testHistoryCountLimit_CommitsOldestVisibleItem()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(0));
+    AnnotationItem* committedFirst = layer.itemAt(0);
+
+    for (int i = 1; i <= 100; ++i) {
+        layer.addItem(createPencil(i));
+    }
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(101));
+    QCOMPARE(layer.historyCommandCount(), AnnotationLayer::kMaxHistoryCommands);
+
+    int undoCount = 0;
+    while (layer.canUndo()) {
+        layer.undo();
+        ++undoCount;
+    }
+
+    QCOMPARE(undoCount, 100);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), committedFirst);
+}
+
+void TestAnnotationLayer::testHistoryByteLimit_PreservesLatestOversizeCommand()
+{
+    AnnotationLayer layer;
+    constexpr std::size_t oversize = AnnotationLayer::kMaxHistoryOwnedBytes + 1024;
+
+    layer.addItem(std::make_unique<SizedAnnotation>(1024));
+    AnnotationItem* committedBaseline = layer.itemAt(0);
+    layer.addItem(std::make_unique<SizedAnnotation>(oversize));
+    AnnotationItem* item = layer.itemAt(1);
+    layer.undo();
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), committedBaseline);
+    QCOMPARE(layer.historyCommandCount(), static_cast<size_t>(1));
+    QVERIFY(layer.historyOwnedBytes() > AnnotationLayer::kMaxHistoryOwnedBytes);
+    QVERIFY(!layer.canUndo());
+    QVERIFY(layer.canRedo());
+
+    layer.redo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemAt(1), item);
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::testHistoryByteLimit_PreservesNearestUndoAndRedo()
+{
+    AnnotationLayer layer;
+    constexpr std::size_t largePayload = 40u * 1024u * 1024u;
+
+    layer.addItem(std::make_unique<SizedAnnotation>(1024));
+    AnnotationItem* first = layer.itemAt(0);
+    layer.addItem(std::make_unique<SizedAnnotation>(largePayload));
+    AnnotationItem* second = layer.itemAt(1);
+    layer.addItem(std::make_unique<SizedAnnotation>(largePayload));
+
+    layer.undo();
+    layer.undo();
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), first);
+    QCOMPARE(layer.historyCommandCount(), static_cast<size_t>(2));
+    QVERIFY(layer.historyOwnedBytes() <= AnnotationLayer::kMaxHistoryOwnedBytes);
+    QVERIFY(layer.canUndo());
+    QVERIFY(layer.canRedo());
+
+    // The farthest redo command was evicted; the commands immediately on
+    // either side of the cursor remain available.
+    layer.redo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemAt(1), second);
+    QVERIFY(!layer.canRedo());
+
+    layer.undo();
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+}
+
+void TestAnnotationLayer::testHistoryBranch_DropsRedoOwnedBytes()
+{
+    AnnotationLayer layer;
+    constexpr std::size_t largePayload = 40u * 1024u * 1024u;
+
+    layer.addItem(std::make_unique<SizedAnnotation>(largePayload));
+    layer.undo();
+    const std::size_t withRedoPayload = layer.historyOwnedBytes();
+    QVERIFY(withRedoPayload >= largePayload);
+
+    layer.addItem(std::make_unique<SizedAnnotation>(1024));
+
+    QVERIFY(!layer.canRedo());
+    QVERIFY(layer.historyOwnedBytes() < withRedoPayload);
+    QVERIFY(layer.historyOwnedBytes() <= AnnotationLayer::kMaxHistoryOwnedBytes);
+}
+
+void TestAnnotationLayer::testHistoryStateToken_TracksUndoRedoAndBranches()
+{
+    AnnotationLayer layer;
+    const auto initial = layer.historyStateToken();
+    layer.addItem(createPencil(20));
+    const auto first = layer.historyStateToken();
+    layer.addItem(createPencil(40));
+    const auto abandoned = layer.historyStateToken();
+
+    QCOMPARE(layer.historyStateRelation(abandoned),
+             AnnotationLayer::HistoryStateRelation::Current);
+    QCOMPARE(layer.historyStateRelation(first),
+             AnnotationLayer::HistoryStateRelation::UndoReachable);
+    QCOMPARE(layer.historyStateRelation(initial),
+             AnnotationLayer::HistoryStateRelation::UndoReachable);
+
+    layer.undo();
+    QCOMPARE(layer.historyStateToken(), first);
+    QCOMPARE(layer.historyStateRelation(abandoned),
+             AnnotationLayer::HistoryStateRelation::RedoReachable);
+
+    layer.addItem(createPencil(60));
+    QVERIFY(layer.historyStateToken() != abandoned);
+    QCOMPARE(layer.historyStateRelation(abandoned),
+             AnnotationLayer::HistoryStateRelation::Unreachable);
+}
+
+void TestAnnotationLayer::testRemoveOutsideEraseTransaction_IsNoOp()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    AnnotationItem* original = layer.itemAt(0);
+    const auto historyState = layer.historyStateToken();
+
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 20), 24);
+
+    QVERIFY(removed.empty());
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), original);
+    QCOMPARE(layer.historyStateToken(), historyState);
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::testDeleteDuringEraseTransaction_IsRejected()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    layer.setSelectedIndex(0);
+    layer.beginEraseTransaction();
+
+    QVERIFY(!layer.removeSelectedItem());
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QVERIFY(layer.endEraseTransaction());
+}
+
+void TestAnnotationLayer::testAddDuringEraseTransaction_DefersUntilCommit()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    AnnotationItem* original = layer.itemAt(0);
+
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 20), 24);
+    QCOMPARE(removed.size(), static_cast<size_t>(1));
+
+    auto deferred = createPencil(60);
+    AnnotationItem* deferredItem = deferred.get();
+    layer.addItem(std::move(deferred));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), deferredItem);
+
+    // The deferred Add follows the completed Remove in history order.
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), original);
+}
+
+void TestAnnotationLayer::testAddDuringEraseTransaction_DefersUntilCancel()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    AnnotationItem* original = layer.itemAt(0);
+
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 20), 24);
+    QCOMPARE(removed.size(), static_cast<size_t>(1));
+
+    auto deferred = createPencil(60);
+    AnnotationItem* deferredItem = deferred.get();
+    layer.addItem(std::move(deferred));
+    QVERIFY(layer.cancelEraseTransaction(std::move(removed)));
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemAt(0), original);
+    QCOMPARE(layer.itemAt(1), deferredItem);
+
+    // Cancelling creates no Remove command; only the real asynchronous Add is
+    // undoable after the original scene item.
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), original);
+}
+
+void TestAnnotationLayer::testAddDuringEraseTransaction_DefersUntilEmptyCommit()
+{
+    AnnotationLayer layer;
+    layer.beginEraseTransaction();
+
+    auto deferred = createPencil(60);
+    AnnotationItem* deferredItem = deferred.get();
+    layer.addItem(std::move(deferred));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+    layer.translateAll(QPointF(5.0, 7.0));
+
+    QVERIFY(layer.commitEraseTransaction({}));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), deferredItem);
+    auto* deferredStroke = dynamic_cast<PencilStroke*>(layer.itemAt(0));
+    QVERIFY(deferredStroke != nullptr);
+    QCOMPARE(deferredStroke->points().first(), QPointF(25.0, 67.0));
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::testDeferredAdds_FlushAsSingleBatch()
+{
+    AnnotationLayer layer;
+    QSignalSpy changedSpy(&layer, &AnnotationLayer::changed);
+    layer.beginEraseTransaction();
+
+    auto first = createPencil(20);
+    auto second = createPencil(40);
+    AnnotationItem* firstItem = first.get();
+    AnnotationItem* secondItem = second.get();
+    layer.addItem(std::move(first));
+    layer.addItem(std::move(second));
+    QCOMPARE(changedSpy.count(), 0);
+
+    QVERIFY(layer.commitEraseTransaction({}));
+    QCOMPARE(changedSpy.count(), 1);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemAt(0), firstItem);
+    QCOMPARE(layer.itemAt(1), secondItem);
+
+    layer.undo();
+    QCOMPARE(layer.itemAt(0), firstItem);
+    layer.undo();
+    QVERIFY(layer.isEmpty());
+}
+
+void TestAnnotationLayer::testDeferredAddAfterCancel_ClearsRedoBranch()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    layer.undo();
+    QVERIFY(layer.canRedo());
+
+    layer.beginEraseTransaction();
+    auto deferred = createPencil(60);
+    AnnotationItem* deferredItem = deferred.get();
+    layer.addItem(std::move(deferred));
+    QVERIFY(layer.cancelEraseTransaction({}));
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), deferredItem);
+    QVERIFY(!layer.canRedo());
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::testClearDuringEraseTransaction_DiscardsDeferredItems()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 20), 24);
+    QCOMPARE(removed.size(), static_cast<size_t>(1));
+    layer.addItem(createPencil(60));
+
+    layer.clear();
+
+    QVERIFY(!layer.commitEraseTransaction(std::move(removed)));
+    QVERIFY(layer.isEmpty());
+    QVERIFY(!layer.canUndo());
+    QVERIFY(!layer.canRedo());
+}
+
+void TestAnnotationLayer::testOwnedVisitor_RefreshesHistoryBytes()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<SizedAnnotation>(1024));
+    layer.undo();
+    const std::size_t before = layer.historyOwnedBytes();
+
+    layer.forEachOwnedItem([](AnnotationItem* item) {
+        if (auto* sized = dynamic_cast<SizedAnnotation*>(item)) {
+            sized->setRetainedBytes(8 * 1024 * 1024);
+        }
+    });
+    const std::size_t grown = layer.historyOwnedBytes();
+    QVERIFY(grown > before);
+
+    layer.forEachOwnedItem([](AnnotationItem* item) {
+        if (auto* sized = dynamic_cast<SizedAnnotation*>(item)) {
+            sized->setRetainedBytes(2048);
+        }
+    });
+    QVERIFY(layer.historyOwnedBytes() < grown);
+    QVERIFY(layer.canRedo());
+}
+
+
+namespace {
+std::unique_ptr<ArrowAnnotation> redArrow(int y = 0)
+{
+    return std::make_unique<ArrowAnnotation>(QPoint(0, y), QPoint(50, y), Qt::red, 3);
+}
+ArrowAnnotation* arrowAt(AnnotationLayer& layer, int index)
+{
+    return static_cast<ArrowAnnotation*>(layer.itemAt(index));
+}
+} // namespace
+
+void TestAnnotationLayer::modifyIsUndoable()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    const auto id = layer.idAt(0);
+    QVERIFY(id != 0);
+    QVERIFY(layer.modifyItem(id, {}, [](AnnotationItem& item) {
+        static_cast<ArrowAnnotation&>(item).setColor(Qt::blue);
+        return true;
+    }));
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::blue));
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::red));
+    QCOMPARE(layer.itemCount(), size_t(1));
+    QCOMPARE(layer.idAt(0), id);
+    layer.redo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::blue));
+    layer.undo();
+    layer.undo(); // the Add
+    QCOMPARE(layer.itemCount(), size_t(0));
+}
+
+void TestAnnotationLayer::modifyKeepsSelectionAcrossUndo()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    layer.setSelectedIndex(0);
+    layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::blue); return true; });
+    layer.undo();
+    QCOMPARE(layer.selectedIndex(), 0);
+    layer.redo();
+    QCOMPARE(layer.selectedIndex(), 0);
+}
+
+void TestAnnotationLayer::modifyCoalesces()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    const auto id = layer.idAt(0);
+    for (int w : {4, 5, 6})
+        layer.modifyItem(id, QStringLiteral("width"), [w](AnnotationItem& i) {
+            static_cast<ArrowAnnotation&>(i).setWidth(w); return true; });
+    QCOMPARE(layer.historyCommandCount(), size_t(2)); // Add + one Modify
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->width(), 3);
+    layer.redo();
+    QCOMPARE(arrowAt(layer, 0)->width(), 6);
+    // A different key starts a new command.
+    layer.modifyItem(id, QStringLiteral("color"), [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::green); return true; });
+    QCOMPARE(layer.historyCommandCount(), size_t(3));
+    // So does an explicit end of coalescing with the same key.
+    layer.endModifyCoalescing();
+    layer.modifyItem(id, QStringLiteral("color"), [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::yellow); return true; });
+    QCOMPARE(layer.historyCommandCount(), size_t(4));
+}
+
+void TestAnnotationLayer::modifyCoalescingEndsOnUndo()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    const auto id = layer.idAt(0);
+    layer.modifyItem(id, QStringLiteral("width"), [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setWidth(8); return true; });
+    layer.undo();
+    layer.modifyItem(id, QStringLiteral("width"), [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setWidth(9); return true; });
+    QVERIFY(!layer.canRedo());
+    QCOMPARE(arrowAt(layer, 0)->width(), 9);
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->width(), 3);
+}
+
+void TestAnnotationLayer::modifyRefusedDuringErase()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    layer.beginEraseTransaction();
+    QVERIFY(!layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem&) { return true; }));
+    layer.endEraseTransaction();
+    QCOMPARE(layer.historyCommandCount(), size_t(1));
+}
+
+void TestAnnotationLayer::modifyRejectedMutationLeavesNoHistory()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    QVERIFY(!layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem&) { return false; }));
+    QCOMPARE(layer.historyCommandCount(), size_t(1));
+    QVERIFY(!layer.modifyItem(9999, {}, [](AnnotationItem&) { return true; }));
+    QCOMPARE(layer.indexOfId(9999), -1);
+}
+
+void TestAnnotationLayer::selectionChangedSignal()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    QSignalSpy spy(&layer, &AnnotationLayer::selectionChanged);
+    layer.setSelectedIndex(0);
+    QCOMPARE(layer.selectedId(), layer.idAt(0));
+    layer.setSelectedIndex(0); // no change, no signal
+    layer.clearSelection();
+    layer.clearSelection();
+    QCOMPARE(spy.count(), 2);
+    QCOMPARE(layer.selectedId(), AnnotationLayer::AnnotationId(0));
+}
+
+
+void TestAnnotationLayer::selectionFollowsItemAfterErase()
+{
+    AnnotationLayer layer;
+    layer.addItem(redArrow(0));
+    layer.addItem(redArrow(40));
+    const auto id = layer.idAt(1);
+    layer.setSelectedIndex(1);
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(25, 0), 6);
+    QCOMPARE(removed.size(), size_t(1));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
+    QCOMPARE(layer.selectedIndex(), 0);
+    QCOMPARE(layer.selectedId(), id);
+    QCOMPARE(layer.selectedItem(), layer.itemAt(0));
+    // Erasing the selected item itself leaves no selection.
+    layer.beginEraseTransaction();
+    removed = layer.removeItemsIntersecting(QPoint(25, 40), 6);
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
+    QCOMPARE(layer.selectedIndex(), -1);
+    QCOMPARE(layer.selectedItem(), nullptr);
+}
+
+
+void TestAnnotationLayer::modifyUndoKeepsLaterGeometry()
+{
+    // Moves are not undoable yet; undoing a colour change must not revert them.
+    AnnotationLayer layer;
+    layer.addItem(redArrow());
+    layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem& i) {
+        static_cast<ArrowAnnotation&>(i).setColor(Qt::blue); return true; });
+    arrowAt(layer, 0)->translate(QPointF(30, 40));
+    const QRect moved = arrowAt(layer, 0)->boundingRect();
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::red));
+    QCOMPARE(arrowAt(layer, 0)->boundingRect(), moved);
+    layer.redo();
+    QCOMPARE(arrowAt(layer, 0)->color(), QColor(Qt::blue));
+    QCOMPARE(arrowAt(layer, 0)->boundingRect(), moved);
+}
+
+void TestAnnotationLayer::modifyUndoKeepsVisibility()
+{
+    // A text hidden for inline re-editing must stay hidden across a style undo/redo.
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Hi"),
+                                                      QFont(), Qt::black));
+    layer.modifyItem(layer.idAt(0), {}, [](AnnotationItem& i) {
+        static_cast<TextBoxAnnotation&>(i).setColor(Qt::red); return true; });
+    auto* text = static_cast<TextBoxAnnotation*>(layer.itemAt(0));
+    text->setVisible(false);
+    layer.undo();
+    QVERIFY(!layer.itemAt(0)->isVisible());
+    QCOMPARE(static_cast<TextBoxAnnotation*>(layer.itemAt(0))->color(), QColor(Qt::black));
+    layer.redo();
+    QVERIFY(!layer.itemAt(0)->isVisible());
+    QCOMPARE(layer.itemAt(0), text); // the same object stays in the scene
+}
+
+namespace {
+ShapeAnnotation* addShape(AnnotationLayer& layer, QRect rect = QRect(10, 10, 40, 30))
+{
+    layer.addItem(std::make_unique<ShapeAnnotation>(rect, ShapeType::Rectangle, Qt::red, 3, false));
+    return static_cast<ShapeAnnotation*>(layer.itemAt(int(layer.itemCount()) - 1));
+}
+} // namespace
+
+void TestAnnotationLayer::gestureSnapshotKeepsFractionalShapeRect()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const QRectF fractional(10.25, 10.5, 40.5, 30.25);
+    shape->setRectF(fractional);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(!layer.commitGesture(AnnotationLayer::ModifyGeometry));   // unchanged: no step
+    QCOMPARE(layer.historyStateToken(), before);
+
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(5, 0));
+    layer.cancelGesture();
+    QCOMPARE(shape->rectF(), fractional);
+
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(5, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF(), fractional);
+}
+
+void TestAnnotationLayer::cancelGestureKeepsStyleEditMadeDuringDrag()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.beginGesture(id));
+    shape->moveBy(QPointF(20, 0));
+    QVERIFY(layer.modifyItem(id, QString(), [](AnnotationItem& item) {   // e.g. wheel width
+        static_cast<ShapeAnnotation&>(item).setWidth(9);
+        return true;
+    }));
+    layer.cancelGesture();
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));   // the drag is reverted
+    QCOMPARE(shape->width(), 9);                            // the style step is kept
+    layer.undo();                                           // undoes the style step
+    QCOMPARE(shape->width(), 3);
+    layer.redo();
+    QCOMPARE(shape->width(), 9);
+}
+
+void TestAnnotationLayer::gestureCommitIsOneStep()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.beginGesture(id));
+    for (int i = 0; i < 5; ++i) shape->moveBy(QPointF(2, 0));   // many moves, one gesture
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(20, 10));
+    layer.undo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(layer.itemCount(), size_t(1));   // undid the move, not the add
+    layer.redo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF().topLeft(), QPointF(20, 10));
+}
+
+void TestAnnotationLayer::unchangedGestureRecordsNothing()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(!layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    QCOMPARE(layer.historyStateToken(), before);
+    QVERIFY(!layer.isGestureActive());
+}
+
+void TestAnnotationLayer::cancelGestureRestoresWithoutHistory()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(30, 30));
+    shape->setRotation(45);
+    layer.cancelGesture();
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(shape->rotation(), 0.0);
+    QCOMPARE(layer.historyStateToken(), before);
+}
+
+void TestAnnotationLayer::styleThenMoveUndoIndependently()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.modifyItem(id, QString(), [](AnnotationItem& item) {
+        static_cast<ShapeAnnotation&>(item).setColor(Qt::blue);
+        return true;
+    }));
+    QVERIFY(layer.beginGesture(id));
+    static_cast<ShapeAnnotation*>(layer.itemAt(0))->moveBy(QPointF(25, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();   // the move only
+    auto* shape = static_cast<ShapeAnnotation*>(layer.itemAt(0));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(shape->color(), QColor(Qt::blue));
+    layer.undo();   // then the style
+    QCOMPARE(shape->color(), QColor(Qt::red));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+}
+
+void TestAnnotationLayer::moveThenStyleUndoIndependently()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    const auto id = layer.idAt(0);
+    QVERIFY(layer.beginGesture(id));
+    static_cast<ShapeAnnotation*>(layer.itemAt(0))->moveBy(QPointF(25, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    QVERIFY(layer.modifyItem(id, QString(), [](AnnotationItem& item) {
+        static_cast<ShapeAnnotation&>(item).setColor(Qt::blue);
+        return true;
+    }));
+    layer.undo();   // the style only
+    auto* shape = static_cast<ShapeAnnotation*>(layer.itemAt(0));
+    QCOMPARE(shape->color(), QColor(Qt::red));
+    QCOMPARE(shape->rectF().topLeft(), QPointF(35, 10));
+    layer.undo();   // then the move
+    QCOMPARE(shape->rectF().topLeft(), QPointF(10, 10));
+    QCOMPARE(shape->color(), QColor(Qt::red));
+}
+
+void TestAnnotationLayer::undoRefusedDuringGesture()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    QSignalSpy changed(&layer, &AnnotationLayer::changed);
+    QVERIFY(layer.canUndo());
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(changed.count() >= 1);   // toolbars refresh
+    QVERIFY(!layer.canUndo());
+    layer.undo();
+    QCOMPARE(layer.itemCount(), size_t(1));
+    layer.cancelGesture();
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::gestureRefusedDuringErase()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    layer.beginEraseTransaction();
+    QVERIFY(!layer.beginGesture(layer.idAt(0)));
+    QVERIFY(layer.endEraseTransaction());
+}
+
+void TestAnnotationLayer::destructiveOpsDropGesture()
+{
+    AnnotationLayer layer;
+    addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    layer.clear();
+    QVERIFY(!layer.isGestureActive());
+
+    addShape(layer);
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(layer.removeSelectedItem());
+    QVERIFY(!layer.isGestureActive());
+    QVERIFY(!layer.commitGesture(AnnotationLayer::ModifyGeometry));
+
+    addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    layer.beginEraseTransaction();
+    QVERIFY(!layer.isGestureActive());
+    QVERIFY(layer.endEraseTransaction());
+}
+
+void TestAnnotationLayer::staleGestureIsCommittedByNextBegin()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* a = addShape(layer);
+    addShape(layer, QRect(100, 100, 10, 10));
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    a->moveBy(QPointF(5, 0));
+    // The release never arrived; the next gesture starts.
+    QVERIFY(layer.beginGesture(layer.idAt(1)));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry) == false);   // b unchanged
+    layer.undo();   // the stale move was recorded
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF().topLeft(), QPointF(10, 10));
+}
+
+void TestAnnotationLayer::translatedSnapshotUndoesToTranslatedPosition()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(20, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.translateAll(QPointF(-10, -10));   // a Pin crop
+    layer.undo();
+    QCOMPARE(static_cast<ShapeAnnotation*>(layer.itemAt(0))->rectF().topLeft(), QPointF(0, 0));
+}
+
+void TestAnnotationLayer::gestureAdvancesStateToken()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    const auto before = layer.historyStateToken();
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    shape->moveBy(QPointF(1, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    QVERIFY(layer.historyStateToken() != before);
+    QCOMPARE(layer.historyStateRelation(before), AnnotationLayer::HistoryStateRelation::UndoReachable);
+}
+
+void TestAnnotationLayer::geometryUndoKeepsSelection()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* shape = addShape(layer);
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.ensureGesture());
+    shape->moveBy(QPointF(3, 0));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();
+    QCOMPARE(layer.selectedIndex(), 0);
+}
+
+// Review #237-3: a gesture that never got its release is recorded when the
+// next drag starts on another item, and that drag gets its own snapshot.
+void TestAnnotationLayer::ensureGestureOnAnotherItemCommitsStale()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* a = addShape(layer);
+    ShapeAnnotation* b = addShape(layer, QRect(100, 100, 10, 10));
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.ensureGesture());
+    a->moveBy(QPointF(5, 0));            // release never arrives
+    layer.setSelectedIndex(1);
+    QVERIFY(layer.ensureGesture());
+    QCOMPARE(layer.gestureId(), layer.idAt(1));
+    b->moveBy(QPointF(0, 7));
+    QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+    layer.undo();
+    QCOMPARE(b->rectF().topLeft(), QPointF(100, 100));
+    QCOMPARE(a->rectF().topLeft(), QPointF(15, 10));
+    layer.undo();
+    QCOMPARE(a->rectF().topLeft(), QPointF(10, 10));
+}
+
+// Drawing something new records a stale gesture, so Undo comes back.
+void TestAnnotationLayer::newAnnotationCommitsStaleGesture()
+{
+    AnnotationLayer layer;
+    ShapeAnnotation* a = addShape(layer);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    a->moveBy(QPointF(5, 0));
+    addShape(layer, QRect(100, 100, 10, 10));
+    QVERIFY(!layer.isGestureActive());
+    QVERIFY(layer.canUndo());
+    layer.undo();                        // the new shape
+    layer.undo();                        // the stale move
+    QCOMPARE(a->rectF().topLeft(), QPointF(10, 10));
+}
+
+// A text re-edit hides its item: nothing else may take over or end its gesture.
+void TestAnnotationLayer::hiddenReEditGestureIsNotTakenOver()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<TextBoxAnnotation>(QPointF(10, 10), QStringLiteral("Edit"), QFont(), Qt::red));
+    addShape(layer, QRect(100, 100, 10, 10));
+    layer.itemAt(0)->setVisible(false);
+    QVERIFY(layer.beginGesture(layer.idAt(0)));
+    QVERIFY(!layer.beginGesture(layer.idAt(1)));
+    layer.setSelectedIndex(1);
+    QVERIFY(!layer.ensureGesture());
+    addShape(layer, QRect(200, 200, 10, 10));
+    QCOMPARE(layer.gestureId(), layer.idAt(0));
+    layer.itemAt(0)->setVisible(true);
+    layer.cancelGesture();
+}
+
+namespace {
+
+std::unique_ptr<AnnotationItem> boxAt(const QRect& bounds)
+{
+    return std::make_unique<CountingAnnotation>(
+        bounds, std::make_shared<CountingAnnotationState>());
+}
+
+std::unique_ptr<AnnotationItem> badgeAt(const QPoint& position, int number)
+{
+    return std::make_unique<StepBadgeAnnotation>(position, Qt::red, number);
+}
+
+// Drawing order as positions in `ids` (the ids in their creation order).
+QList<int> drawingOrder(const AnnotationLayer& layer,
+                        const QList<AnnotationLayer::AnnotationId>& ids)
+{
+    QList<int> order;
+    for (int i = 0; i < static_cast<int>(layer.itemCount()); ++i) {
+        order.append(ids.indexOf(layer.idAt(i)));
+    }
+    return order;
+}
+
+QList<AnnotationLayer::AnnotationId> idsOf(const AnnotationLayer& layer)
+{
+    QList<AnnotationLayer::AnnotationId> ids;
+    for (int i = 0; i < static_cast<int>(layer.itemCount()); ++i) {
+        ids.append(layer.idAt(i));
+    }
+    return ids;
+}
+
+QList<int> badgeNumbersInDrawingOrder(AnnotationLayer& layer)
+{
+    QList<int> numbers;
+    for (int i = 0; i < static_cast<int>(layer.itemCount()); ++i) {
+        if (auto* badge = dynamic_cast<StepBadgeAnnotation*>(layer.itemAt(i))) {
+            numbers.append(badge->number());
+        }
+    }
+    return numbers;
+}
+
+} // namespace
+
+void TestAnnotationLayer::zOrderForwardStepsPastNextOverlapping()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));      // 0: selected
+    layer.addItem(boxAt(QRect(200, 200, 20, 20)));  // 1: elsewhere
+    layer.addItem(boxAt(QRect(300, 0, 20, 20)));    // 2: elsewhere
+    layer.addItem(boxAt(QRect(10, 10, 20, 20)));    // 3: overlaps 0
+    layer.addItem(boxAt(QRect(5, 5, 20, 20)));      // 4: overlaps 0
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+
+    QCOMPARE(layer.zOrderTargetIndex(AnnotationLayer::ZOrderMove::Forward), 3);
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 3, 0, 4}));
+    QCOMPARE(layer.selectedId(), ids[0]);
+}
+
+void TestAnnotationLayer::zOrderBackwardStepsPastNextOverlapping()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(5, 5, 20, 20)));      // 0: overlaps 3
+    layer.addItem(boxAt(QRect(200, 200, 20, 20)));  // 1: elsewhere
+    layer.addItem(boxAt(QRect(300, 0, 20, 20)));    // 2: elsewhere
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));      // 3: selected
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(3);
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({3, 0, 1, 2}));
+}
+
+void TestAnnotationLayer::zOrderWithoutOverlapGoesToTheEnd()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(100, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(200, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 0}));
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1, 2}));
+}
+
+void TestAnnotationLayer::zOrderToFrontAndToBack()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 4; ++i) layer.addItem(boxAt(QRect(i * 100, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(1);
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 2, 3, 1}));
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToBack));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 0, 2, 3}));
+}
+
+void TestAnnotationLayer::zOrderAtTheEndIsNoOp()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    const std::size_t history = layer.historyCommandCount();
+    QSignalSpy changedSpy(&layer, &AnnotationLayer::changed);
+
+    layer.setSelectedIndex(1);
+    QCOMPARE(layer.zOrderTargetIndex(AnnotationLayer::ZOrderMove::Forward), -1);
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    layer.setSelectedIndex(0);
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToBack));
+
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1}));
+    QCOMPARE(layer.historyCommandCount(), history);
+    QCOMPARE(changedSpy.count(), 0);
+}
+
+void TestAnnotationLayer::zOrderNeedsSelection()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const std::size_t history = layer.historyCommandCount();
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    QCOMPARE(layer.historyCommandCount(), history);
+}
+
+void TestAnnotationLayer::zOrderUndoRedoKeepsSelection()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 3; ++i) layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    const std::size_t bytesBefore = layer.historyOwnedBytes();
+    layer.setSelectedIndex(0);
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 0}));
+    // A Reorder owns no annotation copy, only its bookkeeping.
+    QVERIFY(layer.historyOwnedBytes() - bytesBefore < 1024);
+
+    layer.undo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1, 2}));
+    QCOMPARE(layer.selectedId(), ids[0]);
+    layer.redo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 0}));
+    QCOMPARE(layer.selectedId(), ids[0]);
+}
+
+void TestAnnotationLayer::zOrderRepeatsCoalesceIntoOneStep()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 6; ++i) layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+    const std::size_t history = layer.historyCommandCount();
+
+    for (int i = 0; i < 5; ++i) {
+        QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    }
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 3, 4, 5, 0}));
+    QCOMPARE(layer.historyCommandCount(), history + 1);
+
+    layer.undo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1, 2, 3, 4, 5}));
+    layer.redo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 3, 4, 5, 0}));
+}
+
+void TestAnnotationLayer::zOrderCoalescingEndsOnOtherMove()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 4; ++i) layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+    const std::size_t history = layer.historyCommandCount();
+
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Forward));
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(layer.historyCommandCount(), history + 2);
+    layer.endModifyCoalescing();
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(layer.historyCommandCount(), history + 3);
+
+    layer.undo();
+    layer.undo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({1, 2, 0, 3}));
+    layer.undo();
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1, 2, 3}));
+}
+
+void TestAnnotationLayer::zOrderRefusedDuringGestureAndErase()
+{
+    AnnotationLayer layer;
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    layer.addItem(boxAt(QRect(0, 0, 20, 20)));
+    const auto ids = idsOf(layer);
+    layer.setSelectedIndex(0);
+    const std::size_t history = layer.historyCommandCount();
+
+    QVERIFY(layer.beginGesture(ids[0]));
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    layer.cancelGesture();
+
+    layer.beginEraseTransaction();
+    QVERIFY(!layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToFront));
+    QVERIFY(layer.endEraseTransaction());
+
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({0, 1}));
+    QCOMPARE(layer.historyCommandCount(), history);
+}
+
+void TestAnnotationLayer::zOrderKeepsStepBadgeNumbers()
+{
+    AnnotationLayer layer;
+    for (int i = 1; i <= 3; ++i) layer.addItem(badgeAt(QPoint(10 * i, 10), i));
+    const auto ids = idsOf(layer);
+
+    layer.setSelectedIndex(2);
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::ToBack));
+    layer.setSelectedIndex(2);
+    QVERIFY(layer.moveSelectedItem(AnnotationLayer::ZOrderMove::Backward));
+    QCOMPARE(drawingOrder(layer, ids), QList<int>({2, 1, 0}));
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({3, 2, 1}));
+
+    // Undo, redo and deleting another badge keep numbering by creation.
+    layer.undo();
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({3, 1, 2}));
+    layer.redo();
+    layer.setSelectedIndex(1);   // badge 2
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({2, 1}));
+    layer.undo();
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({3, 2, 1}));
+}
+
+void TestAnnotationLayer::stepBadgeNumbersStayContinuousAfterRemoveAndUndo()
+{
+    AnnotationLayer layer;
+    for (int i = 1; i <= 4; ++i) layer.addItem(badgeAt(QPoint(10 * i, 10), i));
+    layer.setSelectedIndex(1);
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({1, 2, 3}));
+    layer.undo();
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({1, 2, 3, 4}));
+}
+
+void TestAnnotationLayer::replaceItemsKeepsReorderedStepBadgeNumbers()
+{
+    // Saved in drawing order after badge 1 was sent to the front.
+    std::vector<std::unique_ptr<AnnotationItem>> items;
+    items.push_back(badgeAt(QPoint(20, 10), 2));
+    items.push_back(boxAt(QRect(0, 0, 50, 50)));
+    items.push_back(badgeAt(QPoint(30, 10), 3));
+    items.push_back(badgeAt(QPoint(10, 10), 1));
+    AnnotationLayer layer;
+    layer.replaceItems(std::move(items));
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({2, 3, 1}));
+
+    // Removing badge 2 still renumbers by creation order.
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({2, 1}));
+}
+
+void TestAnnotationLayer::replaceItemsKeepsLegacyStepBadgeNumbers()
+{
+    // Older history stored numbers that matched drawing order.
+    std::vector<std::unique_ptr<AnnotationItem>> items;
+    items.push_back(badgeAt(QPoint(10, 10), 1));
+    items.push_back(boxAt(QRect(0, 0, 50, 50)));
+    items.push_back(badgeAt(QPoint(20, 10), 2));
+    AnnotationLayer layer;
+    layer.replaceItems(std::move(items));
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({1}));
+    layer.undo();
+    QCOMPARE(badgeNumbersInDrawingOrder(layer), QList<int>({1, 2}));
 }
 
 QTEST_MAIN(TestAnnotationLayer)

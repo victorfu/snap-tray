@@ -13,16 +13,22 @@ public:
     static void render(QPainter& painter, const QRect& targetRect,
                        const QPixmap& source, const BeautifySettings& settings);
 
-private:
+    // Building blocks, shared with recording appearance (#184), which draws
+    // video frames (QImage, off the GUI thread) with the same rules.
     static void drawBackground(QPainter& painter, const QRect& rect,
                                const BeautifySettings& settings);
     static void drawShadow(QPainter& painter, const QRect& insetRect,
                            const BeautifySettings& settings);
-    static void drawScreenshot(QPainter& painter, const QRect& insetRect,
-                               const QPixmap& source, const BeautifySettings& settings);
+    // The border just inside the picture's edge, following its corners.
+    static void drawBorder(QPainter& painter, const QRect& insetRect,
+                           const BeautifySettings& settings);
     static QRect calculateInsetRect(const QSize& outputSize, const QSize& sourceSize,
                                     const BeautifySettings& settings);
     static QSize applyAspectRatio(const QSize& baseSize, BeautifyAspectRatio ratio);
+
+private:
+    static void drawScreenshot(QPainter& painter, const QRect& insetRect,
+                               const QPixmap& source, const BeautifySettings& settings);
 };
 
 #endif // BEAUTIFYRENDERER_H

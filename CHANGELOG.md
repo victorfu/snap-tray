@@ -6,6 +6,161 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Added
+
+- Added drawing order for annotations: Bring Forward, Send Backward, Bring to Front, and Send to Back for the selected annotation, with `Cmd+]`/`Cmd+[` (`Option` for front/back) on macOS and `Ctrl+]`/`Ctrl+[` (`Shift` for front/back) on Windows and Linux, buttons on the style bar, and an Arrange submenu on pins. Forward and Backward skip annotations that do not overlap. Step numbers keep the order the badges were placed in. On a pin with an annotation selected, `Ctrl/Cmd+]` now brings it forward instead of resetting opacity.
+- Added Delayed Capture to the tray menu, with 3, 5, and 10 second countdowns and an optional hotkey. A click-through countdown pill lets you open menus or hover controls first; when it ends, SnapTray hides the pill, freezes the screen, and opens Region Capture on it. The countdown can be cancelled from the tray or by pressing the hotkey again.
+- Added an eyedropper to the annotation color bar in Region Capture, Pin Windows, and Screen Canvas. Click it or press `I`, then click a pixel to make its color the current color, or the color of the selected annotation (one undo step). A magnifier shows the color code; arrow keys move one physical pixel, `Enter` picks, and `Esc` cancels. It picks from the screenshot or pinned image itself, never from annotations or SnapTray's toolbars.
+- Saved Beautify styles are now shared with the recording editor's Canvas: a style saved in either place can be applied in both. On screenshots a style keeps its pixel sizes as before; on recordings its sizes scale with the video, so it fits a 720p and a 4K recording alike. Beautify can also draw a border, and the recording frame can use custom gradients and the full shadow settings of a style. Existing saved styles carry over unchanged.
+
+### Improved
+
+- Recording zoom transitions now change the zoom evenly instead of rushing at one end, and a pan between zooms far apart pulls back on the way instead of sweeping across the screen at full zoom. Existing projects keep their zoom segments; only the frames during a transition differ when exported again.
+- Recording pointer smoothing now uses a lag-compensated spring with click anticipation and tighter drag tracking. Off remains the default. Existing projects with smoothing enabled use the new path when exported again; their pointer motion can differ from earlier exports.
+
+- Settings pages are now grouped by task: General, Capture, Pin Windows, Recording, Saving, Text Recognition, and Hotkeys. The former Advanced, Files, and Watermark settings moved to Capture, Pin Windows, and Saving; your settings are kept. Every page except About starts with a title and a short description.
+- Settings can be searched (Ctrl+F or Cmd+F): results open the page and highlight the setting. A setting you changed shows a reset button that restores its default.
+- Beautify opens on named styles (Compact, Standard, Spacious, Flat) and named backgrounds. Padding, corners, shadow, and the other details are under Customize. Save style… keeps up to 8 looks of your own by name, which you can rename or delete.
+- VoiceOver and other screen readers can now use more of SnapTray. Capture toolbar buttons and More menu items have names, and the selected tool reads as selected. Settings pages can be switched by screen reader, and drop-downs read their current choice. Permission, Browse and hotkey buttons say what they apply to. Export codec and background choices read which one is selected. Pinned images are named.
+- Screen readers can also use the style options under the capture toolbar (sizes, colors, width, arrow and line styles, shapes, text formatting, Auto Blur), hear which Library item and section is selected, and hear sliders with their unit ("100%"). Unavailable toolbar buttons such as Undo read as unavailable, the editor behind the export panel can no longer be reached, and on macOS the tray icon is named, including the recording status.
+- The arrow and line style menus are now translated; they were English-only.
+
+### Fixed
+
+- On macOS, SnapTray now shows in the Dock with a badge while an update is waiting, and the Ready to Install window comes to the front instead of staying behind other apps.
+- Scrolling the mouse wheel with the Step Badge tool now stops at the smallest and largest size instead of jumping from Large back to Small. In Region Capture, the S/M/L size option now shows the size you last used instead of always Medium.
+- On Windows with monitors at different display scales, pinning an image larger than the screen (with `snaptray pin --file` or Pin in the Library) now places the pin where intended, already shrunk to fit. Before, the pin briefly opened at full size across the monitors and could land offset toward the top-left corner.
+
+## [1.0.69] - 2026-10-24
+
+### Added
+
+- Added Full Screen Capture to the tray menu, with an optional hotkey. It captures the screen under the cursor at native resolution, leaves SnapTray's own windows out, and can copy, save, or open the capture in the editor. Captures are added to History.
+- Hold Shift to draw straight pencil and marker strokes.
+
+### Improved
+
+- Reduced selection toolbar display latency on Windows and deferred toolbar text label creation until needed.
+- Mosaic now starts with the small brush preset for more precise edits.
+- Updated the Qt runtime to 6.12.0 across macOS, Windows, and Linux.
+
+### Fixed
+
+- Restored capture exclusion for translucent SnapTray windows on Windows.
+- Fixed initial pinned-window positioning on Windows and preserved native pixel colors at fractional display scales.
+- Kept toolbar text labels visible after hiding and showing toolbars, made annotation red consistent, and sharpened the stroke-width preview dot.
+
+## [1.0.68] - 2026-10-11
+
+### Added
+
+- Added Linux AppImage update checks and signed downloads, with restart-to-install and recovery to the previous version. Linux releases now include AppImageUpdate-compatible metadata and zsync files.
+- Added Linux X11 full-screen recording with microphone/system audio, recording preview, crop/trim, and MP4, GIF, and WebP exports. Hardware encoding is available through VA-API/NVENC with software fallback, and AppImages bundle the required media libraries.
+- Added recording preview cropping, including window highlighting and click-to-snap using the windows recorded at that moment.
+
+### Improved
+
+- Preview recordings use a high-quality intermediate when disk space permits, preserving detail during trimming and cropping before export at the selected quality. Unedited recordings that already meet the selected quality are saved directly.
+- Linux recording captures frames in the background and keeps recording controls in the tray so floating controls are excluded from captures.
+- Unified image copying from the graphical interface across macOS, Windows, and Linux.
+
+### Fixed
+
+- Fixed MP4 trimming with audio and exports of intervals after the source audio ends; failed or cancelled exports preserve the original recording.
+- Fixed small crop selections, final pointer positions, and cropped export filenames; restored the Windows preview title bar and improved frame stepping and video frame handling.
+- Allowed region capture, quick pin, and screen canvas use while recording preview is open.
+- Preserved live annotation edits when navigating capture history and made the eraser take priority over object selection and editing.
+- Fixed aspect-ratio and rounded-size behavior when resizing regions, pinned-window controls on multiple screens, and the click-through exit button.
+- Reduced Linux pinned-window drag stutter, kept canvas bounds stable while dragging toolbars, and fixed CLI installation detection and autostart for paths containing special characters.
+- Fixed Windows window-title and application-name filename tokens, macOS Debug app launches, and Windows installer signing failure handling.
+
+## [1.0.67] - 2026-09-30
+
+### Fixed
+
+- Fixed Linux startup on X11 environments without desktop session metadata, including Xvfb and sessions launched with startx.
+
+## [1.0.66] - 2026-09-30
+
+### Fixed
+
+- Fixed Linux AppImage detection by application catalogs and desktop integration tools by preserving the standard AppImage header.
+
+## [1.0.65] - 2026-09-28
+
+### Improved
+
+- Reduced region capture toolbar latency on Linux.
+- Updated the bundled Qt runtime to 6.11.2 on Windows and Linux, and added a rendering check to Linux AppImage packaging.
+
+### Fixed
+
+- Preserved annotation pixel alignment on displays using fractional scaling.
+- Fixed opening WebP and TIFF images in Windows and Linux distributions by bundling the required image format plugins.
+
+## [1.0.64] - 2026-09-15
+
+### Improved
+
+- Improved recording frame-rate accuracy on Windows and support for frame-rate changes during capture on macOS and Windows.
+- Reduced annotation preview cache memory use and kept pinned-image toolbar actions reachable on narrow screens.
+
+### Fixed
+
+- Fixed black patches and incomplete coverage in Gaussian Mosaic strokes on high-DPI displays.
+- Fixed selection resizing, aspect-ratio locking, and pointer-release handling near screen edges, while preserving window metadata and cross-screen captures in history.
+- Fixed gaps when erasing quickly, arrowhead placement and hit testing, overlapping annotation handles, and whitespace and layout preservation when editing text.
+- Fixed custom canvas color persistence, color-wheel accuracy, step badge toggle synchronization, and copying current pinned-image information.
+- Prevented uniquely named image saves from overwriting existing files, preserved normal output permissions, and corrected filename counters and long Unicode filenames on Linux.
+- Fixed microphone permission timing and device-loss handling, recording audio capability checks, and recording tooltips appearing in macOS captures.
+- Fixed Windows recording preview replay after seeking to the end while paused, improved preview shutdown, and removed temporary recordings when discarding previews.
+- Fixed oversized Windows OCR input and capture-exclusion compatibility on older Windows versions.
+- Fixed CLI pin placement and image loading, invalid capture arguments, and installation failure handling; Linux CLI clipboard images now remain available after the command exits.
+- Fixed Linux cursor rendering during drags and required a compatible X11 session and Qt backend.
+- Fixed dialog modality and prevented conflicting capture actions from history.
+
+### Removed
+
+- Removed the Share URL image-upload feature and its related controls.
+
+## [1.0.63] - 2026-09-05
+
+### Added
+
+- Added three Mosaic brush-size presets for quick adjustments while annotating captures and pinned images.
+
+### Improved
+
+- Reduced the delay when starting a screen capture on macOS.
+- Improved recording audio mixing and timestamp handling on macOS and Windows, including pause/resume and audio-source interruptions.
+- Clarified silent Windows recording previews and localized recording warning titles.
+
+### Fixed
+
+- Fixed macOS GIF/WebP exports by extracting video frames offline, and corrected GIF frame timing and timing fallbacks.
+- Fixed region resizing at screen boundaries and kept annotations aligned when arranging regions or transforming pinned images.
+- Fixed Mosaic rendering across display scales, stale text after canvas transforms, and drawing gestures completed without an intermediate pointer move.
+- Fixed Windows capture on rotated displays and incorrect transparency in fallback captures.
+- Fixed start-on-login handling to respect system approval states, and configured macOS microphone permissions and app entitlements.
+- Prevented obsolete settings from being imported from older installations.
+
+## [1.0.62] - 2026-08-26
+
+### Added
+
+- Added a "Remember last folder" option for manual screenshots, beautified images, and history exports while keeping auto-save tied to the configured Screenshots folder.
+- Added Japanese, Korean, and Thai README guides with localized documentation entry points.
+
+### Improved
+
+- Improved Settings toggles so keyboard users and assistive technologies can activate them reliably.
+- Improved the website language switcher so every supported locale remains available when a page has no direct translation.
+
+### Fixed
+
+- Fixed manual region saves so the fullscreen selector stays hidden after choosing a file, eliminating a brief overlay flash.
+- Corrected macOS website guidance to reflect Apple Silicon-only release builds and SnapTray's screen-first recording workflow.
+
 ## [1.0.61] - 2026-08-08
 
 ### Improved

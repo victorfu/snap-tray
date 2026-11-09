@@ -1,3 +1,4 @@
+#include <QGuiApplication>
 #include "region/RegionInputHandler.h"
 #include "region/SelectionStateManager.h"
 #include "region/SelectionResizeHelper.h"
@@ -66,7 +67,58 @@ bool RegionInputHandler::isManipulatingAnnotation() const
 
 void RegionInputHandler::setSelectionManager(SelectionStateManager* manager)
 {
+    if (m_selectionManager) disconnect(m_selectionManager, nullptr, this, nullptr);
     m_selectionManager = manager;
+    if (manager) connect(manager, &SelectionStateManager::stateChanged, this,
+        [this](SelectionStateManager::State state) {
+            m_boundarySnap.reset();
+            if (state != SelectionStateManager::State::ResizingHandle) m_snapKeyHeld = false;
+        });
+}
+
+void RegionInputHandler::setBoundarySnapSource(const QImage& image, qreal dpr)
+{
+    m_boundarySnap.setSource(image, dpr);
+    m_snapKeyHeld = false;
+    if (m_selectionManager) m_selectionManager->clearSnapGuides();
+}
+
+void RegionInputHandler::setBoundarySnapAllowed(bool allowed)
+{
+    m_boundarySnapAllowed = allowed;
+    if (!allowed) {
+        m_boundarySnap.reset();
+        if (m_selectionManager) m_selectionManager->clearSnapGuides();
+    }
+}
+
+bool RegionInputHandler::handleBoundarySnapKey(
+    int key, bool pressed, bool autoRepeat, Qt::KeyboardModifiers modifiers)
+{
+    if (key != Qt::Key_Alt && key != Qt::Key_S) return false;
+    const bool resizing = boundarySnapEligible();
+    if (key == Qt::Key_S && !resizing && pressed) return false;
+    if (key == Qt::Key_S && pressed && modifiers != Qt::NoModifier) return false;
+    if (autoRepeat) return resizing;
+    m_currentModifiers = modifiers;
+    if (key == Qt::Key_Alt) m_currentModifiers.setFlag(Qt::AltModifier, pressed);
+    else m_snapKeyHeld = pressed;
+    if (resizing && m_state) {
+        updateSelectionGesture(state().currentPoint);
+        emit updateRequested();
+    }
+    return resizing;
+}
+
+bool RegionInputHandler::cancelSelectionResize()
+{
+    if (!m_selectionManager || !m_selectionManager->isResizing() || !m_state
+        || state().multiRegionMode || !m_boundarySnapAllowed) return false;
+    m_boundarySnap.reset();
+    m_selectionManager->cancelResizeOrMove();
+    clearSelectionDrag();
+    emit updateRequested();
+    return true;
 }
 
 void RegionInputHandler::setAnnotationLayer(AnnotationLayer* layer)
@@ -165,12 +217,21 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
         if (m_selectionManager->isComplete()) {
             // Handle inline text editing
             if (handleTextEditorPress(event->pos())) {
+                return;
+            }
+
+            // Erasing must take precedence over selecting or transforming existing items.
+            if (state().currentTool == ToolId::Eraser && m_toolManager) {
+                m_annotationLayer->clearSelection();
+                handleAnnotationToolPress(event->pos());
+                emit updateRequested();
                 return;
             }
 
@@ -255,6 +316,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     m_lastToolEventPos = event->position();
     const bool shouldPreferLiveCursor =
         event->buttons() == Qt::NoButton &&
@@ -334,21 +396,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
-    if (m_pendingWindowClickActive && !m_selectionManager->hasActiveSelection()) {
-        const int dx = effectivePos.x() - m_pendingWindowClickStartPos.x();
-        const int dy = effectivePos.y() - m_pendingWindowClickStartPos.y();
-        if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
-            m_selectionManager->startSelection(m_pendingWindowClickStartPos);
-            m_lastSelectionRect = QRect();
-            // Crossing the click-drift threshold turns a detected-window click
-            // into a real drag-selection transition.
-            clearDetectionAndNotify(true);
-            m_selectionManager->updateSelection(effectivePos);
-            m_pendingWindowClickActive = false;
-            m_pendingWindowClickRect = QRect();
-            m_pendingWindowClickStartPos = QPoint();
-        }
-    }
+    const bool selectionGesture = updateSelectionGesture(effectivePos);
 
     // Window detection during hover
     if (!m_pendingWindowClickActive) {
@@ -356,20 +404,12 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     }
 
     // Handle selection states
-    if (m_selectionManager->isSelecting()) {
-        handleSelectionMove(effectivePos);
+    if (!selectionGesture && state().isDrawing) {
+        // Freehand tools need the sub-pixel position; effectivePos is rounded.
+        handleAnnotationMove(event->position());
     }
-    else if (m_selectionManager->isResizing()) {
-        m_selectionManager->updateResize(effectivePos);
-    }
-    else if (m_selectionManager->isMoving()) {
-        m_selectionManager->updateMove(effectivePos);
-    }
-    else if (state().isDrawing) {
-        handleAnnotationMove(QPointF(effectivePos));
-    }
-    else if (m_selectionManager->isComplete() ||
-        (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
+    else if (!selectionGesture && (m_selectionManager->isComplete() ||
+        (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0))) {
         handleHoverMove(effectivePos, event->buttons());
     }
 
@@ -390,6 +430,7 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event, ReleaseTarget ta
     }
 
     m_currentModifiers = event->modifiers();
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
@@ -423,14 +464,16 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event, ReleaseTarget ta
             return;
         }
 
-        // Handle selection release
+        // Apply the event's final coordinate before finishing the gesture. Do
+        // not route through mouseMove's hover or annotation side effects.
+        updateSelectionGesture(event->pos());
         if (m_selectionManager->isSelecting()) {
-            handleSelectionRelease(event->pos());
+            handleSelectionRelease();
             clearSelectionDrag();
             emit updateRequested();
         }
         else if (m_pendingWindowClickActive) {
-            handleSelectionRelease(event->pos());
+            handleSelectionRelease();
             emit updateRequested();
         }
         else if (m_selectionManager->isResizing()) {
@@ -513,6 +556,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
                 // Start dragging
                 m_isEmojiDragging = true;
                 m_emojiDragStart = pos;
+            m_annotationLayer->snapController().begin(m_annotationLayer, pos);
                 CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Moving);
             }
             else if (handle == GizmoHandle::Rotation) {
@@ -561,6 +605,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiDragStart = pos;
+            m_annotationLayer->snapController().begin(m_annotationLayer, pos);
             CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Moving);
         }
         else if (handle == GizmoHandle::Rotation) {
@@ -628,6 +673,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             if (handle != SelectionStateManager::ResizeHandle::None) {
                 m_lastSelectionRect = m_selectionManager->selectionRect();
                 clearSelectionDrag();
+                state().currentPoint = pos;
                 m_selectionManager->startResize(pos, handle);
                 emit updateRequested();
                 return true;
@@ -656,6 +702,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             if (handle != SelectionStateManager::ResizeHandle::None) {
                 m_lastSelectionRect = m_selectionManager->selectionRect();
                 clearSelectionDrag();
+                state().currentPoint = pos;
                 m_selectionManager->startResize(pos, handle);
                 emit updateRequested();
                 return true;
@@ -673,6 +720,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
     if (handle != SelectionStateManager::ResizeHandle::None) {
         m_lastSelectionRect = m_selectionManager->selectionRect();
         clearSelectionDrag();
+        state().currentPoint = pos;
         m_selectionManager->startResize(pos, handle);
         emit updateRequested();
         return true;
@@ -723,8 +771,36 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
     m_pendingWindowClickStartPos = QPoint();
 }
 
+bool RegionInputHandler::cancelAnnotationManipulation()
+{
+    bool cancelled = m_toolManager && m_toolManager->cancelAnnotationInteraction();
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating
+        || m_isArrowDragging || m_isPolylineDragging) {
+        m_isEmojiDragging = m_isEmojiScaling = m_isEmojiRotating = false;
+        m_activeEmojiHandle = GizmoHandle::None;
+        m_emojiStartDistance = 0.0;
+        m_isArrowDragging = false;
+        m_activeArrowHandle = GizmoHandle::None;
+        m_isPolylineDragging = false;
+        m_activePolylineVertexIndex = -1;
+        cancelled = true;
+    }
+    // A text re-edit's gesture belongs to the inline editor, not to a drag.
+    const bool reEditing = m_textAnnotationEditor && m_textAnnotationEditor->isEditing();
+    if (!cancelled || reEditing) return cancelled;
+    m_annotationLayer->cancelGesture();
+    CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Idle);
+    emit updateRequested();
+    return true;
+}
+
 void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
 {
+    // A right-click during a drag only puts the annotation back (#237).
+    if (cancelAnnotationManipulation()) {
+        return;
+    }
+
     if (state().multiRegionMode && m_multiRegionManager) {
         clearSelectionDrag();
         int hitIndex = m_multiRegionManager->hitTest(pos);
@@ -810,7 +886,9 @@ bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
         auto* emojiItem = getSelectedEmojiStickerAnnotation();
         if (emojiItem) {
             QPoint delta = pos - m_emojiDragStart;
-            emojiItem->moveBy(delta);
+            m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
+            if (!m_annotationLayer->snapController().move(pos, QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier)))
+                emojiItem->moveBy(delta);
             m_emojiDragStart = pos;
             emit updateRequested();
             return true;
@@ -823,6 +901,7 @@ bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
             QPointF delta = QPointF(pos) - m_emojiStartCenter;
             qreal currentAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
             qreal angleDelta = normalizeAngleDelta(currentAngle - m_emojiStartAngle);
+            m_annotationLayer->ensureGesture();
             emojiItem->setRotation(m_emojiStartRotation + angleDelta);
             emit updateRequested();
             return true;
@@ -837,6 +916,7 @@ bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
             qreal scaleFactor = currentDistance / m_emojiStartDistance;
             qreal newScale = m_emojiStartScale * scaleFactor;
             // setScale already clamps to kMinScale/kMaxScale
+            m_annotationLayer->ensureGesture();
             emojiItem->setScale(newScale);
             emit updateRequested();
             return true;
@@ -872,22 +952,6 @@ void RegionInputHandler::clearDetectionAndNotify(bool selectionTransition)
     state().highlightedWindowRect = QRect();
     state().hasDetectedWindow = false;
     emit detectionCleared(previousHighlightRect, selectionTransition);
-}
-
-void RegionInputHandler::handleSelectionMove(const QPoint& pos)
-{
-    if (m_pendingWindowClickActive) {
-        const int dx = pos.x() - m_pendingWindowClickStartPos.x();
-        const int dy = pos.y() - m_pendingWindowClickStartPos.y();
-        if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
-            m_pendingWindowClickActive = false;
-            m_pendingWindowClickRect = QRect();
-            m_pendingWindowClickStartPos = QPoint();
-        }
-    }
-
-    clearDetectionAndNotify();
-    m_selectionManager->updateSelection(pos);
 }
 
 void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
@@ -1210,16 +1274,7 @@ void RegionInputHandler::onDragFrameTick()
 
     state().currentPoint = localPos;
     emit currentPointUpdated(localPos);
-    if (m_selectionManager->isSelecting()) {
-        handleSelectionMove(localPos);
-    }
-    else if (m_selectionManager->isResizing()) {
-        m_selectionManager->updateResize(localPos);
-    }
-    else if (m_selectionManager->isMoving()) {
-        m_selectionManager->updateMove(localPos);
-    }
-    else {
+    if (!updateSelectionGesture(localPos)) {
         if (!m_pendingWindowClickActive) {
             handleWindowDetectionMove(localPos);
         }
@@ -1267,6 +1322,9 @@ bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
 bool RegionInputHandler::handleEmojiStickerRelease(const QPoint& pos)
 {
     if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
+        if (m_isEmojiDragging) handleEmojiStickerMove(pos);
+        m_annotationLayer->snapController().end();
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isEmojiDragging = false;
         m_isEmojiScaling = false;
         m_isEmojiRotating = false;
@@ -1281,14 +1339,65 @@ bool RegionInputHandler::handleEmojiStickerRelease(const QPoint& pos)
     return false;
 }
 
-void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
+void RegionInputHandler::clearPendingWindowClick()
 {
-    Q_UNUSED(pos);
-    auto clearPendingWindowClick = [this]() {
-        m_pendingWindowClickActive = false;
-        m_pendingWindowClickRect = QRect();
-        m_pendingWindowClickStartPos = QPoint();
-    };
+    m_pendingWindowClickActive = false;
+    m_pendingWindowClickRect = QRect();
+    m_pendingWindowClickStartPos = QPoint();
+}
+
+bool RegionInputHandler::boundarySnapEligible() const
+{
+    return m_selectionManager && m_state && m_selectionManager->isResizing()
+        && m_boundarySnapAllowed && !state().multiRegionMode && state().replaceTargetIndex < 0
+        && m_selectionManager->aspectRatio() <= 0;
+}
+
+bool RegionInputHandler::updateSelectionGesture(const QPoint& pos)
+{
+    if (!m_selectionManager || !m_state) return false;
+    if (!m_pendingWindowClickActive && !m_selectionManager->isSelecting()
+        && !m_selectionManager->isResizing() && !m_selectionManager->isMoving())
+        return false;
+    if (state().currentPoint != pos) {
+        state().currentPoint = pos;
+        emit currentPointUpdated(pos);
+    }
+    if (m_pendingWindowClickActive && !m_selectionManager->hasActiveSelection()) {
+        const qreal dx = qreal(pos.x()) - m_pendingWindowClickStartPos.x();
+        const qreal dy = qreal(pos.y()) - m_pendingWindowClickStartPos.y();
+        if (dx * dx + dy * dy > WINDOW_CLICK_MAX_DISTANCE_SQ) {
+            m_selectionManager->startSelection(m_pendingWindowClickStartPos);
+            m_lastSelectionRect = {};
+            clearDetectionAndNotify(true);
+            clearPendingWindowClick();
+        }
+    }
+    if (m_selectionManager->isSelecting()) {
+        clearDetectionAndNotify();
+        m_selectionManager->updateSelection(pos);
+    }
+    else if (m_selectionManager->isResizing()) {
+        const bool enabled = boundarySnapEligible()
+            && ((m_snapKeyHeld && m_currentModifiers == Qt::NoModifier)
+                || m_currentModifiers.testFlag(Qt::AltModifier));
+        if (enabled) {
+            m_selectionManager->updateResize(pos, [this](const QRect& raw, Qt::Edges edges) {
+                const auto result = m_boundarySnap.snap(raw, edges);
+                return SelectionStateManager::ResizePreview{result.rect, result.edges};
+            });
+            if (!m_selectionManager->snappedEdges()) m_boundarySnap.reset();
+        } else {
+            m_boundarySnap.reset();
+            m_selectionManager->updateResize(pos);
+        }
+    }
+    else if (m_selectionManager->isMoving()) m_selectionManager->updateMove(pos);
+    return true;
+}
+
+void RegionInputHandler::handleSelectionRelease()
+{
 
     QRect sel = m_selectionManager->selectionRect();
     const bool canUsePendingWindowClick =
@@ -1360,6 +1469,9 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
 void RegionInputHandler::startAnnotation(const QPointF& pos)
 {
     if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
+        // Width routing depends on the active tool, so select it before
+        // applying that tool's current style values.
+        m_toolManager->setCurrentTool(state().currentTool);
         m_toolManager->setColor(state().annotationColor);
         // Don't overwrite width for StepBadge - it uses a separate radius setting
         if (state().currentTool != ToolId::StepBadge) {
@@ -1370,7 +1482,6 @@ void RegionInputHandler::startAnnotation(const QPointF& pos)
         m_toolManager->setShapeType(static_cast<int>(state().shapeType));
         m_toolManager->setShapeFillMode(static_cast<int>(state().shapeFillMode));
 
-        m_toolManager->setCurrentTool(state().currentTool);
         m_toolManager->handleMousePress(pos, m_currentModifiers);
         state().isDrawing = m_toolManager->isDrawing();
 
@@ -1442,12 +1553,7 @@ SelectionStateManager::ResizeHandle RegionInputHandler::determineHandleFromOutsi
 void RegionInputHandler::adjustEdgesToPosition(const QPoint& pos,
     SelectionStateManager::ResizeHandle handle)
 {
-    QRect currentRect = m_selectionManager->selectionRect();
-    QRect newRect = SelectionResizeHelper::adjustEdgesToPosition(pos, handle, currentRect);
-
-    if (SelectionResizeHelper::meetsMinimumSize(newRect)) {
-        m_selectionManager->setSelectionRect(newRect);
-    }
+    m_selectionManager->resizeToPosition(pos, handle);
 }
 
 // ============================================================================
@@ -1568,6 +1674,7 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
     if (!arrowItem) {
         return false;
     }
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
 
     QPoint delta = pos - m_arrowDragStart;
 
@@ -1590,7 +1697,7 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
             QPointF start = arrowItem->start();
             QPointF end = arrowItem->end();
             QPointF newControl = 2.0 * QPointF(pos) - 0.5 * (start + end);
-            arrowItem->setControlPoint(newControl.toPoint());
+            arrowItem->setControlPoint(newControl);
         }
         break;
 
@@ -1614,6 +1721,7 @@ bool RegionInputHandler::handleArrowAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isArrowDragging = false;
     m_activeArrowHandle = GizmoHandle::None;
     // Reset input state to let hover logic take over
@@ -1691,6 +1799,7 @@ bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
         auto* polylineItem = getSelectedPolylineAnnotation();
         if (polylineItem) {
              QPoint delta = pos - m_polylineDragStart;
+             m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
              
              if (m_activePolylineVertexIndex >= 0) {
                  // Move specific vertex
@@ -1711,6 +1820,7 @@ bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
 
 bool RegionInputHandler::handlePolylineAnnotationRelease(const QPoint& pos) {
     if (m_isPolylineDragging) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
         // Reset input state to let hover logic take over

@@ -147,6 +147,10 @@ developer_architecture:
   en: /developer/architecture/
   zh-tw: /zh-tw/developer/architecture/
 
+developer_recording_sync_matrix:
+  en: /developer/recording-sync-matrix/
+  zh-tw: /zh-tw/developer/recording-sync-matrix/
+
 screenshot_tool:
   en: /screenshot-tool/
   zh-tw: /zh-tw/screenshot-tool/
@@ -171,3 +175,19 @@ screenshot_tool_windows:
 not_found:
   en: /404.html
   zh-tw: /404.html
+
+developer_ui_design:
+  en: /developer/ui-design-guidelines/
+  zh-tw: /developer/ui-design-guidelines/
+
+developer_boundary_snap:
+  en: /developer/boundary-snap/
+  zh-tw: /developer/boundary-snap/
+
+developer_boundary_snap_acceptance:
+  en: /developer/boundary-snap-acceptance/
+  zh-tw: /developer/boundary-snap-acceptance/
+
+developer_site_analytics:
+  en: /developer/site-analytics/
+  zh-tw: /developer/site-analytics/

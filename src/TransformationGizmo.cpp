@@ -6,6 +6,53 @@
 #include "annotations/PolylineAnnotation.h"
 #include <QtMath>
 #include <QLineF>
+#include <limits>
+
+namespace {
+template<typename Handle>
+class NearestHandle
+{
+public:
+    NearestHandle(const QPoint& point, Handle none) : m_point(point), m_handle(none) {}
+
+    void consider(const QPointF& center, qreal radius, Handle handle)
+    {
+        const QPointF delta = center - m_point;
+        const qreal distance = QPointF::dotProduct(delta, delta);
+        // Strict comparison keeps the first candidate on an exact tie.
+        if (distance <= radius * radius && distance < m_distance) {
+            m_distance = distance;
+            m_handle = handle;
+        }
+    }
+    Handle result() const { return m_handle; }
+
+private:
+    QPointF m_point;
+    qreal m_distance = std::numeric_limits<qreal>::infinity();
+    Handle m_handle;
+};
+
+template<typename Annotation>
+GizmoHandle hitBoxHandles(const Annotation* annotation, const QPoint& point)
+{
+    NearestHandle<GizmoHandle> nearest(point, GizmoHandle::None);
+    nearest.consider(TransformationGizmo::rotationHandlePosition(annotation),
+                     TransformationGizmo::kRotationHandleRadius + TransformationGizmo::kHitTolerance,
+                     GizmoHandle::Rotation);
+    const auto corners = TransformationGizmo::cornerHandlePositions(annotation);
+    static constexpr GizmoHandle handles[] = {
+        GizmoHandle::TopLeft, GizmoHandle::TopRight,
+        GizmoHandle::BottomRight, GizmoHandle::BottomLeft
+    };
+    for (int i = 0; i < corners.size(); ++i) {
+        nearest.consider(corners[i],
+                         TransformationGizmo::kHandleRadius + TransformationGizmo::kHitTolerance,
+                         handles[i]);
+    }
+    return nearest.result();
+}
+} // namespace
 
 void TransformationGizmo::draw(QPainter &painter, const TextBoxAnnotation *annotation)
 {
@@ -119,38 +166,9 @@ QVector<QPointF> TransformationGizmo::cornerHandlePositions(const TextBoxAnnotat
 GizmoHandle TransformationGizmo::hitTest(const TextBoxAnnotation *annotation, const QPoint &point)
 {
     if (!annotation) return GizmoHandle::None;
-
-    QPointF p(point);
-
-    // 1. Check rotation handle first (highest priority - it's outside the text box)
-    QPointF rotHandle = rotationHandlePosition(annotation);
-    qreal distToRot = QLineF(p, rotHandle).length();
-    if (distToRot <= kRotationHandleRadius + kHitTolerance) {
-        return GizmoHandle::Rotation;
-    }
-
-    // 2. Check corner handles (they're on the corners, so check before body)
-    QVector<QPointF> corners = cornerHandlePositions(annotation);
-    GizmoHandle cornerHandles[] = {
-        GizmoHandle::TopLeft,
-        GizmoHandle::TopRight,
-        GizmoHandle::BottomRight,
-        GizmoHandle::BottomLeft
-    };
-
-    for (int i = 0; i < 4; ++i) {
-        qreal dist = QLineF(p, corners[i]).length();
-        if (dist <= kHandleRadius + kHitTolerance) {
-            return cornerHandles[i];
-        }
-    }
-
-    // 3. Check if inside the text body (for moving)
-    if (annotation->containsPoint(point)) {
-        return GizmoHandle::Body;
-    }
-
-    return GizmoHandle::None;
+    const GizmoHandle handle = hitBoxHandles(annotation, point);
+    if (handle != GizmoHandle::None) return handle;
+    return annotation->containsPoint(point) ? GizmoHandle::Body : GizmoHandle::None;
 }
 
 QPointF TransformationGizmo::rotationHandlePosition(const QPolygonF &poly, const QPointF &center)
@@ -224,38 +242,9 @@ QVector<QPointF> TransformationGizmo::cornerHandlePositions(const EmojiStickerAn
 GizmoHandle TransformationGizmo::hitTest(const EmojiStickerAnnotation *annotation, const QPoint &point)
 {
     if (!annotation) return GizmoHandle::None;
-
-    QPointF p(point);
-
-    // 1. Check rotation handle first
-    QPointF rotHandle = rotationHandlePosition(annotation);
-    qreal distToRot = QLineF(p, rotHandle).length();
-    if (distToRot <= kRotationHandleRadius + kHitTolerance) {
-        return GizmoHandle::Rotation;
-    }
-
-    // 2. Check corner handles
-    QVector<QPointF> corners = cornerHandlePositions(annotation);
-    GizmoHandle cornerHandles[] = {
-        GizmoHandle::TopLeft,
-        GizmoHandle::TopRight,
-        GizmoHandle::BottomRight,
-        GizmoHandle::BottomLeft
-    };
-
-    for (int i = 0; i < 4; ++i) {
-        qreal dist = QLineF(p, corners[i]).length();
-        if (dist <= kHandleRadius + kHitTolerance) {
-            return cornerHandles[i];
-        }
-    }
-
-    // 3. Check if inside the emoji body (for moving)
-    if (annotation->containsPoint(point)) {
-        return GizmoHandle::Body;
-    }
-
-    return GizmoHandle::None;
+    const GizmoHandle handle = hitBoxHandles(annotation, point);
+    if (handle != GizmoHandle::None) return handle;
+    return annotation->containsPoint(point) ? GizmoHandle::Body : GizmoHandle::None;
 }
 
 // ============================================================================
@@ -306,35 +295,9 @@ QPointF TransformationGizmo::rotationHandlePosition(const ShapeAnnotation *annot
 GizmoHandle TransformationGizmo::hitTest(const ShapeAnnotation *annotation, const QPoint &point)
 {
     if (!annotation) return GizmoHandle::None;
-
-    QPointF p(point);
-
-    QPointF rotHandle = rotationHandlePosition(annotation);
-    qreal distToRot = QLineF(p, rotHandle).length();
-    if (distToRot <= kRotationHandleRadius + kHitTolerance) {
-        return GizmoHandle::Rotation;
-    }
-
-    QVector<QPointF> corners = cornerHandlePositions(annotation);
-    GizmoHandle cornerHandles[] = {
-        GizmoHandle::TopLeft,
-        GizmoHandle::TopRight,
-        GizmoHandle::BottomRight,
-        GizmoHandle::BottomLeft
-    };
-
-    for (int i = 0; i < 4; ++i) {
-        qreal dist = QLineF(p, corners[i]).length();
-        if (dist <= kHandleRadius + kHitTolerance) {
-            return cornerHandles[i];
-        }
-    }
-
-    if (annotation->containsPoint(point)) {
-        return GizmoHandle::Body;
-    }
-
-    return GizmoHandle::None;
+    const GizmoHandle handle = hitBoxHandles(annotation, point);
+    if (handle != GizmoHandle::None) return handle;
+    return annotation->containsPoint(point) ? GizmoHandle::Body : GizmoHandle::None;
 }
 
 // ============================================================================
@@ -395,7 +358,6 @@ GizmoHandle TransformationGizmo::hitTest(const ArrowAnnotation *annotation, cons
 {
     if (!annotation) return GizmoHandle::None;
 
-    QPointF p(point);
     QPointF start = annotation->start();
     QPointF end = annotation->end();
     QPointF control = annotation->controlPoint();
@@ -404,23 +366,12 @@ GizmoHandle TransformationGizmo::hitTest(const ArrowAnnotation *annotation, cons
     // This is where the control handle is displayed
     QPointF curveMidpoint = 0.25 * start + 0.5 * control + 0.25 * end;
 
-    // 1. Check control handle first (at curve midpoint)
-    qreal distToMidpoint = QLineF(p, curveMidpoint).length();
-    if (distToMidpoint <= kControlHandleRadius + kHitTolerance) {
-        return GizmoHandle::ArrowControl;
-    }
-
-    // 2. Check start handle
-    qreal distToStart = QLineF(p, start).length();
-    if (distToStart <= kArrowHandleRadius + kHitTolerance) {
-        return GizmoHandle::ArrowStart;
-    }
-
-    // 3. Check end handle
-    qreal distToEnd = QLineF(p, end).length();
-    if (distToEnd <= kArrowHandleRadius + kHitTolerance) {
-        return GizmoHandle::ArrowEnd;
-    }
+    NearestHandle<GizmoHandle> nearest(point, GizmoHandle::None);
+    // Preserve control/start/end priority only when centers are equally close.
+    nearest.consider(curveMidpoint, kControlHandleRadius + kHitTolerance, GizmoHandle::ArrowControl);
+    nearest.consider(start, kArrowHandleRadius + kHitTolerance, GizmoHandle::ArrowStart);
+    nearest.consider(end, kArrowHandleRadius + kHitTolerance, GizmoHandle::ArrowEnd);
+    if (nearest.result() != GizmoHandle::None) return nearest.result();
 
     // 4. Check if on the arrow body (for moving entire arrow)
     if (annotation->containsPoint(point)) {
@@ -453,16 +404,13 @@ int TransformationGizmo::hitTestVertex(const PolylineAnnotation *annotation, con
 {
     if (!annotation) return -2; // Nothing hit
 
-    QPointF p(point);
     QVector<QPoint> points = annotation->points();
 
-    // 1. Check vertices (highest priority)
+    NearestHandle<int> nearest(point, -2);
     for (int i = 0; i < points.size(); ++i) {
-        qreal dist = QLineF(p, points[i]).length();
-        if (dist <= kArrowHandleRadius + kHitTolerance) {
-            return i; // Return index of hit vertex
-        }
+        nearest.consider(points[i], kArrowHandleRadius + kHitTolerance, i);
     }
+    if (nearest.result() >= 0) return nearest.result();
 
     // 2. Check body
     if (annotation->containsPoint(point)) {

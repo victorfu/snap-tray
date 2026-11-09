@@ -13,8 +13,18 @@ Column {
     property string label: ""
     property string description: ""
     property bool checked: false
+    property string resetKey: ""
+    property bool searchHighlight: false
 
     signal toggled(bool checked)
+
+    function activateToggle() {
+        if (!root.enabled)
+            return
+
+        toggleArea.forceActiveFocus()
+        root.toggled(!root.checked)
+    }
 
     width: parent ? parent.width - parent.leftPadding - parent.rightPadding : 0
     spacing: 0
@@ -22,6 +32,8 @@ Column {
     SettingsRow {
         label: root.label
         width: root.width
+        resetKey: root.resetKey
+        searchHighlight: root.searchHighlight
 
         Item {
             width: parent.width
@@ -65,20 +77,19 @@ Column {
                 id: toggleArea
                 anchors.fill: parent
                 cursorShape: CursorTokens.clickable
-                focus: true
+                activeFocusOnTab: root.enabled
 
                 Accessible.role: Accessible.CheckBox
                 Accessible.name: root.label
+                Accessible.description: root.description
                 Accessible.checked: root.checked
+                Accessible.onPressAction: root.activateToggle()
+                Accessible.onToggleAction: root.activateToggle()
 
-                onClicked: {
-                    forceActiveFocus()
-                    root.checked = !root.checked
-                    root.toggled(root.checked)
-                }
-                Keys.onSpacePressed: {
-                    root.checked = !root.checked
-                    root.toggled(root.checked)
+                onClicked: root.activateToggle()
+                Keys.onSpacePressed: function(event) {
+                    root.activateToggle()
+                    event.accepted = true
                 }
             }
         }

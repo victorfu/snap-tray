@@ -43,6 +43,9 @@
 class QScreen;
 class RegionToolbarViewModel;
 class PinToolOptionsViewModel;
+class AnnotationStyleEditor;
+class ColorPickOverlay;
+struct ColorPickSource;
 namespace SnapTray {
 class QmlFloatingToolbar;
 class QmlFloatingSubToolbar;
@@ -60,6 +63,7 @@ class QCloseEvent;
 class QResizeEvent;
 class QFutureWatcherBase;
 class OCRManager;
+class TextLineGeometryCache;
 struct OCRResult;
 class QRCodeManager;
 class AutoBlurManager;
@@ -78,7 +82,6 @@ class AnnotationContext;
 class CaptureShortcutHintsOverlay;
 class RegionControlViewModel;
 class MultiRegionListViewModel;
-class ShareUploadClient;
 namespace SnapTray { class QmlToast; }
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
@@ -99,8 +102,10 @@ public:
     // 初始化指定螢幕的截圖 (由 CaptureManager 調用)
     void initializeForScreen(QScreen *screen, const QPixmap &preCapture = QPixmap());
 
-    // 初始化指定螢幕並使用預設區域 (用於錄影取消後返回)
-    void initializeWithRegion(QScreen *screen, const QRect &region);
+    // 初始化指定螢幕並使用預設區域 (用於錄影取消後返回、全螢幕截圖編輯)
+    void initializeWithRegion(QScreen *screen,
+                              const QRect &region,
+                              const QPixmap &preCapture = QPixmap());
 
     // 設置 Quick Pin 模式 (選擇區域後直接 pin，不顯示 toolbar)
     void setQuickPinMode(bool enabled);
@@ -141,6 +146,7 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void resizeEvent(QResizeEvent* event) override;
@@ -149,6 +155,7 @@ protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
+    bool cancelSelectionResizeGesture();
     // AnnotationHostAdapter implementation
     QWidget* annotationHostWidget() const override;
     AnnotationLayer* annotationLayerForContext() const override;
@@ -181,6 +188,10 @@ private:
     // Color and style actions
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
+    // Eyedropper (#271): picks from the frozen screenshot, not annotations.
+    void startColorPick();
+    ColorPickSource colorPickSource() const;
+    void applyPickedColor(const QColor& color);
     void syncColorToRuntimeState(const QColor& color);
     void syncColorToAllWidgets(const QColor &color);
 
@@ -190,6 +201,9 @@ private:
     // Lazy component creation
     void showEmojiPickerPopup();
     OCRManager* ensureOCRManager();
+    void syncMarkerTextSnap();
+    TextLineGeometryCache* m_markerTextCache = nullptr;
+    bool m_markerTextSnapSupported = false;
     QRCodeManager* ensureQRCodeManager();
     LoadingSpinnerRenderer* ensureLoadingSpinner();
 
@@ -212,7 +226,6 @@ private:
     void cancelMultiRegionCapture();
     void copyToClipboard();
     void saveToFile();
-    void shareToUrl();
     void finishSelection();
     bool ensureAutoBlurReadyForExport();
     void updateToolbarAutoBlurState();
@@ -238,6 +251,8 @@ private:
     bool loadHistoryReplayIndex(int index);
     bool applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry);
     void clearHistoryReplaySelectionState();
+    void setSelectionWindowMetadata(const QString& title, const QString& ownerApp);
+    void rememberLastCaptureRegion(const QRect& globalRect, QScreen* screen) const;
     void recordCaptureSession(const QPixmap& resultPixmap);
     void recordCaptureSession(const QImage& resultImage);
     struct SelectorCaptureContext;
@@ -297,6 +312,7 @@ private:
     // Annotation helpers
     bool isAnnotationTool(ToolId tool) const;
     bool shouldShowCursorCompanion() const;
+    bool cursorCompanionRequiresOverlay() const;
     bool shouldShowMagnifier() const;
     bool hasActiveAnnotationInteraction() const;
     QRect selectedAnnotationInteractionVisualRect() const;
@@ -309,6 +325,7 @@ private:
     void syncCompletedSelectionFloatingUi();
     void restoreDetachedSelectionFloatingUiIfNeeded();
     void syncMagnifierOverlayDuringPaint();
+    void paintHostForegroundOverlays(QPainter& painter, bool detachedCaptureWindowsActive);
     void syncSelectionPreviewOverlay();
     void hideSelectionPreviewOverlays();
     void commitSelectionCompletionHandoffAfterChromePaint();
@@ -357,6 +374,7 @@ private:
     // QML toolbar (floating QQuickView windows)
     RegionToolbarViewModel* m_toolbarViewModel = nullptr;
     PinToolOptionsViewModel* m_toolOptionsViewModel = nullptr;
+    AnnotationStyleEditor* m_styleEditor = nullptr;   // Qt parent owns lifetime
     std::unique_ptr<SnapTray::QmlFloatingToolbar> m_qmlToolbar;
     std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_qmlSubToolbar;
     bool m_toolbarUserDragged = false;
@@ -375,17 +393,18 @@ private:
     bool m_saveDialogOpen;
     bool m_dropdownOpen;
     int m_openBlockingDialogCount = 0;
+    bool m_adjustingSelectionWithKeyboard = false;
 
     // Window detection state
     WindowDetector *m_windowDetector;
     std::optional<DetectedElement> m_detectedWindow;
+    QString m_selectionWindowTitle;
+    QString m_selectionOwnerApp;
 
     // OCR state
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
-    bool m_shareInProgress = false;
     bool m_exportInProgress = false;
-    QString m_pendingSharePassword;
     LoadingSpinnerRenderer *m_loadingSpinner = nullptr;
     SnapTray::QmlToast *m_selectionToast = nullptr;
 
@@ -438,6 +457,7 @@ private:
 
     // Color picker dialog
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
+    QPointer<ColorPickOverlay> m_colorPickOverlay;
 
     // Startup protection - track window activation for robust deactivate handling
     int m_activationCount = 0;
@@ -539,6 +559,8 @@ private:
         int cornerRadius = 0;
         int maxEntries = 20;
         QDateTime createdAt;
+        QString windowTitle;
+        QString ownerApp;
     };
 
     struct PendingHistorySubmission {
@@ -556,18 +578,20 @@ private:
         QVector<MultiRegionManager::Region> multiRegions;
         QByteArray annotationsJson;
         int cornerRadius = 0;
+        QString windowTitle;
+        QString ownerApp;
     };
 
     QList<SnapTray::HistoryEntry> m_historyReplayEntries;
     HistoryLiveSlot m_historyLiveSlot;
     int m_historyReplayIndex = -1;  // -1 = current live slot
     bool m_historyReplayActive = false;
-    std::optional<PendingHistorySubmission> m_pendingShareSubmission;
 
     // Preserve completed selection when cursor switches to another screen.
     bool m_hasPreservedSelection = false;
     QRect m_preservedGlobalSelectionRect;
     QPixmap m_preservedSelectionPixmap;
+    std::optional<HistoryCaptureSnapshot> m_preservedHistorySnapshot;
 
     // Region control panel (QML - radius + aspect ratio)
     RegionControlViewModel* m_regionControlViewModel = nullptr;
@@ -583,6 +607,7 @@ private:
 
     // Quick Pin mode (select region and pin immediately, skip toolbar)
     bool m_quickPinMode = false;
+    bool m_quickPinPressOnCompletedSelection = false;
 
     // Painting component
     RegionPainter* m_painter;
@@ -597,8 +622,7 @@ private:
     RegionSettingsHelper* m_settingsHelper;
 
     // Export manager component
-    RegionExportManager* m_exportManager;
-    ShareUploadClient* m_shareClient = nullptr;
+    RegionExportManager* m_exportManager = nullptr;
 
     // Shared annotation setup/signals helper
     std::unique_ptr<AnnotationContext> m_annotationContext;

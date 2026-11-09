@@ -44,7 +44,8 @@ bool QtCaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &sc
 
 bool QtCaptureEngine::start()
 {
-    if (!SnapTray::currentPlatformCapabilities().supportsLiveCapture) {
+    const auto caps = SnapTray::currentPlatformCapabilities();
+    if (!caps.supportsLiveCapture && !caps.recordingDirectMp4Only) {
         emit error("Live screen capture is not supported on this platform");
         return false;
     }

@@ -8,7 +8,7 @@
 #include <functional>
 #include <memory>
 
-#include "ToolId.h"
+#include "ToolWidthSlot.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
@@ -36,7 +36,8 @@ public:
 
     // Current drawing settings
     QColor color = Qt::red;
-    int width = 3;
+    int width = ToolWidthDefaults::kStroke;
+    int mosaicWidth = ToolWidthDefaults::kMosaicBrushDefault;
     LineEndStyle arrowStyle = LineEndStyle::EndArrow;
     LineStyle lineStyle = LineStyle::Solid;
 
@@ -49,6 +50,9 @@ public:
 
     // Source pixmap (for mosaic tool) - shared to avoid memory duplication
     SharedPixmap sourcePixmap;
+
+    // Region Selector supplies a current immutable OCR snapshot; other hosts leave empty.
+    std::function<std::shared_ptr<const class TextLineSnapshot>()> markerTextLines;
 
     // Device pixel ratio for high-DPI support
     qreal devicePixelRatio = 1.0;

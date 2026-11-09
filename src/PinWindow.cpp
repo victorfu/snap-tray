@@ -1,6 +1,14 @@
 #include "PinWindow.h"
+#include <QScopeGuard>
+#include "pinwindow/PinHoverBar.h"
+#include "qml/PinHoverBarViewModel.h"
+#include "qml/ToolbarTooltipController.h"
 #include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationStyleEditor.h"
+#include "annotation/ColorPickOverlay.h"
+#include "annotations/AnnotationZOrderCommands.h"
+#include "annotations/AnnotationStyle.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
 #include "QRCodeManager.h"
@@ -27,7 +35,6 @@
 #include "qml/QmlBeautifyPanel.h"
 #include "qml/PinToolbarViewModel.h"
 #include "annotations/AnnotationLayer.h"
-#include "annotations/ErasedItemsGroup.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/MosaicStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
@@ -44,10 +51,7 @@
 #include "settings/BeautifySettingsManager.h"
 #include "beautify/BeautifyRenderer.h"
 #include "settings/OCRSettingsManager.h"
-#include "share/ShareUploadClient.h"
 #include "qml/QmlToast.h"
-#include "qml/SharePasswordViewModel.h"
-#include "qml/ShareResultViewModel.h"
 #include "qml/QmlDialog.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
@@ -73,6 +77,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QCursor>
 #include <QImage>
 #include <QMouseEvent>
+#include <QPaintEvent>
 #include <QWheelEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>
@@ -91,10 +96,11 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QScreen>
 #include <QtMath>
 #include <QDateTime>
-#include <QToolTip>
+#include <QHelpEvent>
 #include <QTextEdit>
 #include <QLabel>
 #include <QTimer>
+#include "platform/WindowDragPolicy.h"
 #include <QPointer>
 #include <QTransform>
 #include <QFontMetrics>
@@ -300,6 +306,102 @@ namespace {
         return transform;
     }
 
+    QPointF layoutHandlePosition(const QRectF& rect, ResizeHandler::Edge edge)
+    {
+        switch (edge) {
+            case ResizeHandler::Edge::TopLeft: return rect.topLeft();
+            case ResizeHandler::Edge::Top: return QPointF(rect.center().x(), rect.top());
+            case ResizeHandler::Edge::TopRight: return rect.topRight();
+            case ResizeHandler::Edge::Right: return QPointF(rect.right(), rect.center().y());
+            case ResizeHandler::Edge::BottomRight: return rect.bottomRight();
+            case ResizeHandler::Edge::Bottom: return QPointF(rect.center().x(), rect.bottom());
+            case ResizeHandler::Edge::BottomLeft: return rect.bottomLeft();
+            case ResizeHandler::Edge::Left: return QPointF(rect.left(), rect.center().y());
+            default: return {};
+        }
+    }
+
+    QPoint renderedLayoutHandlePosition(const QRect& rect, ResizeHandler::Edge edge)
+    {
+        switch (edge) {
+            case ResizeHandler::Edge::TopLeft: return rect.topLeft();
+            case ResizeHandler::Edge::Top: return QPoint(rect.center().x(), rect.top());
+            case ResizeHandler::Edge::TopRight: return rect.topRight();
+            case ResizeHandler::Edge::Right: return QPoint(rect.right(), rect.center().y());
+            case ResizeHandler::Edge::BottomRight: return rect.bottomRight();
+            case ResizeHandler::Edge::Bottom: return QPoint(rect.center().x(), rect.bottom());
+            case ResizeHandler::Edge::BottomLeft: return rect.bottomLeft();
+            case ResizeHandler::Edge::Left: return QPoint(rect.left(), rect.center().y());
+            default: return {};
+        }
+    }
+
+    QPoint snappedLayoutHandlePosition(const QRectF& modelRect,
+                                       ResizeHandler::Edge modelEdge,
+                                       const QTransform& modelToView)
+    {
+        static constexpr ResizeHandler::Edge kVisualEdges[] = {
+            ResizeHandler::Edge::TopLeft,
+            ResizeHandler::Edge::Top,
+            ResizeHandler::Edge::TopRight,
+            ResizeHandler::Edge::Right,
+            ResizeHandler::Edge::BottomRight,
+            ResizeHandler::Edge::Bottom,
+            ResizeHandler::Edge::BottomLeft,
+            ResizeHandler::Edge::Left
+        };
+        const QRect viewRect = modelToView.mapRect(modelRect).toAlignedRect();
+        const QPointF mappedModelHandle = modelToView.map(
+            layoutHandlePosition(modelRect, modelEdge));
+        QPoint closest;
+        qreal closestDistanceSquared = (std::numeric_limits<qreal>::max)();
+        for (const auto visualEdge : kVisualEdges) {
+            const QPoint candidate = renderedLayoutHandlePosition(viewRect, visualEdge);
+            const QPointF delta = QPointF(candidate) - mappedModelHandle;
+            const qreal distanceSquared =
+                delta.x() * delta.x() + delta.y() * delta.y();
+            if (distanceSquared < closestDistanceSquared) {
+                closestDistanceSquared = distanceSquared;
+                closest = candidate;
+            }
+        }
+        return closest;
+    }
+
+    CursorStyleSpec layoutResizeCursorSpec(ResizeHandler::Edge edge,
+                                           const QTransform& modelToView)
+    {
+        QPointF modelDirection;
+        switch (edge) {
+            case ResizeHandler::Edge::Left: modelDirection = QPointF(-1.0, 0.0); break;
+            case ResizeHandler::Edge::Right: modelDirection = QPointF(1.0, 0.0); break;
+            case ResizeHandler::Edge::Top: modelDirection = QPointF(0.0, -1.0); break;
+            case ResizeHandler::Edge::Bottom: modelDirection = QPointF(0.0, 1.0); break;
+            case ResizeHandler::Edge::TopLeft: modelDirection = QPointF(-1.0, -1.0); break;
+            case ResizeHandler::Edge::TopRight: modelDirection = QPointF(1.0, -1.0); break;
+            case ResizeHandler::Edge::BottomRight: modelDirection = QPointF(1.0, 1.0); break;
+            case ResizeHandler::Edge::BottomLeft: modelDirection = QPointF(-1.0, 1.0); break;
+            default: return CursorStyleSpec::fromShape(Qt::ArrowCursor);
+        }
+
+        const QPointF origin = modelToView.map(QPointF());
+        const QPointF mapped = modelToView.map(modelDirection) - origin;
+        const bool corner = edge == ResizeHandler::Edge::TopLeft ||
+            edge == ResizeHandler::Edge::TopRight ||
+            edge == ResizeHandler::Edge::BottomRight ||
+            edge == ResizeHandler::Edge::BottomLeft;
+        if (corner) {
+            return CursorStyleSpec::fromShape(
+                mapped.x() * mapped.y() >= 0.0
+                    ? Qt::SizeFDiagCursor
+                    : Qt::SizeBDiagCursor);
+        }
+        return CursorStyleSpec::fromShape(
+            qAbs(mapped.x()) >= qAbs(mapped.y())
+                ? Qt::SizeHorCursor
+                : Qt::SizeVerCursor);
+    }
+
     bool sameLinearTransform(const QTransform& lhs, const QTransform& rhs)
     {
         return qAbs(lhs.m11() - rhs.m11()) <= kTransformEpsilon &&
@@ -379,11 +481,6 @@ namespace {
             mosaicRect->setSourcePixmap(sourcePixmap);
             return;
         }
-        if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(item)) {
-            erasedGroup->forEachStoredItem([&sourcePixmap](AnnotationItem* storedItem) {
-                refreshMosaicSourceForItem(storedItem, sourcePixmap);
-            });
-        }
     }
 
     void refreshAllMosaicSources(AnnotationLayer* layer, const SharedPixmap& sourcePixmap)
@@ -392,9 +489,9 @@ namespace {
             return;
         }
 
-        layer->forEachItem([&sourcePixmap](AnnotationItem* item) {
+        layer->forEachOwnedItem([&sourcePixmap](AnnotationItem* item) {
             refreshMosaicSourceForItem(item, sourcePixmap);
-        }, true);
+        });
     }
 
     // Crop endpoints can land on the logical right/bottom boundary (x == width / y == height)
@@ -476,6 +573,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     // Initial size matches screenshot (use logical size for HiDPI)
     m_displayPixmap = m_originalPixmap;
     m_contentLogicalSize = logicalSizeFromPixmap(m_displayPixmap);
+    updateAccessibleName();
     resetSourceSampleRect();
     QSize logicalSize = transformedContentLogicalSize();
     setFixedSize(logicalSize);
@@ -517,7 +615,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
         showPreparedWindow();
     }
 
-    // Apply default opacity (90%)
+    // Apply the configured opacity (100% by default).
     setWindowOpacity(m_opacity);
 
     // Initialize loading spinner for OCR
@@ -525,42 +623,17 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
         this, QOverload<>::of(&QWidget::update));
 
-    m_shareClient = new ShareUploadClient(this);
-    connect(m_shareClient, &ShareUploadClient::uploadSucceeded,
-        this, [this](const QString& url, const QDateTime& expiresAt, bool isProtected) {
-            m_shareInProgress = false;
-            if (m_toolbar) {
-                m_toolbar->viewModel()->setShareInProgress(false);
-            }
-            updateLoadingSpinnerState();
-
-            auto* vm = new ShareResultViewModel(this);
-            vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
-            m_pendingSharePassword.clear();
-            auto* dlg = new SnapTray::QmlDialog(
-                QUrl("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml"),
-                vm, "viewModel", this);
-            connect(vm, &ShareResultViewModel::dialogClosed, this, [dlg]() {
-                dlg->close();
-            });
-            dlg->showCenteredOnScreen(QGuiApplication::screenAt(frameGeometry().center()));
-        });
-    connect(m_shareClient, &ShareUploadClient::uploadFailed,
-        this, [this](const QString& errorMessage) {
-            m_shareInProgress = false;
-            if (m_toolbar) {
-                m_toolbar->viewModel()->setShareInProgress(false);
-            }
-            updateLoadingSpinnerState();
-            m_pendingSharePassword.clear();
-            m_toast->showToast(SnapTray::QmlToast::Level::Error,
-                errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage);
-        });
-
     // Initialize resize finish timer for high-quality update
     m_resizeFinishTimer = new QTimer(this);
     m_resizeFinishTimer->setSingleShot(true);
     connect(m_resizeFinishTimer, &QTimer::timeout, this, &PinWindow::onResizeFinished);
+
+    if (const int interval = SnapTray::windowDragUpdateIntervalMs(); interval > 0) {
+        m_dragMoveTimer = new QTimer(this);
+        m_dragMoveTimer->setTimerType(Qt::PreciseTimer);
+        m_dragMoveTimer->setInterval(interval);
+        connect(m_dragMoveTimer, &QTimer::timeout, this, &PinWindow::applyPendingDragPosition);
+    }
 
     if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
         // Track cursor near edges for click-through resize.
@@ -621,18 +694,74 @@ void PinWindow::setPinWindowManager(PinWindowManager* manager)
 
 void PinWindow::setZoomLevel(qreal zoom)
 {
-    m_zoomLevel = qBound(0.1, zoom, 5.0);
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // Annotation geometry uses the zoom that was active when layout mode
+    // began. Without a general annotation scale transform, changing zoom in
+    // the middle of the session would reinterpret every item at a new scale.
+    if (isRegionLayoutMode()) {
+        return;
+    }
+
+    m_zoomLevel = qBound(minimumPinWindowZoom(transformedContentLogicalSize()), zoom, 5.0);
     if (m_currentZoomAction) {
         m_currentZoomAction->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
     }
     updateSize();
     syncCropHandlerImageSize();
+    syncHoverBar();
 }
 
 void PinWindow::setOpacity(qreal opacity)
 {
     m_opacity = qBound(0.1, opacity, 1.0);
     setWindowOpacity(m_opacity);
+    if (m_currentOpacityAction) {
+        m_currentOpacityAction->setText(QString("%1%").arg(qRound(m_opacity * 100)));
+    }
+    syncHoverBar();
+}
+
+void PinWindow::showZoomBadge()
+{
+    m_uiIndicators->showZoomIndicator(tr("Zoom %1%").arg(qRound(m_zoomLevel * 100)), m_isLiveMode);
+}
+
+void PinWindow::showOpacityBadge()
+{
+    m_uiIndicators->showOpacityIndicator(tr("Opacity %1%").arg(qRound(m_opacity * 100)));
+}
+
+void PinWindow::applyUserZoom(qreal zoom)
+{
+    setZoomLevel(zoom);
+    showZoomBadge();
+}
+
+void PinWindow::applyUserOpacity(qreal opacity)
+{
+    setOpacity(opacity);
+    showOpacityBadge();
+}
+
+void PinWindow::resetZoom()
+{
+    applyUserZoom(1.0);
+}
+
+void PinWindow::resetOpacity()
+{
+    applyUserOpacity(1.0);
+}
+
+void PinWindow::zoomByStep(int direction)
+{
+    if (isRegionLayoutMode()) return;
+    const qreal step = PinWindowSettingsManager::instance().loadZoomStep();
+    const qreal target = qBound(minimumPinWindowZoom(transformedContentLogicalSize()),
+                                m_zoomLevel + (direction >= 0 ? step : -step), 5.0);
+    if (qFuzzyCompare(target, m_zoomLevel)) return;
+    // Anchored at the top-left corner, like the wheel.
+    applyUserZoom(target);
 }
 
 void PinWindow::adjustOpacityByStep(int direction)
@@ -646,12 +775,15 @@ void PinWindow::adjustOpacityByStep(int direction)
         return;
     }
 
-    setOpacity(newOpacity);
-    m_uiIndicators->showOpacityIndicator(m_opacity);
+    applyUserOpacity(newOpacity);
 }
 
 void PinWindow::rotateRight()
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    if (isRegionLayoutMode()) {
+        return;
+    }
     m_rotationAngle = (m_rotationAngle + 90) % 360;
     clearCropUndoHistory();
     updateSize();
@@ -660,6 +792,10 @@ void PinWindow::rotateRight()
 
 void PinWindow::rotateLeft()
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    if (isRegionLayoutMode()) {
+        return;
+    }
     m_rotationAngle = (m_rotationAngle + 270) % 360;  // +270 is same as -90
     clearCropUndoHistory();
     updateSize();
@@ -668,6 +804,10 @@ void PinWindow::rotateLeft()
 
 void PinWindow::flipHorizontal()
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    if (isRegionLayoutMode()) {
+        return;
+    }
     m_flipHorizontal = !m_flipHorizontal;
     clearCropUndoHistory();
     updateSize();
@@ -676,6 +816,10 @@ void PinWindow::flipHorizontal()
 
 void PinWindow::flipVertical()
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    if (isRegionLayoutMode()) {
+        return;
+    }
     m_flipVertical = !m_flipVertical;
     clearCropUndoHistory();
     updateSize();
@@ -726,6 +870,45 @@ bool PinWindow::hasActiveAnnotationInteraction() const
            m_isArrowDragging || m_isPolylineDragging;
 }
 
+bool PinWindow::cancelAnnotationGesture()
+{
+    bool cancelled = m_toolManager && m_toolManager->cancelAnnotationInteraction();
+    // Pin drives its own text and shape editors, not only through the
+    // ToolManager context (review #237-1).
+    if (m_textAnnotationEditor
+        && (m_textAnnotationEditor->isDragging() || m_textAnnotationEditor->isTransforming())) {
+        m_textAnnotationEditor->cancelInteraction();
+        cancelled = true;
+    }
+    if (m_shapeAnnotationEditor
+        && (m_shapeAnnotationEditor->isDragging() || m_shapeAnnotationEditor->isTransforming())) {
+        m_shapeAnnotationEditor->cancelInteraction();
+        cancelled = true;
+    }
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating
+        || m_isArrowDragging || m_isPolylineDragging) {
+        m_isEmojiDragging = m_isEmojiScaling = m_isEmojiRotating = false;
+        m_emojiDragHandle = GizmoHandle::None;
+        m_emojiStartDistance = 0.0;
+        m_isArrowDragging = false;
+        m_arrowDragHandle = GizmoHandle::None;
+        m_isPolylineDragging = false;
+        m_activePolylineVertexIndex = -1;
+        cancelled = true;
+    }
+    // The button is still down: its release must not reach a single-click
+    // tool (Emoji, StepBadge) and place a new annotation.
+    if (cancelled) m_consumeNextToolRelease = true;
+    // A text re-edit's gesture belongs to the inline editor, not to a drag.
+    const bool reEditing = m_textAnnotationEditor && m_textAnnotationEditor->isEditing();
+    if (!cancelled || reEditing || !m_annotationLayer) return cancelled;
+    m_annotationLayer->cancelGesture();
+    CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+    updateUndoRedoState();
+    update();
+    return true;
+}
+
 QRect PinWindow::mappedAnnotationRect(const QRect& originalRect) const
 {
     if (!originalRect.isValid() || originalRect.isEmpty()) {
@@ -745,7 +928,7 @@ QRect PinWindow::selectedAnnotationInteractionVisualRect() const
     return mappedAnnotationRect(
         snaptray::tools::selectedAnnotationRepaintRect(
             m_annotationLayer,
-            kAnnotationInteractionVisualMargin));
+            kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds() : QRect()));
 }
 
 bool PinWindow::requestLocalizedToolRepaint()
@@ -823,8 +1006,7 @@ void PinWindow::compensateNewestEmojiIfNeeded(const AnnotationItem* previousLast
     }
 
     auto* newestItem = m_annotationLayer->itemAt(static_cast<int>(currentCount - 1));
-    // AnnotationLayer may trim history at capacity, so count can stay unchanged
-    // even when a new item is added. Compare last-item pointer instead.
+    // Compare the last-item pointer because this helper cares whether the top item changed.
     if (!newestItem || newestItem == previousLastItem) {
         return;
     }
@@ -857,8 +1039,7 @@ void PinWindow::compensateNewestStepBadgeIfNeeded(const AnnotationItem* previous
     }
 
     auto* newestItem = m_annotationLayer->itemAt(static_cast<int>(currentCount - 1));
-    // AnnotationLayer may trim history at capacity, so count can stay unchanged
-    // even when a new item is added. Compare last-item pointer instead.
+    // Compare the last-item pointer because this helper cares whether the top item changed.
     if (!newestItem || newestItem == previousLastItem) {
         return;
     }
@@ -912,9 +1093,11 @@ void PinWindow::ensureTransformCacheValid() const
 void PinWindow::onResizeFinished()
 {
     if (m_pendingHighQualityUpdate && !m_isResizing) {
+        m_resizeFinishTimer->stop();
         invalidateAutoBlurRequest();
         // Perform high-quality scaling after resize is complete
         m_displayPixmap = buildDisplayPixmap(size(), Qt::SmoothTransformation);
+        refreshMosaicSources();
 
         m_pendingHighQualityUpdate = false;
         update();
@@ -928,12 +1111,13 @@ void PinWindow::showPreparedWindow()
         return;
     }
 
-    // Must show() first, then move() to get correct positioning on macOS.
-    // Moving before show() can result in incorrect window placement there.
-#ifdef Q_OS_LINUX
-    move(m_initialPosition);
+    // macOS needs show() before move(). On Windows/Linux, position while
+    // hidden so the first visible surface uses the requested screen and DPR,
+    // rather than appearing at the default position and then jumping.
+#ifdef Q_OS_MACOS
     show();
 #else
+    move(m_initialPosition);
     show();
 #endif
 
@@ -947,7 +1131,7 @@ void PinWindow::showPreparedWindow()
     setFocus(Qt::OtherFocusReason);
 #endif
 
-#ifndef Q_OS_LINUX
+#ifdef Q_OS_MACOS
     move(m_initialPosition);
 #endif
     m_hasPerformedInitialShow = true;
@@ -973,14 +1157,15 @@ int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
     return qMin(radius, maxRadius);
 }
 
-void PinWindow::updateSize()
+void PinWindow::updateSize(bool liveFrame)
 {
     invalidateAutoBlurRequest();
     const QSize transformedLogicalSize = transformedContentLogicalSize();
-    QSize newLogicalSize = transformedLogicalSize * m_zoomLevel;
+    QSize newLogicalSize = (transformedLogicalSize * m_zoomLevel).expandedTo(QSize(1, 1));
 
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = buildDisplayPixmap(newLogicalSize, mode);
+    refreshMosaicSources(liveFrame);
 
     setFixedSize(newLogicalSize);
     update();
@@ -1040,56 +1225,153 @@ void PinWindow::createContextMenu()
 {
     m_contextMenu = new QMenu(this);
 
+    // Grouped by task (#225): View | Output | Modes | Pins | Close.
+    // Arrange leads while an annotation is selected (#268); hidden otherwise.
+    m_arrangeMenu = m_contextMenu->addMenu(tr("Arrange"));
+    m_arrangeMenu->menuAction()->setObjectName(QStringLiteral("pinMenuArrange"));
+    for (const auto move : {AnnotationZOrderCommands::Move::Forward,
+                            AnnotationZOrderCommands::Move::Backward,
+                            AnnotationZOrderCommands::Move::ToFront,
+                            AnnotationZOrderCommands::Move::ToBack}) {
+        QAction* action = m_arrangeMenu->addAction(AnnotationZOrderCommands::actionText(move));
+        action->setData(static_cast<int>(move));
+        action->setShortcut(AnnotationZOrderCommands::shortcut(move));
+        connect(action, &QAction::triggered, this, [this, move]() {
+            if (m_styleEditor && m_styleEditor->applyZOrder(move)) update();
+        });
+    }
+    m_contextMenu->addSeparator();
+
     // Show Toolbar action
     m_showToolbarAction = m_contextMenu->addAction(tr("Show Toolbar"));
+    m_showToolbarAction->setObjectName(QStringLiteral("pinMenuShowToolbar"));
     m_showToolbarAction->setShortcut(QKeySequence(Qt::Key_Space));
     m_showToolbarAction->setCheckable(true);
     connect(m_showToolbarAction, &QAction::triggered, this, &PinWindow::toggleToolbar);
 
     // Show border option (placed right after Show Toolbar)
     m_showBorderAction = m_contextMenu->addAction(tr("Show Border"));
+    m_showBorderAction->setObjectName(QStringLiteral("pinMenuShowBorder"));
     m_showBorderAction->setCheckable(true);
     m_showBorderAction->setChecked(m_showBorder);
     connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
 
-    m_moveToScreenMenu = m_contextMenu->addMenu(tr("Move to Screen"));
+    // Zoom submenu
+    QMenu* zoomMenu = m_contextMenu->addMenu(tr("Zoom"));
+    zoomMenu->menuAction()->setObjectName(QStringLiteral("pinMenuZoom"));
+
+    QAction* zoomInAction = zoomMenu->addAction(tr("Zoom In"));
+    zoomInAction->setObjectName(QStringLiteral("pinMenuZoomIn"));
+    zoomInAction->setShortcut(QKeySequence::ZoomIn);
+    connect(zoomInAction, &QAction::triggered, this, [this]() { zoomByStep(1); });
+    QAction* zoomOutAction = zoomMenu->addAction(tr("Zoom Out"));
+    zoomOutAction->setObjectName(QStringLiteral("pinMenuZoomOut"));
+    zoomOutAction->setShortcut(QKeySequence::ZoomOut);
+    connect(zoomOutAction, &QAction::triggered, this, [this]() { zoomByStep(-1); });
+    QAction* zoomResetAction = zoomMenu->addAction(tr("Reset to 100%"));
+    zoomResetAction->setObjectName(QStringLiteral("pinMenuZoomReset"));
+    zoomResetAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
+    connect(zoomResetAction, &QAction::triggered, this, &PinWindow::resetZoom);
+    zoomMenu->addSeparator();
+
+    // Preset zoom levels
+    QAction* zoom33Action = zoomMenu->addAction(tr("33.3%"));
+    connect(zoom33Action, &QAction::triggered, this, [this]() { applyUserZoom(1.0 / 3.0); });
+
+    QAction* zoom50Action = zoomMenu->addAction(tr("50%"));
+    connect(zoom50Action, &QAction::triggered, this, [this]() { applyUserZoom(0.5); });
+
+    QAction* zoom67Action = zoomMenu->addAction(tr("66.7%"));
+    connect(zoom67Action, &QAction::triggered, this, [this]() { applyUserZoom(2.0 / 3.0); });
+
+    QAction* zoom100Action = zoomMenu->addAction(tr("100%"));
+    connect(zoom100Action, &QAction::triggered, this, [this]() { applyUserZoom(1.0); });
+
+    QAction* zoom200Action = zoomMenu->addAction(tr("200%"));
+    connect(zoom200Action, &QAction::triggered, this, [this]() { applyUserZoom(2.0); });
+
+    zoomMenu->addSeparator();
+
+    // Current zoom level display (disabled, for display only)
+    m_currentZoomAction = zoomMenu->addAction(QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    m_currentZoomAction->setEnabled(false);
+
+    // Smoothing option
+    QAction* smoothingAction = zoomMenu->addAction(tr("Smoothing"));
+    smoothingAction->setCheckable(true);
+    smoothingAction->setChecked(m_smoothing);
+    connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
+        m_smoothing = checked;
+        updateSize();
+        });
+
+    // Opacity sits next to Zoom (#225), not under Image processing.
+    QMenu* opacityMenu = m_contextMenu->addMenu(tr("Opacity"));
+    opacityMenu->menuAction()->setObjectName(QStringLiteral("pinMenuOpacity"));
+    const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
+    QAction* increaseOpacityAction = opacityMenu->addAction(
+        tr("Increase by %1%").arg(opacityStepPercent));
+    increaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketRight));
+    connect(increaseOpacityAction, &QAction::triggered, this, [this]() {
+        adjustOpacityByStep(1);
+        });
+
+    QAction* decreaseOpacityAction = opacityMenu->addAction(
+        tr("Decrease by %1%").arg(opacityStepPercent));
+    decreaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketLeft));
+    connect(decreaseOpacityAction, &QAction::triggered, this, [this]() {
+        adjustOpacityByStep(-1);
+        });
+
+    QAction* opacityResetAction = opacityMenu->addAction(tr("Reset to 100%"));
+    opacityResetAction->setObjectName(QStringLiteral("pinMenuOpacityReset"));
+    opacityResetAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_BracketRight));
+    connect(opacityResetAction, &QAction::triggered, this, &PinWindow::resetOpacity);
+    opacityMenu->addSeparator();
+    m_currentOpacityAction = opacityMenu->addAction(QString("%1%").arg(qRound(m_opacity * 100)));
+    m_currentOpacityAction->setEnabled(false);
+
+    // Image processing submenu
+    QMenu* imageProcessingMenu = m_contextMenu->addMenu(tr("Image processing"));
+    imageProcessingMenu->menuAction()->setObjectName(QStringLiteral("pinMenuImageProcessing"));
+
+    QAction* rotateLeftAction = imageProcessingMenu->addAction(tr("Rotate left"));
+    connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
+
+    QAction* rotateRightAction = imageProcessingMenu->addAction(tr("Rotate right"));
+    connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
+
+    QAction* horizontalFlipAction = imageProcessingMenu->addAction(tr("Horizontal flip"));
+    connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
+
+    QAction* verticalFlipAction = imageProcessingMenu->addAction(tr("Vertical flip"));
+    connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
+
+    imageProcessingMenu->addSeparator();
+    QAction* cropAction = imageProcessingMenu->addAction(tr("Crop"));
+    connect(cropAction, &QAction::triggered, this, [this]() {
+        if (!m_toolbar) {
+            initializeAnnotationComponents();
+        }
+        showToolbar();
+        handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    });
 
     m_contextMenu->addSeparator();
 
     QAction* copyAction = m_contextMenu->addAction(tr("Copy to Clipboard"));
+    copyAction->setObjectName(QStringLiteral("pinMenuCopy"));
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
 
     QAction* saveAction = m_contextMenu->addAction(tr("Save to file"));
+    saveAction->setObjectName(QStringLiteral("pinMenuSave"));
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
-    // Reuse the HistoryWindow translation context for the shared label so PinWindow
-    // stays aligned with the existing QML translation catalogs.
-    QAction* openCacheFolderAction = m_contextMenu->addAction(
-        QCoreApplication::translate("HistoryWindow", "Open History Folder"));
-    connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
-
-    // Do not advertise click-through on platforms whose native implementation
-    // cannot actually remove this window from pointer hit-testing.
-    if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
-        m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
-        m_clickThroughAction->setCheckable(true);
-        m_clickThroughAction->setChecked(m_clickThrough);
-        connect(m_clickThroughAction, &QAction::toggled,
-                this, &PinWindow::setClickThrough);
-    }
-
-    m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
-    connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
-
-    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
-    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
-
-    m_contextMenu->addSeparator();
-
     // Watermark submenu
     QMenu* watermarkMenu = m_contextMenu->addMenu(tr("Watermark"));
+    watermarkMenu->menuAction()->setObjectName(QStringLiteral("pinMenuWatermark"));
 
     // Enable watermark action
     QAction* enableWatermarkAction = watermarkMenu->addAction(tr("Enable"));
@@ -1139,83 +1421,9 @@ void PinWindow::createContextMenu()
         update();
         });
 
-    // Zoom submenu
-    QMenu* zoomMenu = m_contextMenu->addMenu(tr("Zoom"));
-
-    // Preset zoom levels
-    QAction* zoom33Action = zoomMenu->addAction(tr("33.3%"));
-    connect(zoom33Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0 / 3.0); });
-
-    QAction* zoom50Action = zoomMenu->addAction(tr("50%"));
-    connect(zoom50Action, &QAction::triggered, this, [this]() { setZoomLevel(0.5); });
-
-    QAction* zoom67Action = zoomMenu->addAction(tr("66.7%"));
-    connect(zoom67Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0 / 3.0); });
-
-    QAction* zoom100Action = zoomMenu->addAction(tr("100%"));
-    connect(zoom100Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0); });
-
-    QAction* zoom200Action = zoomMenu->addAction(tr("200%"));
-    connect(zoom200Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0); });
-
-    zoomMenu->addSeparator();
-
-    // Current zoom level display (disabled, for display only)
-    m_currentZoomAction = zoomMenu->addAction(QString("%1%").arg(qRound(m_zoomLevel * 100)));
-    m_currentZoomAction->setEnabled(false);
-
-    // Smoothing option
-    QAction* smoothingAction = zoomMenu->addAction(tr("Smoothing"));
-    smoothingAction->setCheckable(true);
-    smoothingAction->setChecked(m_smoothing);
-    connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
-        m_smoothing = checked;
-        updateSize();
-        });
-
-    // Image processing submenu
-    QMenu* imageProcessingMenu = m_contextMenu->addMenu(tr("Image processing"));
-
-    QAction* rotateLeftAction = imageProcessingMenu->addAction(tr("Rotate left"));
-    connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
-
-    QAction* rotateRightAction = imageProcessingMenu->addAction(tr("Rotate right"));
-    connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
-
-    QAction* horizontalFlipAction = imageProcessingMenu->addAction(tr("Horizontal flip"));
-    connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
-
-    QAction* verticalFlipAction = imageProcessingMenu->addAction(tr("Vertical flip"));
-    connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
-
-    imageProcessingMenu->addSeparator();
-    QAction* cropAction = imageProcessingMenu->addAction(tr("Crop"));
-    connect(cropAction, &QAction::triggered, this, [this]() {
-        if (!m_toolbar) {
-            initializeAnnotationComponents();
-        }
-        showToolbar();
-        handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
-    });
-
-    QMenu* opacityMenu = imageProcessingMenu->addMenu(tr("Opacity"));
-    const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
-    QAction* increaseOpacityAction = opacityMenu->addAction(
-        tr("Increase by %1%").arg(opacityStepPercent));
-    increaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketRight));
-    connect(increaseOpacityAction, &QAction::triggered, this, [this]() {
-        adjustOpacityByStep(1);
-        });
-
-    QAction* decreaseOpacityAction = opacityMenu->addAction(
-        tr("Decrease by %1%").arg(opacityStepPercent));
-    decreaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketLeft));
-    connect(decreaseOpacityAction, &QAction::triggered, this, [this]() {
-        adjustOpacityByStep(-1);
-        });
-
     // Info submenu - displays image properties
     m_infoMenu = m_contextMenu->addMenu(currentDisplaySizeText());
+    m_infoMenu->menuAction()->setObjectName(QStringLiteral("pinMenuInfo"));
 
     // Copy all info action
     QAction* copyAllInfoAction = m_infoMenu->addAction(tr("Copy All"));
@@ -1226,8 +1434,9 @@ void PinWindow::createContextMenu()
     // Info items - clicking copies that value
     auto addInfoItem = [this](const QString& label, const QString& value) {
         QAction* action = m_infoMenu->addAction(QString("%1: %2").arg(label, value));
-        QObject::connect(action, &QAction::triggered, [value]() {
-            QGuiApplication::clipboard()->setText(value);
+        action->setData(value);
+        QObject::connect(action, &QAction::triggered, action, [action]() {
+            QGuiApplication::clipboard()->setText(action->data().toString());
             });
         return action;
         };
@@ -1239,11 +1448,30 @@ void PinWindow::createContextMenu()
     m_flipHorizontalInfoAction = addInfoItem(tr("X-mirror"), m_flipHorizontal ? tr("Yes") : tr("No"));
     m_flipVerticalInfoAction = addInfoItem(tr("Y-mirror"), m_flipVertical ? tr("Yes") : tr("No"));
 
-    // Live capture section - actions are updated dynamically in contextMenuEvent
+    // Reuse the HistoryWindow translation context for the shared label so PinWindow
+    // stays aligned with the existing QML translation catalogs.
+    QAction* openCacheFolderAction = m_contextMenu->addAction(
+        QCoreApplication::translate("HistoryWindow", "Open History Folder"));
+    openCacheFolderAction->setObjectName(QStringLiteral("pinMenuHistoryFolder"));
+    connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
+
     m_contextMenu->addSeparator();
+
+    // Do not advertise click-through on platforms whose native implementation
+    // cannot actually remove this window from pointer hit-testing.
+    if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
+        m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
+        m_clickThroughAction->setObjectName(QStringLiteral("pinMenuClickThrough"));
+        m_clickThroughAction->setCheckable(true);
+        m_clickThroughAction->setChecked(m_clickThrough);
+        connect(m_clickThroughAction, &QAction::toggled,
+                this, &PinWindow::setClickThrough);
+    }
 
     // Start/Stop Live action
     m_startLiveAction = m_contextMenu->addAction(tr("Start Live Update"));
+    m_startLiveAction->setObjectName(QStringLiteral("pinMenuLive"));
+    m_startLiveAction->setShortcut(QKeySequence(Qt::Key_L));
     connect(m_startLiveAction, &QAction::triggered, this, [this]() {
         if (m_isLiveMode) {
             stopLiveCapture();
@@ -1255,6 +1483,8 @@ void PinWindow::createContextMenu()
 
     // Pause/Resume Live action
     m_pauseLiveAction = m_contextMenu->addAction(tr("Pause Live Update"));
+    m_pauseLiveAction->setObjectName(QStringLiteral("pinMenuLivePause"));
+    m_pauseLiveAction->setShortcut(QKeySequence(Qt::Key_P));
     connect(m_pauseLiveAction, &QAction::triggered, this, [this]() {
         if (m_livePaused) {
             resumeLiveCapture();
@@ -1266,6 +1496,7 @@ void PinWindow::createContextMenu()
 
     // Frame rate submenu
     m_fpsMenu = m_contextMenu->addMenu(tr("Frame Rate"));
+    m_fpsMenu->menuAction()->setObjectName(QStringLiteral("pinMenuFrameRate"));
     QActionGroup* fpsGroup = new QActionGroup(this);
     for (int fps : {5, 10, 15, 30}) {
         QAction* fpsAction = m_fpsMenu->addAction(tr("%1 FPS").arg(fps));
@@ -1280,18 +1511,32 @@ void PinWindow::createContextMenu()
         setLiveFrameRate(action->data().toInt());
         });
 
+    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
+    m_adjustRegionLayoutAction->setObjectName(QStringLiteral("pinMenuRegionLayout"));
+    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
+
     m_contextMenu->addSeparator();
 
-    QAction* closeAction = m_contextMenu->addAction(tr("Close"));
-    closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
-    connect(closeAction, &QAction::triggered, this, &PinWindow::close);
+    m_moveToScreenMenu = m_contextMenu->addMenu(tr("Move to Screen"));
+    m_moveToScreenMenu->menuAction()->setObjectName(QStringLiteral("pinMenuMoveToScreen"));
+    m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
+    m_mergePinsAction->setObjectName(QStringLiteral("pinMenuMerge"));
+    connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
 
     QAction* closeAllPinsAction = m_contextMenu->addAction(tr("Close All Pins"));
+    closeAllPinsAction->setObjectName(QStringLiteral("pinMenuCloseAll"));
     connect(closeAllPinsAction, &QAction::triggered, this, [this]() {
         if (m_pinWindowManager) {
             m_pinWindowManager->closeAllWindows();
         }
         });
+
+    m_contextMenu->addSeparator();
+
+    QAction* closeAction = m_contextMenu->addAction(tr("Close"));
+    closeAction->setObjectName(QStringLiteral("pinMenuClose"));
+    closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
+    connect(closeAction, &QAction::triggered, this, &PinWindow::close);
 }
 
 void PinWindow::refreshMoveToScreenMenu()
@@ -1545,27 +1790,27 @@ void PinWindow::saveToFile()
             return;
         }
 
-        QString renderError;
-        QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
-
         const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
-        ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
-            emit saveCompleted(pixmapToSave, filePath);
+        const auto saved = ImageSaveUtils::saveImageUnique(
+            taggedImage, {savePath, templateValue, context});
+        if (saved.success) {
+            emit saveCompleted(pixmapToSave, saved.filePath);
         }
         else {
-            if (!renderError.isEmpty()) {
-                qWarning() << "PinWindow: template warning:" << renderError;
+            if (!saved.renderWarning.isEmpty()) {
+                qWarning() << "PinWindow: template warning:" << saved.renderWarning;
             }
-            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
+            emit saveFailed(saved.filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saved.error)));
         }
         return;
     }
 
     // Show save dialog
+    const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
+    const QString manualSavePath =
+        fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
     QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
-        savePath, templateValue, context, 1);
+        manualSavePath, templateValue, context, 1);
     const QString filePath = NativeFileDialogUtils::getSaveFileName(
         this,
         tr("Save Screenshot"),
@@ -1582,6 +1827,9 @@ void PinWindow::saveToFile()
         const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
         ImageSaveUtils::Error saveError;
         if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
+            if (rememberDirectoryOnSuccess) {
+                fileSettings.rememberManualScreenshotSaveDirectory(filePath);
+            }
             emit saveCompleted(pixmapToSave, filePath);
         } else {
             emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
@@ -1634,49 +1882,6 @@ bool PinWindow::ensureAutoBlurReadyForExport()
     return false;
 }
 
-void PinWindow::shareToUrl()
-{
-    if (m_shareInProgress || !m_shareClient) {
-        return;
-    }
-
-    if (!ensureAutoBlurReadyForExport()) {
-        return;
-    }
-
-    const QPixmap pixmapToShare = getExportPixmapWithAnnotations();
-    if (pixmapToShare.isNull()) {
-        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Share failed"));
-        return;
-    }
-
-    auto* vm = new SharePasswordViewModel(this);
-    auto* dlg = new SnapTray::QmlDialog(
-        QUrl("qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml"),
-        vm, "viewModel", this);
-    connect(vm, &SharePasswordViewModel::accepted, this, [this, vm, dlg, pixmapToShare]() {
-        dlg->close();
-        if (m_shareInProgress || !m_shareClient) {
-            return;
-        }
-
-        m_pendingSharePassword = vm->password();
-
-        m_shareInProgress = true;
-        if (m_toolbar) {
-            m_toolbar->viewModel()->setShareInProgress(true);
-        }
-        updateLoadingSpinnerState();
-        m_shareClient->uploadPixmap(pixmapToShare, m_pendingSharePassword);
-    });
-    connect(vm, &SharePasswordViewModel::rejected, this, [this, dlg]() {
-        m_pendingSharePassword.clear();
-        dlg->close();
-    });
-    dlg->setModal(true);
-    dlg->showCenteredOnScreen(QGuiApplication::screenAt(frameGeometry().center()));
-}
-
 OCRManager* PinWindow::ensureOCRManager()
 {
     if (!m_ocrManager) {
@@ -1694,7 +1899,7 @@ void PinWindow::updateLoadingSpinnerState()
         return;
     }
 
-    const bool hasInFlightTask = m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress;
+    const bool hasInFlightTask = m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress;
     if (hasInFlightTask) {
         m_loadingSpinner->start();
     } else {
@@ -1961,10 +2166,29 @@ void PinWindow::setContentLogicalSize(const QSize& logicalSize)
 {
     if (logicalSize.isValid() && !logicalSize.isEmpty()) {
         m_contentLogicalSize = logicalSize;
-        return;
+    } else {
+        m_contentLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
     }
+    updateAccessibleName();
+}
 
-    m_contentLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
+void PinWindow::updateAccessibleName()
+{
+    // A frameless window has no title, so screen readers announced an
+    // unnamed dialog (#238). macOS takes the window's name from its title;
+    // the title is never drawn on this frameless window. The size tells
+    // pins apart, as the window list named every pin the same (#253).
+    const QString sizeText = currentDisplaySizeText();
+    const QString name = sizeText.isEmpty()
+        ? tr("Pinned image")
+        : tr("Pinned image, %1").arg(sizeText);
+    // Live pins set their size on every frame; only a change is announced.
+    if (windowTitle() != name) {
+        setWindowTitle(name);
+    }
+    if (accessibleName() != name) {
+        setAccessibleName(name);
+    }
 }
 
 QRectF PinWindow::preciseSourceSampleRectForRegion(const QRect& globalRegion,
@@ -2084,7 +2308,11 @@ QPixmap PinWindow::buildDisplayPixmap(const QSize& logicalSize, Qt::Transformati
     painter.setRenderHint(QPainter::SmoothPixmapTransform, mode == Qt::SmoothTransformation);
     const QRectF sourceRect = displaySourceRectForTarget(
         transformedSourceSampleRect(), m_transformedCache.size(), deviceSize);
-    painter.drawPixmap(QRectF(QPointF(0.0, 0.0), QSizeF(logicalSize)),
+    // A logical extent can end between native pixels at fractional DPR. Use
+    // the allocated pixel extent so an unscaled capture remains a pixel copy,
+    // rather than blending adjacent colors to fit a half-pixel smaller rect.
+    const QSizeF targetSize = QSizeF(deviceSize) / dpr;
+    painter.drawPixmap(QRectF(QPointF(0.0, 0.0), targetSize),
                        m_transformedCache,
                        sourceRect);
     painter.end();
@@ -2106,6 +2334,7 @@ void PinWindow::refreshInfoMenu()
             return;
         }
         action->setText(QString("%1: %2").arg(label, value));
+        action->setData(value);
     };
 
     updateInfoAction(m_sizeInfoAction, tr("Size"), sizeText);
@@ -2177,6 +2406,7 @@ void PinWindow::setClickThrough(bool enabled)
         return;
 
     m_clickThrough = enabled;
+    syncHoverBar();
 
     if (m_clickThrough) {
         if (m_clickThroughHoverTimer) {
@@ -2214,9 +2444,12 @@ void PinWindow::setShowBorder(bool enabled)
     }
 }
 
-void PinWindow::paintEvent(QPaintEvent*)
+void PinWindow::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
+    if (event) {
+        painter.setClipRegion(event->region(), Qt::IntersectClip);
+    }
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
 
@@ -2224,14 +2457,21 @@ void PinWindow::paintEvent(QPaintEvent*)
 
     // Draw the screenshot (skip in layout mode - regions are drawn separately)
     if (!isRegionLayoutMode()) {
-        painter.drawPixmap(pixmapRect, m_displayPixmap);
+        // Match the native backing-store extent. Drawing into the integer
+        // logical rect would resample the display pixmap again at fractional
+        // scale factors (for example, 101 logical pixels -> 151.5 pixels).
+        // deviceTransform also covers redirected painting such as render().
+        const qreal paintDpr = painter.deviceTransform().m11();
+        const QSize nativeSize = CoordinateHelper::toPhysical(pixmapRect.size(), paintDpr);
+        const QRectF imageRect(QPointF(pixmapRect.topLeft()), QSizeF(nativeSize) / paintDpr);
+        painter.drawPixmap(imageRect, m_displayPixmap, QRectF(m_displayPixmap.rect()));
     } else {
         // Draw solid background for layout mode
         painter.fillRect(pixmapRect, QColor(40, 40, 40));
     }
 
     // Draw annotations with the same rotation/flip transform as the pixmap
-    if (m_annotationLayer && !m_annotationLayer->isEmpty()) {
+    if (!isRegionLayoutMode() && m_annotationLayer && !m_annotationLayer->isEmpty()) {
         painter.save();
 
         // Apply the same rotation/flip transform used for the pixmap
@@ -2244,6 +2484,7 @@ void PinWindow::paintEvent(QPaintEvent*)
         }
 
         m_annotationLayer->draw(painter);
+        m_annotationLayer->snapController().draw(painter);
 
         // Draw transformation gizmo for selected text annotation
         if (auto* textItem = getSelectedTextAnnotation()) {
@@ -2325,7 +2566,7 @@ void PinWindow::paintEvent(QPaintEvent*)
     WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);
 
     // Draw loading spinner when OCR, QR, or auto-blur is in progress
-    if (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress) {
+    if (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress) {
         QPoint center = pixmapRect.center();
         m_loadingSpinner->draw(painter, center);
     }
@@ -2366,8 +2607,13 @@ void PinWindow::paintEvent(QPaintEvent*)
         const auto& regions = m_regionLayoutManager->regions();
         int selectedIdx = m_regionLayoutManager->selectedIndex();
         int hoveredIdx = m_regionLayoutManager->hoveredIndex();
+        const QSize layoutSize = m_regionLayoutManager->canvasBounds().size();
+        const QTransform layoutTransform = regionLayoutViewTransform(layoutSize);
 
-        // Draw region images at their current positions
+        // Draw region images in model coordinates through the shared layout
+        // view transform.
+        painter.save();
+        painter.setTransform(layoutTransform, true);
         for (const auto& region : regions) {
             QRect targetRect = region.rect;
             if (region.rect.size() != region.originalRect.size()) {
@@ -2384,13 +2630,25 @@ void PinWindow::paintEvent(QPaintEvent*)
                 painter.drawImage(targetRect.topLeft(), img);
             }
         }
+        painter.restore();
 
-        // Draw region borders, handles, and badges
-        RegionLayoutRenderer::drawRegions(painter, regions, selectedIdx, hoveredIdx, dpr);
+        // Preview annotations at their pending layout positions without
+        // mutating the layer until Confirm succeeds.
+        drawRegionLayoutAnnotations(painter, layoutSize, false);
+
+        // Chrome stays in widget space so handles, badges, text, and buttons
+        // remain upright and usable at every content zoom/orientation.
+        QVector<LayoutRegion> viewRegions = regions;
+        for (auto& region : viewRegions) {
+            region.rect = layoutTransform.mapRect(QRectF(region.rect)).toAlignedRect();
+            region.originalRect = region.rect;
+        }
+        RegionLayoutRenderer::drawRegions(
+            painter, viewRegions, selectedIdx, hoveredIdx, dpr);
 
         // Draw confirm/cancel buttons
-        QRect canvasBounds = m_regionLayoutManager->canvasBounds();
-        RegionLayoutRenderer::drawConfirmCancelButtons(painter, canvasBounds, m_layoutModeMousePos);
+        RegionLayoutRenderer::drawConfirmCancelButtons(
+            painter, regionLayoutControlsRect(layoutSize), m_layoutModeMousePos);
     }
 }
 
@@ -2399,7 +2657,129 @@ void PinWindow::enterEvent(QEnterEvent* event)
     if (!isRegionLayoutMode()) {
         rebuildManagedCursorAt(event->position().toPoint());
     }
+    ensureHoverBar();
+    syncHoverBar();
+    if (m_hoverBar) m_hoverBar->pointerEntered();
     QWidget::enterEvent(event);
+}
+
+void PinWindow::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    // Rotation, flip, smoothing and window-manager resizes change the size
+    // without a zoom change; the bar follows (review #225-3).
+    syncHoverBar();
+}
+
+QString PinWindow::liveToolTipAt(const QPoint& pos) const
+{
+    if (!m_isLiveMode) return {};
+    const QRect dot(kLiveIndicatorMargin, kLiveIndicatorMargin,
+                    2 * kLiveIndicatorRadius, 2 * kLiveIndicatorRadius);
+    return dot.adjusted(-kLiveIndicatorMargin / 2, -kLiveIndicatorMargin / 2,
+                        kLiveIndicatorMargin / 2, kLiveIndicatorMargin / 2).contains(pos)
+        ? tr("Live Update (L to stop, P to pause)") : QString();
+}
+
+bool PinWindow::event(QEvent* event)
+{
+    switch (event->type()) {
+    case QEvent::ToolTip: {
+        auto* help = static_cast<QHelpEvent*>(event);
+        const QString text = isVisible() ? liveToolTipAt(help->pos()) : QString();
+        if (text.isEmpty()) {
+            if (m_liveTooltip) m_liveTooltip->hide();
+            event->ignore();
+        } else {
+            ensureLiveTooltip();
+            m_liveTooltip->showFor(text, QRect(help->globalPos(), QSize(1, 1)), windowHandle(),
+                                   SnapTray::TooltipPlacement::Below);
+        }
+        return true;
+    }
+    case QEvent::MouseMove:
+        if (m_liveTooltip && liveToolTipAt(static_cast<QMouseEvent*>(event)->position().toPoint()).isEmpty())
+            m_liveTooltip->hide();
+        break;
+    case QEvent::Leave:
+    case QEvent::Hide:
+    case QEvent::Move:
+    case QEvent::Resize:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonDblClick:
+    case QEvent::Wheel:
+    case QEvent::KeyPress:
+    case QEvent::WindowDeactivate:
+        if (m_liveTooltip) m_liveTooltip->hide();
+        break;
+    default:
+        break;
+    }
+    return QWidget::event(event);
+}
+
+void PinWindow::ensureLiveTooltip()
+{
+    if (m_liveTooltip) return;
+    m_liveTooltip = new SnapTray::ToolbarTooltipController(this);
+    m_liveTooltip->setAssociatedWidget(this);
+}
+
+void PinWindow::leaveEvent(QEvent* event)
+{
+    if (m_hoverBar) m_hoverBar->pointerLeft();
+    QWidget::leaveEvent(event);
+}
+
+void PinWindow::focusInEvent(QFocusEvent* event)
+{
+    QWidget::focusInEvent(event);
+    // Keyboard users reach the same controls (#225).
+    if (event->reason() == Qt::TabFocusReason || event->reason() == Qt::BacktabFocusReason) {
+        ensureHoverBar();
+        syncHoverBar();
+        if (m_hoverBar) m_hoverBar->showNow();
+    }
+}
+
+void PinWindow::ensureHoverBar()
+{
+    if (m_hoverBar) return;
+    m_hoverBarViewModel = new PinHoverBarViewModel(this);
+    m_hoverBar = new PinHoverBar(m_hoverBarViewModel, windowHandle(), this);
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::zoomRequested, this, &PinWindow::applyUserZoom);
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::opacityRequested, this, &PinWindow::applyUserOpacity);
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::annotateRequested, this, [this] {
+        if (!m_toolbar) initializeAnnotationComponents();
+        showToolbar();
+    });
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::moreRequested, this, [this] {
+        if (!m_contextMenu) createContextMenu();
+        refreshContextMenuState();
+        m_contextMenu->popup(m_hoverBar->barGeometry().topLeft());
+    });
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::pauseRequested, this, &PinWindow::pauseLiveCapture);
+    connect(m_hoverBarViewModel, &PinHoverBarViewModel::resumeRequested, this, &PinWindow::resumeLiveCapture);
+}
+
+bool PinWindow::hoverBarSuppressed() const
+{
+    return m_isDragging || m_isResizing || m_toolbarVisible || isRegionLayoutMode() || m_clickThrough
+        || !PinWindowSettingsManager::instance().loadShowHoverControls();
+}
+
+void PinWindow::syncHoverBar()
+{
+    if (!m_hoverBar) return;
+    // The native window can be recreated (see hideEvent); follow it.
+    m_hoverBar->setOwner(windowHandle());
+    m_hoverBarViewModel->setValues(m_zoomLevel, minimumPinWindowZoom(transformedContentLogicalSize()), m_opacity);
+    m_hoverBarViewModel->setStatus(!m_isLiveMode ? PinHoverBarViewModel::None
+                                   : m_livePaused ? PinHoverBarViewModel::Paused
+                                                  : PinHoverBarViewModel::Live);
+    m_hoverBar->setPinGeometry(QRect(mapToGlobal(QPoint(0, 0)), size()));
+    m_hoverBar->setPinVisible(isVisible());
+    m_hoverBar->setSuppressed(hoverBarSuppressed());
 }
 
 void PinWindow::mousePressEvent(QMouseEvent* event)
@@ -2424,21 +2804,23 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
 
         // 0. Handle Region Layout Mode interactions
         if (isRegionLayoutMode()) {
-            QPoint pos = event->pos();
-            QRect canvasBounds = m_regionLayoutManager->canvasBounds();
+            const QPoint viewPos = event->position().toPoint();
+            const QPoint pos = regionLayoutPositionFromWidget(event->position());
+            const QRect controlsRect = regionLayoutControlsRect(
+                m_regionLayoutManager->canvasBounds().size());
 
             // Check confirm/cancel button clicks
-            if (RegionLayoutRenderer::confirmButtonRect(canvasBounds).contains(pos)) {
+            if (RegionLayoutRenderer::confirmButtonRect(controlsRect).contains(viewPos)) {
                 exitRegionLayoutMode(true);
                 return;
             }
-            if (RegionLayoutRenderer::cancelButtonRect(canvasBounds).contains(pos)) {
+            if (RegionLayoutRenderer::cancelButtonRect(controlsRect).contains(viewPos)) {
                 exitRegionLayoutMode(false);
                 return;
             }
 
             // Check for resize handle hit on selected region
-            ResizeHandler::Edge handle = m_regionLayoutManager->hitTestHandle(pos);
+            const ResizeHandler::Edge handle = regionLayoutHandleAtWidget(viewPos);
             if (handle != ResizeHandler::Edge::None) {
                 m_regionLayoutManager->startResize(handle, pos);
                 return;
@@ -2459,6 +2841,13 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
 
         // 1. First handle inline text editing (finish/cancel when clicking outside)
         if (handleTextEditorPress(event->pos())) {
+            return;
+        }
+
+        // Erasing must take precedence over selecting or transforming existing items.
+        if (m_annotationMode && m_currentToolId == ToolId::Eraser && m_toolManager) {
+            m_annotationLayer->clearSelection();
+            m_toolManager->handleMousePress(mapToOriginalCoords(event->position()), event->modifiers());
             return;
         }
 
@@ -2546,18 +2935,25 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             // Start resizing
             m_isResizing = true;
             m_resizeHandler->startResize(edge, event->globalPosition().toPoint(), size(), pos());
+            syncHoverBar();
         }
         else {
             // Start dragging
             m_isDragging = true;
             m_dragStartPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
+            m_hasPendingDragPosition = false;
+            if (m_dragMoveTimer) {
+                m_dragMoveTimer->start();
+            }
             CursorManager::instance().setDragStateForWidget(this, DragState::WidgetDrag);
+            syncHoverBar();
         }
     }
 }
 
 void PinWindow::mouseMoveEvent(QMouseEvent* event)
 {
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
         syncFloatingUiCursor();
         return;
@@ -2565,8 +2961,9 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
     // Handle Region Layout Mode
     if (isRegionLayoutMode()) {
-        QPoint pos = event->pos();
-        m_layoutModeMousePos = pos;  // Store for hover effects
+        const QPoint viewPos = event->position().toPoint();
+        const QPoint pos = regionLayoutPositionFromWidget(event->position());
+        m_layoutModeMousePos = viewPos;  // View-space position for fixed chrome
 
         if (m_regionLayoutManager->isDragging()) {
             m_regionLayoutManager->updateDrag(pos);
@@ -2584,31 +2981,13 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         m_regionLayoutManager->setHoveredIndex(hoveredRegion);
 
         // Update cursor based on what's under the mouse
-        ResizeHandler::Edge handle = m_regionLayoutManager->hitTestHandle(pos);
+        const ResizeHandler::Edge handle = regionLayoutHandleAtWidget(viewPos);
         CursorStyleSpec layoutSpec = CursorStyleSpec::fromShape(Qt::ArrowCursor);
         if (handle != ResizeHandler::Edge::None) {
-            // Set resize cursor based on edge
-            switch (handle) {
-                case ResizeHandler::Edge::Left:
-                case ResizeHandler::Edge::Right:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeHorCursor);
-                    break;
-                case ResizeHandler::Edge::Top:
-                case ResizeHandler::Edge::Bottom:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeVerCursor);
-                    break;
-                case ResizeHandler::Edge::TopLeft:
-                case ResizeHandler::Edge::BottomRight:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeFDiagCursor);
-                    break;
-                case ResizeHandler::Edge::TopRight:
-                case ResizeHandler::Edge::BottomLeft:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeBDiagCursor);
-                    break;
-                default:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::ArrowCursor);
-                    break;
-            }
+            layoutSpec = layoutResizeCursorSpec(
+                handle,
+                regionLayoutViewTransform(
+                    m_regionLayoutManager->canvasBounds().size()));
         } else if (hoveredRegion >= 0) {
             layoutSpec = CursorStyleSpec::fromShape(Qt::SizeAllCursor);
         } else {
@@ -2699,7 +3078,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         m_zoomLevel = qMin(scaleX, scaleY);
 
         // Use FastTransformation during resize for responsiveness.
-        // High-quality scaling will be done after resize is complete.
+        // Rebuild mosaic sources and annotation caches only when resize finishes.
         invalidateAutoBlurRequest();
         m_displayPixmap = buildDisplayPixmap(newSize, Qt::FastTransformation);
 
@@ -2713,11 +3092,18 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         syncCropHandlerImageSize();
         update();
 
-        m_uiIndicators->showZoomIndicator(m_zoomLevel);
+        showZoomBadge();
+        syncHoverBar();
 
     }
     else if (m_isDragging) {
-        move(event->globalPosition().toPoint() - m_dragStartPos);
+        const QPoint target = event->globalPosition().toPoint() - m_dragStartPos;
+        if (m_dragMoveTimer) {
+            m_pendingDragPosition = target;
+            m_hasPendingDragPosition = true;
+        } else {
+            move(target);
+        }
     }
     else {
         auto& cm = CursorManager::instance();
@@ -2740,6 +3126,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
 void PinWindow::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (m_annotationLayer) m_annotationLayer->snapController().setInputModifiers(event->modifiers());
     // Qt keeps an implicit mouse grab for a press that started on this widget.
     // A release over a floating toolbar must still finish that interaction;
     // only suppress new single-click tool actions over the floating UI.
@@ -2755,6 +3142,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
             if (m_regionLayoutManager->isResizing()) {
                 m_regionLayoutManager->finishResize();
             }
+            keepRegionLayoutControlsOnScreen();
             return;
         }
 
@@ -2768,12 +3156,15 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         // Handle TextAnnotationEditor transformation/dragging end
         if (m_textAnnotationEditor) {
             if (m_textAnnotationEditor->isTransforming()) {
+                if (m_textAnnotationEditor->activeHandle() == GizmoHandle::Body)
+                    m_textAnnotationEditor->updateTransformation(mapToOriginalCoords(event->pos()));
                 m_textAnnotationEditor->finishTransformation();
                 updateUndoRedoState();
                 update();
                 return;
             }
             if (m_textAnnotationEditor->isDragging()) {
+                m_textAnnotationEditor->updateDragging(mapToOriginalCoords(event->pos()));
                 m_textAnnotationEditor->finishDragging();
                 updateUndoRedoState();
                 update();
@@ -2837,12 +3228,21 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         if (m_isResizing) {
             m_isResizing = false;
             m_resizeHandler->finishResize();
+            syncHoverBar();
+            // Flush even if the debounce already fired while the mouse was held.
+            onResizeFinished();
             rebuildManagedCursorAt(event->pos());
         }
         if (m_isDragging) {
-            m_isDragging = false;
-            CursorManager::instance().setDragStateForWidget(this, DragState::None);
-            rebuildManagedCursorAt(event->pos());
+            if (m_dragMoveTimer) {
+                // The release may arrive before the next tick, and can contain
+                // a newer position than the last mouse move.
+                m_pendingDragPosition = event->globalPosition().toPoint() - m_dragStartPos;
+                m_hasPendingDragPosition = true;
+                applyPendingDragPosition();
+            }
+            endWindowDrag();
+            rebuildManagedCursorAt(mapFromGlobal(event->globalPosition().toPoint()));
         }
         if (m_clickThrough) {
             updateClickThroughForCursor();
@@ -2879,6 +3279,11 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent* event)
 
 void PinWindow::wheelEvent(QWheelEvent* event)
 {
+    if (isRegionLayoutMode()) {
+        event->accept();
+        return;
+    }
+
     // Ctrl+Wheel = Opacity adjustment
     if (event->modifiers() & Qt::ControlModifier) {
         adjustOpacityByStep(event->angleDelta().y() > 0 ? 1 : -1);
@@ -2892,7 +3297,7 @@ void PinWindow::wheelEvent(QWheelEvent* event)
     qreal newZoom = (event->angleDelta().y() > 0)
         ? m_zoomLevel + zoomStep
         : m_zoomLevel - zoomStep;
-    newZoom = qBound(0.1, newZoom, 5.0);
+    newZoom = qBound(minimumPinWindowZoom(transformedContentLogicalSize()), newZoom, 5.0);
 
     if (qFuzzyCompare(oldZoom, newZoom)) {
         event->accept();
@@ -2900,20 +3305,42 @@ void PinWindow::wheelEvent(QWheelEvent* event)
     }
 
     // Keep top-left corner fixed - no position adjustment needed
-    setZoomLevel(newZoom);
-
-    m_uiIndicators->showZoomIndicator(m_zoomLevel);
+    applyUserZoom(newZoom);
     event->accept();
 }
 
 void PinWindow::contextMenuEvent(QContextMenuEvent* event)
 {
+    if (isRegionLayoutMode()) {
+        event->accept();
+        return;
+    }
+
     // Lazy-create context menu on first right-click to improve initial window creation performance
     if (!m_contextMenu) {
         createContextMenu();
     }
+    refreshContextMenuState();
 
+    // Use popup() instead of exec() to avoid blocking the event loop.
+    // This prevents UI freeze when global hotkeys (like F2) are pressed
+    // while the context menu is open.
+    m_contextMenu->popup(event->globalPos());
+}
+
+void PinWindow::refreshContextMenuState()
+{
     refreshMoveToScreenMenu();
+
+    if (m_arrangeMenu) {
+        const bool hasSelection = m_annotationMode && m_annotationLayer && m_styleEditor
+            && m_annotationLayer->selectedIndex() >= 0;
+        m_arrangeMenu->menuAction()->setVisible(hasSelection);
+        for (QAction* action : m_arrangeMenu->actions()) {
+            const auto move = static_cast<AnnotationLayer::ZOrderMove>(action->data().toInt());
+            action->setEnabled(hasSelection && m_annotationLayer->zOrderTargetIndex(move) >= 0);
+        }
+    }
 
     // Update Show Toolbar checked state
     if (m_showToolbarAction) {
@@ -2932,9 +3359,13 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
 
     // Update live mode menu items based on current state
     if (m_startLiveAction) {
-        bool canStartLive = !m_sourceRegion.isEmpty() && m_sourceScreen;
+        const auto& capabilities = PlatformFeatures::instance().capabilities();
+        bool canStartLive = capabilities.supportsLiveCapture
+            && !m_sourceRegion.isEmpty() && m_sourceScreen;
         m_startLiveAction->setEnabled(canStartLive || m_isLiveMode);
-        m_startLiveAction->setText(m_isLiveMode ? tr("Stop Live Update") : tr("Start Live Update"));
+        m_startLiveAction->setText(!capabilities.supportsLiveCapture
+            ? capabilities.liveCaptureUnavailableReason
+            : m_isLiveMode ? tr("Stop Live Update") : tr("Start Live Update"));
     }
     if (m_pauseLiveAction) {
         m_pauseLiveAction->setVisible(m_isLiveMode);
@@ -2950,15 +3381,17 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
     }
 
     refreshInfoMenu();
-
-    // Use popup() instead of exec() to avoid blocking the event loop.
-    // This prevents UI freeze when global hotkeys (like F2) are pressed
-    // while the context menu is open.
-    m_contextMenu->popup(event->globalPos());
 }
 
 void PinWindow::keyPressEvent(QKeyEvent* event)
 {
+    if (event->key() == Qt::Key_Alt && m_annotationLayer && m_annotationLayer->snapController().active()) {
+        m_annotationLayer->snapController().setSuspended(true);
+        update();
+        event->accept();
+        return;
+    }
+
     // Handle text editor state first (like RegionSelector)
     if (m_textEditor && m_textEditor->isEditing()) {
         if (event->key() == Qt::Key_Escape) {
@@ -3011,6 +3444,12 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
     // Escape handling
     if (event->key() == Qt::Key_Escape) {
+        // Escape during a drag puts the annotation back (#237).
+        if (cancelAnnotationGesture()) {
+            event->accept();
+            return;
+        }
+
         // Try to handle escape in tool first (e.g. finish polyline)
         if (m_toolManager && m_toolManager->handleEscape()) {
             event->accept();
@@ -3026,6 +3465,14 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    // I picks a color from the pinned image (#271).
+    if (m_annotationMode && event->key() == Qt::Key_I && !event->modifiers()
+        && m_subToolbar && m_subToolbar->viewModel()->showColorSection()) {
+        startColorPick();
+        event->accept();
+        return;
+    }
+
     // Undo/Redo in annotation mode
     if (m_annotationMode && m_annotationLayer) {
         if (event->matches(QKeySequence::Undo)) {
@@ -3035,6 +3482,13 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
         }
         if (event->matches(QKeySequence::Redo)) {
             handleToolbarRedo();
+            event->accept();
+            return;
+        }
+        // Drawing order (#268). With an annotation selected, Cmd/Ctrl+] is
+        // Bring Forward rather than Reset Opacity; plain ] and [ stay opacity.
+        if (m_styleEditor && m_styleEditor->handleZOrderKey(event)) {
+            update();
             event->accept();
             return;
         }
@@ -3061,6 +3515,29 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
         else {
             pauseLiveCapture();
         }
+        event->accept();
+        return;
+    }
+
+    // Zoom and resets (#225). Ctrl/Cmd+] resets opacity; plain ] steps it.
+    const bool command = event->modifiers() & Qt::ControlModifier;
+    if (event->matches(QKeySequence::ZoomIn) || (command && event->key() == Qt::Key_Equal)) {
+        zoomByStep(1);
+        event->accept();
+        return;
+    }
+    if (event->matches(QKeySequence::ZoomOut) || (command && event->key() == Qt::Key_Minus)) {
+        zoomByStep(-1);
+        event->accept();
+        return;
+    }
+    if (command && event->key() == Qt::Key_0) {
+        resetZoom();
+        event->accept();
+        return;
+    }
+    if (command && event->key() == Qt::Key_BracketRight) {
+        resetOpacity();
         event->accept();
         return;
     }
@@ -3110,6 +3587,9 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
 void PinWindow::closeEvent(QCloseEvent* event)
 {
+    if (m_colorPickOverlay) {
+        m_colorPickOverlay->cancel();
+    }
     emit closed(this);
     event->accept();
 }
@@ -3117,12 +3597,92 @@ void PinWindow::closeEvent(QCloseEvent* event)
 void PinWindow::moveEvent(QMoveEvent* event)
 {
     QWidget::moveEvent(event);
+    if (m_toolManager) {
+        m_toolManager->setDevicePixelRatio(devicePixelRatioF());
+    }
     updateToolbarPosition();
+    syncHoverBar();
+}
+
+void PinWindow::applyPendingDragPosition()
+{
+    if (!m_isDragging || !m_hasPendingDragPosition) {
+        return;
+    }
+    m_hasPendingDragPosition = false;
+    move(m_pendingDragPosition);
+}
+
+void PinWindow::endWindowDrag()
+{
+    if (m_dragMoveTimer) {
+        m_dragMoveTimer->stop();
+    }
+    m_hasPendingDragPosition = false;
+    if (m_isDragging) {
+        m_isDragging = false;
+        CursorManager::instance().setDragStateForWidget(this, DragState::None);
+        syncHoverBar();
+    }
+}
+
+void PinWindow::hideEvent(QHideEvent* event)
+{
+    // Hidden pins can be shown again; discard work from the previous drag.
+    endWindowDrag();
+    // A native window recreation (the first QQuickWidget child, e.g. a badge)
+    // hides and re-shows the pin at once: only a hide that lasts closes the bar.
+    if (m_hoverBar) {
+        QTimer::singleShot(0, this, [this] {
+            if (!isVisible() && m_hoverBar) m_hoverBar->hideNow();
+        });
+    }
+    QWidget::hideEvent(event);
 }
 
 // ============================================================================
 // Toolbar and Annotation Methods
 // ============================================================================
+
+void PinWindow::refreshMosaicSources(bool liveFrame)
+{
+    if (!m_toolManager) {
+        return;
+    }
+
+    const bool activeMosaicTool = m_annotationMode && m_toolManager->currentTool() == ToolId::Mosaic;
+    if (liveFrame && !m_hasVisibleMosaicAnnotations && !activeMosaicTool) {
+        // An initialized toolbar alone does not need a second raster pipeline.
+        m_mosaicSourceDirty = true;
+        return;
+    }
+
+    QPixmap source;
+    if (liveFrame) {
+        // Live frames cover the whole source. Sample them directly without
+        // undoing the display's rotation/flip with another smooth transform.
+        // At 100% scaled() shares the original pixels; zoomed live sources use
+        // nearest-neighbor scaling until pause/stop restores full-quality output.
+        QSize sourceSize = m_displayPixmap.size();
+        if (m_rotationAngle % 180 != 0) sourceSize.transpose();
+        source = m_originalPixmap.scaled(sourceSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        source.setDevicePixelRatio(m_displayPixmap.devicePixelRatio());
+    } else {
+        // Tool points are in zoomed, unrotated display coordinates. Full updates
+        // also preserve fractional crop boundaries and display smoothing.
+        source = buildAutoBlurAnnotationSource(
+            m_displayPixmap, m_rotationAngle, m_flipHorizontal, m_flipVertical);
+    }
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(source);
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    m_mosaicSourceDirty = false;
+    if (!liveFrame || m_hasVisibleMosaicAnnotations) {
+        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
+        if (m_annotationLayer) {
+            m_annotationLayer->invalidateCache();
+        }
+    }
+}
 
 void PinWindow::initializeAnnotationComponents()
 {
@@ -3130,7 +3690,27 @@ void PinWindow::initializeAnnotationComponents()
     m_annotationLayer = new AnnotationLayer(this);
     connect(m_annotationLayer, &AnnotationLayer::changed,
         this, [this]() {
+            // Track visible mosaic demand on edits, not on every frame.
+            const bool hadMosaics = m_hasVisibleMosaicAnnotations;
+            m_hasVisibleMosaicAnnotations = false;
+            for (size_t i = 0; i < m_annotationLayer->itemCount(); ++i) {
+                const auto* item = m_annotationLayer->itemAt(static_cast<int>(i));
+                if (dynamic_cast<const MosaicStroke*>(item) || dynamic_cast<const MosaicRectAnnotation*>(item)) {
+                    m_hasVisibleMosaicAnnotations = true;
+                    break;
+                }
+            }
+            if (m_hasVisibleMosaicAnnotations && (m_mosaicSourceDirty || !hadMosaics)) {
+                refreshMosaicSources();
+            }
             resetAnnotationInteractionTracking();
+            // Undo/Redo turn off while a drag is in progress and back on at
+            // its end (#237). Only on that change: refreshing on every edit
+            // would prune crop history in the middle of a crop.
+            if (m_annotationLayer->isGestureActive() != m_undoStateShowsGesture) {
+                m_undoStateShowsGesture = m_annotationLayer->isGestureActive();
+                updateUndoRedoState();
+            }
             update();
         });
 
@@ -3138,9 +3718,7 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager = new ToolManager(this);
     m_toolManager->registerDefaultHandlers();
     m_toolManager->setAnnotationLayer(m_annotationLayer);
-    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);  // Required for Mosaic tool
+    refreshMosaicSources();
 
     // Set up crop tool callback
     if (auto* cropHandler = dynamic_cast<CropToolHandler*>(m_toolManager->handler(ToolId::Crop))) {
@@ -3153,7 +3731,7 @@ void PinWindow::initializeAnnotationComponents()
     // Load saved annotation settings
     auto& annotationSettings = AnnotationSettingsManager::instance();
     m_annotationColor = annotationSettings.loadColor();
-    m_annotationWidth = annotationSettings.loadWidth();
+    m_annotationWidth = annotationSettings.loadWidthForTool(m_currentToolId);
     LineEndStyle savedArrowStyle = annotationSettings.loadArrowStyle();
     LineStyle savedLineStyle = annotationSettings.loadLineStyle();
     m_stepBadgeSize = annotationSettings.loadStepBadgeSize();
@@ -3161,6 +3739,7 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager->setWidth(m_annotationWidth);
     m_toolManager->setArrowStyle(savedArrowStyle);
     m_toolManager->setLineStyle(savedLineStyle);
+    m_toolManager->setDevicePixelRatio(devicePixelRatioF());
 
     // Connect tool manager signals
     connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
@@ -3179,6 +3758,7 @@ void PinWindow::initializeAnnotationComponents()
     m_textAnnotationEditor = new TextAnnotationEditor(this);
     m_shapeAnnotationEditor = std::make_unique<ShapeAnnotationEditor>();
     m_shapeAnnotationEditor->setAnnotationLayer(m_annotationLayer);
+    m_annotationLayer->snapController().setEnabled(true);
     m_textAnnotationEditor->setCoordinateMappers(
         [this](const QPointF& displayPos) { return mapToOriginalCoords(displayPos); },
         [this](const QPointF& originalPos) { return mapFromOriginalCoords(originalPos); });
@@ -3217,11 +3797,6 @@ void PinWindow::initializeAnnotationComponents()
             dismissBeautifyPanelIfVisible();
             performQRCodeScan();
         });
-    connect(vm, &PinToolbarViewModel::shareClicked,
-        this, [this]() {
-            dismissBeautifyPanelIfVisible();
-            shareToUrl();
-        });
     connect(vm, &PinToolbarViewModel::beautifyClicked,
         this, &PinWindow::showBeautifyPanel);
     connect(vm, &PinToolbarViewModel::copyClicked,
@@ -3258,11 +3833,39 @@ void PinWindow::initializeAnnotationComponents()
         optionsVM->setFontFamily(formatting.fontFamily);
     };
 
+    // Selected-annotation styling (#224): strip edits go to the selection.
+    m_styleEditor = new AnnotationStyleEditor(m_annotationLayer, optionsVM, this);
+    m_styleEditor->setInlineEditingPredicate(
+        [this] { return m_textEditor && m_textEditor->isEditing(); });
+    connect(m_styleEditor, &AnnotationStyleEditor::styleApplied, this, [this] {
+        // A style edit pushes a Modify command, which clears redo.
+        updateUndoRedoState();
+        update();
+    });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetShown, this, [this] {
+        if (m_subToolbar && m_annotationMode) {
+            m_subToolbar->show();
+            updateSubToolbarPosition();
+        }
+    });
+    connect(m_styleEditor, &AnnotationStyleEditor::targetCleared, this, [this] {
+        if (m_subToolbar && m_annotationMode) {
+            m_subToolbar->showForTool(static_cast<int>(m_currentToolId));
+            updateSubToolbarPosition();
+        }
+    });
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::editingFinished,
+        m_styleEditor, &AnnotationStyleEditor::refreshTarget);
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::editingCancelled,
+        m_styleEditor, &AnnotationStyleEditor::refreshTarget);
+
     // Connect ViewModel action signals → PinWindow handlers
     connect(optionsVM, &PinToolOptionsViewModel::colorSelected,
         this, &PinWindow::onColorSelected);
     connect(optionsVM, &PinToolOptionsViewModel::customColorPickerRequested,
         this, &PinWindow::onMoreColorsRequested);
+    connect(optionsVM, &PinToolOptionsViewModel::colorPickRequested,
+        this, &PinWindow::startColorPick);
     connect(optionsVM, &PinToolOptionsViewModel::widthValueChanged,
         this, &PinWindow::onWidthChanged);
     connect(optionsVM, &PinToolOptionsViewModel::arrowStyleSelected,
@@ -3387,11 +3990,11 @@ void PinWindow::showToolbar()
         this, &PinWindow::hideToolbarPreservingToolState, Qt::UniqueConnection);
 
     updateUndoRedoState();
-    m_toolbar->viewModel()->setShareInProgress(m_shareInProgress);
     m_toolbar->viewModel()->setAutoBlurProcessing(m_autoBlurInProgress);
     m_toolbar->show();
 
     m_toolbarVisible = m_toolbar->isVisible();
+    syncHoverBar();
     if (!m_toolbarVisible) {
         return;
     }
@@ -3413,6 +4016,7 @@ void PinWindow::hideToolbar()
         m_toolbar->hide();
     }
     m_toolbarVisible = false;
+    syncHoverBar();
     exitAnnotationMode();
 }
 
@@ -3423,6 +4027,7 @@ void PinWindow::hideToolbarPreservingToolState()
         m_toolbar->hide();
     }
     m_toolbarVisible = false;
+    syncHoverBar();
     exitAnnotationMode(false);
 }
 
@@ -3449,6 +4054,9 @@ void PinWindow::enterAnnotationMode()
     }
 
     m_annotationMode = true;
+    if (m_mosaicSourceDirty && m_toolManager && m_toolManager->currentTool() == ToolId::Mosaic) {
+        refreshMosaicSources();
+    }
     CursorManager::instance().clearAllForWidget(this);
     CursorManager::instance().resetStateForWidget(this);
     rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
@@ -3564,10 +4172,29 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     // Check if same tool clicked - toggle sub-toolbar visibility (matches RegionSelector behavior)
     bool sameToolClicked = (m_currentToolId == tool && m_annotationMode);
 
+    // Picking a tool ends any selected-annotation styling (#224). First, so the
+    // strip's restored defaults are overwritten by this tool's width below.
+    if (m_annotationLayer && isAnnotationTool(tool)) {
+        m_annotationLayer->clearSelection();
+    }
+
     m_currentToolId = tool;
 
     if (m_toolManager) {
         m_toolManager->setCurrentTool(tool);
+    }
+    if (tool == ToolId::Mosaic && m_mosaicSourceDirty) {
+        refreshMosaicSources();
+    }
+
+    const int toolWidth =
+        AnnotationSettingsManager::instance().loadWidthForTool(tool);
+    m_annotationWidth = toolWidth;
+    if (m_toolManager) {
+        m_toolManager->setWidth(toolWidth);
+    }
+    if (m_subToolbar) {
+        m_subToolbar->viewModel()->setCurrentWidth(toolWidth);
     }
 
     if (m_toolbar) {
@@ -3612,10 +4239,13 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
 void PinWindow::handleToolbarUndo()
 {
-    if (m_annotationLayer && m_annotationLayer->isHistoryLocked()) {
+    // Not during a drag either: canUndo() is false then, which would let a
+    // crop undo jump past the gesture (#237).
+    if (m_annotationLayer && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive())) {
         return;
     }
 
+    pruneInvalidCropHistory();
     const bool annotationCanUndo = m_annotationLayer && m_annotationLayer->canUndo();
     const bool cropCanUndo = canUndoCrop();
 
@@ -3644,11 +4274,11 @@ void PinWindow::handleToolbarUndo()
 
 void PinWindow::handleToolbarRedo()
 {
-    if (m_annotationLayer && m_annotationLayer->isHistoryLocked()) {
+    if (m_annotationLayer && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive())) {
         return;
     }
 
-    pruneInvalidCropRedoState();
+    pruneInvalidCropHistory();
 
     if (canRedoCrop()) {
         redoCrop();
@@ -3694,6 +4324,7 @@ void PinWindow::syncCropHandlerImageSize()
 
 void PinWindow::applyCrop(const QRect& cropRect)
 {
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
     if (cropRect.isEmpty()) return;
 
     qreal dpr = m_originalPixmap.devicePixelRatio();
@@ -3808,24 +4439,13 @@ void PinWindow::applyCrop(const QRect& cropRect)
     entry.croppedStoredRegions = m_storedRegions;
     entry.croppedHasMultiRegionData = m_hasMultiRegionData;
 
-    // Update shared pixmap for mosaic tool
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
-
     // Invalidate transform cache
     m_cachedRotation = -1;
 
     // Translate annotations in display/tool coordinates (same space as tool input).
     if (m_annotationLayer) {
-        const std::size_t annotationCount = m_annotationLayer->itemCount();
-        if (annotationCount > 0) {
-            entry.annotationTopItem =
-                m_annotationLayer->itemAt(static_cast<int>(annotationCount - 1));
-        }
+        entry.annotationHistoryState = m_annotationLayer->historyStateToken();
         m_annotationLayer->translateAll(QPointF(-annotationOffsetDisplay.x(), -annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
 
     m_cropRedoStack.clear();
@@ -3867,15 +4487,9 @@ void PinWindow::undoCrop()
     m_storedRegions = entry.storedRegions;
     m_hasMultiRegionData = entry.hasMultiRegionData;
 
-    // Update shared pixmap
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
     if (m_annotationLayer) {
         m_annotationLayer->translateAll(QPointF(entry.annotationOffsetDisplay.x(),
                                                 entry.annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
     m_cropRedoStack.append(entry);
     if (m_cropRedoStack.size() > kMaxCropUndoSize) {
@@ -3907,14 +4521,9 @@ void PinWindow::redoCrop()
     m_storedRegions = entry.croppedStoredRegions;
     m_hasMultiRegionData = entry.croppedHasMultiRegionData;
 
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
     if (m_annotationLayer) {
         m_annotationLayer->translateAll(QPointF(-entry.annotationOffsetDisplay.x(),
                                                 -entry.annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
 
     m_cropUndoStack.append(entry);
@@ -3931,13 +4540,15 @@ void PinWindow::redoCrop()
 
 }
 
-bool PinWindow::canUndoCrop() const
+bool PinWindow::canUndoCrop()
 {
+    pruneInvalidCropHistory();
     return !m_cropUndoStack.isEmpty();
 }
 
-bool PinWindow::canRedoCrop() const
+bool PinWindow::canRedoCrop()
 {
+    pruneInvalidCropHistory();
     if (m_cropRedoStack.isEmpty()) {
         return false;
     }
@@ -3965,43 +4576,48 @@ bool PinWindow::matchesCropAnnotationBoundary(const CropUndoEntry& entry) const
         return true;
     }
 
-    const std::size_t currentCount = m_annotationLayer->itemCount();
-    const AnnotationItem* currentTopItem = (currentCount > 0)
-        ? m_annotationLayer->itemAt(static_cast<int>(currentCount - 1))
-        : nullptr;
-
-    return currentTopItem == entry.annotationTopItem;
+    return m_annotationLayer->historyStateToken() == entry.annotationHistoryState;
 }
 
-void PinWindow::pruneInvalidCropRedoState()
+void PinWindow::pruneInvalidCropHistory()
 {
-    if (m_cropRedoStack.isEmpty() || !m_annotationLayer) {
+    if (!m_annotationLayer || m_annotationLayer->isHistoryLocked()) {
         return;
     }
 
-    if (m_annotationLayer->isHistoryLocked()) {
-        return;
-    }
+    using Relation = AnnotationLayer::HistoryStateRelation;
+    auto pruneInvalidPrefix = [this](QVector<CropUndoEntry>& stack,
+                                     Relation firstValid,
+                                     Relation secondValid) {
+        qsizetype lastInvalid = -1;
+        for (qsizetype i = 0; i < stack.size(); ++i) {
+            const Relation relation = m_annotationLayer->historyStateRelation(
+                stack.at(i).annotationHistoryState);
+            if (relation != firstValid && relation != secondValid) {
+                lastInvalid = i;
+            }
+        }
+        if (lastInvalid >= 0) {
+            stack.remove(0, lastInvalid + 1);
+        }
+    };
 
-    if (matchesCropAnnotationBoundary(m_cropRedoStack.constLast())) {
-        return;
-    }
-
-    // If no annotation redo steps can bring us back to the crop boundary,
-    // this crop redo branch has been invalidated by a new edit path.
-    if (!m_annotationLayer->canRedo()) {
-        m_cropRedoStack.clear();
-    }
+    // Applied crop boundaries are valid only in the current state or the
+    // annotation undo path. Crop redo boundaries have the inverse direction;
+    // UndoReachable there means a new annotation branch invalidated the redo.
+    pruneInvalidPrefix(m_cropUndoStack, Relation::Current, Relation::UndoReachable);
+    pruneInvalidPrefix(m_cropRedoStack, Relation::Current, Relation::RedoReachable);
 }
 
 void PinWindow::updateUndoRedoState()
 {
     if (m_annotationLayer) {
-        pruneInvalidCropRedoState();
+        pruneInvalidCropHistory();
     }
 
     if (m_toolbar && m_annotationLayer) {
-        const bool historyLocked = m_annotationLayer->isHistoryLocked();
+        // A drag in progress blocks history too (#237); crop undo included.
+        const bool historyLocked = m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive();
         const bool canUndo = !historyLocked &&
             (m_annotationLayer->canUndo() || canUndoCrop());
         const bool canRedo = !historyLocked &&
@@ -4034,15 +4650,52 @@ QPixmap PinWindow::getExportPixmapWithAnnotations() const
 
 QPixmap PinWindow::exportPixmapForMerge() const
 {
+    if (m_autoBlurInProgress) {
+        return QPixmap();
+    }
+
     // Merge output is reopened in a PinWindow, so avoid baking display effects
     // (opacity/watermark) that the destination window can apply again.
     QPixmap result;
+    bool usedActiveLayout = false;
+    QSize activeLayoutSize;
     if (isRegionLayoutMode() && m_regionLayoutManager) {
         qreal dpr = m_displayPixmap.devicePixelRatio();
         if (dpr <= 0.0) {
             dpr = 1.0;
         }
-        result = m_regionLayoutManager->recomposeImage(dpr);
+        const QPixmap layoutPixmap = m_regionLayoutManager->recomposeImage(dpr);
+        if (!layoutPixmap.isNull()) {
+            const QSize layoutSize = logicalSizeFromPixmap(layoutPixmap);
+            activeLayoutSize = layoutSize;
+            const QSize viewportSize = regionLayoutContentViewSize(layoutSize);
+            const QSize physicalSize = CoordinateHelper::toPhysical(viewportSize, dpr);
+            if (!physicalSize.isEmpty()) {
+                QPixmap transformedLayout = layoutPixmap;
+                if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+                    transformedLayout = layoutPixmap.transformed(
+                        buildOrientationLinearTransform(
+                            m_rotationAngle,
+                            m_flipHorizontal,
+                            m_flipVertical),
+                        Qt::SmoothTransformation);
+                    transformedLayout.setDevicePixelRatio(dpr);
+                }
+
+                result = QPixmap(physicalSize);
+                result.setDevicePixelRatio(dpr);
+                result.fill(Qt::transparent);
+
+                QPainter layoutPainter(&result);
+                layoutPainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+                layoutPainter.drawPixmap(
+                    QRectF(QPointF(0.0, 0.0), QSizeF(viewportSize)),
+                    transformedLayout,
+                    QRectF(QPointF(0.0, 0.0), QSizeF(transformedLayout.size())));
+                layoutPainter.end();
+                usedActiveLayout = !result.isNull();
+            }
+        }
     }
     if (result.isNull()) {
         result = getExportPixmapCore(false);
@@ -4053,10 +4706,214 @@ QPixmap PinWindow::exportPixmapForMerge() const
 
     QPainter painter(&result);
     painter.setRenderHint(QPainter::Antialiasing);
-    drawAnnotationsForExport(painter, logicalSizeFromPixmap(result));
+    if (usedActiveLayout) {
+        drawRegionLayoutAnnotations(
+            painter, activeLayoutSize, true);
+    } else {
+        drawAnnotationsForExport(painter, logicalSizeFromPixmap(result));
+    }
     painter.end();
 
     return result;
+}
+
+QSize PinWindow::regionLayoutContentViewSize(const QSize& layoutSize) const
+{
+    const QSize orientedSize = transformedLogicalSizeForRotation(
+        layoutSize, m_rotationAngle);
+    return CoordinateHelper::toPhysical(orientedSize, m_zoomLevel);
+}
+
+QSize PinWindow::regionLayoutViewportSize(const QSize& layoutSize) const
+{
+    const QSize contentSize = regionLayoutContentViewSize(layoutSize);
+    const int controlsWidth =
+        LayoutModeConstants::kButtonWidth * 2 +
+        LayoutModeConstants::kButtonSpacing +
+        LayoutModeConstants::kButtonMargin * 2;
+    const int controlsHeight =
+        LayoutModeConstants::kButtonHeight +
+        LayoutModeConstants::kButtonMargin * 2;
+    return QSize(qMax(contentSize.width(), controlsWidth),
+                 contentSize.height() + controlsHeight);
+}
+
+QRect PinWindow::regionLayoutControlsRect(const QSize& layoutSize) const
+{
+    const QSize contentSize = regionLayoutContentViewSize(layoutSize);
+    const QSize viewportSize = regionLayoutViewportSize(layoutSize);
+    return QRect(0,
+                 contentSize.height(),
+                 viewportSize.width(),
+                 viewportSize.height() - contentSize.height());
+}
+
+QTransform PinWindow::regionLayoutViewTransform(const QSize& layoutSize) const
+{
+    const QSize contentViewSize = regionLayoutContentViewSize(layoutSize);
+    QTransform transform = buildPinWindowTransform(
+        QRectF(QPointF(0.0, 0.0), QSizeF(contentViewSize)),
+        m_rotationAngle,
+        m_flipHorizontal,
+        m_flipVertical);
+    transform.scale(m_zoomLevel, m_zoomLevel);
+    return transform;
+}
+
+QPoint PinWindow::regionLayoutPositionFromWidget(const QPointF& widgetPos) const
+{
+    if (!m_regionLayoutManager) {
+        return widgetPos.toPoint();
+    }
+    bool invertible = false;
+    const QTransform inverse = regionLayoutViewTransform(
+        m_regionLayoutManager->canvasBounds().size()).inverted(&invertible);
+    if (!invertible) {
+        return widgetPos.toPoint();
+    }
+    return inverse.map(widgetPos).toPoint();
+}
+
+ResizeHandler::Edge PinWindow::regionLayoutHandleAtWidget(
+    const QPoint& widgetPos) const
+{
+    if (!m_regionLayoutManager) {
+        return ResizeHandler::Edge::None;
+    }
+    const int selectedIndex = m_regionLayoutManager->selectedIndex();
+    const auto regions = m_regionLayoutManager->regions();
+    if (selectedIndex < 0 || selectedIndex >= regions.size()) {
+        return ResizeHandler::Edge::None;
+    }
+
+    static constexpr ResizeHandler::Edge kEdges[] = {
+        ResizeHandler::Edge::TopLeft,
+        ResizeHandler::Edge::Top,
+        ResizeHandler::Edge::TopRight,
+        ResizeHandler::Edge::Right,
+        ResizeHandler::Edge::BottomRight,
+        ResizeHandler::Edge::Bottom,
+        ResizeHandler::Edge::BottomLeft,
+        ResizeHandler::Edge::Left
+    };
+    const QTransform modelToView = regionLayoutViewTransform(
+        m_regionLayoutManager->canvasBounds().size());
+    const QRectF modelRect(regions[selectedIndex].rect);
+    const int halfHandle = LayoutModeConstants::kHandleSize / 2;
+    ResizeHandler::Edge closestEdge = ResizeHandler::Edge::None;
+    qreal closestDistanceSquared = (std::numeric_limits<qreal>::max)();
+    for (const auto edge : kEdges) {
+        const QPoint center = snappedLayoutHandlePosition(
+            modelRect, edge, modelToView);
+        const QRect hitRect = QRect(
+            center.x() - halfHandle,
+            center.y() - halfHandle,
+            LayoutModeConstants::kHandleSize,
+            LayoutModeConstants::kHandleSize).adjusted(
+                -LayoutModeConstants::kHandleHitMargin,
+                -LayoutModeConstants::kHandleHitMargin,
+                LayoutModeConstants::kHandleHitMargin,
+                LayoutModeConstants::kHandleHitMargin);
+        if (hitRect.contains(widgetPos)) {
+            const QPoint delta = widgetPos - center;
+            const qreal distanceSquared =
+                static_cast<qreal>(delta.x()) * delta.x() +
+                static_cast<qreal>(delta.y()) * delta.y();
+            if (distanceSquared < closestDistanceSquared) {
+                closestDistanceSquared = distanceSquared;
+                closestEdge = edge;
+            }
+        }
+    }
+    return closestEdge;
+}
+
+void PinWindow::keepRegionLayoutControlsOnScreen()
+{
+    if (!m_regionLayoutManager) {
+        return;
+    }
+    // Keep the controls on the screen the pin sits on. A canvas grown across
+    // a monitor gap makes screen() follow the larger overlap, which would
+    // pull the window onto the other monitor.
+    QScreen* targetScreen = QGuiApplication::screenAt(pos());
+    if (!targetScreen) {
+        targetScreen = screen();
+    }
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+    if (!targetScreen) {
+        return;
+    }
+
+    const QRect available = targetScreen->availableGeometry();
+    const QRect controlsBand = regionLayoutControlsRect(
+        m_regionLayoutManager->canvasBounds().size());
+    QRect controlsGlobal = RegionLayoutRenderer::confirmButtonRect(controlsBand)
+                               .united(RegionLayoutRenderer::cancelButtonRect(controlsBand))
+                               .translated(pos());
+    QPoint adjustedPos = pos();
+
+    if (controlsGlobal.right() > available.right()) {
+        const int delta = controlsGlobal.right() - available.right();
+        adjustedPos.rx() -= delta;
+        controlsGlobal.translate(-delta, 0);
+    }
+    if (controlsGlobal.left() < available.left()) {
+        const int delta = available.left() - controlsGlobal.left();
+        adjustedPos.rx() += delta;
+        controlsGlobal.translate(delta, 0);
+    }
+    if (controlsGlobal.bottom() > available.bottom()) {
+        const int delta = controlsGlobal.bottom() - available.bottom();
+        adjustedPos.ry() -= delta;
+        controlsGlobal.translate(0, -delta);
+    }
+    if (controlsGlobal.top() < available.top()) {
+        const int delta = available.top() - controlsGlobal.top();
+        adjustedPos.ry() += delta;
+    }
+
+    if (adjustedPos != pos()) {
+        move(adjustedPos);
+    }
+}
+
+void PinWindow::drawRegionLayoutAnnotations(
+    QPainter& painter,
+    const QSize& layoutSize,
+    bool normalizeToRecomposedOrigin) const
+{
+    if (!m_regionLayoutManager || !m_annotationLayer || m_annotationLayer->isEmpty()) {
+        return;
+    }
+
+    painter.save();
+    if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+        const QSize contentViewSize = regionLayoutContentViewSize(layoutSize);
+        painter.setTransform(
+            buildPinWindowTransform(
+                QRectF(QPointF(0.0, 0.0), QSizeF(contentViewSize)),
+                m_rotationAngle,
+                m_flipHorizontal,
+                m_flipVertical),
+            true);
+    }
+
+    for (size_t i = 0; i < m_annotationLayer->itemCount(); ++i) {
+        const AnnotationItem* item = m_annotationLayer->itemAt(static_cast<int>(i));
+        if (!item || !item->isVisible()) {
+            continue;
+        }
+        painter.save();
+        painter.translate(
+            m_regionLayoutManager->annotationTranslation(
+                *item, m_zoomLevel, normalizeToRecomposedOrigin));
+        item->draw(painter);
+        painter.restore();
+    }
+    painter.restore();
 }
 
 void PinWindow::updateSubToolbarPosition()
@@ -4306,8 +5163,8 @@ void PinWindow::onWidthChanged(int width)
     if (m_annotationMode && m_currentToolId == ToolId::Mosaic) {
         updateCursorForTool();
     }
-    // Save to settings
-    AnnotationSettingsManager::instance().saveWidth(width);
+    // Save to the active tool's width slot.
+    AnnotationSettingsManager::instance().saveWidthForTool(m_currentToolId, width);
 }
 
 void PinWindow::onEmojiSelected(const QString& emoji)
@@ -4345,6 +5202,10 @@ void PinWindow::onShapeFillModeChanged(ShapeFillMode mode)
 
 void PinWindow::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::ArrowStyle, static_cast<int>(style))) {
+        return;
+    }
     if (m_subToolbar && m_subToolbar->viewModel()) {
         m_subToolbar->viewModel()->setArrowStyle(static_cast<int>(style));
     }
@@ -4357,6 +5218,10 @@ void PinWindow::onArrowStyleChanged(LineEndStyle style)
 
 void PinWindow::onLineStyleChanged(LineStyle style)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::LineStyle, static_cast<int>(style))) {
+        return;
+    }
     if (m_subToolbar && m_subToolbar->viewModel()) {
         m_subToolbar->viewModel()->setLineStyle(static_cast<int>(style));
     }
@@ -4383,6 +5248,10 @@ void PinWindow::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void PinWindow::onFontSizeSelected(int size)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::FontSize, size)) {
+        return;
+    }
     if (m_annotationContext) {
         m_annotationContext->applyTextFontSize(size);
     }
@@ -4390,6 +5259,10 @@ void PinWindow::onFontSizeSelected(int size)
 
 void PinWindow::onFontFamilySelected(const QString& family)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::FontFamily, family)) {
+        return;
+    }
     if (m_annotationContext) {
         m_annotationContext->applyTextFontFamily(family);
     }
@@ -4685,20 +5558,62 @@ void PinWindow::onAutoBlurRequested()
 
 void PinWindow::onMoreColorsRequested()
 {
-    if (m_subToolbar)
+    const bool editingSelection = m_subToolbar && m_subToolbar->viewModel()->editingSelection();
+    if (m_subToolbar && !editingSelection)
         m_subToolbar->viewModel()->setCurrentColor(m_annotationColor);
 
     AnnotationContext::showColorPickerDialog(
         this,
         m_colorPickerDialog,
-        m_annotationColor,
+        editingSelection ? m_subToolbar->viewModel()->currentColor() : m_annotationColor,
         frameGeometry().center(),
         [this](const QColor& color) {
+            if (m_subToolbar
+                && m_subToolbar->viewModel()->routeToSelection(StyleProperty::Color, color)) {
+                return;
+            }
             onColorSelected(color);
             if (m_subToolbar) {
                 m_subToolbar->viewModel()->setCurrentColor(color);
             }
         });
+}
+
+ColorPickSource PinWindow::colorPickSource() const
+{
+    ColorPickSource source;
+    source.sampleRect = QRect(mapToGlobal(QPoint(0, 0)), size());
+    // Cover the pin's screen so the magnifier fits next to a small pin.
+    const QScreen* pinScreen = screen();
+    source.overlayGeometry = pinScreen ? pinScreen->geometry() : source.sampleRect;
+    // The pinned image as shown (rotation, flip, crop, zoom) without
+    // annotations. Nearest-neighbour scaling keeps every pixel an original
+    // pixel instead of a blend of neighbours.
+    source.image = buildDisplayPixmap(size(), Qt::FastTransformation).toImage();
+    return source;
+}
+
+void PinWindow::startColorPick()
+{
+    if (m_colorPickOverlay || !m_annotationMode || isRegionLayoutMode()) {
+        return;
+    }
+    m_colorPickOverlay = ColorPickOverlay::begin(
+        this, colorPickSource(), [this](const QColor& color) { applyPickedColor(color); });
+}
+
+void PinWindow::applyPickedColor(const QColor& color)
+{
+    // Same path as the custom color dialog: a selected annotation takes the
+    // color as one undoable change; otherwise it becomes the current color.
+    if (m_subToolbar
+        && m_subToolbar->viewModel()->routeToSelection(StyleProperty::Color, color)) {
+        return;
+    }
+    onColorSelected(color);
+    if (m_subToolbar) {
+        m_subToolbar->viewModel()->setCurrentColor(color);
+    }
 }
 
 // ============================================================================
@@ -4748,6 +5663,7 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
             if (handle == GizmoHandle::Body) {
                 m_isEmojiDragging = true;
                 m_emojiStartPos = mappedPos;
+            m_annotationLayer->snapController().begin(m_annotationLayer, mappedPos);
                 cursorManager.setInputStateForWidget(this, InputState::Moving);
             } else if (handle == GizmoHandle::Rotation) {
                 m_isEmojiRotating = true;
@@ -4791,6 +5707,7 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiStartPos = mappedPos;
+            m_annotationLayer->snapController().begin(m_annotationLayer, mappedPos);
             cursorManager.setInputStateForWidget(this, InputState::Moving);
         } else if (handle == GizmoHandle::Rotation) {
             m_isEmojiRotating = true;
@@ -4834,9 +5751,11 @@ bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
         return false;
     }
 
+    m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
     if (m_isEmojiDragging) {
         QPoint delta = mappedPos - m_emojiStartPos;
-        emojiItem->moveBy(delta);
+        if (!m_annotationLayer->snapController().move(mappedPos, QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier)))
+            emojiItem->moveBy(delta);
         m_emojiStartPos = mappedPos;
     } else if (m_isEmojiRotating) {
         QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
@@ -4862,6 +5781,9 @@ bool PinWindow::handleEmojiStickerAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    if (m_isEmojiDragging) handleEmojiStickerAnnotationMove(pos);
+    m_annotationLayer->snapController().end();
+    m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isEmojiDragging = false;
     m_isEmojiScaling = false;
     m_isEmojiRotating = false;
@@ -4994,6 +5916,13 @@ void PinWindow::setSourceRegion(const QRect& region, QScreen* screen)
 
 void PinWindow::startLiveCapture()
 {
+    const auto& capabilities = PlatformFeatures::instance().capabilities();
+    if (!capabilities.supportsLiveCapture) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Info,
+            capabilities.liveCaptureUnavailableReason);
+        return;
+    }
+
     if (m_autoBlurInProgress) {
         m_toast->showToast(SnapTray::QmlToast::Level::Info,
             tr("Please wait for auto-blur to finish"));
@@ -5016,15 +5945,17 @@ void PinWindow::startLiveCapture()
     // might have outlived its visible processing state before frames arrive.
     invalidateAutoBlurRequest();
     m_isLiveMode = true;
+    syncHoverBar();
 
     // Create capture engine
     m_captureEngine = ICaptureEngine::createBestEngine(this);
+    connectLiveCaptureEngineSignals();
     m_captureEngine->setRegion(m_sourceRegion, sourceScreen);
     m_captureEngine->setFrameRate(m_captureFrameRate);
 
-    // Exclude self from capture to avoid infinite recursion
+    // Exclude self and the hover windows from capture to avoid infinite recursion
 #ifdef Q_OS_MACOS
-    m_captureEngine->setExcludedWindows({ winId() });
+    m_captureEngine->setExcludedWindows(liveCaptureExcludedWindowIds());
 #endif
     setWindowExcludedFromCapture(this, true);
 
@@ -5046,8 +5977,40 @@ void PinWindow::startLiveCapture()
     update();
 }
 
+QList<WId> PinWindow::liveCaptureExcludedWindowIds()
+{
+    // Prepare all pin controls and both tooltip windows up front: ScreenCaptureKit
+    // fixes its excluded windows when the stream starts (PR #241 review).
+    ensureHoverBar();
+    QList<WId> ids{winId()};
+    ids.append(m_hoverBar->captureExclusionWindowIds());
+    ensureLiveTooltip();
+    if (QWindow* tooltip = m_liveTooltip->prepareCaptureExclusion(windowHandle()))
+        ids.append(tooltip->winId());
+    return ids;
+}
+
+void PinWindow::connectLiveCaptureEngineSignals()
+{
+    const QPointer<ICaptureEngine> engine(m_captureEngine);
+    connect(m_captureEngine, &ICaptureEngine::stoppedByUser, this, [this, engine]() {
+        if (engine && m_captureEngine == engine.data()) {
+            stopLiveCapture();
+        }
+    }, Qt::QueuedConnection);
+    connect(m_captureEngine, &ICaptureEngine::error, this,
+        [this, engine](const QString& message) {
+            if (!engine || m_captureEngine != engine.data()) {
+                return;
+            }
+            stopLiveCapture();
+            m_toast->showToast(SnapTray::QmlToast::Level::Error, message);
+        }, Qt::QueuedConnection);
+}
+
 void PinWindow::stopLiveCapture()
 {
+    if (m_liveTooltip) m_liveTooltip->hide();
     if (m_captureTimer) {
         m_captureTimer->stop();
         if (!m_isDestructing) {
@@ -5075,7 +6038,11 @@ void PinWindow::stopLiveCapture()
 
     setWindowExcludedFromCapture(this, false);
     m_isLiveMode = false;
+    syncHoverBar();
     m_livePaused = false;
+    if (!m_isDestructing) {
+        refreshMosaicSources();
+    }
     update();
 }
 
@@ -5087,6 +6054,8 @@ void PinWindow::pauseLiveCapture()
     if (m_captureTimer) {
         m_captureTimer->stop();
     }
+    syncHoverBar();
+    refreshMosaicSources();
     update();
 }
 
@@ -5098,6 +6067,7 @@ void PinWindow::resumeLiveCapture()
     if (m_captureTimer) {
         m_captureTimer->start(1000 / m_captureFrameRate);
     }
+    syncHoverBar();
     update();
 }
 
@@ -5137,17 +6107,11 @@ void PinWindow::updateLiveFrame()
         resetSourceSampleRect();
         clearCropUndoHistory();
 
-        // Update shared pixmap for mosaic tool to use latest frame
-        m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-        if (m_toolManager) {
-            m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-        }
-
         // Invalidate transform cache
         m_cachedRotation = -1;
 
         // Update display
-        updateSize();
+        updateSize(/*liveFrame=*/true);
     }
 }
 
@@ -5225,6 +6189,7 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
     if (m_isArrowDragging && m_annotationLayer->selectedIndex() >= 0) {
         auto* arrowItem = getSelectedArrowAnnotation();
         if (arrowItem) {
+            m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
             if (m_arrowDragHandle == GizmoHandle::Body) {
                 QPoint delta = mappedPos - m_annotationDragStartPos;
                 arrowItem->moveBy(delta);
@@ -5239,7 +6204,7 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
                 QPointF start = arrowItem->start();
                 QPointF end = arrowItem->end();
                 QPointF newControl = 2.0 * QPointF(mappedPos) - 0.5 * (start + end);
-                arrowItem->setControlPoint(newControl.toPoint());
+                arrowItem->setControlPoint(newControl);
             }
             requestLocalizedToolRepaint();
             return true;
@@ -5251,6 +6216,7 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
 bool PinWindow::handleArrowAnnotationRelease(const QPoint& pos)
 {
     if (m_isArrowDragging) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isArrowDragging = false;
         m_arrowDragHandle = GizmoHandle::None;
         CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
@@ -5336,6 +6302,7 @@ bool PinWindow::handlePolylineAnnotationMove(const QPoint& pos)
     if (m_isPolylineDragging && m_annotationLayer->selectedIndex() >= 0) {
         auto* polylineItem = getSelectedPolylineAnnotation();
         if (polylineItem) {
+             m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
              if (m_activePolylineVertexIndex >= 0) {
                  // Move specific vertex
                  polylineItem->setPoint(m_activePolylineVertexIndex, mappedPos);
@@ -5355,6 +6322,7 @@ bool PinWindow::handlePolylineAnnotationMove(const QPoint& pos)
 bool PinWindow::handlePolylineAnnotationRelease(const QPoint& pos)
 {
     if (m_isPolylineDragging) {
+        m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
         CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
@@ -5443,9 +6411,14 @@ void PinWindow::prepareForMerge()
 
 void PinWindow::enterRegionLayoutMode()
 {
-    if (!m_hasMultiRegionData || m_isLiveMode) {
+    // The hover bar hides while the layout is edited (#225).
+    const auto syncBar = qScopeGuard([this] { syncHoverBar(); });
+    if (!m_hasMultiRegionData || m_isLiveMode || isRegionLayoutMode()) {
         return;
     }
+
+    m_regionLayoutOriginalWindowPos = pos();
+    m_hasRegionLayoutOriginalWindowPos = true;
 
     // Exit annotation mode if active
     if (m_annotationMode) {
@@ -5465,96 +6438,84 @@ void PinWindow::enterRegionLayoutMode()
         connect(m_regionLayoutManager, &RegionLayoutManager::layoutChanged,
                 this, QOverload<>::of(&QWidget::update));
         connect(m_regionLayoutManager, &RegionLayoutManager::canvasSizeChanged,
-                this, [this](const QSize& newSize) {
-                    QSize logicalSize = newSize;
-                    setFixedSize(logicalSize);
-                });
+                 this, [this](const QSize& newSize) {
+                    setFixedSize(regionLayoutViewportSize(newSize));
+                    if (!m_regionLayoutManager->isDragging() &&
+                        !m_regionLayoutManager->isResizing()) {
+                        keepRegionLayoutControlsOnScreen();
+                    }
+                 });
     }
 
     // Enter layout mode with stored regions
     QSize canvasSize = baseContentLogicalSize();
     m_regionLayoutManager->enterLayoutMode(m_storedRegions, canvasSize);
-
-    // Bind annotations if annotation layer exists
-    if (m_annotationLayer) {
-        m_regionLayoutManager->bindAnnotations(m_annotationLayer);
-    }
+    setFixedSize(regionLayoutViewportSize(canvasSize));
+    keepRegionLayoutControlsOnScreen();
 
     update();
 }
 
 void PinWindow::exitRegionLayoutMode(bool apply)
 {
+    // The hover bar hides while the layout is edited (#225).
+    const auto syncBar = qScopeGuard([this] { syncHoverBar(); });
     if (!m_regionLayoutManager || !m_regionLayoutManager->isActive()) {
         return;
     }
 
     if (apply) {
-        // Update annotation positions before recomposing
-        if (m_annotationLayer) {
-            m_regionLayoutManager->updateAnnotationPositions();
-        }
-
         // Recompose the image
         qreal dpr = m_originalPixmap.devicePixelRatio();
-        QPixmap newPixmap = m_regionLayoutManager->recomposeImage(dpr);
+        QVector<LayoutRegion> committedRegions;
+        QPixmap newPixmap = m_regionLayoutManager->recomposeImage(
+            dpr, &committedRegions);
 
-        if (!newPixmap.isNull()) {
-            invalidateAutoBlurRequest();
-            // Calculate the bounds offset used in recomposition
-            QRect bounds;
-            for (const auto& region : m_regionLayoutManager->regions()) {
-                if (bounds.isNull()) {
-                    bounds = region.rect;
-                } else {
-                    bounds = bounds.united(region.rect);
-                }
+        if (newPixmap.isNull()) {
+            qWarning() << "PinWindow::exitRegionLayoutMode: Failed to recompose layout";
+            if (m_toast) {
+                m_toast->showToast(
+                    SnapTray::QmlToast::Level::Error,
+                    tr("Unable to apply region layout"));
             }
-
-            // Store regions with normalized coordinates (relative to new canvas origin)
-            m_storedRegions = m_regionLayoutManager->regions();
-            for (auto& region : m_storedRegions) {
-                region.rect.translate(-bounds.topLeft());
-                region.originalRect = region.rect;  // Reset original to match current
-            }
-
-            m_originalPixmap = newPixmap;
-            setContentLogicalSize(bounds.size());
-            resetSourceSampleRect();
-            m_displayPixmap = newPixmap;
-            clearCropUndoHistory();
-
-            // Invalidate transform cache
-            m_cachedRotation = -1;
-            m_cachedFlipH = false;
-            m_cachedFlipV = false;
-
-            // Update window size
-            QSize logicalSize = logicalSizeFromPixmap(m_displayPixmap);
-            setFixedSize(logicalSize);
-            syncCropHandlerImageSize();
-
-            // Invalidate annotation layer cache
-            if (m_annotationLayer) {
-                m_annotationLayer->invalidateCache();
-            }
-
+            // Keep layout mode and its temporary canvas active so the user can
+            // adjust the layout or cancel without leaving a half-applied state.
+            return;
         }
-    } else {
-        // Cancel - restore annotations
+
+        invalidateAutoBlurRequest();
+        m_storedRegions = std::move(committedRegions);
+
+        if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+        m_originalPixmap = newPixmap;
+        setContentLogicalSize(logicalSizeFromPixmap(newPixmap));
+        resetSourceSampleRect();
+        m_displayPixmap = newPixmap;
+        clearCropUndoHistory();
+
+        // Move annotations in tool coordinates; updateSize() below refreshes
+        // all mosaic sources after the recomposed display is ready.
         if (m_annotationLayer) {
-            m_regionLayoutManager->restoreAnnotations(m_annotationLayer);
+            m_regionLayoutManager->updateAnnotationPositions(
+                m_annotationLayer, m_zoomLevel);
         }
 
-        // Layout mode can temporarily resize the window via canvasSizeChanged.
-        // On cancel, restore the pre-layout display size.
-        const QSize restoredSize = logicalSizeFromPixmap(m_displayPixmap);
-        if (restoredSize.isValid() && !restoredSize.isEmpty()) {
-            setFixedSize(restoredSize);
-        }
+        // Invalidate transform cache
+        m_cachedRotation = -1;
+        m_cachedFlipH = false;
+        m_cachedFlipV = false;
+
     }
 
     m_regionLayoutManager->exitLayoutMode(apply);
+    // Rebuild from the committed (or original, on Cancel) base content only
+    // after leaving layout mode so updateSize() uses the normal display path.
+    updateSize();
+    syncCropHandlerImageSize();
+    if (m_hasRegionLayoutOriginalWindowPos) {
+        move(m_regionLayoutOriginalWindowPos);
+        m_hasRegionLayoutOriginalWindowPos = false;
+    }
     CursorAuthority::instance().clearWidgetRequest(this, QStringLiteral("pin.layout"));
     rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
     update();
@@ -5695,24 +6656,25 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             return;
         }
 
-        QString renderError;
-        QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
-        if (!renderError.isEmpty()) {
-            qWarning() << "PinWindow: beautify template warning:" << renderError;
-        }
         const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
-        ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
-            emit saveCompleted(result, filePath);
+        const auto saved = ImageSaveUtils::saveImageUnique(
+            taggedImage, {savePath, templateValue, context});
+        if (!saved.renderWarning.isEmpty()) {
+            qWarning() << "PinWindow: beautify template warning:" << saved.renderWarning;
+        }
+        if (saved.success) {
+            emit saveCompleted(result, saved.filePath);
         } else {
             emit saveFailed(
-                filePath,
-                tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saveError)));
+                saved.filePath,
+                tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saved.error)));
         }
     } else {
+        const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
+        const QString manualSavePath =
+            fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
         QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, templateValue, context, 1);
+            manualSavePath, templateValue, context, 1);
         const QString filePath = NativeFileDialogUtils::getSaveFileName(
             this,
             tr("Save Beautified Screenshot"),
@@ -5733,6 +6695,9 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
             ImageSaveUtils::Error saveError;
             if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
+                if (rememberDirectoryOnSuccess) {
+                    fileSettings.rememberManualScreenshotSaveDirectory(filePath);
+                }
                 emit saveCompleted(result, filePath);
             } else {
                 emit saveFailed(
@@ -5741,4 +6706,15 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             }
         }
     }
+}
+
+void PinWindow::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt && m_annotationLayer && m_annotationLayer->snapController().active()) {
+        m_annotationLayer->snapController().setSuspended(false);
+        update();
+        event->accept();
+        return;
+    }
+    QWidget::keyReleaseEvent(event);
 }

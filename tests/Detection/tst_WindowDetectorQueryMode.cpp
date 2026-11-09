@@ -7,6 +7,7 @@
 #include <QScreen>
 
 #include "WindowDetector.h"
+#include "capture/ICaptureEngine.h"
 #include "../../src/WindowDetectorWinFilters.h"
 
 #ifdef Q_OS_LINUX
@@ -79,10 +80,14 @@ class tst_WindowDetectorQueryMode : public QObject
 private slots:
     void testTopLevelOnlySkipsChildQuery();
     void testTopLevelCacheDoesNotPretendChildControlsAreReady();
+    void testTopLevelSnapshotOnlyAfterTopLevelRefresh();
     void testIncludeChildControlsUsesChildQuery();
     void testContextMenuPrefersTopLevelBounds();
     void testQueryUpgradePreservesMissingTopLevelElements();
     void testQueryUpgradeDoesNotDuplicateMatchingTopLevelElements();
+#ifdef Q_OS_MACOS
+    void testMacRefreshRequestInvalidatesPreviousWork();
+#endif
     void testWindowsModernUiRecognizesOnlyImeAndTooltipClasses();
     void testWindowsModernUiDoesNotMaskStyleOrOwnerClassification();
     void testLinuxX11TopLevelWindowDetectionFindsVisibleWindow();
@@ -147,6 +152,27 @@ void tst_WindowDetectorQueryMode::testTopLevelCacheDoesNotPretendChildControlsAr
     QVERIFY(result.has_value());
     QCOMPARE(result->bounds, topBounds);
     QCOMPARE(detector.childQueryCount, 0);
+}
+
+void tst_WindowDetectorQueryMode::testTopLevelSnapshotOnlyAfterTopLevelRefresh()
+{
+    TestWindowDetector detector;
+    QVERIFY(detector.topLevelWindowsSnapshot().empty()); // nothing cached yet
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen != nullptr);
+    detector.setScreen(screen);
+    detector.m_cacheReady = true;
+    detector.m_cacheScreen = screen;
+    detector.m_cacheQueryMode = WindowDetector::QueryMode::TopLevelOnly;
+    detector.m_windowCache = {makeElement(QRect(0, 0, 100, 100), 0), makeElement(QRect(50, 50, 100, 100), 3)};
+    const auto snapshot = detector.topLevelWindowsSnapshot();
+    QCOMPARE(snapshot.size(), size_t(2));
+    QCOMPARE(snapshot[1].windowLayer, 3);
+
+    // A cache that also holds child controls is not a top-level snapshot.
+    detector.m_cacheQueryMode = WindowDetector::QueryMode::IncludeChildControls;
+    QVERIFY(detector.topLevelWindowsSnapshot().empty());
 }
 
 void tst_WindowDetectorQueryMode::testIncludeChildControlsUsesChildQuery()
@@ -288,6 +314,25 @@ void tst_WindowDetectorQueryMode::testQueryUpgradeDoesNotDuplicateMatchingTopLev
     QCOMPARE(newCache.front().bounds, livePopup.bounds);
     QCOMPARE(newCache.front().ownerPid, livePopup.ownerPid);
 }
+
+#ifdef Q_OS_MACOS
+void tst_WindowDetectorQueryMode::testMacRefreshRequestInvalidatesPreviousWork()
+{
+    WindowDetector detector;
+
+    const auto firstRequest = detector.beginRefreshRequest();
+    QVERIFY(firstRequest.cancelled);
+    QVERIFY(!firstRequest.cancelled->load(std::memory_order_acquire));
+
+    const auto secondRequest = detector.beginRefreshRequest();
+    QVERIFY(secondRequest.cancelled);
+    QVERIFY(firstRequest.cancelled->load(std::memory_order_acquire));
+    QVERIFY(!secondRequest.cancelled->load(std::memory_order_acquire));
+    QVERIFY(secondRequest.id > firstRequest.id);
+    QCOMPARE(detector.m_refreshRequestId.load(), secondRequest.id);
+    QCOMPARE(detector.m_refreshCancellationToken, secondRequest.cancelled);
+}
+#endif
 
 void tst_WindowDetectorQueryMode::testWindowsModernUiRecognizesOnlyImeAndTooltipClasses()
 {
@@ -445,6 +490,13 @@ void tst_WindowDetectorQueryMode::testLinuxX11TopLevelWindowDetectionFindsVisibl
     QVERIFY(result.has_value());
     QCOMPARE(result->elementType, ElementType::Window);
     QVERIFY(result->bounds.intersects(testBounds.adjusted(-8, -8, 8, 8)));
+    QVERIFY(result->nativePhysicalBounds.has_value());
+    QVERIFY(result->nativePhysicalBounds->intersects(testBounds));
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    const auto captureScreen = CaptureScreenInfo::fromScreen(screen);
+    QVERIFY(!captureScreen.physicalGeometry.isEmpty());
+    QVERIFY(captureScreen.physicalGeometry.contains(*result->nativePhysicalBounds));
+#endif
 #endif
 }
 

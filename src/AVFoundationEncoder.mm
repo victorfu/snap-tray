@@ -1,6 +1,9 @@
 #include "AVFoundationEncoder.h"
+#include "encoding/VideoBitrate.h"
+#include "encoding/IntermediateQuality.h"
+#include "encoding/VideoRateControl.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 #import <AVFoundation/AVFoundation.h>
 #import <CoreMedia/CoreMedia.h>
@@ -15,6 +18,15 @@
 #if !__has_feature(objc_arc)
 #error "AVFoundationEncoder.mm requires Objective-C ARC"
 #endif
+
+namespace {
+// The historical AVAssetWriter default this encoder has always used.
+constexpr int kDefaultKeyFrameIntervalSeconds = 2;
+// AVVideoQualityKey is documented for JPEG/ProRes; its effect on H.264 via
+// AVAssetWriter is unverified. Stays off until validated on hardware, so the
+// intermediate uses the VBR fallback (IntermediateQuality::intermediateBitrate).
+constexpr bool kUseVideoToolboxQuality = false;
+} // namespace
 
 class AVFoundationEncoderPrivate
 {
@@ -31,6 +43,9 @@ public:
     qint64 frameNumber = 0;
     bool running = false;
     int quality = 55;  // 0-100
+    SnapTray::VideoRateControl requestedRateControl = SnapTray::VideoRateControl::Bitrate;
+    SnapTray::VideoRateControl effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+    int keyFrameIntervalSeconds = 0; // 0 = kDefaultKeyFrameIntervalSeconds
 
     // Audio members
     AVAssetWriterInput *audioInput = nil;
@@ -54,58 +69,131 @@ public:
     // Cached pixel buffer attributes (reused across frames)
     NSDictionary *pixelBufferAttributes = nil;
 
+    // Native capture surfaces encoded as is, and whether a mismatch was logged
+    qint64 nativeFramesWritten = 0;
+    bool nativeMismatchLogged = false;
+
     int calculateBitrate() const {
-        int pixels = frameSize.width() * frameSize.height();
-        // Quality 0-100 maps to bits per pixel 0.1-0.3
-        double bitsPerPixel = 0.1 + (quality / 100.0) * 0.2;
-        int bitrate = static_cast<int>(pixels * frameRate * bitsPerPixel);
-        // Clamp to reasonable range: 1 Mbps to 50 Mbps
-        return qBound(1000000, bitrate, 50000000);
+        if (requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
+            return SnapTray::IntermediateQuality::intermediateBitrate(frameSize, frameRate);
+        }
+        return SnapTray::VideoBitrate::forQuality(frameSize, frameRate, quality);
+    }
+    int keyFrameInterval() const {
+        const int seconds = keyFrameIntervalSeconds > 0 ? keyFrameIntervalSeconds : kDefaultKeyFrameIntervalSeconds;
+        return frameRate * seconds;
+    }
+
+    // A writable BGRA buffer of frameSize: from the adaptor's pool when the
+    // writer has one (reused, no per-frame allocation), else a new one.
+    CVPixelBufferRef createOutputPixelBuffer() {
+        CVPixelBufferRef pixelBuffer = nullptr;
+        CVPixelBufferPoolRef pool = adaptor.pixelBufferPool;
+        CVReturn result = pool
+            ? CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
+            : CVPixelBufferCreate(kCFAllocatorDefault, frameSize.width(), frameSize.height(),
+                                  kCVPixelFormatType_32BGRA,
+                                  (__bridge CFDictionaryRef)pixelBufferAttributes, &pixelBuffer);
+        if (result != kCVReturnSuccess || !pixelBuffer) {
+            qWarning() << "AVFoundationEncoder: Failed to create pixel buffer:" << result;
+            return nullptr;
+        }
+        return pixelBuffer;
     }
 
     CVPixelBufferRef createPixelBufferFromImage(const QImage &image) {
-        // Convert to ARGB32 format which maps well to BGRA
-        QImage converted = image.convertToFormat(QImage::Format_ARGB32);
+        // ARGB32 and RGB32 are BGRA in memory (little-endian); others convert.
+        const bool bgra = image.format() == QImage::Format_ARGB32
+            || image.format() == QImage::Format_RGB32;
+        const QImage converted = bgra ? image : image.convertToFormat(QImage::Format_ARGB32);
 
-        CVPixelBufferRef pixelBuffer = nullptr;
-
-        CVReturn result = CVPixelBufferCreate(
-            kCFAllocatorDefault,
-            frameSize.width(),
-            frameSize.height(),
-            kCVPixelFormatType_32BGRA,
-            (__bridge CFDictionaryRef)pixelBufferAttributes,
-            &pixelBuffer
-        );
-
-        if (result != kCVReturnSuccess || !pixelBuffer) {
-            qWarning() << "AVFoundationEncoder: Failed to create pixel buffer:" << result;
+        CVPixelBufferRef pixelBuffer = createOutputPixelBuffer();
+        if (!pixelBuffer) {
             return nullptr;
         }
 
         CVPixelBufferLockBaseAddress(pixelBuffer, 0);
 
-        void *baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer);
-        size_t bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer);
-
+        auto *baseAddress = static_cast<uint8_t *>(CVPixelBufferGetBaseAddress(pixelBuffer));
+        const size_t bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer);
         const uchar *srcData = converted.constBits();
-        size_t srcBytesPerRow = static_cast<size_t>(converted.bytesPerLine());
+        const size_t srcBytesPerRow = static_cast<size_t>(converted.bytesPerLine());
+        const size_t rowBytes = qMin(bytesPerRow, srcBytesPerRow);
+        const int rows = qMin(frameSize.height(), converted.height());
 
         // Copy row by row, handling stride differences
-        for (int y = 0; y < frameSize.height(); y++) {
-            memcpy(
-                static_cast<uint8_t *>(baseAddress) + y * bytesPerRow,
-                srcData + y * srcBytesPerRow,
-                qMin(bytesPerRow, srcBytesPerRow)
-            );
+        for (int y = 0; y < rows; y++) {
+            memcpy(baseAddress + y * bytesPerRow, srcData + y * srcBytesPerRow, rowBytes);
         }
 
         CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
         return pixelBuffer;
     }
 
+    // Counts and (throttled) logs a video frame dropped because the writer
+    // input is busy. Frames are dropped, never waited for.
+    void dropVideoFrame() {
+        droppedFrames++;
+        const qint64 now = QDateTime::currentMSecsSinceEpoch();
+        if (now - lastDropLogTime >= DROP_LOG_INTERVAL_MS) {
+            qDebug() << "AVFoundationEncoder: Encoder backpressure - dropped"
+                     << droppedFrames << "video frames so far";
+            lastDropLogTime = now;
+        }
+    }
+
+    CMTime presentationTime(qint64 timestampMs) const {
+        return timestampMs >= 0 ? CMTimeMake(timestampMs, 1000)
+                                : CMTimeMake(frameNumber, frameRate);
+    }
+
+    // Appends one frame to the writer and counts it; false if refused.
+    bool appendPixelBuffer(CVPixelBufferRef pixelBuffer, qint64 timestampMs) {
+        if (![adaptor appendPixelBuffer:pixelBuffer withPresentationTime:presentationTime(timestampMs)]) {
+            qWarning() << "AVFoundationEncoder: Failed to append pixel buffer";
+            return false;
+        }
+        framesWritten++;
+        frameNumber++;
+        return true;
+    }
+
+    // ScreenCaptureKit tags its buffers with the display's color space, and
+    // VideoToolbox then converts them to the BT.709 output, changing every
+    // pixel. Image frames carry no tag and are encoded as they are, so the
+    // native path drops the tag to produce the same video. The capture is
+    // done with the buffer; only this encoder reads its color tags.
+    void stripColorConversion(CVPixelBufferRef buffer) const {
+        for (CFStringRef key : {kCVImageBufferCGColorSpaceKey, kCVImageBufferICCProfileKey,
+                                kCVImageBufferColorPrimariesKey, kCVImageBufferTransferFunctionKey}) {
+            // Check first: the same surface is offered again while the screen is still.
+            if (CVBufferHasAttachment(buffer, key)) {
+                CVBufferRemoveAttachment(buffer, key);
+            }
+        }
+    }
+
+    // Why a capture surface cannot be encoded as is, or empty when it can.
+    QString nativeBufferMismatch(CVPixelBufferRef buffer) const {
+        const OSType format = CVPixelBufferGetPixelFormatType(buffer);
+        if (format != kCVPixelFormatType_32BGRA) {
+            return QStringLiteral("pixel format 0x%1").arg(format, 8, 16, QLatin1Char('0'));
+        }
+        const QSize size(static_cast<int>(CVPixelBufferGetWidth(buffer)),
+                         static_cast<int>(CVPixelBufferGetHeight(buffer)));
+        if (size != frameSize) {
+            return QStringLiteral("size %1x%2, encoder %3x%4")
+                .arg(size.width()).arg(size.height()).arg(frameSize.width()).arg(frameSize.height());
+        }
+        return {};
+    }
+
     void cleanup() {
         // Log final drop statistics if any drops occurred
+        if (nativeFramesWritten > 0) {
+            qDebug() << "AVFoundationEncoder:" << nativeFramesWritten
+                     << "of" << framesWritten << "frames encoded from capture surfaces";
+        }
         if (droppedFrames > 0 || droppedAudioChunks > 0) {
             qWarning() << "AVFoundationEncoder: Recording finished with"
                        << droppedFrames << "dropped frames and"
@@ -123,6 +211,8 @@ public:
         droppedFrames = 0;
         droppedAudioChunks = 0;
         lastDropLogTime = 0;
+        nativeFramesWritten = 0;
+        nativeMismatchLogged = false;
     }
 };
 
@@ -186,16 +276,29 @@ bool AVFoundationEncoder::start(const QString &outputPath, const QSize &frameSiz
     // Configure H.264 video settings
     int bitrate = d->calculateBitrate();
 
+    NSMutableDictionary *compression = [@{
+        AVVideoAverageBitRateKey: @(bitrate),
+        AVVideoExpectedSourceFrameRateKey: @(frameRate),
+        AVVideoMaxKeyFrameIntervalKey: @(d->keyFrameInterval()),
+        AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+        AVVideoAllowFrameReorderingKey: @NO
+    } mutableCopy];
+    d->effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+    if (kUseVideoToolboxQuality && d->requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
+        compression[AVVideoQualityKey] = @(d->quality / 100.0);
+        d->effectiveRateControl = SnapTray::VideoRateControl::ConstantQuality;
+    }
     NSDictionary *videoSettings = @{
         AVVideoCodecKey: AVVideoCodecTypeH264,
         AVVideoWidthKey: @(adjustedSize.width()),
         AVVideoHeightKey: @(adjustedSize.height()),
-        AVVideoCompressionPropertiesKey: @{
-            AVVideoAverageBitRateKey: @(bitrate),
-            AVVideoExpectedSourceFrameRateKey: @(frameRate),
-            AVVideoMaxKeyFrameIntervalKey: @(frameRate * 2),
-            AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
-            AVVideoAllowFrameReorderingKey: @NO
+        AVVideoCompressionPropertiesKey: compression,
+        // SDR output, tagged explicitly so players do not guess. HDR capture
+        // is not supported: the stream is BT.709 whatever the display is.
+        AVVideoColorPropertiesKey: @{
+            AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
+            AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
+            AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
         }
     };
 
@@ -206,7 +309,9 @@ bool AVFoundationEncoder::start(const QString &outputPath, const QSize &frameSiz
     NSDictionary *sourcePixelBufferAttributes = @{
         (NSString *)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA),
         (NSString *)kCVPixelBufferWidthKey: @(adjustedSize.width()),
-        (NSString *)kCVPixelBufferHeightKey: @(adjustedSize.height())
+        (NSString *)kCVPixelBufferHeightKey: @(adjustedSize.height()),
+        // IOSurface-backed pool buffers reach VideoToolbox without another copy.
+        (NSString *)kCVPixelBufferIOSurfacePropertiesKey: @{}
     };
 
     d->adaptor = [[AVAssetWriterInputPixelBufferAdaptor alloc]
@@ -285,15 +390,7 @@ void AVFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
 
     // Check if input is ready for more data
     if (!d->videoInput.readyForMoreMediaData) {
-        d->droppedFrames++;
-
-        // Throttle logging to avoid spam
-        qint64 now = QDateTime::currentMSecsSinceEpoch();
-        if (now - d->lastDropLogTime >= d->DROP_LOG_INTERVAL_MS) {
-            qDebug() << "AVFoundationEncoder: Encoder backpressure - dropped"
-                     << d->droppedFrames << "video frames so far";
-            d->lastDropLogTime = now;
-        }
+        d->dropVideoFrame();
         return;
     }
 
@@ -308,26 +405,52 @@ void AVFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
         return;
     }
 
-    // Calculate presentation time
-    CMTime presentationTime;
-    if (timestampMs >= 0) {
-        presentationTime = CMTimeMake(timestampMs, 1000);
-    } else {
-        presentationTime = CMTimeMake(d->frameNumber, d->frameRate);
-    }
-
-    BOOL success = [d->adaptor appendPixelBuffer:pixelBuffer
-                            withPresentationTime:presentationTime];
-
+    const bool success = d->appendPixelBuffer(pixelBuffer, timestampMs);
     CVPixelBufferRelease(pixelBuffer);
 
     if (success) {
-        d->framesWritten++;
-        d->frameNumber++;
         emit progress(d->framesWritten);
-    } else {
-        qWarning() << "AVFoundationEncoder: Failed to append pixel buffer";
     }
+}
+
+bool AVFoundationEncoder::writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs)
+{
+    if (!nativeBuffer) {
+        return false;
+    }
+    if (!d->running || !d->videoInput || !d->adaptor) {
+        return true;  // Dropped, as writeFrame() would drop it.
+    }
+
+    // On macOS native buffers are Core Foundation objects; only a CVPixelBuffer
+    // (what ScreenCaptureKit delivers) qualifies, not, say, a CMSampleBuffer.
+    if (CFGetTypeID(nativeBuffer.get()) != CVPixelBufferGetTypeID()) {
+        return false;
+    }
+    // The capture surface goes to VideoToolbox as is: no QImage, no new
+    // buffer, no copy. The writer retains it until encoded, which keeps the
+    // capture pool from reusing it meanwhile.
+    auto pixelBuffer = static_cast<CVPixelBufferRef>(nativeBuffer.get());
+    const QString mismatch = d->nativeBufferMismatch(pixelBuffer);
+    if (!mismatch.isEmpty()) {
+        if (!d->nativeMismatchLogged) {
+            d->nativeMismatchLogged = true;
+            qDebug() << "AVFoundationEncoder: Copying frames; capture surface does not match:" << mismatch;
+        }
+        return false;
+    }
+
+    if (!d->videoInput.readyForMoreMediaData) {
+        d->dropVideoFrame();
+        return true;
+    }
+
+    d->stripColorConversion(pixelBuffer);
+    if (d->appendPixelBuffer(pixelBuffer, timestampMs)) {
+        d->nativeFramesWritten++;
+        emit progress(d->framesWritten);
+    }
+    return true;
 }
 
 void AVFoundationEncoder::finish()
@@ -438,6 +561,22 @@ void AVFoundationEncoder::setQuality(int quality)
     d->quality = qBound(0, quality, 100);
 }
 
+void AVFoundationEncoder::setRateControl(SnapTray::VideoRateControl mode, int qualityValue)
+{
+    d->requestedRateControl = mode;
+    d->quality = qBound(0, qualityValue, 100);
+}
+
+void AVFoundationEncoder::setKeyFrameIntervalSeconds(int seconds)
+{
+    d->keyFrameIntervalSeconds = qMax(0, seconds);
+}
+
+SnapTray::VideoRateControl AVFoundationEncoder::effectiveRateControl() const
+{
+    return d->effectiveRateControl;
+}
+
 void AVFoundationEncoder::setAudioFormat(int sampleRate, int channels, int bitsPerSample)
 {
     if (d->running) {
@@ -462,7 +601,7 @@ bool AVFoundationEncoder::isAudioEnabled() const
     return d->audioEnabled;
 }
 
-void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs)
+void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 startFrame)
 {
     if (!d->running || !d->audioInput || !d->audioEnabled) {
         return;
@@ -551,8 +690,8 @@ void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 ti
     CMItemCount numSamples = static_cast<CMItemCount>(dataLength / bytesPerFrame);
 
     // Create timing info
-    CMTime presentationTime = CMTimeMake(timestampMs, 1000);
-    CMTime duration = CMTimeMake(numSamples, d->audioSampleRate);
+    CMTime presentationTime = CMTimeMake(startFrame, d->audioSampleRate);
+    CMTime duration = CMTimeMake(1, d->audioSampleRate);
 
     CMSampleTimingInfo timingInfo = {0};
     timingInfo.duration = duration;
@@ -595,4 +734,4 @@ void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 ti
     }
 }
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS

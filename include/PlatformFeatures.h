@@ -5,6 +5,7 @@
 #include <QString>
 #include <QIcon>
 #include <QImage>
+#include <QPixmap>
 
 #include <functional>
 
@@ -33,7 +34,8 @@ public:
     OCRManager* createOCRManager(QObject* parent = nullptr) const;
     WindowDetector* createWindowDetector(QObject* parent = nullptr) const;
 
-    QIcon createTrayIcon() const;
+    // Base tray / menu bar artwork; MainApplication badges it with the recording state.
+    QPixmap createTrayPixmap() const;
 
     // Copy image to clipboard using native APIs for flows that must survive process exit,
     // such as the CLI capture command.
@@ -52,7 +54,7 @@ public:
     bool uninstallCLI() const;
     QString getAppExecutablePath() const;
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     // macOS permission management
     static bool hasScreenRecordingPermission();
     static bool hasAccessibilityPermission();
@@ -61,14 +63,6 @@ public:
 
     /// Bring the application to the foreground (activateIgnoringOtherApps).
     static void activateApp();
-
-    /// Temporarily show the app in the Dock (NSApplicationActivationPolicyRegular).
-    /// Use when a persistent window (e.g., Settings) is open so it survives
-    /// app-deactivation in LSUIElement mode.
-    static void setActivationPolicyRegular();
-
-    /// Revert to accessory / LSUIElement mode (no Dock icon).
-    static void setActivationPolicyAccessory();
 #endif
 
 private:

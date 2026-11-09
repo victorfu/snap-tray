@@ -186,6 +186,7 @@ std::unique_ptr<AnnotationItem> ShapeAnnotation::clone() const
 {
     auto cloned = std::make_unique<ShapeAnnotation>(
         m_rect.toAlignedRect(), m_type, m_color, m_width, m_filled);
+    cloned->setRectF(m_rect);   // keep fractional geometry (undo snapshots)
     cloned->setRotation(m_rotation);
     cloned->setScale(m_scaleX, m_scaleY);
     return cloned;

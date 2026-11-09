@@ -30,9 +30,7 @@ public:
     // State setters (synced from RegionSelector before handle calls)
     void setCurrentTool(ToolId tool) { m_currentTool = tool; }
     void setShowSubToolbar(bool show) { m_showSubToolbar = show; }
-    void setAnnotationWidth(int width) { m_annotationWidth = width; }
     void setStepBadgeSize(StepBadgeSize size);
-    void setShareInProgress(bool inProgress) { m_shareInProgress = inProgress; }
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
 signals:
@@ -47,7 +45,6 @@ signals:
     void pinRequested();
     void saveRequested();
     void copyRequested();
-    void shareRequested();
     void ocrRequested();
     void qrCodeRequested();
     void multiRegionToggled(bool enabled);
@@ -68,7 +65,6 @@ private:
     void handleSelectionTool(ToolId button);
     // Tool switching helpers
     void handleAnnotationTool(ToolId button);
-    void handleStepBadgeTool(ToolId button);
     void handleMosaicTool(ToolId button);
     void handleActionButton(ToolId button);
     void handleUndoAction(ToolId button);
@@ -77,7 +73,6 @@ private:
     void handleOcrAction(ToolId button);
     void handleQrCodeAction(ToolId button);
     void handlePinAction(ToolId button);
-    void handleShareAction(ToolId button);
     void handleSaveAction(ToolId button);
     void handleCopyAction(ToolId button);
     void handleMultiRegionToggle(ToolId button);
@@ -88,9 +83,7 @@ private:
 
     ToolId m_currentTool;
     bool m_showSubToolbar = true;
-    int m_annotationWidth = 3;
     StepBadgeSize m_stepBadgeSize;
-    bool m_shareInProgress = false;
     bool m_multiRegionMode = false;
 };
 

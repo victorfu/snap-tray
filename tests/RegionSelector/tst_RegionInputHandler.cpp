@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include <QCursor>
+#include <QPainter>
 #include <QMouseEvent>
 #include <QSignalSpy>
 #include <QWidget>
@@ -8,13 +9,49 @@
 #include <QGuiApplication>
 
 #include "annotations/AnnotationLayer.h"
+#include "annotations/EmojiStickerAnnotation.h"
+#include "settings/AnnotationSettingsManager.h"
 #include "cursor/CursorManager.h"
 #include "region/RegionInputHandler.h"
 #include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
 #include "region/UpdateThrottler.h"
+#include "tools/IToolHandler.h"
+#include "tools/ToolManager.h"
 
 namespace {
+
+QMouseEvent makeMouseEventF(QEvent::Type type,
+                            const QPointF& pos,
+                            Qt::MouseButton button,
+                            Qt::MouseButtons buttons)
+{
+    return QMouseEvent(type, pos, pos, pos, button, buttons, Qt::NoModifier);
+}
+
+class RecordingPencilHandler : public IToolHandler
+{
+public:
+    explicit RecordingPencilHandler(QVector<QPointF>* positions) : m_positions(positions) {}
+
+    ToolId toolId() const override { return ToolId::Pencil; }
+    void onMousePressF(ToolContext*, const QPointF& pos) override
+    {
+        m_drawing = true;
+        m_positions->append(pos);
+    }
+    void onMouseMoveF(ToolContext*, const QPointF& pos) override { m_positions->append(pos); }
+    void onMouseReleaseF(ToolContext*, const QPointF& pos) override
+    {
+        m_drawing = false;
+        m_positions->append(pos);
+    }
+    bool isDrawing() const override { return m_drawing; }
+
+private:
+    QVector<QPointF>* m_positions;
+    bool m_drawing = false;
+};
 
 QMouseEvent makeMouseEvent(QEvent::Type type,
                            const QPoint& pos,
@@ -35,7 +72,42 @@ private slots:
     void init();
     void cleanup();
 
+    void testAnnotationSnapRelease() {
+        AnnotationSettingsManager::instance().saveAlignmentAssist(true);
+        m_annotationLayer->snapController().setEnabled(true);
+        m_annotationLayer->addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(200,100),QStringLiteral("🙂")));
+        m_annotationLayer->addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(140,220),QStringLiteral("🙂")));
+        m_annotationLayer->setSelectedIndex(1);
+        auto emoji = [&] { return static_cast<EmojiStickerAnnotation*>(m_annotationLayer->itemAt(1)); };
+        m_selectionManager->startSelection({0,0});
+        m_selectionManager->updateSelection({600,400});
+        m_selectionManager->finishSelection();
+        auto press=makeMouseEvent(QEvent::MouseButtonPress,{140,220},Qt::LeftButton,Qt::LeftButton);
+        auto move=makeMouseEvent(QEvent::MouseMove,{197,220},Qt::NoButton,Qt::LeftButton);
+        m_handler->handleMousePress(&press);m_handler->handleMouseMove(&move);
+        QCOMPARE(emoji()->precisePosition(),QPointF(200,220));
+        auto release=makeMouseEvent(QEvent::MouseButtonRelease,{240,220},Qt::LeftButton,Qt::NoButton);
+        m_handler->handleMouseRelease(&release);
+        QCOMPARE(emoji()->precisePosition(),QPointF(240,220));
+        QVERIFY(m_annotationLayer->snapController().guideBounds().isEmpty());
+        m_annotationLayer->undo(); QCOMPARE(emoji()->precisePosition(),QPointF(140,220));
+        m_annotationLayer->redo(); QCOMPARE(emoji()->precisePosition(),QPointF(240,220));
+    }
+    void testBoundarySnapInteraction();
+    void testBoundarySnapToggleDoesNotAccumulate();
+    void testBoundarySnapLeavesCreationAndMoveAlone();
+    void testBoundarySnapExcludedModes();
+    void testModifiedSDoesNotSnap();
+    void testOutsideClickAtRoundedBound_data();
+    void testOutsideClickAtRoundedBound();
+    void testOutsideClickHonorsAspectRatio_data();
+    void testOutsideClickHonorsAspectRatio();
     void testTinyMoveKeepsDetectedWindowSelection();
+    void testReleaseAppliesFinalSelectionPoint_data();
+    void testReleaseAppliesFinalSelectionPoint();
+    void testReleaseAppliesFinalResizeAndMove();
+    void testAspectLockedCornerResizeKeepsPressOffset_data();
+    void testAspectLockedCornerResizeKeepsPressOffset();
     void testNoMoveKeepsDetectedWindowSelection();
     void testTinyMoveWithoutDetectionFallsBackToFullScreen();
     void testLargeDragUsesDragSelectionInsteadOfPendingWindow();
@@ -47,6 +119,7 @@ private slots:
     void testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag();
 
     void testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled();
+    void testFreehandDrawingPreservesFractionalMovePositions();
 
 private:
     RegionInputHandler* m_handler = nullptr;
@@ -87,6 +160,350 @@ void tst_RegionInputHandler::cleanup()
 
     delete m_handler;
     m_handler = nullptr;
+}
+
+void tst_RegionInputHandler::testBoundarySnapInteraction()
+{
+    QImage image(400,400,QImage::Format_RGB32); image.fill(Qt::black);
+    { QPainter p(&image); p.fillRect(100,0,300,400,Qt::white); }
+    m_handler->setBoundarySnapSource(image,1);
+    m_selectionManager->setSelectionRect(QRect(20,20,77,80));
+    const QPoint press(98,60); // two pixels away from the inclusive right edge
+    auto down=makeMouseEvent(QEvent::MouseButtonPress,press,Qt::LeftButton,Qt::LeftButton);
+    m_handler->handleMousePress(&down);
+    QVERIFY(m_selectionManager->isResizing());
+    QSignalSpy changes(m_selectionManager,&SelectionStateManager::selectionChanged);
+    QVERIFY(m_handler->handleBoundarySnapKey(Qt::Key_Alt,true));
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,80,80));
+    QCOMPARE(changes.count(),1);
+    QVERIFY(m_selectionManager->snappedEdges().testFlag(Qt::RightEdge));
+    QVERIFY(m_handler->handleBoundarySnapKey(Qt::Key_Alt,false));
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,77,80));
+    QVERIFY(!m_selectionManager->snappedEdges());
+    QVERIFY(m_handler->handleBoundarySnapKey(Qt::Key_S,true));
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,80,80));
+    QVERIFY(m_handler->cancelSelectionResize());
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,77,80));
+    QVERIFY(!m_selectionManager->snappedEdges());
+    m_handler->handleBoundarySnapKey(Qt::Key_S,false);
+    m_handler->handleMousePress(&down);
+    m_handler->handleBoundarySnapKey(Qt::Key_S,true);
+    // Release at a new position must query the final raw geometry, even with no move event.
+    auto up=makeMouseEvent(QEvent::MouseButtonRelease,QPoint(111,60),Qt::LeftButton,Qt::NoButton);
+    m_handler->handleMouseRelease(&up);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,90,80));
+    QVERIFY(m_selectionManager->isComplete()); QVERIFY(!m_selectionManager->snappedEdges());
+    m_handler->handleBoundarySnapKey(Qt::Key_S,false);
+
+    m_selectionManager->setSelectionRect(QRect(20,20,77,80));
+    m_handler->handleMousePress(&down); m_handler->handleBoundarySnapKey(Qt::Key_S,true);
+    QVERIFY(m_selectionManager->snappedEdges());
+    m_handler->setBoundarySnapSource(QImage(),1);
+    QVERIFY(!m_selectionManager->snappedEdges());
+    m_handler->handleBoundarySnapKey(Qt::Key_S,true);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,77,80));
+}
+
+void tst_RegionInputHandler::testBoundarySnapToggleDoesNotAccumulate()
+{
+    QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
+    {QPainter p(&image);p.fillRect(100,0,300,400,Qt::white);}
+    m_handler->setBoundarySnapSource(image,1);
+    m_selectionManager->setSelectionRect(QRect(20,20,77,80));
+    auto down=makeMouseEvent(QEvent::MouseButtonPress,{98,60},Qt::LeftButton,Qt::LeftButton);
+    m_handler->handleMousePress(&down);
+    auto move=makeMouseEvent(QEvent::MouseMove,{99,60},Qt::NoButton,Qt::LeftButton);
+    m_handler->handleMouseMove(&move);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,78,80)); // offset preserved
+    QSignalSpy changes(m_selectionManager,&SelectionStateManager::selectionChanged);
+    for (int i=0;i<20;++i) {
+        changes.clear();
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,true);
+        QCOMPARE(changes.count(),1);
+        QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,80,80));
+        changes.clear();
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,false,true); // autorepeat release
+        QCOMPARE(changes.count(),0);
+        QVERIFY(m_selectionManager->snappedEdges());
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,false);
+        QCOMPARE(changes.count(),1);
+        QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,78,80));
+        QVERIFY(!m_selectionManager->snappedEdges());
+    }
+    // Mouse-event modifiers activate snapping without a separate key event.
+    QMouseEvent altMove(QEvent::MouseMove,QPointF(99,60),QPointF(99,60),
+                        Qt::NoButton,Qt::LeftButton,Qt::AltModifier);
+    m_handler->handleMouseMove(&altMove);
+    QVERIFY(m_selectionManager->snappedEdges());
+    QMouseEvent release(QEvent::MouseButtonRelease,QPointF(100,60),QPointF(100,60),
+                        Qt::LeftButton,Qt::NoButton,Qt::AltModifier);
+    m_handler->handleMouseRelease(&release);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(20,20,80,80));
+    QVERIFY(!m_selectionManager->snappedEdges());
+}
+
+void tst_RegionInputHandler::testBoundarySnapLeavesCreationAndMoveAlone()
+{
+    QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
+    {QPainter p(&image);p.fillRect(100,0,300,400,Qt::white);}
+    m_handler->setBoundarySnapSource(image,1);
+    m_selectionManager->startSelection({20,20});
+    QMouseEvent move(QEvent::MouseMove,QPointF(97,99),QPointF(97,99),
+                     Qt::NoButton,Qt::LeftButton,Qt::AltModifier);
+    m_handler->handleMouseMove(&move);
+    QCOMPARE(m_selectionManager->selectionRect(),QRect(QPoint(20,20),QPoint(97,99)));
+    QVERIFY(!m_selectionManager->snappedEdges());
+    m_selectionManager->finishSelection();
+    const QRect original=m_selectionManager->selectionRect();
+    m_selectionManager->startMove({50,50});
+    QMouseEvent drag(QEvent::MouseMove,QPointF(53,52),QPointF(53,52),
+                     Qt::NoButton,Qt::LeftButton,Qt::AltModifier);
+    m_handler->handleMouseMove(&drag);
+    QCOMPARE(m_selectionManager->selectionRect(),original.translated(3,2));
+    QVERIFY(!m_selectionManager->snappedEdges());
+}
+
+void tst_RegionInputHandler::testBoundarySnapExcludedModes()
+{
+    QImage image(400,400,QImage::Format_RGB32);image.fill(Qt::black);
+    {QPainter p(&image);p.fillRect(100,0,300,400,Qt::white);}
+    m_handler->setBoundarySnapSource(image,1);
+    for (int mode=0;mode<4;++mode) {
+        m_state.multiRegionMode=mode==0;
+        m_state.replaceTargetIndex=mode==1 ? 0 : -1;
+        m_handler->setBoundarySnapAllowed(mode!=2); // history
+        m_selectionManager->setAspectRatio(mode==3 ? 1.0 : 0);
+        const QRect original(20,20,77,80);
+        m_selectionManager->setSelectionRect(original);
+        m_selectionManager->startResize(QPoint(96,60),SelectionStateManager::ResizeHandle::Right);
+        m_state.currentPoint=QPoint(96,60);
+        QSignalSpy changes(m_selectionManager,&SelectionStateManager::selectionChanged);
+        m_handler->handleBoundarySnapKey(Qt::Key_S,true);
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,true);
+        QVERIFY(!m_selectionManager->snappedEdges());
+        QCOMPARE(m_selectionManager->selectionRect(),original);
+        QCOMPARE(changes.count(),0);
+        m_handler->handleBoundarySnapKey(Qt::Key_Alt,false);
+        m_handler->handleBoundarySnapKey(Qt::Key_S,false);
+        SelectionStateManager baseline;
+        baseline.setBounds(m_selectionManager->bounds());
+        baseline.setAspectRatio(m_selectionManager->aspectRatio());
+        baseline.setSelectionRect(original);
+        baseline.startResize({96, 60}, SelectionStateManager::ResizeHandle::Right);
+        baseline.updateResize({98, 60});
+        QMouseEvent move(QEvent::MouseMove, QPointF(98, 60), QPointF(98, 60),
+                         Qt::NoButton, Qt::LeftButton, Qt::AltModifier);
+        m_handler->handleMouseMove(&move);
+        QCOMPARE(m_selectionManager->selectionRect(), baseline.selectionRect());
+        QVERIFY(!m_selectionManager->snappedEdges());
+        m_selectionManager->cancelResizeOrMove();
+    }
+}
+
+void tst_RegionInputHandler::testModifiedSDoesNotSnap()
+{
+    QImage image(400, 400, QImage::Format_RGB32);
+    image.fill(Qt::black);
+    {
+        QPainter painter(&image);
+        painter.fillRect(100, 0, 300, 400, Qt::white);
+    }
+    m_handler->setBoundarySnapSource(image, 1);
+    const QRect raw(20, 20, 77, 80);
+    m_selectionManager->setSelectionRect(raw);
+    auto press = makeMouseEvent(QEvent::MouseButtonPress, {98, 60}, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    for (auto modifier : {Qt::ControlModifier, Qt::MetaModifier, Qt::ShiftModifier}) {
+        QSignalSpy changed(m_selectionManager, &SelectionStateManager::selectionChanged);
+        QVERIFY(!m_handler->handleBoundarySnapKey(Qt::Key_S, true, false, modifier));
+        QCOMPARE(changed.count(), 0);
+        QCOMPARE(m_selectionManager->selectionRect(), raw);
+        QVERIFY(!m_selectionManager->snappedEdges());
+    }
+    QVERIFY(m_handler->handleBoundarySnapKey(Qt::Key_S, true));
+    QVERIFY(m_selectionManager->snappedEdges());
+    // A modified release must still end an earlier plain-S gesture.
+    m_handler->handleBoundarySnapKey(Qt::Key_S, false, false, Qt::ShiftModifier);
+    QCOMPARE(m_selectionManager->selectionRect(), raw);
+    QVERIFY(!m_selectionManager->snappedEdges());
+}
+
+void tst_RegionInputHandler::testReleaseAppliesFinalSelectionPoint_data()
+{
+    QTest::addColumn<bool>("detected");
+    QTest::addColumn<bool>("moved");
+    QTest::addColumn<bool>("multi");
+    QTest::addColumn<bool>("floating");
+    for (int flags = 0; flags < 16; ++flags)
+        QTest::newRow(qPrintable(QString::number(flags)))
+            << bool(flags & 1) << bool(flags & 2) << bool(flags & 4) << bool(flags & 8);
+}
+
+void tst_RegionInputHandler::testReleaseAppliesFinalSelectionPoint()
+{
+    QFETCH(bool, detected);
+    QFETCH(bool, moved);
+    QFETCH(bool, multi);
+    QFETCH(bool, floating);
+    m_state.multiRegionMode = multi;
+    m_state.hasDetectedWindow = detected;
+    m_state.highlightedWindowRect = detected ? QRect(50, 50, 400, 300) : QRect();
+    QSignalSpy finished(m_handler, &RegionInputHandler::selectionFinished);
+    QSignalSpy fullscreen(m_handler, &RegionInputHandler::fullScreenSelectionRequested);
+    QSignalSpy cleared(m_handler, &RegionInputHandler::detectionCleared);
+    auto press = makeMouseEvent(QEvent::MouseButtonPress, QPoint(100,100), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    if (moved) {
+        auto move = makeMouseEvent(QEvent::MouseMove, QPoint(140,150), Qt::NoButton, Qt::LeftButton);
+        m_handler->handleMouseMove(&move);
+    }
+    auto release = makeMouseEvent(QEvent::MouseButtonRelease, QPoint(180,190), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release, floating ? RegionInputHandler::ReleaseTarget::FloatingUi
+                                                    : RegionInputHandler::ReleaseTarget::Canvas);
+    QCOMPARE(m_selectionManager->selectionRect(), QRect(100,100,81,91));
+    QCOMPARE(m_state.currentPoint, QPoint(180,190));
+    QVERIFY(m_selectionManager->isComplete());
+    QCOMPARE(finished.count(), 1);
+    QCOMPARE(fullscreen.count(), 0);
+    QCOMPARE(cleared.count(), detected ? 1 : 0);
+    if (detected) QCOMPARE(cleared.first().at(1).toBool(), true);
+}
+
+void tst_RegionInputHandler::testReleaseAppliesFinalResizeAndMove()
+{
+    const QRect original(40,40,100,80);
+    m_selectionManager->setSelectionRect(original);
+    m_selectionManager->startResize(original.bottomRight(), SelectionStateManager::ResizeHandle::BottomRight);
+    m_selectionManager->updateResize(QPoint(150,130));
+    auto release = makeMouseEvent(QEvent::MouseButtonRelease, QPoint(170,160), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release, RegionInputHandler::ReleaseTarget::FloatingUi);
+    QCOMPARE(m_selectionManager->selectionRect(), QRect(40,40,131,121));
+    QVERIFY(m_selectionManager->isComplete());
+
+    m_selectionManager->setSelectionRect(original);
+    m_selectionManager->startMove(QPoint(80,80));
+    m_selectionManager->updateMove(QPoint(90,90));
+    auto moveRelease = makeMouseEvent(QEvent::MouseButtonRelease, QPoint(110,120), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&moveRelease);
+    QCOMPARE(m_selectionManager->selectionRect(), original.translated(30,40));
+    QVERIFY(m_selectionManager->isComplete());
+}
+
+void tst_RegionInputHandler::testAspectLockedCornerResizeKeepsPressOffset_data()
+{
+    QTest::addColumn<QPoint>("pressPos");
+    QTest::addColumn<QPoint>("releaseDelta");
+    QTest::addColumn<QRect>("expected");
+    const QRect original(100, 100, 100, 80);
+    struct CornerCase {
+        const char* name;
+        QPoint pressPos;
+        QPoint dragDelta;
+        QRect resized;
+    };
+    const CornerCase cases[] = {
+        {"top-left", QPoint(103, 103), QPoint(-20, -16), QRect(80, 84, 120, 96)},
+        {"top-right", QPoint(196, 103), QPoint(20, -16), QRect(100, 84, 120, 96)},
+        {"bottom-left", QPoint(103, 176), QPoint(-20, 16), QRect(80, 100, 120, 96)},
+        {"bottom-right", QPoint(196, 176), QPoint(20, 16), QRect(100, 100, 120, 96)}
+    };
+    for (const auto& corner : cases) {
+        QTest::addRow("%s-click", corner.name) << corner.pressPos << QPoint() << original;
+        QTest::addRow("%s-drag", corner.name) << corner.pressPos << corner.dragDelta << corner.resized;
+    }
+}
+
+void tst_RegionInputHandler::testAspectLockedCornerResizeKeepsPressOffset()
+{
+    QFETCH(QPoint, pressPos);
+    QFETCH(QPoint, releaseDelta);
+    QFETCH(QRect, expected);
+    m_selectionManager->setSelectionRect(QRect(100, 100, 100, 80));
+    m_selectionManager->setAspectRatio(1.25);
+    auto press = makeMouseEvent(QEvent::MouseButtonPress, pressPos, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    QVERIFY(m_selectionManager->isResizing());
+
+    // No move event: release must apply the final delta without snapping to
+    // the pointer's offset within the handle's hit area.
+    auto release = makeMouseEvent(QEvent::MouseButtonRelease, pressPos + releaseDelta,
+                                  Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release);
+    QCOMPARE(m_selectionManager->selectionRect(), expected);
+    QVERIFY(m_selectionManager->isComplete());
+}
+
+void tst_RegionInputHandler::testOutsideClickAtRoundedBound_data()
+{
+    QTest::addColumn<bool>("vertical");
+    QTest::addColumn<bool>("negative");
+    QTest::newRow("right") << false << false;
+    QTest::newRow("left") << false << true;
+    QTest::newRow("bottom") << true << false;
+    QTest::newRow("top") << true << true;
+}
+
+void tst_RegionInputHandler::testOutsideClickAtRoundedBound()
+{
+    QFETCH(bool, vertical);
+    QFETCH(bool, negative);
+    m_selectionManager->setBounds(vertical ? QRect(0, 0, 21, 1000) : QRect(0, 0, 1000, 21));
+    m_selectionManager->setSelectionRect(vertical ? QRect(0, 100, 20, 10) : QRect(100, 0, 10, 20));
+    m_selectionManager->setAspectRatio(vertical ? 2.0 : 0.5);
+    QVERIFY(m_selectionManager->resizeFromBottomRight(vertical ? QPoint(1, 0) : QPoint(0, 1)));
+    const QRect original = vertical ? QRect(0, 100, 21, 11) : QRect(100, 0, 11, 21);
+    QCOMPARE(m_selectionManager->selectionRect(), original);
+    const int outside = negative ? 50 : 160;
+    const QPoint pos = vertical ? QPoint(10, outside) : QPoint(outside, 10);
+    QSignalSpy changed(m_selectionManager, &SelectionStateManager::selectionChanged);
+    QSignalSpy stateChanged(m_selectionManager, &SelectionStateManager::stateChanged);
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        auto press = makeMouseEvent(QEvent::MouseButtonPress, pos, Qt::LeftButton, Qt::LeftButton);
+        m_handler->handleMousePress(&press);
+        auto release = makeMouseEvent(QEvent::MouseButtonRelease, pos, Qt::LeftButton, Qt::NoButton);
+        m_handler->handleMouseRelease(&release);
+        QCOMPARE(m_selectionManager->selectionRect(), original);
+    }
+    QCOMPARE(changed.count(), 0);
+    QCOMPARE(stateChanged.count(), 0);
+    QVERIFY(m_selectionManager->isComplete());
+}
+
+void tst_RegionInputHandler::testOutsideClickHonorsAspectRatio_data()
+{
+    QTest::addColumn<QPoint>("position");
+    QTest::addColumn<QRect>("expected");
+    QTest::addColumn<qreal>("ratio");
+    QTest::newRow("right") << QPoint(399, 149) << QRect(100, 75, 300, 150) << 2.0;
+    QTest::newRow("left") << QPoint(0, 149) << QRect(0, 75, 300, 150) << 2.0;
+    QTest::newRow("top") << QPoint(199, 50) << QRect(50, 50, 300, 150) << 2.0;
+    QTest::newRow("bottom") << QPoint(199, 249) << QRect(50, 100, 300, 150) << 2.0;
+    QTest::newRow("top-left") << QPoint(0, 0) << QRect(0, 50, 300, 150) << 2.0;
+    QTest::newRow("top-right") << QPoint(499, 50) << QRect(100, 50, 300, 150) << 2.0;
+    QTest::newRow("bottom-left") << QPoint(0, 399) << QRect(0, 100, 300, 150) << 2.0;
+    QTest::newRow("bottom-right") << QPoint(499, 249) << QRect(100, 100, 300, 150) << 2.0;
+    QTest::newRow("perpendicular-boundary") << QPoint(999, 149) << QRect(100, 0, 600, 300) << 2.0;
+    QTest::newRow("unlocked") << QPoint(399, 149) << QRect(100, 100, 300, 100) << 0.0;
+}
+
+void tst_RegionInputHandler::testOutsideClickHonorsAspectRatio()
+{
+    QFETCH(QPoint, position);
+    QFETCH(QRect, expected);
+    QFETCH(qreal, ratio);
+    m_selectionManager->setSelectionRect(QRect(100, 100, 200, 100));
+    m_selectionManager->setAspectRatio(ratio);
+    QSignalSpy changed(m_selectionManager, &SelectionStateManager::selectionChanged);
+    QSignalSpy stateChanged(m_selectionManager, &SelectionStateManager::stateChanged);
+    auto press = makeMouseEvent(QEvent::MouseButtonPress, position, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    auto release = makeMouseEvent(QEvent::MouseButtonRelease, position, Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release);
+    QCOMPARE(m_selectionManager->selectionRect(), expected);
+    QCOMPARE(m_selectionManager->aspectRatio(), ratio);
+    QVERIFY(m_selectionManager->isComplete());
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(stateChanged.count(), 0);
 }
 
 void tst_RegionInputHandler::testTinyMoveKeepsDetectedWindowSelection()
@@ -325,6 +742,34 @@ void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegio
     m_handler->handleMouseMove(&secondMoveEvent);
 
     QVERIFY(m_handler->lastMagnifierRect().isNull());
+}
+
+void tst_RegionInputHandler::testFreehandDrawingPreservesFractionalMovePositions()
+{
+    // Fractional DPR (e.g. Windows 150%) delivers sub-pixel logical positions;
+    // rounding them before the freehand tool sees them makes curves wobble.
+    QVector<QPointF> positions;
+    ToolManager toolManager;
+    toolManager.setAnnotationLayer(m_annotationLayer);
+    toolManager.registerHandler(std::make_unique<RecordingPencilHandler>(&positions));
+    m_handler->setToolManager(&toolManager);
+    m_selectionManager->setSelectionRect(QRect(0, 0, 800, 600));
+    m_state.currentTool = ToolId::Pencil;
+
+    const QPointF pressPos(100.333, 100.667);
+    const QPointF movePos(120.667, 110.333);
+    const QPointF releasePos(130.333, 115.667);
+
+    auto press = makeMouseEventF(QEvent::MouseButtonPress, pressPos, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    QVERIFY(m_state.isDrawing);
+    auto move = makeMouseEventF(QEvent::MouseMove, movePos, Qt::NoButton, Qt::LeftButton);
+    m_handler->handleMouseMove(&move);
+    auto release = makeMouseEventF(QEvent::MouseButtonRelease, releasePos, Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release, RegionInputHandler::ReleaseTarget::Canvas);
+
+    m_handler->setToolManager(nullptr);
+    QCOMPARE(positions, (QVector<QPointF>{pressPos, movePos, releasePos}));
 }
 
 QTEST_MAIN(tst_RegionInputHandler)

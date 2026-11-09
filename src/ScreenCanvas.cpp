@@ -140,15 +140,48 @@ void ScreenCanvas::closeFromSession()
     close();
 }
 
+#ifdef Q_OS_LINUX
+void ScreenCanvas::setFloatingUiInputRegion(const QRegion& region)
+{
+    const WId nativeWindow = winId();
+    const qreal pixelRatio = devicePixelRatioF();
+    if (m_inputRegionWindow == nativeWindow && m_inputRegionPixelRatio == pixelRatio
+        && m_floatingUiInputRegion == region) {
+        return;
+    }
+    const QRegion previous = m_inputRegionWindow ? m_floatingUiInputRegion : QRegion(rect());
+    m_floatingUiInputRegion = region;
+    m_inputRegionWindow = nativeWindow;
+    m_inputRegionPixelRatio = pixelRatio;
+    if (setWindowInputRegion(this, region)) {
+        // QWidget::setMask changes ShapeBounding on every toolbar move, adding
+        // expensive X11/compositor shape updates on GNOME. Keep the canvas
+        // native bounds fixed; clear/restore only the moving transparent holes.
+        clearMask();
+        update(previous.xored(region));
+    } else {
+        setMask(region);
+    }
+}
+#endif
+
 void ScreenCanvas::paintEvent(QPaintEvent* event)
 {
-    Q_UNUSED(event);
-
     if (!m_session) {
         return;
     }
 
     QPainter painter(this);
+    if (event) {
+        painter.setClipRegion(event->region(), Qt::IntersectClip);
+    }
+#ifdef Q_OS_LINUX
+    if (m_inputRegionWindow) {
+        // The translucent backing store clears the dirty area before painting.
+        // Clip every canvas mode, including white/black boards and annotations.
+        painter.setClipRegion(m_floatingUiInputRegion, Qt::IntersectClip);
+    }
+#endif
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
     m_session->handleSurfacePaint(this, painter);

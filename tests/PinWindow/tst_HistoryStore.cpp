@@ -61,6 +61,8 @@ void tst_HistoryStore::testWriteAndLoadCapture()
     captureRequest.devicePixelRatio = 2.0;
     captureRequest.canvasLogicalSize = QSize(160, 90);
     captureRequest.cornerRadius = 8;
+    captureRequest.windowTitle = QStringLiteral("Editor — Notes");
+    captureRequest.ownerApp = QStringLiteral("Test App");
     captureRequest.createdAt = QDateTime(QDate(2026, 1, 1), QTime(12, 0, 0, 0));
 
     auto captureEntry = SnapTray::HistoryStore::writeCaptureSession(captureRequest);
@@ -80,6 +82,23 @@ void tst_HistoryStore::testWriteAndLoadCapture()
     QCOMPARE(loadedCapture->canvasLogicalSize, captureRequest.canvasLogicalSize);
     QCOMPARE(loadedCapture->cornerRadius, captureRequest.cornerRadius);
     QCOMPARE(loadedCapture->devicePixelRatio, captureRequest.devicePixelRatio);
+    QCOMPARE(loadedCapture->windowTitle, captureRequest.windowTitle);
+    QCOMPARE(loadedCapture->ownerApp, captureRequest.ownerApp);
+
+    // Existing manifests without the optional window context still load.
+    QFile manifestFile(QDir(captureEntry->entryDirectory).filePath(QStringLiteral("manifest.json")));
+    QVERIFY(manifestFile.open(QIODevice::ReadOnly));
+    QJsonObject legacyManifest = QJsonDocument::fromJson(manifestFile.readAll()).object();
+    manifestFile.close();
+    legacyManifest.remove(QStringLiteral("windowTitle"));
+    legacyManifest.remove(QStringLiteral("ownerApp"));
+    QVERIFY(manifestFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    manifestFile.write(QJsonDocument(legacyManifest).toJson());
+    manifestFile.close();
+    const auto legacyCapture = SnapTray::HistoryStore::loadEntry(captureEntry->id);
+    QVERIFY(legacyCapture);
+    QVERIFY(legacyCapture->windowTitle.isEmpty());
+    QVERIFY(legacyCapture->ownerApp.isEmpty());
 
     QVERIFY(SnapTray::HistoryStore::deleteEntry(*captureEntry));
     QVERIFY(!QFileInfo::exists(captureEntry->entryDirectory));

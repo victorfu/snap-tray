@@ -8,8 +8,8 @@ import SnapTrayQml
  * Features:
  *   - Glass-effect background (gradient + border + highlight)
  *   - Animated recording indicator (conical gradient / paused / preparing)
- *   - Duration label
- *   - Stop button with hover state
+ *   - Duration label ("Paused" while paused; the time stays frozen)
+ *   - Pause/Resume and Stop buttons with hover state and accessible names
  *   - Draggable window repositioning
  *
  * Properties set from C++ (QmlRecordingControlBar):
@@ -33,6 +33,10 @@ Item {
     property bool isPreparing: false
     property string preparingStatus: ""
     property bool audioEnabled: false
+    // Accessible names; the same strings label the tray actions and tooltips.
+    property string pauseButtonName: qsTr("Pause Recording")
+    property string resumeButtonName: qsTr("Resume Recording")
+    property string stopButtonName: qsTr("Stop Recording")
 
     // ── Theme colors from ComponentTokens (Overlay — always dark) ──
     readonly property color themeGlassBg: ComponentTokens.recordingControlBarBg
@@ -250,9 +254,12 @@ Item {
         // ── Duration label ──
         Text {
             id: durationLabel
+            objectName: "durationLabel"
             text: root.isPreparing
                 ? (root.preparingStatus || qsTr("Preparing..."))
-                : root.duration
+                : (root.isPaused ? qsTr("Paused %1").arg(root.duration) : root.duration)
+            Accessible.role: Accessible.StaticText
+            Accessible.name: text
             font.family: root.monoFont
             font.pixelSize: ComponentTokens.recordingControlBarFontSize
             font.weight: Font.DemiBold
@@ -266,8 +273,62 @@ Item {
     }
 
     // ========================================================================
-    // Button area (right side: stop)
+    // Button area (right side: pause/resume, stop)
     // ========================================================================
+    component ControlButton: Item {
+        id: control
+        property int buttonId: 0
+        property url iconSource
+        property color iconColor: root.themeIconNormal
+        property color hoverIconColor: iconColor
+        property string accessibleName
+        signal activated()
+
+        width: root.buttonSize
+        height: root.buttonSize
+        opacity: root.isPreparing ? 0.5 : 1.0
+
+        Accessible.role: Accessible.Button
+        Accessible.name: accessibleName
+        Accessible.onPressAction: if (!root.isPreparing) control.activated()
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 2
+            radius: ComponentTokens.recordingControlBarButtonRadius
+            color: root.themeHoverBg
+            visible: controlMouseArea.containsMouse && !root.isPreparing
+        }
+
+        SvgIcon {
+            anchors.centerIn: parent
+            source: control.iconSource
+            iconSize: ComponentTokens.recordingControlBarIconSize
+            color: controlMouseArea.containsMouse && !root.isPreparing
+                ? control.hoverIconColor : control.iconColor
+        }
+
+        MouseArea {
+            id: controlMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: CursorTokens.toolbarControl
+            enabled: !root.isPreparing
+
+            onClicked: control.activated()
+
+            onContainsMouseChanged: {
+                if (containsMouse) {
+                    var mapped = control.mapToItem(root, 0, 0)
+                    root.buttonHovered(control.buttonId, mapped.x, mapped.y,
+                                       control.width, control.height)
+                } else {
+                    root.buttonUnhovered()
+                }
+            }
+        }
+    }
+
     Row {
         id: buttonArea
         anchors {
@@ -278,46 +339,25 @@ Item {
         spacing: root.buttonSpacing
         z: 2
 
-        // ── Stop button ──
-        Item {
-            width: root.buttonSize
-            height: root.buttonSize
-            opacity: root.isPreparing ? 0.5 : 1.0
+        // ── Pause/Resume button (buttonId 1) ──
+        ControlButton {
+            objectName: "pauseResumeButton"
+            buttonId: 1
+            iconSource: root.isPaused ? "qrc:/icons/icons/play.svg" : "qrc:/icons/icons/pause.svg"
+            iconColor: root.themeIconNormal
+            hoverIconColor: root.themeIconActive
+            accessibleName: root.isPaused ? root.resumeButtonName : root.pauseButtonName
+            onActivated: root.isPaused ? root.resumeRequested() : root.pauseRequested()
+        }
 
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: 2
-                radius: ComponentTokens.recordingControlBarButtonRadius
-                color: root.themeHoverBg
-                visible: stopMouseArea.containsMouse && !root.isPreparing
-            }
-
-            SvgIcon {
-                anchors.centerIn: parent
-                source: "qrc:/icons/icons/stop.svg"
-                iconSize: ComponentTokens.recordingControlBarIconSize
-                color: root.themeIconRecord
-            }
-
-            MouseArea {
-                id: stopMouseArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: CursorTokens.toolbarControl
-                enabled: !root.isPreparing
-
-                onClicked: root.stopRequested()
-
-                onContainsMouseChanged: {
-                    if (containsMouse) {
-                        var mapped = parent.mapToItem(root, 0, 0)
-                        root.buttonHovered(0, mapped.x, mapped.y,
-                                           parent.width, parent.height)
-                    } else {
-                        root.buttonUnhovered()
-                    }
-                }
-            }
+        // ── Stop button (buttonId 0) ──
+        ControlButton {
+            objectName: "stopButton"
+            buttonId: 0
+            iconSource: "qrc:/icons/icons/stop.svg"
+            iconColor: root.themeIconRecord
+            accessibleName: root.stopButtonName
+            onActivated: root.stopRequested()
         }
     }
 }
