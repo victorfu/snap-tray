@@ -777,18 +777,27 @@ void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
     if (!m_view)
         return;
 
-    // Fit the row to the viewport first so placement never has to clip it.
-    const QRect viewportLocal = insetViewportRect(QRect(0, 0, viewportWidth, viewportHeight),
-                                                  kToolbarPlacementViewportInset);
-    applyOverflowLayout(viewportLocal.translated(
-        m_parentWidget ? m_parentWidget->mapToGlobal(QPoint()) : QPoint()));
+    // Use the same work area as the options strip. In particular, X11 window
+    // managers can move a toolbar out of a reserved panel/dock area after show().
+    const QPoint globalOrigin = m_parentWidget
+        ? m_parentWidget->mapToGlobal(QPoint()) : QPoint();
+    QRect viewport(0, 0, viewportWidth, viewportHeight);
+    if (QScreen* screen = QGuiApplication::screenAt(viewport.center() + globalOrigin)) {
+        const QRect available = viewport.intersected(
+            screen->availableGeometry().translated(-globalOrigin));
+        if (!available.isEmpty()) {
+            viewport = available;
+        }
+    }
+    applyOverflowLayout(insetViewportRect(viewport, kToolbarPlacementViewportInset)
+                            .translated(globalOrigin));
 
     const int w = m_view->width();
     const int h = m_view->height();
     const QPoint topLeft = resolveTopLeftForSelection(
         selectionRect,
         QSize(w, h),
-        QRect(0, 0, viewportWidth, viewportHeight),
+        viewport,
         alignment,
         avoidRect);
 
@@ -1092,6 +1101,11 @@ bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
     }
     if (obj == m_view) {
         switch (event->type()) {
+        case QEvent::Move:
+        case QEvent::Resize:
+            emit geometryChanged();
+            syncCursorSurface();
+            break;
         case QEvent::Enter:
         case QEvent::HoverEnter:
         case QEvent::HoverMove:

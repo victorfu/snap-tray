@@ -89,7 +89,6 @@ ColorPickOverlay::ColorPickOverlay(ColorPickSource source)
     setAccessibleName(tr("Pick color from screen"));
 
     m_samplePixmap = QPixmap::fromImage(m_source.image);
-    m_sampleOrigin = m_source.sampleRect.topLeft() - m_source.overlayGeometry.topLeft();
 
     m_magnifier = new MagnifierPanel(this);
     m_magnifier->setDevicePixelRatio(m_source.image.devicePixelRatio());
@@ -175,7 +174,11 @@ void ColorPickOverlay::cancel()
 
 void ColorPickOverlay::trackPointer(const QPointF& localPos)
 {
-    const QPoint pixel = ColorPick::pixelAt(localPos - QPointF(m_sampleOrigin),
+    // The window manager can move the overlay after setGeometry() (for
+    // example, to clear an Ubuntu panel). The image stays in global space;
+    // use the actual window position, retaining fractional HiDPI coordinates.
+    const QPointF inSample = mapToGlobal(localPos) - QPointF(m_source.sampleRect.topLeft());
+    const QPoint pixel = ColorPick::pixelAt(inSample,
                                             m_source.image.devicePixelRatio(),
                                             m_source.image.size());
     setSample(pixel.x() >= 0, pixel);
@@ -214,7 +217,8 @@ QPointF ColorPickOverlay::pixelCenterLocal() const
     const qreal dpr = m_source.image.devicePixelRatio() > 0.0
         ? m_source.image.devicePixelRatio()
         : 1.0;
-    return QPointF(m_sampleOrigin) + (QPointF(m_pixel) + QPointF(0.5, 0.5)) / dpr;
+    return mapFromGlobal(QPointF(m_source.sampleRect.topLeft())
+                         + (QPointF(m_pixel) + QPointF(0.5, 0.5)) / dpr);
 }
 
 void ColorPickOverlay::syncCursor()
@@ -294,6 +298,16 @@ void ColorPickOverlay::showEvent(QShowEvent* event)
             grabKeyboard();
         }
     });
+}
+
+void ColorPickOverlay::moveEvent(QMoveEvent* event)
+{
+    QWidget::moveEvent(event);
+    // A native move can reuse the backing store without painting. Re-anchor
+    // the reticle and magnifier even when the pointer has not moved yet.
+    if (m_hasSample) {
+        update();
+    }
 }
 
 void ColorPickOverlay::mousePressEvent(QMouseEvent* event)

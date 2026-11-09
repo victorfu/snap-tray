@@ -646,6 +646,20 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Track user drag to prevent paintEvent from overriding toolbar position
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
         this, [this]() { m_toolbarUserDragged = true; });
+    // Native placement is asynchronous on X11. Re-anchor after the window
+    // manager settles the toolbar, even if no capture repaint follows.
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::geometryChanged,
+        this, [this]() {
+            if (!m_qmlToolbar->isVisible()) {
+                return;
+            }
+            if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
+                m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
+            }
+            if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+                m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
+            }
+        }, Qt::QueuedConnection);
 
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::emojiPickerRequested,
         this, [this]() { showEmojiPickerPopup(); });

@@ -22,6 +22,8 @@ private slots:
     void invalidSourceStartsNothing();
     void clickPicksThePixelUnderThePointer_data();
     void clickPicksThePixelUnderThePointer();
+    void movedOverlaySamplesUnderGlobalPointer_data();
+    void movedOverlaySamplesUnderGlobalPointer();
     void arrowKeysMoveOnePhysicalPixelAndEnterPicks();
     void escapeRightClickAndOutsideClickCancel_data();
     void escapeRightClickAndOutsideClickCancel();
@@ -143,6 +145,72 @@ void tst_ColorPickOverlay::clickPicksThePixelUnderThePointer()
     QCOMPARE(cancelled.size(), 0);
     const QPoint pixel = ColorPick::pixelAt(logical, dpr, (QSizeF(area.size()) * dpr).toSize());
     QCOMPARE(picked.first().first().value<QColor>(), expectedAt(pixel));
+}
+
+void tst_ColorPickOverlay::movedOverlaySamplesUnderGlobalPointer_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<QPoint>("sampleOffset");
+    QTest::newRow("screen-1x") << 1.0 << QPoint();
+    QTest::newRow("pin-1.5x") << 1.5 << QPoint(30, 20);
+    QTest::newRow("pin-2x") << 2.0 << QPoint(30, 20);
+}
+
+void tst_ColorPickOverlay::movedOverlaySamplesUnderGlobalPointer()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(QPoint, sampleOffset);
+    // Include a negative monitor origin and a pin offset within that monitor.
+    const QRect area(-400, 40, 400, 300);
+    const QRect sampleArea(area.topLeft() + sampleOffset, QSize(300, 240));
+    const QImage image = gradientImage((QSizeF(sampleArea.size()) * dpr).toSize(), dpr);
+    ColorPickOverlay overlay({area, sampleArea, image});
+    const QPointF inSample(80.5, 90.5);
+    const QPointF globalPointer = QPointF(sampleArea.topLeft()) + inSample;
+    const QPoint expectedPixel = ColorPick::pixelAt(inSample, dpr, image.size());
+    const auto movePointer = [&] {
+        QMouseEvent move(QEvent::MouseMove, overlay.mapFromGlobal(globalPointer), globalPointer,
+                         Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(&overlay, &move);
+    };
+    movePointer();
+    QCOMPARE(overlay.samplePixel(), expectedPixel);
+
+    // X11 may shift a tool window away from a desktop panel after placement.
+    // The source image and pointer stay at the same global coordinates.
+    overlay.move(area.topLeft() + QPoint(8, 28));
+    movePointer();
+    QVERIFY(overlay.hasSample());
+    QCOMPARE(overlay.samplePixel(), expectedPixel);
+    QCOMPARE(overlay.currentColor(), expectedAt(expectedPixel));
+
+    QImage canvas(overlay.size(), QImage::Format_ARGB32_Premultiplied);
+    canvas.fill(Qt::transparent);
+    overlay.render(&canvas);
+    auto* magnifier = overlay.findChild<MagnifierPanel*>();
+    QVERIFY(magnifier);
+    QCOMPARE(magnifier->currentColor(), expectedAt(expectedPixel));
+
+    // The reticle must also remain over that pixel on the underlying image,
+    // not at the position it would have had before the overlay moved.
+    const QPoint center = overlay.mapFromGlobal(
+        QPointF(sampleArea.topLeft()) + (QPointF(expectedPixel) + QPointF(0.5, 0.5)) / dpr)
+                              .toPoint();
+    const QPoint arm = center + QPoint(ColorPickOverlay::kReticleGap + 2, 0);
+    bool reticlePainted = false;
+    for (int y = -1; y <= 1; ++y) {
+        for (int x = -1; x <= 1; ++x) {
+            reticlePainted |= canvas.pixelColor(arm + QPoint(x, y)).alpha() == 255;
+        }
+    }
+    QVERIFY(reticlePainted);
+
+    // Keyboard fine-tuning and the accepted color use the same physical pixel.
+    QSignalSpy picked(&overlay, &ColorPickOverlay::colorPicked);
+    QTest::keyClick(&overlay, Qt::Key_Right);
+    QTest::keyClick(&overlay, Qt::Key_Return);
+    QCOMPARE(picked.size(), 1);
+    QCOMPARE(picked.first().first().value<QColor>(), expectedAt(expectedPixel + QPoint(1, 0)));
 }
 
 void tst_ColorPickOverlay::arrowKeysMoveOnePhysicalPixelAndEnterPicks()

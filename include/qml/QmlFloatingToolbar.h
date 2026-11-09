@@ -142,6 +142,7 @@ public:
     QRect overflowGeometry() const;
 
 signals:
+    void geometryChanged();
     void overflowVisibilityChanged();
     void dragStarted();
     void dragFinished();

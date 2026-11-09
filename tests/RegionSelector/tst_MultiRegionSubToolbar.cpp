@@ -2,6 +2,8 @@
 #include <QScopeGuard>
 #include <QGuiApplication>
 #include <QWheelEvent>
+#include <QScreen>
+#include <QWindow>
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "RegionSelector.h"
@@ -11,6 +13,7 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "qml/QmlFloatingSubToolbar.h"
+#include "qml/QmlFloatingToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/RegionToolbarViewModel.h"
 
@@ -26,10 +29,38 @@ private slots:
     void testToolbarToggleHidesSubToolbarInMultiRegionMode();
     void testBeginReplaceHidesStaleSubToolbar();
     void testCompletedSelectionReopensHiddenSubToolbar();
+    void testSubToolbarFollowsNativeToolbarMoveAtBottom();
     void testWheelDoesNotAdjustWidthWithoutCompletedSelection();
     void testMosaicWheelDoesNotAdjustWidthWithCompletedSelection();
     void testStepBadgeSizeStartsSavedAndWheelStopsAtEnds();
 };
+
+void tst_RegionSelectorMultiRegionSubToolbar::testSubToolbarFollowsNativeToolbarMoveAtBottom()
+{
+    RegionSelector selector;
+    const QRect available = QGuiApplication::primaryScreen()->availableGeometry();
+    selector.m_qmlToolbar->positionForSelection(
+        QRect(80, 80, 300, 200), available.width(), available.height());
+    selector.m_qmlToolbar->show();
+    selector.m_qmlToolbar->window()->setPosition(
+        available.left() + 20,
+        available.bottom() - selector.m_qmlToolbar->height() - 10);
+    selector.m_inputState.currentTool = ToolId::Arrow;
+    selector.m_inputState.showSubToolbar = true;
+    selector.syncRegionSubToolbar(true);
+    QTRY_VERIFY(selector.m_qmlSubToolbar->isVisible());
+    QTRY_VERIFY(selector.m_qmlSubToolbar->geometry().bottom()
+                < selector.m_qmlToolbar->geometry().top());
+
+    // Model a window manager moving the native toolbar up to clear a bottom
+    // panel after the strip has already been positioned. No capture repaint
+    // or user drag signal accompanies this move.
+    const QRect oldStrip = selector.m_qmlSubToolbar->geometry();
+    selector.m_qmlToolbar->window()->setPosition(oldStrip.topLeft());
+    QTRY_VERIFY(!selector.m_qmlSubToolbar->geometry().intersects(
+        selector.m_qmlToolbar->geometry()));
+    QVERIFY(available.contains(selector.m_qmlSubToolbar->geometry()));
+}
 
 void tst_RegionSelectorMultiRegionSubToolbar::testMarkerTextCacheIsSingleRegionOnly()
 {

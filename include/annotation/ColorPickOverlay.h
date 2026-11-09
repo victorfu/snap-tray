@@ -95,6 +95,7 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void showEvent(QShowEvent* event) override;
+    void moveEvent(QMoveEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -111,7 +112,6 @@ private:
 
     ColorPickSource m_source;
     QPixmap m_samplePixmap;
-    QPoint m_sampleOrigin;  // sampleRect's top-left, local to this window
     MagnifierPanel* m_magnifier = nullptr;
     SelectionDirtyRegionPlanner m_dirtyPlanner;
     QPoint m_pixel;
