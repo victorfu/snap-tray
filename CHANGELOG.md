@@ -6,6 +6,12 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.72] - 2026-11-09
+
+### Improved
+
+- Removed the purple background behind the rightmost action buttons in the capture and pin toolbars for a cleaner appearance.
+
 ## [1.0.71] - 2026-11-09
 
 ### Fixed
