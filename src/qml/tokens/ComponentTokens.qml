@@ -54,9 +54,6 @@ QtObject {
     readonly property color toolbarControlBackgroundPressed: DesignSystem.toolbarControlBackgroundPressed
     readonly property color toolbarBackground: DesignSystem.toolbarBackground
     readonly property color toolbarSeparator: DesignSystem.toolbarSeparator
-    // Finishing actions (Copy / Save / Pin) sit on a faint accent band (#224).
-    readonly property color toolbarFinishGroupBackground: Qt.alpha(
-        SemanticTokens.isDarkMode ? DesignSystem.accentLight : DesignSystem.accentDefault, 0.14)
     readonly property color toolbarIcon: DesignSystem.toolbarIcon
     readonly property color toolbarIconActive: DesignSystem.toolbarIconActive
     readonly property color toolbarPopupBackground: DesignSystem.toolbarPopupBackground
