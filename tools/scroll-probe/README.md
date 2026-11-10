@@ -131,5 +131,12 @@ Shift statuses: `found`, `ambiguous` (two shifts equally likely, e.g. two panes 
 `insufficient_detail` (blank or repeating content), `not_found` (no exact row match, e.g. fractional
 scaling re-rasterised the text), `invalid_input`.
 
+On macOS, an `AXWebArea` frame is not treated as document geometry. Chrome can report the
+viewport frame even for a long page. Without independent scroll-bar data, its position and
+endpoint fields stay unknown; `diagnostics.contentsGeometryIgnored` records why. The probe
+still runs the requested repeats and measures image displacement without a platform prior.
+This does not establish reliable system position or end detection for the application's
+acceptance criteria.
+
 Collect the lines from every application in the #265 matrix and judge each one against the
 thresholds in the issue.

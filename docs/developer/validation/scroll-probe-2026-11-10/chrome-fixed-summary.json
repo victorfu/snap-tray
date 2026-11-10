@@ -1,0 +1,66 @@
+[
+  {
+    "case": "Chrome fixed wheel-pixels 120 x10",
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 121,
+      "strictSettleP95Ms": 239,
+      "strictSettles": 10
+    },
+    "injected": 10,
+    "motionObserved": 10,
+    "matchRatioMin": 0.20162016201620162,
+    "matchRatioMax": 0.31493001555209954,
+    "strictConfirmedP95Ms": 329
+  },
+  {
+    "case": "Chrome fixed continuous 120 x10",
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 118,
+      "strictSettleP95Ms": 136,
+      "strictSettles": 10
+    },
+    "injected": 10,
+    "motionObserved": 10,
+    "matchRatioMin": 0.2037037037037037,
+    "matchRatioMax": 0.2906574394463668,
+    "strictConfirmedP95Ms": 220
+  },
+  {
+    "case": "Chrome fixed post-to-process 120 x10",
+    "stats": {
+      "repeats": 10,
+      "shiftMaxPx": 0,
+      "shiftMeanPx": 0,
+      "shiftMinPx": 0,
+      "shiftStddevPx": 0,
+      "shiftsFound": 10,
+      "strictSettleP50Ms": 0,
+      "strictSettleP95Ms": 0,
+      "strictSettles": 10
+    },
+    "injected": 10,
+    "motionObserved": 0,
+    "matchRatioMin": 1.0,
+    "matchRatioMax": 1.0,
+    "strictConfirmedP95Ms": 376
+  },
+  {
+    "case": "Chrome control wheel after pid no-motion",
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 132,
+      "strictSettleP95Ms": 132,
+      "strictSettles": 1
+    },
+    "injected": 1,
+    "motionObserved": 1,
+    "matchRatioMin": 0.2674772036474164,
+    "matchRatioMax": 0.2674772036474164,
+    "strictConfirmedP95Ms": 222
+  }
+]
