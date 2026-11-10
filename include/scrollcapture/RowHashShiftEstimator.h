@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QVector>
+#include <QImage>
 #include <QtGlobal>
 
 #include <optional>
@@ -42,6 +43,9 @@ struct ShiftEstimate {
         Found,
         // Two or more shifts are supported almost equally; see `candidates`.
         Ambiguous,
+        // Independently measured regions have different displacements. There
+        // is no single alignment for this frame, even with a dominant shift.
+        NonUniformMotion,
         // Too few unique rows agree (blank or repeating content).
         InsufficientDetail,
         // The moving rows do not match at any allowed shift.
@@ -60,6 +64,7 @@ struct ShiftEstimate {
     // Rows identical at the same position in both frames.
     int staticRows = 0;
     // For Ambiguous: every shift close to the best, best first.
+    // For NonUniformMotion: independently observed displacements, sorted.
     QVector<int> candidates;
     // Shifts that were searched (inclusive); both 0 when no search ran.
     int searchLow = 0;
@@ -75,5 +80,28 @@ ShiftEstimate estimateVerticalShift(const QVector<quint64>& before,
                                     const ShiftEstimatorOptions& options = {});
 
 const char* shiftEstimateStatusName(ShiftEstimate::Status status);
+
+struct BandShiftEstimate {
+    ShiftEstimate estimate;
+    // Conservative alignment result: rejects conflicting or unresolved moving
+    // bands even when a dominant displacement was measured successfully.
+    ShiftEstimate alignmentEstimate;
+    QVector<ShiftEstimate> bands;
+    // Unconstrained observations used to detect conflicts outside the prior.
+    QVector<ShiftEstimate> observedBands;
+    QVector<int> conflictingBands;
+    QVector<int> unresolvedBands;
+    int supportingBands = 0;
+    // A dominant displacement is not a promise that the entire frame can be
+    // stitched: sticky/independently scrolling columns may disagree.
+    bool nonUniformMotion = false;
+};
+
+// Eight equal-width vertical bands, each using the same exact-row criteria.
+// A displacement needs a strict majority of ALL bands, including blank ones.
+// No band is selected using the expected shift and no thresholds are relaxed.
+BandShiftEstimate estimateVerticalShiftByBands(const QImage& before, const QImage& after,
+                                              const ShiftEstimatorOptions& options = {},
+                                              int horizontalInset = 0);
 
 } // namespace snaptray::scrollcapture

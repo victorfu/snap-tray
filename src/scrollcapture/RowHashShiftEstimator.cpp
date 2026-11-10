@@ -1,6 +1,8 @@
 #include "scrollcapture/RowHashShiftEstimator.h"
+#include "scrollcapture/FrameRowHashes.h"
 
 #include <QHash>
+#include <QSet>
 
 #include <algorithm>
 
@@ -148,6 +150,81 @@ ShiftEstimate estimateVerticalShift(const QVector<quint64>& before,
     return result;
 }
 
+BandShiftEstimate estimateVerticalShiftByBands(const QImage& before, const QImage& after,
+                                              const ShiftEstimatorOptions& options,
+                                              int horizontalInset)
+{
+    constexpr int kBandCount = 8;
+    BandShiftEstimate result;
+    if (before.isNull() || before.size() != after.size() || horizontalInset < 0
+        || horizontalInset > (before.width() - 1) / 2
+        || before.width() - 2 * horizontalInset < kBandCount) {
+        return result;
+    }
+    const int width = before.width() - 2 * horizontalInset;
+    QHash<int, int> support;
+    QVector<bool> blankStaticBands;
+    for (int band = 0; band < kBandCount; ++band) {
+        const int left = horizontalInset + width * band / kBandCount;
+        const int right = horizontalInset + width * (band + 1) / kBandCount;
+        const QRect rect(left, 0, right - left, before.height());
+        const auto beforeRows = computeRowHashes(before.copy(rect));
+        const auto afterRows = computeRowHashes(after.copy(rect));
+        const auto estimate = estimateVerticalShift(beforeRows, afterRows, options);
+        auto unconstrained = options;
+        unconstrained.expectedShift.reset();
+        result.observedBands.append(estimateVerticalShift(beforeRows, afterRows, unconstrained));
+        const QSet<quint64> distinct(beforeRows.cbegin(), beforeRows.cend());
+        blankStaticBands.append(beforeRows == afterRows
+            && distinct.size() < std::max(1, options.minDistinctMatches));
+        result.bands.append(estimate);
+        if (estimate.status == ShiftEstimate::Status::Found) {
+            ++support[estimate.shift];
+        }
+    }
+    result.estimate.status = ShiftEstimate::Status::NotFound;
+    for (const auto& band : result.bands) {
+        if (band.status == ShiftEstimate::Status::Found && support[band.shift] > kBandCount / 2
+            && (band.shift != 0 || before == after)) {
+            result.estimate = band;
+            result.supportingBands = support[band.shift];
+            break;
+        }
+    }
+    if (result.estimate.status != ShiftEstimate::Status::Found && support.size() > 1) {
+        result.estimate.status = ShiftEstimate::Status::Ambiguous;
+        result.estimate.candidates = support.keys().toVector();
+        std::sort(result.estimate.candidates.begin(), result.estimate.candidates.end());
+    }
+    result.alignmentEstimate = result.estimate;
+    if (result.estimate.status == ShiftEstimate::Status::Found) {
+        QSet<int> shifts{result.estimate.shift};
+        for (int band = 0; band < result.observedBands.size(); ++band) {
+            if (blankStaticBands[band]) {
+                continue;
+            }
+            const auto& observed = result.observedBands[band];
+            if (observed.status != ShiftEstimate::Status::Found) {
+                result.unresolvedBands.append(band);
+            } else if (observed.shift != result.estimate.shift) {
+                result.conflictingBands.append(band);
+                shifts.insert(observed.shift);
+            }
+        }
+        result.nonUniformMotion = !result.conflictingBands.isEmpty();
+        if (result.nonUniformMotion) {
+            result.alignmentEstimate.status = ShiftEstimate::Status::NonUniformMotion;
+            result.alignmentEstimate.candidates = shifts.values().toVector();
+            std::sort(result.alignmentEstimate.candidates.begin(), result.alignmentEstimate.candidates.end());
+        } else if (!result.unresolvedBands.isEmpty()) {
+            result.alignmentEstimate.status = ShiftEstimate::Status::NotFound;
+        }
+    } else {
+        result.nonUniformMotion = support.size() > 1;
+    }
+    return result;
+}
+
 const char* shiftEstimateStatusName(ShiftEstimate::Status status)
 {
     struct Entry {
@@ -157,6 +234,7 @@ const char* shiftEstimateStatusName(ShiftEstimate::Status status)
     static constexpr Entry kNames[] = {
         {ShiftEstimate::Status::Found, "found"},
         {ShiftEstimate::Status::Ambiguous, "ambiguous"},
+        {ShiftEstimate::Status::NonUniformMotion, "non_uniform_motion"},
         {ShiftEstimate::Status::InsufficientDetail, "insufficient_detail"},
         {ShiftEstimate::Status::NotFound, "not_found"},
         {ShiftEstimate::Status::InvalidInput, "invalid_input"},

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <limits>
 
 using namespace snaptray::scrollcapture;
 
@@ -57,6 +58,8 @@ class tst_RowHashShiftEstimator : public QObject
 private slots:
     void rowHashesIgnoreScanlinePadding();
     void rowHashesConvertNon32BitFormats();
+    void fixedViewportBorderDoesNotInvalidateInteriorShift();
+    void rowHashInsetRejectsEmptyInterior();
     void findsScrollTowardBottom();
     void findsScrollTowardTop();
     void identicalFramesAreNoMotion();
@@ -68,6 +71,9 @@ private slots:
     void twoPanesMovingDifferentlyAreAmbiguous();
     void unrelatedFramesAreNotFound();
     void mismatchedHeightsAreInvalid();
+    void bandConsensus_data();
+    void bandConsensus();
+    void bandsDoNotPromoteBlankOrMinorityEvidence();
 };
 
 void tst_RowHashShiftEstimator::rowHashesIgnoreScanlinePadding()
@@ -87,6 +93,56 @@ void tst_RowHashShiftEstimator::rowHashesConvertNon32BitFormats()
     const QImage rgb888 = rgb32.convertToFormat(QImage::Format_RGB888);
     QCOMPARE(computeRowHashes(rgb888), computeRowHashes(rgb32));
     QVERIFY(computeRowHashes(QImage()).isEmpty());
+}
+
+void tst_RowHashShiftEstimator::fixedViewportBorderDoesNotInvalidateInteriorShift()
+{
+    const QImage document = makeDocument();
+    QImage before = viewportAt(document, 100);
+    QImage after = viewportAt(document, 137);
+    constexpr int borderWidth = 2;
+    // A fixed vertical window-frame gradient remains at viewport coordinates.
+    // Full-row hashes cannot match it at a nonzero displacement, even though
+    // every interior pixel scrolled exactly as expected.
+    for (int y = 0; y < before.height(); ++y) {
+        for (int x = 0; x < borderWidth; ++x) {
+            const QRgb border = rowColor(y, 7);
+            before.setPixel(x, y, border);
+            after.setPixel(x, y, border);
+            before.setPixel(before.width() - 1 - x, y, border);
+            after.setPixel(after.width() - 1 - x, y, border);
+        }
+    }
+    QCOMPARE(estimateVerticalShift(computeRowHashes(before), computeRowHashes(after)).status,
+             ShiftEstimate::Status::NotFound);
+    ShiftEstimatorOptions options;
+    options.expectedShift = 37;
+    options.searchRadius = 8;
+    const auto result = estimateVerticalShift(computeRowHashes(before, borderWidth),
+                                              computeRowHashes(after, borderWidth), options);
+    QCOMPARE(result.status, ShiftEstimate::Status::Found);
+    QCOMPARE(result.shift, 37);
+    QCOMPARE(result.matchedRows, result.overlapRows);
+    QCOMPARE(computeRowHashes(before, borderWidth),
+             computeRowHashes(before.copy(borderWidth, 0, before.width() - 2 * borderWidth, before.height())));
+
+    // Border exclusion must not turn detail-free interiors into usable motion.
+    QImage blank = before;
+    blank.fill(Qt::white);
+    QImage changed = blank;
+    changed.fill(Qt::black);
+    QCOMPARE(estimateVerticalShift(computeRowHashes(blank, borderWidth),
+                                  computeRowHashes(changed, borderWidth)).status,
+             ShiftEstimate::Status::InsufficientDetail);
+}
+
+void tst_RowHashShiftEstimator::rowHashInsetRejectsEmptyInterior()
+{
+    const QImage frame = makeDocument();
+    QVERIFY(computeRowHashes(frame, -1).isEmpty());
+    QVERIFY(computeRowHashes(frame, frame.width() / 2).isEmpty());
+    QVERIFY(computeRowHashes(frame, std::numeric_limits<int>::max()).isEmpty());
+    QVERIFY(computeRowHashes(QImage(), 2).isEmpty());
 }
 
 void tst_RowHashShiftEstimator::findsScrollTowardBottom()
@@ -214,6 +270,11 @@ void tst_RowHashShiftEstimator::twoPanesMovingDifferentlyAreAmbiguous()
     QVERIFY(result.runnerUpShift.has_value());
     QCOMPARE(QSet<int>({result.shift, *result.runnerUpShift}), QSet<int>({10, -40}));
     QCOMPARE(result.runnerUpVotes, result.distinctMatches);
+    const auto insetResult = estimateVerticalShift(computeRowHashes(before, 2),
+                                                   computeRowHashes(after, 2), options);
+    QCOMPARE(insetResult.status, ShiftEstimate::Status::Ambiguous);
+    QVERIFY(insetResult.candidates.contains(10));
+    QVERIFY(insetResult.candidates.contains(-40));
 }
 
 void tst_RowHashShiftEstimator::unrelatedFramesAreNotFound()
@@ -230,6 +291,88 @@ void tst_RowHashShiftEstimator::mismatchedHeightsAreInvalid()
                                               computeRowHashes(viewportAt(document, 0, 120)));
     QCOMPARE(result.status, ShiftEstimate::Status::InvalidInput);
     QCOMPARE(estimateVerticalShift({}, {}).status, ShiftEstimate::Status::InvalidInput);
+}
+
+void tst_RowHashShiftEstimator::bandConsensus_data()
+{
+    QTest::addColumn<int>("mainBands");
+    QTest::addColumn<int>("sidebarShift");
+    QTest::addColumn<int>("expectedStatus");
+    QTest::newRow("uniform") << 8 << 37 << int(ShiftEstimate::Status::Found);
+    QTest::newRow("sticky-sidebar") << 6 << 0 << int(ShiftEstimate::Status::Found);
+    QTest::newRow("different-sidebar") << 5 << 29 << int(ShiftEstimate::Status::Found);
+    QTest::newRow("sidebar-reaching-sticky-limit") << 5 << 12 << int(ShiftEstimate::Status::Found);
+    QTest::newRow("equal-panes") << 4 << 29 << int(ShiftEstimate::Status::Ambiguous);
+}
+
+void tst_RowHashShiftEstimator::bandConsensus()
+{
+    QFETCH(int, mainBands);
+    QFETCH(int, sidebarShift);
+    QFETCH(int, expectedStatus);
+    const auto document = makeDocument();
+    const auto before = viewportAt(document, 100);
+    auto after = viewportAt(document, 137);
+    for (int y = 0; y < after.height(); ++y) {
+        for (int x = mainBands * kWidth / 8; x < kWidth; ++x) {
+            after.setPixel(x, y, document.pixel(x, 100 + sidebarShift + y));
+        }
+    }
+    const auto result = estimateVerticalShiftByBands(before, after);
+    QCOMPARE(int(result.estimate.status), expectedStatus);
+    QCOMPARE(result.nonUniformMotion, mainBands != 8);
+    QCOMPARE(result.alignmentEstimate.status, mainBands == 8
+        ? ShiftEstimate::Status::Found : (mainBands >= 5
+            ? ShiftEstimate::Status::NonUniformMotion : ShiftEstimate::Status::Ambiguous));
+    // A narrow prior must not hide a sidebar's independently measured motion.
+    ShiftEstimatorOptions narrowPrior;
+    narrowPrior.expectedShift = 37;
+    narrowPrior.searchRadius = 1;
+    const auto narrow = estimateVerticalShiftByBands(before, after, narrowPrior);
+    if (mainBands >= 5 && mainBands < 8) {
+        QCOMPARE(narrow.alignmentEstimate.status, ShiftEstimate::Status::NonUniformMotion);
+        QVERIFY(!narrow.conflictingBands.isEmpty());
+        QCOMPARE(narrow.observedBands.size(), 8);
+        for (int index : narrow.conflictingBands) {
+            QCOMPARE(narrow.observedBands[index].status, ShiftEstimate::Status::Found);
+            QCOMPARE(narrow.observedBands[index].shift, sidebarShift);
+        }
+        QCOMPARE(QString::fromLatin1(shiftEstimateStatusName(narrow.alignmentEstimate.status)),
+                 QStringLiteral("non_uniform_motion"));
+    }
+    if (result.estimate.status == ShiftEstimate::Status::Found) {
+        QCOMPARE(result.estimate.shift, 37);
+        QCOMPARE(result.supportingBands, mainBands);
+    }
+    ShiftEstimatorOptions wrongPrior;
+    wrongPrior.expectedShift = 100;
+    wrongPrior.searchRadius = 8;
+    QVERIFY(estimateVerticalShiftByBands(before, after, wrongPrior).estimate.status != ShiftEstimate::Status::Found);
+    QCOMPARE(estimateVerticalShiftByBands({}, after).estimate.status, ShiftEstimate::Status::InvalidInput);
+    QCOMPARE(estimateVerticalShiftByBands(before, after, {}, kWidth / 2).estimate.status,
+             ShiftEstimate::Status::InvalidInput);
+}
+
+void tst_RowHashShiftEstimator::bandsDoNotPromoteBlankOrMinorityEvidence()
+{
+    const auto document = makeDocument();
+    auto before = viewportAt(document, 100);
+    auto after = viewportAt(document, 137);
+    // Only three textured bands move; five blank bands cannot claim zero or
+    // lower the majority threshold to three out of three informative bands.
+    for (int y = 0; y < before.height(); ++y) {
+        for (int x = 3 * kWidth / 8; x < kWidth; ++x) {
+            before.setPixel(x, y, qRgb(255, 255, 255));
+            after.setPixel(x, y, qRgb(255, 255, 255));
+        }
+    }
+    QVERIFY(estimateVerticalShiftByBands(before, after).estimate.status != ShiftEstimate::Status::Found);
+    const auto unchanged = estimateVerticalShiftByBands(before, before);
+    QCOMPARE(unchanged.estimate.status, ShiftEstimate::Status::Found);
+    QCOMPARE(unchanged.estimate.shift, 0);
+    const auto unrelated = estimateVerticalShiftByBands(viewportAt(document, 100),
+                                                       viewportAt(makeDocument(kDocumentHeight, 7), 100));
+    QVERIFY(unrelated.estimate.status != ShiftEstimate::Status::Found);
 }
 
 QTEST_GUILESS_MAIN(tst_RowHashShiftEstimator)

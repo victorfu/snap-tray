@@ -334,6 +334,7 @@ add_library(snaptray_core STATIC
     # Scroll capture core (#265): frame alignment and settle detection
     src/scrollcapture/FrameRowHashes.cpp
     src/scrollcapture/RowHashShiftEstimator.cpp
+    src/scrollcapture/ScrollContentAssembler.cpp
     src/scrollcapture/FrameSettleDetector.cpp
     src/platform/MacCLIInstaller.cpp
     src/platform/CaptureExclusionPolicy.cpp
