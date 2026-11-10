@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QVector>
+#include <QImage>
 #include <QtGlobal>
 
 #include <optional>
@@ -42,6 +43,9 @@ struct ShiftEstimate {
         Found,
         // Two or more shifts are supported almost equally; see `candidates`.
         Ambiguous,
+        // Independently measured regions have different displacements. There
+        // is no single alignment for this frame, even with a dominant shift.
+        NonUniformMotion,
         // Too few unique rows agree (blank or repeating content).
         InsufficientDetail,
         // The moving rows do not match at any allowed shift.
@@ -59,7 +63,10 @@ struct ShiftEstimate {
     int overlapRows = 0;
     // Rows identical at the same position in both frames.
     int staticRows = 0;
-    // For Ambiguous: every shift close to the best, best first.
+    // For Ambiguous from estimateVerticalShift: every shift close to the best,
+    // best first. From estimateVerticalShiftByBands: every displacement a
+    // textured band measured, ascending.
+    // For NonUniformMotion: independently observed displacements, ascending.
     QVector<int> candidates;
     // Shifts that were searched (inclusive); both 0 when no search ran.
     int searchLow = 0;
@@ -75,5 +82,37 @@ ShiftEstimate estimateVerticalShift(const QVector<quint64>& before,
                                     const ShiftEstimatorOptions& options = {});
 
 const char* shiftEstimateStatusName(ShiftEstimate::Status status);
+
+struct BandShiftEstimate {
+    ShiftEstimate estimate;
+    // Conservative alignment result: rejects conflicting or unresolved moving
+    // bands even when a dominant displacement was measured successfully.
+    ShiftEstimate alignmentEstimate;
+    QVector<ShiftEstimate> bands;
+    // Unconstrained observations used to detect conflicts outside the prior.
+    QVector<ShiftEstimate> observedBands;
+    QVector<int> conflictingBands;
+    QVector<int> unresolvedBands;
+    int supportingBands = 0;
+    // A dominant displacement is not a promise that the entire frame can be
+    // stitched: sticky/independently scrolling columns may disagree. True when
+    // textured bands measured more than one displacement, with or without a
+    // majority; unchanged blank bands (margins) never count as a displacement.
+    bool nonUniformMotion = false;
+};
+
+// Eight equal-width vertical bands, each using the same exact-row criteria.
+// A displacement needs a strict majority of ALL bands, including blank ones.
+// Band boundaries are fixed. Per-band votes use the caller's prior and radius;
+// conflict detection reruns each band without the prior. No thresholds relax.
+// Only this function produces NonUniformMotion, in alignmentEstimate when a
+// strict majority exists. Split textured votes yield Ambiguous instead, with
+// nonUniformMotion still true; the flag describes motion, not acceptance.
+// Without a majority, `estimate` is Ambiguous when textured bands disagree,
+// InsufficientDetail when no band could measure anything and none mismatched,
+// and NotFound otherwise.
+BandShiftEstimate estimateVerticalShiftByBands(const QImage& before, const QImage& after,
+                                              const ShiftEstimatorOptions& options = {},
+                                              int horizontalInset = 0);
 
 } // namespace snaptray::scrollcapture

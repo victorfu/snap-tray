@@ -14,12 +14,15 @@
 #include "scrollcapture/RowHashShiftEstimator.h"
 #include "scrollcapture/ScrollAreaLocator.h"
 #include "scrollcapture/ScrollInjector.h"
+#include "ContentExport.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QCursor>
 #include <QDateTime>
+#include <QDir>
 #include <QElapsedTimer>
+#include <QEventLoop>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -42,10 +45,13 @@
 #include <vector>
 
 using namespace snaptray::scrollcapture;
+using namespace snaptray::scrollcapture::probe;
 
 namespace {
 
-constexpr int kSchemaVersion = 1;
+constexpr int kSchemaVersion = 7;
+// `measure --content-output` ran and wrote its record, but exported no image.
+constexpr int kContentExportRejectedExitCode = 3;
 constexpr int kInspectIntervalMs = 150;
 constexpr int kCountdownPollMs = 50;
 constexpr int kCountdownLocateMs = 300;
@@ -61,10 +67,16 @@ const QString kAxBoostAll = QStringLiteral("all");
 constexpr int kOverlayHideSettleMs = 150;
 constexpr int kOverlayBorder = 3;
 constexpr int kOverlayLabelPadding = 4;
+// Accessibility bounds can include the window's fixed border; fractional DPI
+// rounding can also include an adjacent edge pixel. Do not hash that perimeter
+// as scrolling content. Keep the full frames for settle detection and evidence.
+constexpr int kHashHorizontalInsetLogicalPx = 2;
 constexpr double kP50 = 0.5;
 constexpr double kP95 = 0.95;
 
 struct ProbeOptions {
+    QString contentOutput;
+    QString framesDirectory;
     bool measure = false;
     int level = 0;
     int delaySeconds = kDefaultDelaySeconds;
@@ -283,6 +295,7 @@ QJsonValue timeoutReason(const FrameSettleDetector::Result& settle)
 }
 
 struct RepeatOutcome {
+    ContentRepeat content;
     QJsonObject json;
     std::optional<int> shiftPx;
     std::optional<qint64> strictSettleMs;
@@ -298,6 +311,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
 
     const Frame start = captureArea(before.bounds);
     if (start.image.isNull()) {
+        outcome.content.error = QStringLiteral("capture_failed");
         json.insert(QStringLiteral("error"), QStringLiteral("screen capture failed"));
         return outcome;
     }
@@ -333,6 +347,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
             std::chrono::duration_cast<std::chrono::milliseconds>(dispatched - called).count())},
     });
     if (!inject.ok) {
+        outcome.content.error = QStringLiteral("injection_failed");
         return outcome;
     }
 
@@ -343,6 +358,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         const Frame frame = captureArea(before.bounds);
         captureMs += captureClock.elapsed();
         if (frame.image.isNull()) {
+            outcome.content.error = QStringLiteral("capture_failed_while_settling");
             json.insert(QStringLiteral("error"), QStringLiteral("screen capture failed while settling"));
             return outcome;
         }
@@ -362,11 +378,77 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         {QStringLiteral("timeoutReason"), timeoutReason(settle)},
     });
 
-    const ScrollAreaSnapshot after = area.snapshot();
+    const int hashInset = static_cast<int>(std::ceil(kHashHorizontalInsetLogicalPx * start.scale));
+    const auto visual = estimateVerticalShiftByBands(start.image, detector.lastFrame(), {}, hashInset);
+    ScrollAreaSnapshot after = area.snapshot();
+    json.insert(QStringLiteral("afterAtVisualSettle"), toJson(after.position));
+    // Accessibility can lag the compositor. Wait for an independently measured
+    // displacement to enter the API prior's search window. The platform offset
+    // is approximate; do not require pixel equality or replace it with pixels.
+    // This is bounded and fails closed if the captured frame changes meanwhile.
+    constexpr int kPositionPollMs = 50;
+    const qint64 syncStartedMs = sinceDispatchMs();
+    QJsonArray positionSamples;
+    QString syncOutcome = QStringLiteral("not_available");
+    if (settle.outcome == FrameSettleDetector::Outcome::Settled
+        && before.position.offset && after.position.offset
+        && visual.estimate.status == ShiftEstimate::Status::Found) {
+        while (true) {
+            const double apiShift = (*after.position.offset - *before.position.offset) * start.scale;
+            if (std::abs(qRound(apiShift) - visual.estimate.shift) <= options.searchRadius) {
+                syncOutcome = QStringLiteral("within_search_window");
+                break;
+            }
+            if (sinceDispatchMs() - syncStartedMs >= options.timeoutMs || stopRequested()) {
+                syncOutcome = QStringLiteral("timed_out");
+                break;
+            }
+            QThread::msleep(kPositionPollMs);
+            // UIA is created in the application's STA. Keep its message queue
+            // serviced while waiting for asynchronous accessibility updates.
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+            after = area.snapshot();
+            positionSamples.append(QJsonObject{
+                {QStringLiteral("elapsedMs"), sinceDispatchMs() - syncStartedMs},
+                {QStringLiteral("position"), toJson(after.position)}});
+            const Frame check = captureArea(before.bounds);
+            if (check.image.isNull() || check.image != detector.lastFrame() || after.bounds != before.bounds) {
+                syncOutcome = QStringLiteral("frame_changed");
+                break;
+            }
+            if (!after.position.offset) {
+                syncOutcome = QStringLiteral("position_missing");
+                break;
+            }
+        }
+    }
+    json.insert(QStringLiteral("positionSync"), QJsonObject{
+        {QStringLiteral("outcome"), syncOutcome},
+        {QStringLiteral("confirmedMs"), syncOutcome == QStringLiteral("within_search_window")
+            ? QJsonValue(sinceDispatchMs()) : QJsonValue()},
+        {QStringLiteral("samples"), positionSamples},
+        {QStringLiteral("waitMs"), sinceDispatchMs() - syncStartedMs},
+        {QStringLiteral("tolerancePx"), options.searchRadius}});
     json.insert(QStringLiteral("after"), toJson(after.position));
 
-    const QVector<quint64> beforeRows = computeRowHashes(start.image);
-    const QVector<quint64> afterRows = computeRowHashes(detector.lastFrame());
+    if (!options.framesDirectory.isEmpty()) {
+        QDir directory(options.framesDirectory);
+        const QString prefix = QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz"))
+            + QStringLiteral("-%1").arg(index);
+        const QString beforePath = directory.absoluteFilePath(prefix + QStringLiteral("-before.png"));
+        const QString afterPath = directory.absoluteFilePath(prefix + QStringLiteral("-after.png"));
+        if (directory.mkpath(QStringLiteral(".")) && start.image.save(beforePath)
+            && detector.lastFrame().save(afterPath)) {
+            json.insert(QStringLiteral("frames"), QJsonObject{
+                {QStringLiteral("before"), beforePath}, {QStringLiteral("after"), afterPath}});
+        } else {
+            json.insert(QStringLiteral("frameSaveError"), QStringLiteral("could not save frame pair"));
+        }
+    }
+
+    json.insert(QStringLiteral("hashHorizontalInsetPx"), hashInset);
+    const QVector<quint64> beforeRows = computeRowHashes(start.image, hashInset);
+    const QVector<quint64> afterRows = computeRowHashes(detector.lastFrame(), hashInset);
     ShiftEstimatorOptions shiftOptions;
     shiftOptions.searchRadius = options.searchRadius;
     // The prior comes only from the platform-reported position; when that is
@@ -382,18 +464,62 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         json.insert(QStringLiteral("expectedShiftMissing"),
                     !before.position.offset ? QStringLiteral("offset_before") : QStringLiteral("offset_after"));
     }
-    const ShiftEstimate estimate = estimateVerticalShift(beforeRows, afterRows, shiftOptions);
-    json.insert(QStringLiteral("shift"), shiftToJson(estimate));
+    const auto bandEstimate = estimateVerticalShiftByBands(start.image, detector.lastFrame(), shiftOptions, hashInset);
+    ShiftEstimate estimate = bandEstimate.alignmentEstimate;
+    QJsonArray bands;
+    QJsonArray observedBands;
+    for (const auto& band : bandEstimate.bands) {
+        bands.append(shiftToJson(band));
+    }
+    for (const auto& band : bandEstimate.observedBands) {
+        observedBands.append(shiftToJson(band));
+    }
+    QJsonArray conflictingBands;
+    QJsonArray unresolvedBands;
+    for (int band : bandEstimate.conflictingBands) conflictingBands.append(band);
+    for (int band : bandEstimate.unresolvedBands) unresolvedBands.append(band);
+    json.insert(QStringLiteral("dominantShift"), shiftToJson(bandEstimate.estimate));
+    json.insert(QStringLiteral("bandMatching"), QJsonObject{
+        {QStringLiteral("bands"), bands},
+        {QStringLiteral("observedBands"), observedBands},
+        {QStringLiteral("supportingBands"), bandEstimate.supportingBands},
+        {QStringLiteral("conflictingBands"), conflictingBands},
+        {QStringLiteral("unresolvedBands"), unresolvedBands},
+        {QStringLiteral("nonUniformMotion"), bandEstimate.nonUniformMotion}});
+    json.insert(QStringLiteral("shiftMethod"), QStringLiteral("consistent_vertical_bands"));
+    json.insert(QStringLiteral("fullRowShift"), shiftToJson(estimateVerticalShift(beforeRows, afterRows, shiftOptions)));
+    // Failed settling or an attempted synchronization rejects alignment.
+    // An unavailable synchronization remains allowed for viewport diagnostics;
+    // content export requires a successful check. Keep the measured status too.
+    QString rejectedBy;
+    if (settle.outcome != FrameSettleDetector::Outcome::Settled) {
+        rejectedBy = QStringLiteral("settle_") + QLatin1String(settleOutcomeName(settle.outcome));
+    } else if (syncOutcome == QStringLiteral("timed_out") || syncOutcome == QStringLiteral("frame_changed")
+               || syncOutcome == QStringLiteral("position_missing")) {
+        rejectedBy = QStringLiteral("position_sync_") + syncOutcome;
+    }
+    const ShiftEstimate::Status measuredStatus = estimate.status;
+    if (!rejectedBy.isEmpty()) {
+        estimate.status = ShiftEstimate::Status::NotFound;
+    }
+    QJsonObject shiftJson = shiftToJson(estimate);
+    if (!rejectedBy.isEmpty()) {
+        shiftJson.insert(QStringLiteral("rejectedBy"), rejectedBy);
+        shiftJson.insert(QStringLiteral("measuredStatus"), QLatin1String(shiftEstimateStatusName(measuredStatus)));
+    }
+    json.insert(QStringLiteral("shift"), shiftJson);
     if (shiftOptions.expectedShift) {
         // The same frames without the platform prior, to show how far the
         // reported position is from the measured one.
-        ShiftEstimatorOptions unconstrained = shiftOptions;
-        unconstrained.expectedShift.reset();
         json.insert(QStringLiteral("shiftWithoutPrior"),
-                    shiftToJson(estimateVerticalShift(beforeRows, afterRows, unconstrained)));
+                    shiftToJson(visual.estimate));
     }
     if (estimate.status == ShiftEstimate::Status::Found) {
         outcome.shiftPx = estimate.shift;
+    }
+    if (!options.contentOutput.isEmpty()) {
+        outcome.content = validateContentRepeat(start.image, detector.lastFrame(), settle.outcome,
+            syncOutcome, before.bounds == after.bounds, bandEstimate.estimate);
     }
     return outcome;
 }
@@ -448,6 +574,7 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
         {QStringLiteral("searchRadius"), options.searchRadius},
     };
     QJsonArray repeats;
+    ContentExportSession contentSession;
     std::vector<int> shifts;
     std::vector<qint64> settleTimes;
     const bool towardBottom = options.method == ScrollMethod::PatternSetPercent || options.amount >= 0;
@@ -460,6 +587,9 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
         }
         const RepeatOutcome outcome = runRepeat(index, area, injector, options, before);
         repeats.append(outcome.json);
+        if (!options.contentOutput.isEmpty()) {
+            contentSession.add(index, outcome.content);
+        }
         if (outcome.shiftPx) {
             shifts.push_back(*outcome.shiftPx);
         }
@@ -470,6 +600,15 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
     }
     phase.insert(QStringLiteral("repeats"), repeats);
     phase.insert(QStringLiteral("stats"), statistics(shifts, settleTimes, static_cast<int>(repeats.size())));
+    if (!options.contentOutput.isEmpty()) {
+        QJsonObject content = contentSession.finish(options.contentOutput, stopRequested());
+        if (content.value(QStringLiteral("status")).toString() == QLatin1String("exported")) {
+            std::vector<int> contentShifts;
+            for (const auto& pair : contentSession.pairs()) contentShifts.push_back(pair.shift);
+            content.insert(QStringLiteral("stats"), statistics(contentShifts, settleTimes, int(repeats.size())));
+        }
+        phase.insert(QStringLiteral("contentExport"), content);
+    }
     return phase;
 }
 
@@ -606,8 +745,15 @@ int runMeasure(const ProbeOptions& options)
         if (located.area) {
             record.insert(QStringLiteral("scroll"), runScrollPhase(*located.area, *injector, options));
         } else {
-            record.insert(QStringLiteral("scroll"), QJsonObject{
-                {QStringLiteral("skipped"), QStringLiteral("no scroll area")}});
+            QJsonObject skipped{{QStringLiteral("skipped"), QStringLiteral("no scroll area")}};
+            if (!options.contentOutput.isEmpty()) {
+                skipped.insert(QStringLiteral("contentExport"), QJsonObject{
+                    {QStringLiteral("status"), QStringLiteral("rejected")},
+                    {QStringLiteral("reason"), QStringLiteral("no_scroll_area")},
+                    {QStringLiteral("path"), options.contentOutput},
+                    {QStringLiteral("staleFileAtPath"), QFile::exists(options.contentOutput)}});
+            }
+            record.insert(QStringLiteral("scroll"), skipped);
         }
         QCursor::setPos(cursor);
     }
@@ -618,6 +764,17 @@ int runMeasure(const ProbeOptions& options)
         return 1;
     }
     writeRecord(record, options.output);
+    if (!options.contentOutput.isEmpty()) {
+        // The record is written either way, but a requested export that was
+        // not produced must not look like success to a calling script.
+        const QJsonObject content = record.value(QStringLiteral("scroll")).toObject()
+            .value(QStringLiteral("contentExport")).toObject();
+        if (content.value(QStringLiteral("status")).toString() != QStringLiteral("exported")) {
+            err() << "content export rejected: " << content.value(QStringLiteral("reason")).toString()
+                  << "; " << options.contentOutput << " was not written\n";
+            return kContentExportRejectedExitCode;
+        }
+    }
     return 0;
 }
 
@@ -732,6 +889,11 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
                                       QStringLiteral("ms"), QString::number(kDefaultRepeatIntervalMs));
     const QCommandLineOption output(QStringLiteral("output"), QStringLiteral("Append JSON lines to this file."),
                                     QStringLiteral("file"));
+    const QCommandLineOption framesDirectory(QStringLiteral("frames-dir"),
+        QStringLiteral("Save lossless before/after frame pairs for diagnosis (after settle timing)."), QStringLiteral("directory"));
+    const QCommandLineOption contentOutput(QStringLiteral("content-output"),
+        QStringLiteral("Opt-in: export a common, exactly aligned scrolling content rectangle as PNG (downward only)."),
+        QStringLiteral("png"));
     const QCommandLineOption appLabel(QStringLiteral("app-label"), QStringLiteral("Name of the case, e.g. \"Chrome sticky header\"."),
                                       QStringLiteral("text"));
     const QCommandLineOption note(QStringLiteral("note"), QStringLiteral("Free-form note for the record."), QStringLiteral("text"));
@@ -740,7 +902,7 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
     parser.addHelpOption();
     parser.addPositionalArgument(QStringLiteral("command"), QStringLiteral("inspect (default) or measure"));
     parser.addOptions({level, delay, attempts, axBoost, enableAx, axWait, scroll, amount, percent, repeats, postToProcess, timeout,
-                       strictPairs, searchRadius, interval, output, appLabel, note});
+                       strictPairs, searchRadius, interval, output, framesDirectory, contentOutput, appLabel, note});
     parser.process(app);
 
     ProbeOptions options;
@@ -769,12 +931,29 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
     options.searchRadius = std::max(0, parser.value(searchRadius).toInt());
     options.repeatIntervalMs = std::max(0, parser.value(interval).toInt());
     options.output = parser.value(output);
+    options.framesDirectory = parser.value(framesDirectory);
+    options.contentOutput = parser.value(contentOutput);
     options.appLabel = parser.value(appLabel);
     options.note = parser.value(note);
     if (parser.isSet(scroll)) {
         options.method = scrollMethodFromName(parser.value(scroll));
         if (!options.method || !methodNames.contains(parser.value(scroll))) {
             err() << "unsupported --scroll method; available: " << methodNames.join(QStringLiteral(", ")) << '\n';
+            return std::nullopt;
+        }
+    }
+    if (!options.contentOutput.isEmpty() && (!options.measure || !options.method)) {
+        err() << "--content-output requires measure and --scroll\n";
+        return std::nullopt;
+    }
+    if (!options.contentOutput.isEmpty()) {
+        if (options.method != ScrollMethod::PatternSetPercent && options.amount <= 0) {
+            err() << "--content-output requires a positive --amount (downward scrolling)\n";
+            return std::nullopt;
+        }
+        const QString pathError = contentOutputPathError(options.contentOutput);
+        if (!pathError.isEmpty()) {
+            err() << "invalid --content-output: " << pathError << '\n';
             return std::nullopt;
         }
     }

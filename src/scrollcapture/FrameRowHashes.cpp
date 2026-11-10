@@ -28,19 +28,22 @@ QImage toComparableFormat(const QImage& image)
     return image.convertToFormat(QImage::Format_RGB32);
 }
 
-QVector<quint64> computeRowHashes(const QImage& image)
+QVector<quint64> computeRowHashes(const QImage& image, int horizontalInset)
 {
     const QImage comparable = toComparableFormat(image);
     QVector<quint64> hashes;
-    if (comparable.isNull()) {
+    if (comparable.isNull() || horizontalInset < 0
+        || horizontalInset > (comparable.width() - 1) / 2) {
         return hashes;
     }
 
     // Hash only the visible pixels: scanline padding is undefined memory.
-    const qsizetype rowBytes = static_cast<qsizetype>(comparable.width()) * (kComparableDepth / 8);
+    const qsizetype pixelBytes = kComparableDepth / 8;
+    const qsizetype rowBytes = static_cast<qsizetype>(comparable.width() - 2 * horizontalInset) * pixelBytes;
+    const qsizetype offset = static_cast<qsizetype>(horizontalInset) * pixelBytes;
     hashes.reserve(comparable.height());
     for (int y = 0; y < comparable.height(); ++y) {
-        hashes.append(hashBytes(comparable.constScanLine(y), rowBytes));
+        hashes.append(hashBytes(comparable.constScanLine(y) + offset, rowBytes));
     }
     return hashes;
 }

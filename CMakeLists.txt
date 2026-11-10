@@ -334,6 +334,7 @@ add_library(snaptray_core STATIC
     # Scroll capture core (#265): frame alignment and settle detection
     src/scrollcapture/FrameRowHashes.cpp
     src/scrollcapture/RowHashShiftEstimator.cpp
+    src/scrollcapture/ScrollContentAssembler.cpp
     src/scrollcapture/FrameSettleDetector.cpp
     src/platform/MacCLIInstaller.cpp
     src/platform/CaptureExclusionPolicy.cpp
@@ -1548,7 +1549,8 @@ if(BUILD_TESTING)
     target_link_libraries(SnapTrayCursorInspector PRIVATE snaptray_core)
     # Developer tool: probes system-reported scroll areas and programmatic
     # scrolling, writing JSON lines for the #265 measurements.
-    add_executable(SnapTrayScrollProbe tools/scroll-probe/main.cpp)
+    add_executable(SnapTrayScrollProbe tools/scroll-probe/main.cpp
+        tools/scroll-probe/ContentExport.cpp)
     target_include_directories(SnapTrayScrollProbe PRIVATE ${CMAKE_SOURCE_DIR}/src)
     target_link_libraries(SnapTrayScrollProbe PRIVATE snaptray_platform Qt6::Widgets)
     add_subdirectory(tests)

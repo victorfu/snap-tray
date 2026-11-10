@@ -535,10 +535,24 @@ add_executable(ScrollCapture_RowHashShiftEstimator ScrollCapture/tst_RowHashShif
 target_link_libraries(ScrollCapture_RowHashShiftEstimator PRIVATE snaptray_core Qt6::Test)
 add_test(NAME ScrollCapture_RowHashShiftEstimator COMMAND ScrollCapture_RowHashShiftEstimator)
 set_tests_properties(ScrollCapture_RowHashShiftEstimator PROPERTIES TIMEOUT 30 LABELS "unit")
+add_executable(ScrollCapture_ScrollContentAssembler ScrollCapture/tst_ScrollContentAssembler.cpp)
+target_link_libraries(ScrollCapture_ScrollContentAssembler PRIVATE snaptray_core Qt6::Test)
+add_test(NAME ScrollCapture_ScrollContentAssembler COMMAND ScrollCapture_ScrollContentAssembler)
+set_tests_properties(ScrollCapture_ScrollContentAssembler PROPERTIES TIMEOUT 30 LABELS "unit")
 add_executable(ScrollCapture_FrameSettleDetector ScrollCapture/tst_FrameSettleDetector.cpp)
 target_link_libraries(ScrollCapture_FrameSettleDetector PRIVATE snaptray_core Qt6::Test)
 add_test(NAME ScrollCapture_FrameSettleDetector COMMAND ScrollCapture_FrameSettleDetector)
 set_tests_properties(ScrollCapture_FrameSettleDetector PROPERTIES TIMEOUT 30 LABELS "unit")
+add_executable(ScrollCapture_ProbeContentExport ScrollCapture/tst_ProbeContentExport.cpp
+    ${CMAKE_SOURCE_DIR}/tools/scroll-probe/ContentExport.cpp)
+target_include_directories(ScrollCapture_ProbeContentExport PRIVATE ${CMAKE_SOURCE_DIR}/tools/scroll-probe)
+target_link_libraries(ScrollCapture_ProbeContentExport PRIVATE snaptray_core Qt6::Test)
+add_dependencies(ScrollCapture_ProbeContentExport SnapTrayScrollProbe)
+target_compile_definitions(ScrollCapture_ProbeContentExport PRIVATE
+    SCROLL_PROBE_EXECUTABLE="$<TARGET_FILE:SnapTrayScrollProbe>")
+add_test(NAME ScrollCapture_ProbeContentExport COMMAND ScrollCapture_ProbeContentExport)
+set_tests_properties(ScrollCapture_ProbeContentExport PROPERTIES TIMEOUT 30 LABELS "unit")
+
 
 if(UNIX AND NOT APPLE)
     add_executable(Platform_LinuxDesktopEnvironment Platform/tst_LinuxDesktopEnvironment.cpp)
