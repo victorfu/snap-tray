@@ -5,6 +5,7 @@
 
 #include "platform/MacAXElement.h"
 #include "scrollcapture/ScrollTargetPoints.h"
+#include "scrollcapture/MacScrollPosition.h"
 
 #include <QJsonArray>
 #include <QThread>
@@ -32,8 +33,6 @@ using snaptray::platform::mac::getAXElementRole;
 
 constexpr float kAXMessagingTimeoutSeconds = 0.1f;
 constexpr int kMaxAncestorWalk = 48;
-constexpr double kEdgeFractionEpsilon = 0.001;
-constexpr double kEdgePixelEpsilon = 0.5;
 
 const CFStringRef kManualAccessibilityAttribute = CFSTR("AXManualAccessibility");
 const CFStringRef kEnhancedUserInterfaceAttribute = CFSTR("AXEnhancedUserInterface");
@@ -290,46 +289,24 @@ private:
             }
         }
 
-        // NSScrollView exposes its document view as AXContents; its frame
-        // moves up as the view scrolls down.
         ScopedCF<AXUIElementRef> contents(copyFirstElementOfArray(m_element.get(), kAXContentsAttribute));
         CGRect contentsFrame = CGRectZero;
+        QString contentsRole;
+        std::optional<QRectF> documentFrame;
         if (contents && getAXElementFrame(contents.get(), contentsFrame)) {
-            diagnostics.insert(QStringLiteral("contentsRole"), getAXElementRole(contents.get()));
+            contentsRole = getAXElementRole(contents.get());
+            diagnostics.insert(QStringLiteral("contentsRole"), contentsRole);
             diagnostics.insert(QStringLiteral("contentsFrame"), frameToJson(contentsFrame));
-            if (contentsFrame.size.height + kEdgePixelEpsilon >= viewportHeight) {
-                position.contentHeight = contentsFrame.size.height;
-                position.offset = frame.origin.y - contentsFrame.origin.y;
-                position.sources << QStringLiteral("AXContents");
+            documentFrame = QRectF(contentsFrame.origin.x, contentsFrame.origin.y,
+                                   contentsFrame.size.width, contentsFrame.size.height);
+            if (contentsRole == QStringLiteral("AXWebArea")) {
+                diagnostics.insert(QStringLiteral("contentsGeometryIgnored"),
+                                   QStringLiteral("web_area_frame_is_not_document_geometry"));
             }
         }
-
-        if (!position.contentHeight && position.viewportRatio && *position.viewportRatio > 0.0) {
-            position.contentHeight = viewportHeight / *position.viewportRatio;
-        }
-        if (position.contentHeight && !position.viewportRatio && *position.contentHeight > 0.0) {
-            position.viewportRatio = std::min(1.0, viewportHeight / *position.contentHeight);
-        }
-        const std::optional<double> scrollRange = position.contentHeight
-            ? std::optional<double>(std::max(0.0, *position.contentHeight - viewportHeight))
-            : std::nullopt;
-        if (!position.fraction && position.offset && scrollRange && *scrollRange > 0.0) {
-            position.fraction = std::clamp(*position.offset / *scrollRange, 0.0, 1.0);
-        }
-        if (!position.offset && position.fraction && scrollRange) {
-            position.offset = *position.fraction * *scrollRange;
-        }
-
-        if (scrollRange && *scrollRange <= kEdgePixelEpsilon) {
-            position.atTop = true;
-            position.atBottom = true;
-        } else if (position.fraction) {
-            position.atTop = *position.fraction <= kEdgeFractionEpsilon;
-            position.atBottom = *position.fraction >= 1.0 - kEdgeFractionEpsilon;
-        } else if (position.offset && scrollRange) {
-            position.atTop = *position.offset <= kEdgePixelEpsilon;
-            position.atBottom = *position.offset >= *scrollRange - kEdgePixelEpsilon;
-        }
+        resolveMacScrollPosition(position,
+                                 QRectF(frame.origin.x, frame.origin.y, frame.size.width, viewportHeight),
+                                 contentsRole, documentFrame);
     }
 
     ScopedCF<AXUIElementRef> m_element;
