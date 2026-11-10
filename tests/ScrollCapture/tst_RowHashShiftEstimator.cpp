@@ -76,6 +76,8 @@ private slots:
     void bandsDoNotPromoteBlankOrMinorityEvidence();
     void blankMarginsBesideMajorityAreUniform();
     void bandsReportInsufficientDetailForSparseContent();
+    void unresolvedBandRejectsAlignment();
+    void bandsHonorHorizontalInset();
 };
 
 void tst_RowHashShiftEstimator::rowHashesIgnoreScanlinePadding()
@@ -422,6 +424,44 @@ void tst_RowHashShiftEstimator::bandsReportInsufficientDetailForSparseContent()
     QCOMPARE(result.estimate.status, ShiftEstimate::Status::InsufficientDetail);
     QCOMPARE(result.alignmentEstimate.status, ShiftEstimate::Status::InsufficientDetail);
     QVERIFY(!result.nonUniformMotion);
+}
+
+void tst_RowHashShiftEstimator::unresolvedBandRejectsAlignment()
+{
+    const auto document = makeDocument();
+    const auto before = viewportAt(document, 100);
+    auto after = viewportAt(document, 137);
+    const auto other = makeDocument(kDocumentHeight, 7);
+    for (int y = 0; y < kViewportHeight; ++y) {
+        for (int x = 7 * kWidth / 8; x < kWidth; ++x) after.setPixel(x, y, other.pixel(x, y));
+    }
+    const auto result = estimateVerticalShiftByBands(before, after);
+    QCOMPARE(result.estimate.status, ShiftEstimate::Status::Found);
+    QCOMPARE(result.estimate.shift, 37);
+    QCOMPARE(result.alignmentEstimate.status, ShiftEstimate::Status::NotFound);
+    QCOMPARE(result.unresolvedBands, QVector<int>{7});
+    QVERIFY(result.conflictingBands.isEmpty());
+    QVERIFY(!result.nonUniformMotion);
+}
+
+void tst_RowHashShiftEstimator::bandsHonorHorizontalInset()
+{
+    const auto document = makeDocument();
+    auto before = viewportAt(document, 100);
+    auto after = viewportAt(document, 137);
+    constexpr int inset = 2;
+    for (int y = 0; y < kViewportHeight; ++y) {
+        for (int x : {0, 1, kWidth - 2, kWidth - 1}) {
+            before.setPixel(x, y, rowColor(y, 7));
+            after.setPixel(x, y, rowColor(y, 7));
+        }
+    }
+    QCOMPARE(estimateVerticalShiftByBands(before, after).alignmentEstimate.status, ShiftEstimate::Status::NotFound);
+    const auto result = estimateVerticalShiftByBands(before, after, {}, inset);
+    QCOMPARE(result.estimate.shift, 37);
+    QCOMPARE(result.supportingBands, 8);
+    QCOMPARE(result.alignmentEstimate.status, ShiftEstimate::Status::Found);
+    QVERIFY(result.unresolvedBands.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(tst_RowHashShiftEstimator)

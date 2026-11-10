@@ -10,7 +10,7 @@ off (`PlatformCapabilities::supportsScrollCapture`).
 ## Build
 
 The probe is a separate target, defined when `BUILD_TESTING` is on (the default). The build scripts
-only build the `SnapTray` target, so configure with them once and then build the probe:
+build all enabled targets. The probe can also be built explicitly:
 
 ```bash
 ./scripts/build.sh
@@ -202,8 +202,10 @@ viewport; its x/width are the columns appended after the first frame.
 it can report success while the whole-viewport statistics report a sidebar
 conflict.
 
-A repeat that scrolls nothing (the settled frame is pixel-identical to its start
-frame) ends the exported segment, because accessibility does not always report
+A repeat that scrolls nothing ends the exported segment only after successful
+settling, unchanged viewport geometry and successful position synchronization.
+Its settled frame must be pixel-identical to the start frame; a timed-out repeat
+never counts as an endpoint. This is needed because accessibility does not always report
 `atBottom`; `contentExport.endedAtNoMotionRepeat` records its index. If a later
 repeat moves again, the stall was a lost input and the export is rejected with
 `motion_after_no_motion_repeat`.
@@ -218,6 +220,39 @@ semantic: inspect the PNG before claiming all desired document content is
 included. It exports the captured segment only, not necessarily the entire
 document.
 
+The common rectangle validates each pair over its own overlap length. A short
+last scroll therefore preserves the same content height as earlier larger
+scrolls, including when a sticky footer bounds the rectangle. Every output row
+still comes directly from a captured image.
+
+A non-positive `--amount` with content export is rejected before capture (exit
+2); `pattern-set-percent` uses `--percent` instead and its actual displacement is
+validated afterward. The destination must have an existing writable parent and
+must not be a directory. A temporary sibling checks writability without
+modifying an existing image. Invalid destinations also exit 2 before scrolling.
+
+Schema 7 rejection diagnostics:
+
+| `reason` | Meaning |
+| --- | --- |
+| `capture_failed`, `capture_failed_while_settling`, `injection_failed` | Capture or input failed. |
+| `settle_<outcome>` | The detector did not settle, including `settle_timed_out`. |
+| `geometry_changed` | The viewport bounds or image dimensions changed. |
+| `position_sync_<outcome>` | Synchronization failed or was unavailable. |
+| `dominant_shift_<status>` | No usable dominant displacement was found. |
+| `non_positive_shift`, `shift_too_large` | Reverse/zero motion, or motion of at least half the viewport height. |
+| `no_scroll_motion`, `motion_after_no_motion_repeat` | No initial motion, or motion resumed after an endpoint. |
+| `capture_budget_exceeded`, `pixel_budget_exceeded` | Retained frames or assembly exceed the pixel limit. |
+| `invalid_input`, `invalid_geometry`, `invalid_content_repeat` | Missing input, incompatible frame geometry, or an incomplete repeat. |
+| `no_common_content_region`, `insufficient_content_evidence`, `discontinuous_capture` | No majority rectangle, weak row evidence, or a gap between pairs. |
+| `allocation_failed` | Image conversion, copying, output or scratch allocation failed. |
+| `save_failed` | PNG writing failed; `stage` is `open`, `encode` or `commit`, and `detail` contains the underlying error. |
+| `no_scroll_area`, `interrupted` | No target was found, or the run was interrupted. |
+
+Repeat-level failures carry the zero-based `repeatIndex` of the first failing
+repeat. Assembly-wide and saving failures do not attribute a failure to an
+arbitrary repeat. Rejection still reports `path` and `staleFileAtPath`.
+
 ### Schema history
 
 | Schema | Change |
@@ -227,6 +262,7 @@ document.
 | 4 | `bandMatching.observedBands`; conflicting displacements report `non_uniform_motion`. |
 | 5 | `--content-output` and `scroll.contentExport`. |
 | 6 | `shift.rejectedBy` and `shift.measuredStatus`; blank bands no longer count as a displacement without a majority; `insufficient_detail` for band results; a rejected export exits with code 3 and reports `path`, `staleFileAtPath`; `endedAtNoMotionRepeat`. |
+| 7 | Specific rejection reasons and `repeatIndex`; save `stage`/`detail`; validated no-motion endpoints; full overlap validation for variable shifts. |
 
 ## Record fields
 

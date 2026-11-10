@@ -14,7 +14,7 @@
 #include "scrollcapture/RowHashShiftEstimator.h"
 #include "scrollcapture/ScrollAreaLocator.h"
 #include "scrollcapture/ScrollInjector.h"
-#include "scrollcapture/ScrollContentAssembler.h"
+#include "ContentExport.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -29,7 +29,6 @@
 #include <QJsonObject>
 #include <QPainter>
 #include <QScreen>
-#include <QSaveFile>
 #include <QSysInfo>
 #include <QTextStream>
 #include <QThread>
@@ -46,10 +45,11 @@
 #include <vector>
 
 using namespace snaptray::scrollcapture;
+using namespace snaptray::scrollcapture::probe;
 
 namespace {
 
-constexpr int kSchemaVersion = 6;
+constexpr int kSchemaVersion = 7;
 // `measure --content-output` ran and wrote its record, but exported no image.
 constexpr int kContentExportRejectedExitCode = 3;
 constexpr int kInspectIntervalMs = 150;
@@ -295,13 +295,10 @@ QJsonValue timeoutReason(const FrameSettleDetector::Result& settle)
 }
 
 struct RepeatOutcome {
-    std::optional<ScrollContentPair> contentPair;
+    ContentRepeat content;
     QJsonObject json;
     std::optional<int> shiftPx;
     std::optional<qint64> strictSettleMs;
-    // Input was dispatched but the settled frame is pixel-identical to the
-    // start frame: nothing scrolled (end of content, or the input had no effect).
-    bool noMotion = false;
 };
 
 RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injector,
@@ -314,6 +311,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
 
     const Frame start = captureArea(before.bounds);
     if (start.image.isNull()) {
+        outcome.content.error = QStringLiteral("capture_failed");
         json.insert(QStringLiteral("error"), QStringLiteral("screen capture failed"));
         return outcome;
     }
@@ -349,6 +347,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
             std::chrono::duration_cast<std::chrono::milliseconds>(dispatched - called).count())},
     });
     if (!inject.ok) {
+        outcome.content.error = QStringLiteral("injection_failed");
         return outcome;
     }
 
@@ -359,6 +358,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         const Frame frame = captureArea(before.bounds);
         captureMs += captureClock.elapsed();
         if (frame.image.isNull()) {
+            outcome.content.error = QStringLiteral("capture_failed_while_settling");
             json.insert(QStringLiteral("error"), QStringLiteral("screen capture failed while settling"));
             return outcome;
         }
@@ -366,7 +366,6 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     }
     const FrameSettleDetector::Result& settle = detector.result();
     outcome.strictSettleMs = settle.strictSettleMs;
-    outcome.noMotion = start.image == detector.lastFrame();
     json.insert(QStringLiteral("settle"), QJsonObject{
         {QStringLiteral("outcome"), QLatin1String(settleOutcomeName(settle.outcome))},
         {QStringLiteral("strictSettleMs"), optionalJson(settle.strictSettleMs)},
@@ -489,9 +488,9 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         {QStringLiteral("nonUniformMotion"), bandEstimate.nonUniformMotion}});
     json.insert(QStringLiteral("shiftMethod"), QStringLiteral("consistent_vertical_bands"));
     json.insert(QStringLiteral("fullRowShift"), shiftToJson(estimateVerticalShift(beforeRows, afterRows, shiftOptions)));
-    // An unsettled or unsynchronized measurement is never an accepted
-    // alignment, so `shift.status` stays fail-closed. The record keeps what
-    // the frames actually measured and which check rejected it.
+    // Failed settling or an attempted synchronization rejects alignment.
+    // An unavailable synchronization remains allowed for viewport diagnostics;
+    // content export requires a successful check. Keep the measured status too.
     QString rejectedBy;
     if (settle.outcome != FrameSettleDetector::Outcome::Settled) {
         rejectedBy = QStringLiteral("settle_") + QLatin1String(settleOutcomeName(settle.outcome));
@@ -518,13 +517,9 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     if (estimate.status == ShiftEstimate::Status::Found) {
         outcome.shiftPx = estimate.shift;
     }
-    if (!options.contentOutput.isEmpty() && inject.ok
-        && settle.outcome == FrameSettleDetector::Outcome::Settled
-        && syncOutcome == QStringLiteral("within_search_window")
-        && before.bounds == after.bounds
-        && bandEstimate.estimate.status == ShiftEstimate::Status::Found
-        && bandEstimate.estimate.shift > 0) {
-        outcome.contentPair = ScrollContentPair{start.image, detector.lastFrame(), bandEstimate.estimate.shift};
+    if (!options.contentOutput.isEmpty()) {
+        outcome.content = validateContentRepeat(start.image, detector.lastFrame(), settle.outcome,
+            syncOutcome, before.bounds == after.bounds, bandEstimate.estimate);
     }
     return outcome;
 }
@@ -579,11 +574,7 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
         {QStringLiteral("searchRadius"), options.searchRadius},
     };
     QJsonArray repeats;
-    QVector<ScrollContentPair> contentPairs;
-    qint64 retainedPixels = 0;
-    QString contentError;
-    std::optional<int> contentEndedAtRepeat;
-    constexpr qint64 kMaxRetainedPixels = 64 * 1024 * 1024;
+    ContentExportSession contentSession;
     std::vector<int> shifts;
     std::vector<qint64> settleTimes;
     const bool towardBottom = options.method == ScrollMethod::PatternSetPercent || options.amount >= 0;
@@ -596,30 +587,8 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
         }
         const RepeatOutcome outcome = runRepeat(index, area, injector, options, before);
         repeats.append(outcome.json);
-        if (!options.contentOutput.isEmpty() && contentError.isEmpty()) {
-            if (outcome.noMotion) {
-                // The platform does not always report atBottom. A repeat that
-                // moved nothing ends the segment; the pairs before it stay valid.
-                if (contentPairs.isEmpty()) {
-                    contentError = QStringLiteral("no_scroll_motion");
-                } else if (!contentEndedAtRepeat) {
-                    contentEndedAtRepeat = index;
-                }
-            } else if (contentEndedAtRepeat) {
-                // Motion resumed after a stalled repeat: the stall was a lost
-                // input, not the end, and the frames in between are unknown.
-                contentError = QStringLiteral("motion_after_no_motion_repeat");
-            } else if (!outcome.contentPair) {
-                contentError = QStringLiteral("invalid_capture_or_prior");
-            } else {
-                retainedPixels += qint64(outcome.contentPair->before.width()) * outcome.contentPair->before.height() * 2;
-                if (retainedPixels > kMaxRetainedPixels) {
-                    contentError = QStringLiteral("capture_budget_exceeded");
-                } else {
-                    contentPairs.append(*outcome.contentPair);
-                }
-            }
-            if (!contentError.isEmpty()) contentPairs.clear();
+        if (!options.contentOutput.isEmpty()) {
+            contentSession.add(index, outcome.content);
         }
         if (outcome.shiftPx) {
             shifts.push_back(*outcome.shiftPx);
@@ -632,41 +601,12 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
     phase.insert(QStringLiteral("repeats"), repeats);
     phase.insert(QStringLiteral("stats"), statistics(shifts, settleTimes, static_cast<int>(repeats.size())));
     if (!options.contentOutput.isEmpty()) {
-        QJsonObject content{{QStringLiteral("status"), QStringLiteral("rejected")}};
-        if (stopRequested()) contentError = QStringLiteral("interrupted");
-        if (contentError.isEmpty()) {
-            const auto assembled = assembleScrollContent(contentPairs);
-            contentError = assembled.error;
-            if (contentError.isEmpty()) {
-                QSaveFile output(options.contentOutput);
-                if (!output.open(QIODevice::WriteOnly) || !assembled.image.save(&output, "PNG") || !output.commit()) {
-                    contentError = QStringLiteral("save_failed");
-                } else {
-                    const auto& rect = assembled.viewport;
-                    std::vector<int> contentShifts;
-                    for (const auto& pair : contentPairs) contentShifts.push_back(pair.shift);
-                    content = QJsonObject{
-                        {QStringLiteral("status"), QStringLiteral("exported")},
-                        {QStringLiteral("path"), options.contentOutput},
-                        {QStringLiteral("viewportPx"), QJsonObject{{QStringLiteral("x"), rect.x()},
-                            {QStringLiteral("y"), rect.y()}, {QStringLiteral("width"), rect.width()},
-                            {QStringLiteral("height"), rect.height()}}},
-                        {QStringLiteral("outputWidth"), assembled.image.width()},
-                        {QStringLiteral("outputHeight"), assembled.image.height()},
-                        {QStringLiteral("initialFrameFullWidth"), true},
-                        {QStringLiteral("excludedColumns"), QStringLiteral("transparent_after_initial_frame")},
-                        {QStringLiteral("stats"), statistics(contentShifts, settleTimes, int(repeats.size()))},
-                        {QStringLiteral("overlapValidation"), QStringLiteral("exact_pixels_all_pairs")}};
-                }
-            }
+        QJsonObject content = contentSession.finish(options.contentOutput, stopRequested());
+        if (content.value(QStringLiteral("status")).toString() == QLatin1String("exported")) {
+            std::vector<int> contentShifts;
+            for (const auto& pair : contentSession.pairs()) contentShifts.push_back(pair.shift);
+            content.insert(QStringLiteral("stats"), statistics(contentShifts, settleTimes, int(repeats.size())));
         }
-        if (!contentError.isEmpty()) {
-            content.insert(QStringLiteral("reason"), contentError);
-            content.insert(QStringLiteral("path"), options.contentOutput);
-            // Nothing was written; a file already at the path is from an earlier run.
-            content.insert(QStringLiteral("staleFileAtPath"), QFile::exists(options.contentOutput));
-        }
-        if (contentEndedAtRepeat) content.insert(QStringLiteral("endedAtNoMotionRepeat"), *contentEndedAtRepeat);
         phase.insert(QStringLiteral("contentExport"), content);
     }
     return phase;
@@ -1005,6 +945,17 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
     if (!options.contentOutput.isEmpty() && (!options.measure || !options.method)) {
         err() << "--content-output requires measure and --scroll\n";
         return std::nullopt;
+    }
+    if (!options.contentOutput.isEmpty()) {
+        if (options.method != ScrollMethod::PatternSetPercent && options.amount <= 0) {
+            err() << "--content-output requires a positive --amount (downward scrolling)\n";
+            return std::nullopt;
+        }
+        const QString pathError = contentOutputPathError(options.contentOutput);
+        if (!pathError.isEmpty()) {
+            err() << "invalid --content-output: " << pathError << '\n';
+            return std::nullopt;
+        }
     }
     return options;
 }

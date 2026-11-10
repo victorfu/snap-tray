@@ -103,7 +103,11 @@ struct BandShiftEstimate {
 
 // Eight equal-width vertical bands, each using the same exact-row criteria.
 // A displacement needs a strict majority of ALL bands, including blank ones.
-// No band is selected using the expected shift and no thresholds are relaxed.
+// Band boundaries are fixed. Per-band votes use the caller's prior and radius;
+// conflict detection reruns each band without the prior. No thresholds relax.
+// Only this function produces NonUniformMotion, in alignmentEstimate when a
+// strict majority exists. Split textured votes yield Ambiguous instead, with
+// nonUniformMotion still true; the flag describes motion, not acceptance.
 // Without a majority, `estimate` is Ambiguous when textured bands disagree,
 // InsufficientDetail when no band could measure anything and none mismatched,
 // and NotFound otherwise.
