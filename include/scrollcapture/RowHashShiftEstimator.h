@@ -63,8 +63,10 @@ struct ShiftEstimate {
     int overlapRows = 0;
     // Rows identical at the same position in both frames.
     int staticRows = 0;
-    // For Ambiguous: every shift close to the best, best first.
-    // For NonUniformMotion: independently observed displacements, sorted.
+    // For Ambiguous from estimateVerticalShift: every shift close to the best,
+    // best first. From estimateVerticalShiftByBands: every displacement a
+    // textured band measured, ascending.
+    // For NonUniformMotion: independently observed displacements, ascending.
     QVector<int> candidates;
     // Shifts that were searched (inclusive); both 0 when no search ran.
     int searchLow = 0;
@@ -93,13 +95,18 @@ struct BandShiftEstimate {
     QVector<int> unresolvedBands;
     int supportingBands = 0;
     // A dominant displacement is not a promise that the entire frame can be
-    // stitched: sticky/independently scrolling columns may disagree.
+    // stitched: sticky/independently scrolling columns may disagree. True when
+    // textured bands measured more than one displacement, with or without a
+    // majority; unchanged blank bands (margins) never count as a displacement.
     bool nonUniformMotion = false;
 };
 
 // Eight equal-width vertical bands, each using the same exact-row criteria.
 // A displacement needs a strict majority of ALL bands, including blank ones.
 // No band is selected using the expected shift and no thresholds are relaxed.
+// Without a majority, `estimate` is Ambiguous when textured bands disagree,
+// InsufficientDetail when no band could measure anything and none mismatched,
+// and NotFound otherwise.
 BandShiftEstimate estimateVerticalShiftByBands(const QImage& before, const QImage& after,
                                               const ShiftEstimatorOptions& options = {},
                                               int horizontalInset = 0);

@@ -191,10 +191,28 @@ BandShiftEstimate estimateVerticalShiftByBands(const QImage& before, const QImag
             break;
         }
     }
-    if (result.estimate.status != ShiftEstimate::Status::Found && support.size() > 1) {
-        result.estimate.status = ShiftEstimate::Status::Ambiguous;
-        result.estimate.candidates = support.keys().toVector();
-        std::sort(result.estimate.candidates.begin(), result.estimate.candidates.end());
+    // Without a majority, describe why. A blank static band reports Found/0
+    // but shows no motion, so it is not a competing displacement.
+    QSet<int> texturedShifts;
+    bool anyNotFound = false;
+    bool anyInsufficientDetail = false;
+    for (int band = 0; band < result.bands.size(); ++band) {
+        const auto status = result.bands[band].status;
+        if (status == ShiftEstimate::Status::Found && !blankStaticBands[band]) {
+            texturedShifts.insert(result.bands[band].shift);
+        }
+        anyNotFound = anyNotFound || status == ShiftEstimate::Status::NotFound;
+        anyInsufficientDetail = anyInsufficientDetail || status == ShiftEstimate::Status::InsufficientDetail;
+    }
+    if (result.estimate.status != ShiftEstimate::Status::Found) {
+        if (texturedShifts.size() > 1) {
+            result.estimate.status = ShiftEstimate::Status::Ambiguous;
+            result.estimate.candidates = texturedShifts.values().toVector();
+            std::sort(result.estimate.candidates.begin(), result.estimate.candidates.end());
+        } else if (texturedShifts.isEmpty() && anyInsufficientDetail && !anyNotFound) {
+            // Nothing measurable anywhere: blank or repeating content, not a mismatch.
+            result.estimate.status = ShiftEstimate::Status::InsufficientDetail;
+        }
     }
     result.alignmentEstimate = result.estimate;
     if (result.estimate.status == ShiftEstimate::Status::Found) {
@@ -220,7 +238,7 @@ BandShiftEstimate estimateVerticalShiftByBands(const QImage& before, const QImag
             result.alignmentEstimate.status = ShiftEstimate::Status::NotFound;
         }
     } else {
-        result.nonUniformMotion = support.size() > 1;
+        result.nonUniformMotion = texturedShifts.size() > 1;
     }
     return result;
 }

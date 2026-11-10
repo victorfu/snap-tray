@@ -74,6 +74,8 @@ private slots:
     void bandConsensus_data();
     void bandConsensus();
     void bandsDoNotPromoteBlankOrMinorityEvidence();
+    void blankMarginsBesideMajorityAreUniform();
+    void bandsReportInsufficientDetailForSparseContent();
 };
 
 void tst_RowHashShiftEstimator::rowHashesIgnoreScanlinePadding()
@@ -366,13 +368,60 @@ void tst_RowHashShiftEstimator::bandsDoNotPromoteBlankOrMinorityEvidence()
             after.setPixel(x, y, qRgb(255, 255, 255));
         }
     }
-    QVERIFY(estimateVerticalShiftByBands(before, after).estimate.status != ShiftEstimate::Status::Found);
+    const auto minority = estimateVerticalShiftByBands(before, after);
+    // Blank margins are not a second displacement: one region moved, without
+    // a majority. That is neither ambiguous nor non-uniform motion.
+    QCOMPARE(minority.estimate.status, ShiftEstimate::Status::NotFound);
+    QCOMPARE(minority.alignmentEstimate.status, ShiftEstimate::Status::NotFound);
+    QVERIFY(minority.estimate.candidates.isEmpty());
+    QVERIFY(!minority.nonUniformMotion);
     const auto unchanged = estimateVerticalShiftByBands(before, before);
     QCOMPARE(unchanged.estimate.status, ShiftEstimate::Status::Found);
     QCOMPARE(unchanged.estimate.shift, 0);
     const auto unrelated = estimateVerticalShiftByBands(viewportAt(document, 100),
                                                        viewportAt(makeDocument(kDocumentHeight, 7), 100));
     QVERIFY(unrelated.estimate.status != ShiftEstimate::Status::Found);
+}
+
+void tst_RowHashShiftEstimator::blankMarginsBesideMajorityAreUniform()
+{
+    const auto document = makeDocument();
+    auto before = viewportAt(document, 100);
+    auto after = viewportAt(document, 137);
+    // Six textured bands move together; two blank margin bands are unchanged.
+    for (int y = 0; y < before.height(); ++y) {
+        for (int x = 6 * kWidth / 8; x < kWidth; ++x) {
+            before.setPixel(x, y, qRgb(255, 255, 255));
+            after.setPixel(x, y, qRgb(255, 255, 255));
+        }
+    }
+    const auto result = estimateVerticalShiftByBands(before, after);
+    QCOMPARE(result.estimate.status, ShiftEstimate::Status::Found);
+    QCOMPARE(result.estimate.shift, 37);
+    QCOMPARE(result.supportingBands, 6);
+    QCOMPARE(result.alignmentEstimate.status, ShiftEstimate::Status::Found);
+    QVERIFY(result.conflictingBands.isEmpty());
+    QVERIFY(result.unresolvedBands.isEmpty());
+    QVERIFY(!result.nonUniformMotion);
+}
+
+void tst_RowHashShiftEstimator::bandsReportInsufficientDetailForSparseContent()
+{
+    // A blank page with three moving rules: every band sees motion but has too
+    // few unique rows to measure it. That is missing detail, not a mismatch.
+    QImage before(kWidth, kViewportHeight, QImage::Format_RGB32);
+    before.fill(Qt::white);
+    QImage after = before;
+    for (int rule = 0; rule < 3; ++rule) {
+        for (int x = 0; x < kWidth; ++x) {
+            before.setPixel(x, 100 + rule * 10, rowColor(rule, 3));
+            after.setPixel(x, 63 + rule * 10, rowColor(rule, 3));
+        }
+    }
+    const auto result = estimateVerticalShiftByBands(before, after);
+    QCOMPARE(result.estimate.status, ShiftEstimate::Status::InsufficientDetail);
+    QCOMPARE(result.alignmentEstimate.status, ShiftEstimate::Status::InsufficientDetail);
+    QVERIFY(!result.nonUniformMotion);
 }
 
 QTEST_GUILESS_MAIN(tst_RowHashShiftEstimator)
