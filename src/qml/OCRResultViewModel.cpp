@@ -3,7 +3,9 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QFutureWatcher>
 #include <QTimer>
+#include <QtConcurrent/QtConcurrentRun>
 
 OCRResultViewModel::OCRResultViewModel(QObject* parent)
     : QObject(parent)
@@ -15,8 +17,26 @@ void OCRResultViewModel::setOCRResult(const OCRResult& result)
     m_originalText = result.text;
     m_text = result.text;
 
-    const TableDetectionResult detection = TableDetector::detect(result.blocks);
-    m_detectedTsv = detection.isTable ? detection.tsv : QString();
+    m_detectedTsv.clear();
+    const quint64 generation = ++m_resultGeneration;
+    if (result.blocks.size() >= 4) {
+        auto* watcher = new QFutureWatcher<TableDetectionResult>(this);
+        connect(watcher, &QFutureWatcher<TableDetectionResult>::finished, this,
+                [this, watcher, generation]() {
+            const auto detection = watcher->result();
+            watcher->deleteLater();
+            if (generation != m_resultGeneration) {
+                return;
+            }
+            m_detectedTsv = detection.isTable ? detection.tsv : QString();
+            emit resultSet();
+        });
+        // Only value-owned OCR data crosses threads. Closing the dialog destroys
+        // the watcher without waiting for analysis or accessing this from a worker.
+        watcher->setFuture(QtConcurrent::run([blocks = result.blocks]() {
+            return TableDetector::detect(blocks);
+        }));
+    }
 
     emit textChanged();
     emit resultSet();

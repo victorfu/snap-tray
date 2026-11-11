@@ -484,4 +484,15 @@ public:
     {
         return selector.m_captureChromeWindow.get();
     }
+
+    static void setOcrBusy(RegionSelector& selector, bool busy)
+    {
+        selector.m_ocrInProgress = busy;
+        auto* spinner = selector.ensureLoadingSpinner();
+        if (busy) {
+            spinner->start();
+        } else {
+            spinner->stop();
+        }
+    }
 };

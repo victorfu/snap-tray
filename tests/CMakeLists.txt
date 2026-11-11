@@ -278,6 +278,11 @@ target_link_libraries(Qml_UpdateDialogViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_UpdateDialogViewModel COMMAND Qml_UpdateDialogViewModel)
 set_tests_properties(Qml_UpdateDialogViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_OCRResultViewModel Qml/tst_OCRResultViewModel.cpp)
+target_link_libraries(Qml_OCRResultViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_OCRResultViewModel COMMAND Qml_OCRResultViewModel)
+set_tests_properties(Qml_OCRResultViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_PlacementHelpers Qml/tst_PlacementHelpers.cpp)
 target_link_libraries(Qml_PlacementHelpers PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 add_test(NAME Qml_PlacementHelpers COMMAND Qml_PlacementHelpers)
@@ -922,6 +927,13 @@ target_link_libraries(RegionSelector_RegionPainterChrome PRIVATE snaptray_ui Qt6
 add_test(NAME RegionSelector_RegionPainterChrome COMMAND RegionSelector_RegionPainterChrome)
 set_tests_properties(RegionSelector_RegionPainterChrome PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_OCRBusyRepaint
+    RegionSelector/tst_OCRBusyRepaint.cpp
+    ../resources/resources.qrc)
+target_link_libraries(RegionSelector_OCRBusyRepaint PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_OCRBusyRepaint COMMAND RegionSelector_OCRBusyRepaint)
+set_tests_properties(RegionSelector_OCRBusyRepaint PROPERTIES TIMEOUT 60 LABELS "integration")
+
 add_executable(RegionSelector_AttachmentLayout RegionSelector/tst_AttachmentLayout.cpp)
 target_link_libraries(RegionSelector_AttachmentLayout PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_AttachmentLayout COMMAND RegionSelector_AttachmentLayout)
@@ -1184,6 +1196,11 @@ add_executable(Detection_TableDetector Detection/tst_TableDetector.cpp)
 target_link_libraries(Detection_TableDetector PRIVATE snaptray_algorithms Qt6::Test)
 add_test(NAME Detection_TableDetector COMMAND Detection_TableDetector)
 set_tests_properties(Detection_TableDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Detection_OCRTextUtils Detection/tst_OCRTextUtils.cpp)
+target_link_libraries(Detection_OCRTextUtils PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Detection_OCRTextUtils COMMAND Detection_OCRTextUtils)
+set_tests_properties(Detection_OCRTextUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Detection_OCRImageUtils Detection/tst_OCRImageUtils.cpp)
 target_link_libraries(Detection_OCRImageUtils PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)

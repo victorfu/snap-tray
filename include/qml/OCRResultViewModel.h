@@ -41,5 +41,6 @@ private:
     QString m_text;
     QString m_originalText;
     QString m_detectedTsv;
+    quint64 m_resultGeneration = 0;
     bool m_copyFeedbackActive = false;
 };

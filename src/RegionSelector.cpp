@@ -1402,7 +1402,17 @@ LoadingSpinnerRenderer* RegionSelector::ensureLoadingSpinner()
     if (!m_loadingSpinner) {
         m_loadingSpinner = new LoadingSpinnerRenderer(this);
         connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
-            this, [this]() { requestCaptureSceneUpdate(); });
+            this, [this]() {
+                const QRect spinnerBounds = m_loadingSpinner->bounds(
+                    m_selectionManager->selectionRect().center());
+                if (usesDetachedCaptureWindows() && m_captureChromeWindow) {
+                    m_captureChromeWindow->markDirtyRegion(
+                        QRegion(spinnerBounds), snaptray::region::CaptureChromeDirtyReason::BusySpinner);
+                    syncCaptureChromeWindow();
+                } else {
+                    update(spinnerBounds);
+                }
+            });
     }
     return m_loadingSpinner;
 }

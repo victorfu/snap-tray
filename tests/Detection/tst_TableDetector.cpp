@@ -24,6 +24,7 @@ private slots:
     void testDetect_SingleRow_NotTable();
     void testDetect_RegularGrid_TableDetected();
     void testDetect_MultiWordCells_KeepColumns();
+    void testDetect_ChineseCells();
     void testDetect_RaggedRows_TableDetectedWithEmptyCell();
     void testDetect_Paragraph_NotTable();
     void testDetect_TerminalAlignedOutput_TableDetected();
@@ -95,6 +96,23 @@ void tst_TableDetector::testDetect_MultiWordCells_KeepColumns()
     QCOMPARE(result.rowCount, 3);
     QCOMPARE(result.columnCount, 2);
     QCOMPARE(result.tsv, QStringLiteral("Full Name\tAge\nAlice Smith\t30\nBob Jones\t28"));
+}
+
+void tst_TableDetector::testDetect_ChineseCells()
+{
+    const auto result = TableDetector::detect({
+        makeBlock(QStringLiteral("姓"), 0.10, 0.10),
+        makeBlock(QStringLiteral("名"), 0.17, 0.10),
+        makeBlock("Age", 0.52, 0.10),
+        makeBlock(QStringLiteral("庭"), 0.10, 0.145),
+        makeBlock(QStringLiteral("宇"), 0.17, 0.145),
+        makeBlock("30", 0.52, 0.145),
+        // A native line (as returned by macOS) retains intentional spaces.
+        makeBlock(QStringLiteral("庭 宇"), 0.10, 0.19),
+        makeBlock("28", 0.52, 0.19),
+    });
+    QVERIFY(result.isTable);
+    QCOMPARE(result.tsv, QStringLiteral("姓名\tAge\n庭宇\t30\n庭 宇\t28"));
 }
 
 void tst_TableDetector::testDetect_RaggedRows_TableDetectedWithEmptyCell()
