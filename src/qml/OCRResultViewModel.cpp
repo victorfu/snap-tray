@@ -23,13 +23,8 @@ void OCRResultViewModel::setOCRResult(const OCRResult& result)
         auto* watcher = new QFutureWatcher<TableDetectionResult>(this);
         connect(watcher, &QFutureWatcher<TableDetectionResult>::finished, this,
                 [this, watcher, generation]() {
-            const auto detection = watcher->result();
             watcher->deleteLater();
-            if (generation != m_resultGeneration) {
-                return;
-            }
-            m_detectedTsv = detection.isTable ? detection.tsv : QString();
-            emit resultSet();
+            applyTableDetectionResult(watcher->future(), generation);
         });
         // Only value-owned OCR data crosses threads. Closing the dialog destroys
         // the watcher without waiting for analysis or accessing this from a worker.
@@ -39,6 +34,26 @@ void OCRResultViewModel::setOCRResult(const OCRResult& result)
     }
 
     emit textChanged();
+    emit resultSet();
+}
+
+void OCRResultViewModel::applyTableDetectionResult(
+    const QFuture<TableDetectionResult>& future, quint64 generation)
+{
+    if (generation != m_resultGeneration) {
+        qDebug() << "OCR table detection: ignoring stale result";
+        return;
+    }
+    try {
+        const auto detection = future.result();
+        m_detectedTsv = detection.isTable ? detection.tsv : QString();
+        if (!detection.isTable) {
+            qDebug() << "OCR table detection: no table found";
+        }
+    } catch (...) {
+        m_detectedTsv.clear();
+        qWarning() << "OCR table detection failed; plain text remains available";
+    }
     emit resultSet();
 }
 

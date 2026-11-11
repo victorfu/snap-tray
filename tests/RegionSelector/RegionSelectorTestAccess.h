@@ -495,4 +495,9 @@ public:
             spinner->stop();
         }
     }
+
+    static LoadingSpinnerRenderer* loadingSpinner(RegionSelector& selector)
+    {
+        return selector.ensureLoadingSpinner();
+    }
 };

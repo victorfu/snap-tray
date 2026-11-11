@@ -278,8 +278,8 @@ target_link_libraries(Qml_UpdateDialogViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_UpdateDialogViewModel COMMAND Qml_UpdateDialogViewModel)
 set_tests_properties(Qml_UpdateDialogViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(Qml_OCRResultViewModel Qml/tst_OCRResultViewModel.cpp)
-target_link_libraries(Qml_OCRResultViewModel PRIVATE snaptray_ui Qt6::Test)
+add_executable(Qml_OCRResultViewModel Qml/tst_OCRResultViewModel.cpp ../resources/resources.qrc)
+target_link_libraries(Qml_OCRResultViewModel PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME Qml_OCRResultViewModel COMMAND Qml_OCRResultViewModel)
 set_tests_properties(Qml_OCRResultViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 

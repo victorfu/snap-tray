@@ -387,7 +387,9 @@ TableDetectionResult TableDetector::detect(const QVector<OCRTextBlock> &blocks)
         cells.reserve(stableColumns.size());
 
         for (int stableColumn : stableColumns) {
-            cells.push_back(normalizeCellText(cellTokens[rowIndex][stableColumn]));
+            // Geometry kept these as separate cells. Preserve that boundary
+            // even when column snapping assigns them to the same output cell.
+            cells.push_back(cellTokens[rowIndex][stableColumn].join(QLatin1Char(' ')).simplified());
         }
 
         tsvLines.push_back(cells.join(QLatin1Char('\t')));

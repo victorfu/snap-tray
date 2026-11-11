@@ -213,7 +213,9 @@ protected:
                     block.confidence = -1.0f;
                     blocks.push_back(block);
                 }
-                lines.append(OCRTextUtils::joinWords(words));
+                if (!words.isEmpty()) {
+                    lines.append(OCRTextUtils::joinWords(words));
+                }
             }
 
             m_result.text = lines.join(QStringLiteral("\n")).trimmed();

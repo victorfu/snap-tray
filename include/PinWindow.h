@@ -187,6 +187,7 @@ private:
     friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
+    friend class TestOCRBusyRepaint;
     friend class TestPinHoverIntegration;
     friend class TestPinContextMenuLayout;
     friend class TestPinWindowEvidence;

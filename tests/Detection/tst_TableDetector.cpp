@@ -25,6 +25,7 @@ private slots:
     void testDetect_RegularGrid_TableDetected();
     void testDetect_MultiWordCells_KeepColumns();
     void testDetect_ChineseCells();
+    void testDetect_SeparateCellsInSameColumn();
     void testDetect_RaggedRows_TableDetectedWithEmptyCell();
     void testDetect_Paragraph_NotTable();
     void testDetect_TerminalAlignedOutput_TableDetected();
@@ -96,6 +97,24 @@ void tst_TableDetector::testDetect_MultiWordCells_KeepColumns()
     QCOMPARE(result.rowCount, 3);
     QCOMPARE(result.columnCount, 2);
     QCOMPARE(result.tsv, QStringLiteral("Full Name\tAge\nAlice Smith\t30\nBob Jones\t28"));
+}
+
+void tst_TableDetector::testDetect_SeparateCellsInSameColumn()
+{
+    // Wider cells on other rows establish a shared column; the first row's
+    // two short blocks are farther apart than the word-joining threshold.
+    QVector<OCRTextBlock> blocks{
+        makeBlock(QStringLiteral("甲"), 0.1, 0.1, 0.002),
+        makeBlock(QStringLiteral("乙"), 0.18, 0.1, 0.002),
+        makeBlock(QStringLiteral("42"), 0.5, 0.1, 0.2),
+        makeBlock(QStringLiteral("丙"), 0.1, 0.2, 0.2),
+        makeBlock(QStringLiteral("42"), 0.5, 0.2, 0.2),
+        makeBlock(QStringLiteral("丁"), 0.1, 0.3, 0.2),
+        makeBlock(QStringLiteral("42"), 0.5, 0.3, 0.2),
+    };
+    const auto result = TableDetector::detect(blocks);
+    QVERIFY(result.isTable);
+    QCOMPARE(result.tsv, QStringLiteral("甲 乙\t42\n丙\t42\n丁\t42"));
 }
 
 void tst_TableDetector::testDetect_ChineseCells()

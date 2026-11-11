@@ -19,7 +19,7 @@ namespace snaptray::region {
 enum class CaptureChromeDirtyReason {
     Scene,
     PencilPreview,
-    BusySpinner
+    BusySpinner // Animation tick only; centre/visibility changes use state invalidation.
 };
 
 CaptureChromeDirtyReason captureChromeDirtyReasonForToolPreview(
