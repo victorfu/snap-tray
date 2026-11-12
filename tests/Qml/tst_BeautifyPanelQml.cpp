@@ -48,6 +48,8 @@ private slots:
     void testSliderBindingSurvivesReopen_data();
     void testSliderBindingSurvivesReopen();
     void testResultsComeFirst_CustomizeCollapsed();
+    void testScreenSizedPanelPosition_data();
+    void testScreenSizedPanelPosition();
     void testStyleCardAndShadowToggle();
     void testTallPanelScrollsOnShortScreen();
     void testCustomizeNearScreenBottomStaysOnScreen();
@@ -194,6 +196,49 @@ void tst_BeautifyPanelQml::testResultsComeFirst_CustomizeCollapsed()
     panel.hide();
     panel.showNear(QRect(100, 100, 400, 300));
     QVERIFY(root->property("customizeExpanded").toBool());
+}
+
+void tst_BeautifyPanelQml::testScreenSizedPanelPosition_data()
+{
+    QTest::addColumn<int>("extraSize");
+    QTest::newRow("exact-fit") << 0;
+    QTest::newRow("oversized") << 100;
+}
+
+void tst_BeautifyPanelQml::testScreenSizedPanelPosition()
+{
+    QFETCH(int, extraSize);
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    const QRect available = screen->availableGeometry();
+    const QRect anchor(available.center(), QSize(1, 1));
+    SnapTray::QmlBeautifyPanel panel;
+    panel.setSettings(BeautifySettings{});
+    panel.showNear(anchor);
+    auto* view = qobject_cast<QQuickView*>(panel.window());
+    QVERIFY(view && view->rootObject());
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    panel.hide();
+
+    // Force the boundary sizes on every host, including large desktop screens.
+    // Keep maxHeight unchanged on reopen so these dimensions survive until polish.
+    const QSize insetSize = available.size()
+        - QSize(2 * kScreenEdgeMargin, 2 * kScreenEdgeMargin)
+        + QSize(extraSize, extraSize);
+    view->rootObject()->setSize(insetSize);
+    view->resize(insetSize);
+    panel.showNear(anchor);
+    QCOMPARE(view->position(), available.topLeft() + QPoint(kScreenEdgeMargin, kScreenEdgeMargin));
+
+    // Dragging uses the whole available screen without the opening margin.
+    const QSize dragSize = available.size() + QSize(extraSize, extraSize);
+    view->rootObject()->setSize(dragSize);
+    view->resize(dragSize);
+    QVERIFY(QMetaObject::invokeMethod(&panel, "onDragStarted", Qt::DirectConnection));
+    QVERIFY(QMetaObject::invokeMethod(&panel, "onDragMoved", Qt::DirectConnection,
+                                     Q_ARG(double, 0.0), Q_ARG(double, 0.0)));
+    QCOMPARE(view->position(), available.topLeft());
+    QVERIFY(QMetaObject::invokeMethod(&panel, "onDragFinished", Qt::DirectConnection));
 }
 
 void tst_BeautifyPanelQml::testStyleCardAndShadowToggle()

@@ -17,6 +17,22 @@
 
 namespace SnapTray {
 
+namespace {
+
+QPoint boundedPanelPosition(const QPoint& position, const QSize& size,
+                           const QRect& available, int margin)
+{
+    const QPoint minimum = available.topLeft() + QPoint(margin, margin);
+    // QRect's right/bottom are inclusive. If the panel cannot fit, keep its
+    // top-left reachable instead of passing reversed bounds to qBound.
+    const int maximumX = qMax(minimum.x(), available.right() + 1 - size.width() - margin);
+    const int maximumY = qMax(minimum.y(), available.bottom() + 1 - size.height() - margin);
+    return QPoint(qBound(minimum.x(), position.x(), maximumX),
+                  qBound(minimum.y(), position.y(), maximumY));
+}
+
+} // namespace
+
 QmlBeautifyPanel::QmlBeautifyPanel(QObject* parent)
     : QObject(parent)
 {
@@ -127,8 +143,7 @@ void QmlBeautifyPanel::onDragMoved(double deltaX, double deltaY)
 
     if (screen) {
         const QRect screenGeom = screen->availableGeometry();
-        newPos.setX(qBound(screenGeom.left(), newPos.x(), screenGeom.right() - m_view->width()));
-        newPos.setY(qBound(screenGeom.top(), newPos.y(), screenGeom.bottom() - m_view->height()));
+        newPos = boundedPanelPosition(newPos, m_view->size(), screenGeom, 0);
     }
 
     m_view->setPosition(newPos);
@@ -213,7 +228,7 @@ void QmlBeautifyPanel::keepOnScreen()
         return;
     }
     const QRect screenGeom = screen->availableGeometry();
-    const int bottomLimit = screenGeom.bottom() - kScreenEdgeMargin - m_view->height();
+    const int bottomLimit = screenGeom.bottom() + 1 - kScreenEdgeMargin - m_view->height();
     if (m_view->y() > bottomLimit) {
         m_view->setY(qMax(screenGeom.top() + kScreenEdgeMargin, bottomLimit));
     }
@@ -236,18 +251,14 @@ void QmlBeautifyPanel::positionNear(const QRect& anchorRect)
 
     int x = anchorRect.right() + gap;
     int y = anchorRect.top();
-    if (screen && x + panelSize.width() > screenGeom.right() - kScreenEdgeMargin) {
+    if (screen && x + panelSize.width() > screenGeom.right() + 1 - kScreenEdgeMargin) {
         x = anchorRect.left() - panelSize.width() - gap;
     }
 
-    if (screen) {
-        x = qBound(screenGeom.left() + kScreenEdgeMargin, x,
-                   screenGeom.right() - panelSize.width() - kScreenEdgeMargin);
-        y = qBound(screenGeom.top() + kScreenEdgeMargin, y,
-                   screenGeom.bottom() - panelSize.height() - kScreenEdgeMargin);
-    }
-
-    m_view->setPosition(x, y);
+    const QPoint position(x, y);
+    m_view->setPosition(screen
+        ? boundedPanelPosition(position, panelSize, screenGeom, kScreenEdgeMargin)
+        : position);
 }
 
 bool QmlBeautifyPanel::eventFilter(QObject* watched, QEvent* event)
