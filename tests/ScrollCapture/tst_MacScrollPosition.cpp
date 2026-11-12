@@ -13,6 +13,9 @@ private slots:
     void webScrollBarStillReportsEndpoints();
     void nativeDocumentGeometry_data();
     void nativeDocumentGeometry();
+    void viewportGeometryWithScrollBar_data();
+    void viewportGeometryWithScrollBar();
+    void viewportGeometryWithOnlyThumbRatio();
 };
 
 void tst_MacScrollPosition::webViewportDoesNotProveEndpoints()
@@ -94,6 +97,61 @@ void tst_MacScrollPosition::nativeDocumentGeometry()
     QCOMPARE(position.atTop.value(), top);
     QCOMPARE(position.atBottom.value(), bottom);
     QCOMPARE(position.sources, QStringList{QStringLiteral("AXContents")});
+}
+
+void tst_MacScrollPosition::viewportGeometryWithScrollBar_data()
+{
+    QTest::addColumn<double>("fraction");
+    QTest::addColumn<bool>("hasRatio");
+    QTest::newRow("settings-top") << 0.0 << true;
+    QTest::newRow("settings-scrolled") << 0.9532871972318339 << true;
+    QTest::newRow("settings-bottom") << 1.0 << true;
+    QTest::newRow("fraction-only-top") << 0.0 << false;
+    QTest::newRow("fraction-only-middle") << 0.5 << false;
+    QTest::newRow("fraction-only-bottom") << 1.0 << false;
+}
+
+void tst_MacScrollPosition::viewportGeometryWithScrollBar()
+{
+    QFETCH(double, fraction);
+    QFETCH(bool, hasRatio);
+    const QRectF viewport(695, 211, 232, 527);
+    constexpr double ratio = 0.5113421550094518;
+    ScrollPosition position;
+    position.fraction = fraction;
+    position.sources << QStringLiteral("AXVerticalScrollBar.AXValue");
+    if (hasRatio) {
+        position.viewportRatio = ratio;
+        position.sources << QStringLiteral("AXValueIndicator");
+    }
+    const QStringList sources = position.sources;
+    resolveMacScrollPosition(position, viewport, QStringLiteral("AXOutline"), viewport);
+    QCOMPARE(position.atTop.value(), fraction == 0.0);
+    QCOMPARE(position.atBottom.value(), fraction == 1.0);
+    QCOMPARE(position.sources, sources);
+    if (hasRatio) {
+        QCOMPARE(position.contentHeight.value(), viewport.height() / ratio);
+        QCOMPARE(position.offset.value(), fraction * (viewport.height() / ratio - viewport.height()));
+    } else {
+        QVERIFY(!position.contentHeight);
+        QVERIFY(!position.offset);
+        QVERIFY(!position.viewportRatio);
+    }
+}
+
+void tst_MacScrollPosition::viewportGeometryWithOnlyThumbRatio()
+{
+    const QRectF viewport(695, 211, 232, 527);
+    ScrollPosition position;
+    position.viewportRatio = 0.5;
+    position.sources << QStringLiteral("AXValueIndicator");
+    resolveMacScrollPosition(position, viewport, QStringLiteral("AXOutline"), viewport);
+    QCOMPARE(position.contentHeight.value(), 1054.0);
+    QVERIFY(!position.offset);
+    QVERIFY(!position.fraction);
+    QVERIFY(!position.atTop);
+    QVERIFY(!position.atBottom);
+    QCOMPARE(position.sources, QStringList{QStringLiteral("AXValueIndicator")});
 }
 
 QTEST_GUILESS_MAIN(tst_MacScrollPosition)
