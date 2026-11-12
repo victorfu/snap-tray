@@ -13,7 +13,7 @@ public:
     void updateLevels(int count)
     {
         m_levels = std::max(0, count);
-        if (m_level >= m_levels) m_level = 0;
+        if (m_levels > 0 && m_level >= m_levels) m_level = 0;
     }
     void cycle(int direction)
     {
@@ -27,6 +27,12 @@ public:
         return true;
     }
     void endMeasurement() { m_busy = false; }
+    const char* ignoredReason() const
+    {
+        if (m_busy) return "measurement pending or running";
+        if (m_levels == 0) return "no scroll area";
+        return nullptr;
+    }
 
 private:
     int m_level = 0;

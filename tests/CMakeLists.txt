@@ -1509,6 +1509,7 @@ set_tests_properties(Hotkey_HotkeyManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Hotkey_TypeHotkeyDialog Hotkey/tst_TypeHotkeyDialog.cpp)
 target_link_libraries(Hotkey_TypeHotkeyDialog PRIVATE snaptray_ui Qt6::Test)
+target_include_directories(Hotkey_TypeHotkeyDialog PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_test(NAME Hotkey_TypeHotkeyDialog COMMAND Hotkey_TypeHotkeyDialog)
 set_tests_properties(Hotkey_TypeHotkeyDialog PROPERTIES TIMEOUT 60 LABELS "unit")
 

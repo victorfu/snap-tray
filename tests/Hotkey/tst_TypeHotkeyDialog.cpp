@@ -4,16 +4,44 @@
 
 #include "hotkey/HotkeyManager.h"
 #include "widgets/TypeHotkeyDialog.h"
+#include "platform/KeyboardModifiers.h"
+#ifdef Q_OS_WIN
+#include "platform/KeyboardModifiers_win.h"
+#endif
 
 class tst_TypeHotkeyDialog : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void testPhysicalModifiersExcludeLayoutFlags();
+    void testWindowsPhysicalModifierBits();
     void testPrintKeyCapture_StoresPlatformSequence();
     void testWindowsPrintScreenNativeCapture_StoresPlatformSequence();
     void testNativePrintScreenFormat_IsReadable();
 };
+
+void tst_TypeHotkeyDialog::testPhysicalModifiersExcludeLayoutFlags()
+{
+    QCOMPARE(SnapTray::shortcutModifiers(Qt::KeypadModifier | Qt::GroupSwitchModifier), Qt::NoModifier);
+    QCOMPARE(SnapTray::shortcutModifiers(Qt::ControlModifier | Qt::KeypadModifier), Qt::ControlModifier);
+}
+
+void tst_TypeHotkeyDialog::testWindowsPhysicalModifierBits()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows asynchronous key-state mapping");
+#else
+    const auto held = [](int key) -> SHORT {
+        return (key == VK_RCONTROL || key == VK_LMENU || key == VK_RSHIFT || key == VK_RWIN)
+            ? SHORT(0x8000) : 0;
+    };
+    QCOMPARE(SnapTray::detail::windowsKeyboardModifiers(held),
+        Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier | Qt::MetaModifier);
+    // The low bit means previously pressed, not physically held now.
+    QCOMPARE(SnapTray::detail::windowsKeyboardModifiers([](int) -> SHORT { return 1; }), Qt::NoModifier);
+#endif
+}
 
 void tst_TypeHotkeyDialog::testPrintKeyCapture_StoresPlatformSequence()
 {

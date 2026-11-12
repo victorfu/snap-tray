@@ -575,6 +575,7 @@ add_library(snaptray_platform STATIC
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
     src/platform/QtQuickBackendPolicy.cpp
+    src/platform/KeyboardModifiers.cpp
     # Scroll area detection and scroll injection (#265)
     src/scrollcapture/ScrollCaptureCommon.cpp
     $<$<NOT:$<PLATFORM_ID:Darwin,Windows>>:

@@ -15,12 +15,16 @@ struct ContentRepeat {
     bool noMotion = false;
 };
 
+QString positionSyncUnavailableReason(bool settled, bool hasOffsetBefore, bool hasOffsetAfter,
+                                      const ShiftEstimate& visual);
+
 // Called only after successful capture/injection. Even an unchanged frame must
 // pass settle, geometry and position checks before it can end a segment.
 ContentRepeat validateContentRepeat(const QImage& before, const QImage& after,
                                     FrameSettleDetector::Outcome settle,
                                     const QString& positionSync, bool sameBounds,
-                                    const ShiftEstimate& dominant);
+                                    const ShiftEstimate& dominant,
+                                    const QString& syncUnavailableReason = {});
 
 // Checks the parent by opening a temporary sibling, without touching an existing
 // destination. Runtime save errors still matter if the filesystem changes later.

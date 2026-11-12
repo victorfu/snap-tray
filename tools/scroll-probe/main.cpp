@@ -18,6 +18,7 @@
 #include "InspectState.h"
 #include "ProbeEventLoop.h"
 #include "hotkey/HotkeyManager.h"
+#include "platform/KeyboardModifiers.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -52,7 +53,7 @@ using namespace snaptray::scrollcapture::probe;
 
 namespace {
 
-constexpr int kSchemaVersion = 8;
+constexpr int kSchemaVersion = 9;
 // `measure --content-output` ran and wrote its record, but exported no image.
 constexpr int kContentExportRejectedExitCode = 3;
 constexpr int kInspectIntervalMs = 150;
@@ -401,9 +402,10 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     const qint64 syncStartedMs = sinceDispatchMs();
     QJsonArray positionSamples;
     QString syncOutcome = QStringLiteral("not_available");
-    if (settle.outcome == FrameSettleDetector::Outcome::Settled
-        && before.position.offset && after.position.offset
-        && visual.estimate.status == ShiftEstimate::Status::Found) {
+    const QString syncUnavailableReason = positionSyncUnavailableReason(
+        settle.outcome == FrameSettleDetector::Outcome::Settled,
+        before.position.offset.has_value(), after.position.offset.has_value(), visual.estimate);
+    if (syncUnavailableReason.isEmpty()) {
         while (true) {
             const double apiShift = (*after.position.offset - *before.position.offset) * start.scale;
             if (std::abs(qRound(apiShift) - visual.estimate.shift) <= options.searchRadius) {
@@ -438,6 +440,8 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     }
     json.insert(QStringLiteral("positionSync"), QJsonObject{
         {QStringLiteral("outcome"), syncOutcome},
+        {QStringLiteral("unavailableReason"), syncUnavailableReason.isEmpty()
+            ? QJsonValue() : QJsonValue(syncUnavailableReason)},
         {QStringLiteral("confirmedMs"), syncOutcome == QStringLiteral("within_search_window")
             ? QJsonValue(sinceDispatchMs()) : QJsonValue()},
         {QStringLiteral("samples"), positionSamples},
@@ -533,7 +537,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     }
     if (!options.contentOutput.isEmpty()) {
         outcome.content = validateContentRepeat(start.image, detector.lastFrame(), settle.outcome,
-            syncOutcome, before.bounds == after.bounds, bandEstimate.estimate);
+            syncOutcome, before.bounds == after.bounds, bandEstimate.estimate, syncUnavailableReason);
     }
     return outcome;
 }
@@ -871,13 +875,28 @@ int runInspect(const ProbeOptions& options)
     QElapsedTimer pending;
     QObject::connect(measureTimer, &QTimer::timeout, overlay, [&] {
         constexpr int kModifierReleaseTimeoutMs = 3000;
-        if (stopRequested() || pending.elapsed() >= kModifierReleaseTimeoutMs) {
+        if (stopRequested()) {
             measureTimer->stop();
             state.endMeasurement();
-            err() << "measurement cancelled while waiting for shortcut modifiers\n";
+            err() << "measurement cancelled: stop requested\n";
+            err().flush();
             return;
         }
-        if (QGuiApplication::queryKeyboardModifiers() != Qt::NoModifier) return;
+        const auto modifiers = SnapTray::currentPhysicalKeyboardModifiers();
+        if (pending.elapsed() >= kModifierReleaseTimeoutMs) {
+            measureTimer->stop();
+            state.endMeasurement();
+            QStringList held;
+            if (modifiers.testFlag(Qt::ControlModifier)) held << QStringLiteral("Control");
+            if (modifiers.testFlag(Qt::AltModifier)) held << QStringLiteral("Alt");
+            if (modifiers.testFlag(Qt::ShiftModifier)) held << QStringLiteral("Shift");
+            if (modifiers.testFlag(Qt::MetaModifier)) held << QStringLiteral("Meta");
+            err() << "measurement cancelled: modifier release timed out after " << kModifierReleaseTimeoutMs
+                  << " ms; reported modifiers: " << (held.isEmpty() ? QStringLiteral("none") : held.join('+')) << '\n';
+            err().flush();
+            return;
+        }
+        if (modifiers != Qt::NoModifier) return;
         measureTimer->stop();
         timer->stop();
         overlay->hide();
@@ -896,24 +915,40 @@ int runInspect(const ProbeOptions& options)
     });
     const auto registerShortcut = [&](const QString& sequence, std::function<void()> callback) {
         if (SnapTray::HotkeyManager::registerSessionShortcut(sequence, overlay, std::move(callback))) return true;
-        err() << "cannot register inspect shortcut " << sequence << "; close the conflicting application\n";
+        err() << "inspect shortcut unavailable: " << sequence
+              << "; invalid/unsupported shortcut or OS registration failure (possibly a conflict)\n";
+        err().flush();
         return false;
     };
-    const bool registered =
-        registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Up"), [&] { refresh(); state.cycle(1); refresh(); })
-        && registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Down"), [&] { refresh(); state.cycle(-1); refresh(); })
-        && registerShortcut(QStringLiteral("Ctrl+Alt+Shift+M"), [&] {
-            refresh();
-            if (!state.beginMeasurement()) return;
-            pending.start();
-            measureTimer->start(kCountdownPollMs);
-        })
-        && registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Q"), [] { requestStop(0); });
-    if (!registered) {
+    const auto ignored = [&](const char* action) {
+        if (const char* reason = state.ignoredReason()) {
+            err() << action << " ignored: " << reason << '\n';
+            err().flush();
+            return true;
+        }
+        return false;
+    };
+    const auto cycle = [&](int direction) {
+        refresh();
+        if (ignored("level change")) return;
+        state.cycle(direction);
+        refresh();
+    };
+    // A conflicting optional binding must not disable passive inspection.
+    // Keep a working global stop shortcut mandatory for interactive measurement.
+    if (!registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Q"), [] { requestStop(0); })) {
         delete overlay;
         locator->restoreAccessibility();
         return 1;
     }
+    registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Up"), [&] { cycle(1); });
+    registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Down"), [&] { cycle(-1); });
+    registerShortcut(QStringLiteral("Ctrl+Alt+Shift+M"), [&] {
+        refresh();
+        if (ignored("measure") || !state.beginMeasurement()) return;
+        pending.start();
+        measureTimer->start(kCountdownPollMs);
+    });
     timer->start(kInspectIntervalMs);
     const int code = QApplication::exec();
     delete overlay;

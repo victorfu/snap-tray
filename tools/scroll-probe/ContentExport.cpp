@@ -9,10 +9,21 @@
 
 namespace snaptray::scrollcapture::probe {
 
+QString positionSyncUnavailableReason(bool settled, bool hasOffsetBefore, bool hasOffsetAfter,
+                                      const ShiftEstimate& visual)
+{
+    if (!settled) return QStringLiteral("not_settled");
+    if (!hasOffsetBefore) return QStringLiteral("position_missing_offset_before");
+    if (!hasOffsetAfter) return QStringLiteral("position_missing_offset_after");
+    if (visual.status != ShiftEstimate::Status::Found)
+        return QStringLiteral("visual_shift_") + QLatin1String(shiftEstimateStatusName(visual.status));
+    return {};
+}
+
 ContentRepeat validateContentRepeat(const QImage& before, const QImage& after,
                                     FrameSettleDetector::Outcome settle,
                                     const QString& positionSync, bool sameBounds,
-                                    const ShiftEstimate& dominant)
+                                    const ShiftEstimate& dominant, const QString& syncUnavailableReason)
 {
     const auto rejected = [](const QString& reason) { return ContentRepeat{std::nullopt, reason, false}; };
     if (before.isNull() || after.isNull()) return rejected(QStringLiteral("capture_failed"));
@@ -20,11 +31,10 @@ ContentRepeat validateContentRepeat(const QImage& before, const QImage& after,
         return rejected(QStringLiteral("settle_") + QLatin1String(settleOutcomeName(settle)));
     }
     if (!sameBounds || before.size() != after.size()) return rejected(QStringLiteral("geometry_changed"));
-    // A missing visual displacement prevents synchronization from even running.
-    // Preserve that root cause instead of reporting a misleading position failure.
+    // Use the reason recorded by the sync gate, not the later prior-constrained estimate.
     if (positionSync == QLatin1String("not_available")
-        && dominant.status != ShiftEstimate::Status::Found) {
-        return rejected(QStringLiteral("dominant_shift_") + QLatin1String(shiftEstimateStatusName(dominant.status)));
+        && !syncUnavailableReason.isEmpty()) {
+        return rejected(syncUnavailableReason);
     }
     if (positionSync != QLatin1String("within_search_window")) {
         return rejected(QStringLiteral("position_sync_") + positionSync);

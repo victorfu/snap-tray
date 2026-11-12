@@ -47,6 +47,7 @@ class tst_ProbeContentExport : public QObject
 {
     Q_OBJECT
 private slots:
+    void syncCauseUsesUnconstrainedEstimateAndOffsetPresence();
     void activeSettleDeliversQueuedCancellation();
     void inspectLevelChangesAndReentrantMeasurement();
     void timedOutUnchangedRepeatRejectsExport();
@@ -61,6 +62,28 @@ private slots:
     void noMotionWithoutContentRejects();
     void rejectsInvalidCommandLine();
 };
+
+void tst_ProbeContentExport::syncCauseUsesUnconstrainedEstimateAndOffsetPresence()
+{
+    ShiftEstimate visual;
+    visual.status = ShiftEstimate::Status::Ambiguous;
+    ShiftEstimate constrained;
+    constrained.status = ShiftEstimate::Status::Found;
+    constrained.shift = 30;
+    const auto reason = positionSyncUnavailableReason(true, true, true, visual);
+    const auto result = validateContentRepeat(frame(0), frame(30), FrameSettleDetector::Outcome::Settled,
+        QStringLiteral("not_available"), true, constrained, reason);
+    QCOMPARE(result.error, QStringLiteral("visual_shift_ambiguous"));
+    QVERIFY(!result.pair);
+    for (bool beforePresent : {false, true}) {
+        const auto missing = positionSyncUnavailableReason(true, beforePresent, false, visual);
+        const auto rejected = validateContentRepeat(frame(0), frame(30), FrameSettleDetector::Outcome::Settled,
+            QStringLiteral("not_available"), true, visual, missing);
+        QCOMPARE(rejected.error, beforePresent ? QStringLiteral("position_missing_offset_after")
+                                              : QStringLiteral("position_missing_offset_before"));
+        QVERIFY(!rejected.pair);
+    }
+}
 
 void tst_ProbeContentExport::activeSettleDeliversQueuedCancellation()
 {
@@ -94,6 +117,9 @@ void tst_ProbeContentExport::inspectLevelChangesAndReentrantMeasurement()
 {
     InspectState state(1);
     QVERIFY(!state.beginMeasurement());
+    state.updateLevels(0);
+    QCOMPARE(state.level(), 1); // Hovering a non-scrollable gap must preserve --level.
+    QCOMPARE(QByteArray(state.ignoredReason()), QByteArray("no scroll area"));
     state.updateLevels(3);
     QCOMPARE(state.level(), 1);
     state.cycle(1);
@@ -103,10 +129,14 @@ void tst_ProbeContentExport::inspectLevelChangesAndReentrantMeasurement()
     state.cycle(-1);
     QCOMPARE(state.level(), 2);
     QVERIFY(state.beginMeasurement());
+    QCOMPARE(QByteArray(state.ignoredReason()), QByteArray("measurement pending or running"));
     QVERIFY(!state.beginMeasurement()); // processEvents must not start a second capture.
     state.cycle(-1);
     QCOMPARE(state.level(), 2);
     state.endMeasurement();
+    QVERIFY(state.ignoredReason() == nullptr);
+    state.updateLevels(0);
+    QCOMPARE(state.level(), 2);
     state.updateLevels(1); // Moving from a nested div to a plain document resets level.
     QCOMPARE(state.level(), 0);
     state.updateLevels(0);
@@ -185,9 +215,9 @@ void tst_ProbeContentExport::rejectionReasons_data()
         << int(ShiftEstimate::Status::Ambiguous) << 30 << QStringLiteral("position_sync_timed_out");
     for (auto status : {ShiftEstimate::Status::NotFound, ShiftEstimate::Status::Ambiguous,
                         ShiftEstimate::Status::InsufficientDetail}) {
-        QTest::newRow(qPrintable(QStringLiteral("unsynchronized-") + QLatin1String(shiftEstimateStatusName(status))))
+        QTest::newRow(qPrintable(QStringLiteral("unsynchronized-no-cause-") + QLatin1String(shiftEstimateStatusName(status))))
             << QStringLiteral("not_available") << true << int(status) << 30
-            << QStringLiteral("dominant_shift_") + QLatin1String(shiftEstimateStatusName(status));
+            << QStringLiteral("position_sync_not_available");
         QTest::newRow(shiftEstimateStatusName(status)) << QStringLiteral("within_search_window") << true
             << int(status) << 30 << QStringLiteral("dominant_shift_") + QLatin1String(shiftEstimateStatusName(status));
     }

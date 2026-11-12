@@ -54,10 +54,16 @@ Inspect registers session-only global shortcuts through `HotkeyManager`:
 - `Ctrl+Alt+Shift+Q`: stop (including a pending or active measurement).
 
 Keep the cursor over the intended area until the measurement starts. A held
-modifier cancels the request after three seconds, preventing Ctrl+wheel zoom.
+Ctrl/Alt/Shift/Meta modifier cancels the request after three seconds. On Windows,
+the guard uses physical `GetAsyncKeyState` state even while the probe is in the
+background. Keypad/layout flags are excluded. A timeout logs the limit and
+reported modifiers; an explicit stop has its own cancellation message.
 While a request is pending or running, additional measure/level shortcuts are
-ignored. Moving to a target with fewer nested levels resets selection to level 0.
-Registration failure exits with a diagnostic and releases partial registrations.
+ignored with a reason on stderr. Non-scrollable gaps preserve the selected level;
+finding an area with fewer nested levels resets selection to level 0.
+Unavailable Up/Down/M shortcuts are reported and disabled individually. Failure
+to register the mandatory Q stop shortcut exits. Registration errors do not
+assume another application caused a conflict.
 These shortcuts do not initialize or persist the product's hotkey settings.
 
 ### Chromium and Electron (macOS)
@@ -181,10 +187,12 @@ retry rechecks the full captured frame and bounds. `positionSync.outcome` is:
   platform reported no offset, or no dominant displacement was measured. The
   measurement is not rejected on this ground, but it is not synchronized either.
 
-Content export still requires synchronization. In schema 8, when synchronization
-could not run because the visual displacement was unresolved, export reports
-`dominant_shift_<status>` instead of hiding that cause behind
-`position_sync_not_available`. Acceptance thresholds are unchanged.
+Content export still requires synchronization. Schema 9 records
+`positionSync.unavailableReason` at the synchronization gate: missing offsets
+take precedence (`position_missing_offset_before/after`), followed by
+`visual_shift_<status>` from the estimate computed without a platform prior.
+Export preserves this cause rather than inferring it from the later constrained
+estimate. Acceptance thresholds are unchanged.
 
 The constrained search always uses the actual platform offset and the requested
 radius, never a prior copied from pixels. This bounded check is not a general
@@ -285,6 +293,7 @@ arbitrary repeat. Rejection still reports `path` and `staleFileAtPath`.
 | 6 | `shift.rejectedBy` and `shift.measuredStatus`; blank bands no longer count as a displacement without a majority; `insufficient_detail` for band results; a rejected export exits with code 3 and reports `path`, `staleFileAtPath`; `endedAtNoMotionRepeat`. |
 | 7 | Specific rejection reasons and `repeatIndex`; save `stage`/`detail`; validated no-motion endpoints; full overlap validation for variable shifts. |
 | 8 | Unresolved visual displacement reports `dominant_shift_<status>` when synchronization could not run; acceptance gates unchanged. |
+| 9 | `positionSync.unavailableReason` records the actual gate's cause; export preserves missing-offset or unconstrained `visual_shift_<status>` reasons instead of inferring them from the constrained dominant estimate. |
 
 ## Record fields
 
