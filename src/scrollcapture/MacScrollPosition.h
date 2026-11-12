@@ -7,8 +7,8 @@
 
 namespace snaptray::scrollcapture {
 
-// AXWebArea frames describe a web viewport, not NSScrollView document geometry.
-// Keep missing web positions unknown; real scroll-bar values remain usable.
+// AXContents can describe a viewport rather than document geometry, including
+// native AXOutline providers. Do not let a zero-range frame override a scrollbar.
 // Pure geometry policy so platform AX observations can be regression-tested.
 inline void resolveMacScrollPosition(ScrollPosition& position, const QRectF& viewport,
                                      const QString& contentsRole,
@@ -17,7 +17,12 @@ inline void resolveMacScrollPosition(ScrollPosition& position, const QRectF& vie
     constexpr double kEdgeFractionEpsilon = 0.001;
     constexpr double kEdgePixelEpsilon = 0.5;
     const double viewportHeight = viewport.height();
+    const bool hasScrollBarPosition = position.fraction.has_value() ||
+        (position.viewportRatio && *position.viewportRatio > 0.0 && *position.viewportRatio < 1.0);
+    const bool contentsMayBeViewport = contentsFrame && hasScrollBarPosition &&
+        contentsFrame->height() <= viewportHeight + kEdgePixelEpsilon;
     if (contentsFrame && contentsRole != QStringLiteral("AXWebArea") &&
+        !contentsMayBeViewport &&
         contentsFrame->height() + kEdgePixelEpsilon >= viewportHeight) {
         position.contentHeight = contentsFrame->height();
         position.offset = viewport.y() - contentsFrame->y();
