@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Qt>
-#include <windows.h>
+#include <qt_windows.h>
 
 namespace SnapTray::detail {
 template<typename KeyState>

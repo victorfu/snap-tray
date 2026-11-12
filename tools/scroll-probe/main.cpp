@@ -53,7 +53,7 @@ using namespace snaptray::scrollcapture::probe;
 
 namespace {
 
-constexpr int kSchemaVersion = 9;
+constexpr int kSchemaVersion = 8;
 // `measure --content-output` ran and wrote its record, but exported no image.
 constexpr int kContentExportRejectedExitCode = 3;
 constexpr int kInspectIntervalMs = 150;
@@ -804,10 +804,6 @@ int runInspect(const ProbeOptions& options)
         err() << "scroll area detection is not available on this platform\n";
         return 1;
     }
-    err() << "Hover over a scroll area. Ctrl+Alt+Shift+Up/Down: outer/inner; "
-             "Ctrl+Alt+Shift+M: measure once after releasing modifiers; "
-             "Ctrl+Alt+Shift+Q or Ctrl+C: quit.\n";
-    err().flush();
 
     // `all` is a measurement mode; inspect applies both attributes.
     const QList<AccessibilityBoost> boosts = boostsFor(options.axBoost);
@@ -941,14 +937,20 @@ int runInspect(const ProbeOptions& options)
         locator->restoreAccessibility();
         return 1;
     }
-    registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Up"), [&] { cycle(1); });
-    registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Down"), [&] { cycle(-1); });
-    registerShortcut(QStringLiteral("Ctrl+Alt+Shift+M"), [&] {
+    const bool upRegistered = registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Up"), [&] { cycle(1); });
+    const bool downRegistered = registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Down"), [&] { cycle(-1); });
+    const bool measureRegistered = registerShortcut(QStringLiteral("Ctrl+Alt+Shift+M"), [&] {
         refresh();
         if (ignored("measure") || !state.beginMeasurement()) return;
         pending.start();
         measureTimer->start(kCountdownPollMs);
     });
+    err() << "Hover over a scroll area. ";
+    if (upRegistered) err() << "Ctrl+Alt+Shift+Up: outer; ";
+    if (downRegistered) err() << "Ctrl+Alt+Shift+Down: inner; ";
+    if (measureRegistered) err() << "Ctrl+Alt+Shift+M: measure once after releasing modifiers; ";
+    err() << "Ctrl+Alt+Shift+Q or Ctrl+C: quit.\n";
+    err().flush();
     timer->start(kInspectIntervalMs);
     const int code = QApplication::exec();
     delete overlay;

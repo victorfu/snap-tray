@@ -187,7 +187,7 @@ retry rechecks the full captured frame and bounds. `positionSync.outcome` is:
   platform reported no offset, or no dominant displacement was measured. The
   measurement is not rejected on this ground, but it is not synchronized either.
 
-Content export still requires synchronization. Schema 9 records
+Content export still requires synchronization. Schema 8 records
 `positionSync.unavailableReason` at the synchronization gate: missing offsets
 take precedence (`position_missing_offset_before/after`), followed by
 `visual_shift_<status>` from the estimate computed without a platform prior.
@@ -292,8 +292,7 @@ arbitrary repeat. Rejection still reports `path` and `staleFileAtPath`.
 | 5 | `--content-output` and `scroll.contentExport`. |
 | 6 | `shift.rejectedBy` and `shift.measuredStatus`; blank bands no longer count as a displacement without a majority; `insufficient_detail` for band results; a rejected export exits with code 3 and reports `path`, `staleFileAtPath`; `endedAtNoMotionRepeat`. |
 | 7 | Specific rejection reasons and `repeatIndex`; save `stage`/`detail`; validated no-motion endpoints; full overlap validation for variable shifts. |
-| 8 | Unresolved visual displacement reports `dominant_shift_<status>` when synchronization could not run; acceptance gates unchanged. |
-| 9 | `positionSync.unavailableReason` records the actual gate's cause; export preserves missing-offset or unconstrained `visual_shift_<status>` reasons instead of inferring them from the constrained dominant estimate. |
+| 8 | `positionSync.unavailableReason` records the actual gate's cause; export preserves missing-offset or unconstrained `visual_shift_<status>` reasons instead of inferring them from the constrained dominant estimate. Acceptance gates unchanged. |
 
 ## Record fields
 
