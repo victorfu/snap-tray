@@ -15,6 +15,8 @@
 #include "scrollcapture/ScrollAreaLocator.h"
 #include "scrollcapture/ScrollInjector.h"
 #include "ContentExport.h"
+#include "InspectState.h"
+#include "hotkey/HotkeyManager.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -49,7 +51,7 @@ using namespace snaptray::scrollcapture::probe;
 
 namespace {
 
-constexpr int kSchemaVersion = 7;
+constexpr int kSchemaVersion = 8;
 // `measure --content-output` ran and wrote its record, but exported no image.
 constexpr int kContentExportRejectedExitCode = 3;
 constexpr int kInspectIntervalMs = 150;
@@ -785,7 +787,9 @@ int runInspect(const ProbeOptions& options)
         err() << "scroll area detection is not available on this platform\n";
         return 1;
     }
-    err() << "Hover over a scroll area. Ctrl+C to quit.\n";
+    err() << "Hover over a scroll area. Ctrl+Alt+Shift+Up/Down: outer/inner; "
+             "Ctrl+Alt+Shift+M: measure once after releasing modifiers; "
+             "Ctrl+Alt+Shift+Q or Ctrl+C: quit.\n";
     err().flush();
 
     // `all` is a measurement mode; inspect applies both attributes.
@@ -796,15 +800,17 @@ int runInspect(const ProbeOptions& options)
 
     auto* overlay = new HighlightOverlay;
     auto* timer = new QTimer(overlay);
-    QObject::connect(timer, &QTimer::timeout, overlay,
-                     [&locator, overlay, options, boost, boostedProcesses = QSet<qint64>(),
+    InspectState state(options.level);
+    auto refresh = [&locator, &state, overlay, options, boost, boostedProcesses = QSet<qint64>(),
                       lastKey = QString()]() mutable {
         if (stopRequested()) {
             QApplication::quit();
             return;
         }
+        if (state.busy()) return;
         LocateOptions locateOptions;
-        locateOptions.level = options.level;
+        // Query the innermost area first so moving to a less deeply nested
+        // target cannot strand inspect at an invalid outer level.
         LocateResult result = locator->locateAt(QCursor::pos(), locateOptions);
         if (boost && result.processId != 0 && !boostedProcesses.contains(result.processId)) {
             boostedProcesses.insert(result.processId);
@@ -813,6 +819,11 @@ int runInspect(const ProbeOptions& options)
                   << QJsonDocument(request).toJson(QJsonDocument::Compact) << '\n';
             out().flush();
             QThread::msleep(static_cast<unsigned long>(options.axWaitMs));
+            result = locator->locateAt(QCursor::pos(), locateOptions);
+        }
+        state.updateLevels(result.area ? result.area->snapshot().availableLevels : 0);
+        if (result.area && state.level() != 0) {
+            locateOptions.level = state.level();
             result = locator->locateAt(QCursor::pos(), locateOptions);
         }
         // Print only when the area itself changes. Position changes go to
@@ -838,7 +849,58 @@ int runInspect(const ProbeOptions& options)
             out().flush();
             lastKey = key;
         }
+    };
+    QObject::connect(timer, &QTimer::timeout, overlay, [&] { refresh(); });
+
+    // Do not initialize the product's hotkeys/settings in this developer tool.
+    // Owner destruction unregisters every shortcut, including partial failure.
+    auto* measureTimer = new QTimer(overlay);
+    QElapsedTimer pending;
+    QObject::connect(measureTimer, &QTimer::timeout, overlay, [&] {
+        constexpr int kModifierReleaseTimeoutMs = 3000;
+        if (stopRequested() || pending.elapsed() >= kModifierReleaseTimeoutMs) {
+            measureTimer->stop();
+            state.endMeasurement();
+            err() << "measurement cancelled while waiting for shortcut modifiers\n";
+            return;
+        }
+        if (QGuiApplication::queryKeyboardModifiers() != Qt::NoModifier) return;
+        measureTimer->stop();
+        timer->stop();
+        overlay->hide();
+        auto measurement = options;
+        measurement.measure = true;
+        measurement.level = state.level();
+        measurement.delaySeconds = 0;
+        measurement.repeats = 1;
+        // Inspect owns any accessibility boost until it exits.
+        measurement.axBoost.clear();
+        const int result = runMeasure(measurement);
+        err() << "inspect measurement exit code: " << result << '\n';
+        err().flush();
+        state.endMeasurement();
+        timer->start(kInspectIntervalMs);
     });
+    const auto registerShortcut = [&](const QString& sequence, std::function<void()> callback) {
+        if (SnapTray::HotkeyManager::registerSessionShortcut(sequence, overlay, std::move(callback))) return true;
+        err() << "cannot register inspect shortcut " << sequence << "; close the conflicting application\n";
+        return false;
+    };
+    const bool registered =
+        registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Up"), [&] { refresh(); state.cycle(1); refresh(); })
+        && registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Down"), [&] { refresh(); state.cycle(-1); refresh(); })
+        && registerShortcut(QStringLiteral("Ctrl+Alt+Shift+M"), [&] {
+            refresh();
+            if (!state.beginMeasurement()) return;
+            pending.start();
+            measureTimer->start(kCountdownPollMs);
+        })
+        && registerShortcut(QStringLiteral("Ctrl+Alt+Shift+Q"), [] { requestStop(0); });
+    if (!registered) {
+        delete overlay;
+        locator->restoreAccessibility();
+        return 1;
+    }
     timer->start(kInspectIntervalMs);
     const int code = QApplication::exec();
     delete overlay;

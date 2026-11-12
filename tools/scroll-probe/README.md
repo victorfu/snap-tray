@@ -44,6 +44,22 @@ overlay label follows position changes; the terminal gets a line only when the a
 role, level or bounds) changes, so inspecting the terminal that runs the probe does not loop. `--level 1`
 selects the next scroll area outward.
 
+Inspect registers session-only global shortcuts through `HotkeyManager`:
+
+- `Ctrl+Alt+Shift+Up` / `Down`: cycle outward / inward, wrapping at the end.
+- `Ctrl+Alt+Shift+M`: measure once at the cursor after releasing all modifiers.
+  It uses the selected level and CLI measurement options, with zero countdown
+  and one repeat. Pass `--scroll wheel-delta --amount 120` to include scrolling;
+  without `--scroll`, it records detection/position only. `--output` appends JSON.
+- `Ctrl+Alt+Shift+Q`: stop (including a pending or active measurement).
+
+Keep the cursor over the intended area until the measurement starts. A held
+modifier cancels the request after three seconds, preventing Ctrl+wheel zoom.
+While a request is pending or running, additional measure/level shortcuts are
+ignored. Moving to a target with fewer nested levels resets selection to level 0.
+Registration failure exits with a diagnostic and releases partial registrations.
+These shortcuts do not initialize or persist the product's hotkey settings.
+
 ### Chromium and Electron (macOS)
 
 Chrome and Electron apps build the accessibility tree of their web content only for assistive clients,
@@ -165,6 +181,11 @@ retry rechecks the full captured frame and bounds. `positionSync.outcome` is:
   platform reported no offset, or no dominant displacement was measured. The
   measurement is not rejected on this ground, but it is not synchronized either.
 
+Content export still requires synchronization. In schema 8, when synchronization
+could not run because the visual displacement was unresolved, export reports
+`dominant_shift_<status>` instead of hiding that cause behind
+`position_sync_not_available`. Acceptance thresholds are unchanged.
+
 The constrained search always uses the actual platform offset and the requested
 radius, never a prior copied from pixels. This bounded check is not a general
 freshness guarantee for all accessibility providers. `afterAtVisualSettle` is
@@ -263,6 +284,7 @@ arbitrary repeat. Rejection still reports `path` and `staleFileAtPath`.
 | 5 | `--content-output` and `scroll.contentExport`. |
 | 6 | `shift.rejectedBy` and `shift.measuredStatus`; blank bands no longer count as a displacement without a majority; `insufficient_detail` for band results; a rejected export exits with code 3 and reports `path`, `staleFileAtPath`; `endedAtNoMotionRepeat`. |
 | 7 | Specific rejection reasons and `repeatIndex`; save `stage`/`detail`; validated no-motion endpoints; full overlap validation for variable shifts. |
+| 8 | Unresolved visual displacement reports `dominant_shift_<status>` when synchronization could not run; acceptance gates unchanged. |
 
 ## Record fields
 

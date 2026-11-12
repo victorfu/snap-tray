@@ -20,6 +20,12 @@ ContentRepeat validateContentRepeat(const QImage& before, const QImage& after,
         return rejected(QStringLiteral("settle_") + QLatin1String(settleOutcomeName(settle)));
     }
     if (!sameBounds || before.size() != after.size()) return rejected(QStringLiteral("geometry_changed"));
+    // A missing visual displacement prevents synchronization from even running.
+    // Preserve that root cause instead of reporting a misleading position failure.
+    if (positionSync == QLatin1String("not_available")
+        && dominant.status != ShiftEstimate::Status::Found) {
+        return rejected(QStringLiteral("dominant_shift_") + QLatin1String(shiftEstimateStatusName(dominant.status)));
+    }
     if (positionSync != QLatin1String("within_search_window")) {
         return rejected(QStringLiteral("position_sync_") + positionSync);
     }

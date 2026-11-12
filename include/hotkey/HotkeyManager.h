@@ -47,6 +47,12 @@ public:
      */
     static HotkeyManager& instance();
 
+    // Session-only shortcut for developer tools. Does not initialize product
+    // hotkeys or touch settings. The owner releases the registration on destruction.
+    // Returns nullptr on invalid input or an OS registration conflict.
+    static QObject* registerSessionShortcut(const QString& sequence, QObject* owner,
+                                             std::function<void()> activated);
+
     /**
      * @brief Initialize the manager and load all hotkeys from settings.
      *

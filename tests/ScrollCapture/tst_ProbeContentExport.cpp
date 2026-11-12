@@ -1,4 +1,5 @@
 #include "ContentExport.h"
+#include "InspectState.h"
 
 #include <QFile>
 #include <QTemporaryDir>
@@ -44,6 +45,7 @@ class tst_ProbeContentExport : public QObject
 {
     Q_OBJECT
 private slots:
+    void inspectLevelChangesAndReentrantMeasurement();
     void timedOutUnchangedRepeatRejectsExport();
     void settledNoMotionEndsSegment();
     void resumedMotionRejectsExport();
@@ -56,6 +58,29 @@ private slots:
     void noMotionWithoutContentRejects();
     void rejectsInvalidCommandLine();
 };
+
+void tst_ProbeContentExport::inspectLevelChangesAndReentrantMeasurement()
+{
+    InspectState state(1);
+    QVERIFY(!state.beginMeasurement());
+    state.updateLevels(3);
+    QCOMPARE(state.level(), 1);
+    state.cycle(1);
+    QCOMPARE(state.level(), 2);
+    state.cycle(1);
+    QCOMPARE(state.level(), 0);
+    state.cycle(-1);
+    QCOMPARE(state.level(), 2);
+    QVERIFY(state.beginMeasurement());
+    QVERIFY(!state.beginMeasurement()); // processEvents must not start a second capture.
+    state.cycle(-1);
+    QCOMPARE(state.level(), 2);
+    state.endMeasurement();
+    state.updateLevels(1); // Moving from a nested div to a plain document resets level.
+    QCOMPARE(state.level(), 0);
+    state.updateLevels(0);
+    QVERIFY(!state.beginMeasurement());
+}
 
 void tst_ProbeContentExport::timedOutUnchangedRepeatRejectsExport()
 {
@@ -125,8 +150,13 @@ void tst_ProbeContentExport::rejectionReasons_data()
         QTest::newRow(qPrintable(sync)) << sync << true << found << 30 << QStringLiteral("position_sync_") + sync;
     }
     QTest::newRow("bounds") << QStringLiteral("within_search_window") << false << found << 30 << QStringLiteral("geometry_changed");
+    QTest::newRow("timeout-before-ambiguous") << QStringLiteral("timed_out") << true
+        << int(ShiftEstimate::Status::Ambiguous) << 30 << QStringLiteral("position_sync_timed_out");
     for (auto status : {ShiftEstimate::Status::NotFound, ShiftEstimate::Status::Ambiguous,
                         ShiftEstimate::Status::InsufficientDetail}) {
+        QTest::newRow(qPrintable(QStringLiteral("unsynchronized-") + QLatin1String(shiftEstimateStatusName(status))))
+            << QStringLiteral("not_available") << true << int(status) << 30
+            << QStringLiteral("dominant_shift_") + QLatin1String(shiftEstimateStatusName(status));
         QTest::newRow(shiftEstimateStatusName(status)) << QStringLiteral("within_search_window") << true
             << int(status) << 30 << QStringLiteral("dominant_shift_") + QLatin1String(shiftEstimateStatusName(status));
     }
