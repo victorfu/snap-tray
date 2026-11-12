@@ -16,6 +16,7 @@
 #include "scrollcapture/ScrollInjector.h"
 #include "ContentExport.h"
 #include "InspectState.h"
+#include "ProbeEventLoop.h"
 #include "hotkey/HotkeyManager.h"
 
 #include <QApplication>
@@ -312,6 +313,10 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     json.insert(QStringLiteral("before"), toJson(before.position));
 
     const Frame start = captureArea(before.bounds);
+    if (processCancellation(stopRequested)) {
+        outcome.content.error = QStringLiteral("cancelled");
+        return outcome;
+    }
     if (start.image.isNull()) {
         outcome.content.error = QStringLiteral("capture_failed");
         json.insert(QStringLiteral("error"), QStringLiteral("screen capture failed"));
@@ -354,17 +359,21 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     }
 
     qint64 captureMs = 0;
-    while (detector.result().outcome == FrameSettleDetector::Outcome::Pending) {
+    const auto loopResult = settleFrames(detector, [&] {
         QElapsedTimer captureClock;
         captureClock.start();
         const Frame frame = captureArea(before.bounds);
         captureMs += captureClock.elapsed();
-        if (frame.image.isNull()) {
-            outcome.content.error = QStringLiteral("capture_failed_while_settling");
-            json.insert(QStringLiteral("error"), QStringLiteral("screen capture failed while settling"));
-            return outcome;
-        }
-        detector.addFrame(frame.image, sinceDispatchMs());
+        return frame.image;
+    }, sinceDispatchMs, stopRequested);
+    if (loopResult == SettleLoopResult::Cancelled) {
+        outcome.content.error = QStringLiteral("cancelled");
+        return outcome;
+    }
+    if (loopResult == SettleLoopResult::CaptureFailed) {
+        outcome.content.error = QStringLiteral("capture_failed_while_settling");
+        json.insert(QStringLiteral("error"), QStringLiteral("screen capture failed while settling"));
+        return outcome;
     }
     const FrameSettleDetector::Result& settle = detector.result();
     outcome.strictSettleMs = settle.strictSettleMs;
@@ -408,7 +417,10 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
             QThread::msleep(kPositionPollMs);
             // UIA is created in the application's STA. Keep its message queue
             // serviced while waiting for asynchronous accessibility updates.
-            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+            if (processCancellation(stopRequested)) {
+                outcome.content.error = QStringLiteral("cancelled");
+                return outcome;
+            }
             after = area.snapshot();
             positionSamples.append(QJsonObject{
                 {QStringLiteral("elapsedMs"), sinceDispatchMs() - syncStartedMs},
@@ -588,6 +600,7 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
             break;
         }
         const RepeatOutcome outcome = runRepeat(index, area, injector, options, before);
+        if (processCancellation(stopRequested)) break;
         repeats.append(outcome.json);
         if (!options.contentOutput.isEmpty()) {
             contentSession.add(index, outcome.content);
@@ -598,7 +611,7 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
         if (outcome.strictSettleMs) {
             settleTimes.push_back(*outcome.strictSettleMs);
         }
-        QThread::msleep(static_cast<unsigned long>(options.repeatIntervalMs));
+        waitWithCancellation(options.repeatIntervalMs, stopRequested);
     }
     phase.insert(QStringLiteral("repeats"), repeats);
     phase.insert(QStringLiteral("stats"), statistics(shifts, settleTimes, static_cast<int>(repeats.size())));
@@ -761,7 +774,7 @@ int runMeasure(const ProbeOptions& options)
     }
     locator->restoreAccessibility();
 
-    if (stopRequested()) {
+    if (processCancellation(stopRequested)) {
         err() << "stopped; accessibility attributes restored, nothing written\n";
         return 1;
     }

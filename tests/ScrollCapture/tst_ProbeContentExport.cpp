@@ -1,5 +1,7 @@
 #include "ContentExport.h"
 #include "InspectState.h"
+#include "ProbeEventLoop.h"
+#include <QTimer>
 
 #include <QFile>
 #include <QTemporaryDir>
@@ -45,6 +47,7 @@ class tst_ProbeContentExport : public QObject
 {
     Q_OBJECT
 private slots:
+    void activeSettleDeliversQueuedCancellation();
     void inspectLevelChangesAndReentrantMeasurement();
     void timedOutUnchangedRepeatRejectsExport();
     void settledNoMotionEndsSegment();
@@ -58,6 +61,34 @@ private slots:
     void noMotionWithoutContentRejects();
     void rejectsInvalidCommandLine();
 };
+
+void tst_ProbeContentExport::activeSettleDeliversQueuedCancellation()
+{
+    FrameSettleDetector::Config config;
+    config.timeoutMs = 5000;
+    FrameSettleDetector detector(config);
+    detector.start(frame(0));
+    bool stopped = false;
+    int captures = 0;
+    QObject context;
+    const auto result = settleFrames(detector, [&] {
+        ++captures;
+        // A stop shortcut delivered while a frame is being captured.
+        QTimer::singleShot(0, &context, [&] { stopped = true; });
+        return frame(captures * 30);
+    }, [&] { return captures * 100; }, [&] { return stopped; });
+    QCOMPARE(result, SettleLoopResult::Cancelled);
+    QVERIFY(stopped);
+    QCOMPARE(captures, 1);
+    QCOMPARE(detector.result().outcome, FrameSettleDetector::Outcome::Pending);
+
+    QTemporaryDir directory;
+    const QString path = directory.filePath(QStringLiteral("cancelled.png"));
+    ContentExportSession session;
+    session.add(0, moving());
+    QCOMPARE(session.finish(path, stopped).value("status").toString(), QStringLiteral("rejected"));
+    QVERIFY(!QFile::exists(path));
+}
 
 void tst_ProbeContentExport::inspectLevelChangesAndReentrantMeasurement()
 {
