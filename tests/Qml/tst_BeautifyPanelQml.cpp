@@ -48,6 +48,10 @@ private slots:
     void testSliderBindingSurvivesReopen_data();
     void testSliderBindingSurvivesReopen();
     void testResultsComeFirst_CustomizeCollapsed();
+    void testScreenSizedPanelPosition_data();
+    void testScreenSizedPanelPosition();
+    void testPositionNearRightEdge_data();
+    void testPositionNearRightEdge();
     void testStyleCardAndShadowToggle();
     void testTallPanelScrollsOnShortScreen();
     void testCustomizeNearScreenBottomStaysOnScreen();
@@ -196,6 +200,80 @@ void tst_BeautifyPanelQml::testResultsComeFirst_CustomizeCollapsed()
     QVERIFY(root->property("customizeExpanded").toBool());
 }
 
+void tst_BeautifyPanelQml::testScreenSizedPanelPosition_data()
+{
+    QTest::addColumn<int>("extraSize");
+    QTest::newRow("one-pixel-room") << -1;
+    QTest::newRow("exact-fit") << 0;
+    QTest::newRow("oversized") << 100;
+}
+
+void tst_BeautifyPanelQml::testScreenSizedPanelPosition()
+{
+    QFETCH(int, extraSize);
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    const QRect available = screen->availableGeometry();
+    const QRect anchor(available.center(), QSize(1, 1));
+    SnapTray::QmlBeautifyPanel panel;
+    panel.setSettings(BeautifySettings{});
+    panel.showNear(anchor);
+    auto* view = qobject_cast<QQuickView*>(panel.window());
+    QVERIFY(view && view->rootObject());
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    panel.hide();
+
+    // Force the boundary sizes on every host, including large desktop screens.
+    // Keep maxHeight unchanged on reopen so these dimensions survive until polish.
+    const QSize insetSize = available.size()
+        - QSize(2 * kScreenEdgeMargin, 2 * kScreenEdgeMargin)
+        + QSize(extraSize, extraSize);
+    view->rootObject()->setSize(insetSize);
+    view->resize(insetSize);
+    panel.showNear(anchor);
+    const int remainingSpace = qMax(0, -extraSize);
+    QCOMPARE(view->position(), available.topLeft()
+        + QPoint(kScreenEdgeMargin, kScreenEdgeMargin + remainingSpace));
+
+    // Dragging uses the whole available screen without the opening margin.
+    const QSize dragSize = available.size() + QSize(extraSize, extraSize);
+    view->rootObject()->setSize(dragSize);
+    view->resize(dragSize);
+    QVERIFY(QMetaObject::invokeMethod(&panel, "onDragStarted", Qt::DirectConnection));
+    QVERIFY(QMetaObject::invokeMethod(&panel, "onDragMoved", Qt::DirectConnection,
+                                     Q_ARG(double, 0.0), Q_ARG(double, 0.0)));
+    QCOMPARE(view->position(), available.topLeft() + QPoint(remainingSpace, remainingSpace));
+    QVERIFY(QMetaObject::invokeMethod(&panel, "onDragFinished", Qt::DirectConnection));
+    QCOMPARE(view->y(), available.top() + kScreenEdgeMargin);
+}
+
+void tst_BeautifyPanelQml::testPositionNearRightEdge_data()
+{
+    QTest::addColumn<int>("overflow");
+    QTest::newRow("fits-at-right-edge") << 0;
+    QTest::newRow("one-pixel-overflow") << 1;
+}
+
+void tst_BeautifyPanelQml::testPositionNearRightEdge()
+{
+    QFETCH(int, overflow);
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    const QRect available = screen->availableGeometry();
+    SnapTray::QmlBeautifyPanel panel;
+    panel.setSettings(BeautifySettings{});
+    const int panelWidth = panel.window()->width();
+    constexpr int kAnchorGap = 8;
+    if (available.width() < 2 * (panelWidth + kAnchorGap + kScreenEdgeMargin)) {
+        QSKIP("Screen must fit the panel on either side of the anchor");
+    }
+    const int rightmost = available.right() + 1 - kScreenEdgeMargin - panelWidth;
+    const QRect anchor(QPoint(rightmost - kAnchorGap + overflow, available.center().y()), QSize(1, 1));
+    panel.showNear(anchor);
+    QCOMPARE(panel.window()->x(), overflow == 0
+        ? rightmost : anchor.left() - panelWidth - kAnchorGap);
+}
+
 void tst_BeautifyPanelQml::testStyleCardAndShadowToggle()
 {
     SnapTray::QmlBeautifyPanel panel;
@@ -333,8 +411,16 @@ void tst_BeautifyPanelQml::testCustomizeNearScreenBottomStaysOnScreen()
     root->setProperty("customizeExpanded", true);
     QTRY_VERIFY(root->height() > collapsed);
     QTRY_COMPARE(qreal(view->height()), root->height());
-    QTRY_VERIFY(view->geometry().bottom() <= available.bottom() - kScreenEdgeMargin);
+    QTRY_COMPARE(view->geometry().bottom(), available.bottom() - kScreenEdgeMargin);
     QVERIFY(view->geometry().top() >= available.top() + kScreenEdgeMargin);
+
+    // Leave room above the panel so top-edge fallback cannot hide an off-by-one
+    // in keepOnScreen(), even when the expanded panel fills a short screen.
+    const int reducedHeight = qMin(view->height() - 1, available.height() / 2);
+    view->setY(available.bottom() - kScreenEdgeMargin);
+    root->setProperty("maxHeight", reducedHeight);
+    QTRY_COMPARE(view->height(), reducedHeight);
+    QTRY_COMPARE(view->geometry().bottom(), available.bottom() - kScreenEdgeMargin);
 }
 
 void tst_BeautifyPanelQml::testSaveStyleByName()
