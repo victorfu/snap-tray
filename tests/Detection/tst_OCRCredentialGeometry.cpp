@@ -11,7 +11,48 @@ class TestOCRCredentialGeometry : public QObject
 private slots:
     void nativeOcrCoverage_data();
     void nativeOcrCoverage();
+    void nativeChineseSpacing();
 };
+
+void TestOCRCredentialGeometry::nativeChineseSpacing()
+{
+    if (!qEnvironmentVariableIsSet("SNAPTRAY_TEST_NATIVE_OCR")) {
+        QSKIP("Set SNAPTRAY_TEST_NATIVE_OCR=1 to run native OCR");
+    }
+    QString language;
+    for (const auto& available : OCRManager::availableLanguages()) {
+        if (available.code.startsWith(QStringLiteral("zh"))) {
+            language = available.code;
+            break;
+        }
+    }
+    if (language.isEmpty()) {
+        QSKIP("No Chinese OCR language installed");
+    }
+    QImage input(1000, 120, QImage::Format_RGB32);
+    input.fill(Qt::white);
+    {
+        QPainter painter(&input);
+        QFont font(QStringLiteral("Microsoft JhengHei"));
+        font.setPixelSize(40);
+        painter.setFont(font);
+        painter.setPen(Qt::black);
+        painter.drawText(QPoint(20, 75), QStringLiteral("你好世界 vision api XD 19:52"));
+    }
+    OCRManager manager;
+    manager.setRecognitionLanguages({language});
+    auto result = std::make_shared<OCRResult>();
+    auto complete = std::make_shared<bool>(false);
+    manager.recognizeText(QPixmap::fromImage(input), [result, complete](const OCRResult& recognized) {
+        *result = recognized;
+        *complete = true;
+    });
+    QTRY_VERIFY_WITH_TIMEOUT(*complete, 60000);
+    QVERIFY2(result->success, qPrintable(result->error));
+    QVERIFY2(result->text.contains(QStringLiteral("你好世界")), qPrintable(result->text));
+    QVERIFY2(result->text.contains(QStringLiteral("vision api XD"), Qt::CaseInsensitive), qPrintable(result->text));
+    QVERIFY2(result->text.contains(QStringLiteral("19:52")), qPrintable(result->text));
+}
 
 void TestOCRCredentialGeometry::nativeOcrCoverage_data()
 {

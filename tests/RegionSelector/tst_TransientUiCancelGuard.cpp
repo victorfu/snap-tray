@@ -453,7 +453,8 @@ void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCopyAsTsvClosesViewM
 
     OCRResultViewModel vm;
     vm.setOCRResult(result);
-    QVERIFY(vm.hasTsv());
+    // Table detection completes asynchronously after the text is available.
+    QTRY_VERIFY(vm.hasTsv());
 
     QSignalSpy copiedSpy(&vm, &OCRResultViewModel::textCopied);
     QSignalSpy closedSpy(&vm, &OCRResultViewModel::dialogClosed);

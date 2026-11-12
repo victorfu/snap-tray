@@ -3,6 +3,8 @@
 #include <QObject>
 
 struct OCRResult;
+struct TableDetectionResult;
+template <typename T> class QFuture;
 
 class OCRResultViewModel : public QObject
 {
@@ -32,14 +34,18 @@ public:
 
 signals:
     void textChanged();
+    // Emitted immediately for text, and again when current table analysis completes.
     void resultSet();
     void copyFeedbackActiveChanged();
     void textCopied(const QString& text);
     void dialogClosed();
 
 private:
+    friend class TestOCRResultViewModel;
+    void applyTableDetectionResult(const QFuture<TableDetectionResult>& future, quint64 generation);
     QString m_text;
     QString m_originalText;
     QString m_detectedTsv;
+    quint64 m_resultGeneration = 0; // GUI-thread generation; older workers cannot replace newer TSV.
     bool m_copyFeedbackActive = false;
 };

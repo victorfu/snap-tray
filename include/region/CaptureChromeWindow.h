@@ -18,7 +18,8 @@ namespace snaptray::region {
 
 enum class CaptureChromeDirtyReason {
     Scene,
-    PencilPreview
+    PencilPreview,
+    BusySpinner // Animation tick only; centre/visibility changes use state invalidation.
 };
 
 CaptureChromeDirtyReason captureChromeDirtyReasonForToolPreview(
@@ -29,6 +30,7 @@ struct CaptureChromePendingDirtyRegions
 {
     QRegion scene;
     QRegion pencilPreview;
+    QRegion busySpinner;
 
     void add(const QRegion& region, CaptureChromeDirtyReason reason);
     void clear();
@@ -40,6 +42,7 @@ struct CaptureChromeDirtyRegionPlanInput
     QRect windowRect;
     QRegion sceneDirtyRegion;
     QRegion previewDirtyRegion;
+    QRegion spinnerDirtyRegion;
     QRegion stateDirtyRegion;
     bool forceFullRepaint = false;
     bool renderStateChanged = false;

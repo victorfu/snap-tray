@@ -3,7 +3,9 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QFutureWatcher>
 #include <QTimer>
+#include <QtConcurrent/QtConcurrentRun>
 
 OCRResultViewModel::OCRResultViewModel(QObject* parent)
     : QObject(parent)
@@ -15,10 +17,43 @@ void OCRResultViewModel::setOCRResult(const OCRResult& result)
     m_originalText = result.text;
     m_text = result.text;
 
-    const TableDetectionResult detection = TableDetector::detect(result.blocks);
-    m_detectedTsv = detection.isTable ? detection.tsv : QString();
+    m_detectedTsv.clear();
+    const quint64 generation = ++m_resultGeneration;
+    if (result.blocks.size() >= 4) {
+        auto* watcher = new QFutureWatcher<TableDetectionResult>(this);
+        connect(watcher, &QFutureWatcher<TableDetectionResult>::finished, this,
+                [this, watcher, generation]() {
+            watcher->deleteLater();
+            applyTableDetectionResult(watcher->future(), generation);
+        });
+        // Only value-owned OCR data crosses threads. Closing the dialog destroys
+        // the watcher without waiting for analysis or accessing this from a worker.
+        watcher->setFuture(QtConcurrent::run([blocks = result.blocks]() {
+            return TableDetector::detect(blocks);
+        }));
+    }
 
     emit textChanged();
+    emit resultSet();
+}
+
+void OCRResultViewModel::applyTableDetectionResult(
+    const QFuture<TableDetectionResult>& future, quint64 generation)
+{
+    if (generation != m_resultGeneration) {
+        qDebug() << "OCR table detection: ignoring stale result";
+        return;
+    }
+    try {
+        const auto detection = future.result();
+        m_detectedTsv = detection.isTable ? detection.tsv : QString();
+        if (!detection.isTable) {
+            qDebug() << "OCR table detection: no table found";
+        }
+    } catch (...) {
+        m_detectedTsv.clear();
+        qWarning() << "OCR table detection failed; plain text remains available";
+    }
     emit resultSet();
 }
 

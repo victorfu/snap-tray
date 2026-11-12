@@ -1,4 +1,5 @@
 #include "detection/TableDetector.h"
+#include "utils/OCRTextUtils.h"
 
 #include <QRectF>
 #include <QStringList>
@@ -22,7 +23,7 @@ struct RowBucket {
 };
 
 struct RowCell {
-    QString text;
+    QStringList words;
     QRectF rect;
     qreal leftX = 0.0;
 };
@@ -144,7 +145,7 @@ QVector<qreal> clusterAnchors(QVector<qreal> values, qreal tolerance)
 
 QString normalizeCellText(const QStringList &tokens)
 {
-    return tokens.join(QStringLiteral(" ")).simplified();
+    return OCRTextUtils::joinWords(tokens).simplified();
 }
 
 qreal deriveWordJoinGapThreshold(const QVector<RowBucket> &rows, qreal medianWidth, qreal medianHeight)
@@ -213,7 +214,7 @@ QVector<RowCell> mergeWordsIntoCells(const QVector<NormalizedBlock> &sortedBlock
     cells.reserve(sortedBlocks.size());
 
     RowCell currentCell;
-    currentCell.text = sortedBlocks.front().text;
+    currentCell.words = {sortedBlocks.front().text};
     currentCell.rect = sortedBlocks.front().rect;
     currentCell.leftX = sortedBlocks.front().leftX;
 
@@ -224,16 +225,13 @@ QVector<RowCell> mergeWordsIntoCells(const QVector<NormalizedBlock> &sortedBlock
 
         if (!shouldMerge) {
             cells.push_back(currentCell);
-            currentCell.text = block.text;
+            currentCell.words = {block.text};
             currentCell.rect = block.rect;
             currentCell.leftX = block.leftX;
             continue;
         }
 
-        if (!currentCell.text.isEmpty() && !block.text.isEmpty()) {
-            currentCell.text += QLatin1Char(' ');
-        }
-        currentCell.text += block.text;
+        currentCell.words.append(block.text);
         currentCell.rect = currentCell.rect.united(block.rect);
         currentCell.leftX = currentCell.rect.left();
     }
@@ -341,7 +339,7 @@ TableDetectionResult TableDetector::detect(const QVector<OCRTextBlock> &blocks)
                 continue;
             }
 
-            const QString normalizedText = normalizeCellText(cell.text.split(QLatin1Char(' '), Qt::SkipEmptyParts));
+            const QString normalizedText = normalizeCellText(cell.words);
             if (!normalizedText.isEmpty()) {
                 cellTokens[rowIndex][nearestColumn].append(normalizedText);
             }
@@ -389,7 +387,9 @@ TableDetectionResult TableDetector::detect(const QVector<OCRTextBlock> &blocks)
         cells.reserve(stableColumns.size());
 
         for (int stableColumn : stableColumns) {
-            cells.push_back(normalizeCellText(cellTokens[rowIndex][stableColumn]));
+            // Geometry kept these as separate cells. Preserve that boundary
+            // even when column snapping assigns them to the same output cell.
+            cells.push_back(cellTokens[rowIndex][stableColumn].join(QLatin1Char(' ')).simplified());
         }
 
         tsvLines.push_back(cells.join(QLatin1Char('\t')));

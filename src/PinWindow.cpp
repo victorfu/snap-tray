@@ -621,7 +621,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
-        this, QOverload<>::of(&QWidget::update));
+        this, [this]() { update(m_loadingSpinner->bounds(rect().center())); });
 
     // Initialize resize finish timer for high-quality update
     m_resizeFinishTimer = new QTimer(this);

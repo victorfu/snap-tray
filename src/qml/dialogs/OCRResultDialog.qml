@@ -66,9 +66,7 @@ DialogBase {
                 DialogButton {
                     text: qsTr("Close")
                     style: "secondary"
-                    width: (viewModel && viewModel.hasTsv)
-                        ? (parent.width - 16) / 3
-                        : (parent.width - 8) / 2
+                    width: (parent.width - 16) / 3
                     onClicked: if (viewModel) viewModel.close()
                 }
 
@@ -77,9 +75,7 @@ DialogBase {
                     text: qsTr("Copy")
                     style: "secondary"
                     feedbackText: qsTr("\u2713 Copied!")
-                    width: (viewModel && viewModel.hasTsv)
-                        ? (parent.width - 16) / 3
-                        : (parent.width - 8) / 2
+                    width: (parent.width - 16) / 3
                     onClicked: {
                         if (viewModel) viewModel.copyText()
                         copyBtn.showFeedback()
@@ -88,11 +84,12 @@ DialogBase {
 
                 DialogButton {
                     id: tsvBtn
-                    visible: viewModel ? viewModel.hasTsv : false
+                    // Reserve the slot so async completion cannot move a click target.
+                    enabled: viewModel ? viewModel.hasTsv : false
                     text: qsTr("Copy as TSV")
                     style: "secondary"
                     feedbackText: qsTr("\u2713 Copied!")
-                    width: (viewModel && viewModel.hasTsv) ? (parent.width - 16) / 3 : 0
+                    width: (parent.width - 16) / 3
                     onClicked: {
                         if (viewModel) viewModel.copyAsTsv()
                         tsvBtn.showFeedback()

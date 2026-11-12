@@ -1,5 +1,6 @@
 #include "OCRManager.h"
 #include "utils/OCRImageUtils.h"
+#include "utils/OCRTextUtils.h"
 #include <QDebug>
 #include <QImage>
 #include <QCoreApplication>
@@ -194,13 +195,14 @@ protected:
             QVector<OCRTextBlock> blocks;
 
             for (const auto& line : result.Lines()) {
-                lines.append(QString::fromStdWString(std::wstring(line.Text())));
+                QStringList words;
 
                 for (const auto& word : line.Words()) {
                     const QString wordText = QString::fromStdWString(std::wstring(word.Text())).trimmed();
                     if (wordText.isEmpty()) {
                         continue;
                     }
+                    words.append(wordText);
 
                     const Windows::Foundation::Rect winRect = word.BoundingRect();
 
@@ -210,6 +212,9 @@ protected:
                         QRectF(winRect.X, winRect.Y, winRect.Width, winRect.Height), recognitionImage.size());
                     block.confidence = -1.0f;
                     blocks.push_back(block);
+                }
+                if (!words.isEmpty()) {
+                    lines.append(OCRTextUtils::joinWords(words));
                 }
             }
 

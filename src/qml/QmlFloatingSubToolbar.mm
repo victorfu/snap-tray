@@ -194,13 +194,17 @@ void QmlFloatingSubToolbar::show()
 
 void QmlFloatingSubToolbar::hide()
 {
+    const bool wasVisible = isVisible();
     hideControlTooltip();
     if (m_view) {
         m_view->hide();
         m_view->unsetCursor();
     }
     CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
-    if (m_parentWidget) {
+    // A paint can hide an already hidden sub-toolbar. Restoring the host cursor
+    // sends a mouse move, which requests another paint; only do it on a real
+    // visibility transition so the selector can become idle.
+    if (wasVisible && m_parentWidget) {
         QTimer::singleShot(0, this, [this]() {
             CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
         });

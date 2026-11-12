@@ -88,6 +88,8 @@ void CaptureChromePendingDirtyRegions::add(const QRegion& region,
 {
     if (reason == CaptureChromeDirtyReason::PencilPreview) {
         pencilPreview += region;
+    } else if (reason == CaptureChromeDirtyReason::BusySpinner) {
+        busySpinner += region;
     } else {
         scene += region;
     }
@@ -97,6 +99,7 @@ void CaptureChromePendingDirtyRegions::clear()
 {
     scene = QRegion();
     pencilPreview = QRegion();
+    busySpinner = QRegion();
 }
 
 CaptureChromePendingDirtyRegions CaptureChromePendingDirtyRegions::take()
@@ -115,19 +118,20 @@ QRegion planCaptureChromeDirtyRegion(const CaptureChromeDirtyRegionPlanInput& in
 
     if (input.conservativeStateCompositing) {
         // Windows transparent capture chrome needs a full clear for any scene or
-        // render-state change. A Pencil preview is the only safe partial path:
-        // its dirty bounds contain both the old and new mutable tail.
+        // render-state change. Pencil previews and spinner animation frames can
+        // repaint locally: their bounds contain both the old and new pixels.
         if (input.renderStateChanged ||
             !input.sceneDirtyRegion.isEmpty() ||
             !input.stateDirtyRegion.isEmpty()) {
             return fullRegion;
         }
 
-        return input.previewDirtyRegion.intersected(fullRegion);
+        return (input.previewDirtyRegion + input.spinnerDirtyRegion).intersected(fullRegion);
     }
 
     QRegion dirtyRegion = input.sceneDirtyRegion;
     dirtyRegion += input.previewDirtyRegion;
+    dirtyRegion += input.spinnerDirtyRegion;
     dirtyRegion += input.stateDirtyRegion;
     return dirtyRegion.intersected(fullRegion);
 }
@@ -345,6 +349,7 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
     planInput.windowRect = rect();
     planInput.sceneDirtyRegion = pendingDirtyRegions.scene;
     planInput.previewDirtyRegion = pendingDirtyRegions.pencilPreview;
+    planInput.spinnerDirtyRegion = pendingDirtyRegions.busySpinner;
     planInput.stateDirtyRegion = stateDirtyRegion;
     planInput.forceFullRepaint =
         geometryChanged || becameVisible || !wasVisible ||

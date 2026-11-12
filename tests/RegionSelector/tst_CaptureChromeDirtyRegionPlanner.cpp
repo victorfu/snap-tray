@@ -17,6 +17,7 @@ private slots:
     void testStableStateWithoutDirtyRegionSkipsRepaint();
     void testNonConservativePlanCombinesDirtyRegions();
     void testCurrentPlatformPolicyIsWired();
+    void testSpinnerFramesStayLocalButStateChangesClearFully();
 };
 
 namespace {
@@ -161,6 +162,23 @@ void tst_CaptureChromeDirtyRegionPlanner::testCurrentPlatformPolicyIsWired()
     expected += input.sceneDirtyRegion;
     QCOMPARE(actual, expected);
 #endif
+}
+
+void tst_CaptureChromeDirtyRegionPlanner::testSpinnerFramesStayLocalButStateChangesClearFully()
+{
+    snaptray::region::CaptureChromePendingDirtyRegions pending;
+    const QRegion spinner(QRect(200, 200, 50, 50));
+    pending.add(spinner, snaptray::region::CaptureChromeDirtyReason::BusySpinner);
+    const auto dirty = pending.take();
+    QCOMPARE(dirty.busySpinner, spinner);
+    QVERIFY(dirty.scene.isEmpty());
+    QVERIFY(pending.busySpinner.isEmpty());
+    auto input = baseInput();
+    input.conservativeStateCompositing = true;
+    input.spinnerDirtyRegion = dirty.busySpinner;
+    QCOMPARE(snaptray::region::planCaptureChromeDirtyRegion(input), spinner);
+    input.renderStateChanged = true;
+    QCOMPARE(snaptray::region::planCaptureChromeDirtyRegion(input), QRegion(input.windowRect));
 }
 
 QTEST_APPLESS_MAIN(tst_CaptureChromeDirtyRegionPlanner)
