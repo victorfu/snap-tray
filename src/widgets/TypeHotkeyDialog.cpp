@@ -5,6 +5,7 @@
 
 #include "widgets/TypeHotkeyDialog.h"
 #include "hotkey/HotkeyManager.h"
+#include "platform/KeyboardModifiers.h"
 #include "settings/SettingsTheme.h"
 
 #include <QApplication>
@@ -22,37 +23,6 @@
 namespace SnapTray {
 
 #ifdef Q_OS_WIN
-namespace {
-bool isWindowsKeyPressed(int virtualKey)
-{
-    return (GetAsyncKeyState(virtualKey) & 0x8000) != 0;
-}
-
-Qt::KeyboardModifiers currentWindowsKeyboardModifiers()
-{
-    Qt::KeyboardModifiers modifiers = Qt::NoModifier;
-    if (isWindowsKeyPressed(VK_CONTROL) ||
-        isWindowsKeyPressed(VK_LCONTROL) ||
-        isWindowsKeyPressed(VK_RCONTROL)) {
-        modifiers |= Qt::ControlModifier;
-    }
-    if (isWindowsKeyPressed(VK_MENU) ||
-        isWindowsKeyPressed(VK_LMENU) ||
-        isWindowsKeyPressed(VK_RMENU)) {
-        modifiers |= Qt::AltModifier;
-    }
-    if (isWindowsKeyPressed(VK_SHIFT) ||
-        isWindowsKeyPressed(VK_LSHIFT) ||
-        isWindowsKeyPressed(VK_RSHIFT)) {
-        modifiers |= Qt::ShiftModifier;
-    }
-    if (isWindowsKeyPressed(VK_LWIN) || isWindowsKeyPressed(VK_RWIN)) {
-        modifiers |= Qt::MetaModifier;
-    }
-    return modifiers;
-}
-}  // namespace
-
 TypeHotkeyDialog* TypeHotkeyDialog::s_printScreenHookDialog = nullptr;
 #endif
 
@@ -384,7 +354,7 @@ LRESULT CALLBACK TypeHotkeyDialog::printScreenHookProc(int code, WPARAM wParam, 
             const bool isRelease = (wParam == WM_KEYUP || wParam == WM_SYSKEYUP);
             if (isPress) {
                 s_printScreenHookDialog->captureWindowsPrintScreen(
-                    currentWindowsKeyboardModifiers());
+                    currentPhysicalKeyboardModifiers());
             }
             if (isPress || isRelease) {
                 return 1;

@@ -575,6 +575,7 @@ add_library(snaptray_platform STATIC
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
     src/platform/QtQuickBackendPolicy.cpp
+    src/platform/KeyboardModifiers.cpp
     # Scroll area detection and scroll injection (#265)
     src/scrollcapture/ScrollCaptureCommon.cpp
     $<$<NOT:$<PLATFORM_ID:Darwin,Windows>>:
@@ -1553,6 +1554,6 @@ if(BUILD_TESTING)
     add_executable(SnapTrayScrollProbe tools/scroll-probe/main.cpp
         tools/scroll-probe/ContentExport.cpp)
     target_include_directories(SnapTrayScrollProbe PRIVATE ${CMAKE_SOURCE_DIR}/src)
-    target_link_libraries(SnapTrayScrollProbe PRIVATE snaptray_platform Qt6::Widgets)
+    target_link_libraries(SnapTrayScrollProbe PRIVATE snaptray_ui Qt6::Widgets)
     add_subdirectory(tests)
 endif()

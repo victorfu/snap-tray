@@ -1,4 +1,7 @@
 #include "ContentExport.h"
+#include "InspectState.h"
+#include "ProbeEventLoop.h"
+#include <QTimer>
 
 #include <QFile>
 #include <QTemporaryDir>
@@ -44,6 +47,9 @@ class tst_ProbeContentExport : public QObject
 {
     Q_OBJECT
 private slots:
+    void syncCauseUsesUnconstrainedEstimateAndOffsetPresence();
+    void activeSettleDeliversQueuedCancellation();
+    void inspectLevelChangesAndReentrantMeasurement();
     void timedOutUnchangedRepeatRejectsExport();
     void settledNoMotionEndsSegment();
     void resumedMotionRejectsExport();
@@ -56,6 +62,86 @@ private slots:
     void noMotionWithoutContentRejects();
     void rejectsInvalidCommandLine();
 };
+
+void tst_ProbeContentExport::syncCauseUsesUnconstrainedEstimateAndOffsetPresence()
+{
+    ShiftEstimate visual;
+    visual.status = ShiftEstimate::Status::Ambiguous;
+    ShiftEstimate constrained;
+    constrained.status = ShiftEstimate::Status::Found;
+    constrained.shift = 30;
+    const auto reason = positionSyncUnavailableReason(true, true, true, visual);
+    const auto result = validateContentRepeat(frame(0), frame(30), FrameSettleDetector::Outcome::Settled,
+        QStringLiteral("not_available"), true, constrained, reason);
+    QCOMPARE(result.error, QStringLiteral("visual_shift_ambiguous"));
+    QVERIFY(!result.pair);
+    for (bool beforePresent : {false, true}) {
+        const auto missing = positionSyncUnavailableReason(true, beforePresent, false, visual);
+        const auto rejected = validateContentRepeat(frame(0), frame(30), FrameSettleDetector::Outcome::Settled,
+            QStringLiteral("not_available"), true, visual, missing);
+        QCOMPARE(rejected.error, beforePresent ? QStringLiteral("position_missing_offset_after")
+                                              : QStringLiteral("position_missing_offset_before"));
+        QVERIFY(!rejected.pair);
+    }
+}
+
+void tst_ProbeContentExport::activeSettleDeliversQueuedCancellation()
+{
+    FrameSettleDetector::Config config;
+    config.timeoutMs = 5000;
+    FrameSettleDetector detector(config);
+    detector.start(frame(0));
+    bool stopped = false;
+    int captures = 0;
+    QObject context;
+    const auto result = settleFrames(detector, [&] {
+        ++captures;
+        // A stop shortcut delivered while a frame is being captured.
+        QTimer::singleShot(0, &context, [&] { stopped = true; });
+        return frame(captures * 30);
+    }, [&] { return captures * 100; }, [&] { return stopped; });
+    QCOMPARE(result, SettleLoopResult::Cancelled);
+    QVERIFY(stopped);
+    QCOMPARE(captures, 1);
+    QCOMPARE(detector.result().outcome, FrameSettleDetector::Outcome::Pending);
+
+    QTemporaryDir directory;
+    const QString path = directory.filePath(QStringLiteral("cancelled.png"));
+    ContentExportSession session;
+    session.add(0, moving());
+    QCOMPARE(session.finish(path, stopped).value("status").toString(), QStringLiteral("rejected"));
+    QVERIFY(!QFile::exists(path));
+}
+
+void tst_ProbeContentExport::inspectLevelChangesAndReentrantMeasurement()
+{
+    InspectState state(1);
+    QVERIFY(!state.beginMeasurement());
+    state.updateLevels(0);
+    QCOMPARE(state.level(), 1); // Hovering a non-scrollable gap must preserve --level.
+    QCOMPARE(QByteArray(state.ignoredReason()), QByteArray("no scroll area"));
+    state.updateLevels(3);
+    QCOMPARE(state.level(), 1);
+    state.cycle(1);
+    QCOMPARE(state.level(), 2);
+    state.cycle(1);
+    QCOMPARE(state.level(), 0);
+    state.cycle(-1);
+    QCOMPARE(state.level(), 2);
+    QVERIFY(state.beginMeasurement());
+    QCOMPARE(QByteArray(state.ignoredReason()), QByteArray("measurement pending or running"));
+    QVERIFY(!state.beginMeasurement()); // processEvents must not start a second capture.
+    state.cycle(-1);
+    QCOMPARE(state.level(), 2);
+    state.endMeasurement();
+    QVERIFY(state.ignoredReason() == nullptr);
+    state.updateLevels(0);
+    QCOMPARE(state.level(), 2);
+    state.updateLevels(1); // Moving from a nested div to a plain document resets level.
+    QCOMPARE(state.level(), 0);
+    state.updateLevels(0);
+    QVERIFY(!state.beginMeasurement());
+}
 
 void tst_ProbeContentExport::timedOutUnchangedRepeatRejectsExport()
 {
@@ -125,8 +211,13 @@ void tst_ProbeContentExport::rejectionReasons_data()
         QTest::newRow(qPrintable(sync)) << sync << true << found << 30 << QStringLiteral("position_sync_") + sync;
     }
     QTest::newRow("bounds") << QStringLiteral("within_search_window") << false << found << 30 << QStringLiteral("geometry_changed");
+    QTest::newRow("timeout-before-ambiguous") << QStringLiteral("timed_out") << true
+        << int(ShiftEstimate::Status::Ambiguous) << 30 << QStringLiteral("position_sync_timed_out");
     for (auto status : {ShiftEstimate::Status::NotFound, ShiftEstimate::Status::Ambiguous,
                         ShiftEstimate::Status::InsufficientDetail}) {
+        QTest::newRow(qPrintable(QStringLiteral("unsynchronized-no-cause-") + QLatin1String(shiftEstimateStatusName(status))))
+            << QStringLiteral("not_available") << true << int(status) << 30
+            << QStringLiteral("position_sync_not_available");
         QTest::newRow(shiftEstimateStatusName(status)) << QStringLiteral("within_search_window") << true
             << int(status) << 30 << QStringLiteral("dominant_shift_") + QLatin1String(shiftEstimateStatusName(status));
     }

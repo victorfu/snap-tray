@@ -44,6 +44,28 @@ overlay label follows position changes; the terminal gets a line only when the a
 role, level or bounds) changes, so inspecting the terminal that runs the probe does not loop. `--level 1`
 selects the next scroll area outward.
 
+Inspect registers session-only global shortcuts through `HotkeyManager`:
+
+- `Ctrl+Alt+Shift+Up` / `Down`: cycle outward / inward, wrapping at the end.
+- `Ctrl+Alt+Shift+M`: measure once at the cursor after releasing all modifiers.
+  It uses the selected level and CLI measurement options, with zero countdown
+  and one repeat. Pass `--scroll wheel-delta --amount 120` to include scrolling;
+  without `--scroll`, it records detection/position only. `--output` appends JSON.
+- `Ctrl+Alt+Shift+Q`: stop (including a pending or active measurement).
+
+Keep the cursor over the intended area until the measurement starts. A held
+Ctrl/Alt/Shift/Meta modifier cancels the request after three seconds. On Windows,
+the guard uses physical `GetAsyncKeyState` state even while the probe is in the
+background. Keypad/layout flags are excluded. A timeout logs the limit and
+reported modifiers; an explicit stop has its own cancellation message.
+While a request is pending or running, additional measure/level shortcuts are
+ignored with a reason on stderr. Non-scrollable gaps preserve the selected level;
+finding an area with fewer nested levels resets selection to level 0.
+Unavailable Up/Down/M shortcuts are reported and disabled individually. Failure
+to register the mandatory Q stop shortcut exits. Registration errors do not
+assume another application caused a conflict.
+These shortcuts do not initialize or persist the product's hotkey settings.
+
 ### Chromium and Electron (macOS)
 
 Chrome and Electron apps build the accessibility tree of their web content only for assistive clients,
@@ -165,6 +187,13 @@ retry rechecks the full captured frame and bounds. `positionSync.outcome` is:
   platform reported no offset, or no dominant displacement was measured. The
   measurement is not rejected on this ground, but it is not synchronized either.
 
+Content export still requires synchronization. Schema 8 records
+`positionSync.unavailableReason` at the synchronization gate: missing offsets
+take precedence (`position_missing_offset_before/after`), followed by
+`visual_shift_<status>` from the estimate computed without a platform prior.
+Export preserves this cause rather than inferring it from the later constrained
+estimate. Acceptance thresholds are unchanged.
+
 The constrained search always uses the actual platform offset and the requested
 radius, never a prior copied from pixels. This bounded check is not a general
 freshness guarantee for all accessibility providers. `afterAtVisualSettle` is
@@ -263,6 +292,7 @@ arbitrary repeat. Rejection still reports `path` and `staleFileAtPath`.
 | 5 | `--content-output` and `scroll.contentExport`. |
 | 6 | `shift.rejectedBy` and `shift.measuredStatus`; blank bands no longer count as a displacement without a majority; `insufficient_detail` for band results; a rejected export exits with code 3 and reports `path`, `staleFileAtPath`; `endedAtNoMotionRepeat`. |
 | 7 | Specific rejection reasons and `repeatIndex`; save `stage`/`detail`; validated no-motion endpoints; full overlap validation for variable shifts. |
+| 8 | `positionSync.unavailableReason` records the actual gate's cause; export preserves missing-offset or unconstrained `visual_shift_<status>` reasons instead of inferring them from the constrained dominant estimate. Acceptance gates unchanged. |
 
 ## Record fields
 

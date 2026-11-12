@@ -24,6 +24,7 @@ class tst_HotkeyManager : public QObject
     Q_OBJECT
 
 private slots:
+    void testSessionShortcutLifetime();
     void init();
     void cleanup();
     void cleanupTestCase();
@@ -75,6 +76,29 @@ private:
 
     SnapTray::HotkeyManager& manager() { return SnapTray::HotkeyManager::instance(); }
 };
+
+void tst_HotkeyManager::testSessionShortcutLifetime()
+{
+    manager().shutdown(); // The probe never initializes product hotkeys.
+    QObject owner;
+    QVERIFY(!SnapTray::HotkeyManager::registerSessionShortcut(QString(), &owner, [] {}));
+    QVERIFY(!SnapTray::HotkeyManager::registerSessionShortcut(QStringLiteral("Ctrl+K, Ctrl+C"), &owner, [] {}));
+    QVERIFY(!SnapTray::HotkeyManager::registerSessionShortcut(QStringLiteral("Ctrl+Alt+Shift+F11"), nullptr, [] {}));
+    const auto keysBefore = SnapTray::getSettings().allKeys();
+    const bool initialized = manager().isInitialized();
+    int activations = 0;
+    const QString sequence = QStringLiteral("Ctrl+Alt+Shift+F11");
+    auto* shortcut = SnapTray::HotkeyManager::registerSessionShortcut(sequence, &owner, [&] { ++activations; });
+    if (!shortcut) QSKIP("OS could not register the test session shortcut");
+    QCOMPARE(shortcut->parent(), &owner);
+    QVERIFY(QMetaObject::invokeMethod(shortcut, "activated", Qt::DirectConnection));
+    QCOMPARE(activations, 1);
+    QCOMPARE(manager().isInitialized(), initialized);
+    QCOMPARE(SnapTray::getSettings().allKeys(), keysBefore);
+    delete shortcut;
+    // Re-registration proves destruction released the native shortcut.
+    QVERIFY(SnapTray::HotkeyManager::registerSessionShortcut(sequence, &owner, [] {}));
+}
 
 void tst_HotkeyManager::init()
 {

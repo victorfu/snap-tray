@@ -18,6 +18,23 @@
 
 namespace SnapTray {
 
+QObject* HotkeyManager::registerSessionShortcut(const QString& sequence, QObject* owner,
+                                               std::function<void()> activated)
+{
+    const QKeySequence keys(sequence);
+    if (!owner || !activated || keys.isEmpty() || keys.count() != 1
+        || keys[0].key() == Qt::Key_unknown) {
+        return nullptr;
+    }
+    auto* hotkey = new QHotkey(keys, true, owner);
+    if (!hotkey->isRegistered()) {
+        delete hotkey;
+        return nullptr;
+    }
+    QObject::connect(hotkey, &QHotkey::activated, owner, std::move(activated));
+    return hotkey;
+}
+
 namespace {
 QString translateHotkeyText(const char* sourceText)
 {
