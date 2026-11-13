@@ -13,10 +13,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 
 // Shared pixmap type for explicit memory sharing across mosaic annotations
 using SharedPixmap = std::shared_ptr<const QPixmap>;
+#include "beautify/BeautifySettings.h"
 #include "WatermarkRenderer.h"
 #include "LoadingSpinnerRenderer.h"
 #include "pinwindow/ResizeHandler.h"
@@ -49,6 +51,7 @@ class QmlWindowedToolbar;
 class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
+struct CaptureSessionWriteRequest;
 class ToolbarTooltipController;
 }
 class PinToolbarViewModel;
@@ -71,7 +74,6 @@ class RegionLayoutManager;
 class RegionSettingsHelper;
 struct LayoutRegion;
 class AnnotationContext;
-struct BeautifySettings;
 class TestPinWindowCropUndo;
 
 namespace snaptray {
@@ -132,6 +134,9 @@ public:
 
     // Live capture mode
     void setSourceRegion(const QRect& region, QScreen* screen);
+    // The history entry this pin's picture came from, and the Beautify
+    // settings to continue from when that entry was itself beautified (#344).
+    void setHistoryOrigin(const QString& entryId, const std::optional<BeautifySettings>& beautify);
     void startLiveCapture();
     void stopLiveCapture();
     QList<WId> liveCaptureExcludedWindowIds();
@@ -191,6 +196,7 @@ private:
     friend class TestPinHoverIntegration;
     friend class TestPinContextMenuLayout;
     friend class TestPinWindowEvidence;
+    friend class TestPinWindowBeautifyHistory;
     friend class TestPinWindowTextToolFormatting;
     friend class TestEraserHostRouting;
     struct CropUndoEntry;
@@ -609,7 +615,24 @@ private:
     void showBeautifyPanel();
     void onBeautifyCopy(const BeautifySettings& settings);
     void onBeautifySave(const BeautifySettings& settings);
+    // What the Beautify panel opens with: this pin's settings, else the
+    // global last-used ones.
+    BeautifySettings beautifyPanelSettings() const;
+    // The new history entry for a beautified export, where `result` is
+    // `source` with `settings` applied. Built when the picture is rendered so
+    // the document matches it; submitted once the export has succeeded.
+    // Existing entries are never rewritten.
+    SnapTray::CaptureSessionWriteRequest beautifiedHistoryRequest(
+        const QPixmap& source, const QPixmap& result, const BeautifySettings& settings) const;
     std::unique_ptr<SnapTray::QmlBeautifyPanel> m_beautifyPanel;
+    // This pin's own Beautify settings once it has any; the panel opens with
+    // them rather than with the global last-used ones.
+    std::optional<BeautifySettings> m_beautifySettings;
+    // History entry holding the editable document of this pin's picture, and
+    // the picture that document produces. The entry is only reused while the
+    // pin still exports exactly that picture.
+    QString m_historyDocumentEntryId;
+    QPixmap m_historyDocumentPixmap;
 
     // ========================================================================
     // Local constants (previously in Constants.h but only used by PinWindow)

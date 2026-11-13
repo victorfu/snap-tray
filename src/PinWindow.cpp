@@ -1,4 +1,5 @@
 #include "PinWindow.h"
+#include <QColorSpace>
 #include <QScopeGuard>
 #include "pinwindow/PinHoverBar.h"
 #include "qml/PinHoverBarViewModel.h"
@@ -26,6 +27,8 @@
 #include "pinwindow/RegionLayoutManager.h"
 #include "pinwindow/RegionLayoutRenderer.h"
 #include "pinwindow/PinMergeHelper.h"
+#include "history/AnnotationSerializer.h"
+#include "history/HistoryRecorder.h"
 #include "history/HistoryStore.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "qml/QmlFloatingSubToolbar.h"
@@ -6556,7 +6559,7 @@ void PinWindow::showBeautifyPanel()
 
     // Clear any stale preview first so the panel can appear before export work completes.
     m_beautifyPanel->setSourcePixmap(QPixmap());
-    m_beautifyPanel->setSettings(BeautifySettingsManager::instance().loadSettings());
+    m_beautifyPanel->setSettings(beautifyPanelSettings());
     m_beautifyPanel->showNear(frameGeometry());
     if (m_toolbar) {
         m_toolbar->setAssociatedTransientWindow(m_beautifyPanel->window());
@@ -6574,12 +6577,74 @@ void PinWindow::showBeautifyPanel()
     });
 }
 
+BeautifySettings PinWindow::beautifyPanelSettings() const
+{
+    return m_beautifySettings ? *m_beautifySettings
+                              : BeautifySettingsManager::instance().loadSettings();
+}
+
+void PinWindow::setHistoryOrigin(const QString& entryId,
+                                 const std::optional<BeautifySettings>& beautify)
+{
+    m_historyDocumentEntryId = entryId;
+    m_historyDocumentPixmap = entryId.isEmpty() ? QPixmap() : m_originalPixmap;
+    m_beautifySettings = beautify;
+}
+
+SnapTray::CaptureSessionWriteRequest PinWindow::beautifiedHistoryRequest(
+    const QPixmap& source, const QPixmap& result, const BeautifySettings& settings) const
+{
+    // The document is the picture a pin reopened from this entry starts from,
+    // so, as for a merge, without this pin's opacity and watermark: the
+    // reopened pin applies its own, and baking them in would apply them twice.
+    QPixmap document = exportPixmapForMerge();
+    if (document.isNull()) {
+        document = source;
+    }
+    const QImage documentImage = document.toImage();
+    const QSize logicalSize = logicalSizeFromPixmap(document);
+
+    SnapTray::CaptureSessionWriteRequest request;
+    request.resultImage = result.toImage();
+    request.beautify = settings;
+    request.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
+
+    // Fallback document: that picture with the pin's own edits flattened in.
+    // It keeps the Beautify settings adjustable.
+    request.canvasImage = documentImage;
+    request.selectionRect = QRect(QPoint(0, 0), logicalSize);
+    request.annotationsJson = SnapTray::serializeAnnotationLayer(AnnotationLayer());
+    request.devicePixelRatio = document.devicePixelRatio();
+    request.canvasLogicalSize = logicalSize;
+
+    // While the pin still shows exactly what its capture produced, the new
+    // entry takes over that capture's canvas and annotations instead, so the
+    // annotations stay editable when the entry is reopened.
+    // Pixels are compared in one format and without colour space: the capture
+    // is usually opaque RGB32 (tagged with the display's colour space on
+    // macOS), the pin's export always ARGB32, and QImage's == tells those apart.
+    const auto comparable = [](QImage image) {
+        image = std::move(image).convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        image.setColorSpace(QColorSpace());
+        image.setDevicePixelRatio(1.0);
+        return image;
+    };
+    if (!m_historyDocumentEntryId.isEmpty() &&
+        qFuzzyCompare(document.devicePixelRatio(), m_historyDocumentPixmap.devicePixelRatio()) &&
+        comparable(documentImage) == comparable(m_historyDocumentPixmap.toImage())) {
+        request.documentSourceEntryId = m_historyDocumentEntryId;
+    }
+
+    return request;
+}
+
 void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
 {
     if (!ensureAutoBlurReadyForExport()) {
         return;
     }
 
+    m_beautifySettings = settings;
     BeautifySettingsManager::instance().saveSettings(settings);
     QPixmap source = getExportPixmapWithAnnotations();
     if (source.isNull()) {
@@ -6601,7 +6666,12 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         clipboardImage,
         qApp,
-        [safeThis](PlatformFeatures::ClipboardCopyResult result) {
+        [safeThis, historyRequest = beautifiedHistoryRequest(source, result, settings)](
+            PlatformFeatures::ClipboardCopyResult result) {
+            // The copy happened even if the pin was closed meanwhile.
+            if (result == PlatformFeatures::ClipboardCopyResult::Success) {
+                SnapTray::HistoryRecorder::instance().submitCaptureSession(historyRequest);
+            }
             if (!safeThis || result == PlatformFeatures::ClipboardCopyResult::Superseded) {
                 return;
             }
@@ -6618,6 +6688,7 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
         return;
     }
 
+    m_beautifySettings = settings;
     BeautifySettingsManager::instance().saveSettings(settings);
     const QPixmap sizeReferencePixmap = !m_displayPixmap.isNull() ? m_displayPixmap : m_originalPixmap;
     if (sizeReferencePixmap.isNull()) {
@@ -6656,6 +6727,7 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             return;
         }
 
+        auto historyRequest = beautifiedHistoryRequest(source, result, settings);
         const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
         const auto saved = ImageSaveUtils::saveImageUnique(
             taggedImage, {savePath, templateValue, context});
@@ -6663,6 +6735,7 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             qWarning() << "PinWindow: beautify template warning:" << saved.renderWarning;
         }
         if (saved.success) {
+            SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(historyRequest));
             emit saveCompleted(result, saved.filePath);
         } else {
             emit saveFailed(
@@ -6692,12 +6765,14 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
                 return;
             }
 
+            auto historyRequest = beautifiedHistoryRequest(source, result, settings);
             const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
             ImageSaveUtils::Error saveError;
             if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
                 if (rememberDirectoryOnSuccess) {
                     fileSettings.rememberManualScreenshotSaveDirectory(filePath);
                 }
+                SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(historyRequest));
                 emit saveCompleted(result, filePath);
             } else {
                 emit saveFailed(

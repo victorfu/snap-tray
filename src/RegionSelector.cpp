@@ -1532,6 +1532,8 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
+    m_historyReplayBeautify.reset();
+    m_lastRecordedHistoryEntryId.clear();
     resetInitialRevealState();
     clearPreservedSelection();
     hideSelectionPreviewOverlays();
@@ -1607,6 +1609,8 @@ void RegionSelector::initializeWithRegion(QScreen* screen,
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
+    m_historyReplayBeautify.reset();
+    m_lastRecordedHistoryEntryId.clear();
     resetInitialRevealState();
     clearPreservedSelection();
     hideSelectionPreviewOverlays();
@@ -1811,6 +1815,7 @@ void RegionSelector::restoreLiveReplaySlot()
 
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
+    m_historyReplayBeautify.reset();
     m_inputHandler->setBoundarySnapAllowed(true);
     setSelectionWindowMetadata(m_historyLiveSlot.windowTitle, m_historyLiveSlot.ownerApp);
     update();
@@ -1854,6 +1859,9 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
         }
     }
 
+    // From here the picture changes; the previous entry's look goes with it
+    // even if loading this one fails further down.
+    m_historyReplayBeautify.reset();
     clearHistoryReplaySelectionState();
     const QSize replayCanvasSize = entry.canvasLogicalSize.isValid()
         ? entry.canvasLogicalSize
@@ -1899,6 +1907,7 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
     }
 
     setSelectionWindowMetadata(entry.windowTitle, entry.ownerApp);
+    m_historyReplayBeautify = entry.beautify;
     update();
     return true;
 }
@@ -1944,6 +1953,7 @@ void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
         return;
     }
 
+    m_lastRecordedHistoryEntryId = snapshot->entryId;
     const QPixmap resultPixmapCopy = resultPixmap;
     QTimer::singleShot(0, qApp, [snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
         if (resultPixmapCopy.isNull()) {
@@ -1989,6 +1999,7 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
     }
 
     HistoryCaptureSnapshot snapshot;
+    snapshot.entryId = SnapTray::HistoryStore::newEntryId(createdAt);
     snapshot.backgroundPixmap = m_backgroundPixmap;
     snapshot.selectionRect = selectionRect;
     snapshot.captureRegions = currentHistoryCaptureRegions();
@@ -2003,8 +2014,9 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
     return snapshot;
 }
 
-void RegionSelector::submitPendingHistorySubmission(PendingHistorySubmission submission) const
+void RegionSelector::submitPendingHistorySubmission(PendingHistorySubmission submission)
 {
+    m_lastRecordedHistoryEntryId = submission.snapshot.entryId;
     QTimer::singleShot(0, qApp, [submission = std::move(submission)]() mutable {
         if (submission.resultImage.isNull() ||
             submission.snapshot.backgroundPixmap.isNull() ||
@@ -2021,6 +2033,7 @@ SnapTray::CaptureSessionWriteRequest RegionSelector::buildCaptureSessionWriteReq
     const PendingHistorySubmission& submission)
 {
     SnapTray::CaptureSessionWriteRequest request;
+    request.id = submission.snapshot.entryId;
     request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
     request.resultImage = submission.resultImage;
     request.selectionRect = submission.snapshot.selectionRect;
@@ -5234,6 +5247,9 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
                 // Generated QR codes are synthetic content, so they have no source-region
                 // metadata. Open the pin near the current selection instead of (0, 0).
                 const QRect globalRect;
+                // Not this selection's picture: no history document to continue.
+                m_lastRecordedHistoryEntryId.clear();
+                m_historyReplayBeautify.reset();
                 emit regionSelected(pixmap, selectionGlobalTopLeft, globalRect);
                 dialog->close();
                 close();
