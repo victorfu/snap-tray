@@ -1800,6 +1800,14 @@ target_link_libraries(RecordingManager_CoreAudioRuntime PRIVATE snaptray_platfor
 add_test(NAME RecordingManager_CoreAudioRuntime COMMAND RecordingManager_CoreAudioRuntime)
 set_tests_properties(RecordingManager_CoreAudioRuntime PROPERTIES TIMEOUT 30 LABELS "unit")
 
+# The macOS cursor probe (#322): image conversion, button mapping, lifecycle.
+add_executable(RecordingManager_CursorProbeMac RecordingManager/tst_CursorProbe_mac.mm)
+set_source_files_properties(RecordingManager/tst_CursorProbe_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+target_link_libraries(RecordingManager_CursorProbeMac PRIVATE snaptray_platform Qt6::Test
+    "-framework AppKit" "-framework CoreGraphics")
+add_test(NAME RecordingManager_CursorProbeMac COMMAND RecordingManager_CursorProbeMac)
+set_tests_properties(RecordingManager_CursorProbeMac PROPERTIES TIMEOUT 30 LABELS "unit")
+
 add_executable(RecordingManager_CaptureExclusion RecordingManager/tst_CaptureExclusion.mm)
 set_source_files_properties(RecordingManager/tst_CaptureExclusion.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 target_link_libraries(RecordingManager_CaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test

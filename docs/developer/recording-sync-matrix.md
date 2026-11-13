@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-06
+last_modified_at: 2026-11-13
 layout: docs
 title: Recording Sync Matrix
 seo_title: "SnapTray Recording Sync Matrix: End-to-End A/V and Fault Injection Tests"
@@ -134,6 +134,29 @@ changes are not covered by mocks; they need the real-device procedure below.
    Flash frames have a high `YAVG`; each `silence_end` is a beep onset. Their
    difference is the A/V offset. Record machine, OS, SnapTray version,
    resolution, frame rate, encoder and power mode with the numbers.
+
+## macOS pointer probe (#322)
+
+`RecordingManager_CursorProbeMac` covers image conversion (pixel size, hotspot,
+1x/2x representation, orientation), button and event-type mapping, event age,
+and creating and destroying the probe. Real pointer shapes and real button
+events cannot be produced in a test; check them on a Mac. The debug log line
+`cursor: <probe>, shapes yes, clicks yes` names the click source in use:
+`macos-event-tap` (Input Monitoring already granted) or `macos-event-monitor`
+(no permission).
+
+| Check | Expected | Status |
+| --- | --- | --- |
+| Fresh install, no Input Monitoring or Accessibility: record with preview | No system permission prompt; probe is `macos-event-monitor`; `button` records present; Auto Zoom enabled | Pending device test |
+| Input Monitoring already granted (shortcut hints used before) | Probe is `macos-event-tap`; no prompt; `button` records present | Pending device test |
+| Click, drag, text field, link, window edge | `shape` records for arrow, I-beam, hand and resize pointers; press and release for each click | Pending device test |
+| Retina screen and external non-Retina screen, each recorded in turn | Pointer sharp on both; click ring centre within 1 video px of the pointer tip | Pending device test |
+| Enlarged pointer (Accessibility > Display > Pointer size) | Recorded pointer matches the size on screen, or note the difference | Pending device test |
+| Pointer hidden by an application (full-screen video, typing) | Samples not visible; export draws no pointer | Pending device test |
+| System Settings > Mouse > primary button: right | Primary button recorded as `left` | Pending device test |
+| Middle, back and forward buttons | Recorded as `middle`, `back`, `forward` | Pending device test |
+| Main thread blocked for several seconds while clicking (event-tap source) | Tap re-enabled after the system disables it; later clicks recorded | Pending device test |
+| Stop the recording, then click | No further callbacks (tap, run-loop source and monitor removed); repeat start/stop 20 times | Pending device test |
 
 ## Native editor follow-up (#185, #187, #188, #189, #190)
 
