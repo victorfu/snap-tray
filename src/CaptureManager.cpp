@@ -428,6 +428,10 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
             && targetScreen) {
             window->setSourceRegion(globalRect, targetScreen);
         }
+        if (window && m_regionSelector) {
+            window->setHistoryOrigin(m_regionSelector->lastRecordedHistoryEntryId(),
+                                     m_regionSelector->historyReplayBeautify());
+        }
 
         // Pass multi-region data if this was a multi-region capture
         if (window && m_regionSelector && m_regionSelector->isMultiRegionCapture()) {

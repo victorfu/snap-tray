@@ -175,7 +175,7 @@ Important extracted parts under `src/pinwindow/`:
 - `RegionLayoutRenderer`
 - `PinMergeHelper`
 
-Capture history is recorded by `RegionSelector` through `HistoryRecorder` and `HistoryStore` under `src/history/`. Creating a pin window through `PinWindowManager::createPinWindow` does not persist history.
+Capture history is recorded by `RegionSelector` through `HistoryRecorder` and `HistoryStore` under `src/history/`. Creating a pin window through `PinWindowManager::createPinWindow` does not persist history. Entries are immutable: every export adds one and none is rewritten. `HistoryStore` builds an entry in a `.staging-<id>` directory and commits it with one directory rename, so a failed or interrupted write leaves no entry (the next write clears leftovers). The manifest carries `schemaVersion` (`HistoryStore::kSchemaVersion`; manifests without one are version 1); an entry from a newer version is listed but not replayable. A beautified export from a pin (#344) adds an entry whose manifest holds the exact `BeautifySettings` (`beautify/BeautifySettingsJson.h`, pixel values, never a style name). While the pin still shows exactly what its capture produced, the new entry takes over that capture's canvas and annotations (`documentSourceEntryId`); otherwise its canvas is the pin's picture with the pin's edits flattened in (`PinWindow::exportPixmapForMerge`, so without opacity and watermark). Replaying a beautified entry hands its settings to the pin made from it (`RegionSelector::historyReplayBeautify` → `PinWindow::setHistoryOrigin`), and that pin's Beautify panel opens with them instead of the global last-used settings.
 
 ### Recording subsystem
 

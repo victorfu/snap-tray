@@ -25,6 +25,7 @@ private slots:
     void testResizeEscapeDoesNotAcceptQuickPin_data();
     void testResizeEscapeDoesNotAcceptQuickPin();
     void testBuildCaptureSessionWriteRequestPreservesFields();
+    void testReplayedBeautifySettingsReachThePin();
     void testRestoreLiveReplaySlotRecordsCaptureContext();
     void testApplyHistoryReplayEntryRecordsCaptureContext();
     void testDetectedWindowMetadataSurvivesHighlightClear();
@@ -231,6 +232,52 @@ void tst_RegionSelectorHistoryReplay::testBuildCaptureSessionWriteRequestPreserv
     QCOMPARE(request.cornerRadius, cornerRadius);
     QCOMPARE(request.maxEntries, maxEntries);
     QCOMPARE(request.createdAt, createdAt);
+}
+
+void tst_RegionSelectorHistoryReplay::testReplayedBeautifySettingsReachThePin()
+{
+    RegionSelector selector;
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+
+    QPixmap initialCapture(QSize(120, 90));
+    initialCapture.fill(Qt::gray);
+    selector.initializeForScreen(screen, initialCapture);
+    QVERIFY(!selector.historyReplayBeautify());
+    QVERIFY(selector.lastRecordedHistoryEntryId().isEmpty());
+
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    QPixmap replayPixmap(QSize(160, 100));
+    replayPixmap.fill(Qt::darkYellow);
+    const QString canvasPath = tempDir.filePath(QStringLiteral("canvas.png"));
+    QVERIFY(replayPixmap.save(canvasPath));
+
+    SnapTray::HistoryEntry entry;
+    entry.id = QStringLiteral("beautified-entry");
+    entry.canvasPath = canvasPath;
+    entry.canvasLogicalSize = QSize(160, 100);
+    entry.selectionRect = QRect(5, 6, 30, 20);
+    BeautifySettings look;
+    look.padding = 17;
+    entry.beautify = look;
+
+    // The pin made from a replayed entry continues from that entry's look.
+    QVERIFY(RegionSelectorTestAccess::invokeApplyHistoryReplayEntry(selector, entry));
+    QVERIFY(selector.historyReplayBeautify());
+    QCOMPARE(selector.historyReplayBeautify()->padding, 17);
+
+    // Every recorded capture knows its history id before it is written, so
+    // the pin can name the entry that holds its document.
+    const auto request = RegionSelectorTestAccess::currentHistoryRequest(selector);
+    QVERIFY(request);
+    QVERIFY(!request->id.isEmpty());
+    QVERIFY(!request->beautify);
+
+    // A plain entry, or going back to the live capture, drops it again.
+    entry.beautify.reset();
+    QVERIFY(RegionSelectorTestAccess::invokeApplyHistoryReplayEntry(selector, entry));
+    QVERIFY(!selector.historyReplayBeautify());
 }
 
 void tst_RegionSelectorHistoryReplay::testRestoreLiveReplaySlotRecordsCaptureContext()

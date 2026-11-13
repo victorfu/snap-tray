@@ -327,6 +327,7 @@ add_library(snaptray_core STATIC
     src/settings/WindowsPrintScreenSettingsManager.cpp
     src/settings/LanguageManager.cpp
     src/beautify/BeautifyRenderer.cpp
+    src/beautify/BeautifySettingsJson.cpp
     src/beautify/FrameStyle.cpp
     src/beautify/FrameStyleLibrary.cpp
     src/update/UpdateSettingsManager.cpp

@@ -116,6 +116,11 @@ public:
     // Switch capture context to another screen while selector is active.
     void switchToScreen(QScreen *screen, bool preserveCompletedSelection = true);
     bool beginHistoryReplay(const QString& entryId);
+    // For the pin made from this selection (#344): the history entry holding
+    // its document, and the Beautify settings of the replayed entry it
+    // continues from. Empty when the pinned picture is not this selection.
+    QString lastRecordedHistoryEntryId() const { return m_lastRecordedHistoryEntryId; }
+    std::optional<BeautifySettings> historyReplayBeautify() const { return m_historyReplayBeautify; }
 
     // Check if selection is complete (for external queries)
     bool isSelectionComplete() const;
@@ -261,7 +266,7 @@ private:
     struct RegionSelectorTraceProbe;
     std::optional<HistoryCaptureSnapshot> makeHistoryCaptureSnapshot(
         const QDateTime& createdAt = QDateTime::currentDateTime()) const;
-    void submitPendingHistorySubmission(PendingHistorySubmission submission) const;
+    void submitPendingHistorySubmission(PendingHistorySubmission submission);
     QRect currentHistorySelectionRect() const;
     QVector<MultiRegionManager::Region> currentHistoryCaptureRegions() const;
     QPixmap capturePlainSelectionPixmap() const;
@@ -550,6 +555,7 @@ private:
     };
 
     struct HistoryCaptureSnapshot {
+        QString entryId;
         QPixmap backgroundPixmap;
         QRect selectionRect;
         QVector<MultiRegionManager::Region> captureRegions;
@@ -586,6 +592,8 @@ private:
     HistoryLiveSlot m_historyLiveSlot;
     int m_historyReplayIndex = -1;  // -1 = current live slot
     bool m_historyReplayActive = false;
+    std::optional<BeautifySettings> m_historyReplayBeautify;
+    QString m_lastRecordedHistoryEntryId;
 
     // Preserve completed selection when cursor switches to another screen.
     bool m_hasPreservedSelection = false;

@@ -10,6 +10,11 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - Recordings on Windows now keep the pointer's real shape and mouse clicks for editing, so Auto Zoom, click highlights and the recorded pointer shape work there as they do on Linux.
 - macOS recordings now keep the real pointer shape and mouse clicks, so Auto Zoom and click highlights work on macOS without any extra permission.
+- Beautified screenshots copied or saved from a pin are now kept in the Library together with the exact Beautify settings used. Editing such an item and pinning it again opens Beautify with those settings, even after the defaults or saved styles have changed.
+
+### Improved
+
+- Screenshot history items are now written as a whole or not at all, so a full disk or an interrupted save can no longer leave a half-written item.
 
 ## [1.0.72] - 2026-11-09
 

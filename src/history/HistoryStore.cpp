@@ -1,7 +1,9 @@
 #include "history/HistoryStore.h"
 
+#include "beautify/BeautifySettingsJson.h"
 #include "utils/ImageSaveUtils.h"
 
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -9,7 +11,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QSaveFile>
 #include <QStandardPaths>
+#include <QThread>
 #include <QUuid>
 
 #include <algorithm>
@@ -23,6 +29,55 @@ constexpr auto kCanvasFileName = "canvas.png";
 constexpr auto kResultFileName = "result.png";
 constexpr auto kAnnotationsFileName = "annotations.json";
 constexpr auto kCaptureSessionKind = "capture_session";
+// An entry is built in a staging directory and only becomes an entry when the
+// whole directory is renamed, so a write that fails or is cut short never
+// leaves a picture next to a document that does not belong to it.
+constexpr auto kStagingPrefix = ".staging-";
+constexpr auto kCommitStep = "commit";
+
+// One write at a time: a write also clears staging directories left by an
+// interrupted one, which must not be another thread's write in progress.
+// Both are never destroyed: HistoryRecorder finishes queued writes while the
+// process exits, after ordinary statics may already be gone.
+QMutex* writeMutex()
+{
+    static auto* mutex = new QMutex;
+    return mutex;
+}
+
+std::function<bool(const QString&)>& writeFault()
+{
+    static auto* fault = new std::function<bool(const QString&)>;
+    return *fault;
+}
+
+bool stepFails(const char* step)
+{
+    return writeFault() && writeFault()(QString::fromLatin1(step));
+}
+
+// On Windows a directory cannot be renamed while another process (a virus
+// scanner, the search indexer) has one of its new files open for a moment.
+constexpr int kCommitAttempts = 6;
+constexpr int kCommitRetryDelayMs = 50;
+
+bool commitStagingDirectory(QDir& root, const QString& stagingName, const QString& id)
+{
+    for (int attempt = 0; attempt < kCommitAttempts; ++attempt) {
+        if (attempt > 0) {
+            QThread::msleep(kCommitRetryDelayMs);
+        }
+        if (root.rename(stagingName, id)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isStagingName(const QString& directoryName)
+{
+    return directoryName.startsWith(QLatin1String(kStagingPrefix));
+}
 
 QJsonArray serializeRect(const QRect& rect)
 {
@@ -95,35 +150,34 @@ QVector<MultiRegionManager::Region> deserializeCaptureRegions(const QJsonValue& 
     return regions;
 }
 
-QString uniqueEntryId(const QDateTime& createdAt)
-{
-    return QStringLiteral("capture_%1_%2")
-        .arg(createdAt.toString(QStringLiteral("yyyyMMdd_HHmmss_zzz")),
-             QUuid::createUuid().toString(QUuid::WithoutBraces));
-}
-
 QString fileNameString(const char* value)
 {
     return QString::fromLatin1(value);
 }
 
-bool writeTextFile(const QString& filePath, const QByteArray& data)
+bool writeTextFile(const QDir& directory, const char* fileName, const QByteArray& data)
 {
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    if (stepFails(fileName)) {
+        return false;
+    }
+    // QSaveFile reports a failed flush, which a plain QFile only shows on close.
+    QSaveFile file(directory.filePath(fileNameString(fileName)));
+    if (!file.open(QIODevice::WriteOnly)) {
         return false;
     }
     if (file.write(data) != data.size()) {
+        file.cancelWriting();
         return false;
     }
-    return true;
+    return file.commit();
 }
 
-bool saveImage(const QImage& image, const QString& filePath)
+bool saveImage(const QImage& image, const QDir& directory, const char* fileName)
 {
-    if (image.isNull()) {
+    if (image.isNull() || stepFails(fileName)) {
         return false;
     }
+    const QString filePath = directory.filePath(fileNameString(fileName));
 
     ImageSaveUtils::Error error;
     return ImageSaveUtils::saveImageAtomically(image, filePath, QByteArrayLiteral("PNG"), &error);
@@ -145,6 +199,29 @@ QJsonObject baseManifest(const QString& id,
     };
 }
 
+bool copyFile(const QString& sourcePath, const QDir& directory, const char* fileName)
+{
+    if (stepFails(fileName)) {
+        return false;
+    }
+    const QString targetPath = directory.filePath(fileNameString(fileName));
+    if (QFile::copy(sourcePath, targetPath)) {
+        return true;
+    }
+    QFile::remove(targetPath);
+    return false;
+}
+
+void removeStaleStagingDirectories(const QDir& root)
+{
+    const QStringList names = root.entryList(
+        {QString::fromLatin1(kStagingPrefix) + QLatin1Char('*')},
+        QDir::Dirs | QDir::Hidden | QDir::NoDotAndDotDot);
+    for (const QString& name : names) {
+        QDir(root.filePath(name)).removeRecursively();
+    }
+}
+
 void trimEntriesToLimit(int maxEntries)
 {
     if (maxEntries <= 0) {
@@ -161,6 +238,11 @@ void trimEntriesToLimit(int maxEntries)
 } // namespace
 
 namespace SnapTray {
+
+bool HistoryEntry::isFromNewerVersion() const
+{
+    return schemaVersion > HistoryStore::kSchemaVersion;
+}
 
 QString HistoryStore::historyRootPath()
 {
@@ -188,6 +270,9 @@ QList<HistoryEntry> HistoryStore::loadEntries()
 
     const QFileInfoList dirs = entriesDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
     for (const QFileInfo& dirInfo : dirs) {
+        if (isStagingName(dirInfo.fileName())) {
+            continue;
+        }
         const auto entry = loadEntryFromDirectory(dirInfo.filePath());
         if (entry.has_value()) {
             entries.append(entry.value());
@@ -209,33 +294,84 @@ std::optional<HistoryEntry> HistoryStore::loadEntry(const QString& id)
     return loadEntryFromDirectory(entryDirectory);
 }
 
+QString HistoryStore::newEntryId(const QDateTime& createdAt)
+{
+    return QStringLiteral("capture_%1_%2")
+        .arg(createdAt.toString(QStringLiteral("yyyyMMdd_HHmmss_zzz")),
+             QUuid::createUuid().toString(QUuid::WithoutBraces));
+}
+
+void HistoryStore::setWriteFaultForTests(std::function<bool(const QString& step)> fault)
+{
+    QMutexLocker locker(writeMutex());
+    writeFault() = std::move(fault);
+}
+
 std::optional<HistoryEntry> HistoryStore::writeCaptureSession(const CaptureSessionWriteRequest& request)
 {
     if (request.canvasImage.isNull() || request.resultImage.isNull() || !request.selectionRect.isValid()) {
         return std::nullopt;
     }
 
+    QMutexLocker locker(writeMutex());
+
     QDir root(entriesRootPath());
     if (!root.exists() && !root.mkpath(QStringLiteral("."))) {
         return std::nullopt;
     }
+    removeStaleStagingDirectories(root);
 
-    const QString id = uniqueEntryId(request.createdAt);
-    const QString entryDirPath = root.filePath(id);
-    if (!root.mkpath(id)) {
+    const QString id = request.id.isEmpty() ? newEntryId(request.createdAt) : request.id;
+    if (isStagingName(id) || QFileInfo(id).fileName() != id || root.exists(id)) {
+        // An entry is never rewritten in place.
         return std::nullopt;
     }
 
-    QDir entryDir(entryDirPath);
-    const QString canvasPath = entryDir.filePath(fileNameString(kCanvasFileName));
-    const QString resultPath = entryDir.filePath(fileNameString(kResultFileName));
-    const QString annotationsPath = entryDir.filePath(fileNameString(kAnnotationsFileName));
-
-    if (!saveImage(request.canvasImage, canvasPath) ||
-        !saveImage(request.resultImage, resultPath) ||
-        !writeTextFile(annotationsPath, request.annotationsJson)) {
-        QDir(entryDirPath).removeRecursively();
+    const QString stagingName = QString::fromLatin1(kStagingPrefix) + id;
+    if (!root.mkpath(stagingName)) {
         return std::nullopt;
+    }
+    const QDir stagingDir(root.filePath(stagingName));
+    const auto abandon = [&stagingDir]() {
+        QDir(stagingDir.path()).removeRecursively();
+        return std::nullopt;
+    };
+
+    // The document: taken over from an existing entry, or the request's own.
+    QRect selectionRect = request.selectionRect;
+    QVector<MultiRegionManager::Region> captureRegions = request.captureRegions;
+    qreal devicePixelRatio = request.devicePixelRatio;
+    QSize canvasLogicalSize = request.canvasLogicalSize;
+    int cornerRadius = request.cornerRadius;
+    QString windowTitle = request.windowTitle;
+    QString ownerApp = request.ownerApp;
+
+    bool documentWritten = false;
+    if (!request.documentSourceEntryId.isEmpty()) {
+        const auto source = loadEntry(request.documentSourceEntryId);
+        if (source && source->replayAvailable &&
+            copyFile(source->canvasPath, stagingDir, kCanvasFileName) &&
+            copyFile(source->annotationsPath, stagingDir, kAnnotationsFileName)) {
+            selectionRect = source->selectionRect;
+            captureRegions = source->captureRegions;
+            devicePixelRatio = source->devicePixelRatio;
+            canvasLogicalSize = source->canvasLogicalSize;
+            cornerRadius = source->cornerRadius;
+            windowTitle = source->windowTitle;
+            ownerApp = source->ownerApp;
+            documentWritten = true;
+        } else {
+            QFile::remove(stagingDir.filePath(fileNameString(kCanvasFileName)));
+            QFile::remove(stagingDir.filePath(fileNameString(kAnnotationsFileName)));
+        }
+    }
+    if (!documentWritten &&
+        (!saveImage(request.canvasImage, stagingDir, kCanvasFileName) ||
+         !writeTextFile(stagingDir, kAnnotationsFileName, request.annotationsJson))) {
+        return abandon();
+    }
+    if (!saveImage(request.resultImage, stagingDir, kResultFileName)) {
+        return abandon();
     }
 
     QJsonObject manifest = baseManifest(id,
@@ -243,21 +379,29 @@ std::optional<HistoryEntry> HistoryStore::writeCaptureSession(const CaptureSessi
                                         fileNameString(kResultFileName),
                                         fileNameString(kResultFileName),
                                         true);
+    manifest.insert(QStringLiteral("schemaVersion"), kSchemaVersion);
     manifest.insert(QStringLiteral("canvasPath"), fileNameString(kCanvasFileName));
     manifest.insert(QStringLiteral("annotationsPath"), fileNameString(kAnnotationsFileName));
-    manifest.insert(QStringLiteral("selectionRect"), serializeRect(request.selectionRect));
-    manifest.insert(QStringLiteral("captureRegions"), serializeCaptureRegions(request.captureRegions));
-    manifest.insert(QStringLiteral("devicePixelRatio"), request.devicePixelRatio);
-    manifest.insert(QStringLiteral("canvasLogicalSize"), serializeSize(request.canvasLogicalSize));
+    manifest.insert(QStringLiteral("selectionRect"), serializeRect(selectionRect));
+    manifest.insert(QStringLiteral("captureRegions"), serializeCaptureRegions(captureRegions));
+    manifest.insert(QStringLiteral("devicePixelRatio"), devicePixelRatio);
+    manifest.insert(QStringLiteral("canvasLogicalSize"), serializeSize(canvasLogicalSize));
     manifest.insert(QStringLiteral("resultSize"), serializeSize(request.resultImage.size()));
-    manifest.insert(QStringLiteral("cornerRadius"), request.cornerRadius);
-    manifest.insert(QStringLiteral("windowTitle"), request.windowTitle);
-    manifest.insert(QStringLiteral("ownerApp"), request.ownerApp);
+    manifest.insert(QStringLiteral("cornerRadius"), cornerRadius);
+    manifest.insert(QStringLiteral("windowTitle"), windowTitle);
+    manifest.insert(QStringLiteral("ownerApp"), ownerApp);
+    if (request.beautify) {
+        manifest.insert(QStringLiteral("beautify"), beautifySettingsToJson(*request.beautify));
+    }
 
-    const QString manifestPath = entryDir.filePath(fileNameString(kManifestFileName));
-    if (!writeTextFile(manifestPath, QJsonDocument(manifest).toJson(QJsonDocument::Indented))) {
-        QDir(entryDirPath).removeRecursively();
-        return std::nullopt;
+    if (!writeTextFile(stagingDir, kManifestFileName,
+                       QJsonDocument(manifest).toJson(QJsonDocument::Indented))) {
+        return abandon();
+    }
+
+    // The commit: until this rename the entry does not exist for any reader.
+    if (stepFails(kCommitStep) || !commitStagingDirectory(root, stagingName, id)) {
+        return abandon();
     }
 
     trimEntriesToLimit(request.maxEntries);
@@ -275,7 +419,7 @@ bool HistoryStore::deleteEntry(const HistoryEntry& entry)
 std::optional<HistoryEntry> HistoryStore::loadEntryFromDirectory(const QString& entryDirectory)
 {
     QDir dir(entryDirectory);
-    if (!dir.exists()) {
+    if (!dir.exists() || isStagingName(dir.dirName())) {
         return std::nullopt;
     }
 
@@ -315,6 +459,31 @@ std::optional<HistoryEntry> HistoryStore::loadEntryFromDirectory(const QString& 
     entry.cornerRadius = manifest.value(QStringLiteral("cornerRadius")).toInt();
     entry.windowTitle = manifest.value(QStringLiteral("windowTitle")).toString();
     entry.ownerApp = manifest.value(QStringLiteral("ownerApp")).toString();
+
+    // Anything but a whole number is not a version this code knows: treat it
+    // as newer rather than as a manifest from before versions existed.
+    const QJsonValue schemaVersion = manifest.value(QStringLiteral("schemaVersion"));
+    entry.schemaVersion = schemaVersion.isUndefined()
+        ? 1
+        : schemaVersion.toInt(HistoryStore::kSchemaVersion + 1);
+    if (entry.schemaVersion < 1) {
+        entry.schemaVersion = HistoryStore::kSchemaVersion + 1;
+    }
+    if (entry.isFromNewerVersion()) {
+        entry.replayAvailable = false;
+        return entry;
+    }
+
+    const QJsonValue beautify = manifest.value(QStringLiteral("beautify"));
+    if (!beautify.isUndefined()) {
+        entry.beautify = beautifySettingsFromJson(beautify.toObject());
+        if (!entry.beautify) {
+            // Replaying it would show the picture without the look it was
+            // saved with, or with today's defaults; the finished picture stays.
+            qWarning() << "HistoryStore: unreadable beautify settings in" << entryDirectory;
+            entry.replayAvailable = false;
+        }
+    }
 
     return entry;
 }

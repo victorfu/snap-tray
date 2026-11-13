@@ -71,7 +71,9 @@ void HistoryBackend::edit(int index)
     const HistoryEntry entry = m_model->entryAt(index);
     if (!entry.replayAvailable) {
         showError(historyText("Edit Failed"),
-                  historyText("This history item cannot be replayed."));
+                  entry.isFromNewerVersion()
+                      ? historyText("This history item was saved by a newer version of SnapTray.")
+                      : historyText("This history item cannot be replayed."));
         return;
     }
 
