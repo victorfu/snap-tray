@@ -1,0 +1,16 @@
+Test project build
+    Start 62: Platform_Capabilities
+1/4 Test #62: Platform_Capabilities .................   Passed    0.97 sec
+    Start 63: ScrollCapture_MacScrollPosition
+2/4 Test #63: ScrollCapture_MacScrollPosition .......   Passed    0.36 sec
+    Start 64: ScrollCapture_RowHashShiftEstimator
+3/4 Test #64: ScrollCapture_RowHashShiftEstimator ...   Passed    0.14 sec
+    Start 65: ScrollCapture_FrameSettleDetector
+4/4 Test #65: ScrollCapture_FrameSettleDetector .....   Passed    0.19 sec
+
+100% tests passed out of 4
+
+Label Time Summary:
+unit    =   1.66 sec*proc (4 tests)
+
+Total Test time (real) =   1.68 sec

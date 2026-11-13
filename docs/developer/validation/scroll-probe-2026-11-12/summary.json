@@ -1,0 +1,1201 @@
+[
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari plain phase1 after handoff",
+    "schema": 1,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "fraction": 0.00011934598296647891,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari plain wheel120 x10",
+    "schema": 1,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "fraction": 0.00011934598296647891,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftMaxPx": 240,
+      "shiftMeanPx": 240,
+      "shiftMinPx": 240,
+      "shiftStddevPx": 0,
+      "shiftsFound": 10,
+      "strictSettleP50Ms": 126,
+      "strictSettleP95Ms": 136,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari plain continuous120 x10",
+    "schema": 1,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "fraction": 0.1433345228433609,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftMaxPx": 240,
+      "shiftMeanPx": 240,
+      "shiftMinPx": 240,
+      "shiftStddevPx": 0,
+      "shiftsFound": 10,
+      "strictSettleP50Ms": 113,
+      "strictSettleP95Ms": 132,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari plain PID120 x10",
+    "schema": 1,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "fraction": 0.28654971718788147,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 0,
+    "statuses": {
+      "found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftMaxPx": 0,
+      "shiftMeanPx": 0,
+      "shiftMinPx": 0,
+      "shiftStddevPx": 0,
+      "shiftsFound": 10,
+      "strictSettleP50Ms": 0,
+      "strictSettleP95Ms": 0,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari plain reach bottom",
+    "schema": 1,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "fraction": 0.28654971718788147,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 1,
+    "injections": 1,
+    "motion": 1,
+    "statuses": {
+      "not_found": 1
+    },
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 127,
+      "strictSettleP95Ms": 127,
+      "strictSettles": 1
+    },
+    "stoppedAtEnd": 1
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari plain reach top",
+    "schema": 1,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": true,
+      "atTop": false,
+      "fraction": 1,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 1,
+    "injections": 1,
+    "motion": 1,
+    "statuses": {
+      "not_found": 1
+    },
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 129,
+      "strictSettleP95Ms": 129,
+      "strictSettles": 1
+    },
+    "stoppedAtEnd": 1
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari nested phase1",
+    "schema": 1,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "fraction": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari nested selected root wheel120 x10",
+    "schema": 1,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "fraction": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftMaxPx": 240,
+      "shiftMeanPx": 240,
+      "shiftMinPx": 240,
+      "shiftStddevPx": 0,
+      "shiftsFound": 10,
+      "strictSettleP50Ms": 117,
+      "strictSettleP95Ms": 144,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Safari nested requested outer level1",
+    "schema": 1,
+    "actualApp": null,
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "no_scroll_area",
+    "levels": null,
+    "position": null,
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Finder src list wheel40 x10",
+    "schema": 1,
+    "actualApp": "Finder",
+    "processId": 858,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "contentHeight": 1297,
+      "fraction": 0,
+      "offset": -27,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.3004769475357711
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "not_found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 44,
+      "strictSettleP95Ms": 113,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "Finder src reach bottom",
+    "schema": 1,
+    "actualApp": "Finder",
+    "processId": 858,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "contentHeight": 1297,
+      "fraction": 0.41025641025641024,
+      "offset": 373,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.3004769475357711
+    },
+    "repeats": 1,
+    "injections": 1,
+    "motion": 1,
+    "statuses": {
+      "not_found": 1
+    },
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 99,
+      "strictSettleP95Ms": 99,
+      "strictSettles": 1
+    },
+    "stoppedAtEnd": 1
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "System Settings General phase1",
+    "schema": 1,
+    "actualApp": null,
+    "processId": 69878,
+    "excludedWrongTarget": false,
+    "locateStatus": "no_scroll_area",
+    "levels": null,
+    "position": null,
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "System Settings General fixed point",
+    "schema": 1,
+    "actualApp": "System Settings",
+    "processId": 69878,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": true,
+      "atTop": true,
+      "contentHeight": 527,
+      "fraction": 0,
+      "offset": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.505671077504726
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "System Settings General main wheel40 x10",
+    "schema": 1,
+    "actualApp": null,
+    "processId": 69878,
+    "excludedWrongTarget": false,
+    "locateStatus": "no_scroll_area",
+    "levels": null,
+    "position": null,
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "legacy-schema1-results.jsonl",
+    "case": "System Settings sidebar after independent scroll",
+    "schema": 1,
+    "actualApp": "System Settings",
+    "processId": 69878,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": true,
+      "atTop": true,
+      "contentHeight": 527,
+      "fraction": 0.9532871972318339,
+      "offset": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.5113421550094518
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Chrome plain schema7 phase1",
+    "schema": 7,
+    "actualApp": "Google Chrome",
+    "processId": 94494,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "sources": []
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Chrome plain schema7 wheel120 x10",
+    "schema": 7,
+    "actualApp": "Google Chrome",
+    "processId": 94494,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "sources": []
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "not_found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 131,
+      "strictSettleP95Ms": 163,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Chrome nested schema7 manual phase1",
+    "schema": 7,
+    "actualApp": "Google Chrome",
+    "processId": 94494,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "sources": []
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Chrome nested schema7 selected root wheel120 x10",
+    "schema": 7,
+    "actualApp": "Google Chrome",
+    "processId": 94494,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "sources": []
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "ambiguous": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 128,
+      "strictSettleP95Ms": 150,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Chrome dense schema7 wheel120 x10",
+    "schema": 7,
+    "actualApp": "Google Chrome",
+    "processId": 94494,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "sources": []
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftMaxPx": 240,
+      "shiftMeanPx": 240,
+      "shiftMinPx": 240,
+      "shiftStddevPx": 0,
+      "shiftsFound": 10,
+      "strictSettleP50Ms": 123,
+      "strictSettleP95Ms": 143,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Safari dense schema7 target",
+    "schema": 7,
+    "actualApp": "Google Chrome",
+    "processId": 94494,
+    "excludedWrongTarget": true,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "sources": []
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Safari dense schema7 verified handoff",
+    "schema": 7,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "fraction": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Safari dense schema7 wheel120 x10",
+    "schema": 7,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "fraction": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftMaxPx": 240,
+      "shiftMeanPx": 240,
+      "shiftMinPx": 240,
+      "shiftStddevPx": 0,
+      "shiftsFound": 10,
+      "strictSettleP50Ms": 112,
+      "strictSettleP95Ms": 131,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Safari dense schema7 continuous120 x10",
+    "schema": 7,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "fraction": 0.14321517944335938,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftMaxPx": 240,
+      "shiftMeanPx": 240,
+      "shiftMinPx": 240,
+      "shiftStddevPx": 0,
+      "shiftsFound": 10,
+      "strictSettleP50Ms": 36,
+      "strictSettleP95Ms": 132,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Safari nested schema7 selected root wheel120 x10",
+    "schema": 7,
+    "actualApp": "Safari",
+    "processId": 67835,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "fraction": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue"
+      ]
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "ambiguous": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 36,
+      "strictSettleP95Ms": 143,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Word RTF schema7 phase1",
+    "schema": 7,
+    "actualApp": "ChatGPT",
+    "processId": 59805,
+    "excludedWrongTarget": true,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "sources": []
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Word RTF schema7 verified handoff",
+    "schema": 7,
+    "actualApp": "Microsoft Word",
+    "processId": 73851,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "contentHeight": 8766,
+      "fraction": 0,
+      "offset": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXContents"
+      ],
+      "viewportRatio": 0.08567191421400867
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Word RTF schema7 wheel120 x10",
+    "schema": 7,
+    "actualApp": "Microsoft Word",
+    "processId": 73851,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": true,
+      "contentHeight": 8766,
+      "fraction": 0,
+      "offset": 0,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXContents"
+      ],
+      "viewportRatio": 0.08567191421400867
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "not_found": 9,
+      "ambiguous": 1
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 44,
+      "strictSettleP95Ms": 205,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Word RTF schema7 reach bottom",
+    "schema": 7,
+    "actualApp": "Microsoft Word",
+    "processId": 73851,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "contentHeight": 8766,
+      "fraction": 0.1497320354369463,
+      "offset": 1200.1025390625,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXContents"
+      ],
+      "viewportRatio": 0.08567191421400867
+    },
+    "repeats": 1,
+    "injections": 1,
+    "motion": 1,
+    "statuses": {
+      "not_found": 1
+    },
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 124,
+      "strictSettleP95Ms": 124,
+      "strictSettles": 1
+    },
+    "stoppedAtEnd": 1
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Word RTF schema7 reach top",
+    "schema": 7,
+    "actualApp": "Microsoft Word",
+    "processId": 73851,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": true,
+      "atTop": false,
+      "contentHeight": 8766,
+      "fraction": 1,
+      "offset": 8015,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXContents"
+      ],
+      "viewportRatio": 0.08567191421400867
+    },
+    "repeats": 1,
+    "injections": 1,
+    "motion": 1,
+    "statuses": {
+      "not_found": 1
+    },
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 207,
+      "strictSettleP95Ms": 207,
+      "strictSettles": 1
+    },
+    "stoppedAtEnd": 1
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Excel synthetic workbook schema7 phase1",
+    "schema": 7,
+    "actualApp": null,
+    "processId": 74624,
+    "excludedWrongTarget": false,
+    "locateStatus": "no_scroll_area",
+    "levels": null,
+    "position": null,
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Excel after PageDown schema7 phase1",
+    "schema": 7,
+    "actualApp": null,
+    "processId": 74624,
+    "excludedWrongTarget": false,
+    "locateStatus": "no_scroll_area",
+    "levels": null,
+    "position": null,
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Preview PDF schema7 phase1",
+    "schema": 7,
+    "actualApp": "ChatGPT",
+    "processId": 59805,
+    "excludedWrongTarget": true,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "sources": []
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Preview PDF schema7 verified handoff",
+    "schema": 7,
+    "actualApp": "Preview",
+    "processId": 54879,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "contentHeight": 17179.146496815287,
+      "fraction": 0.0025684701398791705,
+      "offset": 42.000000000334694,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.0505173463177115
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Preview PDF schema7 wheel120 x10",
+    "schema": 7,
+    "actualApp": "Preview",
+    "processId": 54879,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "contentHeight": 17179.146496815287,
+      "fraction": 0.0025684701398791705,
+      "offset": 42.000000000334694,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.0505173463177115
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "not_found": 6,
+      "ambiguous": 4
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 39,
+      "strictSettleP95Ms": 137,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Preview PDF schema7 reach bottom",
+    "schema": 7,
+    "actualApp": "Preview",
+    "processId": 54879,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "contentHeight": 17179.146496815287,
+      "fraction": 0.07595333127928586,
+      "offset": 1242.0000000003347,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.0505173463177115
+    },
+    "repeats": 1,
+    "injections": 1,
+    "motion": 1,
+    "statuses": {
+      "not_found": 1
+    },
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 136,
+      "strictSettleP95Ms": 136,
+      "strictSettles": 1
+    },
+    "stoppedAtEnd": 1
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Preview PDF schema7 reach top",
+    "schema": 7,
+    "actualApp": "Preview",
+    "processId": 54879,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": true,
+      "atTop": false,
+      "contentHeight": 17179.146496815287,
+      "fraction": 0.9999910411252622,
+      "offset": 16351.999999983123,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.0505173463177115
+    },
+    "repeats": 1,
+    "injections": 1,
+    "motion": 1,
+    "statuses": {
+      "not_found": 1
+    },
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 144,
+      "strictSettleP95Ms": 144,
+      "strictSettles": 1
+    },
+    "stoppedAtEnd": 1
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Notes synthetic separate window schema7 phase1",
+    "schema": 7,
+    "actualApp": "Notes",
+    "processId": 76777,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "contentHeight": 2991,
+      "fraction": 0.0023538642604943117,
+      "offset": 6,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.16045197740112993
+    },
+    "repeats": 0,
+    "injections": 0,
+    "motion": 0,
+    "statuses": {},
+    "stats": null,
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Notes synthetic schema7 wheel120 x10",
+    "schema": 7,
+    "actualApp": "Notes",
+    "processId": 76777,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "contentHeight": 2991,
+      "fraction": 0.0023538642604943117,
+      "offset": 6,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.16045197740112993
+    },
+    "repeats": 10,
+    "injections": 10,
+    "motion": 10,
+    "statuses": {
+      "not_found": 10
+    },
+    "stats": {
+      "repeats": 10,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 39,
+      "strictSettleP95Ms": 122,
+      "strictSettles": 10
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Notes synthetic schema7 reach bottom",
+    "schema": 7,
+    "actualApp": "Notes",
+    "processId": 76777,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": false,
+      "atTop": false,
+      "contentHeight": 3057,
+      "fraction": 0.4611854684512428,
+      "offset": 1206,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.15706214689265538
+    },
+    "repeats": 2,
+    "injections": 2,
+    "motion": 2,
+    "statuses": {
+      "not_found": 2
+    },
+    "stats": {
+      "repeats": 2,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 105,
+      "strictSettleP95Ms": 132,
+      "strictSettles": 2
+    },
+    "stoppedAtEnd": null
+  },
+  {
+    "file": "results-schema7.jsonl",
+    "case": "Notes synthetic schema7 reach top",
+    "schema": 7,
+    "actualApp": "Notes",
+    "processId": 76777,
+    "excludedWrongTarget": false,
+    "locateStatus": "found",
+    "levels": 1,
+    "position": {
+      "atBottom": true,
+      "atTop": false,
+      "contentHeight": 3085,
+      "fraction": 1,
+      "offset": 2643,
+      "sources": [
+        "AXVerticalScrollBar.AXValue",
+        "AXValueIndicator",
+        "AXContents"
+      ],
+      "viewportRatio": 0.15593220338983052
+    },
+    "repeats": 1,
+    "injections": 1,
+    "motion": 1,
+    "statuses": {
+      "not_found": 1
+    },
+    "stats": {
+      "repeats": 1,
+      "shiftsFound": 0,
+      "strictSettleP50Ms": 569,
+      "strictSettleP95Ms": 569,
+      "strictSettles": 1
+    },
+    "stoppedAtEnd": 1
+  }
+]

@@ -1,0 +1,20 @@
+Test project build
+    Start 63: Platform_Capabilities
+1/6 Test #63: Platform_Capabilities ..................   Passed    0.29 sec
+    Start 64: ScrollCapture_MacScrollPosition
+2/6 Test #64: ScrollCapture_MacScrollPosition ........   Passed    0.50 sec
+    Start 65: ScrollCapture_RowHashShiftEstimator
+3/6 Test #65: ScrollCapture_RowHashShiftEstimator ....   Passed    0.36 sec
+    Start 66: ScrollCapture_ScrollContentAssembler
+4/6 Test #66: ScrollCapture_ScrollContentAssembler ...   Passed    0.40 sec
+    Start 67: ScrollCapture_FrameSettleDetector
+5/6 Test #67: ScrollCapture_FrameSettleDetector ......   Passed    0.33 sec
+    Start 68: ScrollCapture_ProbeContentExport
+6/6 Test #68: ScrollCapture_ProbeContentExport .......   Passed    0.45 sec
+
+100% tests passed out of 6
+
+Label Time Summary:
+unit    =   2.33 sec*proc (6 tests)
+
+Total Test time (real) =   2.34 sec

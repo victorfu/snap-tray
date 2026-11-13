@@ -1,0 +1,38 @@
+[
+  {
+    "args": [
+      "inspect",
+      "--point",
+      "1,2"
+    ],
+    "exit": 2,
+    "rejected": true
+  },
+  {
+    "args": [
+      "measure",
+      "--point",
+      "x,2"
+    ],
+    "exit": 2,
+    "rejected": true
+  },
+  {
+    "args": [
+      "measure",
+      "--point",
+      "1,2,3"
+    ],
+    "exit": 2,
+    "rejected": true
+  },
+  {
+    "args": [
+      "measure",
+      "--point",
+      "2147483648,0"
+    ],
+    "exit": 2,
+    "rejected": true
+  }
+]

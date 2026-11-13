@@ -1,0 +1,902 @@
+[
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022818-692-0-after.png",
+    "bytes": 728466,
+    "sha256": "620729b5355f54ba0ef5f7b13e601576734bccdcfba826d18a2fe64d99e95777"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022818-692-0-before.png",
+    "bytes": 746804,
+    "sha256": "7579b34697201c8ad4889ebff08356c888bdfbb84860e42514ec56fdae693c28"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022820-013-1-after.png",
+    "bytes": 721419,
+    "sha256": "b733f6910cacb0b3172ffc8ccf76894a22c60d355c9f9d1f23101d0d94600bbf"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022820-013-1-before.png",
+    "bytes": 727950,
+    "sha256": "8d5675fdbc561ce9c63e52c7dac56a839f317e4e7507b3ce66eb913a2dc933da"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022821-326-2-after.png",
+    "bytes": 745157,
+    "sha256": "1e50d4f7890c32809641f941bb54abb1311b39bfe660a706b55965a6c63992e4"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022821-326-2-before.png",
+    "bytes": 721187,
+    "sha256": "84fb5cf0e19b7d7351d2337caff39de61fb46866e07866aaca4274274a0f9b4e"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022822-610-3-after.png",
+    "bytes": 747078,
+    "sha256": "4b9f54b38812c04e891366ad0e8a15438727f187087e68069cc5ba39f33525ab"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022822-610-3-before.png",
+    "bytes": 744682,
+    "sha256": "93099d90b2c6bb41a108dde2b7df04b6aba55b109611accc3bae651c6971e8c9"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022823-905-4-after.png",
+    "bytes": 733539,
+    "sha256": "2901a569d929acba640049917ee3324907e00cf12d1b5dd40cf2c61a082087f6"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022823-905-4-before.png",
+    "bytes": 746287,
+    "sha256": "32e7825c3570ba7206351531d4efc77fb3cd841260e48382e8cfa316fe8ac982"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022825-205-5-after.png",
+    "bytes": 719958,
+    "sha256": "75e691454426eea388d7feac7b35431d455b8e9f284ca58bd8eaa3a2be2189a0"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022825-205-5-before.png",
+    "bytes": 733282,
+    "sha256": "ae21b7a50f1ff0f065bc4f167b025a3deca816eefaf2a932acaa0e7ccaa08ff0"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022826-505-6-after.png",
+    "bytes": 745005,
+    "sha256": "8fbaaa22468e2d4867bc6a0edf0b93bceca6364b416ce12d084f4092ce85a146"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022826-505-6-before.png",
+    "bytes": 719733,
+    "sha256": "05128a5ca15fa5d78e1751be0edc8aa4dd4c366e789f16edfec7bfa5c87bf341"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022827-795-7-after.png",
+    "bytes": 751672,
+    "sha256": "359193ef3ba9a5f6ed6480074152f67fdba40d7465ae2e53f8f1fc2dc3c57163"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022827-795-7-before.png",
+    "bytes": 744774,
+    "sha256": "e27fdf494d8e60516a85fedf0839185c72a95ac96dc0175a36b5fd7715dfb3aa"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022829-094-8-after.png",
+    "bytes": 739230,
+    "sha256": "b901999aedf535d23c7f8164b4a53569fa48dbf863010f78c5006ef5fe3e490d"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022829-094-8-before.png",
+    "bytes": 751414,
+    "sha256": "e5dc1942fb9973cb12db5bc2b236d35a608526e85712f4fdb7ca9e7a3478d5c5"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022830-392-9-after.png",
+    "bytes": 724006,
+    "sha256": "73ff48140bd6aed74bc19d777e2a40e346249cc243b92693748037f577eae895"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-dense/20261112-022830-392-9-before.png",
+    "bytes": 738994,
+    "sha256": "982b0ec03aacb111efeb79c44a74a79ba115393a759af0a32a253709b2fad165"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022736-642-0-after.png",
+    "bytes": 472328,
+    "sha256": "7064441a115409df53ecf264b036f72a9c6e93b4702bd0646f189b64ce5da822"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022736-642-0-before.png",
+    "bytes": 465859,
+    "sha256": "264fd4782c7e9b372b6fae2de0668e568ec223a612f6fe0a3b1f5ca178b338c6"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022737-943-1-after.png",
+    "bytes": 461601,
+    "sha256": "aa0ccbe3a553592f00ffa403b26b1a3b70cff1783cb6b70b7247f92c32892a21"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022737-943-1-before.png",
+    "bytes": 472073,
+    "sha256": "c8db6309fe6466505f4af9b49f9c0909bd86bcdac2a258f1238efd98fd0bc706"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022739-222-2-after.png",
+    "bytes": 461950,
+    "sha256": "ba35dad64d3711115891be0285409fe0bb5baef59ff05d605b851cb12a7bd40b"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022739-222-2-before.png",
+    "bytes": 460475,
+    "sha256": "bda52b5fc90436f2dfe9c441d39511807798b379165d9bf97c5ea83317e87247"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022740-501-3-after.png",
+    "bytes": 473137,
+    "sha256": "02dba75d986bd4f71170191a0685df565efb24921952f3a819ca6fc5dcff5bcf"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022740-501-3-before.png",
+    "bytes": 461380,
+    "sha256": "9a94db58eb5d03790babb6bba20524350e949f1ee82c419581b0aaf997a0cb26"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022741-772-4-after.png",
+    "bytes": 482064,
+    "sha256": "497f7012823fbd7d08be46300202373ef3c9481d4ac8b8b9019a19fd47068de7"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022741-772-4-before.png",
+    "bytes": 472583,
+    "sha256": "47d12a0bf20ecedfc0d78405f8cbf76ed5cd0b48cf72e78eb03f0491e4f8a4b9"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022743-058-5-after.png",
+    "bytes": 467659,
+    "sha256": "4305b8c26d81ce827032eaf82bde45b4ce8d79c1b9a76701f83845d9024e99bc"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022743-058-5-before.png",
+    "bytes": 481669,
+    "sha256": "f4573f54cfbc0a7ec73ea22346ae11aaa1700432c93d17ee380bde54a7862d95"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022744-312-6-after.png",
+    "bytes": 469039,
+    "sha256": "60506364e927fa8d5df93fecd2cbb641f731120663d1f26e0a2953b26b588449"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022744-312-6-before.png",
+    "bytes": 467194,
+    "sha256": "5acee9a9e085525b371ed5b89ad9c15e6999886c912a46f47b458da23f15bb53"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022745-579-7-after.png",
+    "bytes": 477911,
+    "sha256": "a1c7623599dd166ed2110530e54160ec1905d169076b8f65fdad4b761e8267dd"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022745-579-7-before.png",
+    "bytes": 468701,
+    "sha256": "4ebd349711bbca76fb672a43b9b0e0c0fa6c8707fc8fb0b78931910f44965fb7"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022746-853-8-after.png",
+    "bytes": 491564,
+    "sha256": "55ffa4eb2f4e3c68d77fcdfc376a76bd292210b7dc6251c141f342fccf2e46da"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022746-853-8-before.png",
+    "bytes": 476874,
+    "sha256": "554c711279c4c7dba0ce5347f47ea34bf0dea6a1fffb57a673d99015c203136f"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022748-126-9-after.png",
+    "bytes": 476770,
+    "sha256": "acb1c548a739b60df8f5d50efb95dfadea3938e70e6e33daaea168d16365429c"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-nested/20261112-022748-126-9-before.png",
+    "bytes": 490917,
+    "sha256": "c35124cd926119006dd6f41285eeaecdd900ccc478596927d6192a9d3d477b28"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022612-973-0-after.png",
+    "bytes": 559603,
+    "sha256": "2f58713865fd8174ca844b8215722c5f1804eda32ce830c04b4cc480db473ef2"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022612-973-0-before.png",
+    "bytes": 564288,
+    "sha256": "88540eea612856d20343022257a06147e20e9c77fb05bf587c951801cd574c50"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022614-272-1-after.png",
+    "bytes": 545927,
+    "sha256": "c38257f4c94e83719b7fd6319ae712ff63ead1ce1b33ee30e9136e8d56305fbb"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022614-272-1-before.png",
+    "bytes": 559409,
+    "sha256": "78685a9b052e2a325bef62b1168df855d801799ddd5766d2dd017407dca790c6"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022615-563-2-after.png",
+    "bytes": 562181,
+    "sha256": "3020c5e754a79ca0818fe714305e5a4239ed71e8754e6a125db73a5cd9173ee3"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022615-563-2-before.png",
+    "bytes": 545708,
+    "sha256": "153af042a78b778664cae2883eca8574388d094cdd48cd8d0fced7bf62c5002c"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022616-841-3-after.png",
+    "bytes": 575741,
+    "sha256": "483dd1c75386c8208e4c4ee3eacdbbfa9b7fdbc8d6f37a624db16b6028ca25d8"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022616-841-3-before.png",
+    "bytes": 561890,
+    "sha256": "fc72bd8b48f5649e628065e86d6d12db94ca2be449b1092036e72805a0617ecf"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022618-121-4-after.png",
+    "bytes": 573335,
+    "sha256": "36f20dfe766751c7999effcac0ce75a0a47c359ea4209121ce14a5ba1de8096a"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022618-121-4-before.png",
+    "bytes": 575354,
+    "sha256": "3e41d9658ef226a78ff12f843c1c18b7656495218b16da1b053583d816a46e0a"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022619-389-5-after.png",
+    "bytes": 559294,
+    "sha256": "a98a41dee160a10109a2d782d41f5a58fa51fae1b0d29fb9cd50c0bf85b871de"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022619-389-5-before.png",
+    "bytes": 572891,
+    "sha256": "cbefed44e1181f6223cc4c5a6b49990ec97f68e78f0119ebc2ff6df28f4beb4f"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022620-663-6-after.png",
+    "bytes": 574903,
+    "sha256": "cd938bdbad23add5a77991116dc7e43e49996a6c0b3fcc3ab34afbabc3fa0b50"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022620-663-6-before.png",
+    "bytes": 559063,
+    "sha256": "18f4d3e8e6cdd2908d29a500ccca133e9d133e1f18489ca20b49deaf0cb40824"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022621-938-7-after.png",
+    "bytes": 587928,
+    "sha256": "8d8b3c5c10a0576fec423674541d54cc4bfd6c01f25672e85d99ee6c35163004"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022621-938-7-before.png",
+    "bytes": 574645,
+    "sha256": "d8fbc115975bf5f3e195c5da8e227714cbd39cea524fedb9297b508475f450c4"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022623-204-8-after.png",
+    "bytes": 586249,
+    "sha256": "44061cb844675b4523afdc23b75266cd8e69f184ec16d111c44b5389359854c6"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022623-204-8-before.png",
+    "bytes": 587357,
+    "sha256": "5bc9aaf64fb86b2dd9fb0a7cbb7cd0e4e29663e0dd516c7cb94d5f59aaa6d605"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022624-487-9-after.png",
+    "bytes": 572765,
+    "sha256": "82161dfbd355525d6681e57316d69a49e66753aa348c976164bb9e13e8811210"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/chrome-plain/20261112-022624-487-9-before.png",
+    "bytes": 585993,
+    "sha256": "ec3f8fd1b823aa6a42f9a4d0e13b5aec8af4b288013de04b2ae5d1963ca51cec"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033329-485-0-after.png",
+    "bytes": 283132,
+    "sha256": "947dbc3be1b3e480818e6bf7f7fb83c1bb8b4ef735461f2de262f92df9dc110e"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033329-485-0-before.png",
+    "bytes": 265695,
+    "sha256": "cd86959be26bdb41bfce23f31f7a5f3b0f9ef6adc09167a72434f1c8aa20a650"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033330-190-1-after.png",
+    "bytes": 286859,
+    "sha256": "30136f955bb842e401ddc7c0cbceba83953d117ba39164a538279ddcab768e3f"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033330-190-1-before.png",
+    "bytes": 283120,
+    "sha256": "3a01fc8e1f4872ac728227ff90f633b429634898be614bd96b1615ad2a2d22c2"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033330-789-2-after.png",
+    "bytes": 289962,
+    "sha256": "d111c9c92fb8e1b2aa457f5f089def743a60edb8ac3535b99ddea5197cf0c3fa"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033330-789-2-before.png",
+    "bytes": 286788,
+    "sha256": "534de29ab6dd8dc93db484cd5ee653b47ffc9014cb14fb3536a674375cc94fcf"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033331-389-3-after.png",
+    "bytes": 289966,
+    "sha256": "9ca7828f59d6af5b802fa8ff4f1e6f97b3ce3a91f9897c18390b3a8acfa771de"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033331-389-3-before.png",
+    "bytes": 289955,
+    "sha256": "6b19266e5aaaaf99d3292cd64f2baab424178b64600f4ea95e1f3c35fe44bf21"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033331-998-4-after.png",
+    "bytes": 291024,
+    "sha256": "4fd7defd6778e99e168f10f418ebaeac223600e91b9780c655ec132a980b6c44"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033331-998-4-before.png",
+    "bytes": 289994,
+    "sha256": "64613b42987cec637eb9ae41ea0aeb86c090c12e0fa92fd6a044ccc2f95616d6"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033332-596-5-after.png",
+    "bytes": 293636,
+    "sha256": "35bbc4a7f71328cde5bc16709b7eb49b117b65b83a326278a1bf41e085da5556"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033332-596-5-before.png",
+    "bytes": 291025,
+    "sha256": "b9d3dc5a5de278214c28e226f4478b3c2b338b3bff8dc14eeb9512f169fb7d28"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033333-244-6-after.png",
+    "bytes": 294592,
+    "sha256": "3e8143e2f45baf4d64fbb017dc52b62b39a1ed43bf235fbb80b2d4978a8fbe5e"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033333-244-6-before.png",
+    "bytes": 293657,
+    "sha256": "c6c05e3a9e1bcb895a67ae95e2f96d02a488963e2d6fae9a01a55b61671e2b52"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033333-896-7-after.png",
+    "bytes": 295603,
+    "sha256": "10654d7e5117f88f43970a09c541a658392fd5fd0b6834f499346ad96e246b9d"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033333-896-7-before.png",
+    "bytes": 294554,
+    "sha256": "0d6b62c9697bc03a2c1099a316b77a936904387ce920eb049ff3abc3d729ae9b"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033334-497-8-after.png",
+    "bytes": 296397,
+    "sha256": "c9b42fb0fc3437cd32acb29ea9e19181d6f5283b87b222fe45e7ee2d6cc4122f"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033334-497-8-before.png",
+    "bytes": 295552,
+    "sha256": "725655d1543bff2f6ca3fe6b8e9f09a91c5ae6f68424c28c3847a205789428f6"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033335-099-9-after.png",
+    "bytes": 296334,
+    "sha256": "417124b66f14099be353aa050704f5b20c1cd1814665bce28fb37ee9f55f8495"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/notes-synthetic/20261112-033335-099-9-before.png",
+    "bytes": 296385,
+    "sha256": "912f2924bffc151b20742c2c28629a0625ca49c871d1484b97a96ed6265c9222"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033017-454-0-after.png",
+    "bytes": 496484,
+    "sha256": "ea462a5f476ab8b0a312a77a16c086f246b41d5c8d456e5ef9c23a07918a49f6"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033017-454-0-before.png",
+    "bytes": 479794,
+    "sha256": "6e65412e2cb03b52e8b698ccad9192bd833a0251f5d78e897e067df4d44db118"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033018-467-1-after.png",
+    "bytes": 495885,
+    "sha256": "fd348ab94875487d920be9751f64d4c345d49c44e33f42aaedf341e5b3c6b615"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033018-467-1-before.png",
+    "bytes": 496107,
+    "sha256": "9b2d2004ec2d1a26763114c415209b7ee482df1d7e086ff0a114d9f193f34d2d"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033019-462-2-after.png",
+    "bytes": 498256,
+    "sha256": "9bdb3d5a188bced664c63ebe6b852ee02db29c784b0edeb48e281c2d8e614c63"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033019-462-2-before.png",
+    "bytes": 495462,
+    "sha256": "e9e3e37e32b11218e7b27529fd6c177ea2838b9ee43e1e15e030bb66a76d6771"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033020-448-3-after.png",
+    "bytes": 508727,
+    "sha256": "cd662523c4ffeb322e1488b09c2939c65dfd48926bbce0961ceb57e194b63a49"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033020-448-3-before.png",
+    "bytes": 497936,
+    "sha256": "f914ecc482bc8277eaafce83040d80cb1851aa196737ab72168364192a3f027b"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033021-462-4-after.png",
+    "bytes": 502762,
+    "sha256": "24f13efdaadc05e50080a7c2f03544613608ddbabe85e01c1fc6a191ccb53953"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033021-462-4-before.png",
+    "bytes": 508543,
+    "sha256": "a723a32244318e81d21a9427922377defc6eb371c7a644847c4fecee0b3015c4"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033022-497-5-after.png",
+    "bytes": 494334,
+    "sha256": "738849297aff0dca31ade47a30d243868803453861651c284842c3cf7c4d55be"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033022-497-5-before.png",
+    "bytes": 502466,
+    "sha256": "8a1d2bc099e9b6f1d9b4d18ca9f3d629f428d2156d51f003f5cee4e442d9895f"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033023-509-6-after.png",
+    "bytes": 491988,
+    "sha256": "445007405c64a9c105f3f879953fd8d5ef1623eff253b91bdd88e8921efe6bfe"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033023-509-6-before.png",
+    "bytes": 493896,
+    "sha256": "ba03c595bd854db1f014ccf29d40eaed2d9d84056bf504cd152643d18911cdc7"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033024-525-7-after.png",
+    "bytes": 491510,
+    "sha256": "f6b617b5ea119768a43ec4a65e8f4347a38c3b008bb515cd5eb119a5d4164220"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033024-525-7-before.png",
+    "bytes": 491566,
+    "sha256": "606bce3af8ecd00a298c1c7ca3509ade50d60c7c02aeef28d508b22466b2424c"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033025-548-8-after.png",
+    "bytes": 495771,
+    "sha256": "8e0c2914bb0ff668029d57077a37dfdfc092292803d786d736d54531e1342d00"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033025-548-8-before.png",
+    "bytes": 491426,
+    "sha256": "c5be0f3510a066e5cfa52950fe198dabf0266666ce8b2edfe525fc2f3f2b16c8"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033026-556-9-after.png",
+    "bytes": 497809,
+    "sha256": "44621dfe68c348410eaf1ba9e366db9eac559d5f4e3535c633f313b7fd7c0026"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/preview-pdf/20261112-033026-556-9-before.png",
+    "bytes": 495311,
+    "sha256": "ccf1087b1df66f249a01f6225588af4af3099779b7e37834d216020bee0b5fd0"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023314-916-0-after.png",
+    "bytes": 659789,
+    "sha256": "ace655dc1eff0506903533cb0e5761d01f5c55ca925f63777958d2473180c229"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023314-916-0-before.png",
+    "bytes": 671328,
+    "sha256": "ce1b02982cb1092e637d9547c984a4e550f30e484f686a5c334b8eb7022c2823"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023316-160-1-after.png",
+    "bytes": 649892,
+    "sha256": "58bc24fce59ad6eb701c4bbb28365ae56555d96707eb0f3de5d89c0c6a250ec2"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023316-160-1-before.png",
+    "bytes": 659547,
+    "sha256": "8c2940554721768dada0c53b179a6f7ca6c1699e3ad1b608c65102b9655dc56e"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023317-310-2-after.png",
+    "bytes": 665701,
+    "sha256": "c5020ced717dac8eb7bac32d777cc836c3bb4fa6e9509118ca2b0f0538a773fb"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023317-310-2-before.png",
+    "bytes": 649689,
+    "sha256": "0e4132b2ecb10516f7bfad71132fa6aedc922a38dcc5dfe7158d96e03585ae54"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023318-533-3-after.png",
+    "bytes": 675665,
+    "sha256": "5c154a231c29f8f4852356f1ce3c021b5a8c3eea0f184de74bd35872d7f0ed3e"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023318-533-3-before.png",
+    "bytes": 665333,
+    "sha256": "6dc0ac0b52e15ac0b1e0d13c4c801c2ffe272e2fde645ffe9996e4cab3495e63"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023319-757-4-after.png",
+    "bytes": 665672,
+    "sha256": "d31bd5391f645bfa8570af0f07454eacd9ed0aec8740cb9fe71beba16e26a0cf"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023319-757-4-before.png",
+    "bytes": 675416,
+    "sha256": "91951283ff191c06e78ff92806a7b103483c32f336ebd906c7c67b60ed2e806f"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023321-000-5-after.png",
+    "bytes": 648698,
+    "sha256": "db2561331360ac771acf586c34e2ecd1fbd4444f7c86d9828b2bbf913ede0a28"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023321-000-5-before.png",
+    "bytes": 665279,
+    "sha256": "784c9ed3cac4502a686781db4552dae4ec770fcf55c44a0ec0a301c90c946c09"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023322-234-6-after.png",
+    "bytes": 662766,
+    "sha256": "fa35960bf2c3d54d8af065fda04135d0f4f099ccedb17b334d66c3d68687244d"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023322-234-6-before.png",
+    "bytes": 648268,
+    "sha256": "b320c283700c85665e263689c9e83b384be06c92da019b88f08801dc148f7bf5"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023323-462-7-after.png",
+    "bytes": 673793,
+    "sha256": "4906481f8ce418cdaed607a748ce2a5a67c799dd26b058479b6daf1528921749"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023323-462-7-before.png",
+    "bytes": 662404,
+    "sha256": "93286820a93e67eea70b0871286f111b06edb73503d6f0871b045350b1f60da0"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023324-698-8-after.png",
+    "bytes": 666698,
+    "sha256": "beb6a2323495c9fb5760198b5c31f7b61e776bc8c6530234e7be97aaba8b5d5b"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023324-698-8-before.png",
+    "bytes": 673357,
+    "sha256": "b39743f9785ebf5d77e6d5ee8b42fe337a80ab34b14ddaa37598a75ffdba55d2"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023325-870-9-after.png",
+    "bytes": 645121,
+    "sha256": "3af60795ca9605d13aadfab10fb5df9096620404391ffb2be86ee533818f85e5"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense/20261112-023325-870-9-before.png",
+    "bytes": 666227,
+    "sha256": "2cb3238b32ba917fcdfc67854d75226559df8dd598f5dccafcf7bb0f6bfe1455"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023342-973-0-after.png",
+    "bytes": 657826,
+    "sha256": "85f7442655a2a5c9a8ad9b62c53aa193798156cdccd1dd989deb5288d1e01722"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023342-973-0-before.png",
+    "bytes": 644762,
+    "sha256": "36d27e3e2a23f69da3d70a9c341848f1f1883ebca6e6a0195808d91618e031ff"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023344-109-1-after.png",
+    "bytes": 668268,
+    "sha256": "88221a3663b3d6ecf5814d056b773487f4206fe83d1b7080eeada342780d3814"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023344-109-1-before.png",
+    "bytes": 657556,
+    "sha256": "a6efe86ed70a9eaf271a0ff0aaaecf1caae10f533356dc08cd2d61163df363b1"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023345-255-2-after.png",
+    "bytes": 664157,
+    "sha256": "00c960b7da4c91731344d0a988126e9f67c138fcafbd5ea66de40f9075db6cda"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023345-255-2-before.png",
+    "bytes": 668113,
+    "sha256": "1be86df6702aa2ee9b3cda7cf833a35c0423aa118ee784c7e40d4354b7ecf6c9"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023346-398-3-after.png",
+    "bytes": 646488,
+    "sha256": "7c364aaf6a0818c988601c40fdced99c1f4b78fa5d6cb95d2b8a8e3c39eba476"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023346-398-3-before.png",
+    "bytes": 663623,
+    "sha256": "ca56bf2f7da712243edcec6a40ee28cec4d3929de167f33e7575601f1a8051a8"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023347-635-4-after.png",
+    "bytes": 661892,
+    "sha256": "f1e6e84be72890833234e2593d637011cb4f4626a704f7ce00b88ebd9244e2df"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023347-635-4-before.png",
+    "bytes": 646031,
+    "sha256": "148571abb05ca8b0bfa2d1c39d579eebeaa88a703a3b2a872b37aeedf96ec38c"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023348-860-5-after.png",
+    "bytes": 676439,
+    "sha256": "1ebfde2811c5c8ac64ac956923081743ceda00b38bb36c342dda7e93fc9f69b3"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023348-860-5-before.png",
+    "bytes": 661419,
+    "sha256": "fc366ea3ea87c3415b0e7e3db6c25ee26f94ff1c39b7613a2e21a116ea2462d3"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023350-087-6-after.png",
+    "bytes": 675957,
+    "sha256": "74168ed0bd604389ce368ae4a45987413d498f88e75fef29212488de416746cd"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023350-087-6-before.png",
+    "bytes": 675988,
+    "sha256": "cc057bfd180a727caa859de3b373307b9bd06163e01bd552daefd75de7fd384e"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023351-236-7-after.png",
+    "bytes": 652385,
+    "sha256": "0921f915c97a498bf071da3bf1bff2596bbd91dae6ef023c3527a50e0e2ff871"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023351-236-7-before.png",
+    "bytes": 675498,
+    "sha256": "2d6a784beadab22852112b55037077d9736b5d34a51dca128c9eb8e07c59950b"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023352-381-8-after.png",
+    "bytes": 661316,
+    "sha256": "907fe6c46d540e6089c6d7f50a259fa130cf21c06f78fa73a3b968e0ecc08da2"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023352-381-8-before.png",
+    "bytes": 651949,
+    "sha256": "ec3999e5eb38475afd598b3c6ff9892da1d56717847b096b6d6cb928e73fddfb"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023353-519-9-after.png",
+    "bytes": 681146,
+    "sha256": "d8e77b1056eb1dfcb38e7ae54ce9db18dd47a202e21d37fec00ae03da304cac0"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-dense-continuous/20261112-023353-519-9-before.png",
+    "bytes": 660911,
+    "sha256": "cf121f5ab6f429902b599d27b8112664b7d87d89840c61ebcfb89070d61a2498"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023430-026-0-after.png",
+    "bytes": 360971,
+    "sha256": "b41050befcab01c19f980ef36079f18620acbd744907c6f54585b15375a8d07c"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023430-026-0-before.png",
+    "bytes": 351512,
+    "sha256": "bf7d5ca9f183d1fe35bc2eb055df337d83bb2566a4728bcbd5de2235ad36febe"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023431-141-1-after.png",
+    "bytes": 353182,
+    "sha256": "520736da98a2cd00d0959d922dc04c39bd4cdb4286d09033ce1fec96f5c7aeaa"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023431-141-1-before.png",
+    "bytes": 360615,
+    "sha256": "4220c9d18a13409c2fa167a9bc787464e3544634d313dca3b9ba13acb148129d"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023432-254-2-after.png",
+    "bytes": 355355,
+    "sha256": "c64babe6f69b864dfab4bcc5edbe254a6c2d89fef16289a40f8f00716fc8311f"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023432-254-2-before.png",
+    "bytes": 352806,
+    "sha256": "d147c09a0744df387dcea6fbce0c081f6e41449f0d46eb7ffe1b1ff5a3c829d0"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023433-384-3-after.png",
+    "bytes": 361941,
+    "sha256": "93cd94bc07340c61042bcfb1d69b252d84ff4dda19b0353dfc2362db20b7c8dc"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023433-384-3-before.png",
+    "bytes": 354980,
+    "sha256": "faf5479850a6acc591b5c3563de49534764db27f04c8a88637a4fcd740c2399d"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023434-510-4-after.png",
+    "bytes": 369829,
+    "sha256": "ff919c6dbe63a9a5df233fe39e45de4331c0a8f1920b3d3ed6b4ad7b742c17e9"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023434-510-4-before.png",
+    "bytes": 361575,
+    "sha256": "6c2aa2db6416f46cadf4a279a39dbccfcf226f6a0b44c63a7e5ddca52396eabb"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023435-710-5-after.png",
+    "bytes": 358934,
+    "sha256": "2379a8f8fe187c60f88f29eb1dd239bcb241f80f303260e6f3281f9d6763e43a"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023435-710-5-before.png",
+    "bytes": 369544,
+    "sha256": "d90d14cb5ac923bdd501a2b462a716a88bb216618c806c45e6eab28184d20d5b"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023436-858-6-after.png",
+    "bytes": 360030,
+    "sha256": "e021f36f9fd933ce85af9db21b9a2300b17d9b9424646dbcff32d242cd4107ed"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023436-858-6-before.png",
+    "bytes": 358596,
+    "sha256": "49a1e4775a80b93a65046b41b50bcad49f92c818de31740fcc941bb72a31f6e4"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023437-978-7-after.png",
+    "bytes": 362011,
+    "sha256": "98424155091370e3e6a977d06885e0c482ed1472f3962962178aff5b119a3316"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023437-978-7-before.png",
+    "bytes": 359698,
+    "sha256": "085038ae4a57ed1bda5745201d4f1d0b1388f01c3d54fae088b5cbf036bf30f9"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023439-189-8-after.png",
+    "bytes": 374565,
+    "sha256": "cc5b86d174a6447d2f10b25d477e3b084da7cada494e59bcb628d68cbc744e68"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023439-189-8-before.png",
+    "bytes": 361621,
+    "sha256": "35d3a0c31bcf212d5f249a78042c479f7d886225cc9859940636a59ae8cca97b"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023440-312-9-after.png",
+    "bytes": 362571,
+    "sha256": "d00c652b952d49c8d3cf108c134814a177a50b77ff65d3d19235bf7020e2a09b"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/safari-nested/20261112-023440-312-9-before.png",
+    "bytes": 374229,
+    "sha256": "c2ff02cb3fc1ed85ef57144cc51d477084b682b87fe9fe86a0661129c0505a90"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024315-354-0-after.png",
+    "bytes": 478691,
+    "sha256": "4151c0275fe0a85f70bcbe0485404a89a8e9a91364c3ff8a2bb71fe128388ba0"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024315-354-0-before.png",
+    "bytes": 400447,
+    "sha256": "4c6a7e7023df8f6c23e5431526475e830f8ae10dcc3e1024c8c1fd8233f9dab3"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024316-248-1-after.png",
+    "bytes": 495188,
+    "sha256": "3e37eaac6b5dac2f294664dd7b2dba9278cd1373c6d4a48b40c40f96cd9dad45"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024316-248-1-before.png",
+    "bytes": 476206,
+    "sha256": "100a825b1ff7d4b615e9098cd7b10b085cb6ed3cb7ed5f5cc137ce8b663c517e"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024317-185-2-after.png",
+    "bytes": 492914,
+    "sha256": "69bb001dd18543591f5a3125659a012a765020508d2d77ed1bcc9486d95181fa"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024317-185-2-before.png",
+    "bytes": 492655,
+    "sha256": "79478386c2dffd6fab3db3faf9ceb5a26154f858236bec00555791ba56a72094"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024318-176-3-after.png",
+    "bytes": 436065,
+    "sha256": "1bc338b9b5b959cab3b0008595246348fdd278adf8f5644770462c6162daffe5"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024318-176-3-before.png",
+    "bytes": 490579,
+    "sha256": "4296d8b6f35c85585591ca770277a56a690d4c4ba60c10c626cd28a3d642f281"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024319-162-4-after.png",
+    "bytes": 363826,
+    "sha256": "ee17d78f7e7fb2abbf6378acc78d103b4dcff0e25b128ddccda8a9baa57b8162"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024319-162-4-before.png",
+    "bytes": 433549,
+    "sha256": "8c8f469f14577dca57a5cf5b353af2f933166552a240b4f5068c2a6d828c0ee9"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024320-072-5-after.png",
+    "bytes": 337276,
+    "sha256": "02f6d9b5af7d1aa0b6b7338600553d6a32cac6e48cc3d5c854374f72773473ba"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024320-072-5-before.png",
+    "bytes": 361128,
+    "sha256": "5ccfbaaa0a001c8dd97303230353eee13978e118f5bd6a810d7cdeb28a5a012c"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024320-969-6-after.png",
+    "bytes": 345384,
+    "sha256": "4a3263a61632cba95f17e57cfa02d19321a4eadd489cb1fb68bcd2b688776bdf"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024320-969-6-before.png",
+    "bytes": 334006,
+    "sha256": "78303985b98708de659efdfaffa322cd93fd5e939993abc97f28e12b2a9ca322"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024321-930-7-after.png",
+    "bytes": 350621,
+    "sha256": "d15b86fa19f9b2e148d8dea744a0f75f82bdb1746710c72b2b3e3bf817c85a33"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024321-930-7-before.png",
+    "bytes": 341962,
+    "sha256": "8aba8e2b2e7c06b5ee92120ebd66b61902610ce48e9c2cb3a8bf4371dccb44ca"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024322-837-8-after.png",
+    "bytes": 342170,
+    "sha256": "8151795b026b0e77758ac68e374bd60f5a3fec28ba86d79e87119c1f22441222"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024322-837-8-before.png",
+    "bytes": 347450,
+    "sha256": "a55f6d1500e69953c8abadcf3e90cab8952ff2474cb624e76f2d1eaa5b5b7d27"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024323-729-9-after.png",
+    "bytes": 391646,
+    "sha256": "ae548d47e744f4e77c064a40655fd907021779f600c48c96ef2647f4a86cfba3"
+  },
+  {
+    "path": "build/issue265-macos-20261112/frames/word-rtf/20261112-024323-729-9-before.png",
+    "bytes": 339895,
+    "sha256": "5a606e75f9c758e4c3eee3f6464d345592814bac1a3d5abc8e81c61062b07d10"
+  }
+]
