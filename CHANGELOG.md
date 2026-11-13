@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Added
+
+- Recordings on Windows now keep the pointer's real shape and mouse clicks for editing, so Auto Zoom, click highlights and the recorded pointer shape work there as they do on Linux.
+
 ## [1.0.72] - 2026-11-09
 
 ### Improved

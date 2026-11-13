@@ -493,6 +493,18 @@ target_link_libraries(RecordingManager_RecordingProject PRIVATE snaptray_core Qt
 add_test(NAME RecordingManager_RecordingProject COMMAND RecordingManager_RecordingProject)
 set_tests_properties(RecordingManager_RecordingProject PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_WindowsCursorSupport RecordingManager/tst_WindowsCursorSupport.cpp)
+target_link_libraries(RecordingManager_WindowsCursorSupport PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_WindowsCursorSupport COMMAND RecordingManager_WindowsCursorSupport)
+set_tests_properties(RecordingManager_WindowsCursorSupport PROPERTIES TIMEOUT 60 LABELS "unit")
+
+if(WIN32)
+    add_executable(RecordingManager_WindowsCursorProbe RecordingManager/tst_CursorProbe_win.cpp)
+    target_link_libraries(RecordingManager_WindowsCursorProbe PRIVATE snaptray_platform Qt6::Gui Qt6::Test)
+    add_test(NAME RecordingManager_WindowsCursorProbe COMMAND RecordingManager_WindowsCursorProbe)
+    set_tests_properties(RecordingManager_WindowsCursorProbe PROPERTIES TIMEOUT 60 LABELS "integration")
+endif()
+
 add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
 target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_CursorTimelineRecorder COMMAND RecordingManager_CursorTimelineRecorder)

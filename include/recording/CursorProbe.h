@@ -54,4 +54,12 @@ signals:
 // native source it falls back to position-only polling.
 std::unique_ptr<CursorProbe> createCursorProbe();
 
+#ifdef Q_OS_WIN
+// CursorProbe_win.cpp. Shapes always; clicks unless the mouse hook is refused.
+std::unique_ptr<CursorProbe> createWindowsCursorProbe();
+// The picture and hotspot of a cursor handle (an HCURSOR). nullopt when it
+// cannot be read; a fully transparent picture when it draws nothing.
+std::optional<CursorProbe::Shape> windowsCursorShape(void* cursorHandle);
+#endif
+
 } // namespace SnapTray

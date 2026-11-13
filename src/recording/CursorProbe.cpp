@@ -30,7 +30,11 @@ std::unique_ptr<CursorProbe> createCursorProbe()
         if (auto probe = createX11CursorProbe()) return probe;
     }
 #endif
+#ifdef Q_OS_WIN
+    return createWindowsCursorProbe();
+#else
     return std::make_unique<PositionOnlyCursorProbe>();
+#endif
 }
 
 } // namespace SnapTray
