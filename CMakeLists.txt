@@ -922,6 +922,7 @@ add_library(snaptray_ui STATIC
     src/region/CaptureShortcutHintsOverlay.cpp
     src/history/AnnotationSerializer.cpp
     src/history/HistoryRecorder.cpp
+    src/history/HistoryReplayDocument.cpp
     src/history/HistoryStore.cpp
     # PinWindow
     src/PinWindow.cpp

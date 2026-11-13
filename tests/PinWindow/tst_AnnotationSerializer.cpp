@@ -137,6 +137,9 @@ private slots:
     void testBulkRoundtripPreservesVisibleSceneAndBoundedUndo();
     void testSerializeExcludesRemovedCommandPayload();
     void testDeserializeFailureClearsLayerOnce();
+    void testDecodeRejectsIncompleteDocuments_data();
+    void testDecodeRejectsIncompleteDocuments();
+    void testDecodeAcceptsEmptyAndPopulatedDocuments();
     void testArrowControlPointPrecision_data();
     void testArrowControlPointPrecision();
 };
@@ -354,6 +357,76 @@ void tst_AnnotationSerializer::testDeserializeFailureClearsLayerOnce()
     QCOMPARE(changedSpy.count(), 1);
     QVERIFY(layer.isEmpty());
     QVERIFY(!layer.canUndo());
+}
+
+// #352: anything short of a complete document is refused, and saying so does
+// not cost the caller the layer it was going to replace.
+void tst_AnnotationSerializer::testDecodeRejectsIncompleteDocuments_data()
+{
+    QTest::addColumn<QByteArray>("payload");
+    QTest::newRow("no-bytes") << QByteArray();
+    QTest::newRow("whitespace-only") << QByteArray(" \n");
+    QTest::newRow("truncated-json") << QByteArray("{");
+    QTest::newRow("root-array") << QByteArray("[]");
+    QTest::newRow("root-null") << QByteArray("null");
+    QTest::newRow("items-missing") << QByteArray("{}");
+    QTest::newRow("items-under-another-name") << QByteArray("{\"annotations\":[]}");
+    QTest::newRow("items-object") << QByteArray("{\"items\":{}}");
+    QTest::newRow("items-null") << QByteArray("{\"items\":null}");
+    QTest::newRow("item-not-object") << QByteArray("{\"items\":[42]}");
+    QTest::newRow("item-without-type") << QByteArray("{\"items\":[{}]}");
+    QTest::newRow("unknown-item-type") << QByteArray("{\"items\":[{\"type\":\"hologram\"}]}");
+    QTest::newRow("unknown-after-valid")
+        << QByteArray("{\"items\":[{\"type\":\"marker\",\"points\":[],\"width\":4},"
+                      "{\"type\":\"hologram\"}]}");
+}
+
+void tst_AnnotationSerializer::testDecodeRejectsIncompleteDocuments()
+{
+    QFETCH(QByteArray, payload);
+
+    QString decodeError;
+    QVERIFY(!SnapTray::decodeAnnotationItems(payload, makeSharedPixmap(), &decodeError));
+    QVERIFY(!decodeError.isEmpty());
+
+    // The layer-replacing call agrees, and keeps its clear-on-failure contract.
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<PencilStroke>(
+        QVector<QPointF>{QPointF(10.0, 10.0), QPointF(30.0, 10.0)},
+        QColor(Qt::red),
+        3,
+        LineStyle::Solid));
+    QString layerError;
+    QVERIFY(!SnapTray::deserializeAnnotationLayer(payload, &layer, makeSharedPixmap(), &layerError));
+    QCOMPARE(layerError, decodeError);
+    QVERIFY(layer.isEmpty());
+}
+
+void tst_AnnotationSerializer::testDecodeAcceptsEmptyAndPopulatedDocuments()
+{
+    QString error;
+    const auto none = SnapTray::decodeAnnotationItems(
+        QByteArrayLiteral("{\"items\":[]}"), SharedPixmap(), &error);
+    QVERIFY2(none.has_value(), qPrintable(error));
+    QVERIFY(none->empty());
+    QVERIFY(error.isEmpty());
+
+    AnnotationLayer source;
+    source.addItem(std::make_unique<PencilStroke>(
+        QVector<QPointF>{QPointF(10.0, 10.0), QPointF(30.0, 10.0)},
+        QColor(Qt::red),
+        3,
+        LineStyle::Solid));
+    source.addItem(std::make_unique<StepBadgeAnnotation>(QPoint(20, 20), Qt::red, 1));
+    const QByteArray stored = SnapTray::serializeAnnotationLayer(source);
+
+    auto decoded = SnapTray::decodeAnnotationItems(stored, makeSharedPixmap(), &error);
+    QVERIFY2(decoded.has_value(), qPrintable(error));
+    QCOMPARE(decoded->size(), size_t(2));
+
+    AnnotationLayer restored;
+    restored.replaceItems(std::move(*decoded));
+    QCOMPARE(SnapTray::serializeAnnotationLayer(restored), stored);
 }
 
 // #268: a rearranged scene reopens in the same drawing order with the same

@@ -329,6 +329,21 @@ public:
         return selector.loadHistoryReplayIndex(0);
     }
 
+    static int historyReplayIndex(const RegionSelector& selector)
+    {
+        return selector.m_historyReplayIndex;
+    }
+
+    static bool historyReplayActive(const RegionSelector& selector)
+    {
+        return selector.m_historyReplayActive;
+    }
+
+    static QImage backgroundImage(const RegionSelector& selector)
+    {
+        return selector.m_backgroundPixmap.toImage();
+    }
+
     static Qt::Edges snappedEdges(const RegionSelector& selector)
     {
         return selector.m_selectionManager->snappedEdges();

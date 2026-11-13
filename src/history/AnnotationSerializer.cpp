@@ -412,6 +412,59 @@ QByteArray serializeAnnotationLayer(const AnnotationLayer& layer)
     return QJsonDocument(root).toJson(QJsonDocument::Compact);
 }
 
+std::optional<std::vector<std::unique_ptr<AnnotationItem>>> decodeAnnotationItems(
+    const QByteArray& data,
+    SharedPixmap sourcePixmap,
+    QString* errorMessage)
+{
+    const auto fail = [errorMessage](const QString& message) {
+        if (errorMessage) {
+            *errorMessage = message;
+        }
+        return std::nullopt;
+    };
+
+    // A document with no annotations is {"items":[]}; no bytes at all is a
+    // file that was lost or truncated.
+    if (data.trimmed().isEmpty()) {
+        return fail(QStringLiteral("Annotation payload is empty"));
+    }
+
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(data, &parseError);
+    if (parseError.error != QJsonParseError::NoError) {
+        return fail(parseError.errorString());
+    }
+    if (!document.isObject()) {
+        return fail(QStringLiteral("Annotation payload is not an object"));
+    }
+
+    const QJsonValue itemsValue = document.object().value(QStringLiteral("items"));
+    if (itemsValue.isUndefined()) {
+        return fail(QStringLiteral("Annotation payload has no items"));
+    }
+    if (!itemsValue.isArray()) {
+        return fail(QStringLiteral("Annotation items are not an array"));
+    }
+
+    const QJsonArray items = itemsValue.toArray();
+    std::vector<std::unique_ptr<AnnotationItem>> decodedItems;
+    decodedItems.reserve(static_cast<std::size_t>(items.size()));
+
+    for (const QJsonValue& value : items) {
+        if (!value.isObject()) {
+            return fail(QStringLiteral("Annotation item is not an object"));
+        }
+        auto item = deserializeAnnotationItem(value.toObject(), sourcePixmap, errorMessage);
+        if (!item) {
+            return std::nullopt;
+        }
+        decodedItems.push_back(std::move(item));
+    }
+
+    return decodedItems;
+}
+
 bool deserializeAnnotationLayer(const QByteArray& data,
                                 AnnotationLayer* layer,
                                 SharedPixmap sourcePixmap,
@@ -424,33 +477,13 @@ bool deserializeAnnotationLayer(const QByteArray& data,
         return false;
     }
 
-    QJsonParseError parseError;
-    const QJsonDocument document = QJsonDocument::fromJson(data, &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-        if (errorMessage) {
-            *errorMessage = parseError.error != QJsonParseError::NoError
-                ? parseError.errorString()
-                : QStringLiteral("Annotation payload is not an object");
-        }
+    auto decodedItems = decodeAnnotationItems(data, std::move(sourcePixmap), errorMessage);
+    if (!decodedItems) {
         layer->replaceItems({});
         return false;
     }
 
-    const QJsonArray items = document.object().value(QStringLiteral("items")).toArray();
-    std::vector<std::unique_ptr<AnnotationItem>> decodedItems;
-    decodedItems.reserve(static_cast<std::size_t>(items.size()));
-
-    for (const QJsonValue& value : items) {
-        const QJsonObject object = value.toObject();
-        auto item = deserializeAnnotationItem(object, sourcePixmap, errorMessage);
-        if (!item) {
-            layer->replaceItems({});
-            return false;
-        }
-        decodedItems.push_back(std::move(item));
-    }
-
-    layer->replaceItems(std::move(decodedItems));
+    layer->replaceItems(std::move(*decodedItems));
     return true;
 }
 
