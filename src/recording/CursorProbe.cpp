@@ -8,6 +8,9 @@ namespace SnapTray {
 #ifdef SNAPTRAY_HAS_X11_CURSOR_PROBE
 std::unique_ptr<CursorProbe> createX11CursorProbe(); // X11CursorProbe_linux.cpp
 #endif
+#ifdef Q_OS_MACOS
+std::unique_ptr<CursorProbe> createMacCursorProbe(); // CursorProbe_mac.mm
+#endif
 
 namespace {
 
@@ -29,6 +32,10 @@ std::unique_ptr<CursorProbe> createCursorProbe()
     if (QGuiApplication::platformName() == QLatin1String("xcb")) {
         if (auto probe = createX11CursorProbe()) return probe;
     }
+#endif
+#ifdef Q_OS_MACOS
+    // AppKit's pointer and events need the native platform (not "offscreen").
+    if (QGuiApplication::platformName() == QLatin1String("cocoa")) return createMacCursorProbe();
 #endif
 #ifdef Q_OS_WIN
     return createWindowsCursorProbe();

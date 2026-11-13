@@ -626,6 +626,7 @@ add_library(snaptray_platform STATIC
         src/video/AVFoundationFrameReader_mac.mm
         src/video/AVFoundationPlayer_mac.mm
         src/video/AVFoundationTranscoder_mac.mm
+        src/recording/CursorProbe_mac.mm
         src/recording/KeyProbe_mac.mm
         src/video/NativeEditMedia_mac.mm
         src/video/PreviewPcmOutput_mac.mm
@@ -712,6 +713,7 @@ set_source_files_properties(
     src/video/AVFoundationTranscoder_mac.mm
     src/video/NativeEditMedia_mac.mm
     src/video/PreviewPcmOutput_mac.mm
+    src/recording/CursorProbe_mac.mm
     src/recording/KeyProbe_mac.mm
     src/scrollcapture/ScrollCapturePlatform_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"

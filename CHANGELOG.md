@@ -9,6 +9,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 ### Added
 
 - Recordings on Windows now keep the pointer's real shape and mouse clicks for editing, so Auto Zoom, click highlights and the recorded pointer shape work there as they do on Linux.
+- macOS recordings now keep the real pointer shape and mouse clicks, so Auto Zoom and click highlights work on macOS without any extra permission.
 
 ## [1.0.72] - 2026-11-09
 
