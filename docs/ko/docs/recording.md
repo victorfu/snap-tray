@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-06-13
+last_modified_at: 2026-11-13
 layout: docs
 title: 녹화
 seo_title: "SnapTray 화면 녹화: macOS·Windows용 MP4, GIF, WebP 캡처"
@@ -13,6 +13,8 @@ doc_order: 2
 
 녹화는 macOS 및 Windows에서만 사용 가능합니다. Linux beta는 녹화를 포함하지 않으며,
 녹화 관련 UI가 숨겨져 있습니다.
+
+Windows에서 선택적으로 사용하는 Windows Graphics Capture 백엔드는 반복된 정지 프레임 뒤에 도착한 새 화면을 타임스탬프 때문에 중복 프레임으로 집계하지 않습니다. 선택한 프레임 속도 제한은 계속 적용됩니다.
 
 ## 녹화 진입점
 

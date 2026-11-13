@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-06
+last_modified_at: 2026-11-13
 layout: docs
 title: 錄影
 seo_title: "SnapTray 螢幕錄影：macOS、Windows 與 Linux X11 輸出 MP4、GIF 與 WebP"
@@ -12,6 +12,8 @@ doc_order: 2
 ---
 
 錄影支援 macOS、Windows 與啟用錄影功能的 Linux X11 版本。Linux 使用系統 FFmpeg 函式庫與 PulseAudio（或 PipeWire 的 PulseAudio 相容服務）。
+
+在 Windows 上，選用的 Windows Graphics Capture 後端不再因時間戳記而將重複靜止畫面之後到達的新畫面誤計為重複幀。所選的影格率限制仍然適用。
 
 ## 錄影入口
 
