@@ -54,7 +54,10 @@ signals:
     // A physical button changed, already mapped to the user's button order
     // (left-handed setups report their primary button as Left). ageMs is
     // how long ago it happened, for events delivered late.
-    void buttonChanged(Qt::MouseButton button, bool down, qint64 ageMs = 0);
+    // Native desktop pixels at the event time, when supplied by the source.
+    // Otherwise the recorder uses its position history.
+    void buttonChanged(Qt::MouseButton button, bool down, qint64 ageMs = 0,
+                       std::optional<QPoint> physicalPosition = std::nullopt);
     // Some button events did not make it (a full queue, an event source the
     // system switched off for a while). Which ones is not known, so a button
     // may look held when it is not.

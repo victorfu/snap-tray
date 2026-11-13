@@ -126,6 +126,7 @@ qint64 tickAgeMs(quint32 nowTicks, quint32 eventTicks);
 struct HookEvent {
     ButtonChange change;
     quint32 time = 0; // MSLLHOOKSTRUCT::time: in practice GetTickCount() ms when it happened
+    QPoint physicalPosition; // MSLLHOOKSTRUCT::pt at the event time
 };
 
 // Button changes on their way from the hook thread to the GUI thread.
@@ -135,12 +136,12 @@ template <std::size_t Capacity>
 class ButtonEventPump {
 public:
     // Hook thread. An event that does not fit is counted, not queued.
-    void push(const ButtonChange& change, quint32 time)
+    void push(const ButtonChange& change, quint32 time, const QPoint& physicalPosition)
     {
-        if (!m_queue.push(HookEvent{change, time})) m_dropped.fetch_add(1, std::memory_order_relaxed);
+        if (!m_queue.push(HookEvent{change, time, physicalPosition})) m_dropped.fetch_add(1, std::memory_order_relaxed);
     }
 
-    // GUI thread. Calls deliver(change, ageMs) for every queued event, in
+    // GUI thread. Calls deliver(change, ageMs, physicalPosition) for every queued event, in
     // order, and returns how many events were dropped since the last drain.
     // A drain started from inside deliver does nothing: a handler that polls
     // must not get a queued release before its press has been recorded.
@@ -149,7 +150,9 @@ public:
     {
         if (m_draining) return 0;
         m_draining = true;
-        while (const auto event = m_queue.pop()) deliver(event->change, tickAgeMs(nowTicks, event->time));
+        while (const auto event = m_queue.pop()) {
+            deliver(event->change, tickAgeMs(nowTicks, event->time), event->physicalPosition);
+        }
         m_draining = false;
         return m_dropped.exchange(0, std::memory_order_relaxed);
     }

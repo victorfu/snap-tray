@@ -49,7 +49,7 @@ LRESULT CALLBACK mouseHook(int code, WPARAM message, LPARAM data)
         // until this returns, and drops a hook that is too slow.
         if (const auto change = WindowsCursor::recordedButtonChange(
                 quint32(message), quint32(native.mouseData), quint32(native.flags))) {
-            target->push(*change, quint32(native.time));
+            target->push(*change, quint32(native.time), QPoint(native.pt.x, native.pt.y));
         }
     }
     // Never swallow input.
@@ -229,8 +229,9 @@ private:
     void drainEvents()
     {
         const quint32 dropped = m_pump.drain(
-            quint32(GetTickCount()), [this](const WindowsCursor::ButtonChange& change, qint64 ageMs) {
-                emit buttonChanged(change.button, change.down, ageMs);
+            quint32(GetTickCount()), [this](const WindowsCursor::ButtonChange& change, qint64 ageMs,
+                                          const QPoint& physicalPosition) {
+                emit buttonChanged(change.button, change.down, ageMs, physicalPosition);
             });
         if (dropped > 0) {
             qWarning() << "WindowsCursorProbe:" << dropped

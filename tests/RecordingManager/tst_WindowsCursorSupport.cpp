@@ -280,6 +280,7 @@ struct Delivered {
     Qt::MouseButton button;
     bool down;
     qint64 ageMs;
+    QPoint position;
 };
 
 } // namespace
@@ -287,25 +288,28 @@ struct Delivered {
 void tst_WindowsCursorSupport::pumpDeliversInOrderWithAges()
 {
     ButtonEventPump<8> pump;
-    pump.push({Qt::LeftButton, true}, 1000u);
-    pump.push({Qt::LeftButton, false}, 1040u);
-    pump.push({Qt::RightButton, true}, 1100u);
+    pump.push({Qt::LeftButton, true}, 1000u, QPoint(-1200, 300));
+    pump.push({Qt::LeftButton, false}, 1040u, QPoint(-1100, 400));
+    pump.push({Qt::RightButton, true}, 1100u, QPoint(0, 0));
     std::vector<Delivered> got;
-    const quint32 dropped = pump.drain(1100u, [&got](const ButtonChange& change, qint64 ageMs) {
-        got.push_back({change.button, change.down, ageMs});
+    const quint32 dropped = pump.drain(1100u, [&got](const ButtonChange& change, qint64 ageMs, const QPoint& position) {
+        got.push_back({change.button, change.down, ageMs, position});
     });
     QCOMPARE(dropped, 0u);
     QCOMPARE(int(got.size()), 3);
     QCOMPARE(got[0].button, Qt::LeftButton);
     QVERIFY(got[0].down);
     QCOMPARE(got[0].ageMs, qint64(100));
+    QCOMPARE(got[0].position, QPoint(-1200, 300));
+    QCOMPARE(got[1].position, QPoint(-1100, 400));
+    QCOMPARE(got[2].position, QPoint(0, 0));
     QVERIFY(!got[1].down);
     QCOMPARE(got[1].ageMs, qint64(60));
     QCOMPARE(got[2].button, Qt::RightButton);
     QCOMPARE(got[2].ageMs, qint64(0));
     // Nothing is delivered twice.
     int again = 0;
-    pump.drain(1200u, [&again](const ButtonChange&, qint64) { ++again; });
+    pump.drain(1200u, [&again](const ButtonChange&, qint64, const QPoint&) { ++again; });
     QCOMPARE(again, 0);
 }
 
@@ -314,13 +318,13 @@ void tst_WindowsCursorSupport::pumpIgnoresADrainFromInsideAHandler()
     // The recorder's press handler polls, which drains: the queued release
     // must not arrive inside the press handler, before the press is recorded.
     ButtonEventPump<8> pump;
-    pump.push({Qt::LeftButton, true}, 10u);
-    pump.push({Qt::LeftButton, false}, 20u);
+    pump.push({Qt::LeftButton, true}, 10u, QPoint());
+    pump.push({Qt::LeftButton, false}, 20u, QPoint());
     QStringList order;
-    pump.drain(30u, [&](const ButtonChange& change, qint64) {
+    pump.drain(30u, [&](const ButtonChange& change, qint64, const QPoint&) {
         order << (change.down ? QStringLiteral("press begins") : QStringLiteral("release begins"));
         int nested = 0;
-        const quint32 nestedDropped = pump.drain(30u, [&nested](const ButtonChange&, qint64) { ++nested; });
+        const quint32 nestedDropped = pump.drain(30u, [&nested](const ButtonChange&, qint64, const QPoint&) { ++nested; });
         QCOMPARE(nested, 0);
         QCOMPARE(nestedDropped, 0u);
         order << (change.down ? QStringLiteral("press ends") : QStringLiteral("release ends"));
@@ -328,23 +332,23 @@ void tst_WindowsCursorSupport::pumpIgnoresADrainFromInsideAHandler()
     QCOMPARE(order, QStringList({QStringLiteral("press begins"), QStringLiteral("press ends"),
                                  QStringLiteral("release begins"), QStringLiteral("release ends")}));
     // The guard is released afterwards.
-    pump.push({Qt::RightButton, true}, 40u);
+    pump.push({Qt::RightButton, true}, 40u, QPoint());
     int later = 0;
-    pump.drain(40u, [&later](const ButtonChange&, qint64) { ++later; });
+    pump.drain(40u, [&later](const ButtonChange&, qint64, const QPoint&) { ++later; });
     QCOMPARE(later, 1);
 }
 
 void tst_WindowsCursorSupport::pumpCountsWhatDidNotFit()
 {
     ButtonEventPump<2> pump;
-    for (quint32 i = 0; i < 5; ++i) pump.push({Qt::LeftButton, i % 2 == 0}, i);
+    for (quint32 i = 0; i < 5; ++i) pump.push({Qt::LeftButton, i % 2 == 0}, i, QPoint());
     int delivered = 0;
-    QCOMPARE(pump.drain(10u, [&delivered](const ButtonChange&, qint64) { ++delivered; }), 3u);
+    QCOMPARE(pump.drain(10u, [&delivered](const ButtonChange&, qint64, const QPoint&) { ++delivered; }), 3u);
     QCOMPARE(delivered, 2); // the first two; later ones were refused, not overwritten
     // The count is reported once, and every later loss again.
-    QCOMPARE(pump.drain(10u, [](const ButtonChange&, qint64) {}), 0u);
-    for (quint32 i = 0; i < 3; ++i) pump.push({Qt::LeftButton, true}, i);
-    QCOMPARE(pump.drain(10u, [](const ButtonChange&, qint64) {}), 1u);
+    QCOMPARE(pump.drain(10u, [](const ButtonChange&, qint64, const QPoint&) {}), 0u);
+    for (quint32 i = 0; i < 3; ++i) pump.push({Qt::LeftButton, true}, i, QPoint());
+    QCOMPARE(pump.drain(10u, [](const ButtonChange&, qint64, const QPoint&) {}), 1u);
 }
 
 void tst_WindowsCursorSupport::queueKeepsOrderAndRefusesWhenFull()

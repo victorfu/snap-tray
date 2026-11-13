@@ -49,7 +49,8 @@ public:
     int buttonEventLosses() const { return m_buttonEventLosses; }
 
 private:
-    void onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs);
+    void onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs,
+                         std::optional<QPoint> physicalPosition);
     void onButtonEventsLost();
     quint32 currentShapeId();
     void releaseHeldButtons();

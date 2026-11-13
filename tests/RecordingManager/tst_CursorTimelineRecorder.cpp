@@ -8,6 +8,7 @@
 
 #include "recording/CursorTimelineRecorder.h"
 #include "recording/CursorEffects.h"
+#include "recording/WindowsCursorSupport.h"
 
 using namespace SnapTray;
 
@@ -57,7 +58,11 @@ public:
         return m_s->caps.shapes ? m_s->shape : std::nullopt;
     }
     QString name() const override { return QStringLiteral("fake"); }
-    void press(Qt::MouseButton b, bool down, qint64 ageMs = 0) { emit buttonChanged(b, down, ageMs); }
+    void press(Qt::MouseButton b, bool down, qint64 ageMs = 0,
+               std::optional<QPoint> physicalPosition = std::nullopt)
+    {
+        emit buttonChanged(b, down, ageMs, physicalPosition);
+    }
     void loseEvents() { emit buttonEventsLost(); }
 
 private:
@@ -113,6 +118,8 @@ private slots:
     void queuedClicksKeepTheirSourceTime();
     void x11QueuedClickKeepsItsDuration();
     void x11ClicksDuringAnotherPointerGrab();
+    void queuedClicksKeepTheirNativePositions_data();
+    void queuedClicksKeepTheirNativePositions();
     void lateClickTakesThePositionAtItsTime();
     void clicksFromAPauseAreDropped();
     void lostButtonEventsReleaseWhatLooksHeld();
@@ -562,6 +569,55 @@ void TestCursorTimelineRecorder::x11ClicksDuringAnotherPointerGrab()
 #else
     QSKIP("Built without XTest");
 #endif
+}
+
+void TestCursorTimelineRecorder::queuedClicksKeepTheirNativePositions_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<int>("deliveryMs");
+    QTest::newRow("100-percent-between-polls") << qreal(1.0) << 16;
+    QTest::newRow("150-percent-between-polls") << qreal(1.5) << 16;
+    QTest::newRow("200-percent-gui-stall") << qreal(2.0) << 1000;
+}
+
+void TestCursorTimelineRecorder::queuedClicksKeepTheirNativePositions()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(int, deliveryMs);
+    // A secondary monitor left of the primary, with a cropped capture origin.
+    // Native positions must be translated to video pixels, never scaled again.
+    const QRect physicalScreen(-1920, 0, 1920, 1080);
+    const QRect region(-1800, 100, 800, 600);
+    const WindowFrameMapping mapping{QRect(-1920, 0, qRound(1920 / dpr), qRound(1080 / dpr)),
+                                     physicalScreen, dpr, region};
+    Rig rig(mapping);
+    rig.probeState.state.position = region.topLeft() + QPoint(10, 10);
+    QVERIFY(rig.recorder->start());
+
+    // Both events happen after the last sample and before the next poll.
+    // The pointer then moves again before the GUI drains the Windows queue.
+    WindowsCursor::ButtonEventPump<8> pump;
+    pump.push({Qt::LeftButton, true}, 8u, region.topLeft() + QPoint(400, 300));
+    pump.push({Qt::LeftButton, false}, 10u, region.topLeft() + QPoint(420, 310));
+    rig.probeState.state.position = region.topLeft() + QPoint(700, 500);
+    rig.now = deliveryMs;
+    rig.probeState.onPoll = [&] {
+        pump.drain(quint32(deliveryMs), [&](const WindowsCursor::ButtonChange& change, qint64 ageMs,
+                                          const QPoint& position) {
+            rig.probe->press(change.button, change.down, ageMs, position);
+        });
+    };
+    rig.recorder->sampleNow();
+
+    const auto timeline = rig.finish();
+    QCOMPARE(timeline.buttons.size(), size_t(2));
+    QCOMPARE(timeline.buttons[0].tMs, qint64(8));
+    QCOMPARE(timeline.buttons[0].position, QPoint(400, 300));
+    QVERIFY(timeline.buttons[0].down);
+    QCOMPARE(timeline.buttons[1].tMs, qint64(10));
+    QCOMPARE(timeline.buttons[1].position, QPoint(420, 310));
+    QVERIFY(!timeline.buttons[1].down);
+    QVERIFY(!timeline.buttons[0].synthetic && !timeline.buttons[1].synthetic);
 }
 
 void TestCursorTimelineRecorder::lateClickTakesThePositionAtItsTime()
