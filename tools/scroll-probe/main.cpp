@@ -82,6 +82,7 @@ struct ProbeOptions {
     QString contentOutput;
     QString framesDirectory;
     bool measure = false;
+    std::optional<QPoint> point;
     int level = 0;
     int delaySeconds = kDefaultDelaySeconds;
     int attempts = kDefaultAttempts;
@@ -683,7 +684,7 @@ void countdown(ScrollAreaLocator& locator, HighlightOverlay& overlay, const Prob
             lastLocate = clock.elapsed();
             LocateOptions locateOptions;
             locateOptions.level = options.level;
-            const LocateResult result = locator.locateAt(QCursor::pos(), locateOptions);
+            const LocateResult result = locator.locateAt(options.point.value_or(QCursor::pos()), locateOptions);
             if (result.area) {
                 const ScrollAreaSnapshot snapshot = result.area->snapshot();
                 overlay.showFor(snapshot.bounds, QStringLiteral("%1s\n%2").arg(remaining).arg(describe(snapshot)));
@@ -708,6 +709,7 @@ int runMeasure(const ProbeOptions& options)
     countdown(*locator, overlay, options);
 
     const QPoint cursor = QCursor::pos();
+    const QPoint target = options.point.value_or(cursor);
     QJsonObject record{
         {QStringLiteral("tool"), QStringLiteral("snaptray-scroll-probe")},
         {QStringLiteral("schema"), kSchemaVersion},
@@ -718,14 +720,16 @@ int runMeasure(const ProbeOptions& options)
         {QStringLiteral("note"), options.note},
         {QStringLiteral("cursor"), QJsonObject{{QStringLiteral("x"), cursor.x()}, {QStringLiteral("y"), cursor.y()}}},
         {QStringLiteral("level"), options.level},
-        {QStringLiteral("screen"), screenToJson(cursor)},
+        {QStringLiteral("targetPoint"), QJsonObject{{QStringLiteral("x"), target.x()}, {QStringLiteral("y"), target.y()}}},
+        {QStringLiteral("targetPointSource"), options.point ? QStringLiteral("explicit") : QStringLiteral("cursor")},
+        {QStringLiteral("screen"), screenToJson(target)},
         {QStringLiteral("environment"), locator->environment()},
     };
 
     LocateOptions locateOptions;
     locateOptions.level = options.level;
     locateOptions.maxAttempts = options.attempts;
-    LocateResult located = locator->locateAt(cursor, locateOptions);
+    LocateResult located = locator->locateAt(target, locateOptions);
     record.insert(QStringLiteral("locate"), locateToJson(located));
 
     const QList<AccessibilityBoost> boosts = boostsFor(options.axBoost);
@@ -740,7 +744,7 @@ int runMeasure(const ProbeOptions& options)
             }
             QJsonObject attempt = locator->requestFullAccessibilityTree(targetProcessId, boost);
             QThread::msleep(static_cast<unsigned long>(options.axWaitMs));
-            attempt.insert(QStringLiteral("locate"), locateToJson(locator->locateAt(cursor, locateOptions)));
+            attempt.insert(QStringLiteral("locate"), locateToJson(locator->locateAt(target, locateOptions)));
             locator->restoreAccessibility();
             attempts.append(attempt);
             QThread::msleep(static_cast<unsigned long>(options.axWaitMs));
@@ -756,7 +760,7 @@ int runMeasure(const ProbeOptions& options)
             record.insert(QStringLiteral("scrollAccessibilityBoost"),
                           locator->requestFullAccessibilityTree(targetProcessId, scrollBoost));
             QThread::msleep(static_cast<unsigned long>(options.axWaitMs));
-            located = locator->locateAt(cursor, locateOptions);
+            located = locator->locateAt(target, locateOptions);
         }
     }
 
@@ -964,6 +968,9 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
     for (ScrollMethod method : ScrollInjector::create()->supportedMethods()) {
         methodNames << QLatin1String(scrollMethodName(method));
     }
+    const QCommandLineOption point(QStringLiteral("point"),
+        QStringLiteral("Measure at global logical coordinates instead of the cursor (measure only)."),
+        QStringLiteral("x,y"));
     const QCommandLineOption level(QStringLiteral("level"), QStringLiteral("Nested scroll area to use; 0 is innermost."),
                                    QStringLiteral("n"), QStringLiteral("0"));
     const QCommandLineOption delay(QStringLiteral("delay"), QStringLiteral("Seconds before measuring."),
@@ -1013,7 +1020,7 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
     parser.setApplicationDescription(QStringLiteral("Probe system-reported scroll areas and programmatic scrolling (#265)."));
     parser.addHelpOption();
     parser.addPositionalArgument(QStringLiteral("command"), QStringLiteral("inspect (default) or measure"));
-    parser.addOptions({level, delay, attempts, axBoost, enableAx, axWait, scroll, amount, percent, repeats, postToProcess, timeout,
+    parser.addOptions({point, level, delay, attempts, axBoost, enableAx, axWait, scroll, amount, percent, repeats, postToProcess, timeout,
                        strictPairs, searchRadius, interval, output, framesDirectory, contentOutput, appLabel, note});
     parser.process(app);
 
@@ -1024,6 +1031,18 @@ std::optional<ProbeOptions> parseOptions(const QApplication& app, QCommandLinePa
         return std::nullopt;
     }
     options.measure = command == QLatin1String("measure");
+    if (parser.isSet(point)) {
+        const QStringList coordinates = parser.value(point).split(QLatin1Char(','));
+        bool xOk = false;
+        bool yOk = false;
+        const int x = coordinates.value(0).toInt(&xOk);
+        const int y = coordinates.value(1).toInt(&yOk);
+        if (!options.measure || coordinates.size() != 2 || !xOk || !yOk) {
+            err() << "--point requires measure and two integer coordinates: x,y\n";
+            return std::nullopt;
+        }
+        options.point = QPoint(x, y);
+    }
     options.level = std::max(0, parser.value(level).toInt());
     options.delaySeconds = std::max(0, parser.value(delay).toInt());
     options.attempts = std::max(1, parser.value(attempts).toInt());

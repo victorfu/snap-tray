@@ -106,6 +106,15 @@ inside the area where the accessibility API reports the selected area as the inn
 `--level 1` does not scroll a nested pane that covers the centre. When no point qualifies, the repeat
 records `inject.ok = false` with the reason.
 
+For reproducible desktop measurements, `measure --point x,y` selects a fixed
+global logical screen coordinate instead of the current cursor. Negative
+coordinates are allowed for secondary displays. The JSON retains the actual
+`cursor` and adds `targetPoint` plus `targetPointSource` (`explicit` or `cursor`).
+Screen metadata and all accessibility re-queries use the target point; the
+original cursor is restored after scrolling. This option does not activate a
+window or bypass occlusion: verify `locate.area.appName` and `windowOwner` before
+counting a result. `inspect` does not accept `--point`.
+
 Scroll methods:
 
 | Method | Platform | `--amount` |
