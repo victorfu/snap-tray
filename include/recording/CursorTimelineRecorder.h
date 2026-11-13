@@ -45,9 +45,13 @@ public:
     QString probeName() const;
     bool truncated() const { return m_writer.truncated(); }
     bool failed() const { return m_writer.failed(); }
+    // How often the probe reported button events it could not deliver.
+    int buttonEventLosses() const { return m_buttonEventLosses; }
 
 private:
-    void onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs);
+    void onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs,
+                         std::optional<QPoint> physicalPosition);
+    void onButtonEventsLost();
     quint32 currentShapeId();
     void releaseHeldButtons();
     void rememberSample(const CursorSample& sample);
@@ -73,6 +77,7 @@ private:
     QHash<QByteArray, quint32> m_shapeIds; // image + hotspot digest -> id
     quint32 m_nextShapeId = 1;
     Qt::MouseButtons m_held;
+    int m_buttonEventLosses = 0;
     qint64 m_buttonFloorMs = 0; // button events stay in order and after start/resume
     qint64 m_activeSinceMs = 0; // last start/resume: earlier button events are dropped
     // Recent samples, for positioning events delivered late.

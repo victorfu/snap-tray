@@ -38,6 +38,7 @@ CursorTimelineRecorder::CursorTimelineRecorder(std::unique_ptr<CursorProbe> prob
     if (m_probe) {
         m_capabilities = m_probe->capabilities();
         connect(m_probe.get(), &CursorProbe::buttonChanged, this, &CursorTimelineRecorder::onButtonChanged);
+        connect(m_probe.get(), &CursorProbe::buttonEventsLost, this, &CursorTimelineRecorder::onButtonEventsLost);
     }
     m_sampleTimer.setInterval(kSampleIntervalMs);
     m_sampleTimer.setTimerType(Qt::PreciseTimer);
@@ -165,10 +166,11 @@ quint32 CursorTimelineRecorder::currentShapeId()
     return id;
 }
 
-void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs)
+void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs,
+                                             std::optional<QPoint> physicalPosition)
 {
     if (!m_running || m_paused || !m_capabilities.clicks) return;
-    // Position the click where it happened, not up to one poll later.
+    // Keep the pointer samples current, including for sources without event coordinates.
     sampleNow();
     // A queued event happened ageMs before it reached us. One from before
     // the recording (re)started, i.e. during a pause, is not recorded.
@@ -182,10 +184,24 @@ void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, 
     m_buttonFloorMs = event.tMs;
     event.button = button;
     event.down = down;
-    // Where the recorded pointer was then: for a late event, not where it
-    // has moved to since (#174 review).
-    event.position = positionAt(event.tMs);
+    // Prefer the event source's exact position: a click can fall between
+    // polls, or arrive after the pointer has moved during a GUI stall.
+    // Sources without event coordinates still use the recorded history.
+    event.position = physicalPosition ? m_mapping.toVideoPointFromPhysical(*physicalPosition)
+                                      : positionAt(event.tMs);
     m_writer.addButton(event);
+}
+
+void CursorTimelineRecorder::onButtonEventsLost()
+{
+    // Losses from a pause are of events that would have been dropped anyway.
+    if (!m_running || m_paused) return;
+    ++m_buttonEventLosses;
+    // A lost release would leave its button held: the next real press would
+    // be taken for a repeat and its release would close the stale press, one
+    // long drag instead of two clicks. Start from "nothing held" instead.
+    sampleNow();
+    releaseHeldButtons();
 }
 
 void CursorTimelineRecorder::rememberSample(const CursorSample& sample)

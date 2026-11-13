@@ -2289,6 +2289,10 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
             if (m_cursorRecorder && m_cursorRecorder->truncated()) {
                 m_lastDiagnostics += QStringLiteral(" (size limit reached)");
             }
+            if (m_cursorRecorder && m_cursorRecorder->buttonEventLosses() > 0) {
+                m_lastDiagnostics += QStringLiteral(" (button events lost: %1 times)")
+                                         .arg(m_cursorRecorder->buttonEventLosses());
+            }
         }
         qDebug().noquote() << m_lastDiagnostics;
         emit diagnosticsAvailable();

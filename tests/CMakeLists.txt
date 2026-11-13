@@ -493,6 +493,18 @@ target_link_libraries(RecordingManager_RecordingProject PRIVATE snaptray_core Qt
 add_test(NAME RecordingManager_RecordingProject COMMAND RecordingManager_RecordingProject)
 set_tests_properties(RecordingManager_RecordingProject PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_WindowsCursorSupport RecordingManager/tst_WindowsCursorSupport.cpp)
+target_link_libraries(RecordingManager_WindowsCursorSupport PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_WindowsCursorSupport COMMAND RecordingManager_WindowsCursorSupport)
+set_tests_properties(RecordingManager_WindowsCursorSupport PROPERTIES TIMEOUT 60 LABELS "unit")
+
+if(WIN32)
+    add_executable(RecordingManager_WindowsCursorProbe RecordingManager/tst_CursorProbe_win.cpp)
+    target_link_libraries(RecordingManager_WindowsCursorProbe PRIVATE snaptray_platform Qt6::Gui Qt6::Test)
+    add_test(NAME RecordingManager_WindowsCursorProbe COMMAND RecordingManager_WindowsCursorProbe)
+    set_tests_properties(RecordingManager_WindowsCursorProbe PROPERTIES TIMEOUT 60 LABELS "integration")
+endif()
+
 add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
 target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_CursorTimelineRecorder COMMAND RecordingManager_CursorTimelineRecorder)
@@ -1787,6 +1799,14 @@ target_link_libraries(RecordingManager_CoreAudioRuntime PRIVATE snaptray_platfor
     "-framework AVFoundation" "-framework Foundation")
 add_test(NAME RecordingManager_CoreAudioRuntime COMMAND RecordingManager_CoreAudioRuntime)
 set_tests_properties(RecordingManager_CoreAudioRuntime PROPERTIES TIMEOUT 30 LABELS "unit")
+
+# The macOS cursor probe (#322): image conversion, button mapping, lifecycle.
+add_executable(RecordingManager_CursorProbeMac RecordingManager/tst_CursorProbe_mac.mm)
+set_source_files_properties(RecordingManager/tst_CursorProbe_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+target_link_libraries(RecordingManager_CursorProbeMac PRIVATE snaptray_platform Qt6::Test
+    "-framework AppKit" "-framework CoreGraphics")
+add_test(NAME RecordingManager_CursorProbeMac COMMAND RecordingManager_CursorProbeMac)
+set_tests_properties(RecordingManager_CursorProbeMac PROPERTIES TIMEOUT 30 LABELS "unit")
 
 add_executable(RecordingManager_CaptureExclusion RecordingManager/tst_CaptureExclusion.mm)
 set_source_files_properties(RecordingManager/tst_CaptureExclusion.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")

@@ -362,6 +362,7 @@ add_library(snaptray_core STATIC
     src/recording/RecordingSession.cpp
     src/recording/RecordingInterruption.cpp
     src/recording/CursorTimeline.cpp
+    src/recording/WindowsCursorSupport.cpp
     src/recording/CursorEffects.cpp
     src/recording/ZoomTrack.cpp
     src/recording/RedactionTrack.cpp
@@ -625,6 +626,7 @@ add_library(snaptray_platform STATIC
         src/video/AVFoundationFrameReader_mac.mm
         src/video/AVFoundationPlayer_mac.mm
         src/video/AVFoundationTranscoder_mac.mm
+        src/recording/CursorProbe_mac.mm
         src/recording/KeyProbe_mac.mm
         src/video/NativeEditMedia_mac.mm
         src/video/PreviewPcmOutput_mac.mm
@@ -658,6 +660,7 @@ add_library(snaptray_platform STATIC
         src/encoding/MFSampleTimes_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
+        src/recording/CursorProbe_win.cpp
         src/recording/KeyProbe_win.cpp
         src/video/PreviewPcmOutput_win.cpp
         src/video/RemixedAudioPreview.cpp
@@ -710,6 +713,7 @@ set_source_files_properties(
     src/video/AVFoundationTranscoder_mac.mm
     src/video/NativeEditMedia_mac.mm
     src/video/PreviewPcmOutput_mac.mm
+    src/recording/CursorProbe_mac.mm
     src/recording/KeyProbe_mac.mm
     src/scrollcapture/ScrollCapturePlatform_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"

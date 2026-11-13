@@ -133,7 +133,9 @@ If several of these happen at once, the recording still ends only once and the f
 
 The recorded video does not contain the mouse pointer. While a recording that opens in the preview runs, SnapTray keeps a separate record of the pointer next to it: where it was, what it looked like, and when buttons were pressed. Keyboard input is only recorded if you separately enable shortcut hints. This record stays with the temporary recording and is deleted with it when you save or discard; saved videos and exports never include it. It is what later editing features use to show, enlarge or highlight the pointer.
 
-On Linux (X11) it includes the pointer's shape and clicks. On macOS and Windows only the position is kept for now, and the pointer is drawn as a plain arrow. If the record cannot be written, the recording itself is not affected.
+On Linux (X11), Windows and macOS it includes the pointer's shape and clicks. On Windows, buttons are read with a mouse hook that only listens: clicks are never blocked or changed, and not noticeably delayed. Clicks that a program injects are left out; this includes your own clicks when a remote-control tool, button remapper or some tablet drivers deliver them that way. If the record cannot be written, the recording itself is not affected.
+
+On macOS this needs no extra permission: SnapTray only listens for mouse button presses, never changes or delays them, and does not ask for Input Monitoring or Accessibility for the pointer. (Input Monitoring is only requested if you turn on shortcut hints.) A pointer that an application hides, for example over a full-screen video or while you type, is recorded as hidden and is not drawn in the export.
 
 ### Pointer effects in the preview
 
@@ -142,7 +144,7 @@ When a recording has this record, open **Pointer** in the inspector's Project se
 - **Pointer**: show or hide the mouse pointer in the exported video.
 - **Size** (1×, 1.5×, 2×, 3×): draw the pointer larger.
 - **Smooth** (Off, Low, Medium, High): smooth out a shaky path with a spring that anticipates movement and clicks, with tighter tracking during drags. Clicks stay at their recorded positions and times. Off preserves the recorded path and remains the default. Seeking and exporting use the same precomputed path; smoothing never reaches across a cut. Existing projects with smoothing enabled also use this improved model when reopened and exported, so their pointer paths can differ from earlier exports.
-- **Clicks**: show a brief ring where each click happened. Needs recorded clicks (Linux).
+- **Clicks**: show a brief ring where each click happened. Needs recorded clicks (Linux, Windows and macOS).
 - **Pointer** also includes these effects, all off by default:
   - **Hide When Idle** (1 s, 2 s, 5 s): fade the pointer out once it has not moved for that long. It fades back in just before it moves or clicks, so it is always visible at a click, and click rings are never hidden.
   - **Motion Blur** (Low, Medium, High): a short trail behind a fast-moving pointer. A resting pointer is drawn sharp.
@@ -166,7 +168,7 @@ In the preview, **Keys** in Project settings (enabled when the recording has key
 
 Full-screen recordings often make buttons and text small once shared. The preview can zoom in on parts of the recording:
 
-- **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux); the camera follows actions spread across the screen while retaining magnification. Running it again replaces the automatic zooms but keeps the ones you added or changed.
+- **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux, Windows and macOS); the camera follows actions spread across the screen while retaining magnification. Running it again replaces the automatic zooms but keeps the ones you added or changed.
 - **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
 - Zooms appear in the Zoom lane. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less motion** makes all zooms smaller and slower without direct pans, **Zoom effects** turns them all off without deleting them, and **Delete zoom** removes one.
 
