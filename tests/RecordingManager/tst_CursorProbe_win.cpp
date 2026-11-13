@@ -53,6 +53,8 @@ private slots:
     void systemCursorsBecomePictures();
     void invertingCursorGetsAnOutlineAndKeepsItsHotspot();
     void noCursorHandleHasNoShape();
+    void systemCursorPicturesAreValidPremultiplied();
+    void reportTheAlphaConventionOfSystemCursors();
     void probesCanBeCreatedAndDestroyedRepeatedly();
 };
 
@@ -169,6 +171,78 @@ void tst_CursorProbe_win::invertingCursorGetsAnOutlineAndKeepsItsHotspot()
 void tst_CursorProbe_win::noCursorHandleHasNoShape()
 {
     QVERIFY(!SnapTray::windowsCursorShape(nullptr).has_value());
+}
+
+void tst_CursorProbe_win::systemCursorPicturesAreValidPremultiplied()
+{
+    // Whatever Windows hands out, no colour channel of a picture may exceed its alpha.
+    for (const auto resource : {IDC_ARROW, IDC_HAND, IDC_IBEAM, IDC_WAIT}) {
+        const auto shape = SnapTray::windowsCursorShape(LoadCursorW(nullptr, reinterpret_cast<LPCWSTR>(resource)));
+        QVERIFY(shape.has_value());
+        const QImage& image = shape->image;
+        for (int y = 0; y < image.height(); ++y) {
+            const auto* row = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+            for (int x = 0; x < image.width(); ++x) {
+                const int alpha = qAlpha(row[x]);
+                QVERIFY(qRed(row[x]) <= alpha && qGreen(row[x]) <= alpha && qBlue(row[x]) <= alpha);
+            }
+        }
+    }
+}
+
+void tst_CursorProbe_win::reportTheAlphaConventionOfSystemCursors()
+{
+    // Not an assertion: prints what GetIconInfo's colour bitmap holds, to
+    // settle whether Windows stores cursor colours straight or premultiplied
+    // (#341 review). A translucent pixel with a channel above its alpha can
+    // only be straight.
+    for (const auto resource : {IDC_ARROW, IDC_HAND, IDC_WAIT, IDC_SIZEALL}) {
+        const HICON copy = CopyIcon(static_cast<HICON>(LoadCursorW(nullptr, reinterpret_cast<LPCWSTR>(resource))));
+        QVERIFY(copy);
+        ICONINFO icon{};
+        QVERIFY(GetIconInfo(copy, &icon));
+        DestroyIcon(copy);
+        if (!icon.hbmColor) {
+            if (icon.hbmMask) DeleteObject(icon.hbmMask);
+            qInfo() << "cursor" << quintptr(resource) << "is monochrome";
+            continue;
+        }
+        BITMAP header{};
+        QVERIFY(GetObjectW(icon.hbmColor, sizeof(header), &header));
+        QList<quint32> pixels(qsizetype(header.bmWidth) * header.bmHeight);
+        BITMAPINFO info{};
+        info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        info.bmiHeader.biWidth = header.bmWidth;
+        info.bmiHeader.biHeight = -header.bmHeight;
+        info.bmiHeader.biPlanes = 1;
+        info.bmiHeader.biBitCount = 32;
+        info.bmiHeader.biCompression = BI_RGB;
+        const HDC screen = GetDC(nullptr);
+        const int lines = GetDIBits(screen, icon.hbmColor, 0, UINT(header.bmHeight), pixels.data(), &info,
+                                    DIB_RGB_COLORS);
+        ReleaseDC(nullptr, screen);
+        DeleteObject(icon.hbmColor);
+        if (icon.hbmMask) DeleteObject(icon.hbmMask);
+        QCOMPARE(lines, int(header.bmHeight));
+        int translucent = 0;
+        int aboveAlpha = 0;
+        int maxExcess = 0;
+        for (const quint32 value : pixels) {
+            const QRgb argb = QRgb(value);
+            const int alpha = qAlpha(argb);
+            if (alpha == 0 || alpha == 255) continue;
+            ++translucent;
+            const int brightest = qMax(qRed(argb), qMax(qGreen(argb), qBlue(argb)));
+            if (brightest > alpha) {
+                ++aboveAlpha;
+                maxExcess = qMax(maxExcess, brightest - alpha);
+            }
+        }
+        qInfo().noquote() << QStringLiteral("ALPHA-CONVENTION cursor %1: %2x%3, %4 translucent pixels, "
+                                            "%5 with a channel above alpha (largest excess %6)")
+                                 .arg(quintptr(resource)).arg(header.bmWidth).arg(header.bmHeight)
+                                 .arg(translucent).arg(aboveAlpha).arg(maxExcess);
+    }
 }
 
 void tst_CursorProbe_win::probesCanBeCreatedAndDestroyedRepeatedly()

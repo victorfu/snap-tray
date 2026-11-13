@@ -63,11 +63,25 @@ Picture pictureFromBitmaps(const Bitmaps& b)
     if (!monochrome && std::size_t(b.color.size()) < count) return {};
 
     // A colour bitmap with any alpha carries its own transparency; without
-    // any, the AND mask decides. Its alpha is taken as straight (not
-    // premultiplied), as icon bitmaps are stored.
+    // any, the AND mask decides.
+    //
+    // Whether its colours are already multiplied by the alpha is not
+    // something Windows states, and the sources disagree (Microsoft's
+    // CreateIconIndirect sample stores premultiplied colours; cursor files
+    // and other capture code use straight ones). The pixels tell: a colour
+    // channel above its alpha cannot be premultiplied. Such a bitmap is
+    // straight and is multiplied here; any other is kept as it is, which is
+    // right if it was premultiplied and at worst slightly bright if it was
+    // straight with only dark translucent pixels.
     bool hasAlpha = false;
+    bool straightAlpha = false;
     if (!monochrome) {
-        for (std::size_t i = 0; i < count && !hasAlpha; ++i) hasAlpha = (b.color[i] & kAlphaMask) != 0;
+        for (std::size_t i = 0; i < count; ++i) {
+            const QRgb argb = QRgb(b.color[i]);
+            const int alpha = qAlpha(argb);
+            hasAlpha |= alpha != 0;
+            straightAlpha |= qRed(argb) > alpha || qGreen(argb) > alpha || qBlue(argb) > alpha;
+        }
     }
 
     std::vector<Pixel> kinds(count, Pixel::Transparent);
@@ -76,7 +90,7 @@ Picture pictureFromBitmaps(const Bitmaps& b)
     bool anyVisible = false;
     for (std::size_t i = 0; i < count; ++i) {
         if (hasAlpha) {
-            colors[i] = qPremultiply(QRgb(b.color[i]));
+            colors[i] = straightAlpha ? qPremultiply(QRgb(b.color[i])) : QRgb(b.color[i]);
             kinds[i] = qAlpha(colors[i]) ? Pixel::Opaque : Pixel::Transparent;
         } else {
             const bool andBit = bitSet(b.mask[i]);
