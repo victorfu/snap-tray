@@ -3,11 +3,15 @@
 #include "capture/D3D11Frame.h"
 #include "capture/DXGICaptureEngine.h"
 #include "capture/WGCCaptureEngine.h"
+#include "recording/SessionClock.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QGuiApplication>
 #include <QMutex>
 #include <QScreen>
+#include <QPainter>
+#include <QTimer>
+#include <QWidget>
 
 #include <atomic>
 
@@ -15,6 +19,23 @@ namespace {
 
 constexpr int kFrameRate = 10;
 constexpr int kFrameTimeoutMs = 5000;
+constexpr int kPatternSquarePixels = 64;
+constexpr int kPatternStepPixels = 13;
+
+class CapturePattern : public QWidget
+{
+public:
+    int step = 0;
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.fillRect(rect(), Qt::black);
+        const int x = (step * kPatternStepPixels) % qMax(1, width() - kPatternSquarePixels);
+        painter.fillRect(QRect(x, height() / 2, kPatternSquarePixels, kPatternSquarePixels), Qt::white);
+    }
+};
 
 // Collects frames delivered on the capture thread.
 struct FrameSink
@@ -51,6 +72,7 @@ class TestWindowsGpuCapture : public QObject
 private slots:
     void testGraphicsCaptureDeliversFramesOfTheRegion();
     void testGraphicsCaptureRepeatsAStaticScreen();
+    void testGraphicsCaptureChangingAndStaticFramesHaveNoDuplicates();
     void testGraphicsCaptureNativeFramesStayOnItsDevice();
     void testGraphicsCaptureDeliversNothingAfterStop();
     void testGraphicsCaptureUnknownDisplayFailsToStart();
@@ -122,8 +144,55 @@ void TestWindowsGpuCapture::testGraphicsCaptureRepeatsAStaticScreen()
     // 10 fps for a second; allow for timer slack.
     QVERIFY2(frames.size() >= kFrameRate / 2, qPrintable(QString::number(frames.size())));
     for (int i = 1; i < frames.size(); ++i) {
-        QVERIFY(frames[i].sourceTimeNs >= frames[i - 1].sourceTimeNs);
+        QVERIFY(frames[i].sourceTimeNs > frames[i - 1].sourceTimeNs);
     }
+}
+
+void TestWindowsGpuCapture::testGraphicsCaptureChangingAndStaticFramesHaveNoDuplicates()
+{
+    if (!WGCCaptureEngine::isAvailable()) QSKIP("Windows Graphics Capture is not supported here");
+    auto* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    CapturePattern pattern;
+    pattern.setGeometry(screen->geometry());
+    pattern.showFullScreen();
+    QVERIFY(QTest::qWaitForWindowExposed(&pattern));
+
+    WGCCaptureEngine engine;
+    constexpr int kPatternFrameRate = 60;
+    constexpr int kDurationMs = 10000;
+    constexpr int kPhaseMs = 2000;
+    engine.setFrameRate(kPatternFrameRate);
+    engine.setNativeFrameOutput(true);
+    QVERIFY(engine.setRegion(screen->geometry(), CaptureScreenInfo::fromScreen(screen)));
+    SnapTray::SessionClock clock;
+    clock.start(SnapTray::captureClockNowNs());
+    // Admit on the capture thread, just as RecordingManager does. Do not retain
+    // ten seconds of full-screen GPU textures in the test process.
+    QObject::connect(&engine, &ICaptureEngine::frameCaptured, &engine,
+                     [&clock](const SnapTray::CapturedFrame& frame) {
+        clock.admit(frame.sourceTimeNs, nullptr);
+    }, Qt::DirectConnection);
+    QVERIFY2(engine.start(), qPrintable(engine.lastStartError()));
+
+    QElapsedTimer elapsed;
+    elapsed.start();
+    QTimer animation;
+    QObject::connect(&animation, &QTimer::timeout, &pattern, [&] {
+        if ((elapsed.elapsed() / kPhaseMs) % 2 == 0) {
+            ++pattern.step;
+            pattern.update();
+        }
+    });
+    animation.start(1000 / kPatternFrameRate);
+    QTest::qWait(kDurationMs);
+    engine.stop();
+    const auto stats = clock.stats();
+    qInfo() << "10s WGC changing/static capture: accepted" << stats.accepted
+            << "duplicates" << stats.duplicates << "backwards" << stats.backwards;
+    QVERIFY(stats.accepted >= kPatternFrameRate);
+    QCOMPARE(stats.duplicates, qint64(0));
+    QCOMPARE(stats.backwards, qint64(0));
 }
 
 void TestWindowsGpuCapture::testGraphicsCaptureNativeFramesStayOnItsDevice()

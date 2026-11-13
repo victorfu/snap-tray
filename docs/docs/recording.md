@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-06
+last_modified_at: 2026-11-13
 layout: docs
 title: Recording
 seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS, Windows and Linux X11"
@@ -14,6 +14,8 @@ doc_order: 2
 Recording is available on macOS, Windows, and Linux X11 builds with recording
 enabled. Linux uses the system FFmpeg libraries and PulseAudio (or PipeWire's
 PulseAudio compatibility service).
+
+On Windows, the optional Windows Graphics Capture backend no longer counts a new picture arriving after a repeated still frame as a duplicate because of its timestamp. The selected frame-rate limit still applies.
 
 ## Recording entry points
 

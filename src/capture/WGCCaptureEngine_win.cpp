@@ -1,5 +1,6 @@
 #include "capture/WGCCaptureEngine.h"
 #include "capture/CaptureFrameTiming.h"
+#include "capture/WGCFrameTiming.h"
 #include "capture/D3D11Frame.h"
 #include "utils/CoordinateHelper.h"
 
@@ -447,16 +448,11 @@ void WGCCaptureEngine::Private::emitFrameLocked(const SnapTray::CapturedFrame &f
     }
     // A real frame carries the time it was composed and can arrive after a
     // repeat stamped "now" already went out. Its picture is newer than the
-    // repeat's, so it is kept, but never with an earlier time: frame times
-    // only move forward.
-    if (lastEmittedNs >= 0 && frame.sourceTimeNs < lastEmittedNs) {
-        SnapTray::CapturedFrame stamped = frame;
-        stamped.sourceTimeNs = lastEmittedNs;
-        emit q->frameCaptured(stamped);
-        return;
-    }
-    lastEmittedNs = frame.sourceTimeNs;
-    emit q->frameCaptured(frame);
+    // repeat's. Advance even equal timestamps by at least one nanosecond so
+    // SessionClock accepts the picture instead of counting it as a duplicate.
+    const auto stamped = SnapTray::wgcFrameForEmission(frame, lastEmittedNs);
+    lastEmittedNs = stamped.sourceTimeNs;
+    emit q->frameCaptured(stamped);
 }
 
 void WGCCaptureEngine::Private::emitError(const QString &message, quint64 generationAtStart)

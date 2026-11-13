@@ -1,5 +1,6 @@
 #include <QtTest>
 
+#include "capture/WGCFrameTiming.h"
 #include "recording/CapturedFrame.h"
 #include "recording/FramePacer.h"
 #include "recording/SessionClock.h"
@@ -25,6 +26,8 @@ private slots:
     void stopRejectsLateFrames();
     void encoderMillisecondsRoundOnce();
     void capturedFrameKeepsNativeBufferAlive();
+    void wgcRealFrameAfterRepeat_data();
+    void wgcRealFrameAfterRepeat();
 
     void pacerDropsOverDelivery();
     void pacerToleratesJitter();
@@ -161,6 +164,64 @@ void TestSessionClock::capturedFrameKeepsNativeBufferAlive()
     QCOMPARE(released, 1);
     QVERIFY(!SnapTray::CapturedFrame{}.isValid());
     QVERIFY(SnapTray::captureClockNowNs() > 0);
+}
+
+void TestSessionClock::wgcRealFrameAfterRepeat_data()
+{
+    QTest::addColumn<qint64>("composedNs");
+    QTest::addColumn<qint64>("expectedNs");
+    QTest::newRow("late") << qint64(95) << qint64(101);
+    QTest::newRow("equal") << qint64(100) << qint64(101);
+    QTest::newRow("forward") << qint64(110) << qint64(110);
+}
+
+void TestSessionClock::wgcRealFrameAfterRepeat()
+{
+    QFETCH(qint64, composedNs);
+    QFETCH(qint64, expectedNs);
+    SessionClock clock;
+    clock.start(0);
+    SnapTray::CapturedFrame repeat;
+    repeat.image = QImage(2, 2, QImage::Format_RGB32);
+    repeat.image.fill(Qt::red);
+    repeat.sourceTimeNs = 100;
+    repeat.sequence = 1;
+    qint64 lastEmittedNs = -1;
+    const auto first = SnapTray::wgcFrameForEmission(repeat, lastEmittedNs);
+    QCOMPARE(first.sourceTimeNs, qint64(100));
+    lastEmittedNs = first.sourceTimeNs;
+    QCOMPARE(clock.admit(first.sourceTimeNs, nullptr), Admission::Accepted);
+
+    SnapTray::CapturedFrame real = repeat;
+    real.image.fill(Qt::green);
+    real.sourceTimeNs = composedNs;
+    real.sequence = 2;
+    real.generation = 3;
+    real.pixelSize = real.image.size();
+    real.nativeBuffer = std::make_shared<int>(42);
+    const auto second = SnapTray::wgcFrameForEmission(real, lastEmittedNs);
+    QCOMPARE(clock.admit(second.sourceTimeNs, nullptr), Admission::Accepted);
+    QCOMPARE(second.sourceTimeNs, expectedNs);
+    QVERIFY(second.sourceTimeNs > first.sourceTimeNs);
+    QCOMPARE(second.image.pixelColor(0, 0), QColor(Qt::green));
+    QCOMPARE(first.image.pixelColor(0, 0), QColor(Qt::red));
+    QCOMPARE(second.nativeBuffer, real.nativeBuffer);
+    QCOMPARE(second.sequence, real.sequence);
+    QCOMPARE(second.generation, real.generation);
+    QCOMPARE(second.clockDomain, real.clockDomain);
+    QCOMPARE(second.pixelSize, real.pixelSize);
+    QCOMPARE(real.sourceTimeNs, composedNs); // The cached source frame is unchanged.
+
+    // Another delayed arrival advances from the adjusted time, not the repeat.
+    lastEmittedNs = second.sourceTimeNs;
+    const auto third = SnapTray::wgcFrameForEmission(real, lastEmittedNs);
+    QCOMPARE(third.sourceTimeNs, expectedNs + 1);
+    QCOMPARE(clock.admit(third.sourceTimeNs, nullptr), Admission::Accepted);
+    QCOMPARE(clock.stats().duplicates, qint64(0));
+    QCOMPARE(clock.stats().backwards, qint64(0));
+    QCOMPARE(clock.stats().accepted, qint64(3));
+    // A new capture session does not inherit the previous session's adjustment.
+    QCOMPARE(SnapTray::wgcFrameForEmission(real, -1).sourceTimeNs, composedNs);
 }
 
 void TestSessionClock::pacerDropsOverDelivery()

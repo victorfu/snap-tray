@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-26
+last_modified_at: 2026-11-13
 layout: docs
 title: 録画
 seo_title: "SnapTray 画面録画：macOS・Windows 向け MP4、GIF、WebP キャプチャ"
@@ -13,6 +13,8 @@ doc_order: 2
 
 録画は macOS と Windows でのみ利用可能です。Linux beta には録画機能は含まれておらず、
 録画 UI は非表示になっています。
+
+Windows では、任意で使用する Windows Graphics Capture バックエンドで、繰り返された静止フレームの後に届く新しい映像が、タイムスタンプを理由に重複フレームとして数えられなくなりました。選択したフレームレートの制限は引き続き適用されます。
 
 ## 録画の開始方法
 
