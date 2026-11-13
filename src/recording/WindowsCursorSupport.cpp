@@ -6,9 +6,6 @@ namespace SnapTray::WindowsCursor {
 
 namespace {
 
-// The largest cursor worth converting; the sidecar keeps shapes up to 256 px.
-constexpr int kMaxEdge = 1024;
-
 constexpr quint32 kRgbMask = 0x00ffffffu;
 constexpr quint32 kAlphaMask = 0xff000000u;
 constexpr QRgb kInvertFill = 0xff000000u;    // opaque black
@@ -51,25 +48,25 @@ enum class Pixel : quint8 { Transparent, Opaque, Inverting };
 
 bool bitSet(quint32 maskPixel) { return (maskPixel & kRgbMask) != 0; }
 
-// Straight alpha to premultiplied, rounding like Qt does.
-QRgb premultiplied(quint32 argb)
-{
-    return qPremultiply(QRgb(argb));
-}
-
 } // namespace
 
 Picture pictureFromBitmaps(const Bitmaps& b)
 {
-    if (b.width <= 0 || b.height <= 0 || b.width > kMaxEdge || b.height > kMaxEdge || !b.mask) return {};
+    if (b.width <= 0 || b.height <= 0 || b.width > kMaxCursorEdge || b.height > kMaxCursorEdge) return {};
     const int w = b.width;
     const int h = b.height;
     const std::size_t count = std::size_t(w) * std::size_t(h);
+    // Every pixel read below must be there: a monochrome cursor's mask holds
+    // two pictures, a colour cursor's bitmaps one each.
+    const bool monochrome = b.color.isEmpty();
+    if (std::size_t(b.mask.size()) < count * (monochrome ? 2 : 1)) return {};
+    if (!monochrome && std::size_t(b.color.size()) < count) return {};
 
-    // A colour bitmap with any alpha carries its own transparency (and is
-    // not premultiplied); without any, the AND mask decides.
+    // A colour bitmap with any alpha carries its own transparency; without
+    // any, the AND mask decides. Its alpha is taken as straight (not
+    // premultiplied), as icon bitmaps are stored.
     bool hasAlpha = false;
-    if (b.color) {
+    if (!monochrome) {
         for (std::size_t i = 0; i < count && !hasAlpha; ++i) hasAlpha = (b.color[i] & kAlphaMask) != 0;
     }
 
@@ -79,13 +76,13 @@ Picture pictureFromBitmaps(const Bitmaps& b)
     bool anyVisible = false;
     for (std::size_t i = 0; i < count; ++i) {
         if (hasAlpha) {
-            colors[i] = premultiplied(b.color[i]);
+            colors[i] = qPremultiply(QRgb(b.color[i]));
             kinds[i] = qAlpha(colors[i]) ? Pixel::Opaque : Pixel::Transparent;
         } else {
             const bool andBit = bitSet(b.mask[i]);
             // The XOR part: the colour bitmap, or the lower half of a monochrome mask.
-            const quint32 xorRgb = b.color ? (b.color[i] & kRgbMask)
-                                           : (bitSet(b.mask[count + i]) ? kRgbMask : 0u);
+            const quint32 xorRgb = monochrome ? (bitSet(b.mask[count + i]) ? kRgbMask : 0u)
+                                              : (b.color[i] & kRgbMask);
             if (!andBit) {
                 kinds[i] = Pixel::Opaque;
                 colors[i] = kAlphaMask | xorRgb;
@@ -154,6 +151,12 @@ std::optional<ButtonChange> buttonChangeFromHookMessage(quint32 message, quint32
         }
     }
     return std::nullopt;
+}
+
+std::optional<ButtonChange> recordedButtonChange(quint32 message, quint32 mouseData, quint32 flags)
+{
+    if (flags & kHookInjectedFlags) return std::nullopt;
+    return buttonChangeFromHookMessage(message, mouseData);
 }
 
 qint64 tickAgeMs(quint32 nowTicks, quint32 eventTicks)

@@ -58,6 +58,7 @@ public:
     }
     QString name() const override { return QStringLiteral("fake"); }
     void press(Qt::MouseButton b, bool down, qint64 ageMs = 0) { emit buttonChanged(b, down, ageMs); }
+    void loseEvents() { emit buttonEventsLost(); }
 
 private:
     ProbeState* m_s;
@@ -114,6 +115,8 @@ private slots:
     void x11ClicksDuringAnotherPointerGrab();
     void lateClickTakesThePositionAtItsTime();
     void clicksFromAPauseAreDropped();
+    void lostButtonEventsReleaseWhatLooksHeld();
+    void lossesWhilePausedAreNotCounted();
 };
 
 void TestCursorTimelineRecorder::startRecordsTheInitialPointer()
@@ -608,6 +611,47 @@ void TestCursorTimelineRecorder::clicksFromAPauseAreDropped()
     QCOMPARE(int(timeline.buttons.size()), 2);
     QCOMPARE(timeline.buttons[0].button, Qt::MiddleButton);
     QVERIFY(!timeline.buttons[0].synthetic && !timeline.buttons[1].synthetic);
+}
+
+void TestCursorTimelineRecorder::lostButtonEventsReleaseWhatLooksHeld()
+{
+    Rig rig;
+    QVERIFY(rig.recorder->start());
+    rig.now = 40;
+    rig.probe->press(Qt::LeftButton, true);
+    // The release was lost; the probe says so.
+    rig.now = 60;
+    rig.probe->loseEvents();
+    QCOMPARE(rig.recorder->buttonEventLosses(), 1);
+    // The next click is a click of its own, not the end of a long drag.
+    rig.now = 500;
+    rig.probe->press(Qt::LeftButton, true);
+    rig.now = 520;
+    rig.probe->press(Qt::LeftButton, false);
+    const auto timeline = rig.finish();
+    QCOMPARE(int(timeline.buttons.size()), 4);
+    QVERIFY(timeline.buttons[0].down && !timeline.buttons[0].synthetic);
+    QCOMPARE(timeline.buttons[0].tMs, qint64(40));
+    QVERIFY(!timeline.buttons[1].down && timeline.buttons[1].synthetic);
+    QCOMPARE(timeline.buttons[1].tMs, qint64(60));
+    QVERIFY(timeline.buttons[2].down && !timeline.buttons[2].synthetic);
+    QCOMPARE(timeline.buttons[2].tMs, qint64(500));
+    QVERIFY(!timeline.buttons[3].down && !timeline.buttons[3].synthetic);
+    QCOMPARE(timeline.buttons[3].tMs, qint64(520));
+    QCOMPARE(timeline.buttonsDownAt(100), Qt::MouseButtons());
+}
+
+void TestCursorTimelineRecorder::lossesWhilePausedAreNotCounted()
+{
+    Rig rig;
+    QVERIFY(rig.recorder->start());
+    rig.now = 40;
+    rig.recorder->pause();
+    // Events from a pause are dropped anyway: losing some is not a loss.
+    rig.probe->loseEvents();
+    rig.recorder->resume();
+    QCOMPARE(rig.recorder->buttonEventLosses(), 0);
+    QVERIFY(rig.finish().buttons.empty());
 }
 
 QTEST_MAIN(TestCursorTimelineRecorder)

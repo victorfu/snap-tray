@@ -38,6 +38,7 @@ CursorTimelineRecorder::CursorTimelineRecorder(std::unique_ptr<CursorProbe> prob
     if (m_probe) {
         m_capabilities = m_probe->capabilities();
         connect(m_probe.get(), &CursorProbe::buttonChanged, this, &CursorTimelineRecorder::onButtonChanged);
+        connect(m_probe.get(), &CursorProbe::buttonEventsLost, this, &CursorTimelineRecorder::onButtonEventsLost);
     }
     m_sampleTimer.setInterval(kSampleIntervalMs);
     m_sampleTimer.setTimerType(Qt::PreciseTimer);
@@ -186,6 +187,18 @@ void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, 
     // has moved to since (#174 review).
     event.position = positionAt(event.tMs);
     m_writer.addButton(event);
+}
+
+void CursorTimelineRecorder::onButtonEventsLost()
+{
+    // Losses from a pause are of events that would have been dropped anyway.
+    if (!m_running || m_paused) return;
+    ++m_buttonEventLosses;
+    // A lost release would leave its button held: the next real press would
+    // be taken for a repeat and its release would close the stale press, one
+    // long drag instead of two clicks. Start from "nothing held" instead.
+    sampleNow();
+    releaseHeldButtons();
 }
 
 void CursorTimelineRecorder::rememberSample(const CursorSample& sample)

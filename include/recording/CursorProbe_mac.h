@@ -26,9 +26,24 @@ std::optional<Qt::MouseButton> buttonForNumber(qint64 number);
 // nullopt for any other event.
 std::optional<bool> pressForEventType(int eventType);
 
-// How long ago an event happened, from two readings of the uptime clock in
-// nanoseconds. Never negative.
-qint64 eventAgeMs(quint64 nowNs, quint64 eventNs);
+// A reading of the uptime clock (mach_absolute_time) and the timebase that
+// turns its ticks into nanoseconds: 1/1 on Intel, 125/3 on Apple silicon.
+struct UptimeClock {
+    quint64 ticks = 0;
+    quint32 numer = 1;
+    quint32 denom = 1;
+    quint64 nanoseconds() const;
+};
+
+// How long ago an event stamped `eventStamp` happened. Never negative.
+//
+// -[NSEvent timestamp] is in seconds, so its stamps arrive here as
+// nanoseconds. CGEventGetTimestamp is documented as nanoseconds too, but is
+// reported to hold clock ticks on Apple silicon; which it is has not been
+// checked on a device. Both are accepted: where ticks and nanoseconds differ,
+// a tick stamp is never ahead of the tick clock and a nanosecond stamp always
+// is (it is about 42 times larger), so the stamp says which one it is.
+qint64 eventAgeMs(const UptimeClock& now, quint64 eventStamp);
 
 #ifdef __OBJC__
 // A cursor image as recorded: premultiplied ARGB at `scale` pixels per

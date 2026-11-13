@@ -18,13 +18,17 @@ class CursorProbe : public QObject
 public:
     struct Capabilities {
         bool shapes = false; // real pointer images and hotspots
-        bool clicks = false; // button presses outside SnapTray's own windows
+        // Button presses anywhere on the desktop. Whether presses on
+        // SnapTray's own windows are among them depends on the source.
+        bool clicks = false;
     };
 
     struct State {
         QPoint position;
         bool physical = false;   // native desktop pixels; otherwise Qt logical coordinates
-        quint64 shapeSerial = 0; // changes whenever the shape changes; 0 = unknown
+        // Changes whenever the shape changes; 0 = unknown. A serial says
+        // "ask again", not that the shape can be read.
+        quint64 shapeSerial = 0;
     };
 
     struct Shape {
@@ -38,9 +42,12 @@ public:
     virtual Capabilities capabilities() const = 0;
     // nullopt when the pointer cannot be read right now.
     virtual std::optional<State> poll() = 0;
-    // The current shape image; nullopt without shape support.
+    // The shape poll() last saw. nullopt without shape support, before the
+    // first poll(), or when this shape cannot be read (recorded as unknown);
+    // a fully transparent image for a hidden pointer.
     virtual std::optional<Shape> currentShape() { return std::nullopt; }
-    // Short name for diagnostics ("x11", "position-only").
+    // Short name for diagnostics ("x11", "windows", "macos-event-tap",
+    // "macos-event-monitor", "macos-shapes-only", "position-only").
     virtual QString name() const = 0;
 
 signals:
@@ -48,6 +55,10 @@ signals:
     // (left-handed setups report their primary button as Left). ageMs is
     // how long ago it happened, for events delivered late.
     void buttonChanged(Qt::MouseButton button, bool down, qint64 ageMs = 0);
+    // Some button events did not make it (a full queue, an event source the
+    // system switched off for a while). Which ones is not known, so a button
+    // may look held when it is not.
+    void buttonEventsLost();
 };
 
 // The best probe this platform and session supports. Never null: without a

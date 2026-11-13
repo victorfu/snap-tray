@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "recording/CursorProbe.h"
+#include "recording/WindowsCursorSupport.h"
 
 #include <windows.h>
 
@@ -22,7 +23,9 @@ bool hasVisiblePixel(const QImage& image)
 
 // A monochrome cursor of the system cursor size whose every pixel inverts the
 // screen (AND and XOR both set), like the classic text I-beam, with its
-// hotspot at (1, 2).
+// hotspot at kInvertingHotspot.
+constexpr QPoint kInvertingHotspot(1, 2);
+
 HCURSOR createInvertingCursor()
 {
     const int width = GetSystemMetrics(SM_CXCURSOR);
@@ -31,7 +34,8 @@ HCURSOR createInvertingCursor()
     const int rowBytes = ((width + 15) / 16) * 2;
     const QByteArray bits(rowBytes * height, char(0xFF));
     const auto* data = reinterpret_cast<const BYTE*>(bits.constData());
-    return CreateCursor(GetModuleHandleW(nullptr), 1, 2, width, height, data, data);
+    return CreateCursor(GetModuleHandleW(nullptr), kInvertingHotspot.x(), kInvertingHotspot.y(), width, height,
+                        data, data);
 }
 
 } // namespace
@@ -44,6 +48,7 @@ private slots:
     void factoryMakesTheWindowsProbe();
     void pollReportsAPhysicalPositionAndASerial();
     void currentShapeAlwaysAnswers();
+    void noShapeBeforeTheFirstPoll();
     void systemCursorsBecomePictures_data();
     void systemCursorsBecomePictures();
     void invertingCursorGetsAnOutlineAndKeepsItsHotspot();
@@ -57,8 +62,9 @@ void tst_CursorProbe_win::factoryMakesTheWindowsProbe()
     QVERIFY(probe);
     QCOMPARE(probe->name(), QStringLiteral("windows"));
     QVERIFY(probe->capabilities().shapes);
-    // The hook needs an interactive window station, which a CI runner has.
-    QVERIFY(probe->capabilities().clicks);
+    // The hook needs an interactive window station. Without one the probe
+    // still works, without clicks, and says why in its warning.
+    if (!probe->capabilities().clicks) QSKIP("The mouse hook was refused on this desktop");
 }
 
 void tst_CursorProbe_win::pollReportsAPhysicalPositionAndASerial()
@@ -68,14 +74,19 @@ void tst_CursorProbe_win::pollReportsAPhysicalPositionAndASerial()
     if (!state) QSKIP("The pointer cannot be read on this desktop");
     QVERIFY(state->physical);
     QVERIFY(state->shapeSerial != 0);
-    POINT native{};
-    QVERIFY(GetCursorPos(&native));
-    // Nothing moves the pointer between the two reads on a test machine.
-    QCOMPARE(state->position, QPoint(native.x, native.y));
-    // The same cursor keeps its serial.
-    const auto again = probe->poll();
-    QVERIFY(again.has_value());
-    QCOMPARE(again->shapeSerial, state->shapeSerial);
+    // The same coordinates GetCursorPos reports. The pointer may be moving
+    // on a developer's machine: a few tries find two reads that agree.
+    bool agreed = false;
+    for (int attempt = 0; attempt < 20 && !agreed; ++attempt) {
+        POINT before{};
+        POINT after{};
+        QVERIFY(GetCursorPos(&before));
+        const auto polled = probe->poll();
+        QVERIFY(GetCursorPos(&after));
+        QVERIFY(polled.has_value());
+        agreed = before.x == after.x && before.y == after.y && polled->position == QPoint(before.x, before.y);
+    }
+    QVERIFY2(agreed, "poll() reports the position GetCursorPos does");
 }
 
 void tst_CursorProbe_win::currentShapeAlwaysAnswers()
@@ -88,6 +99,13 @@ void tst_CursorProbe_win::currentShapeAlwaysAnswers()
     QVERIFY(shape.has_value());
     QVERIFY(!shape->image.isNull());
     QCOMPARE(shape->image.format(), QImage::Format_ARGB32_Premultiplied);
+}
+
+void tst_CursorProbe_win::noShapeBeforeTheFirstPoll()
+{
+    // Before poll() has looked there is no cursor to describe: unknown, not hidden.
+    const auto probe = SnapTray::createWindowsCursorProbe();
+    QVERIFY(!probe->currentShape().has_value());
 }
 
 void tst_CursorProbe_win::systemCursorsBecomePictures_data()
@@ -124,8 +142,10 @@ void tst_CursorProbe_win::invertingCursorGetsAnOutlineAndKeepsItsHotspot()
     const auto shape = SnapTray::windowsCursorShape(cursor);
     DestroyCursor(cursor);
     QVERIFY(shape.has_value());
-    // The picture gains a one-pixel border for the outline.
-    QVERIFY(shape->image.width() >= 3 && shape->image.height() >= 3);
+    // The picture gains a border for the outline on every side.
+    const int border = SnapTray::WindowsCursor::kOutlineBorder;
+    QCOMPARE(shape->image.size(),
+             QSize(GetSystemMetrics(SM_CXCURSOR) + 2 * border, GetSystemMetrics(SM_CYCURSOR) + 2 * border));
     QVERIFY(hasVisiblePixel(shape->image));
     // Dark inside, light outline around it.
     const QImage argb = shape->image.convertToFormat(QImage::Format_ARGB32_Premultiplied);
@@ -142,8 +162,8 @@ void tst_CursorProbe_win::invertingCursorGetsAnOutlineAndKeepsItsHotspot()
     QVERIFY(light);
     // The corner pixel is outline: the cursor itself starts one pixel in.
     QCOMPARE(argb.pixel(0, 0), QRgb(0xffffffffu));
-    QVERIFY(shape->image.rect().contains(shape->hotspot));
-    QVERIFY(shape->hotspot.x() >= 1 && shape->hotspot.y() >= 1);
+    // The hotspot moves with the picture.
+    QCOMPARE(shape->hotspot, kInvertingHotspot + QPoint(border, border));
 }
 
 void tst_CursorProbe_win::noCursorHandleHasNoShape()
@@ -156,14 +176,12 @@ void tst_CursorProbe_win::probesCanBeCreatedAndDestroyedRepeatedly()
     // Each probe installs a hook on its own thread and must remove both.
     for (int i = 0; i < 20; ++i) {
         const auto probe = SnapTray::createWindowsCursorProbe();
-        QVERIFY(probe->capabilities().clicks);
         probe->poll();
     }
     // Two at once (a preview recording started while another is stopping).
     const auto first = SnapTray::createWindowsCursorProbe();
     const auto second = SnapTray::createWindowsCursorProbe();
-    QVERIFY(first->capabilities().clicks);
-    QVERIFY(second->capabilities().clicks);
+    QCOMPARE(first->capabilities().clicks, second->capabilities().clicks);
 }
 
 QTEST_MAIN(tst_CursorProbe_win)

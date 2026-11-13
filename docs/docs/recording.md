@@ -131,7 +131,7 @@ If several of these happen at once, the recording still ends only once and the f
 
 The recorded video does not contain the mouse pointer. While a recording that opens in the preview runs, SnapTray keeps a separate record of the pointer next to it: where it was, what it looked like, and when buttons were pressed. Keyboard input is only recorded if you separately enable shortcut hints. This record stays with the temporary recording and is deleted with it when you save or discard; saved videos and exports never include it. It is what later editing features use to show, enlarge or highlight the pointer.
 
-On Linux (X11), Windows and macOS it includes the pointer's shape and clicks. On Windows, buttons are read with a mouse hook that only listens: clicks are never blocked, changed or delayed, and clicks made by other programs are left out. If the record cannot be written, the recording itself is not affected.
+On Linux (X11), Windows and macOS it includes the pointer's shape and clicks. On Windows, buttons are read with a mouse hook that only listens: clicks are never blocked or changed, and not noticeably delayed. Clicks that a program injects are left out; this includes your own clicks when a remote-control tool, button remapper or some tablet drivers deliver them that way. If the record cannot be written, the recording itself is not affected.
 
 On macOS this needs no extra permission: SnapTray only listens for mouse button presses, never changes or delays them, and does not ask for Input Monitoring or Accessibility for the pointer. (Input Monitoring is only requested if you turn on shortcut hints.) A pointer that an application hides, for example over a full-screen video or while you type, is recorded as hidden and is not drawn in the export.
 

@@ -135,6 +135,33 @@ changes are not covered by mocks; they need the real-device procedure below.
    difference is the A/V offset. Record machine, OS, SnapTray version,
    resolution, frame rate, encoder and power mode with the numbers.
 
+## Windows pointer probe (#321)
+
+`RecordingManager_WindowsCursorSupport` (every platform) covers the bitmap
+conversion for each cursor kind, hook message and injected-event handling, the
+queue between the hook thread and the GUI thread (order, ages, a drain from
+inside a handler, overflow counting). `RecordingManager_WindowsCursorProbe`
+(Windows) covers the factory, `poll()`, system cursors turned into pictures, a
+generated inverting cursor, and creating and destroying the hook thread. Real
+button events cannot be produced in a test without acting on the desktop;
+check them on a PC. The diagnostics line `cursor: windows, shapes yes, clicks
+yes` shows the hook was installed; "(button events lost: N times)" is added
+when the queue overflowed.
+
+| Check | Expected | Status |
+| --- | --- | --- |
+| Click, drag, text field, link, window edge | `shape` records for arrow, I-beam, hand and resize pointers; press and release for each click | Pending device test |
+| Settings > Mouse > primary button: right | Primary (physical right) button recorded as `left`. The probe applies no swap, on the understanding that the hook already reports the user's order; if this fails, swap on `SM_SWAPBUTTON` | Pending device test |
+| Middle, back and forward buttons | Recorded as `middle`, `back`, `forward` | Pending device test |
+| 100%, 150% and 200% scaling; two monitors with different scaling | Click ring centre within 1 video px of the pointer tip | Pending device test |
+| Enlarged pointer (Accessibility > Mouse pointer and touch > Size) | Recorded pointer matches the size on screen, or note the difference | Pending device test |
+| Classic (monochrome, inverting) I-beam, and an application's custom cursor | Visible with the right outline in preview and exports | Pending device test |
+| Pointer hidden by an application (full-screen video, typing) | Samples not visible; export draws no pointer | Pending device test |
+| UAC prompt or lock screen during a recording | Log says the pointer cannot be read, then that it can again; the recording continues | Pending device test |
+| Clicks through a remote-control tool or button remapper | Not recorded (injected); documented in the user docs | Pending device test |
+| Heavy load on the GUI thread while moving and clicking | No perceptible mouse lag; clicks recorded; no "button events lost" in the diagnostics | Pending device test |
+| Start and stop 20 recordings | No hook left behind (mouse responsiveness unchanged; process thread count returns to its baseline) | Pending device test |
+
 ## macOS pointer probe (#322)
 
 `RecordingManager_CursorProbeMac` covers image conversion (pixel size, hotspot,
@@ -155,7 +182,9 @@ events cannot be produced in a test; check them on a Mac. The debug log line
 | Pointer hidden by an application (full-screen video, typing) | Samples not visible; export draws no pointer | Pending device test |
 | System Settings > Mouse > primary button: right | Primary button recorded as `left` | Pending device test |
 | Middle, back and forward buttons | Recorded as `middle`, `back`, `forward` | Pending device test |
-| Main thread blocked for several seconds while clicking (event-tap source) | Tap re-enabled after the system disables it; later clicks recorded | Pending device test |
+| Main thread blocked for several seconds while clicking (event-tap source) | Log says the tap was disabled; tap re-enabled; later clicks recorded; diagnostics show "(button events lost: N times)" | Pending device test |
+| Clicks with the event-tap source on Apple silicon and on Intel | `button` records present with times matching the clicks (the tap's timestamp unit differs between the two; both are handled, neither is confirmed on a device) | Pending device test |
+| Input Monitoring revoked while recording with the event-tap source | Log says the tap cannot be re-enabled; the event monitor takes over; later clicks recorded | Pending device test |
 | Stop the recording, then click | No further callbacks (tap, run-loop source and monitor removed); repeat start/stop 20 times | Pending device test |
 
 ## Native editor follow-up (#185, #187, #188, #189, #190)

@@ -113,10 +113,28 @@ void tst_CursorProbeMac::buttonEventTypes()
 
 void tst_CursorProbeMac::eventAge()
 {
-    QCOMPARE(MacCursor::eventAgeMs(5000000000ULL, 4750000000ULL), qint64(250));
-    QCOMPARE(MacCursor::eventAgeMs(1000000ULL, 1000000ULL), qint64(0));
+    // Intel: a tick is a nanosecond, so there is only one kind of stamp.
+    const MacCursor::UptimeClock intel{5000000000ULL, 1, 1};
+    QCOMPARE(intel.nanoseconds(), quint64(5000000000ULL));
+    QCOMPARE(MacCursor::eventAgeMs(intel, 4750000000ULL), qint64(250));
+    QCOMPARE(MacCursor::eventAgeMs(intel, 5000000000ULL), qint64(0));
     // An event stamped after "now" (clock granularity) is not from the future.
-    QCOMPARE(MacCursor::eventAgeMs(1000000ULL, 2000000ULL), qint64(0));
+    QCOMPARE(MacCursor::eventAgeMs(intel, 5001000000ULL), qint64(0));
+
+    // Apple silicon: 125/3 ns per tick. 24e9 ticks are 1000 s.
+    const MacCursor::UptimeClock arm{24000000000ULL, 125, 3};
+    QCOMPARE(arm.nanoseconds(), quint64(1000000000000ULL));
+    // A stamp in ticks, 6e6 ticks (250 ms) ago.
+    QCOMPARE(MacCursor::eventAgeMs(arm, 24000000000ULL - 6000000ULL), qint64(250));
+    // The same moment stamped in nanoseconds.
+    QCOMPARE(MacCursor::eventAgeMs(arm, 1000000000000ULL - 250000000ULL), qint64(250));
+    QCOMPARE(MacCursor::eventAgeMs(arm, 24000000000ULL), qint64(0));
+    QCOMPARE(MacCursor::eventAgeMs(arm, 1000000000000ULL), qint64(0));
+    // A nanosecond stamp slightly ahead of the clock.
+    QCOMPARE(MacCursor::eventAgeMs(arm, 1000000000000ULL + 1000000ULL), qint64(0));
+    // No overflow late in a long uptime (about 49 days of ticks).
+    const MacCursor::UptimeClock late{100000000000000ULL, 125, 3};
+    QCOMPARE(MacCursor::eventAgeMs(late, 100000000000000ULL - 24000000ULL), qint64(1000));
 }
 
 void tst_CursorProbeMac::imageAtRetinaScale()
@@ -161,6 +179,11 @@ void tst_CursorProbeMac::probeReadsThePointerAndStops()
         QVERIFY(probe);
         QVERIFY(probe->name().startsWith(QLatin1String("macos-")));
         QVERIFY(probe->capabilities().shapes);
+        // Clicks come from the tap or, without Input Monitoring (as on a CI
+        // runner), from the monitor; either way they are available.
+        QVERIFY(probe->capabilities().clicks);
+        QVERIFY(probe->name() == QLatin1String("macos-event-tap")
+                || probe->name() == QLatin1String("macos-event-monitor"));
         const auto state = probe->poll();
         QVERIFY(state);
         QVERIFY(!state->physical);

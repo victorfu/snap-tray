@@ -1,13 +1,15 @@
 #include "recording/CursorProbe_mac.h"
 
+#include <QCoreApplication>
 #include <QCursor>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QThread>
 
 #import <AppKit/AppKit.h>
 #import <CoreGraphics/CoreGraphics.h>
 
-#include <time.h>
+#include <mach/mach_time.h>
 
 namespace SnapTray {
 
@@ -62,9 +64,30 @@ std::optional<bool> pressForEventType(int eventType)
     return std::nullopt;
 }
 
-qint64 eventAgeMs(quint64 nowNs, quint64 eventNs)
+namespace {
+
+// ticks * numer / denom without overflowing 64 bits.
+quint64 scaled(quint64 ticks, quint32 numer, quint32 denom)
 {
-    return nowNs > eventNs ? qint64((nowNs - eventNs) / kNanosecondsPerMillisecond) : 0;
+    if (denom == 0) return ticks;
+    return (ticks / denom) * numer + (ticks % denom) * numer / denom;
+}
+
+} // namespace
+
+quint64 UptimeClock::nanoseconds() const
+{
+    return scaled(ticks, numer, denom);
+}
+
+qint64 eventAgeMs(const UptimeClock& now, quint64 eventStamp)
+{
+    // Not ahead of the tick clock: a tick stamp (on Intel the two are one).
+    if (eventStamp <= now.ticks) {
+        return qint64(scaled(now.ticks - eventStamp, now.numer, now.denom) / kNanosecondsPerMillisecond);
+    }
+    const quint64 nowNs = now.nanoseconds();
+    return nowNs > eventStamp ? qint64((nowNs - eventStamp) / kNanosecondsPerMillisecond) : 0;
 }
 
 std::optional<CursorProbe::Shape> shapeFromImage(NSImage* image, CGPoint hotSpotPoints, qreal scale)
@@ -110,10 +133,15 @@ std::optional<CursorProbe::Shape> shapeFromImage(NSImage* image, CGPoint hotSpot
 
 namespace {
 
-quint64 uptimeNs()
+// The clock event timestamps count on (time awake since startup).
+MacCursor::UptimeClock uptimeNow()
 {
-    // The clock CGEventGetTimestamp and -[NSEvent timestamp] count on.
-    return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+    static const mach_timebase_info_data_t timebase = [] {
+        mach_timebase_info_data_t info{};
+        mach_timebase_info(&info);
+        return info;
+    }();
+    return {mach_absolute_time(), timebase.numer, timebase.denom};
 }
 
 bool pointerVisible()
@@ -158,9 +186,11 @@ constexpr CGEventMask kButtonEventMask =
     | CGEventMaskBit(kCGEventOtherMouseDown) | CGEventMaskBit(kCGEventOtherMouseUp);
 
 // The system pointer, read on the GUI thread: its image from
-// NSCursor.currentSystemCursor (whatever application set it), its visibility
-// from CGCursorIsVisible, and button presses from a listener that never
-// consumes, changes or delays an event.
+// NSCursor.currentSystemCursor, its visibility from CGCursorIsVisible, and
+// button presses from a listener that never consumes, changes or delays an
+// event. How well the first two follow a pointer that another application
+// sets or hides is on the device checklist
+// (docs/developer/recording-sync-matrix.md), not established here.
 //
 // Presses come from one of two sources. Neither asks for a permission:
 //  - a listen-only CGEventTap, used only when listening is already allowed
@@ -169,18 +199,24 @@ constexpr CGEventMask kButtonEventMask =
 //    could show the system prompt, which only a setting the user switched on
 //    may do, so it is not attempted.
 //  - otherwise an NSEvent global monitor, which needs no permission for
-//    mouse events (only key events are restricted). It does not see presses
-//    on SnapTray's own windows, which are not wanted in the record anyway.
+//    mouse events (only key events are restricted).
 //
-// Both report the buttons after the system's "primary mouse button" setting:
-// the swap is applied below the session event stream, so the primary button
-// arrives as the left one.
+// The two differ in one way: the monitor does not see presses on SnapTray's
+// own windows and the tap does (as the X11 and Windows probes do). Leaving
+// those out everywhere is #323.
+//
+// Both are expected to report the buttons after the system's "primary mouse
+// button" setting (the swap is applied below the session event stream), so
+// the primary button arrives as the left one. That is not documented and is
+// on the device checklist.
 class MacCursorProbe final : public CursorProbe
 {
 public:
     MacCursorProbe()
     {
-        startButtonSource();
+        // The run-loop source, the monitor and NSCursor all belong to the main thread.
+        Q_ASSERT(QCoreApplication::instance() && QThread::currentThread() == QCoreApplication::instance()->thread());
+        if (!CGPreflightListenEventAccess() || !startTap()) startMonitor();
         refreshShape();
         m_shapeClock.start();
     }
@@ -188,15 +224,7 @@ public:
     ~MacCursorProbe() override
     {
         if (m_monitor) [NSEvent removeMonitor:m_monitor];
-        if (m_source) {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), m_source, kCFRunLoopCommonModes);
-            CFRelease(m_source);
-        }
-        if (m_tap) {
-            CGEventTapEnable(m_tap, false);
-            CFMachPortInvalidate(m_tap);
-            CFRelease(m_tap);
-        }
+        stopTap();
     }
 
     Capabilities capabilities() const override { return {true, m_tap != nullptr || m_monitor != nil}; }
@@ -219,24 +247,48 @@ public:
     std::optional<Shape> currentShape() override { return m_shape; }
 
 private:
-    void startButtonSource()
+    // False when the tap cannot be used; nothing is left behind then.
+    bool startTap()
     {
-        if (CGPreflightListenEventAccess()) {
-            m_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, kCGEventTapOptionListenOnly,
-                                     kButtonEventMask, tapCallback, this);
-            if (m_tap) m_source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, m_tap, 0);
-            if (m_source) {
-                CFRunLoopAddSource(CFRunLoopGetMain(), m_source, kCFRunLoopCommonModes);
-                CGEventTapEnable(m_tap, true);
-                return;
-            }
-            if (m_tap) {
-                CFMachPortInvalidate(m_tap);
-                CFRelease(m_tap);
-                m_tap = nullptr;
-            }
-            qWarning() << "MacCursorProbe: event tap unavailable; using the event monitor for clicks";
+        m_tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, kCGEventTapOptionListenOnly,
+                                 kButtonEventMask, tapCallback, this);
+        if (!m_tap) {
+            qWarning() << "MacCursorProbe: the event tap was refused; using the event monitor for clicks";
+            return false;
         }
+        m_source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, m_tap, 0);
+        if (!m_source) {
+            qWarning() << "MacCursorProbe: no run-loop source for the event tap; using the event monitor for clicks";
+            stopTap();
+            return false;
+        }
+        CFRunLoopAddSource(CFRunLoopGetMain(), m_source, kCFRunLoopCommonModes);
+        CGEventTapEnable(m_tap, true);
+        if (!CGEventTapIsEnabled(m_tap)) {
+            qWarning() << "MacCursorProbe: the event tap stays disabled; using the event monitor for clicks";
+            stopTap();
+            return false;
+        }
+        return true;
+    }
+
+    void stopTap()
+    {
+        if (m_source) {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), m_source, kCFRunLoopCommonModes);
+            CFRelease(m_source);
+            m_source = nullptr;
+        }
+        if (m_tap) {
+            CGEventTapEnable(m_tap, false);
+            CFMachPortInvalidate(m_tap);
+            CFRelease(m_tap);
+            m_tap = nullptr;
+        }
+    }
+
+    void startMonitor()
+    {
         const NSEventMask mask = NSEventMaskLeftMouseDown | NSEventMaskLeftMouseUp | NSEventMaskRightMouseDown
                                  | NSEventMaskRightMouseUp | NSEventMaskOtherMouseDown | NSEventMaskOtherMouseUp;
         // Removed in the destructor before `this` goes away; delivered on the main thread.
@@ -253,9 +305,7 @@ private:
     {
         auto* self = static_cast<MacCursorProbe*>(context);
         if (type == kCGEventTapDisabledByTimeout || type == kCGEventTapDisabledByUserInput) {
-            // The system switches a tap off when its callback was slow or
-            // on some user input; it has to be switched back on.
-            if (self->m_tap) CGEventTapEnable(self->m_tap, true);
+            self->tapWasDisabled();
             return event;
         }
         self->report(int(type), CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber),
@@ -263,12 +313,34 @@ private:
         return event; // Listen-only: the event goes on unchanged.
     }
 
-    void report(int eventType, qint64 buttonNumber, quint64 eventNs)
+    // The system switches a tap off when its callback was slow or on some
+    // user input; it has to be switched back on. Button events from the gap
+    // are gone, which the recorder is told.
+    void tapWasDisabled()
+    {
+        if (!m_tap) return;
+        ++m_tapDisabledCount;
+        qWarning() << "MacCursorProbe: the system disabled the event tap (" << m_tapDisabledCount
+                   << "times so far); button events may have been missed";
+        emit buttonEventsLost();
+        CGEventTapEnable(m_tap, true);
+        if (CGEventTapIsEnabled(m_tap)) return;
+        // It will not come back (for example Input Monitoring was revoked):
+        // use the monitor instead. Not from inside the tap's own callback.
+        qWarning() << "MacCursorProbe: the event tap cannot be re-enabled; switching to the event monitor";
+        QMetaObject::invokeMethod(this, [this] {
+            if (!m_tap) return;
+            stopTap();
+            if (!m_monitor) startMonitor();
+        }, Qt::QueuedConnection);
+    }
+
+    void report(int eventType, qint64 buttonNumber, quint64 eventStamp)
     {
         const auto down = MacCursor::pressForEventType(eventType);
         const auto button = MacCursor::buttonForNumber(buttonNumber);
         if (!down || !button) return;
-        emit buttonChanged(*button, *down, MacCursor::eventAgeMs(uptimeNs(), eventNs));
+        emit buttonChanged(*button, *down, MacCursor::eventAgeMs(uptimeNow(), eventStamp));
     }
 
     // Re-reads the pointer. The converted pixels themselves are compared:
@@ -281,9 +353,15 @@ private:
         } else {
             @autoreleasepool {
                 // nil when the system cannot say: recorded as an unknown shape.
-                if (NSCursor* cursor = NSCursor.currentSystemCursor) {
+                NSCursor* cursor = NSCursor.currentSystemCursor;
+                if (cursor) {
                     next = MacCursor::shapeFromImage(cursor.image, NSPointToCGPoint(cursor.hotSpot),
                                                      scaleUnderPointer());
+                }
+                if (!next && !m_unreadableReported) {
+                    m_unreadableReported = true;
+                    qWarning() << "MacCursorProbe: a pointer shape is recorded as unknown:"
+                               << (cursor ? "its image cannot be converted" : "the system reports no current cursor");
                 }
             }
         }
@@ -296,7 +374,10 @@ private:
     CFRunLoopSourceRef m_source = nullptr;
     id m_monitor = nil;
     std::optional<Shape> m_shape;
-    quint64 m_serial = 0; // first refresh makes it 1; 0 means unknown
+    // Never 0, which means "unknown" to the recorder; grows with every change.
+    quint64 m_serial = 1;
+    int m_tapDisabledCount = 0;
+    bool m_unreadableReported = false; // logged once: it repeats on every refresh
     QElapsedTimer m_shapeClock;
 };
 
