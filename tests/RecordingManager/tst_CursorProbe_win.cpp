@@ -192,10 +192,10 @@ void tst_CursorProbe_win::systemCursorPicturesAreValidPremultiplied()
 
 void tst_CursorProbe_win::reportTheAlphaConventionOfSystemCursors()
 {
-    // Not an assertion: prints what GetIconInfo's colour bitmap holds, to
-    // settle whether Windows stores cursor colours straight or premultiplied
-    // (#341 review). A translucent pixel with a channel above its alpha can
-    // only be straight.
+    // Not an assertion: prints what GetIconInfo's colour bitmap holds, the
+    // measurement behind treating cursor colours as straight alpha (#341
+    // review). A translucent pixel with a channel above its alpha can only be
+    // straight; the wait and hand cursors had such pixels when this was added.
     for (const auto resource : {IDC_ARROW, IDC_HAND, IDC_WAIT, IDC_SIZEALL}) {
         const HICON copy = CopyIcon(static_cast<HICON>(LoadCursorW(nullptr, reinterpret_cast<LPCWSTR>(resource))));
         QVERIFY(copy);

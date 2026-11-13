@@ -25,7 +25,7 @@ class tst_WindowsCursorSupport : public QObject
 
 private slots:
     void alphaCursorIsPremultiplied();
-    void premultipliedAlphaCursorIsKept();
+    void darkTranslucentPixelsAreMultipliedToo();
     void colorCursorWithoutAlphaUsesTheMask();
     void monochromeCursorBlackWhiteAndTransparent();
     void invertingPixelsGetAFillAndAnOutline();
@@ -50,7 +50,7 @@ private slots:
 
 void tst_WindowsCursorSupport::alphaCursorIsPremultiplied()
 {
-    // 2x1, straight alpha (red above its alpha): half-transparent red, fully transparent.
+    // 2x1: half-transparent red, fully transparent.
     const std::vector<quint32> color{0x80ff0000u, 0x00000000u};
     const std::vector<quint32> mask{kClear, kClear}; // ignored once the colour has alpha
     const Picture picture = pictureFromBitmaps({2, 1, color, mask});
@@ -62,29 +62,22 @@ void tst_WindowsCursorSupport::alphaCursorIsPremultiplied()
     QCOMPARE(qAlpha(pixel(picture.image, 1, 0)), 0);
 }
 
-void tst_WindowsCursorSupport::premultipliedAlphaCursorIsKept()
+void tst_WindowsCursorSupport::darkTranslucentPixelsAreMultipliedToo()
 {
-    // No channel exceeds its alpha: these colours are (or may be) multiplied
-    // already. Multiplying again would darken translucent edges.
-    const std::vector<quint32> color{0x80800000u, 0x80404040u, 0xffffffffu, 0x00000000u};
+    // Cursor colours are straight alpha (measured on Windows, see
+    // pictureFromBitmaps). A bitmap whose translucent pixels are all dark, as
+    // the arrow's are, is no exception: nothing here exceeds its alpha, and it
+    // is still multiplied.
+    const std::vector<quint32> color{0x80404040u, 0x40202020u, 0xffffffffu, 0x00000000u};
     const std::vector<quint32> mask(4, kClear);
     const Picture picture = pictureFromBitmaps({4, 1, color, mask});
     QCOMPARE(picture.image.size(), QSize(4, 1));
-    QCOMPARE(pixel(picture.image, 0, 0), QRgb(0x80800000u));
-    QCOMPARE(pixel(picture.image, 1, 0), QRgb(0x80404040u));
+    QCOMPARE(pixel(picture.image, 0, 0), qPremultiply(QRgb(0x80404040u)));
+    QCOMPARE(qRed(pixel(picture.image, 0, 0)), 0x20);
+    QCOMPARE(pixel(picture.image, 1, 0), qPremultiply(QRgb(0x40202020u)));
+    QCOMPARE(qRed(pixel(picture.image, 1, 0)), 0x08);
     QCOMPARE(pixel(picture.image, 2, 0), QRgb(0xffffffffu));
     QCOMPARE(qAlpha(pixel(picture.image, 3, 0)), 0);
-
-    // One pixel that cannot be premultiplied makes the whole bitmap straight.
-    const std::vector<quint32> straight{0x80800000u, 0x40ffffffu};
-    const Picture multiplied = pictureFromBitmaps({2, 1, straight, mask});
-    QCOMPARE(pixel(multiplied.image, 0, 0), qPremultiply(QRgb(0x80800000u)));
-    QCOMPARE(pixel(multiplied.image, 1, 0), QRgb(0x40404040u));
-    // Either way the result is a valid premultiplied picture.
-    for (int x = 0; x < 2; ++x) {
-        const QRgb p = pixel(multiplied.image, x, 0);
-        QVERIFY(qRed(p) <= qAlpha(p) && qGreen(p) <= qAlpha(p) && qBlue(p) <= qAlpha(p));
-    }
 }
 
 void tst_WindowsCursorSupport::colorCursorWithoutAlphaUsesTheMask()
