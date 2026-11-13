@@ -16,6 +16,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - Screenshot history items are now written as a whole or not at all, so a full disk or an interrupted save can no longer leave a half-written item.
 
+### Fixed
+
+- Editing a screenshot from the Library or stepping through history with `,` and `.` no longer opens an item whose saved annotations are missing or damaged as if it had none, which could show what a mosaic or blur was hiding. Such an item is now refused with a message, and the capture you were editing stays exactly as it was.
+
 ## [1.0.72] - 2026-11-09
 
 ### Improved

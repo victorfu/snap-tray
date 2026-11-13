@@ -2,6 +2,7 @@
 
 #include "ImageColorSpaceHelper.h"
 #include "PinWindow.h"
+#include "history/HistoryReplayDocument.h"
 #include "PinWindowManager.h"
 #include "PlatformFeatures.h"
 #include "pinwindow/PinWindowPlacement.h"
@@ -78,8 +79,13 @@ void HistoryBackend::edit(int index)
     }
 
     if (!m_startReplay(entry.id)) {
+        // Tell a damaged item apart from a capture that could not start now.
+        const auto current = HistoryStore::loadEntry(entry.id);
+        const bool damaged = current && !loadHistoryReplayDocument(*current);
         showError(historyText("Edit Failed"),
-                  historyText("Failed to start history replay."));
+                  damaged
+                      ? historyText("This history item is missing data or damaged and can't be reopened.")
+                      : historyText("Failed to start history replay."));
         return;
     }
 

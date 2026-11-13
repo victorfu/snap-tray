@@ -4,6 +4,7 @@
 #include "annotation/ColorPickOverlay.h"
 #include "annotations/AnnotationStyle.h"
 #include "history/AnnotationSerializer.h"
+#include "history/HistoryReplayDocument.h"
 #include "history/HistoryRecorder.h"
 #include "platform/WindowLevel.h"
 #include "region/RegionPainter.h"
@@ -1478,7 +1479,9 @@ void RegionSelector::applyCaptureContext(const SelectorCaptureContext& context)
     m_inputHandler->setBoundarySnapSource(m_backgroundPixmap.toImage(), normalizedDpr);
     m_inputHandler->setBoundarySnapAllowed(!m_historyReplayActive);
     m_devicePixelRatio = normalizedDpr;
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
+    m_sharedSourcePixmap = context.sharedSourcePixmap
+        ? context.sharedSourcePixmap
+        : std::make_shared<const QPixmap>(m_backgroundPixmap);
     m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
     m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
@@ -1668,17 +1671,25 @@ void RegionSelector::initializeWithRegion(QScreen* screen,
 
 bool RegionSelector::beginHistoryReplay(const QString& entryId)
 {
-    m_historyReplayEntries = SnapTray::HistoryStore::loadEntries();
+    const QList<SnapTray::HistoryEntry> entries = SnapTray::HistoryStore::loadEntries();
 
     int entryIndex = -1;
-    for (int i = 0; i < m_historyReplayEntries.size(); ++i) {
-        if (m_historyReplayEntries.at(i).id == entryId) {
+    for (int i = 0; i < entries.size(); ++i) {
+        if (entries.at(i).id == entryId) {
             entryIndex = i;
             break;
         }
     }
 
     if (entryIndex < 0) {
+        return false;
+    }
+
+    // Nothing of the current edit is given up until the entry is known to load.
+    QString errorMessage;
+    auto document = SnapTray::loadHistoryReplayDocument(entries.at(entryIndex), &errorMessage);
+    if (!document) {
+        qWarning() << "RegionSelector: cannot replay history entry" << entryId << "-" << errorMessage;
         return false;
     }
 
@@ -1689,7 +1700,10 @@ bool RegionSelector::beginHistoryReplay(const QString& entryId)
         snapshotLiveReplaySlot();
     }
 
-    return loadHistoryReplayIndex(entryIndex);
+    m_historyReplayEntries = entries;
+    commitHistoryReplayEntry(entries.at(entryIndex), *document);
+    setHistoryReplayIndex(entryIndex);
+    return true;
 }
 
 bool RegionSelector::canNavigateHistoryReplay() const
@@ -1724,17 +1738,11 @@ void RegionSelector::navigateHistoryReplay(int direction)
         return;
     }
 
-    int targetIndex = m_historyReplayIndex;
-    if (direction < 0) {
-        targetIndex = (m_historyReplayIndex < 0)
-            ? 0
-            : qMin(m_historyReplayIndex + 1, m_historyReplayEntries.size() - 1);
-    }
-    else {
-        targetIndex = (m_historyReplayIndex <= 0) ? -1 : (m_historyReplayIndex - 1);
-    }
-
-    if (targetIndex == m_historyReplayIndex) {
+    // Toward older entries with ',' and back toward the live capture with '.'.
+    const int step = direction < 0 ? 1 : -1;
+    const int lastIndex = static_cast<int>(m_historyReplayEntries.size()) - 1;
+    int targetIndex = m_historyReplayIndex + step;
+    if (targetIndex < -1 || targetIndex > lastIndex) {
         return;
     }
 
@@ -1744,12 +1752,43 @@ void RegionSelector::navigateHistoryReplay(int direction)
         snapshotLiveReplaySlot();
     }
 
+    // An entry that cannot be reopened is stepped over, so it never cuts off
+    // the entries behind it or the way back to the live capture.
+    int skipped = 0;
+    for (; targetIndex >= 0 && targetIndex <= lastIndex; targetIndex += step) {
+        if (loadHistoryReplayIndex(targetIndex)) {
+            if (skipped > 0) {
+                showHistoryReplayToast(
+                    tr("Skipped %n history item(s) that can't be reopened", nullptr, skipped));
+            }
+            return;
+        }
+        ++skipped;
+    }
+
     if (targetIndex < 0) {
         restoreLiveReplaySlot();
+        if (skipped > 0) {
+            showHistoryReplayToast(
+                tr("Skipped %n history item(s) that can't be reopened", nullptr, skipped));
+        }
         return;
     }
 
-    loadHistoryReplayIndex(targetIndex);
+    // Nothing older opens. What is on screen stays exactly as it was.
+    const SnapTray::HistoryEntry& next = m_historyReplayEntries.at(m_historyReplayIndex + step);
+    showHistoryReplayToast(
+        skipped == 1 && next.isFromNewerVersion()
+            ? tr("This history item was saved by a newer version of SnapTray")
+            : tr("Older history items are missing data or damaged and can't be reopened"));
+}
+
+void RegionSelector::showHistoryReplayToast(const QString& message)
+{
+    if (m_selectionToast) {
+        m_selectionToast->showNearRect(
+            SnapTray::QmlToast::Level::Error, message, currentHistorySelectionRect());
+    }
 }
 
 void RegionSelector::snapshotLiveReplaySlot()
@@ -1831,47 +1870,40 @@ bool RegionSelector::loadHistoryReplayIndex(int index)
         return false;
     }
 
+    setHistoryReplayIndex(index);
+    return true;
+}
+
+void RegionSelector::setHistoryReplayIndex(int index)
+{
     m_historyReplayIndex = index;
     m_historyReplayActive = true;
     m_inputHandler->setBoundarySnapAllowed(false);
-    return true;
 }
 
 bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry)
 {
-    if (!entry.replayAvailable || entry.canvasPath.isEmpty()) {
+    QString errorMessage;
+    auto document = SnapTray::loadHistoryReplayDocument(entry, &errorMessage);
+    if (!document) {
+        qWarning() << "RegionSelector: cannot replay history entry" << entry.id << "-" << errorMessage;
         return false;
     }
 
-    QPixmap canvas(entry.canvasPath);
-    if (canvas.isNull()) {
-        return false;
-    }
-    if (entry.devicePixelRatio > 0.0) {
-        canvas.setDevicePixelRatio(entry.devicePixelRatio);
-    }
+    commitHistoryReplayEntry(entry, *document);
+    return true;
+}
 
-    QByteArray annotationsData;
-    if (!entry.annotationsPath.isEmpty()) {
-        QFile annotationsFile(entry.annotationsPath);
-        if (annotationsFile.open(QIODevice::ReadOnly)) {
-            annotationsData = annotationsFile.readAll();
-        }
-    }
-
-    // From here the picture changes; the previous entry's look goes with it
-    // even if loading this one fails further down.
+void RegionSelector::commitHistoryReplayEntry(const SnapTray::HistoryEntry& entry,
+                                              SnapTray::HistoryReplayDocument& document)
+{
+    // Everything that can fail has already succeeded; from here the picture changes.
     m_historyReplayBeautify.reset();
     clearHistoryReplaySelectionState();
-    const QSize replayCanvasSize = entry.canvasLogicalSize.isValid()
-        ? entry.canvasLogicalSize
-        : CoordinateHelper::toLogical(
-            canvas.size(),
-            entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0);
-    applyCanvasGeometry(replayCanvasSize);
+    applyCanvasGeometry(document.canvasLogicalSize);
 
     applyCaptureContext(
-        {canvas, entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0, m_currentScreen});
+        {document.canvas, document.devicePixelRatio, m_currentScreen, document.sourcePixmap});
     refreshMagnifierContext(m_inputState.currentPoint);
 
     m_cornerRadius = entry.cornerRadius;
@@ -1896,20 +1928,11 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
         }
     }
 
-    if (annotationsData.isEmpty()) {
-        m_annotationLayer->replaceItems({});
-    } else {
-        QString errorMessage;
-        if (!SnapTray::deserializeAnnotationLayer(
-                annotationsData, m_annotationLayer, m_sharedSourcePixmap, &errorMessage)) {
-            return false;
-        }
-    }
+    m_annotationLayer->replaceItems(std::move(document.annotations));
 
     setSelectionWindowMetadata(entry.windowTitle, entry.ownerApp);
     m_historyReplayBeautify = entry.beautify;
     update();
-    return true;
 }
 
 void RegionSelector::clearHistoryReplaySelectionState()
