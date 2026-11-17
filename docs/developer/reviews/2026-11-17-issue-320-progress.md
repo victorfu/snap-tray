@@ -56,6 +56,8 @@ The 13 pointer SVGs are original MIT SnapTray drawings; provenance is recorded i
   errors instead of silently losing the rest of the recording.
 - Reject future audio timestamps without poisoning the next contiguous fallback;
   include all trimming paths in per-source diagnostics.
+- Include the GPU readback declaration in both Windows capture engines; the
+  first native Windows CI build identified the missing WGC include.
 - Replace the new raw QML cursor enum with the shared cursor token required by
   the repository's cursor guard.
 
@@ -97,6 +99,15 @@ Release measurements on this Linux host (synthetic, reproducible fixtures):
 The blur benchmark used CPU libx264 because no CUDA encoding device was available.
 High blur is intentionally more expensive and remains opt-in; preview uses the
 selected quality, with no unlabelled quality reduction.
+
+The optional long audio benchmark uses `SNAPTRAY_LONG_AUDIO_BENCHMARK=1` and
+`QTEST_FUNCTION_TIMEOUT=900000` when invoking
+`release/bin/Video_VideoTranscoder longPitchExportBenchmark`. It generates a
+600-second 1080p/30 fps source, then brackets Keep sound on with two off exports
+at 2×. `SNAPTRAY_AUDIO_BENCHMARK_INPUT` can reuse that source and its two PCM
+sidecars; dimensions, duration and frame rate are checked before measurement.
+Run without concurrent builds for meaningful timing. The shorter blur benchmark
+uses `SNAPTRAY_ROADMAP_BENCHMARK=1` and `cameraBlurExportBenchmark`.
 
 ## Remaining hardware acceptance evidence
 

@@ -2,6 +2,7 @@
 #include "capture/CaptureFrameTiming.h"
 #include "capture/DesktopCapturePolicy.h"
 #include "capture/D3D11Frame.h"
+#include "encoding/D3D11Nv12Converter_win.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QCoreApplication>

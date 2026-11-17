@@ -1574,35 +1574,42 @@ void tst_VideoTranscoder::longPitchExportBenchmark()
 {
     if (!qEnvironmentVariableIsSet("SNAPTRAY_LONG_AUDIO_BENCHMARK")) QSKIP("Opt-in ten-minute 1080p audio benchmark");
     const QSize size(1920, 1080);
-    const QString input = m_dir.filePath("audio-benchmark.mp4");
-    std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
-    QVERIFY(encoder && encoder->start(input, size, 30));
-    QImage picture(size, QImage::Format_RGB32); picture.fill(Qt::white);
-    { QPainter p(&picture); for (int x = 0; x < size.width(); x += 40) p.fillRect(x, 0, 10, size.height(), Qt::blue); }
-    // A real 30 fps source is required: export never raises the input rate.
-    const QImage background = picture;
-    for (int i = 0; i < 18000; ++i) {
-        picture = background;
-        { QPainter p(&picture); p.fillRect((i * 7) % 1800, (i * 3) % 960, 120, 120, Qt::red); }
-        encoder->writeFrameNs(picture, qint64(i) * 1000000000LL / 30);
-        QCOMPARE(encoder->framesWritten(), i + 1);
+    const QString retained = qEnvironmentVariable("SNAPTRAY_AUDIO_BENCHMARK_INPUT");
+    const QString input = retained.isEmpty() ? m_dir.filePath("audio-benchmark.mp4") : retained;
+    if (retained.isEmpty()) {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder && encoder->start(input, size, 30));
+        QImage picture(size, QImage::Format_RGB32); picture.fill(Qt::white);
+        { QPainter p(&picture); for (int x = 0; x < size.width(); x += 40) p.fillRect(x, 0, 10, size.height(), Qt::blue); }
+        // A real 30 fps source is required: export never raises the input rate.
+        const QImage background = picture;
+        for (int i = 0; i < 18000; ++i) {
+            picture = background;
+            { QPainter p(&picture); p.fillRect((i * 7) % 1800, (i * 3) % 960, 120, 120, Qt::red); }
+            encoder->writeFrameNs(picture, qint64(i) * 1000000000LL / 30);
+            QCOMPARE(encoder->framesWritten(), i + 1);
+        }
+        QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+        encoder->finishAtNs(600000000000LL);
+        if (finished.isEmpty()) QVERIFY(finished.wait(30000));
+        QVERIFY(finished.first().first().toBool());
+        QByteArray pcm(48000 * 4, Qt::Uninitialized);
+        for (int i = 0; i < 48000; ++i) {
+            const qint16 sample = qint16(6000 * std::sin(2.0 * M_PI * 440 * i / 48000));
+            qToLittleEndian<qint16>(sample, pcm.data() + i * 4);
+            qToLittleEndian<qint16>(sample, pcm.data() + i * 4 + 2);
+        }
+        SnapTray::AudioTrackWriter track(SnapTray::AudioTracks::pathFor(input, SnapTray::AudioTracks::Track::Microphone));
+        QVERIFY(track.open());
+        for (int second = 0; second < 600; ++second) track.write(pcm, qint64(second) * 48000);
+        track.close(); QVERIFY(!track.failed());
+        SnapTray::AudioTrackWriter systemTrack(SnapTray::AudioTracks::pathFor(input, SnapTray::AudioTracks::Track::SystemAudio));
+        QVERIFY(systemTrack.open()); systemTrack.close(); QVERIFY(!systemTrack.failed());
     }
-    QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
-    encoder->finishAtNs(600000000000LL);
-    if (finished.isEmpty()) QVERIFY(finished.wait(30000));
-    QVERIFY(finished.first().first().toBool());
-    QByteArray pcm(48000 * 4, Qt::Uninitialized);
-    for (int i = 0; i < 48000; ++i) {
-        const qint16 sample = qint16(6000 * std::sin(2.0 * M_PI * 440 * i / 48000));
-        qToLittleEndian<qint16>(sample, pcm.data() + i * 4);
-        qToLittleEndian<qint16>(sample, pcm.data() + i * 4 + 2);
-    }
-    SnapTray::AudioTrackWriter track(SnapTray::AudioTracks::pathFor(input, SnapTray::AudioTracks::Track::Microphone));
-    QVERIFY(track.open());
-    for (int second = 0; second < 600; ++second) track.write(pcm, qint64(second) * 48000);
-    track.close(); QVERIFY(!track.failed());
-    SnapTray::AudioTrackWriter systemTrack(SnapTray::AudioTracks::pathFor(input, SnapTray::AudioTracks::Track::SystemAudio));
-    QVERIFY(systemTrack.open()); systemTrack.close(); QVERIFY(!systemTrack.failed());
+    const auto source = m_transcoder->probe(input);
+    QVERIFY(source.valid && source.videoSize == size && qAbs(source.durationMs - 600000) <= 40);
+    QVERIFY(source.frameRate > 29.9 && source.frameRate < 30.1);
+    QVERIFY(SnapTray::AudioTracks::exist(input));
     double times[3]{};
     for (int i = 0; i < 3; ++i) {
         VideoTranscodeRequest request;
