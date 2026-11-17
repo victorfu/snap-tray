@@ -75,6 +75,9 @@ The 13 pointer SVGs are original MIT SnapTray drawings; provenance is recorded i
 - Require a fresh painted frame before the busy-spinner comparison, and place
   both native cursor-occlusion test windows at the app's overlay level so Cocoa
   desktop windows cannot obscure their fixture.
+- Run the spinner fixture through the real initial reveal. Changing only its
+  reveal state left the selector at opacity zero, allowing Cocoa to defer its
+  drawing. Assert full opacity and native exposure before sampling pixels.
 - Reduce cursor preprocessing work after a hosted Linux run exceeded 30 ms:
   reserve sample storage, retain already ordered samples, and walk nearby input
   knots during spring integration, including backwards lead transitions.
@@ -88,15 +91,19 @@ Linux: Ubuntu 22.04, Qt 6.12.0, GCC 11.4, Debug application and tests; performan
 measurements use the Release build. Canonical scripts are run with
 `PATH=/snap/cmake/1534/bin:$PATH`; desktop/audio integration uses host X11/PulseAudio.
 
-Main advanced to `29a807e6` during the work. After integrating it, the canonical
-application build passed and the complete suite passed **262/262 tests**, with
-zero failures in **567.54 seconds**. After the asynchronous AAC and isolated
-audio-fixture fixes, the full suite again passed **262/262**, in **540.38 seconds**.
+Main advanced to `29a807e6` during the work and was integrated into this branch.
+After the final product changes, the canonical application build passed and the
+complete suite passed **262/262 tests**, with zero failures in **523.52 seconds**.
 Focused tests cover cursor gap/settling timing,
 numeric inspector commit, legacy audio preparation, imported audio persistence
 and export, and actual shape/loop-return outputs in all three formats. The
-optimized WSOLA Release suite passed all 16 cases, including pitch, chunk
-independence and seam alignment. Native CI results are recorded separately below.
+optimized audio Release suite passed all 16 cases, including pitch, chunk
+independence, seam alignment and partial imported-audio coverage. The cursor
+Release suite passed 36 cases, and the FFmpeg encoder suite passed 13, including
+exact synchronous/asynchronous AAC packet comparisons and abort/error/reuse.
+The corrected native-reveal spinner fixture passed 20 consecutive isolated X11
+runs (16.32 seconds).
+Native CI results are recorded separately below.
 
 All 93 new UI context/source pairs have nonempty translations in each of the
 24 language catalogs. XML, duplicate keys and substitution placeholders were
@@ -127,6 +134,17 @@ export, then brackets Keep sound on with two off exports at 2×.
 sidecars; dimensions, duration and frame rate are checked before measurement.
 Run without concurrent builds for meaningful timing. The shorter blur benchmark
 uses `SNAPTRAY_ROADMAP_BENCHMARK=1` and `cameraBlurExportBenchmark`.
+
+## Native CI
+
+GitHub Actions also builds and tests the native implementations. The Windows
+run includes the final sparse keep-alive fixture; the Linux run includes all
+final product changes.
+
+| Platform | Tested revision | Result | Evidence |
+| --- | --- | --- | --- |
+| Windows | `bbab53fd` | 266/266, 362.09 seconds | [CI job](https://github.com/victorfu/snap-tray/actions/runs/44141600486/job/134245563381) |
+| Linux | `bbab53fd` | 264/264, 197.08 seconds | [CI job](https://github.com/victorfu/snap-tray/actions/runs/44141600486/job/134245563925) |
 
 ## Remaining hardware acceptance evidence
 

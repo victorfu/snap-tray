@@ -133,9 +133,13 @@ void TestOCRBusyRepaint::animationRepaintsOnlySpinner()
     // Keep the preset inside the logical screen even at high scale factors.
     const QRect selection(QPoint(50, 50), screen->size() / 2);
     selector.initializeWithRegion(screen, selection.translated(screen->geometry().topLeft()), background);
-    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+    // Exercise the real reveal: merely setting the state to Revealed leaves
+    // initializeWithRegion's opacity at zero. Cocoa can then defer drawing the
+    // invisible window, making a backing-store comparison nondeterministic.
     RegionSelectorTestAccess::showForRevealTests(selector);
-    QCoreApplication::processEvents();
+    QTRY_VERIFY(RegionSelectorTestAccess::initialRevealStateIsRevealed(selector));
+    QCOMPARE(selector.windowOpacity(), 1.0);
+    QVERIFY(QTest::qWaitForWindowExposed(&selector));
     QWidget* surface = &selector;
     auto* chrome = RegionSelectorTestAccess::captureChromeWindow(selector);
     if (chrome && chrome->isVisible()) {
