@@ -3,8 +3,10 @@
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
+#include <QLockFile>
 #include <QTemporaryDir>
 #include <QtEndian>
+#include <filesystem>
 
 #include "recording/AudioTracks.h"
 #include "recording/CursorTimeline.h"
@@ -28,8 +30,15 @@ private slots:
     void createMovesTheRecordingAndSidecars();
     void createMovesTracksThePreviewIsPlaying();
     void createCanCopy();
+    void stagingKeepsSourceUntilCommit_data();
+    void stagingKeepsSourceUntilCommit();
     void createFailsCleanly();
+    void failedCleanupIsRetriedSafely();
+    void preparerReceivesRecipe();
+    void preparedRecipeInvalidatesSuppliedThumbnail();
     void failedCreateNeverLosesTheSource();
+    void failedTransferPreservesEverySource_data();
+    void failedTransferPreservesEverySource();
     void loadRejectsDamagedProjects();
     void updateKeepsTheSourceAndBumpsModified();
     void listIsNewestFirst();
@@ -47,6 +56,41 @@ private:
     QTemporaryDir m_dir;
     QString m_root;
 };
+
+void tst_RecordingProject::preparedRecipeInvalidatesSuppliedThumbnail()
+{
+    const QString source = writeRecording(QStringLiteral("prepared-poster.mp4"), false);
+    const auto original = RecordingRecipe::toJson(PreviewEditState{}, {});
+    PreviewEditState edited;
+    edited.redaction.masks.push_back({QRect(0, 0, 32, 18), 0, 5000});
+    const auto prepared = RecordingRecipe::toJson(edited, {});
+    QImage oldPoster(32, 18, QImage::Format_RGB32);
+    oldPoster.fill(Qt::green);
+    QSignalSpy changes(RecordingProjects::events(), &RecordingProjectEvents::changed);
+    QString pendingDir;
+    RecordingProjects::beforeNextManifestWriteForTests([&] {
+        QVERIFY(QFile::exists(source));
+        QVERIFY(RecordingProjects::list().isEmpty());
+        QCOMPARE(changes.count(), 0);
+        QVERIFY(QDir(pendingDir).entryList({QStringLiteral("thumbnail*.png")}, QDir::Files).isEmpty());
+    });
+    const auto project = RecordingProjects::create(source, false, original, oldPoster, 5000, {},
+        [&](const QString& dir, const QJsonObject&) -> std::optional<QJsonObject> {
+            pendingDir = dir;
+            return prepared;
+        });
+    QVERIFY(project);
+    QCOMPARE(project->recipe, prepared);
+    QCOMPARE(changes.count(), 1);
+    QVERIFY(!QFile::exists(source));
+    // The supplied unmasked poster belongs to the pre-preparation recipe.
+    // Only a newly rendered image for the committed recipe may be published.
+    QVERIFY(project->thumbnailUrl().isEmpty());
+    QVERIFY(!QFile::exists(project->thumbnailPath()));
+    oldPoster.fill(Qt::black);
+    QVERIFY(RecordingProjects::publishThumbnail(*project, oldPoster));
+    QVERIFY(!project->thumbnailUrl().isEmpty());
+}
 
 void tst_RecordingProject::init()
 {
@@ -238,6 +282,58 @@ void tst_RecordingProject::createCanCopy()
     QVERIFY(!project->title().isEmpty());
 }
 
+void tst_RecordingProject::stagingKeepsSourceUntilCommit_data()
+{
+    QTest::addColumn<bool>("copy");
+    QTest::addColumn<bool>("symlinkSource");
+    QTest::newRow("move-uses-links") << false << false;
+    QTest::newRow("copy-is-independent") << true << false;
+#ifdef Q_OS_UNIX
+    QTest::newRow("symlink-source-copies-target") << false << true;
+#endif
+}
+
+void tst_RecordingProject::stagingKeepsSourceUntilCommit()
+{
+    QFETCH(bool, copy);
+    QFETCH(bool, symlinkSource);
+    QString source = writeRecording(QStringLiteral("staging.mp4"), true);
+    if (symlinkSource) {
+        const QString alias = QDir(m_dir.path()).filePath("staging-alias.mp4");
+        QVERIFY(QFile::link(source, alias));
+        for (const QString& suffix : RecordingProjects::sidecarSuffixes()) {
+            QVERIFY(QFile::link(source + suffix, alias + suffix));
+        }
+        source = alias;
+    }
+    const auto native = [](const QString& path) { return std::filesystem::u8path(path.toUtf8().constData()); };
+    const QString probe = source + QStringLiteral(".link-probe");
+    std::error_code error;
+    std::filesystem::create_hard_link(native(source), native(probe), error);
+    if (error) QSKIP("Fixture filesystem does not support hard links");
+    QVERIFY(QFile::remove(probe));
+    bool inspected = false;
+    RecordingProjects::beforeNextManifestWriteForTests([&] {
+        inspected = true;
+        const auto dirs = QDir(m_root).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        QCOMPARE(dirs.size(), 1);
+        const QString staged = QDir(m_root).filePath(dirs.first() + "/recording.mp4");
+        QStringList suffixes = RecordingProjects::sidecarSuffixes();
+        suffixes.prepend(QString());
+        for (const QString& suffix : suffixes) {
+            QVERIFY(QFile::exists(source + suffix));
+            const bool linked = std::filesystem::equivalent(native(source + suffix), native(staged + suffix), error);
+            QVERIFY(!error);
+            QCOMPARE(linked, !copy && !symlinkSource);
+        }
+    });
+    RecordingProjects::failNextManifestWriteForTests();
+    QVERIFY(!RecordingProjects::create(source, copy, {}, {}, 1000, {}));
+    QVERIFY(inspected);
+    QCOMPARE(QFileInfo(source).size(), qint64(1024));
+    QVERIFY(QDir(m_root).entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty());
+}
+
 void tst_RecordingProject::createFailsCleanly()
 {
     QVERIFY(!RecordingProjects::create(QDir(m_dir.path()).filePath(QStringLiteral("missing.mp4")), false, {}, {}, 0, {})
@@ -245,8 +341,7 @@ void tst_RecordingProject::createFailsCleanly()
     QVERIFY(RecordingProjects::list().isEmpty());
 }
 
-// PR #203 review: a failure after the recording was moved (a full disk at
-// the manifest) moves everything back instead of deleting the only copy.
+// A manifest failure leaves the source and every sidecar in place for retry.
 void tst_RecordingProject::failedCreateNeverLosesTheSource()
 {
     const QString source = writeRecording(QStringLiteral("SnapTray_Recording_keep.mp4"), true);
@@ -262,6 +357,88 @@ void tst_RecordingProject::failedCreateNeverLosesTheSource()
     QVERIFY(RecordingProjects::list().isEmpty());
     // The next try works.
     QVERIFY(RecordingProjects::create(source, false, {}, {}, 1000, {}).has_value());
+}
+
+void tst_RecordingProject::failedTransferPreservesEverySource_data()
+{
+    QTest::addColumn<QString>("blockedSuffix");
+    QTest::newRow("video") << QString();
+    QTest::newRow("last-sidecar") << RecordingProjects::sidecarSuffixes().last();
+}
+
+void tst_RecordingProject::failedTransferPreservesEverySource()
+{
+    QFETCH(QString, blockedSuffix);
+    const QString source = writeRecording(QStringLiteral("transfer.mp4"), true);
+    QVERIFY(!source.isEmpty());
+    const auto prepare = [&](const QString& dir, const QJsonObject&) -> std::optional<QJsonObject> {
+        // Occupy the copy destination to fail after asset preparation, and
+        // (for the last sidecar) after the other media files were staged.
+        if (!QDir(dir).mkdir(QStringLiteral("recording.mp4") + blockedSuffix)) return std::nullopt;
+        return QJsonObject{};
+    };
+    QVERIFY(!RecordingProjects::create(source, false, {}, {}, 1000, {}, prepare));
+    QCOMPARE(QFileInfo(source).size(), qint64(1024));
+    for (const QString& suffix : RecordingProjects::sidecarSuffixes()) {
+        QFile file(source + suffix);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        QCOMPARE(file.readAll(), suffix.toUtf8());
+    }
+    QVERIFY(QDir(m_root).entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty());
+    QVERIFY(RecordingProjects::create(source, false, {}, {}, 1000, {}));
+}
+
+void tst_RecordingProject::failedCleanupIsRetriedSafely()
+{
+    QVERIFY(QDir().mkpath(QDir(m_root).filePath("legacy-unreadable")));
+    const QString source = writeRecording(QStringLiteral("cleanup.mp4"), true);
+    RecordingProjects::failNextManifestWriteForTests();
+    RecordingProjects::failNextProjectCleanupForTests();
+    QVERIFY(!RecordingProjects::create(source, false, {}, {}, 0, {}));
+    QVERIFY(QFileInfo::exists(source));
+    QDir root(m_root);
+    auto markers = root.entryList({".creating-*.pending"}, QDir::Files | QDir::Hidden);
+    QCOMPARE(markers.size(), 1);
+    const QString pending = markers.first();
+    auto dirs = root.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    dirs.removeAll("legacy-unreadable");
+    QCOMPARE(dirs.size(), 1);
+    const QString incomplete = root.filePath(dirs.first());
+    QVERIFY(QFileInfo::exists(QDir(incomplete).filePath("recording.mp4")));
+    // A live creator's lock protects its staged directory from another save.
+    QLockFile active(root.filePath(pending + ".lock"));
+    QVERIFY(active.tryLock(0));
+    auto committed = RecordingProjects::create(writeRecording("second.mp4", false), false, {}, {}, 0, {});
+    QVERIFY(committed);
+    QVERIFY(QFileInfo::exists(incomplete));
+    active.unlock();
+    // Simulate a crash after commit but before the marker was removed.
+    const QString committedMarker = root.filePath(".creating-" + QFileInfo(committed->dir).fileName() + ".pending");
+    QFile marker(committedMarker);
+    QVERIFY(marker.open(QIODevice::WriteOnly));
+    marker.close();
+    QVERIFY(RecordingProjects::create(source, false, {}, {}, 0, {}));
+    QVERIFY(!QFileInfo::exists(incomplete));
+    QVERIFY(RecordingProjects::load(committed->dir));
+    QVERIFY(QFileInfo::exists(root.filePath("legacy-unreadable")));
+    QVERIFY(root.entryList({".creating-*.pending"}, QDir::Files | QDir::Hidden).isEmpty());
+}
+
+void tst_RecordingProject::preparerReceivesRecipe()
+{
+    const QJsonObject original{{"snapshot", 42}};
+    QJsonObject received;
+    auto project = RecordingProjects::create(writeRecording("snapshot.mp4", false), false, original, {}, 0, {},
+        [&](const QString&, const QJsonObject& recipe) -> std::optional<QJsonObject> {
+            received = recipe;
+            auto prepared = recipe;
+            prepared.insert("prepared", true);
+            return prepared;
+        });
+    QVERIFY(project);
+    QCOMPARE(received, original);
+    QCOMPARE(project->recipe["snapshot"].toInt(), 42);
+    QVERIFY(project->recipe["prepared"].toBool());
 }
 
 void tst_RecordingProject::loadRejectsDamagedProjects()
