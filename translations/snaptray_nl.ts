@@ -7896,4 +7896,94 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
         <translation>Uitlijnen op tekst: markeerstiftstreken worden uitgelijnd op gedetecteerde tekstregels</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Afbeeldingen rangschikken</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Bekijk de indeling vóór het toepassen</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Indeling</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Handmatig</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Oorspronkelijke afmetingen</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Horizontaal, gelijke hoogte</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Verticaal, gelijke breedte</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Bronpixels niet vergroten</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Gebruik de kleinste bron als groottelimiet</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Tussenruimte</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Afbeeldingsvolgorde (nummers komen overeen met het canvas)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Afbeelding %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Eerder</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Afbeelding %1 eerder plaatsen</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Later</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Afbeelding %1 later plaatsen</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Kies Handmatig om uw vrije indeling te herstellen en afbeeldingen op het canvas te verplaatsen.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuleren</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Toepassen</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>De indeling overschrijdt de uitvoerlimieten of bevat ongeldige afbeeldingen.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Uitvoer: %1 × %2 pixels</translation>
+    </message>
+</context>
 </TS>

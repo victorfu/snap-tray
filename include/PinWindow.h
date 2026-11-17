@@ -10,6 +10,7 @@
 #include <QElapsedTimer>
 #include <QPointer>
 #include <QVector>
+#include <QHash>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -22,6 +23,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 #include "WatermarkRenderer.h"
 #include "LoadingSpinnerRenderer.h"
 #include "pinwindow/ResizeHandler.h"
+#include "pinwindow/PinLayoutGeometry.h"
 #include "tools/ToolId.h"
 #include "annotation/AnnotationHostAdapter.h"
 #include "region/ShapeAnnotationEditor.h"
@@ -51,6 +53,7 @@ class QmlWindowedToolbar;
 class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
+class QmlDialog;
 struct CaptureSessionWriteRequest;
 class ToolbarTooltipController;
 }
@@ -156,6 +159,7 @@ public:
     void exitRegionLayoutMode(bool apply);
     bool isRegionLayoutMode() const;
     void prepareForMerge();
+    PinLayoutGeometry::Source mergeSourceGeometry() const;
     QPixmap exportPixmapForMerge() const;
     bool isAutoBlurInProgress() const { return m_autoBlurInProgress; }
 
@@ -224,13 +228,15 @@ private:
     void handleApplicationStateChanged(Qt::ApplicationState state);
     QString screenMenuLabel(QScreen* screen, int index, bool isPrimary) const;
     void mergePinsFromContextMenu();
+    void showRegionLayoutDialog();
     int eligibleMergePinCount() const;
     void adjustOpacityByStep(int direction);
     void saveToFile();
     void copyToClipboard();
     bool ensureAutoBlurReadyForExport();
-    QPixmap getExportPixmapCore(bool includeDisplayEffects) const;
-    void drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize) const;
+    QPixmap getExportPixmapCore(bool includeDisplayEffects, bool nativeResolution = false) const;
+    void drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize,
+                                  bool nativeResolution = false) const;
     QPixmap getExportPixmap() const;
 
     // Performance optimization: ensure transform cache is valid
@@ -325,7 +331,8 @@ private:
     void keepRegionLayoutControlsOnScreen();
     void drawRegionLayoutAnnotations(QPainter& painter,
                                      const QSize& layoutSize,
-                                     bool normalizeToRecomposedOrigin) const;
+                                     bool normalizeToRecomposedOrigin,
+                                     bool nativeResolution = false) const;
     void updateSubToolbarPosition();
     void hideSubToolbar();
     void showEmojiPickerPopup();
@@ -570,6 +577,10 @@ private:
         bool croppedHasMultiRegionData = false;
         QPoint annotationOffsetDisplay;
         std::uint64_t annotationHistoryState = 0;
+        bool isLayout = false;
+        qreal layoutViewScale = 1.0;
+        std::uint64_t layoutHistoryCeiling = 0;
+        QHash<QPair<quint64, quint64>, QPointF> layoutAnnotationOffsets;
     };
     QVector<CropUndoEntry> m_cropUndoStack;
     QVector<CropUndoEntry> m_cropRedoStack;
@@ -594,6 +605,7 @@ private:
 
     // Region Layout Mode
     RegionLayoutManager* m_regionLayoutManager = nullptr;
+    QPointer<SnapTray::QmlDialog> m_regionLayoutDialog;
     QVector<LayoutRegion> m_storedRegions;
     bool m_hasMultiRegionData = false;
     QPoint m_layoutModeMousePos;  // Widget/view coordinates for layout chrome hover

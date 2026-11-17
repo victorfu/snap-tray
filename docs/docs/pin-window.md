@@ -75,6 +75,16 @@ Changing the frame rate while Live Update is running also updates the capture en
 
 With click-through on, clicks pass through the pin to the window below, and a **Click-through · Turn off ✕** label sits at the pin's top-right corner. Click that label to turn it off, or use **Turn Off Click-through for All Pins** in the tray menu. Click-through is available on macOS and Windows.
 
+### Arrange merged images
+
+**Merge Pins** keeps its existing original-size, wrapped layout. On the merged pin (or a multi-region capture), choose **Adjust Region Layout** to preview original sizes, a horizontal row with equal heights, or a vertical column with equal widths. Change spacing and use **Earlier / Later** to change image order. Numbers identify the same source image throughout the edit.
+
+**Do not enlarge source pixels** is on by default. Equal-height/width modes use the smallest source dimension as the shared limit at the output DPR, preserving aspect ratios within pixel rounding. The dialog shows the saved image's pixel dimensions; screen size and display zoom do not select output quality. Turning the option off uses the largest source's natural logical height/width. Spacing is measured in logical output units.
+
+Choose **Manual** to restore the free layout you had before trying automatic arrangements in this editing session, then drag or resize on the canvas. **Cancel** restores the layout from before entering the editor. **Apply** commits one image undo step; open the annotation toolbar to Undo or Redo it. Source annotations and redactions are included in merged pixels, and merging waits for auto-blur. Annotations added to the merged pin retain the existing layout behavior: their centers follow their source region while their visual size stays fixed.
+
+Layouts support up to 20 images, 10,000 logical units per canvas dimension, and 64 megapixels of output. Invalid or oversized layouts are rejected before composition. Saved images and history continue using the existing output pipeline.
+
 ## Annotation in pin window
 
 Press `Space`, or click **Annotate** on the hover bar, to open a lightweight annotation toolbar dedicated to the current pinned image. Beautify is on that toolbar too.

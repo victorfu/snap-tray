@@ -85,8 +85,11 @@ private slots:
     void testApplyCrop_RefreshesMosaicSourceInsideRemoveCommand();
     void testApplyCrop_RefreshesMosaicSourceInsideUndoneAddCommand();
     void testRegionLayoutApply_MovesAnnotationAfterSuccessfulRecompose();
+    void automaticLayoutUndoPreservesAnnotationHistory();
+    void automaticLayoutUndoBeforeOpeningToolbar();
+    void automaticLayoutPreservesExistingRedoSnapshots();
     void testRegionLayoutApply_RefreshesMosaicSourceInsideUndoneAddCommand();
-    void testRegionLayoutApply_MaterializesResizedRegionForNextEdit();
+    void testRegionLayoutApply_PreservesNativeRegionForNextEdit();
     void testRegionLayoutApply_RecomposeFailureKeepsModeActive();
     void testRegionLayoutZoomMapsRenderingInputAndApply_data();
     void testRegionLayoutZoomMapsRenderingInputAndApply();
@@ -530,6 +533,146 @@ void TestPinWindowCropUndo::testRegionLayoutApply_MovesAnnotationAfterSuccessful
     QCOMPARE(window.m_originalPixmap.deviceIndependentSize().toSize(), QSize(250, 100));
     QVERIFY(window.m_sharedSourcePixmap != nullptr);
     QVERIFY(pixmapsEqual(*window.m_sharedSourcePixmap, window.m_originalPixmap));
+    const QPixmap arranged = window.m_originalPixmap;
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(marker->boundingRect(), originalAnnotationRect);
+    window.handleToolbarRedo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, arranged));
+    QCOMPARE(marker->boundingRect(), originalAnnotationRect.translated(40, 0));
+}
+
+void TestPinWindowCropUndo::automaticLayoutUndoPreservesAnnotationHistory()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, {0, 0}, nullptr, false);
+    window.showToolbar();
+    QVector<LayoutRegion> regions;
+    for (int i = 0; i < 2; ++i) {
+        LayoutRegion region;
+        region.rect = QRect(i * 110, 0, 100, 100);
+        region.originalRect = region.rect;
+        region.image = source.toImage().copy(region.rect);
+        region.index = i + 1;
+        regions.append(region);
+    }
+    auto* layer = window.m_annotationLayer;
+    layer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{{130, 30}, {160, 60}}, QColor(Qt::red), 3,
+        LineEndStyle::None, LineStyle::Solid));
+    const auto id = layer->idAt(0);
+    const QRect beforeMove = layer->itemAt(0)->boundingRect();
+    QVERIFY(layer->beginGesture(id));
+    layer->itemAt(0)->translate({5, 5});
+    QVERIFY(layer->commitGesture(AnnotationLayer::ModifyGeometry));
+    const QRect beforeLayout = layer->itemAt(0)->boundingRect();
+    window.setMultiRegionData(regions);
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->setArrangementMode(3);
+    window.m_regionLayoutManager->moveArrangementItem(1, -1);
+    window.exitRegionLayoutMode(true);
+    const QPixmap arranged = window.m_originalPixmap;
+    const QRect afterLayout = layer->itemAt(0)->boundingRect();
+    QVERIFY(afterLayout != beforeLayout);
+    QCOMPARE(window.m_cropUndoStack.size(), 1);
+
+    // A post-layout geometry edit creates newer hidden snapshots on undo.
+    QVERIFY(layer->beginGesture(id));
+    layer->itemAt(0)->translate({9, 4});
+    QVERIFY(layer->commitGesture(AnnotationLayer::ModifyGeometry));
+    const QRect afterNewMove = layer->itemAt(0)->boundingRect();
+    window.handleToolbarUndo();
+    QCOMPARE(layer->itemAt(0)->boundingRect(), afterLayout);
+    window.handleToolbarUndo();
+    QCOMPARE(layer->itemAt(0)->boundingRect(), beforeLayout);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    window.handleToolbarUndo(); // pre-layout Modify swaps its owned snapshot
+    QCOMPARE(layer->itemAt(0)->boundingRect(), beforeMove);
+    window.handleToolbarRedo();
+    QCOMPARE(layer->itemAt(0)->boundingRect(), beforeLayout);
+    window.handleToolbarRedo();
+    QCOMPARE(layer->itemAt(0)->boundingRect(), afterLayout);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, arranged));
+    window.handleToolbarRedo();
+    QCOMPARE(layer->itemAt(0)->boundingRect(), afterNewMove);
+    window.handleToolbarUndo();
+    window.handleToolbarUndo();
+    QCOMPARE(layer->itemAt(0)->boundingRect(), beforeLayout);
+    window.handleToolbarRedo();
+    window.handleToolbarRedo();
+    QCOMPARE(layer->itemAt(0)->boundingRect(), afterNewMove);
+}
+
+void TestPinWindowCropUndo::automaticLayoutUndoBeforeOpeningToolbar()
+{
+    const auto source = createPatternPixmap(210, 100);
+    PinWindow window(source, {0, 0}, nullptr, false);
+    QVERIFY(!window.m_annotationLayer);
+    QVector<LayoutRegion> regions(2);
+    for (int i = 0; i < 2; ++i) {
+        regions[i].rect = QRect(i * 110, 0, 100, 100);
+        regions[i].originalRect = regions[i].rect;
+        regions[i].image = source.toImage().copy(regions[i].rect);
+    }
+    window.setMultiRegionData(regions);
+    window.setZoomLevel(2.0);
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->setArrangementMode(3);
+    window.exitRegionLayoutMode(true);
+    const auto arranged = window.m_originalPixmap;
+    QVERIFY(!pixmapsEqual(arranged, source));
+    QCOMPARE(window.getExportPixmapWithAnnotations().size(), arranged.size());
+    window.setZoomLevel(0.75);
+    QCOMPARE(window.getExportPixmapWithAnnotations().size(), arranged.size());
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString outputPath = directory.filePath("arranged.png");
+    QVERIFY(window.getExportPixmapWithAnnotations().save(outputPath));
+    QCOMPARE(QImage(outputPath).convertToFormat(QImage::Format_ARGB32),
+             arranged.toImage().convertToFormat(QImage::Format_ARGB32));
+    window.showToolbar();
+    QVERIFY(window.canUndoCrop());
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    window.handleToolbarRedo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, arranged));
+}
+
+void TestPinWindowCropUndo::automaticLayoutPreservesExistingRedoSnapshots()
+{
+    PinWindow window(createPatternPixmap(210, 100), {0, 0}, nullptr, false);
+    window.showToolbar();
+    auto* layer = window.m_annotationLayer;
+    layer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{{20, 30}, {50, 60}}, QColor(Qt::red), 3,
+        LineEndStyle::None, LineStyle::Solid));
+    const auto id = layer->idAt(0);
+    const QRect left = layer->itemAt(0)->boundingRect();
+    QVERIFY(layer->beginGesture(id));
+    layer->itemAt(0)->translate({110, 0});
+    QVERIFY(layer->commitGesture(AnnotationLayer::ModifyGeometry));
+    layer->undo(); // an existing redo snapshot belongs to a different region
+    QVector<LayoutRegion> regions(2);
+    for (int i = 0; i < 2; ++i) {
+        regions[i].rect = QRect(i * 110, 0, 100, 100);
+        regions[i].originalRect = regions[i].rect;
+        regions[i].image = window.m_originalPixmap.toImage().copy(regions[i].rect);
+    }
+    window.setMultiRegionData(regions);
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->setArrangementMode(3);
+    window.exitRegionLayoutMode(true);
+    window.handleToolbarRedo(); // redo old Modify in the arranged coordinate space
+    const QRect arrangedRight = layer->itemAt(0)->boundingRect();
+    QCOMPARE(arrangedRight, left.translated(0, 108));
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        window.handleToolbarUndo(); // replaces the Modify snapshot object
+        window.handleToolbarUndo(); // undo layout
+        QCOMPARE(layer->itemAt(0)->boundingRect(), left);
+        window.handleToolbarRedo(); // redo layout
+        window.handleToolbarRedo(); // redo old Modify
+        QCOMPARE(layer->itemAt(0)->boundingRect(), arrangedRight);
+    }
 }
 
 void TestPinWindowCropUndo::testRegionLayoutApply_RefreshesMosaicSourceInsideUndoneAddCommand()
@@ -614,7 +757,7 @@ void TestPinWindowCropUndo::testRegionLayoutApply_RefreshesMosaicSourceInsideUnd
     QCOMPARE(actual, expected);
 }
 
-void TestPinWindowCropUndo::testRegionLayoutApply_MaterializesResizedRegionForNextEdit()
+void TestPinWindowCropUndo::testRegionLayoutApply_PreservesNativeRegionForNextEdit()
 {
     const QPixmap source = createPatternPixmap(100, 100);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
@@ -640,12 +783,12 @@ void TestPinWindowCropUndo::testRegionLayoutApply_MaterializesResizedRegionForNe
     QCOMPARE(window.m_storedRegions.size(), 1);
     QCOMPARE(window.m_storedRegions[0].rect, QRect(0, 0, 200, 200));
     QCOMPARE(window.m_storedRegions[0].originalRect, QRect(0, 0, 200, 200));
-    QCOMPARE(window.m_storedRegions[0].image.size(), QSize(200, 200));
+    QCOMPARE(window.m_storedRegions[0].image, source.toImage());
     const QPixmap firstApply = window.m_originalPixmap;
 
-    // Re-enter and apply without another resize. The committed per-region
-    // image must already match the 200x200 rect, so no transparent quadrant
-    // appears and the result remains byte-for-byte stable.
+    // The renderer uses the explicit 200x200 rect with the retained 100x100
+    // source. Re-entering must not create a transparent quadrant or resample
+    // the already resized output again.
     window.enterRegionLayoutMode();
     window.exitRegionLayoutMode(true);
 

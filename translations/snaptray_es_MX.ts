@@ -7896,4 +7896,94 @@ Puede estar en uso por otra aplicación.</translation>
         <translation>Ajustar al texto: los trazos del marcador se alinean con las líneas de texto detectadas</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Organizar imágenes</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Vista previa de la distribución antes de aplicar</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Distribución</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Manual</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Tamaños originales</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Horizontal, misma altura</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Vertical, mismo ancho</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>No ampliar los píxeles de origen</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Usar el origen más pequeño como límite de tamaño</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Espaciado</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Orden de imágenes (los números coinciden con el lienzo)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Imagen %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Antes</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Mover la imagen %1 antes</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Después</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Mover la imagen %1 después</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Elige Manual para restaurar la distribución libre y mover imágenes en el lienzo.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Aplicar</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>La distribución supera los límites de salida o contiene imágenes no válidas.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Salida: %1 × %2 píxeles</translation>
+    </message>
+</context>
 </TS>

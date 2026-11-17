@@ -7896,4 +7896,94 @@ Den kan användas av ett annat program.</translation>
         <translation>Fäst mot text: markörens streck justeras efter identifierade textrader</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Ordna bilder</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Förhandsgranska layouten före tillämpning</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Layout</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Manuell</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Ursprungliga storlekar</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Horisontell, samma höjd</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Vertikal, samma bredd</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Förstora inte källpixlar</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Använd den minsta källan som storleksgräns</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Mellanrum</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Bildordning (numren motsvarar arbetsytan)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Bild %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Tidigare</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Flytta bild %1 tidigare</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Senare</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Flytta bild %1 senare</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Välj Manuell för att återställa din fria layout och flytta bilder på arbetsytan.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Tillämpa</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Layouten överskrider utdatagränserna eller innehåller ogiltiga bilder.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Utdata: %1 × %2 pixlar</translation>
+    </message>
+</context>
 </TS>

@@ -10,8 +10,35 @@
 #include <QDebug>
 #include <algorithm>
 #include <utility>
+#include <numeric>
+#include <cmath>
+#include <limits>
 
 namespace {
+
+const QString kSourceLogicalSizeKey = QStringLiteral("SnapTray.SourceLogicalSize");
+
+QSize sourceLogicalSize(const LayoutRegion& region)
+{
+    const auto parts = region.image.text(kSourceLogicalSizeKey).split(QLatin1Char('x'));
+    if (parts.size() == 2) {
+        const QSize recorded(parts[0].toInt(), parts[1].toInt());
+        if (!recorded.isEmpty()) return recorded;
+    }
+    const qreal dpr = region.image.devicePixelRatio();
+    if (!std::isfinite(dpr) || dpr <= 0) return {};
+    const qreal width = region.image.width() / dpr;
+    const qreal height = region.image.height() / dpr;
+    const qreal maxRounded = std::numeric_limits<int>::max() - 1.0;
+    if (!std::isfinite(width) || !std::isfinite(height)
+        || width > maxRounded || height > maxRounded) return {};
+    return QSize(qRound(width), qRound(height));
+}
+
+void recordSourceLogicalSize(QImage& image, const QSize& size)
+{
+    image.setText(kSourceLogicalSizeKey, QStringLiteral("%1x%2").arg(size.width()).arg(size.height()));
+}
 
 struct ResizeDirections
 {
@@ -176,12 +203,21 @@ RegionLayoutManager::RegionLayoutManager(QObject* parent)
 // Mode Control
 // ============================================================================
 
-void RegionLayoutManager::enterLayoutMode(const QVector<LayoutRegion>& regions, const QSize& canvasSize)
+void RegionLayoutManager::enterLayoutMode(const QVector<LayoutRegion>& regions, const QSize& canvasSize,
+                                         qreal outputDpr, const QTransform& outputOrientation)
 {
     if (m_active) {
         return;
     }
 
+    m_freeRegions = regions;
+    m_arrangementMode = 0;
+    m_outputDpr = outputDpr;
+    m_outputOrientation = outputOrientation;
+    m_arrangementValid = true;
+    m_arrangementOptions = {};
+    m_arrangementOptions.order.resize(regions.size());
+    std::iota(m_arrangementOptions.order.begin(), m_arrangementOptions.order.end(), 0);
     m_state.regions = regions;
     m_state.originalSnapshot = regions;
     m_state.canvasSize = canvasSize;
@@ -220,6 +256,109 @@ void RegionLayoutManager::exitLayoutMode(bool applyChanges)
 bool RegionLayoutManager::isActive() const
 {
     return m_active;
+}
+
+QVariantList RegionLayoutManager::arrangementOrder() const
+{
+    QVariantList result;
+    for (int index : m_arrangementOptions.order) result.append(index);
+    return result;
+}
+
+bool RegionLayoutManager::arrangementValid() const
+{
+    QRect bounds;
+    for (const auto& region : m_state.regions) {
+        if (region.image.isNull() || region.rect.isEmpty()) return false;
+        if (region.rect.x() < 0 || region.rect.y() < 0
+            || qint64(region.rect.x()) + region.rect.width() > PinLayoutGeometry::MaxCanvasExtent
+            || qint64(region.rect.y()) + region.rect.height() > PinLayoutGeometry::MaxCanvasExtent)
+            return false;
+        bounds = bounds.united(region.rect);
+    }
+    return m_arrangementValid && m_state.regions.size() <= PinLayoutGeometry::MaxSources
+        && PinLayoutGeometry::safeOutputSize(bounds.size(), m_outputDpr);
+}
+
+QString RegionLayoutManager::outputDescription() const
+{
+    if (!arrangementValid()) return tr("Layout exceeds the output limits or has invalid images.");
+    QRect bounds;
+    for (const auto& region : m_state.regions) bounds = bounds.united(region.rect);
+    const QSize orientedSize = m_outputOrientation.mapRect(bounds).size();
+    const QSize pixels = CoordinateHelper::toPhysical(orientedSize, m_outputDpr);
+    return tr("Output: %1 × %2 pixels").arg(pixels.width()).arg(pixels.height());
+}
+
+void RegionLayoutManager::setArrangementMode(int mode)
+{
+    if (!m_active || m_state.isDragging || m_state.isResizing || mode < 0 || mode > 3
+        || mode == m_arrangementMode) return;
+    if (m_arrangementMode == 0) m_freeRegions = m_state.regions;
+    m_arrangementMode = mode;
+    updateArrangement();
+}
+
+void RegionLayoutManager::setArrangementGap(int gap)
+{
+    if (!m_active || gap < 0 || gap > PinLayoutGeometry::MaxCanvasExtent) return;
+    m_arrangementOptions.gap = gap;
+    if (m_arrangementMode != 0) updateArrangement();
+    else emit layoutChanged();
+}
+
+void RegionLayoutManager::setPreventUpscale(bool prevent)
+{
+    if (!m_active) return;
+    m_arrangementOptions.preventUpscale = prevent;
+    if (m_arrangementMode != 0) updateArrangement();
+    else emit layoutChanged();
+}
+
+void RegionLayoutManager::moveArrangementItem(int position, int direction)
+{
+    auto& order = m_arrangementOptions.order;
+    if (!m_active || m_arrangementMode == 0 || (direction != -1 && direction != 1)
+        || position < 0 || position >= order.size()) return;
+    const int target = position + direction;
+    if (target < 0 || target >= order.size()) return;
+    order.swapItemsAt(position, target);
+    updateArrangement();
+}
+
+void RegionLayoutManager::updateArrangement()
+{
+    if (m_arrangementMode == 0) {
+        m_state.regions = m_freeRegions;
+        m_arrangementValid = true;
+    } else {
+        m_arrangementOptions.mode = static_cast<PinLayoutGeometry::Mode>(m_arrangementMode - 1);
+        QVector<PinLayoutGeometry::Source> sources;
+        for (const auto& region : m_freeRegions) {
+            sources.append({m_outputOrientation.mapRect(region.image.rect()).size(),
+                region.image.devicePixelRatio(),
+                m_outputOrientation.mapRect(QRect(QPoint(), sourceLogicalSize(region))).size()});
+        }
+        const auto geometry = PinLayoutGeometry::calculate(sources, m_outputDpr, m_arrangementOptions);
+        bool invertible = false;
+        const auto inverse = m_outputOrientation.inverted(&invertible);
+        m_arrangementValid = geometry.valid() && invertible;
+        if (m_arrangementValid) {
+            // Keep vector identity stable: annotation ownership uses the source
+            // index. Calculate in output space, then undo the pin's orientation
+            // so Horizontal/Vertical and order describe the final visible image.
+            m_state.regions = m_freeRegions;
+            QRect bounds;
+            for (int i = 0; i < m_state.regions.size(); ++i) {
+                const QRect rect = inverse.mapRect(QRectF(geometry.placements[i])).toAlignedRect();
+                m_state.regions[i].rect = rect;
+                bounds = bounds.united(rect);
+            }
+            for (auto& region : m_state.regions) region.rect.translate(-bounds.topLeft());
+        }
+    }
+    recalculateBounds();
+    emit layoutChanged();
 }
 
 // ============================================================================
@@ -332,6 +471,7 @@ int RegionLayoutManager::hoveredIndex() const
 
 void RegionLayoutManager::startDrag(const QPoint& pos)
 {
+    if (m_arrangementMode != 0) return;
     if (m_state.selectedIndex < 0 || m_state.selectedIndex >= m_state.regions.size()) {
         return;
     }
@@ -395,6 +535,7 @@ bool RegionLayoutManager::isDragging() const
 
 void RegionLayoutManager::startResize(ResizeHandler::Edge edge, const QPoint& pos)
 {
+    if (m_arrangementMode != 0) return;
     if (m_state.selectedIndex < 0 || m_state.selectedIndex >= m_state.regions.size()) {
         return;
     }
@@ -452,13 +593,19 @@ QPixmap RegionLayoutManager::recomposeImage(
     qreal dpr,
     QVector<LayoutRegion>* committedRegions) const
 {
-    if (dpr <= 0.0 || m_state.regions.isEmpty()) {
+    if (m_state.regions.isEmpty() || m_state.regions.size() > PinLayoutGeometry::MaxSources
+        || !m_arrangementValid) {
         return QPixmap();
     }
 
     // Calculate bounding box of all regions
     QRect bounds;
     for (const auto& region : m_state.regions) {
+        if (region.rect.isEmpty() || region.rect.x() < 0 || region.rect.y() < 0
+            || qint64(region.rect.x()) + region.rect.width() > PinLayoutGeometry::MaxCanvasExtent
+            || qint64(region.rect.y()) + region.rect.height() > PinLayoutGeometry::MaxCanvasExtent) {
+            return {};
+        }
         if (bounds.isNull()) {
             bounds = region.rect;
         } else {
@@ -466,7 +613,7 @@ QPixmap RegionLayoutManager::recomposeImage(
         }
     }
 
-    if (bounds.isEmpty()) {
+    if (!PinLayoutGeometry::safeOutputSize(bounds.size(), dpr)) {
         return QPixmap();
     }
 
@@ -523,7 +670,9 @@ QPixmap RegionLayoutManager::recomposeImage(
             LayoutRegion finalRegion = region;
             finalRegion.rect = targetRect;
             finalRegion.originalRect = targetRect;
-            finalRegion.image = std::move(materializedImage);
+            // Resampling belongs to the composed output only. Retain the final
+            // visible source pixels so Apply/undo/history never invent detail
+            // for a later no-upscale layout or repeatedly resample a source.
             finalRegions.append(std::move(finalRegion));
         }
     }
@@ -561,12 +710,20 @@ QPointF RegionLayoutManager::annotationTranslation(
     qreal viewScale,
     bool normalizeToRecomposedOrigin) const
 {
-    if (m_state.regions.isEmpty() || m_state.originalSnapshot.isEmpty()) {
+    return annotationTranslationBetween(annotation, m_state.originalSnapshot,
+                                        m_state.regions, viewScale, normalizeToRecomposedOrigin);
+}
+
+QPointF RegionLayoutManager::annotationTranslationBetween(
+    const AnnotationItem& annotation, const QVector<LayoutRegion>& before,
+    const QVector<LayoutRegion>& after, qreal viewScale, bool normalizeToRecomposedOrigin)
+{
+    if (after.isEmpty() || before.isEmpty()) {
         return {};
     }
 
     QRect finalBounds;
-    for (const auto& region : m_state.regions) {
+    for (const auto& region : after) {
         finalBounds = finalBounds.isNull()
             ? region.rect
             : finalBounds.united(region.rect);
@@ -575,8 +732,8 @@ QPointF RegionLayoutManager::annotationTranslation(
         return {};
     }
 
-    const int regionCount = (std::min)(m_state.regions.size(),
-                                       m_state.originalSnapshot.size());
+    const int regionCount = (std::min)(after.size(),
+                                       before.size());
     const QPointF outputOrigin = normalizeToRecomposedOrigin
         ? QPointF(finalBounds.topLeft())
         : QPointF();
@@ -588,7 +745,7 @@ QPointF RegionLayoutManager::annotationTranslation(
     // Regions are painted in vector order, so the last containing region is
     // the visible/topmost owner for overlapping captures.
     for (int i = regionCount - 1; i >= 0; --i) {
-        if (QRectF(m_state.originalSnapshot[i].rect).contains(originalCenterModel)) {
+        if (QRectF(before[i].rect).contains(originalCenterModel)) {
             regionIndex = i;
             break;
         }
@@ -596,8 +753,8 @@ QPointF RegionLayoutManager::annotationTranslation(
 
     QPointF targetCenterModel = originalCenterModel - outputOrigin;
     if (regionIndex >= 0) {
-        const QRectF originalRegion(m_state.originalSnapshot[regionIndex].rect);
-        const QRectF currentRegion(m_state.regions[regionIndex].rect);
+        const QRectF originalRegion(before[regionIndex].rect);
+        const QRectF currentRegion(after[regionIndex].rect);
         if (originalRegion.width() > 0.0 && originalRegion.height() > 0.0) {
             const qreal relativeX =
                 (originalCenterModel.x() - originalRegion.left()) / originalRegion.width();
@@ -643,7 +800,9 @@ QByteArray RegionLayoutManager::serializeRegions(const QVector<LayoutRegion>& re
         QByteArray imageData;
         QBuffer buffer(&imageData);
         buffer.open(QIODevice::WriteOnly);
-        region.image.save(&buffer, "PNG");
+        QImage source = region.image;
+        recordSourceLogicalSize(source, sourceLogicalSize(region));
+        source.save(&buffer, "PNG");
         stream << imageData;
     }
 
@@ -696,6 +855,11 @@ QVector<LayoutRegion> RegionLayoutManager::deserializeRegions(const QByteArray& 
         QByteArray imageData;
         stream >> imageData;
         region.image.loadFromData(imageData, "PNG");
+        if (region.image.text(kSourceLogicalSizeKey).isEmpty()) {
+            // Version-1 files from older builds contain materialized images
+            // without DPR. Their stored logical bounds are authoritative.
+            recordSourceLogicalSize(region.image, region.originalRect.size());
+        }
 
         if (stream.status() != QDataStream::Ok) {
             qWarning() << "Error reading region data at index" << i;

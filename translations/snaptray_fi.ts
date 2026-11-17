@@ -7896,4 +7896,94 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <translation>Kohdista tekstiin: korostuskynän vedot kohdistuvat tunnistettuihin tekstiriveihin</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Järjestä kuvat</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Esikatsele asettelua ennen käyttöönottoa</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Asettelu</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Manuaalinen</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Alkuperäiset koot</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Vaakasuora, sama korkeus</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Pystysuora, sama leveys</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Älä suurenna lähdepikseleitä</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Käytä pienintä lähdettä kokorajana</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Väli</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Kuvien järjestys (numerot vastaavat piirtoaluetta)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Kuva %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Aiemmaksi</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Siirrä kuva %1 aiemmaksi</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Myöhemmäksi</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Siirrä kuva %1 myöhemmäksi</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Valitse Manuaalinen, jos haluat palauttaa vapaan asettelun ja siirtää kuvia piirtoalueella.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Käytä</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Asettelu ylittää tulosteen rajat tai sisältää virheellisiä kuvia.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Tuloste: %1 × %2 pikseliä</translation>
+    </message>
+</context>
 </TS>

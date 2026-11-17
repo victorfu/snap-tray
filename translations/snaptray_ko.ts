@@ -7892,4 +7892,94 @@ It may be in use by another application.</source>
         <translation>텍스트에 맞추기: 마커 획이 감지된 텍스트 줄에 맞춰집니다</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>이미지 배치</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>적용하기 전에 레이아웃 미리 보기</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>레이아웃</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>수동</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>원본 크기</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>가로 배치, 높이 맞춤</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>세로 배치, 너비 맞춤</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>원본 픽셀 확대 안 함</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>가장 작은 원본을 크기 제한으로 사용</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>간격</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>이미지 순서(캔버스의 번호와 일치)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>이미지 %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>앞으로</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>이미지 %1을 앞으로 이동</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>뒤로</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>이미지 %1을 뒤로 이동</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>수동을 선택하면 자유 배치를 복원하고 캔버스에서 이미지를 이동할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>적용</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>레이아웃이 출력 제한을 초과하거나 잘못된 이미지를 포함합니다.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>출력: %1 × %2 픽셀</translation>
+    </message>
+</context>
 </TS>

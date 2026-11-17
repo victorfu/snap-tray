@@ -7892,4 +7892,94 @@ It may be in use by another application.</source>
         <translation>貼齊文字：螢光筆會自動對齊偵測到的文字行</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>排列圖片</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>套用前預覽版面</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>版面</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>手動</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>原始尺寸</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>橫排，等高</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>直排，等寬</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>不放大來源像素</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>以最小來源作為尺寸上限</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>間距</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>圖片順序（編號對應畫布）</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>圖片 %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>往前</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>將圖片 %1 往前移</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>往後</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>將圖片 %1 往後移</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>選擇「手動」可還原自由版面，並在畫布上移動圖片。</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>套用</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>版面超過輸出上限，或包含無效圖片。</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>輸出：%1 × %2 像素</translation>
+    </message>
+</context>
 </TS>

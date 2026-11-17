@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "PinWindow.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/MarkerStroke.h"
 #include "pinwindow/PinMergeHelper.h"
 #include "ui/DesignSystem.h"
 #include "utils/CoordinateHelper.h"
@@ -121,7 +123,8 @@ private slots:
         QCOMPARE(result.composedPixmap.devicePixelRatio(), 2.0);
         QCOMPARE(logicalSize(result.composedPixmap), QSize(208, 100));
         QCOMPARE(result.regions.size(), 2);
-        QCOMPARE(result.regions[0].image.devicePixelRatio(), 2.0);
+        QCOMPARE(result.regions[0].image.devicePixelRatio(), 1.0);
+        QCOMPARE(result.regions[0].image.size(), QSize(100, 100));
         QCOMPARE(result.regions[1].image.devicePixelRatio(), 2.0);
     }
 
@@ -263,13 +266,15 @@ private slots:
 
         const PinMergeResult result = PinMergeHelper::merge(QList<PinWindow*>{&first, &second}, 8);
         QVERIFY(!result.success);
-        QVERIFY(result.errorMessage.contains(QString::number(maxSize)));
+        QCOMPARE(result.errorMessage, QCoreApplication::translate("RegionLayoutManager",
+            "Layout exceeds the output limits or has invalid images."));
 
         PinWindow tallFirst(createTestPixmap(200, maxSize + 1), QPoint(0, 0), nullptr, false);
         PinWindow tallSecond(createTestPixmap(200, 50), QPoint(220, 0), nullptr, false);
         const PinMergeResult tallResult = PinMergeHelper::merge(QList<PinWindow*>{&tallFirst, &tallSecond}, 8);
         QVERIFY(!tallResult.success);
-        QVERIFY(tallResult.errorMessage.contains(QString::number(maxSize)));
+        QCOMPARE(tallResult.errorMessage, QCoreApplication::translate("RegionLayoutManager",
+            "Layout exceeds the output limits or has invalid images."));
     }
 
     void testFailedMergeDoesNotExitRegionLayoutMode()
@@ -303,7 +308,8 @@ private slots:
 
         const PinMergeResult result = PinMergeHelper::merge(QList<PinWindow*>{&first, &second}, 8);
         QVERIFY(!result.success);
-        QVERIFY(result.errorMessage.contains(QString::number(maxSize)));
+        QCOMPARE(result.errorMessage, QCoreApplication::translate("RegionLayoutManager",
+            "Layout exceeds the output limits or has invalid images."));
         QVERIFY(first.isRegionLayoutMode());
     }
 
@@ -372,7 +378,7 @@ private slots:
         window.enterRegionLayoutMode();
         const QPixmap during = window.exportPixmapForMerge();
 
-        QCOMPARE(logicalSize(before), QSize(200, 200));
+        QCOMPARE(logicalSize(before), QSize(100, 100));
         QCOMPARE(logicalSize(during), logicalSize(before));
         QCOMPARE(during.toImage().convertToFormat(QImage::Format_ARGB32),
                  before.toImage().convertToFormat(QImage::Format_ARGB32));
@@ -405,6 +411,95 @@ private slots:
         QCOMPARE(firstExport.devicePixelRatio(), secondExport.devicePixelRatio());
         QCOMPARE(firstExport.toImage().convertToFormat(QImage::Format_ARGB32),
                  secondExport.toImage().convertToFormat(QImage::Format_ARGB32));
+    }
+
+    void testAutomaticLayoutUsesFinalRotatedAnnotatedPixels()
+    {
+        QPixmap transparent(120, 80);
+        transparent.fill(Qt::transparent);
+        PinWindow first(transparent, {0, 0});
+        first.setZoomLevel(2.0);
+        first.showToolbar();
+        first.m_annotationLayer->addItem(std::make_unique<MarkerStroke>(
+            QVector<QPointF>{{40, 40}, {120, 60}}, QColor(Qt::red), 20));
+        first.rotateRight();
+        const auto visibleSource = first.exportPixmapForMerge();
+        QCOMPARE(visibleSource.size(), QSize(80, 120));
+        QCOMPARE(visibleSource.toImage().pixelColor(10, 10).alpha(), 0);
+        QVERIFY(visibleSource.toImage().pixelColor(55, 40).red() > 200);
+        QVERIFY(visibleSource.toImage().pixelColor(55, 40).alpha() > 0);
+        PinWindow second(createTestPixmap(60, 80, Qt::green, 2), {150, 0});
+        const auto merged = PinMergeHelper::merge({&first, &second});
+        QVERIFY(merged.success);
+        QCOMPARE(merged.regions[0].image, visibleSource.toImage());
+        RegionLayoutManager manager;
+        manager.enterLayoutMode(merged.regions, logicalSize(merged.composedPixmap), 2);
+        manager.setArrangementMode(2);
+        QVERIFY(manager.arrangementValid());
+        QVector<LayoutRegion> committed;
+        const QPixmap output = manager.recomposeImage(2, &committed);
+        QVERIFY(!output.isNull());
+        const auto targetPixels = committed[0].image.size();
+        QVERIFY(targetPixels.width() <= visibleSource.width());
+        QVERIFY(targetPixels.height() <= visibleSource.height());
+        QCOMPARE(committed[0].image, visibleSource.toImage());
+        QVERIFY(committed[0].image.hasAlphaChannel());
+        // The existing region serialization helper preserves chosen geometry.
+        const auto restored = RegionLayoutManager::deserializeRegions(
+            RegionLayoutManager::serializeRegions(committed));
+        QCOMPARE(restored.size(), committed.size());
+        for (int i = 0; i < restored.size(); ++i) {
+            QCOMPARE(restored[i].rect, committed[i].rect);
+            auto restoredPixels = restored[i].image;
+            restoredPixels.setDevicePixelRatio(committed[i].image.devicePixelRatio());
+            QCOMPARE(restoredPixels.convertToFormat(QImage::Format_ARGB32),
+                     committed[i].image.convertToFormat(QImage::Format_ARGB32));
+        }
+        RegionLayoutManager reopened;
+        reopened.enterLayoutMode(restored, logicalSize(output), 2);
+        reopened.setPreventUpscale(false);
+        reopened.setArrangementMode(1);
+        for (int i = 0; i < restored.size(); ++i)
+            QCOMPARE(reopened.regions()[i].rect.size(), merged.regions[i].rect.size());
+    }
+
+    void testInvalidAutomaticPreviewCannotBeMerged()
+    {
+        PinWindow first(createTestPixmap(100, 100), {0, 0});
+        PinWindow second(createTestPixmap(100, 100), {120, 0});
+        LayoutRegion region;
+        region.rect = QRect(0, 0, 100, 100);
+        region.originalRect = region.rect;
+        region.image = QImage(100, 100, QImage::Format_ARGB32);
+        region.image.fill(Qt::red);
+        first.setMultiRegionData({region, region});
+        first.enterRegionLayoutMode();
+        first.m_regionLayoutManager->setArrangementMode(2);
+        first.m_regionLayoutManager->setArrangementGap(10000);
+        QVERIFY(first.exportPixmapForMerge().isNull());
+        const auto result = PinMergeHelper::merge({&first, &second});
+        QVERIFY(!result.success);
+        QVERIFY(result.mergedWindows.isEmpty());
+        QVERIFY(first.isVisible());
+        QVERIFY(second.isVisible());
+        QVERIFY(first.isRegionLayoutMode());
+    }
+    void testOversizedMergeRejectsBeforeRenderingSources()
+    {
+        PinWindow first(createTestPixmap(100, 100), {0, 0});
+        PinWindow second(createTestPixmap(100, 100), {120, 0});
+        first.m_cachedRotation = -1;
+        second.m_cachedRotation = -1;
+        PinMergeLayoutOptions options;
+        options.gap = 10000;
+        const auto result = PinMergeHelper::merge({&first, &second}, options);
+        QVERIFY(!result.success);
+        QVERIFY(result.composedPixmap.isNull());
+        QVERIFY(result.mergedWindows.isEmpty());
+        QCOMPARE(first.m_cachedRotation, -1);
+        QCOMPARE(second.m_cachedRotation, -1);
+        QVERIFY(first.isVisible());
+        QVERIFY(second.isVisible());
     }
 };
 

@@ -941,6 +941,7 @@ add_library(snaptray_ui STATIC
     src/pinwindow/RegionLayoutManager.cpp
     src/pinwindow/RegionLayoutRenderer.cpp
     src/pinwindow/PinMergeHelper.cpp
+    src/pinwindow/PinLayoutGeometry.cpp
 
     # Screen canvas
     include/ScreenCanvas.h
@@ -1028,6 +1029,7 @@ add_library(snaptray_ui STATIC
     include/pinwindow/ClickThroughExitButton.h
     include/pinwindow/RegionLayoutManager.h
     include/pinwindow/PinMergeHelper.h
+    include/pinwindow/PinLayoutGeometry.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/LaserPointerRenderer.h
@@ -1161,6 +1163,7 @@ set_source_files_properties(src/qml/dialogs/OCRResultDialog.qml PROPERTIES QT_RE
 set_source_files_properties(src/qml/dialogs/AppImageUpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/AppImageUpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
+set_source_files_properties(src/qml/dialogs/PinLayoutDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/PinLayoutDialog.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
 set_source_files_properties(src/qml/dialogs/RecordingRecoveryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingRecoveryDialog.qml)
 
@@ -1268,6 +1271,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/AppImageUpdateDialog.qml
         src/qml/dialogs/QRCodeResultDialog.qml
         src/qml/dialogs/ScreenPickerDialog.qml
+        src/qml/dialogs/PinLayoutDialog.qml
         src/qml/dialogs/RecordingRecoveryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolbarOverflowMenu.qml

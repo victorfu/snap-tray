@@ -3,6 +3,7 @@
 #include <QImage>
 #include <QColor>
 #include <memory>
+#include <limits>
 
 #include "annotations/AnnotationItem.h"
 #include "annotations/AnnotationLayer.h"
@@ -155,6 +156,173 @@ private:
     }
 
 private slots:
+    void automaticLayoutsPreserveManualAndCancel() {
+        RegionLayoutManager manager;
+        auto regions = createTestRegions(2);
+        regions[0].rect = QRect(20, 30, 100, 50);
+        regions[0].originalRect = regions[0].rect;
+        regions[0].image = QImage(200, 100, QImage::Format_ARGB32);
+        regions[0].image.fill(Qt::red);
+        regions[0].image.setDevicePixelRatio(2);
+        regions[1].rect = QRect(200, 50, 50, 100);
+        regions[1].originalRect = regions[1].rect;
+        regions[1].image = QImage(50, 100, QImage::Format_ARGB32);
+        regions[1].image.fill(Qt::transparent);
+        manager.enterLayoutMode(regions, {250, 150}, 2);
+        manager.selectRegion(0);
+        manager.startDrag({20, 30});
+        manager.updateDrag({40, 50});
+        manager.finishDrag();
+        const auto manual = manager.regions();
+        manager.setArrangementMode(2);
+        QVERIFY(manager.arrangementValid());
+        QCOMPARE(manager.regions()[0].rect, QRect(0, 0, 100, 50));
+        QCOMPARE(manager.regions()[1].rect, QRect(108, 0, 25, 50));
+        manager.moveArrangementItem(1, -1);
+        manager.setArrangementGap(12);
+        QCOMPARE(manager.regions()[1].rect, QRect(0, 0, 25, 50));
+        QCOMPARE(manager.regions()[0].rect, QRect(37, 0, 100, 50));
+        QVector<LayoutRegion> committed;
+        const auto image = manager.recomposeImage(2, &committed).toImage();
+        QCOMPARE(image.size(), QSize(274, 100));
+        QCOMPARE(image.pixelColor(0, 0).alpha(), 0);
+        QCOMPARE(image.pixelColor(74, 0), QColor(Qt::red));
+        QCOMPARE(committed[0].image.size(), QSize(200, 100));
+        manager.setArrangementMode(3);
+        QCOMPARE(manager.regions()[0].rect.width(), manager.regions()[1].rect.width());
+        manager.setArrangementMode(0);
+        for (int i = 0; i < manual.size(); ++i) {
+            QCOMPARE(manager.regions()[i].rect, manual[i].rect);
+            QCOMPARE(manager.regions()[i].image, manual[i].image);
+        }
+        manager.exitLayoutMode(false);
+        QCOMPARE(manager.regions()[0].rect, regions[0].rect);
+    }
+
+    void invalidArrangementDoesNotMutateOrAllocate() {
+        RegionLayoutManager manager;
+        const auto regions = createTestRegions(2);
+        manager.enterLayoutMode(regions, {210, 100}, 2);
+        manager.setArrangementMode(2);
+        const auto valid = manager.regions();
+        manager.setArrangementGap(10000);
+        QVERIFY(!manager.arrangementValid());
+        QCOMPARE(manager.regions()[0].rect, valid[0].rect);
+        QVERIFY(manager.recomposeImage(2).isNull());
+        manager.setArrangementMode(0);
+        QVERIFY(manager.arrangementValid());
+        QCOMPARE(manager.regions()[0].rect, regions[0].rect);
+        QVERIFY(manager.recomposeImage(std::numeric_limits<qreal>::infinity()).isNull());
+    }
+    void rotatedOutputPreviewUsesExportDimensions() {
+        RegionLayoutManager manager;
+        manager.enterLayoutMode(createTestRegions(2), {210, 100}, 2, QTransform().rotate(90));
+        QCOMPARE(manager.outputDescription(), QStringLiteral("Output: 200 × 420 pixels"));
+        manager.setArrangementMode(2);
+        QCOMPARE(manager.outputDescription(), QStringLiteral("Output: 216 × 100 pixels"));
+    }
+    void repeatedApplyKeepsNativePixelLimits() {
+        auto regions = createTestRegions(2);
+        regions[1].image = QImage(200, 200, QImage::Format_ARGB32);
+        regions[1].image.fill(Qt::green);
+        regions[1].image.setDevicePixelRatio(2);
+        RegionLayoutManager manual;
+        manual.enterLayoutMode(regions, {210, 100}, 2);
+        QVector<LayoutRegion> committed;
+        QVERIFY(!manual.recomposeImage(2, &committed).isNull());
+        RegionLayoutManager automatic;
+        automatic.enterLayoutMode(committed, {210, 100}, 2);
+        automatic.setArrangementMode(2);
+        QCOMPARE(automatic.regions()[0].rect.size(), QSize(50, 50));
+        QCOMPARE(automatic.recomposeImage(2).size(), QSize(216, 100));
+        QCOMPARE(committed[0].image, regions[0].image);
+        QCOMPARE(committed[1].image, regions[1].image);
+        QVERIFY(!automatic.recomposeImage(2, &committed).isNull());
+        const auto restored = RegionLayoutManager::deserializeRegions(
+            RegionLayoutManager::serializeRegions(committed));
+        RegionLayoutManager reopened;
+        reopened.enterLayoutMode(restored, {108, 50}, 2);
+        reopened.setArrangementMode(2);
+        QCOMPARE(reopened.recomposeImage(2).size(), QSize(216, 100));
+        reopened.setPreventUpscale(false);
+        QCOMPARE(reopened.regions()[0].rect.size(), QSize(100, 100));
+        QCOMPARE(reopened.regions()[1].rect.size(), QSize(100, 100));
+    }
+    void arrangementsFollowOutputOrientation_data() {
+        QTest::addColumn<int>("rotation");
+        QTest::addColumn<bool>("flipH");
+        QTest::addColumn<bool>("flipV");
+        QTest::addColumn<int>("mode");
+        for (int rotation : {0, 90, 180, 270})
+            for (bool flipH : {false, true})
+                for (bool flipV : {false, true})
+                    for (int mode : {2, 3})
+                        QTest::newRow(qPrintable(QString("%1-%2-%3-%4").arg(rotation).arg(flipH).arg(flipV).arg(mode)))
+                            << rotation << flipH << flipV << mode;
+    }
+    void arrangementsFollowOutputOrientation() {
+        QFETCH(int, rotation);
+        QFETCH(bool, flipH);
+        QFETCH(bool, flipV);
+        QFETCH(int, mode);
+        QTransform orientation;
+        orientation.rotate(rotation);
+        orientation.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+        auto regions = createTestRegions(2);
+        regions[0].rect.setSize({100, 50});
+        regions[0].originalRect = regions[0].rect;
+        regions[0].image = QImage(100, 50, QImage::Format_ARGB32);
+        regions[0].image.fill(Qt::red);
+        regions[1].image.fill(Qt::green);
+        RegionLayoutManager manager;
+        manager.enterLayoutMode(regions, {210, 100}, 1, orientation);
+        manager.setArrangementMode(mode);
+        QVERIFY(manager.arrangementValid());
+        auto output = manager.recomposeImage(1).transformed(orientation).toImage();
+        QRect bounds;
+        for (const auto& region : manager.regions()) bounds = bounds.united(orientation.mapRect(region.rect));
+        const auto visibleRect = [&](int index) {
+            return orientation.mapRect(manager.regions()[index].rect).translated(-bounds.topLeft());
+        };
+        const QRect first = visibleRect(0), second = visibleRect(1);
+        if (mode == 2) {
+            QCOMPARE(first.height(), second.height());
+            QCOMPARE(first.top(), second.top());
+            QCOMPARE(second.x() - first.x() - first.width(), 8);
+        } else {
+            QCOMPARE(first.width(), second.width());
+            QCOMPARE(first.left(), second.left());
+            QCOMPARE(second.y() - first.y() - first.height(), 8);
+        }
+        QCOMPARE(output.pixelColor(first.center()), QColor(Qt::red));
+        QCOMPARE(output.pixelColor(second.center()), QColor(Qt::green));
+        manager.moveArrangementItem(1, -1);
+        QVERIFY(manager.arrangementValid());
+        const QRect swappedFirst = orientation.mapRect(manager.regions()[0].rect);
+        const QRect swappedSecond = orientation.mapRect(manager.regions()[1].rect);
+        QVERIFY(mode == 2 ? swappedSecond.x() < swappedFirst.x() : swappedSecond.y() < swappedFirst.y());
+    }
+    void fractionalDprPreservesOuterPixelColumn() {
+        auto regions = createTestRegions(2);
+        regions[0].rect = QRect(0, 0, 162, 160);
+        regions[0].image = QImage(203, 200, QImage::Format_ARGB32);
+        regions[0].image.fill(Qt::green);
+        regions[1].rect = QRect(170, 0, 83, 80);
+        regions[1].image = QImage(104, 100, QImage::Format_ARGB32);
+        regions[1].image.fill(Qt::transparent);
+        for (int y = 0; y < 100; ++y) regions[1].image.setPixelColor(103, y, Qt::red);
+        for (auto& region : regions) {
+            region.originalRect = region.rect;
+            region.image.setDevicePixelRatio(1.25);
+        }
+        RegionLayoutManager manager;
+        manager.enterLayoutMode(regions, {253, 160}, 1.25);
+        manager.setArrangementMode(2);
+        manager.setArrangementGap(0);
+        const QImage output = manager.recomposeImage(1.25).toImage();
+        QCOMPARE(output.size(), QSize(205, 100));
+        QCOMPARE(output.pixelColor(204, 50), QColor(Qt::red));
+    }
     // =========================================================================
     // Mode Control Tests
     // =========================================================================
@@ -766,7 +934,7 @@ private slots:
         QCOMPARE(annotation->boundingRect(), QRect(170, 20, 10, 10));
     }
 
-    void testRecomposeMaterializesCommittedRegionAtTargetDpr() {
+    void testRecomposePreservesNativeRegionAtTargetDpr() {
         RegionLayoutManager manager;
         auto regions = createTestRegions(1);
         manager.enterLayoutMode(regions, QSize(100, 100));
@@ -784,8 +952,7 @@ private slots:
         QCOMPARE(committedRegions.size(), 1);
         QCOMPARE(committedRegions[0].rect, QRect(0, 0, 150, 150));
         QCOMPARE(committedRegions[0].originalRect, committedRegions[0].rect);
-        QCOMPARE(committedRegions[0].image.size(), QSize(300, 300));
-        QCOMPARE(committedRegions[0].image.devicePixelRatio(), 2.0);
+        QCOMPARE(committedRegions[0].image, regions[0].image);
     }
 
     // =========================================================================

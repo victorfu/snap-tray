@@ -7900,4 +7900,94 @@ Může být používána jinou aplikací.</translation>
         <translation>Přichytit k textu: tahy zvýrazňovače se zarovnají na rozpoznané řádky textu</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Uspořádat obrázky</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Náhled rozložení před použitím</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Rozložení</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Ručně</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Původní velikosti</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Vodorovně, stejná výška</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Svisle, stejná šířka</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Nezvětšovat zdrojové pixely</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Použít nejmenší zdroj jako limit velikosti</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Mezery</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Pořadí obrázků (čísla odpovídají plátnu)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Obrázek %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Dříve</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Přesunout obrázek %1 dříve</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Později</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Přesunout obrázek %1 později</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Zvolte Ručně pro obnovení volného rozložení a přesouvání obrázků na plátně.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Použít</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Rozložení překračuje limity výstupu nebo obsahuje neplatné obrázky.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Výstup: %1 × %2 pixelů</translation>
+    </message>
+</context>
 </TS>
