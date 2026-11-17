@@ -102,7 +102,7 @@ independence, seam alignment and partial imported-audio coverage. The cursor
 Release suite passed 36 cases, and the FFmpeg encoder suite passed 13, including
 exact synchronous/asynchronous AAC packet comparisons and abort/error/reuse.
 The corrected native-reveal spinner fixture passed 20 consecutive isolated X11
-runs (16.32 seconds).
+runs at normal DPI (16.32 seconds) and five at 2× DPI (4.12 seconds).
 Native CI results are recorded separately below.
 
 All 93 new UI context/source pairs have nonempty translations in each of the
@@ -137,14 +137,15 @@ uses `SNAPTRAY_ROADMAP_BENCHMARK=1` and `cameraBlurExportBenchmark`.
 
 ## Native CI
 
-GitHub Actions also builds and tests the native implementations. The Windows
-run includes the final sparse keep-alive fixture; the Linux run includes all
-final product changes.
+GitHub Actions builds and tests the native implementations. All three jobs
+passed on `163895e9`, including the final sparse keep-alive and native-reveal
+fixtures. Only this verification report was updated after that tested revision.
 
 | Platform | Tested revision | Result | Evidence |
 | --- | --- | --- | --- |
-| Windows | `bbab53fd` | 266/266, 362.09 seconds | [CI job](https://github.com/victorfu/snap-tray/actions/runs/44141600486/job/134245563381) |
-| Linux | `bbab53fd` | 264/264, 197.08 seconds | [CI job](https://github.com/victorfu/snap-tray/actions/runs/44141600486/job/134245563925) |
+| Windows | `163895e9` | 266/266, 422.83 seconds | [CI job](https://github.com/victorfu/snap-tray/actions/runs/44147821743/job/134267655750) |
+| macOS | `163895e9` | 263/263, 306.94 seconds | [CI job](https://github.com/victorfu/snap-tray/actions/runs/44147821743/job/134267655746) |
+| Linux | `163895e9` | 264/264, 199.36 seconds | [CI job](https://github.com/victorfu/snap-tray/actions/runs/44147821743/job/134267655562) |
 
 ## Remaining hardware acceptance evidence
 
