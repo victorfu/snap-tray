@@ -5,6 +5,7 @@
 #include "recording/WindowTimeline.h"
 
 #include <QHash>
+#include <QElapsedTimer>
 #include <QObject>
 #include <QTimer>
 
@@ -40,6 +41,14 @@ public:
     void stop();
     void sampleNow();
 
+    // Global Qt logical rectangles of visible, interactive SnapTray windows.
+    using ExcludedRects = std::function<QList<QRect>()>;
+    void setExcludedRectsProvider(ExcludedRects provider) { m_excludedRects = std::move(provider); }
+    // Native tray menus have no QWindow; remember their wall-clock intervals,
+    // including while paused and when an event arrives after the menu closes.
+    void setMenuOpen(bool open);
+    int skippedUiClicks() const { return m_skippedUiClicks; }
+
     bool isRunning() const { return m_running && !m_paused; }
     CursorProbe::Capabilities capabilities() const { return m_capabilities; }
     QString probeName() const;
@@ -50,12 +59,24 @@ public:
 
 private:
     void onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs,
-                         std::optional<QPoint> physicalPosition);
+                         std::optional<QPoint> physicalPosition, std::optional<QPoint> logicalPosition);
     void onButtonEventsLost();
     quint32 currentShapeId();
     void releaseHeldButtons();
     void rememberSample(const CursorSample& sample);
     QPoint positionAt(qint64 tMs) const;
+
+    void rememberExcludedRects();
+    bool excludedAt(const QPoint& videoPosition, qint64 ageMs) const;
+    ExcludedRects m_excludedRects;
+    struct ExclusionSample { qint64 wallMs; QList<QRect> rects; };
+    std::deque<ExclusionSample> m_exclusionHistory;
+    struct MenuInterval { qint64 start; qint64 end; };
+    std::deque<MenuInterval> m_menuIntervals;
+    QElapsedTimer m_wallClock;
+    bool m_menuOpen = false;
+    Qt::MouseButtons m_ignored;
+    int m_skippedUiClicks = 0;
 
     std::unique_ptr<CursorProbe> m_probe;
     Clock m_clock;

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "WindowLevel.h"
+#include "platform/WindowInput.h"
 
 #include <QGuiApplication>
 #include <QCursor>
@@ -172,6 +173,13 @@ void raiseWindowAboveMenuBar(QWindow *window)
     if (view) {
         [[view window] setLevel:kCGScreenSaverWindowLevel]; // level 1000
     }
+}
+
+bool SnapTray::windowAcceptsPointerInput(QWindow* window)
+{
+    if (!window || window->flags().testFlag(Qt::WindowTransparentForInput)) return false;
+    NSView* view = nsViewForWindow(window);
+    return !view || !view.window.ignoresMouseEvents;
 }
 
 void setWindowClickThrough(QWidget *widget, bool enabled)

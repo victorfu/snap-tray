@@ -5382,6 +5382,38 @@ Size: %2</source>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Можно хранить не более %1 сохранённых стилей. Удалите один, чтобы сохранить новый.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Кольцо</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Волны</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Подсветка</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Лучи</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Цвет щелчка</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Другой цвет правого щелчка</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Цвет правого щелчка</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Отскок при нажатии</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

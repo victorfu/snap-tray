@@ -110,7 +110,11 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool showCursor READ showCursor WRITE setShowCursor NOTIFY cursorEffectsChanged)
     Q_PROPERTY(qreal cursorScale READ cursorScale WRITE setCursorScale NOTIFY cursorEffectsChanged)
     Q_PROPERTY(int cursorSmoothing READ cursorSmoothing WRITE setCursorSmoothing NOTIFY cursorEffectsChanged)
-    Q_PROPERTY(bool clickRipple READ clickRipple WRITE setClickRipple NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(int clickStyle READ clickStyle WRITE setClickStyle NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(QColor clickColor READ clickColor WRITE setClickColor NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(QColor rightClickColor READ rightClickColor WRITE setRightClickColor NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(bool separateRightClickColor READ separateRightClickColor WRITE setSeparateRightClickColor NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(int pressBounce READ pressBounce WRITE setPressBounce NOTIFY cursorEffectsChanged)
     // #186: idle hiding and "still end" in ms (0 = off), motion blur level,
     // and the time ranges without a pointer.
     Q_PROPERTY(int cursorIdleHide READ cursorIdleHide WRITE setCursorIdleHide NOTIFY cursorEffectsChanged)
@@ -365,7 +369,16 @@ public:
     void setCursorScale(qreal value);
     int cursorSmoothing() const { return int(m_cursorEffects.smoothing); }
     void setCursorSmoothing(int value);
-    bool clickRipple() const { return m_cursorEffects.clickRipple; }
+    int clickStyle() const { return int(m_cursorEffects.clickStyle); }
+    void setClickStyle(int value);
+    QColor clickColor() const { return m_cursorEffects.clickColor; }
+    void setClickColor(const QColor& value);
+    QColor rightClickColor() const { return m_cursorEffects.rightClickColor; }
+    void setRightClickColor(const QColor& value);
+    bool separateRightClickColor() const { return m_cursorEffects.separateRightClickColor; }
+    void setSeparateRightClickColor(bool value);
+    int pressBounce() const { return int(m_cursorEffects.pressBounce); }
+    void setPressBounce(int value);
     int cursorIdleHide() const { return int(m_cursorEffects.idleHideMs); }
     void setCursorIdleHide(int ms);
     int cursorMotionBlur() const { return int(m_cursorEffects.motionBlur); }
@@ -384,7 +397,6 @@ public:
     // Where the exported clip ends in source time, for effects tied to the
     // end; -1 until the duration is known.
     qint64 effectsClipEnd() const;
-    void setClickRipple(bool value);
     const SnapTray::CursorTimeline* cursorTimeline() const { return m_cursorTimeline.get(); }
     std::shared_ptr<const SnapTray::CursorTimeline> cursorTimelineSnapshot() const { return m_cursorTimeline; }
 

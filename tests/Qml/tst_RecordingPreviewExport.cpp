@@ -1909,7 +1909,7 @@ void tst_RecordingPreviewExport::pointerEffectsOnlyReencodeWhenDrawn()
         backend.updateVideoSize(sourceSize);
         backend.updateDuration(kFrameCount * kFrameIntervalMs);
         backend.setShowCursor(false);
-        backend.setClickRipple(false);
+        backend.setClickStyle(0);
         QVERIFY(!backend.cursorEffectsActive());
         QVERIFY(!backend.hasEdits());
         QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
@@ -3598,7 +3598,7 @@ void tst_RecordingPreviewExport::zoomMatchesAcrossPreviewAndOutputs()
     backend.setShowCursor(true);
     backend.setCursorScale(1.0);
     backend.setCursorSmoothing(0);
-    backend.setClickRipple(false);
+    backend.setClickStyle(0);
     backend.setCropRect(crop);
     backend.setTrimStart(kTrimStart);
     backend.setTrimEnd(900);

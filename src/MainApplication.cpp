@@ -627,6 +627,11 @@ void MainApplication::initialize()
     });
     connect(m_trayMenu, &QMenu::aboutToShow, this, [this] {
         m_disableClickThroughAction->setVisible(m_pinWindowManager->anyClickThrough());
+        if (m_recordingManager) m_recordingManager->setTrayMenuOpen(true);
+    });
+
+    connect(m_trayMenu, &QMenu::aboutToHide, this, [this] {
+        if (m_recordingManager) m_recordingManager->setTrayMenuOpen(false);
     });
 
     connect(m_pinWindowManager, &PinWindowManager::windowCreated,
@@ -698,6 +703,12 @@ void MainApplication::initialize()
     SnapTray::installMacTrayActivationGuard();
 #endif
     m_trayIcon->setContextMenu(m_trayMenu);
+    if (m_recordingManager) {
+        const QPointer<QSystemTrayIcon> trayIcon(m_trayIcon);
+        m_recordingManager->setTrayIconGeometryProvider([trayIcon] {
+            return trayIcon ? trayIcon->geometry() : QRect();
+        });
+    }
     m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
     m_trayIcon->show();
 

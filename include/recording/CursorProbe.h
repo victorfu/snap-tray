@@ -40,6 +40,7 @@ public:
     ~CursorProbe() override = default;
 
     virtual Capabilities capabilities() const = 0;
+    virtual void stop() {} // release native event sources when recording ends
     // nullopt when the pointer cannot be read right now.
     virtual std::optional<State> poll() = 0;
     // The shape poll() last saw. nullopt without shape support, before the
@@ -54,10 +55,11 @@ signals:
     // A physical button changed, already mapped to the user's button order
     // (left-handed setups report their primary button as Left). ageMs is
     // how long ago it happened, for events delivered late.
-    // Native desktop pixels at the event time, when supplied by the source.
-    // Otherwise the recorder uses its position history.
+    // Event-time position: native desktop pixels, or Qt global logical
+    // coordinates (macOS). With neither, use the recorder's position history.
     void buttonChanged(Qt::MouseButton button, bool down, qint64 ageMs = 0,
-                       std::optional<QPoint> physicalPosition = std::nullopt);
+                       std::optional<QPoint> physicalPosition = std::nullopt,
+                       std::optional<QPoint> logicalPosition = std::nullopt);
     // Some button events did not make it (a full queue, an event source the
     // system switched off for a while). Which ones is not known, so a button
     // may look held when it is not.

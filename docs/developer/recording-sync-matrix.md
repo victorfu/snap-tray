@@ -187,6 +187,28 @@ events cannot be produced in a test; check them on a Mac. The debug log line
 | Input Monitoring revoked while recording with the event-tap source | Log says the tap cannot be re-enabled; the event monitor takes over; later clicks recorded | Pending device test |
 | Stop the recording, then click | No further callbacks (tap, run-loop source and monitor removed); repeat start/stop 20 times | Pending device test |
 
+## Click filtering and styles (#323, #326)
+
+Automated coverage: `RecordingManager_CursorTimelineRecorder` injects exclusion
+rectangles and native menu intervals, including release outside a control,
+external drags released over controls, pauses, queued menu events, and 2x
+screen/crop mapping. The version-1 sidecar keeps its existing event schema; an
+optional `skippedUiClicks` counter in the end record is ignored by older readers.
+`RecordingManager_CursorEffects` compares legacy Ring pixels with the original
+renderer and checks every style for seek stability, cuts, color, crop, 3x size,
+viewport clipping, and bounded, continuous bounce. `Qml_RecordingPreviewPointer`
+checks the real controls, custom colors, availability, preferences, and undo.
+
+| Device check | Expected | Status |
+| --- | --- | --- |
+| macOS/Windows: click Pause, Resume, Stop on the floating controls | No control clicks in the sidecar or Auto Zoom; skipped count includes all three | Pending device test |
+| Linux: stop from the tray, including a submenu | No final menu press in the sidecar or Auto Zoom | Pending device test |
+| Click through a pinned image on macOS/Windows | Underlying application clicks still recorded; recording controls still excluded | Pending device test |
+| Drag from another app and release over SnapTray, using each Mac event source | Both events recorded; no held button afterward | Pending device test |
+| Ring, Ripple, Spotlight, Burst; custom left/right colors; Low/High bounce | Same appearance at the same timestamp in preview, MP4, GIF and WebP | Pending device test |
+| Zoom plus crop at 3x pointer size; click at an edge or over a mask | Tip/highlight remain aligned; spotlight stays in the video; masked information stays concealed | Pending device test |
+| Rapid repeated clicks less than 150 ms apart; long drag | Bounce remains bounded, holds during the drag and recovers on release | Pending device test |
+
 ## Native editor follow-up (#185, #187, #188, #189, #190)
 
 The native editor additions need the following macOS/Windows handoff checks.

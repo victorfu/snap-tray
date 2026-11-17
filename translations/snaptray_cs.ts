@@ -5382,6 +5382,38 @@ Velikost: %2</translation>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Můžete uchovat až %1 uložených stylů. Chcete-li uložit další, jeden smažte.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Kruh</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Vlnění</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Bodové světlo</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Paprsky</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Barva kliknutí</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Jiná barva pravého kliknutí</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Barva pravého kliknutí</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Odpružení při stisku</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

@@ -5378,6 +5378,38 @@ Koko: %2</translation>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Voit säilyttää enintään %1 tallennettua tyyliä. Poista yksi tallentaaksesi uuden.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Rengas</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Väreily</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Kohdevalo</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Säteet</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Napsautuksen väri</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Eri väri oikealle napsautukselle</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Oikean napsautuksen väri</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Jousto painettaessa</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

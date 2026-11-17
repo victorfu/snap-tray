@@ -1,8 +1,11 @@
 #include <QtTest>
 
 #include <QImage>
+#include <QPainter>
+#include <cmath>
 
 #include "recording/CursorEffects.h"
+#include "recording/RecordingFrameFilter.h"
 
 using namespace SnapTray;
 
@@ -52,6 +55,10 @@ private slots:
     void springPrecomputationBudget();
     void springJumpAndVisibility();
     void springJitterPreservesShapeBoundaries();
+    void frameFilterKeepsStylesAndMasks();
+    void legacyClickRecipesMatchOriginalFrames();
+    void clickStylesAreDeterministicAndClipped();
+    void bounceIsContinuousAndCutBounded();
     void settingsRoundTrip();
     void availabilityFollowsTheSidecar();
     void pointerDrawnAtHotspotThroughCrop();
@@ -211,7 +218,7 @@ void TestCursorEffects::settingsRoundTrip()
     s.showCursor = false;
     s.scale = 1.5;
     s.smoothing = CursorEffectSettings::Smoothing::High;
-    s.clickRipple = true;
+    s.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Ring;
     QCOMPARE(CursorEffectSettings::fromJson(s.toJson()), s);
     // Missing keys keep defaults; out-of-range sizes are clamped.
     const auto defaults = CursorEffectSettings::fromJson({{QStringLiteral("scale"), 99.0}});
@@ -316,7 +323,7 @@ void TestCursorEffects::rippleAnchoredToThePress()
     const CursorTimeline t = timeline();
     CursorEffectSettings s;
     s.showCursor = false;
-    s.clickRipple = true;
+    s.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Ring;
     CursorEffectRenderer renderer(t, s);
     const CursorFrameMapping mapping{QRect(), QSize(200, 100), QSize(200, 100)};
     const QImage base = blank();
@@ -383,7 +390,7 @@ void TestCursorEffects::costAt4K()
     CursorEffectSettings s;
     s.scale = 2.0;
     s.smoothing = CursorEffectSettings::Smoothing::High;
-    s.clickRipple = true;
+    s.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Ring;
     s.motionBlur = CursorEffectSettings::MotionBlur::High; // the most draws per frame
     s.idleHideMs = 1000;
     s.stillEndMs = 500;
@@ -499,7 +506,7 @@ void TestCursorEffects::idleHideKeepsClicksVisible()
                  {2040, Qt::LeftButton, false, QPoint(120, 50), false}};
     CursorEffectSettings s;
     s.idleHideMs = 1000;
-    s.clickRipple = true;
+    s.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Ring;
     const CursorEffectRenderer renderer(t, s);
     // A click is activity: the pointer is there at the press without moving.
     QCOMPARE(renderer.pointerOpacity(2000), 1.0);
@@ -596,7 +603,7 @@ void TestCursorEffects::hiddenRangesHidePointerAndRipples()
 {
     CursorTimeline t = timeline();
     CursorEffectSettings s;
-    s.clickRipple = true;
+    s.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Ring;
     s.hiddenRanges = {{250, 500}};
     const CursorEffectRenderer renderer(t, s);
     QVERIFY(renderer.pointerPosition(200));
@@ -650,7 +657,7 @@ void TestCursorEffects::nothingReachesAcrossACut()
     // The click in the cut part leaves no ripple after the cut.
     CursorEffectSettings ripples;
     ripples.showCursor = false;
-    ripples.clickRipple = true;
+    ripples.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Ring;
     const QImage base = blank(QSize(400, 100));
     QImage withoutCut = base, withCut = base;
     CursorEffectRenderer(t, ripples).paint(withoutCut, 2050, mapping);
@@ -669,6 +676,131 @@ void TestCursorEffects::nothingReachesAcrossACut()
     CursorEffectRenderer(t, {}).paint(sharp, 2005, mapping);
     blurCut.paint(blurred, 2005, mapping);
     QCOMPARE(blurred, sharp);
+}
+
+void TestCursorEffects::frameFilterKeepsStylesAndMasks()
+{
+    auto t = std::make_shared<CursorTimeline>(timeline());
+    const TimelineMap map({{0, 1000, 1}});
+    for (int style = 1; style <= 4; ++style) {
+        PreviewEditState state;
+        state.cursor.clickStyle = CursorEffectSettings::ClickStyle(style);
+        state.cursor.clickColor = QColor("#4dabf7");
+        state.cursor.pressBounce = CursorEffectSettings::PressBounce::High;
+        state.redaction.masks.push_back({QRect(100, 40, 40, 40), 0, -1, RedactionMask::Style::Solid});
+        const auto filter = recordingFrameFilter(state, t->info.frameSize, map, t);
+        QImage actual = blank();
+        filter(actual, 410, 420);
+        QImage expected = blank();
+        state.redaction.apply(expected, 410, QRectF(QPointF(), t->info.frameSize), 610);
+        CursorEffectRenderer renderer(*t, state.cursor, 1000);
+        renderer.setTimeline(map);
+        renderer.paint(expected, 410, {QRect(), t->info.frameSize, expected.size()});
+        QCOMPARE(actual, expected); // shared MP4/GIF/WebP/poster filter uses the same effects
+        QImage differentSecret = blank();
+        { QPainter painter(&differentSecret); painter.fillRect(QRect(100, 40, 40, 40), Qt::magenta); }
+        filter(differentSecret, 410, 420);
+        QCOMPARE(differentSecret, actual); // even Spotlight cannot reveal masked pixels
+    }
+}
+
+void TestCursorEffects::legacyClickRecipesMatchOriginalFrames()
+{
+    const auto t = timeline();
+    const auto off = CursorEffectSettings::fromJson({{QStringLiteral("clickRipple"), false}});
+    QCOMPARE(off.clickStyle, CursorEffectSettings::ClickStyle::Off);
+    const auto old = CursorEffectSettings::fromJson({{QStringLiteral("clickRipple"), true},
+                                                     {QStringLiteral("showCursor"), false}});
+    QCOMPARE(old.clickStyle, CursorEffectSettings::ClickStyle::Ring);
+    QCOMPARE(old.pressBounce, CursorEffectSettings::PressBounce::Off);
+    // Independent reference for the original main-branch ring, for every frame.
+    for (int age = 0; age < 450; age += 7) {
+        QImage reference = blank();
+        QPainter p(&reference);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setRenderHint(QPainter::SmoothPixmapTransform);
+        const double progress = double(age) / 450;
+        const double fade = 1.0 - progress;
+        const double radius = 6.0 + 22.0 * (1.0 - std::pow(1.0 - progress, 3.0));
+        p.setPen(QPen(QColor(0, 0, 0, int(220 * fade * 0.5)), 4.5));
+        p.setBrush(Qt::NoBrush);
+        p.drawEllipse(QPointF(120, 60), radius, radius);
+        p.setPen(QPen(QColor(255, 255, 255, int(220 * fade)), 3.0));
+        p.setBrush(QColor(255, 255, 255, int(70 * fade)));
+        p.drawEllipse(QPointF(120, 60), radius, radius);
+        p.end();
+        QImage actual = blank();
+        CursorEffectRenderer(t, old).paint(actual, 300 + age, {QRect(), t.info.frameSize, actual.size()});
+        QCOMPARE(actual, reference);
+    }
+}
+
+void TestCursorEffects::clickStylesAreDeterministicAndClipped()
+{
+    using Style = CursorEffectSettings::ClickStyle;
+    for (Style style : {Style::Ring, Style::Ripple, Style::Spotlight, Style::Burst}) {
+        auto t = timeline();
+        CursorEffectSettings s;
+        s.showCursor = false;
+        s.clickStyle = style;
+        s.scale = 3.0;
+        s.clickColor = QColor("#ffd43b");
+        s.rightClickColor = QColor("#4dabf7");
+        s.separateRightClickColor = true;
+        s.pressBounce = CursorEffectSettings::PressBounce::High;
+        QCOMPARE(CursorEffectSettings::fromJson(s.toJson()), s);
+        const CursorFrameMapping mapping{QRect(100, 50, 100, 50), t.info.frameSize, QSize(200, 100)};
+        CursorEffectRenderer r(t, s);
+        auto first = blank();
+        r.paint(first, 410, mapping);
+        QVERIFY(differingPixels(first, blank()) > 0);
+        auto other = blank();
+        r.paint(other, 800, mapping);
+        auto again = blank();
+        r.paint(again, 410, mapping);
+        QCOMPARE(first, again);
+        t.buttons.front().button = Qt::RightButton;
+        auto right = blank();
+        CursorEffectRenderer(t, s).paint(right, 410, mapping);
+        QVERIFY(differingPixels(right, first) > 0);
+        r.setTimeline(TimelineMap({{0, 250, 1}, {350, 1000, 1}}));
+        auto cut = blank();
+        r.paint(cut, 410, mapping);
+        QCOMPARE(cut, blank());
+        // Effects may touch the edge but cannot paint beyond the output viewport.
+        auto large = blank(QSize(300, 200));
+        CursorEffectRenderer(t, s).paint(large, 410, mapping);
+        QCOMPARE(large.pixel(220, 60), blank().pixel(0, 0));
+        QCOMPARE(large.pixel(50, 120), blank().pixel(0, 0));
+    }
+}
+
+void TestCursorEffects::bounceIsContinuousAndCutBounded()
+{
+    auto t = timeline();
+    t.buttons = {{100, Qt::LeftButton, true, QPoint(120, 60), false},
+                 {500, Qt::LeftButton, false, QPoint(120, 60), false},
+                 {550, Qt::LeftButton, true, QPoint(120, 60), false},
+                 {570, Qt::LeftButton, false, QPoint(120, 60), false}};
+    CursorEffectSettings s;
+    s.pressBounce = CursorEffectSettings::PressBounce::High;
+    CursorEffectRenderer r(t, s);
+    QCOMPARE(r.pointerBounceScale(99), 1.0);
+    QCOMPARE(r.pointerBounceScale(100), 1.0);
+    QCOMPARE(r.pointerBounceScale(210), 0.84);
+    QCOMPARE(r.pointerBounceScale(499), 0.84); // hold a drag at its minimum
+    QCOMPARE(r.pointerBounceScale(700), 1.0);
+    for (int ms = 1; ms < 800; ++ms) {
+        const double value = r.pointerBounceScale(ms);
+        QVERIFY(value >= 0.84 && value <= 1.0);
+        QVERIFY(std::abs(value - r.pointerBounceScale(ms - 1)) < 0.004);
+    }
+    r.setTimeline(TimelineMap({{0, 80, 1}, {400, 800, 1}}));
+    QCOMPARE(r.pointerBounceScale(400), 1.0); // press was cut away
+    QCOMPARE(r.pointerBounceScale(500), 1.0); // orphan release cannot bounce
+    QVERIFY(r.pointerBounceScale(560) < 1.0);
+    t.info.clicksAvailable = false;
+    QCOMPARE(CursorEffectRenderer(t, s).pointerBounceScale(210), 1.0);
 }
 
 QTEST_MAIN(TestCursorEffects)

@@ -2524,14 +2524,52 @@ Item {
                     currentIndex: backend.cursorSmoothing
                     onActivated: function(index) { backend.cursorSmoothing = index }
                 }
-                EditorSwitch {
-                    objectName: "previewClickRipple"
-                    visible: backend.hasPointerData
+                EditorChoice {
+                    objectName: "previewClickStyle"
                     enabled: backend.clickEffectsAvailable
-                    text: qsTr("Clicks")
-                    tooltipText: backend.clickRipple ? qsTr("Hide Click Highlights") : qsTr("Highlight Clicks")
-                    on: backend.clickRipple && backend.clickEffectsAvailable
-                    onClicked: backend.clickRipple = !backend.clickRipple
+                    label: qsTr("Clicks")
+                    tooltipText: qsTr("Highlight Clicks")
+                    choices: [qsTr("Off"), qsTr("Ring"), qsTr("Ripple"), qsTr("Spotlight"), qsTr("Burst")]
+                    currentIndex: backend.clickStyle
+                    onActivated: function(index) { backend.clickStyle = index }
+                }
+                ClickColorField {
+                    objectName: "previewClickColor"
+                    enabled: backend.clickEffectsAvailable && backend.clickStyle !== 0
+                    label: qsTr("Click color")
+                    value: backend.clickColor
+                    onCommitted: function(color) { backend.clickColor = color }
+                }
+                EditorSwitch {
+                    objectName: "previewSeparateRightClickColor"
+                    enabled: backend.clickEffectsAvailable && backend.clickStyle !== 0
+                    text: qsTr("Different right-click color")
+                    on: backend.separateRightClickColor
+                    onClicked: backend.separateRightClickColor = !backend.separateRightClickColor
+                }
+                ClickColorField {
+                    objectName: "previewRightClickColor"
+                    visible: backend.separateRightClickColor
+                    enabled: backend.clickEffectsAvailable && backend.clickStyle !== 0
+                    label: qsTr("Right-click color")
+                    value: backend.rightClickColor
+                    onCommitted: function(color) { backend.rightClickColor = color }
+                }
+                EditorChoice {
+                    objectName: "previewPressBounce"
+                    enabled: backend.clickEffectsAvailable && backend.showCursor
+                    label: qsTr("Press bounce")
+                    choices: [qsTr("Off"), qsTr("Low"), qsTr("High")]
+                    currentIndex: backend.pressBounce
+                    onActivated: function(index) { backend.pressBounce = index }
+                }
+                Text {
+                    visible: !backend.clickEffectsAvailable
+                    width: parent.width
+                    text: qsTr("Auto zoom needs recorded clicks; add zooms by hand instead")
+                    color: root.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    wrapMode: Text.WordWrap
                 }
                 EditorChoice {
                     objectName: "previewPointerIdle"
@@ -4439,6 +4477,49 @@ Item {
 
     // Integer entry committed on Enter or focus loss; Esc restores the value
     // and gives focus back to the preview.
+    component ClickColorField: Column {
+        id: colorField
+        property string label
+        property color value
+        property bool custom: false
+        readonly property var colors: ["#ffffff", "#ffd43b", "#ff5252", "#4dabf7"]
+        readonly property int preset: colors.indexOf(value.toString().toLowerCase())
+        signal committed(color color)
+        width: parent.width
+        spacing: 6
+        EditorChoice {
+            label: colorField.label
+            choices: [qsTr("Default"), qsTr("Yellow"), qsTr("Red"), qsTr("Blue"), qsTr("Custom")]
+            currentIndex: colorField.custom || colorField.preset < 0 ? 4 : colorField.preset
+            onActivated: function(index) {
+                colorField.custom = index === 4
+                if (index < 4) colorField.committed(colorField.colors[index])
+            }
+        }
+        TextField {
+            objectName: "customClickColor"
+            visible: colorField.custom || colorField.preset < 0
+            width: parent.width
+            height: ComponentTokens.recordingPreviewControlButtonHeight
+            text: colorField.value.toString()
+            placeholderText: "#RRGGBB"
+            validator: RegularExpressionValidator { regularExpression: /#[0-9a-fA-F]{6}/ }
+            selectByMouse: true
+            color: root.textPrimary
+            Accessible.name: colorField.label
+            onEditingFinished: {
+                if (acceptableInput) colorField.committed(text)
+                text = Qt.binding(function() { return colorField.value.toString() })
+            }
+            background: Rectangle {
+                radius: SemanticTokens.radiusSmall
+                color: ComponentTokens.editorControl
+                border.color: root.borderColor
+                border.width: 1
+            }
+        }
+    }
+
     component NumberField: TextField {
         id: numberField
         property int value: 0

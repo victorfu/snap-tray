@@ -5374,6 +5374,38 @@ Size: %2</source>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>저장된 스타일은 최대 %1개까지 유지할 수 있습니다. 새로 저장하려면 하나를 삭제하세요.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>고리</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>물결</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>스포트라이트</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>방사형</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>클릭 색상</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>오른쪽 클릭에 다른 색상 사용</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>오른쪽 클릭 색상</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>누를 때 반동</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

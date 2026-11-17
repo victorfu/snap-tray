@@ -5394,6 +5394,38 @@ Size: %2</source>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>يمكنك الاحتفاظ بما يصل إلى %1 من الأنماط المحفوظة. احذف واحدًا لحفظ نمط آخر.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>حلقة</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>تموّج</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>إضاءة موضعية</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>أشعة</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>لون النقر</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>لون مختلف للنقر بزر الفأرة الأيمن</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>لون النقر بزر الفأرة الأيمن</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>ارتداد عند الضغط</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

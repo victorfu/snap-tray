@@ -5374,6 +5374,38 @@ Boyut: %2</translation>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>En fazla %1 kayıtlı stil tutabilirsiniz. Başka birini kaydetmek için birini silin.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Halka</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Dalga</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Spot ışığı</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Işınlar</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Tıklama rengi</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Sağ tıklama için farklı renk</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Sağ tıklama rengi</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Basınca sekme</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

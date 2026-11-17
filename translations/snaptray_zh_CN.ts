@@ -5374,6 +5374,38 @@ Size: %2</source>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>最多可保留 %1 个已保存的样式。删除一个后才能保存新的。</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>圆环</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>波纹</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>聚光灯</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>放射线</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>点击颜色</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>右键使用不同颜色</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>右键颜色</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>按压回弹</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

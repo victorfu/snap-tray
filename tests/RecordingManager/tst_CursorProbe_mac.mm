@@ -1,6 +1,8 @@
 #include <QtTest>
 
 #include "recording/CursorProbe_mac.h"
+#include "platform/WindowInput.h"
+#include <QWindow>
 
 #import <AppKit/AppKit.h>
 
@@ -71,6 +73,7 @@ class tst_CursorProbeMac : public QObject
     Q_OBJECT
 
 private slots:
+    void nativeClickThroughIsNotExcluded();
     void buttonNumbers();
     void buttonEventTypes();
     void eventAge();
@@ -79,6 +82,18 @@ private slots:
     void unusableImages();
     void probeReadsThePointerAndStops();
 };
+
+void tst_CursorProbeMac::nativeClickThroughIsNotExcluded()
+{
+    if (QGuiApplication::platformName() != QLatin1String("cocoa")) QSKIP("Requires Cocoa");
+    QWindow window;
+    auto* view = reinterpret_cast<NSView*>(window.winId());
+    QVERIFY(view.window);
+    view.window.ignoresMouseEvents = YES;
+    QVERIFY(!windowAcceptsPointerInput(&window));
+    view.window.ignoresMouseEvents = NO;
+    QVERIFY(windowAcceptsPointerInput(&window));
+}
 
 void tst_CursorProbeMac::buttonNumbers()
 {
@@ -89,6 +104,11 @@ void tst_CursorProbeMac::buttonNumbers()
     QCOMPARE(MacCursor::buttonForNumber(4), std::optional<Qt::MouseButton>(Qt::ForwardButton));
     QVERIFY(!MacCursor::buttonForNumber(5));
     QVERIFY(!MacCursor::buttonForNumber(-1));
+    QCOMPARE(MacCursor::buttonForEvent(kCGEventLeftMouseDown, 1), std::optional<Qt::MouseButton>(Qt::LeftButton));
+    QCOMPARE(MacCursor::buttonForEvent(kCGEventRightMouseUp, 0), std::optional<Qt::MouseButton>(Qt::RightButton));
+    QCOMPARE(MacCursor::buttonForEvent(kCGEventOtherMouseDown, 2), std::optional<Qt::MouseButton>(Qt::MiddleButton));
+    QVERIFY(!MacCursor::buttonForEvent(kCGEventOtherMouseDown, 0));
+    QVERIFY(!MacCursor::buttonForEvent(kCGEventMouseMoved, 0));
 }
 
 void tst_CursorProbeMac::buttonEventTypes()
@@ -198,6 +218,9 @@ void tst_CursorProbeMac::probeReadsThePointerAndStops()
         // Later polls re-read the shape without disturbing the state.
         QTest::qWait(MacCursor::kShapePollIntervalMs * 2);
         QVERIFY(probe->poll());
+        probe->stop();
+        QVERIFY(!probe->capabilities().clicks);
+        probe->stop(); // teardown is idempotent even before destruction
     }
 }
 

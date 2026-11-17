@@ -5374,6 +5374,38 @@ Kích thước: %2</translation>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Bạn có thể giữ tối đa %1 kiểu đã lưu. Hãy xóa một kiểu để lưu kiểu khác.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Vòng tròn</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Gợn sóng</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Đèn chiếu</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Tia sáng</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Màu nhấp chuột</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Màu riêng cho nhấp chuột phải</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Màu nhấp chuột phải</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Nảy khi nhấn</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

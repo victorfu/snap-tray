@@ -99,6 +99,8 @@ public:
     // counters, for the user to copy. Empty until a recording has finished.
     QString lastDiagnostics() const { return m_lastDiagnostics; }
     State state() const { return m_state; }
+    void setTrayMenuOpen(bool open);
+    void setTrayIconGeometryProvider(std::function<QRect()> provider) { m_trayIconGeometry = std::move(provider); }
 
 public slots:
     // Records full screen using screen-first semantics. `area` (#194, logical
@@ -389,6 +391,8 @@ private:
     // Watermark for recording (settings stored, rendering done by EncodingWorker)
     WatermarkRenderer::Settings m_watermarkSettings;
     std::unique_ptr<SnapTray::WindowTimelineRecorder> m_windowTimelineRecorder;
+    std::function<QRect()> m_trayIconGeometry;
+    bool m_trayMenuOpen = false;
     std::unique_ptr<SnapTray::CursorTimelineRecorder> m_cursorRecorder;
     // Keys for shortcut hints (#187), only when switched on before recording.
     std::unique_ptr<SnapTray::KeyTimelineRecorder> m_keyRecorder;

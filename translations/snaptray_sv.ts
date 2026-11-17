@@ -5378,6 +5378,38 @@ Storlek: %2</translation>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Du kan behålla upp till %1 sparade stilar. Ta bort en för att spara en till.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Ring</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Vågor</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Spotlight</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Strålar</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Klickfärg</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Annan färg för högerklick</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Högerklicksfärg</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Fjädring vid tryck</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

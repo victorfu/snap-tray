@@ -20,6 +20,9 @@ inline constexpr int kShapePollIntervalMs = 33;
 // A mouse button number as CGEvent (kCGMouseEventButtonNumber) and NSEvent
 // (buttonNumber) report it. nullopt for buttons that are not recorded.
 std::optional<Qt::MouseButton> buttonForNumber(qint64 number);
+// Left/right event types already express the system's primary/secondary
+// semantics. The device button number is needed only for OtherMouse.
+std::optional<Qt::MouseButton> buttonForEvent(int eventType, qint64 number);
 
 // Whether a mouse event type is a press (true) or a release (false). The
 // CGEventType and NSEventType values of the six button events are the same.

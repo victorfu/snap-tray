@@ -1,4 +1,5 @@
 #include "WindowLevel.h"
+#include "platform/WindowInput.h"
 
 #include <QGuiApplication>
 #include <QtGui/qguiapplication_platform.h>
@@ -18,6 +19,12 @@ void raiseWindowAboveMenuBar(QWidget* widget)
 void raiseWindowAboveMenuBar(QWindow* window)
 {
     Q_UNUSED(window);
+}
+
+bool SnapTray::windowAcceptsPointerInput(QWindow* window)
+{
+    if (!window || window->flags().testFlag(Qt::WindowTransparentForInput)) return false;
+    return true;
 }
 
 void setWindowClickThrough(QWidget* widget, bool enabled)

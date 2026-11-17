@@ -112,7 +112,11 @@ PreviewEditState tst_RecordingProject::sampleState()
     s.trimStart = 500;
     s.trimEnd = 4500;
     s.cursor.scale = 1.5;
-    s.cursor.clickRipple = true;
+    s.cursor.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Spotlight;
+    s.cursor.clickColor = QColor("#ffd43b");
+    s.cursor.rightClickColor = QColor("#4dabf7");
+    s.cursor.separateRightClickColor = true;
+    s.cursor.pressBounce = SnapTray::CursorEffectSettings::PressBounce::High;
     s.cursor.idleHideMs = 2000;
     s.timeline.splitAt(1500, 5000);
     s.timeline.setSpeed(1, 2.0);

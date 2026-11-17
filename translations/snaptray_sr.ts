@@ -5382,6 +5382,38 @@ Size: %2</source>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Можете задржати највише %1 сачуваних стилова. Обришите један да бисте сачували други.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Прстен</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Таласи</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Рефлектор</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Зраци</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Боја клика</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Друга боја за десни клик</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Боја десног клика</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Одскок при притиску</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

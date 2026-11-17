@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "WindowLevel.h"
+#include "platform/WindowInput.h"
 #include "platform/CaptureExclusionPolicy.h"
 #include <QDateTime>
 #include <QDebug>
@@ -154,6 +155,19 @@ void raiseWindowAboveMenuBar(QWidget *)
 void raiseWindowAboveMenuBar(QWindow *)
 {
     // Windows does not need special handling for window level
+}
+
+bool SnapTray::windowAcceptsPointerInput(QWindow* window)
+{
+    if (!window || window->flags().testFlag(Qt::WindowTransparentForInput)) return false;
+#ifdef Q_OS_WIN
+    const HWND handle = reinterpret_cast<HWND>(window->winId());
+    const LONG_PTR flags = handle ? GetWindowLongPtr(handle, GWL_EXSTYLE) : 0;
+    constexpr LONG_PTR clickThrough = WS_EX_TRANSPARENT | WS_EX_LAYERED;
+    return (flags & clickThrough) != clickThrough;
+#else
+    return true;
+#endif
 }
 
 void setWindowClickThrough(QWidget *widget, bool enabled)

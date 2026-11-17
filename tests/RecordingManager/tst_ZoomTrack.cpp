@@ -608,7 +608,7 @@ void TestZoomTrack::demoContactSheet()
     }
 
     CursorEffectSettings effects;
-    effects.clickRipple = true;
+    effects.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Ring;
     CursorEffectRenderer renderer(s.timeline, effects);
     const qint64 times[] = {1000, 2500, 3050, 5250, 7450, 9500, 11000, 12300, 12700, 13650, 15000, 15900};
     constexpr int kCols = 4;

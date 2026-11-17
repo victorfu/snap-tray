@@ -5161,6 +5161,38 @@ English is always included and cannot be removed.</source>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>คุณเก็บสไตล์ที่บันทึกไว้ได้สูงสุด %1 รายการ ลบหนึ่งรายการเพื่อบันทึกสไตล์ใหม่</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>วงแหวน</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>ระลอกคลื่น</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>สปอตไลต์</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>แฉกแสง</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>สีคลิก</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>ใช้สีอื่นสำหรับคลิกขวา</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>สีคลิกขวา</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>เด้งเมื่อกด</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
