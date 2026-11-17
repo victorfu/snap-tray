@@ -3867,9 +3867,11 @@ void tst_RecordingPreviewExport::importedAudioSurvivesSourceRemovalAndProjectReo
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(backend.audioClips().size(), 1);
     const auto& imported = backend.m_audioClips.clips[0];
-    // Media Foundation returns 47,999 samples for this 44.1 kHz source;
-    // native resampling may round by one output sample (about 21 microseconds).
-    QVERIFY2(qAbs(imported.assetFrames - 48000) <= 1,
+    // Media Foundation returns 47,999 samples and AVFoundation 47,983 for
+    // this source. Permit less than one millisecond of native conversion
+    // tail difference; the editor must still include every returned sample.
+    constexpr qint64 kResamplerTailTolerance = SnapTray::AudioTracks::kSampleRate / 1000;
+    QVERIFY2(qAbs(imported.assetFrames - 48000) < kResamplerTailTolerance,
              qPrintable(QString::number(imported.assetFrames)));
     QVERIFY(imported.durationMs() >= 1000 && imported.durationMs() <= 1001);
     QCOMPARE(imported.endMs, qMin(backend.duration(), imported.durationMs()));

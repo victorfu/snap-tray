@@ -148,6 +148,9 @@ void TestOCRBusyRepaint::animationRepaintsOnlySpinner()
     QVERIFY(waitForQuiet(probe));
     const QImage idle = probe.pixels;
     QVERIFY(!idle.isNull());
+    // A quiet old frame is not evidence that the requested state was painted.
+    // Cocoa may deliver the new backing-store update after the first wait tick.
+    probe.regions.clear();
     RegionSelectorTestAccess::setOcrBusy(selector, true);
     stopAnimationClock(spinner);
     QVERIFY(waitForQuiet(probe));
@@ -180,6 +183,7 @@ void TestOCRBusyRepaint::pinAnimationRepaintsAndErases()
     QVERIFY(waitForQuiet(probe));
     const QImage idle = probe.pixels;
     QVERIFY(!idle.isNull());
+    probe.regions.clear();
     window.m_ocrInProgress = true;
     window.updateLoadingSpinnerState();
     stopAnimationClock(spinner);

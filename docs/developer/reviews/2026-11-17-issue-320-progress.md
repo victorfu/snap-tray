@@ -69,9 +69,12 @@ The 13 pointer SVGs are original MIT SnapTray drawings; provenance is recorded i
   encoding with video work using a single bounded 100 ms task; keep all muxer
   access on the owner thread and join before abort, failure or final flush.
   Compare synchronous/asynchronous AAC payloads, timestamps and side data.
-- Accept the native resampler's one-sample rounding difference, while rounding
+- Accept native resamplers' sub-millisecond tail differences, while rounding
   imported clip coverage up to include its final partial millisecond. Verify
   that the final stored sample survives and the next sample is silent.
+- Require a fresh painted frame before the busy-spinner comparison, and place
+  both native cursor-occlusion test windows at the app's overlay level so Cocoa
+  desktop windows cannot obscure their fixture.
 
 ## Verification
 

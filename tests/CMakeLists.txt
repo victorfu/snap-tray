@@ -517,6 +517,7 @@ if(WIN32)
 endif()
 
 add_executable(RecordingManager_CursorTimelineRecorder RecordingManager/tst_CursorTimelineRecorder.cpp)
+target_include_directories(RecordingManager_CursorTimelineRecorder PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(RecordingManager_CursorTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_CursorTimelineRecorder COMMAND RecordingManager_CursorTimelineRecorder)
 set_tests_properties(RecordingManager_CursorTimelineRecorder PROPERTIES TIMEOUT 60 LABELS "unit")
