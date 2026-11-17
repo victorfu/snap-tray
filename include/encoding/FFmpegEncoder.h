@@ -36,6 +36,9 @@ public:
     bool isAudioSupported() const override;
     bool isAudioEnabled() const override;
     void writeAudioSamples(const QByteArray& pcm, qint64 startFrame) override;
+    // Offline export can overlap AAC work with video encoding. Public calls
+    // remain serialized; a bounded private task owns only the audio codec.
+    void setAsyncAudio(bool enabled) { if (!isRunning()) m_asyncAudio = enabled; }
     // Output is a temporary file until finish(): its size so far.
     ByteCounter writtenBytesCounter() const override { return m_writtenBytes; }
 
@@ -45,6 +48,9 @@ private:
     ByteCounter m_writtenBytes = std::make_shared<std::atomic<qint64>>(0);
     bool drainPackets(bool audio = false);
     bool encodeAudio(bool flushPartial);
+    void writeAudioSamplesNow(const QByteArray& pcm, qint64 startFrame);
+    bool finishAudioWork();
+    void failAudio(const QString& message);
     void fail(const QString& message);
     // `keepDirectOutput`: leave a fragmented recording's file on disk (failure,
     // teardown); false removes it (abort).
@@ -61,4 +67,5 @@ private:
     int m_keyframeSeconds = 2;
     bool m_fragmented = false;
     bool m_hevc = false;
+    bool m_asyncAudio = false;
 };

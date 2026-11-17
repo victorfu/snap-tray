@@ -60,6 +60,15 @@ The 13 pointer SVGs are original MIT SnapTray drawings; provenance is recorded i
   first native Windows CI build identified the missing WGC include.
 - Replace the new raw QML cursor enum with the shared cursor token required by
   the repository's cursor guard.
+- Restore loop-return settings after output tests so later export cases are
+  independent of their execution order.
+- Run Linux preview export tests with the existing isolated PulseAudio fixture;
+  hosted CI has no default output device, but still exercises real playback.
+- Warm codec/device startup before the long audio comparison. This exposed a
+  15.89% processing overhead hidden by the first cold export. Overlap Linux AAC
+  encoding with video work using a single bounded 100 ms task; keep all muxer
+  access on the owner thread and join before abort, failure or final flush.
+  Compare synchronous/asynchronous AAC payloads, timestamps and side data.
 
 ## Verification
 
@@ -67,19 +76,13 @@ Linux: Ubuntu 22.04, Qt 6.12.0, GCC 11.4, Debug application and tests; performan
 measurements use the Release build. Canonical scripts are run with
 `PATH=/snap/cmake/1534/bin:$PATH`; desktop/audio integration uses host X11/PulseAudio.
 
-The first complete 261-suite run passed 260 suites. Its sole failure was the
-new raw QML cursor enum; that was fixed and the guard passed on rerun. Subsequent
-focused tests passed for cursor gap/settling timing, numeric inspector commit,
-legacy audio preparation, imported audio persistence/export, and actual shape
-and loop-return outputs in all three formats. The next canonical run completed in 570.69 seconds: 260/261 suites passed;
-the export suite exposed a new test leaving Loop back enabled. Its settings
-restore was fixed and the entire export suite then passed (107 cases, one
-platform skip, 59.3 seconds). All 261 suites therefore passed across the full
-run and corrected rerun. The optimized WSOLA Release suite also passed all
-16 cases, including pitch, chunk independence and seam alignment.
-
-Main advanced to `29a807e6` during the work. Integration and final native CI
-results are recorded below after verification.
+Main advanced to `29a807e6` during the work. After integrating it, the canonical
+application build passed and the complete suite passed **262/262 tests**, with
+zero failures in **567.54 seconds**. Focused tests cover cursor gap/settling timing,
+numeric inspector commit, legacy audio preparation, imported audio persistence
+and export, and actual shape/loop-return outputs in all three formats. The
+optimized WSOLA Release suite passed all 16 cases, including pitch, chunk
+independence and seam alignment. Native CI results are recorded separately below.
 
 All 93 new UI context/source pairs have nonempty translations in each of the
 24 language catalogs. XML, duplicate keys and substitution placeholders were
@@ -95,6 +98,7 @@ Release measurements on this Linux host (synthetic, reproducible fixtures):
 | 1080p transition frame, blur Off / Low / High | 2.035 / 37.176 / 60.906 ms |
 | Additional transition-frame cost, Low / High | 35.141 / 58.871 ms |
 | 10-second 1080p export, four camera transitions, Off / Low / High | 2567.3 / 5569.2 / 6481.7 ms (1.00× / 2.17× / 2.52×) |
+| 10-minute 1080p/30 fps source, all 2×, Keep sound Off / On / Off after warm-up | 59,590.7 / 60,406.6 / 59,130.7 ms; **1.76%** above the bracketed baseline (< 5%) |
 
 The blur benchmark used CPU libx264 because no CUDA encoding device was available.
 High blur is intentionally more expensive and remains opt-in; preview uses the
@@ -103,8 +107,9 @@ selected quality, with no unlabelled quality reduction.
 The optional long audio benchmark uses `SNAPTRAY_LONG_AUDIO_BENCHMARK=1` and
 `QTEST_FUNCTION_TIMEOUT=900000` when invoking
 `release/bin/Video_VideoTranscoder longPitchExportBenchmark`. It generates a
-600-second 1080p/30 fps source, then brackets Keep sound on with two off exports
-at 2×. `SNAPTRAY_AUDIO_BENCHMARK_INPUT` can reuse that source and its two PCM
+600-second 1080p/30 fps source, warms the codec/device initialization with a short
+export, then brackets Keep sound on with two off exports at 2×.
+`SNAPTRAY_AUDIO_BENCHMARK_INPUT` can reuse that source and its two PCM
 sidecars; dimensions, duration and frame rate are checked before measurement.
 Run without concurrent builds for meaningful timing. The shorter blur benchmark
 uses `SNAPTRAY_ROADMAP_BENCHMARK=1` and `cameraBlurExportBenchmark`.
@@ -116,6 +121,6 @@ from Linux verification. A hosted build is not a substitute for device testing.
 No Windows 10/11 UAC, physical GPU removal, multi-driver color/readback benchmark,
 headphone waveform inspection, CPU-saturation recording, or cross-player manual
 seek has been performed on this Linux workstation. Likewise, the requested three
-real-recording Auto Zoom comparisons, three-platform voice listening tests and
-10-minute 1080p audio-export overhead measurement are not claimed as completed.
+real-recording Auto Zoom comparisons and three-platform voice listening tests
+are not claimed as completed. The long audio-export benchmark above is synthetic.
 The reproducible manual scenarios are in `docs/developer/recording-sync-matrix.md`.

@@ -272,8 +272,8 @@ public:
 private:
     // #185: the kept parts joined, each at its speed. Video frames are placed
     // at output times; audio is decoded and written again, from the source
-    // for parts at normal speed and as silence for the others, so every seam
-    // stays in sync (packet passthrough could not cut between AAC packets).
+    // through the shared pitch-preserving reader for sped-up parts, so every
+    // seam stays in sync (passthrough could not cut between AAC packets).
     VideoTranscodeResult transcodeSegments(const VideoTranscodeRequest& request, const ProgressCallback& progress) {
         VideoTranscodeResult result;
         auto fail = [&](const QString& message) { result.audioCopied = false; result.errorMessage = message; qWarning() << "FFmpeg export:" << message; return result; };
@@ -335,6 +335,7 @@ private:
         encoder.setBitrate(request.videoBitrate > 0 ? request.videoBitrate
             : SnapTray::VideoBitrate::forQuality(outputSize, fps, kDefaultTranscodeQuality));
         encoder.setHevc(request.videoCodec == QLatin1String(kVideoCodecHevc));
+        encoder.setAsyncAudio(true);
         constexpr int kAudioRate = 48000, kAudioChannels = 2, kAudioBits = 16;
         constexpr int kAudioChunk = 4800; // 100 ms
         AudioReader audio;

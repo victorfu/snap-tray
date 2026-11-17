@@ -645,7 +645,14 @@ if(APPLE OR WIN32 OR SNAPTRAY_ENABLE_LINUX_RECORDING)
 
     add_executable(Qml_RecordingPreviewExport Qml/tst_RecordingPreviewExport.cpp)
     target_link_libraries(Qml_RecordingPreviewExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
-    add_test(NAME Qml_RecordingPreviewExport COMMAND Qml_RecordingPreviewExport)
+    if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+        # The legacy speed-preview case opens a real audio output. Use the
+        # existing private server so headless CI exercises it without hardware.
+        add_test(NAME Qml_RecordingPreviewExport COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/Encoding/run_linux_media_test.py $<TARGET_FILE:Qml_RecordingPreviewExport>)
+    else()
+        add_test(NAME Qml_RecordingPreviewExport COMMAND Qml_RecordingPreviewExport)
+    endif()
     set_tests_properties(Qml_RecordingPreviewExport PROPERTIES TIMEOUT 120 LABELS "integration")
     add_executable(Qml_RecordingPreviewAppearance Qml/tst_RecordingPreviewAppearance.cpp)
     target_link_libraries(Qml_RecordingPreviewAppearance PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)

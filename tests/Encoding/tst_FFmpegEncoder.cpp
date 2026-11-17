@@ -6,6 +6,9 @@
 #include <QFile>
 #include <QSignalSpy>
 #include <QTemporaryDir>
+#include <QDataStream>
+#include <QtEndian>
+#include <cmath>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -25,6 +28,8 @@ private slots:
     void unfragmentedCrashLeavesNothingAtThePath();
     void fragmentedNeverOverwritesExistingFile();
     void writtenBytesAreReportedBeforeCommit();
+    void asyncAudioPacketsMatch();
+    void asyncAudioAbortFailureAndReuse();
 };
 
 void TestFFmpegEncoder::roundTrip()
@@ -305,6 +310,100 @@ void TestFFmpegEncoder::writtenBytesAreReportedBeforeCommit()
     encoder.finish();
     QVERIFY(QFileInfo::exists(path));
     QCOMPARE(written->load(), QFileInfo(path).size());
+}
+
+void TestFFmpegEncoder::asyncAudioPacketsMatch()
+{
+    QTemporaryDir dir;
+    QList<QByteArray> reference;
+    for (bool asynchronous : {false, true}) {
+        FFmpegEncoder encoder;
+        encoder.setAudioFormat(48000, 2, 16);
+        encoder.setAsyncAudio(asynchronous);
+        const QString path = dir.filePath(asynchronous ? "async.mp4" : "sync.mp4");
+        QSignalSpy finished(&encoder, &IVideoEncoder::finished);
+        QVERIFY(encoder.start(path, QSize(128, 96), 20));
+        QImage frame(128, 96, QImage::Format_RGB32);
+        frame.fill(Qt::blue);
+        // Includes a gap, overlap, input larger than the task budget and a
+        // partial final AAC frame. Task boundaries must not alter the stream.
+        const QList<QPair<qint64, int>> chunks{{0, 6000}, {6500, 12345}, {18500, 2000}, {20500, 27507}};
+        for (int i = 0; i < 20; ++i) {
+            encoder.writeFrame(frame, i * 50);
+            if (i % 4 == 0 && i / 4 < chunks.size()) {
+                const auto chunk = chunks[i / 4];
+                QByteArray pcm(chunk.second * 4, Qt::Uninitialized);
+                for (int f = 0; f < chunk.second; ++f) {
+                    const qint16 value = qint16(12000 * std::sin(2 * 3.141592653589793 * 440 * (chunk.first + f) / 48000));
+                    qToLittleEndian(value, pcm.data() + f * 4);
+                    qToLittleEndian(qint16(-value), pcm.data() + f * 4 + 2);
+                }
+                encoder.writeAudioSamples(pcm, chunk.first);
+            }
+            QVERIFY2(encoder.isRunning(), qPrintable(encoder.lastError()));
+        }
+        encoder.finish();
+        QCOMPARE(finished.count(), 1);
+        QVERIFY2(finished.first().first().toBool(), qPrintable(encoder.lastError()));
+        AVFormatContext* format = nullptr;
+        QCOMPARE(avformat_open_input(&format, QFile::encodeName(path).constData(), nullptr, nullptr), 0);
+        auto close = qScopeGuard([&] { avformat_close_input(&format); });
+        QVERIFY(avformat_find_stream_info(format, nullptr) >= 0);
+        const int audio = av_find_best_stream(format, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+        QVERIFY(audio >= 0);
+        AVPacket* packet = av_packet_alloc();
+        QVERIFY(packet);
+        auto free = qScopeGuard([&] { av_packet_free(&packet); });
+        QList<QByteArray> packets;
+        while (av_read_frame(format, packet) >= 0) {
+            if (packet->stream_index == audio) {
+                QByteArray record;
+                QDataStream data(&record, QIODevice::WriteOnly);
+                data << qint64(packet->pts) << qint64(packet->dts) << qint64(packet->duration)
+                     << format->streams[audio]->time_base.num << format->streams[audio]->time_base.den;
+                data << QByteArray(reinterpret_cast<const char*>(packet->data), packet->size);
+                for (int i = 0; i < packet->side_data_elems; ++i) {
+                    const auto& side = packet->side_data[i];
+                    data << int(side.type) << QByteArray(reinterpret_cast<const char*>(side.data), qsizetype(side.size));
+                }
+                packets.push_back(record);
+            }
+            av_packet_unref(packet);
+        }
+        QVERIFY(packets.size() > 40);
+        if (asynchronous) QCOMPARE(packets, reference);
+        else reference = packets;
+    }
+}
+
+void TestFFmpegEncoder::asyncAudioAbortFailureAndReuse()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath("audio.mp4");
+    FFmpegEncoder encoder;
+    encoder.setAudioFormat(48000, 2, 16);
+    encoder.setAsyncAudio(true);
+    QImage frame(128, 96, QImage::Format_RGB32);
+    frame.fill(Qt::black);
+    const QByteArray pcm(4800 * 4, '\0');
+    for (bool invalid : {false, true}) {
+        QVERIFY(encoder.start(path, frame.size(), 30));
+        encoder.writeFrame(frame, 0);
+        encoder.writeAudioSamples(pcm, 0);
+        if (invalid) encoder.writeAudioSamples(pcm, -1);
+        else encoder.abort();
+        QVERIFY(!encoder.isRunning());
+        QVERIFY(!QFile::exists(path));
+        QCOMPARE(encoder.lastError().isEmpty(), !invalid);
+    }
+    QVERIFY(encoder.start(path, frame.size(), 30));
+    encoder.writeFrame(frame, 0);
+    encoder.writeAudioSamples(pcm, 0);
+    QSignalSpy finished(&encoder, &IVideoEncoder::finished);
+    encoder.finish();
+    QCOMPARE(finished.count(), 1);
+    QVERIFY2(finished.first().first().toBool(), qPrintable(encoder.lastError()));
+    QVERIFY(QFileInfo::exists(path));
 }
 
 QTEST_GUILESS_MAIN(TestFFmpegEncoder)

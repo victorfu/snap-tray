@@ -336,6 +336,7 @@ QByteArray AudioTrackMixer::read(qint64 startFrame, int frames)
         const double value = qFromLittleEndian<qint16>(mic + i) * gm + qFromLittleEndian<qint16>(sys + i) * gs;
         qToLittleEndian<qint16>(clampSample(value), mixed + i);
     }
+    if (m_clips.clips.empty()) return out; // The recorded mix is already clamped.
     // Accumulate in floating point; clamp only once so overlap order never
     // changes the mix. Fades depend on source samples, never playback history.
     std::vector<double> sum(size_t(frames) * 2);

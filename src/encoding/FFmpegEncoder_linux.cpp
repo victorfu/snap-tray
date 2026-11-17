@@ -8,11 +8,14 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QThread>
+#include <QThreadPool>
 #include <climits>
 #include <QtEndian>
 #include <cerrno>
 #include <cstdio>
 #include <limits>
+#include <future>
+#include <vector>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -126,6 +129,12 @@ struct FFmpegEncoder::State
     QByteArray audioPending;
     qint64 audioPts = 0;
     bool audioStarted = false;
+    bool asyncAudio = false;
+    QThreadPool audioPool;
+    std::future<void> audioWork;
+    AVPacket* audioPacket = nullptr;
+    std::vector<AVPacket*> audioPackets;
+    QString audioWorkerError;
     qint64 encodeNs = 0;
     SnapTray::VideoRateControl rateControl = SnapTray::VideoRateControl::Bitrate;
     QSize size;
@@ -161,6 +170,12 @@ void FFmpegEncoder::release(bool keepDirectOutput)
         return;
     }
     auto& s = *m_state;
+    // A failed video write or abort can arrive while AAC is still running.
+    // Join before releasing any codec, packet or state the task can reference.
+    if (s.audioWork.valid()) s.audioWork.wait();
+    s.audioPool.waitForDone();
+    for (auto* packet : s.audioPackets) av_packet_free(&packet);
+    av_packet_free(&s.audioPacket);
     if (m_framesWritten) qDebug() << "FFmpeg encoding:" << m_encoderName << m_framesWritten
         << "frames, mean conversion/encode ms" << double(s.encodeNs)/m_framesWritten/1e6;
     sws_freeContext(s.scaler);
@@ -365,6 +380,12 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
         s.audioFrame->channels = m_audioChannels;
 #endif
         if (av_frame_get_buffer(s.audioFrame, 0) < 0) { fail(QStringLiteral("Cannot allocate AAC frame.")); return false; }
+        s.asyncAudio = m_asyncAudio;
+        if (s.asyncAudio) {
+            s.audioPacket = av_packet_alloc();
+            if (!s.audioPacket) { fail(QStringLiteral("Cannot allocate AAC packet.")); return false; }
+            s.audioPool.setMaxThreadCount(1);
+        }
     }
     s.stream->time_base = s.codec->time_base;
     s.stream->avg_frame_rate = s.codec->framerate;
@@ -402,21 +423,30 @@ bool FFmpegEncoder::drainPackets(bool audio)
     int result = 0;
     auto* codec = audio ? s.audioCodec : s.codec;
     auto* stream = audio ? s.audioStream : s.stream;
-    while ((result = avcodec_receive_packet(codec, s.packet)) >= 0) {
-        if (!audio && s.packet->duration <= 0) {
-            s.packet->duration = av_rescale_q(1, AVRational{1, s.frameRate}, s.codec->time_base);
+    AVPacket* packet = audio && s.asyncAudio ? s.audioPacket : s.packet;
+    while ((result = avcodec_receive_packet(codec, packet)) >= 0) {
+        if (!audio && packet->duration <= 0) {
+            packet->duration = av_rescale_q(1, AVRational{1, s.frameRate}, s.codec->time_base);
         }
-        av_packet_rescale_ts(s.packet, codec->time_base, stream->time_base);
-        s.packet->stream_index = stream->index;
-        result = av_interleaved_write_frame(s.format, s.packet);
-        av_packet_unref(s.packet);
+        if (audio && s.asyncAudio) {
+            AVPacket* queued = av_packet_alloc();
+            if (!queued) { failAudio(QStringLiteral("Cannot allocate AAC packet.")); return false; }
+            av_packet_move_ref(queued, packet);
+            s.audioPackets.push_back(queued);
+            continue;
+        }
+        av_packet_rescale_ts(packet, codec->time_base, stream->time_base);
+        packet->stream_index = stream->index;
+        result = av_interleaved_write_frame(s.format, packet);
+        av_packet_unref(packet);
         if (result < 0) {
             fail(QStringLiteral("Cannot write MP4 packet: %1").arg(ffmpegError(result)));
             return false;
         }
     }
     if (result != AVERROR(EAGAIN) && result != AVERROR_EOF) {
-        fail(QStringLiteral("H.264 encoding failed: %1").arg(ffmpegError(result)));
+        const QString message = QStringLiteral("Media encoding failed: %1").arg(ffmpegError(result));
+        if (audio) failAudio(message); else fail(message);
         return false;
     }
     return true;
@@ -500,6 +530,8 @@ void FFmpegEncoder::finish()
         return;
     }
     if (m_state->audioCodec) {
+        if (!finishAudioWork()) { emit finished(false, m_outputPath); return; }
+        m_state->asyncAudio = false; // Flush the final AAC frame on the owner.
         if (!encodeAudio(true)) { emit finished(false, m_outputPath); return; }
         const int sent = avcodec_send_frame(m_state->audioCodec, nullptr);
         if (sent < 0 || !drainPackets(true)) {
@@ -547,7 +579,7 @@ bool FFmpegEncoder::encodeAudio(bool partial) {
     const int bytes = s.audioCodec->frame_size * m_audioChannels * 2;
     while (s.audioPending.size() >= bytes || (partial && !s.audioPending.isEmpty())) {
         const int used = qMin(bytes, int(s.audioPending.size()));
-        if (av_frame_make_writable(s.audioFrame) < 0) { fail(QStringLiteral("Cannot prepare AAC frame.")); return false; }
+        if (av_frame_make_writable(s.audioFrame) < 0) { failAudio(QStringLiteral("Cannot prepare AAC frame.")); return false; }
         for (int channel = 0; channel < m_audioChannels; ++channel) {
             auto* samples = reinterpret_cast<float*>(s.audioFrame->data[channel]);
             for (int i = 0; i < s.audioCodec->frame_size; ++i) {
@@ -558,15 +590,66 @@ bool FFmpegEncoder::encodeAudio(bool partial) {
         s.audioFrame->pts = s.audioPts;
         s.audioPts += s.audioCodec->frame_size;
         s.audioPending.remove(0, used);
-        if (avcodec_send_frame(s.audioCodec, s.audioFrame) < 0) { fail(QStringLiteral("Cannot encode AAC samples.")); return false; }
+        if (avcodec_send_frame(s.audioCodec, s.audioFrame) < 0) { failAudio(QStringLiteral("Cannot encode AAC samples.")); return false; }
         if (!drainPackets(true)) return false;
     }
     return true;
 }
 void FFmpegEncoder::writeAudioSamples(const QByteArray& pcm, qint64 startFrame) {
     if (!isAudioEnabled() || pcm.isEmpty()) return;
+    const int stride = m_audioChannels * 2;
+    if (startFrame < 0 || pcm.size() % stride) { fail(QStringLiteral("Invalid PCM sample range.")); return; }
+    if (!m_state->asyncAudio) { writeAudioSamplesNow(pcm, startFrame); return; }
+    // Only one 100 ms task may be outstanding, including for a caller that
+    // supplies a large block. Packet and PCM memory therefore stay bounded.
+    constexpr int kAudioTaskFrames = 4800;
+    for (qsizetype offset = 0; offset < pcm.size();) {
+        if (!finishAudioWork()) return;
+        const auto block = pcm.mid(offset, qMin<qsizetype>(kAudioTaskFrames * stride, pcm.size() - offset));
+        const qint64 first = startFrame + offset / stride;
+        auto task = std::make_shared<std::packaged_task<void()>>([this, block, first] {
+            writeAudioSamplesNow(block, first);
+        });
+        m_state->audioWork = task->get_future();
+        m_state->audioPool.start([task] { (*task)(); });
+        offset += block.size();
+    }
+}
+
+void FFmpegEncoder::failAudio(const QString& message)
+{
+    if (m_state->asyncAudio) m_state->audioWorkerError = message;
+    else fail(message);
+}
+
+bool FFmpegEncoder::finishAudioWork()
+{
+    auto& s = *m_state;
+    if (!s.audioWork.valid()) return true;
+    try { s.audioWork.get(); }
+    catch (...) { s.audioWorkerError = QStringLiteral("AAC encoding task failed."); }
+    if (!s.audioWorkerError.isEmpty()) {
+        const QString message = s.audioWorkerError;
+        fail(message);
+        return false;
+    }
+    // All muxer and QFile access stays on the owner thread. The worker only
+    // produces packets, preserving their original PTS, duration and side data.
+    for (auto*& packet : s.audioPackets) {
+        av_packet_rescale_ts(packet, s.audioCodec->time_base, s.audioStream->time_base);
+        packet->stream_index = s.audioStream->index;
+        const int result = av_interleaved_write_frame(s.format, packet);
+        av_packet_free(&packet);
+        if (result < 0) { fail(QStringLiteral("Cannot write AAC packet: %1").arg(ffmpegError(result))); return false; }
+    }
+    s.audioPackets.clear();
+    return true;
+}
+
+void FFmpegEncoder::writeAudioSamplesNow(const QByteArray& pcm, qint64 startFrame) {
+    if (!isAudioEnabled() || pcm.isEmpty()) return;
     const int stride = m_audioChannels*2;
-    if (startFrame < 0 || pcm.size()%stride) { fail(QStringLiteral("Invalid PCM sample range.")); return; }
+    if (startFrame < 0 || pcm.size()%stride) { failAudio(QStringLiteral("Invalid PCM sample range.")); return; }
     auto& s = *m_state;
     if (!s.audioStarted) { s.audioPts = startFrame; s.audioStarted = true; }
     qint64 expected = s.audioPts + s.audioPending.size()/stride;

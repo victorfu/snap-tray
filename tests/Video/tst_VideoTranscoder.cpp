@@ -1610,6 +1610,17 @@ void tst_VideoTranscoder::longPitchExportBenchmark()
     QVERIFY(source.valid && source.videoSize == size && qAbs(source.durationMs - 600000) <= 40);
     QVERIFY(source.frameRate > 29.9 && source.frameRate < 30.1);
     QVERIFY(SnapTray::AudioTracks::exist(input));
+    // Warm the codec/device initialization before comparing processing cost.
+    // Otherwise the first off export can hide audio overhead behind startup.
+    VideoTranscodeRequest warmup;
+    warmup.inputPath = input;
+    warmup.outputPath = m_dir.filePath("pitch-warmup.mp4");
+    warmup.frameRate = 30;
+    warmup.videoBitrate = 5000000;
+    warmup.audioTracksVideoPath = input;
+    warmup.segments = {{0, 4000, 2.0, true}};
+    const auto warmed = m_transcoder->transcode(warmup, {});
+    QVERIFY2(warmed.success, qPrintable(warmed.errorMessage));
     double times[3]{};
     for (int i = 0; i < 3; ++i) {
         VideoTranscodeRequest request;
