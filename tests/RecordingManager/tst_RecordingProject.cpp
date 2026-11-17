@@ -35,6 +35,8 @@ private slots:
     void listIsNewestFirst();
     void removeOnlyInsideTheRoot();
     void removeOlderThan();
+    void thumbnailPublicationFollowsCommittedGeneration();
+    void legacyThumbnailIsNeverTrusted();
 
 private:
     static PreviewEditState sampleState();
@@ -347,6 +349,77 @@ void tst_RecordingProject::removeOlderThan()
     QVERIFY(QFileInfo::exists(project->dir));
     QCOMPARE(RecordingProjects::removeOlderThan(30, now.addDays(31)), 1);
     QVERIFY(!QFileInfo::exists(project->dir));
+}
+
+void tst_RecordingProject::thumbnailPublicationFollowsCommittedGeneration()
+{
+    auto project = RecordingProjects::create(writeRecording(QStringLiteral("poster.mp4"), false),
+                                              false, RecordingRecipe::toJson(sampleState(), {}), {}, 5000, {});
+    QVERIFY(project);
+    QImage image(32, 18, QImage::Format_RGB32);
+    image.fill(Qt::black);
+    const RecordingProject oldJob = *project;
+    QVERIFY(project->thumbnailUrl().isEmpty());
+    QVERIFY(RecordingProjects::publishThumbnail(*project, image));
+    const QString oldUrl = project->thumbnailUrl();
+    QVERIFY(!oldUrl.isEmpty());
+
+    // A failed manifest write keeps both the in-memory and committed recipe,
+    // generation and valid poster. It must not invalidate a successful save.
+    const auto recipe = RecordingRecipe::toJson(PreviewEditState{}, {});
+    RecordingProjects::failNextManifestWriteForTests();
+    QVERIFY(!RecordingProjects::update(*project, recipe, QStringLiteral("failed.mp4")));
+    QCOMPARE(project->recipe, oldJob.recipe);
+    QCOMPARE(project->thumbnailUrl(), oldUrl);
+
+    QVERIFY(RecordingProjects::update(*project, recipe, {}));
+    QVERIFY(project->thumbnailPath() != oldJob.thumbnailPath());
+    QVERIFY(project->thumbnailUrl().isEmpty());
+    QVERIFY(oldJob.thumbnailUrl().isEmpty()); // cached model snapshot is stale too
+    QVERIFY(!RecordingProjects::publishThumbnail(oldJob, image)); // old worker completes late
+    QVERIFY(!QFileInfo::exists(oldJob.thumbnailPath()));
+    QVERIFY(!RecordingProjects::publishThumbnail(*project, {})); // failed rendering
+    QVERIFY(project->thumbnailUrl().isEmpty());
+
+    // Failure to publish stays a placeholder, never an old/raw fallback.
+    QVERIFY(QDir().mkdir(project->thumbnailPath()));
+    QVERIFY(!RecordingProjects::publishThumbnail(*project, image));
+    QVERIFY(QDir().rmdir(project->thumbnailPath()));
+    QVERIFY(RecordingProjects::publishThumbnail(*project, image));
+    QVERIFY(project->thumbnailUrl() != oldUrl);
+    const auto savedJob = *project;
+    QVERIFY(RecordingProjects::remove(*project));
+    QVERIFY(!RecordingProjects::publishThumbnail(savedJob, image));
+    QVERIFY(!QFileInfo::exists(project->dir));
+}
+
+void tst_RecordingProject::legacyThumbnailIsNeverTrusted()
+{
+    const auto project = RecordingProjects::create(writeRecording(QStringLiteral("legacy.mp4"), false),
+        false, RecordingRecipe::toJson(sampleState(), {}), {}, 5000, {});
+    QVERIFY(project);
+    const QString manifest = QDir(project->dir).filePath(QStringLiteral("project.json"));
+    QFile file(manifest);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    auto json = QJsonDocument::fromJson(file.readAll()).object();
+    file.close();
+    json.remove(QStringLiteral("thumbnailGeneration"));
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    file.write(QJsonDocument(json).toJson());
+    file.close();
+    QImage raw(32, 18, QImage::Format_RGB32);
+    raw.fill(Qt::green);
+    const QString legacy = QDir(project->dir).filePath(QStringLiteral("thumbnail.png"));
+    QVERIFY(raw.save(legacy));
+    const auto loaded = RecordingProjects::load(project->dir);
+    QVERIFY(loaded);
+    QVERIFY(loaded->thumbnailGeneration.isEmpty());
+    QVERIFY(loaded->thumbnailPath() != legacy);
+    QVERIFY(loaded->thumbnailUrl().isEmpty());
+    raw.fill(Qt::black);
+    QVERIFY(RecordingProjects::publishThumbnail(*loaded, raw));
+    QVERIFY(!loaded->thumbnailUrl().isEmpty());
+    QCOMPARE(QImage(loaded->thumbnailPath()).pixelColor(0, 0), QColor(Qt::black));
 }
 
 QTEST_GUILESS_MAIN(tst_RecordingProject)

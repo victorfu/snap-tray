@@ -141,9 +141,7 @@ QVariant LibraryModel::data(const QModelIndex& index, int role) const
     switch (role) {
     case TitleRole: return project.title();
     case ThumbnailUrlRole:
-        return QFileInfo::exists(project.thumbnailPath())
-            ? QUrl::fromLocalFile(project.thumbnailPath()).toString()
-            : QString();
+        return project.thumbnailUrl();
     case MetaTextRole:
         return QStringLiteral("%1 · %2 · %3")
             .arg(HistoryModel::relativeDateFor(project.created),

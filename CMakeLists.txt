@@ -376,6 +376,8 @@ add_library(snaptray_core STATIC
     src/recording/OverlayTrack.cpp
     src/recording/AudioTracks.cpp
     src/recording/RecordingProject.cpp
+    include/recording/RecordingProject.h
+    src/recording/RecordingFrameFilter.cpp
     src/recording/RecordingArea.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/OCRTextUtils.cpp
@@ -1350,6 +1352,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/RecordingRecoveryViewModel.cpp
         include/qml/RecordingRecoveryViewModel.h
         src/qml/RecordingLibraryViewModel.cpp
+        src/qml/RecordingProjectThumbnail.cpp
         src/qml/QuickSaveAction.cpp
         include/qml/QuickSaveAction.h
         src/qml/QmlRecordingAreaSelector.cpp

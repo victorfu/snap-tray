@@ -1,4 +1,5 @@
 #include "qml/RecordingLibraryViewModel.h"
+#include "qml/RecordingProjectThumbnail.h"
 
 #include "qml/RecordingRecoveryViewModel.h"
 #include "settings/RecordingSettingsManager.h"
@@ -15,6 +16,7 @@ namespace SnapTray {
 RecordingLibraryViewModel::RecordingLibraryViewModel(QObject* parent)
     : QObject(parent)
 {
+    connect(RecordingProjects::events(), &RecordingProjectEvents::changed, this, &RecordingLibraryViewModel::refresh);
     refresh();
 }
 
@@ -22,6 +24,7 @@ void RecordingLibraryViewModel::refresh()
 {
     m_items = RecordingProjects::list();
     rebuildRows();
+    for (const auto& project : m_items) requestProjectThumbnail(project);
 }
 
 QString RecordingLibraryViewModel::totalSizeText() const
@@ -62,9 +65,7 @@ void RecordingLibraryViewModel::rebuildRows()
         const bool open = !m_openProjectDir.isEmpty() && project.dir == m_openProjectDir;
         row[QStringLiteral("details")] = open ? tr("Open in the preview") : details;
         row[QStringLiteral("open")] = open;
-        row[QStringLiteral("thumbnail")] = QFileInfo::exists(project.thumbnailPath())
-            ? QUrl::fromLocalFile(project.thumbnailPath()).toString()
-            : QString();
+        row[QStringLiteral("thumbnail")] = project.thumbnailUrl();
         m_rows.append(row);
     }
     emit projectsChanged();

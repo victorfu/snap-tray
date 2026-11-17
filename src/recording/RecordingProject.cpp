@@ -6,6 +6,9 @@
 #include "recording/WindowTimelineSidecar.h"
 
 #include <QDebug>
+#include <QCryptographicHash>
+#include <QUuid>
+#include <QUrl>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
@@ -26,7 +29,6 @@ namespace {
 
 constexpr auto kRecipeType = "snaptray-recipe";
 constexpr auto kManifestName = "project.json";
-constexpr auto kThumbnailName = "thumbnail.png";
 constexpr auto kManifestType = "snaptray-project";
 constexpr int kManifestVersion = 1;
 
@@ -81,7 +83,8 @@ QJsonObject manifestOf(const RecordingProject& p)
             {QStringLiteral("modified"), p.modified.toString(Qt::ISODateWithMs)},
             {QStringLiteral("durationMs"), double(p.durationMs)},
             {QStringLiteral("savedPath"), p.savedPath},
-            {QStringLiteral("recipe"), p.recipe}};
+            {QStringLiteral("recipe"), p.recipe},
+            {QStringLiteral("thumbnailGeneration"), p.thumbnailGeneration}};
 }
 
 } // namespace
@@ -157,7 +160,19 @@ QString RecordingProject::videoPath() const
 
 QString RecordingProject::thumbnailPath() const
 {
-    return QDir(dir).filePath(QLatin1String(kThumbnailName));
+    // Legacy thumbnail.png never participates. Include recipe as well as the
+    // generation so older writers that preserve/drop unknown keys stay safe.
+    const QByteArray revision = QCryptographicHash::hash(
+        QJsonDocument(recipe).toJson(QJsonDocument::Compact) + thumbnailGeneration.toUtf8(),
+        QCryptographicHash::Sha256).toHex();
+    return QDir(dir).filePath(QStringLiteral("thumbnail-v1-%1.png").arg(QString::fromLatin1(revision)));
+}
+
+QString RecordingProject::thumbnailUrl() const
+{
+    const auto current = RecordingProjects::load(dir);
+    if (!current || current->thumbnailPath() != thumbnailPath() || !QFileInfo(thumbnailPath()).isFile()) return {};
+    return QUrl::fromLocalFile(thumbnailPath()).toString();
 }
 
 QString RecordingProject::title() const
@@ -178,6 +193,24 @@ qint64 RecordingProject::sizeBytes() const
 }
 
 namespace RecordingProjects {
+
+RecordingProjectEvents* events()
+{
+    static RecordingProjectEvents notifier;
+    return &notifier;
+}
+
+bool publishThumbnail(const RecordingProject& snapshot, const QImage& image)
+{
+    const auto current = load(snapshot.dir);
+    if (image.isNull() || !current || current->thumbnailPath() != snapshot.thumbnailPath()) return false;
+    if (QFileInfo(snapshot.thumbnailPath()).isFile()) return true; // immutable URL contents
+    // Never create a directory here: a deleted project must stay deleted.
+    QSaveFile file(snapshot.thumbnailPath());
+    if (!file.open(QIODevice::WriteOnly) || !image.save(&file, "PNG") || !file.commit()) return false;
+    emit events()->changed();
+    return true;
+}
 
 QString root()
 {
@@ -220,6 +253,7 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
     project.durationMs = durationMs;
     project.savedPath = savedPath;
     project.recipe = recipe;
+    project.thumbnailGeneration = QUuid::createUuid().toString(QUuid::WithoutBraces);
     // What was moved, so a failure can put it back: the recording is the
     // only full-quality copy and must survive a half-made project
     // (PR #203 review).
@@ -234,7 +268,6 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
     for (const QString& sidecar : sidecarSuffixes()) {
         if (ok && QFileInfo::exists(videoPath + sidecar)) ok = transfer(videoPath + sidecar, project.videoPath() + sidecar);
     }
-    if (ok && !thumbnail.isNull()) thumbnail.save(project.thumbnailPath(), "PNG");
     ok = ok && writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(project));
     if (!ok) {
         qWarning() << "RecordingProjects: could not create a project in" << project.dir;
@@ -247,6 +280,8 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
         else qWarning() << "RecordingProjects: kept" << project.dir << "- files could not be moved back";
         return std::nullopt;
     }
+    if (!thumbnail.isNull()) publishThumbnail(project, thumbnail);
+    emit events()->changed();
     return project;
 }
 
@@ -264,6 +299,7 @@ std::optional<RecordingProject> load(const QString& dir)
     if (!p.modified.isValid()) p.modified = p.created;
     p.durationMs = qint64(m.value(QStringLiteral("durationMs")).toDouble(0));
     p.savedPath = m.value(QStringLiteral("savedPath")).toString();
+    p.thumbnailGeneration = m.value(QStringLiteral("thumbnailGeneration")).toString();
     p.recipe = RecordingRecipe::migrate(m.value(QStringLiteral("recipe")).toObject());
     if (p.videoName.isEmpty() || !QFileInfo::exists(p.videoPath())) return std::nullopt;
     return p;
@@ -271,10 +307,18 @@ std::optional<RecordingProject> load(const QString& dir)
 
 bool update(RecordingProject& project, const QJsonObject& recipe, const QString& savedPath)
 {
-    project.recipe = recipe;
-    if (!savedPath.isEmpty()) project.savedPath = savedPath;
-    project.modified = QDateTime::currentDateTime();
-    return writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(project));
+    RecordingProject next = project;
+    next.recipe = recipe;
+    if (!savedPath.isEmpty()) next.savedPath = savedPath;
+    next.modified = QDateTime::currentDateTime();
+    next.thumbnailGeneration = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    if (!writeJson(QDir(next.dir).filePath(QLatin1String(kManifestName)), manifestOf(next))) return false;
+    project = next;
+    const QDir dir(project.dir);
+    for (const QString& name : dir.entryList({QStringLiteral("thumbnail*.png")}, QDir::Files))
+        QFile::remove(dir.filePath(name));
+    emit events()->changed();
+    return true;
 }
 
 QList<RecordingProject> list()
@@ -293,7 +337,9 @@ bool remove(const RecordingProject& project)
 {
     // Only ever a folder inside the projects root.
     if (!contains(project.dir) || QDir::cleanPath(project.dir) == QDir::cleanPath(root())) return false;
-    return QDir(project.dir).removeRecursively();
+    const bool removed = QDir(project.dir).removeRecursively();
+    if (removed) emit events()->changed();
+    return removed;
 }
 
 qint64 totalBytes()
