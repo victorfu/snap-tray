@@ -93,10 +93,13 @@ struct Recoverable {
     qint64 durationMs = 0;       // what can actually be played
     bool audioMissing = false;   // audio was required but is not in the file
     bool complete = false;       // finished normally (Finished state)
+    bool accessBlocked = false;  // could not acquire lock for reasons other than contention
     QString problem;             // why it cannot be recovered, if not
 };
 
-// Finds left-behind sessions in `directory`. Active sessions are skipped.
+// Finds left-behind sessions in `directory`, holding each session lock while
+// reading/probing/cleaning it. Held locks are skipped; other lock errors are
+// reported as blocked entries. Cleanup-pending entries are returned unprobed.
 // Cleanup-pending manifests remain discoverable even after the video is gone.
 // Other manifests whose video is gone are removed (nothing left to recover);
 // unreadable manifests are reported with a problem rather than deleted.
@@ -107,9 +110,10 @@ QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsAc
 bool hasSession(const QString& videoPath);
 
 struct DiscardResult {
-    bool complete = false;
-    QStringList remainingPaths;
-    QStringList errors;
+    bool complete = false;       // every owned path, including manifest, is gone
+    bool intentPersisted = false; // deletion was authorized durably; recovery is no longer safe
+    QStringList remainingPaths;  // paths still present after this attempt
+    QStringList errors;          // per-path failure details, also logged
 };
 // Optional file operation for deterministic failure tests. Return false with
 // an error when removal fails; already absent paths are handled by discard.

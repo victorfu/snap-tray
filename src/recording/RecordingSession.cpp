@@ -8,6 +8,7 @@
 #include "recording/AudioTracks.h"
 
 #include <QDir>
+#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -179,16 +180,29 @@ DiscardResult discard(const QString& videoPath, const RemoveFile& removeFile)
         result.complete = true;
         return result;
     }
+    const auto reportError = [&](const QString& path, const QString& error) {
+        const QString detail = QStringLiteral("%1: %2").arg(path, error);
+        result.errors.append(detail);
+        qWarning().noquote() << "RecordingSession: discard failed:" << detail;
+    };
+    // QSaveFile follows an existing symlink. Never let a cleanup-intent write
+    // replace a link target or a non-file in the shared temporary directory.
+    const QFileInfo manifestInfo(manifest);
+    if (manifestInfo.isSymLink() || (manifestInfo.exists() && !manifestInfo.isFile())) {
+        reportError(manifest, QStringLiteral("manifest is not a regular, non-symlink file"));
+        return result;
+    }
     auto info = read(manifest).value_or(RecordingSessionInfo{});
     info.videoPath = videoPath;
     if (!info.cleanupPending) {
         info.cleanupPending = true;
         QString error;
         if (!write(info, &error)) {
-            result.errors.append(QStringLiteral("%1: %2").arg(manifest, error));
+            reportError(manifest, error);
             return result; // no deletion without a durable retry record
         }
     }
+    result.intentPersisted = true;
     const auto removeOne = [&](const QString& path) {
         if (!exists(path)) return true;
         QString error;
@@ -200,7 +214,7 @@ DiscardResult discard(const QString& videoPath, const RemoveFile& removeFile)
             removed = file.remove();
             error = file.errorString();
         }
-        if (!removed) result.errors.append(QStringLiteral("%1: %2").arg(path, error));
+        if (!removed) reportError(path, error);
         return removed;
     };
     bool materialsRemoved = true;
@@ -269,9 +283,17 @@ QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsAc
         // cleanup so a concurrent discard cannot replace our manifest snapshot.
         QLockFile lock(lockPathFor(videoPath));
         lock.setStaleLockTime(0);
-        if (!lock.tryLock(0)) continue;
         Recoverable item;
         item.manifestPath = manifestPath;
+        if (!lock.tryLock(0)) {
+            if (lock.error() == QLockFile::LockFailedError) continue;
+            item.info.videoPath = videoPath;
+            item.accessBlocked = true;
+            item.problem = QStringLiteral("cannot lock session (error %1)").arg(int(lock.error()));
+            qWarning().noquote() << "RecordingSession:" << item.problem << lock.fileName();
+            found.append(item);
+            continue; // no probe or cleanup without ownership
+        }
         QString error;
         const auto info = read(manifestPath, &error);
         if (!info) {
@@ -285,7 +307,6 @@ QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsAc
         }
         item.info = *info;
         if (info->cleanupPending) {
-            item.problem = QStringLiteral("discard pending; retry cleanup");
             found.append(item);
             continue;
         }

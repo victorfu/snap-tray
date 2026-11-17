@@ -1,6 +1,7 @@
 #include "qml/RecordingRecoveryViewModel.h"
 
 #include <QLocale>
+#include <QDebug>
 #include <QLockFile>
 #include <QVariantMap>
 
@@ -33,6 +34,9 @@ QString RecordingRecoveryViewModel::durationText(qint64 ms)
 
 QString RecordingRecoveryViewModel::statusText(const RecordingSession::Recoverable& item)
 {
+    if (item.accessBlocked) {
+        return tr("Cannot access this recording. Check file permissions and try again.");
+    }
     if (item.info.cleanupPending) {
         return tr("Discard is incomplete. Choose Discard to retry cleanup.");
     }
@@ -94,7 +98,13 @@ void RecordingRecoveryViewModel::discard(int index)
     QLockFile lock(RecordingSession::lockPathFor(path));
     lock.setStaleLockTime(0);
     if (!lock.tryLock(0)) {
-        m_busy.insert(path);
+        if (lock.error() == QLockFile::LockFailedError) {
+            m_busy.insert(path);
+        } else {
+            m_busy.remove(path);
+            m_discardErrors.insert(path, tr("Cannot access this recording. Check file permissions and try again."));
+            qWarning().noquote() << "RecordingRecovery: cannot lock session" << path << int(lock.error());
+        }
         rebuildRows();
         return;
     }
@@ -103,10 +113,11 @@ void RecordingRecoveryViewModel::discard(int index)
     m_busy.remove(path);
     if (!result.complete) {
         auto& item = m_items[index];
-        item.info.cleanupPending = true;
-        item.decodable = false;
-        m_discardErrors.insert(path, tr("Discard failed. Choose Discard to retry. %1")
-            .arg(result.errors.join(QStringLiteral("; "))));
+        if (result.intentPersisted) {
+            item.info.cleanupPending = true;
+            item.decodable = false;
+        }
+        m_discardErrors.insert(path, tr("Discard failed. Check file permissions and choose Discard to retry."));
         rebuildRows();
         return;
     }

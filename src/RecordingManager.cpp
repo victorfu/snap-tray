@@ -1718,7 +1718,7 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
         m_session = {};
         return false;  // another SnapTray has it open
     }
-    // Re-read under the lock: another recovery dialog may have partially
+    // Re-read under the lock: another SnapTray instance may have partially
     // discarded this session after our list was populated.
     const auto info = SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(videoPath));
     if (!QFileInfo::exists(videoPath) || (info && info->cleanupPending)) {
