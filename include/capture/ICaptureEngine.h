@@ -145,6 +145,10 @@ public:
 
     // Asynchronous backends can deliver completed frames directly to the
     // encoding queue instead of depending on GUI-thread polling.
+    virtual bool allowsSparseFrames() const { return false; }
+    virtual bool usesCompatibilityMode() const { return false; }
+    // Request an immediate current picture when the recording gate opens.
+    virtual void requestFrame() {}
     virtual bool deliversFrames() const { return false; }
 
     // True when captured frames already contain the pointer. Backends leave
@@ -183,6 +187,8 @@ signals:
      * @param message Warning description
      */
     void warning(const QString &message);
+    // Persistent tray status; deliberately separate from notifications.
+    void compatibilityModeChanged(bool active, const QString& detail);
 
 protected:
     QRect m_captureRegion;

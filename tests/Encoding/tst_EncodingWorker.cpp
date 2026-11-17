@@ -301,6 +301,10 @@ public:
         ++m_framesWritten;
         return true;
     }
+    void writeFrameNs(const QImage& frame, qint64 ns) override { m_imageNs = ns; writeFrame(frame, 0); }
+    bool writeNativeFrameNs(const std::shared_ptr<void>& buffer, qint64 ns) override { m_nativeNs = ns; return writeNativeFrame(buffer, 0); }
+    void finishAtNs(qint64 ns) override { m_endNs = ns; finish(); }
+    std::atomic<qint64> m_imageNs{-1}, m_nativeNs{-1}, m_endNs{-1};
     void finish() override { m_running = false; emit finished(true, m_outputPath); }
     void abort() override { m_running = false; }
     bool isRunning() const override { return m_running; }
@@ -346,6 +350,7 @@ class TestEncodingWorker : public QObject
     Q_OBJECT
 
 private slots:
+    void exactCaptureTimesReachEncoder();
     void testFrameExceptionStopsWorker();
     void testStoppedGifStopsWorker();
     void testAudioExceptionStopsWorker();
@@ -917,3 +922,19 @@ void TestEncodingWorker::testNativeFramesCountTheirPixelsAgainstTheByteBudget()
 
 QTEST_MAIN(TestEncodingWorker)
 #include "tst_EncodingWorker.moc"
+
+void TestEncodingWorker::exactCaptureTimesReachEncoder()
+{
+    auto* encoder = new NativeFrameVideoEncoder(true);
+    ThreadedWorker run(encoder);
+    QVERIFY(run.worker.start());
+    const EncodingWorker::FrameData image{createTestFrame(), 17, 0, {}, {}, 16666667};
+    const EncodingWorker::FrameData native{{}, 33, 0, std::make_shared<int>(0), QSize(16,16), 33333333};
+    QVERIFY(run.worker.enqueueFrame(image));
+    QVERIFY(run.worker.enqueueFrame(native));
+    run.worker.setEndTimestampNs(2033333333);
+    QVERIFY(finishAndWait(run.worker));
+    QCOMPARE(encoder->m_imageNs.load(), qint64(16666667));
+    QCOMPARE(encoder->m_nativeNs.load(), qint64(33333333));
+    QCOMPARE(encoder->m_endNs.load(), qint64(2033333333));
+}

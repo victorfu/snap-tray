@@ -40,6 +40,8 @@ private slots:
     void failedTransferPreservesEverySource_data();
     void failedTransferPreservesEverySource();
     void loadRejectsDamagedProjects();
+    void manifestBackupRecovery();
+    void unreadableProjectCleanup();
     void updateKeepsTheSourceAndBumpsModified();
     void listIsNewestFirst();
     void removeOnlyInsideTheRoot();
@@ -466,7 +468,52 @@ void tst_RecordingProject::loadRejectsDamagedProjects()
     file.write("not json");
     file.close();
     QVERIFY(!RecordingProjects::load(project->dir).has_value());
-    QVERIFY(RecordingProjects::list().isEmpty());
+    QCOMPARE(RecordingProjects::list().size(), 1);
+    QVERIFY(RecordingProjects::list().front().unreadable);
+}
+
+void tst_RecordingProject::manifestBackupRecovery()
+{
+    auto project = RecordingProjects::create(writeRecording(QStringLiteral("backup.mp4"), false),
+        false, {}, {}, 1000, QStringLiteral("first.mp4"));
+    QVERIFY(project);
+    QVERIFY(RecordingProjects::update(*project, {}, QStringLiteral("second.mp4")));
+    const auto corrupt = [](const QString& path) {
+        QFile file(path);
+        return file.open(QIODevice::WriteOnly | QIODevice::Truncate) && file.write("{") == 1;
+    };
+    const QDir dir(project->dir);
+    QVERIFY(corrupt(dir.filePath(QStringLiteral("project.json"))));
+    const auto recovered = RecordingProjects::load(project->dir);
+    QVERIFY(recovered);
+    QVERIFY(recovered->recoveredFromBackup);
+    QCOMPARE(recovered->savedPath, QStringLiteral("first.mp4"));
+    RecordingProjects::failNextManifestReadForTests();
+    QVERIFY(!RecordingProjects::load(project->dir)); // I/O failure never uses the backup
+    QVERIFY(RecordingProjects::update(*project, {}, QStringLiteral("third.mp4")));
+    QVERIFY(!project->recoveredFromBackup);
+    QVERIFY(corrupt(dir.filePath(QStringLiteral("project.json"))));
+    QCOMPARE(RecordingProjects::load(project->dir)->savedPath, QStringLiteral("first.mp4"));
+    QVERIFY(corrupt(dir.filePath(QStringLiteral("manifest.prev.json"))));
+    const auto items = RecordingProjects::list();
+    QCOMPARE(items.size(), 1);
+    QVERIFY(items.front().unreadable);
+    QVERIFY(items.front().sizeBytes() > 0);
+    QVERIFY(RecordingProjects::remove(items.front()));
+    QVERIFY(!dir.exists());
+}
+
+void tst_RecordingProject::unreadableProjectCleanup()
+{
+    auto project = RecordingProjects::create(writeRecording(QStringLiteral("cleanup.mp4"), false),
+        false, {}, {}, 1000, {});
+    QVERIFY(project);
+    QVERIFY(QFile::remove(QDir(project->dir).filePath(QStringLiteral("project.json"))));
+    RecordingProjects::setOpenProjectDir(project->dir);
+    const auto future = QDateTime::currentDateTime().addDays(60);
+    QCOMPARE(RecordingProjects::removeOlderThan(30, future), 0);
+    RecordingProjects::setOpenProjectDir({});
+    QCOMPARE(RecordingProjects::removeOlderThan(30, future), 1);
 }
 
 void tst_RecordingProject::updateKeepsTheSourceAndBumpsModified()

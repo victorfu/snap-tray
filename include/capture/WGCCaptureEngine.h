@@ -10,8 +10,8 @@
  *
  * Captures a whole monitor through GraphicsCaptureItem::CreateForMonitor with
  * a free-threaded frame pool. Frames are event driven and carry the system's
- * capture time; while the screen is static the last frame is repeated at the
- * frame rate, so an unchanging screen does not look like a stalled capture.
+ * capture time; while the screen is static a low-frequency refresh keeps the stream live; the encoder extends
+ * each sample to the next presentation time.
  *
  * Capabilities are probed per property, not by OS version:
  * - IsCursorCaptureEnabled: the pointer is left out for the cursor sidecar;
@@ -43,6 +43,8 @@ public:
     bool isRunning() const override;
     QImage captureFrame() override;
     bool deliversFrames() const override { return true; }
+    bool allowsSparseFrames() const override { return true; }
+    void requestFrame() override;
     bool capturesCursor() const override;
     std::shared_ptr<void> nativeFrameDevice() const override;
     void setNativeFrameOutput(bool enabled) override;

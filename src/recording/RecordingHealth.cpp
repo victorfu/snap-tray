@@ -26,6 +26,22 @@ void RecordingHealth::reset(const QString& backend, quint64 generation)
     m_nextTiming = 0;
 }
 
+void RecordingHealth::captureEvent(const QString& event)
+{
+    if (event.isEmpty()) return;
+    QMutexLocker lock(&m_mutex);
+    constexpr int kMaxCaptureEvents = 64;
+    if (m_counts.captureEvents.size() >= kMaxCaptureEvents) m_counts.captureEvents.removeFirst();
+    m_counts.captureEvents.append(event);
+}
+
+void RecordingHealth::captureSourceStats(quint64 dropped, quint64 copies)
+{
+    QMutexLocker lock(&m_mutex);
+    m_counts.sourceDroppedFrames += dropped;
+    m_counts.captureCopies += copies;
+}
+
 void RecordingHealth::frameOffered()
 {
     QMutexLocker lock(&m_mutex);
@@ -80,6 +96,12 @@ void RecordingHealth::framePath(FramePath path)
     case FramePath::Disabled: ++m_counts.imageDisabled; break;
     case FramePath::Incompatible: ++m_counts.imageIncompatible; break;
     }
+}
+
+void RecordingHealth::setAudioSourceDiagnostics(const AudioCaptureDiagnostics& diagnostics)
+{
+    QMutexLocker lock(&m_mutex);
+    m_counts.audioSources = diagnostics;
 }
 
 void RecordingHealth::audioQueued()
@@ -150,6 +172,15 @@ QString RecordingHealth::formatDiagnostics(const Snapshot& s)
                  .arg(s.imageNoNativeBuffer).arg(s.imageWatermark).arg(s.imageDisabled).arg(s.imageIncompatible);
     lines << QStringLiteral("audio: queued %1 packets, dropped %2 packets (%3 bytes; kept as silence)")
                  .arg(s.audioQueued).arg(s.audioDropped).arg(s.audioDroppedBytes);
+    lines << QStringLiteral("capture source: %1 coalesced updates, %2 desktop copies").arg(s.sourceDroppedFrames).arg(s.captureCopies);
+    const QStringList sourceNames{QStringLiteral("microphone"), QStringLiteral("system")};
+    for (size_t i = 0; i < s.audioSources.sources.size(); ++i) {
+        const auto& a = s.audioSources.sources[i];
+        lines << QStringLiteral("audio %1: gaps %2 (%3 frames; max %4), trims %5 (%6 frames), timestamp errors %7, realignments %8")
+            .arg(sourceNames[int(i)]).arg(a.gapCount).arg(a.gapFrames).arg(a.maxGapFrames)
+            .arg(a.trimCount).arg(a.trimFrames).arg(a.timestampErrors).arg(a.timestampRealignments);
+    }
+    for (const auto& event : s.captureEvents) lines << QStringLiteral("capture event: %1").arg(event);
     return lines.join(QLatin1Char('\n'));
 }
 

@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-13
+last_modified_at: 2026-11-17
 layout: docs
 title: Recording Sync Matrix
 seo_title: "SnapTray Recording Sync Matrix: End-to-End A/V and Fault Injection Tests"
@@ -231,3 +231,37 @@ Measure A/V pulse error and output metadata using the procedure above. Check
 that unedited saves still use the existing fast path. Check font fallback when
 opening a project on a computer without the chosen family. #192 (the general
 preview playback backend) remains separate.
+
+## Roadmap #320 acceptance matrix
+
+The following hardware checks supplement the synthetic suite. Record the OS,
+GPU/driver, capture backend, audio endpoints, frame rate and build commit with
+measurements. A Linux unit-test pass is not Windows or macOS hardware evidence.
+
+| Scenario | Observe and retain |
+| --- | --- |
+| Windows 10 19041/22H2 and Windows 11, fresh settings | WGC selection or explicit fallback reason; existing explicit DXGI preference remains respected |
+| Countdown, controls, area border | No SnapTray controls or border in captured pixels; compare CPU/readback count during three-second countdown and time to first admitted frame |
+| 60 fps moving counter, then 20 seconds still | Source timestamps within one frame, at least 80% fewer still samples, exact final hold and duration; compare CPU/GPU load |
+| Still desktop, pointer-only motion for 10 seconds | DXGI copy count stays in single digits; no missing sidecar pointer motion |
+| UAC, lock/unlock, exclusive-full-screen transition | Compatibility/recovery events and times in diagnostics/tray; continuous playable output or explicit #158 termination with retained file |
+| D3D device removed/reset | New capture device and encoder device manager; restored output or explicit encoder error, never silently accepted missing frames |
+| CPU versus GPU encode of color chart | BT.709 primaries/transfer/matrix, limited-range output and matching decoded colors |
+| Sparse MP4 playback and editing | Seek/play in Windows Media Player, Chrome, QuickTime and VLC; crop/trim/re-export and inspect first changed frame |
+| WASAPI pause for two seconds then resume | Inspect waveform and listen on headphones for the 5 ms fade; retain waveform screenshot |
+| WASAPI under ten-second CPU saturation | Per-source gap/trim counters explain every discontinuity; GUI startup block below 50 ms |
+| Default output endpoint changes | Automatic endpoint migration is deferred; record explicit source degradation rather than claiming recovery on the new endpoint |
+| Form, menu, code-editing recordings | Compare Auto Zoom framing before/after; verify classification, typing holds and cut/speed timing |
+| Pitch-preserving voice/music at 0.5×–4× | Listen at seams, measure pulse alignment and pitch; compare preview at supported rates with exported audio |
+| Shapes/camera blur/loop return | Compare shared-time preview and MP4/GIF/WebP frames, hidden endpoints, crop edges and cuts; masks must never leak into blur or background |
+
+Automated additions cover classifier boundaries, 300-click auto-zoom and
+72,000-sample cursor-preparation budgets, source-relative imported audio,
+shape coordinate mapping, deterministic masked composition, gap fades,
+contiguous bad timestamps, QPC conversion/backoff, nonblocking WASAPI startup,
+DXGI push delivery and Media Foundation sparse nanosecond sample timing.
+Windows sync-matrix rows `sparse-desktop-20s-mixed` and
+`sparse-desktop-final-hold` decode sparse output and check sample placement,
+audio alignment and the final held duration.
+Windows-only tests must run on Windows; tests that skip for unavailable
+hardware do not establish that hardware acceptance passed.

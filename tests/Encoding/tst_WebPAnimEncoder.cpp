@@ -84,6 +84,7 @@ class tst_WebPAnimEncoder : public QObject
 
 private slots:
     void framesRoundTripThroughImport();
+    void loopAndExactDuration();
 };
 
 void tst_WebPAnimEncoder::framesRoundTripThroughImport()
@@ -127,6 +128,36 @@ void tst_WebPAnimEncoder::framesRoundTripThroughImport()
     const QPoint right(kFrameSize.width() * 3 / 4, kFrameSize.height() / 2);
     QCOMPARE(frames[1].pixelColor(left).alpha(), 0);
     QVERIFY(closeTo(frames[1].pixelColor(right), QColor(0, 200, 0)));
+}
+
+void tst_WebPAnimEncoder::loopAndExactDuration()
+{
+    QTemporaryDir dir;
+    for (const bool loop : {false, true}) {
+        const QString path = dir.filePath(loop ? "loop.webp" : "once.webp");
+        WebPAnimationEncoder encoder;
+        encoder.setLooping(loop);
+        encoder.setMinimizeSize(true);
+        QVERIFY(encoder.start(path, kFrameSize, 15));
+        encoder.writeFrame(solidFrame(Qt::red), 0);
+        encoder.writeFrame(solidFrame(Qt::green), 66);
+        encoder.writeFrame(solidFrame(Qt::blue), 133);
+        encoder.finish(180);
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const QByteArray bytes = file.readAll();
+        const WebPData data{reinterpret_cast<const uint8_t*>(bytes.constData()), size_t(bytes.size())};
+        auto* demux = WebPDemux(&data);
+        QVERIFY(demux);
+        QCOMPARE(WebPDemuxGetI(demux, WEBP_FF_LOOP_COUNT), loop ? 0u : 1u);
+        WebPIterator it;
+        QVERIFY(WebPDemuxGetFrame(demux, 1, &it));
+        int duration = 0;
+        do { duration += it.duration; } while (WebPDemuxNextFrame(&it));
+        WebPDemuxReleaseIterator(&it);
+        WebPDemuxDelete(demux);
+        QCOMPARE(duration, 180);
+    }
 }
 
 QTEST_MAIN(tst_WebPAnimEncoder)

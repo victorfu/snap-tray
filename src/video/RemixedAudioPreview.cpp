@@ -1,4 +1,5 @@
 #include "video/RemixedAudioPreview.h"
+#include "recording/AudioSegmentReader.h"
 #include <QDebug>
 #include <QMutexLocker>
 #include <QtEndian>
@@ -44,27 +45,37 @@ void RemixedAudioPreview::run()
     auto device = createPreviewPcmOutput();
     bool opened = false;
     quint64 generation = 0;
-    qint64 nextFrame = 0;
+    qint64 anchorFrame = 0, outputFrame = 0;
+    std::unique_ptr<AudioSegmentReader> reader;
+    const auto resetReader = [&](const IVideoPlayer::AudioSource& source, qint64 at, float rate) {
+        anchorFrame = at; outputFrame = 0;
+        reader = std::make_unique<AudioSegmentReader>([source, at](qint64 frame, int count) {
+            return source ? source(at + frame, count) : QByteArray(count * 4, '\0');
+        });
+        constexpr qint64 kPreviewHorizonMs = 24 * 60 * 60 * 1000;
+        reader->begin({0, kPreviewHorizonMs, rate});
+    };
     while (true) {
         IVideoPlayer::AudioSource source;
         bool active, muted, stop;
-        float volume;
+        float volume, rate;
         quint64 currentGeneration;
         qint64 positionFrame;
         {
             QMutexLocker lock(&m_mutex);
             stop = m_stopping;
             source = m_source;
-            active = source && m_playing && qFuzzyCompare(m_rate, 1.0f);
+            active = source && m_playing;
+            rate = m_rate;
             muted = m_muted; volume = m_volume; currentGeneration = m_generation;
             positionFrame = qMax<qint64>(0, m_positionMs * 48
-                + (active ? (nowNs() - m_clockNs) * 48000 / 1000000000 : 0));
+                + (active ? qint64((nowNs() - m_clockNs) * 48000.0 * rate / 1000000000.0) : 0));
         }
         if (stop) break;
         if (generation != currentGeneration) {
             if (opened) device->reset();
             generation = currentGeneration;
-            nextFrame = positionFrame;
+            resetReader(source, positionFrame, rate);
         }
         if (!active) { msleep(5); continue; }
         if (!opened) {
@@ -77,17 +88,18 @@ void RemixedAudioPreview::run()
                 } while (true);
                 continue;
             }
-            opened = true; nextFrame = positionFrame;
+            opened = true; resetReader(source, positionFrame, rate);
         }
         const int queued = device->queuedFrames();
         constexpr qint64 kResyncFrames = 4800; // 100 ms; tolerate native clock quantization
-        if (qAbs(nextFrame - queued - positionFrame) > kResyncFrames) {
-            device->reset(); nextFrame = positionFrame;
+        if (qAbs(anchorFrame + qRound64((outputFrame - queued) * double(rate)) - positionFrame) > kResyncFrames) {
+            device->reset(); resetReader(source, positionFrame, rate);
         }
         if (device->queuedFrames() >= PreviewPcmOutput::kChunkFrames * PreviewPcmOutput::kBufferCount) {
             msleep(5); continue;
         }
-        QByteArray pcm = source(nextFrame, PreviewPcmOutput::kChunkFrames);
+        if (!reader) resetReader(source, positionFrame, rate);
+        QByteArray pcm = reader->read(PreviewPcmOutput::kChunkFrames);
         if (pcm.size() != PreviewPcmOutput::kChunkFrames * 4) pcm = QByteArray(PreviewPcmOutput::kChunkFrames * 4, '\0');
         if (muted) pcm.fill('\0');
         else if (volume < 1.0f) {
@@ -103,7 +115,7 @@ void RemixedAudioPreview::run()
             if (!device->write(pcm)) {
                 qWarning() << "Native recording mix output stopped";
                 device->reset(); opened = false;
-            } else nextFrame += PreviewPcmOutput::kChunkFrames;
+            } else outputFrame += PreviewPcmOutput::kChunkFrames;
         }
     }
     if (opened) device->reset();

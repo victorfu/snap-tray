@@ -99,6 +99,7 @@ public:
     // counters, for the user to copy. Empty until a recording has finished.
     QString lastDiagnostics() const { return m_lastDiagnostics; }
     State state() const { return m_state; }
+    bool previewIsNewRecording() const { return m_previewIsNewRecording; }
     void setTrayMenuOpen(bool open);
     void setTrayIconGeometryProvider(std::function<QRect()> provider) { m_trayIconGeometry = std::move(provider); }
 
@@ -130,6 +131,8 @@ public:
                                   QString *savedPath = nullptr);
 public slots:
 
+    QString captureStatus() const { return m_captureStatus; }
+
 signals:
     void recordingStarted();
     void recordingStopped(const QString &outputPath);
@@ -144,6 +147,7 @@ signals:
     void stateChanged(State state);
     void audioStatusChanged();
     void droppingFramesChanged(bool dropping);
+    void captureStatusChanged();
     void lowDiskSpaceChanged(bool low);
     void recoveriesFound(const QList<SnapTray::RecordingSession::Recoverable>& recoveries);
     // A recording ended for a reason other than Stop; emitted once per recording.
@@ -276,7 +280,8 @@ private:
     // With m_durationMutex held: true and the encoder time when a frame
     // captured at `sourceTimeNs` belongs in the video. `paced` applies the
     // frame pacer (backends that capture on their own thread).
-    bool admitFrameLocked(qint64 sourceTimeNs, bool paced, qint64* encoderTimeMs);
+    QString m_captureStatus;
+    bool admitFrameLocked(qint64 sourceTimeNs, bool paced, qint64* encoderTimeMs, qint64* encoderTimeNs = nullptr);
 
     // Recording health: counters shared with the encoding worker, checked
     // once a second for sustained frame loss.
@@ -318,6 +323,7 @@ private:
     SnapTray::RecordingSessionInfo m_session;
     std::unique_ptr<class QLockFile> m_sessionLock;
     int m_sessionHeartbeat = 0;
+    bool m_previewIsNewRecording = false;
     void beginSession(const QString& videoPath, const QSize& frameSize, bool audioRequired);
     void updateSession(SnapTray::RecordingSessionInfo::State state);
     void endSession(bool removeManifest);

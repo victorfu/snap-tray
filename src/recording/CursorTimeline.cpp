@@ -177,6 +177,7 @@ std::optional<CursorTimeline> CursorTimeline::parse(const QByteArray& jsonl, QSt
             int hx = 0, hy = 0;
             readPair(record.value(QStringLiteral("hotspot")), &hx, &hy);
             shape.hotspot = QPoint(hx, hy);
+            shape.kind = record.value(QStringLiteral("kind")).toString();
             const QByteArray png = QByteArray::fromBase64(record.value(QStringLiteral("png")).toString().toLatin1());
             shape.image.loadFromData(png, "PNG");
             if (shape.id == 0 || shape.image.isNull()) {
@@ -257,6 +258,7 @@ bool CursorTimelineWriter::addShape(const CursorShape& shape)
     if (!shape.image.save(&buffer, "PNG")) return false;
     if (!append(line({{QStringLiteral("type"), QStringLiteral("shape")},
                  {QStringLiteral("id"), qint64(shape.id)},
+                 {QStringLiteral("kind"), shape.kind},
                  {QStringLiteral("hotspot"), pair(shape.hotspot.x(), shape.hotspot.y())},
                  {QStringLiteral("size"), pair(shape.image.width(), shape.image.height())},
                  {QStringLiteral("png"), QString::fromLatin1(png.toBase64())}}),

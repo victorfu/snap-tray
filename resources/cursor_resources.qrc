@@ -2,5 +2,18 @@
 <RCC version="1.0">
     <qresource prefix="/cursor">
         <file alias="sizeallcursor.png">icons/sizeallcursor.png</file>
+        <file alias="recording/arrow.svg">recording-cursors/arrow.svg</file>
+        <file alias="recording/pointer.svg">recording-cursors/pointer.svg</file>
+        <file alias="recording/openHand.svg">recording-cursors/openHand.svg</file>
+        <file alias="recording/closedHand.svg">recording-cursors/closedHand.svg</file>
+        <file alias="recording/crosshair.svg">recording-cursors/crosshair.svg</file>
+        <file alias="recording/resizeEW.svg">recording-cursors/resizeEW.svg</file>
+        <file alias="recording/resizeNS.svg">recording-cursors/resizeNS.svg</file>
+        <file alias="recording/resizeNWSE.svg">recording-cursors/resizeNWSE.svg</file>
+        <file alias="recording/resizeNESW.svg">recording-cursors/resizeNESW.svg</file>
+        <file alias="recording/move.svg">recording-cursors/move.svg</file>
+        <file alias="recording/wait.svg">recording-cursors/wait.svg</file>
+        <file alias="recording/text.svg">recording-cursors/text.svg</file>
+        <file alias="recording/notAllowed.svg">recording-cursors/notAllowed.svg</file>
     </qresource>
 </RCC>

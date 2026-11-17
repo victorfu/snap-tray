@@ -3355,6 +3355,10 @@ Size: %2</source>
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Δεν ήταν δυνατή η αποθήκευση των ενδείξεων πλήκτρων. Η εγγραφή θα συνεχιστεί χωρίς αυτές.</translation>
     </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Η λήψη οθόνης χρησιμοποιεί προσωρινά λειτουργία συμβατότητας</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5426,6 +5430,262 @@ Size: %2</source>
         <source>Press bounce</source>
         <translation>Αναπήδηση στο πάτημα</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>Προστέθηκαν αυτόματα %1 μεγεθύνσεις</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Αναίρεση</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Να μην προστίθενται ξανά αυτόματα</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Κλείσιμο</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Βέλος</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Ορθογώνιο</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Έλλειψη</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Γραμμή</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Επισήμανση</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Αριθμός βήματος</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Σχήμα</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Κλιπ ήχου</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Ταχύτητα προεπισκόπησης (κατά προσέγγιση)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Η προεπισκόπηση περιορίζεται σε 0,25×–2×. Η εξαγωγή χρησιμοποιεί την ακριβή ταχύτητα του κλιπ και διατηρεί το τονικό ύψος.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Σύρετε στην προεπισκόπηση για να σχεδιάσετε αυτό το σχήμα</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Προσθήκη ήχου…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Εισαγωγή μουσικής ή αφήγησης (έως 30 λεπτά και 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>Τα GIF και WebP δεν περιέχουν ήχο. Επιλέξτε MP4 για προσθήκη ήχου.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Σχήματα</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Κλιπ ήχου %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Ταχύτητα αναπαραγωγής αυτού του κλιπ στο εξαγόμενο αρχείο</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Διατήρηση ήχου</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Διατήρηση αρχικού τονικού ύψους κατά την αλλαγή ταχύτητας του κλιπ</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Στυλ δείκτη</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Το Ευκρινές επανασχεδιάζει αναγνωρισμένους τυπικούς δείκτες όταν μεγεθύνονται· οι προσαρμοσμένοι διατηρούν την καταγεγραμμένη εικόνα</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Καταγεγραμμένο</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Ευκρινές</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Ευθυγράμμιση διαδρομής</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Μειώνει μικρές καμπές πριν την εξομάλυνση. Τα κλικ και οι μεταφορές διατηρούν τις καταγεγραμμένες θέσεις.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Επιστροφή στην αρχή</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Η επιστροφή στην αρχή διατίθεται για εξαγωγές GIF και WebP</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>Επιστρέφει τον δείκτη και την κάμερα στην αρχή. Ο δείκτης επιστρέφει μόνο όταν και τα δύο άκρα είναι ορατά στην περικοπή.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Σταθεροποίηση σχήματος δείκτη</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Απόκρυψη σύντομων αλλαγών σχήματος εκτός κοντά σε κλικ</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>Τα GIF και WebP δεν περιέχουν ήχο. Επιλέξτε MP4 για επεξεργασία κλιπ ήχου.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Ένταση</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Επανάληψη ήχου</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Επανάληψη του αρχείου ήχου για να καλύψει το εύρος του κλιπ</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Μετατόπιση πηγής (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Σταδιακή ενίσχυση (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Σταδιακή εξασθένηση (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Αρχή ήχου</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Τέλος ήχου</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Διαγραφή κλιπ ήχου</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Χώρος συντεταγμένων</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Περιεχόμενο — ακολουθεί τη μεγέθυνση</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Οθόνη — σταθερή θέση</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Πάχος γραμμής</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Στυλ βέλους</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Γεμάτο βέλος</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Βέλος περιγράμματος</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Ανοιχτό βέλος</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Και τα δύο άκρα</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Και τα δύο άκρα, περίγραμμα</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Αρχή σχήματος</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Τέλος σχήματος</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Διαγραφή σχήματος</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Προσαρμοσμένο πλάτος</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Περιορίστε τη μεγαλύτερη πλευρά ή ορίστε πλάτος. Η εικόνα δεν μεγεθύνεται ποτέ.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Ατέρμονη επανάληψη</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Μικρότερο αρχείο (πιο αργά)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Αυτές οι επιλογές ισχύουν στον επεξεργαστή. Η γρήγορη λειτουργία χρησιμοποιεί απευθείας το μέγεθος και τον ρυθμό καρέ εγγραφής.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Θόλωση κίνησης κάμερας</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Απαλύνει την κίνηση της κάμερας διατηρώντας ευκρινείς δείκτες και επικαλύψεις</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5625,6 +5885,78 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Αποθηκεύτηκε στο %1, αλλά η εγγραφή δεν διατηρήθηκε ως επεξεργάσιμο έργο. Είναι ακόμη ανοιχτή εδώ: αποθηκεύστε ξανά ή κλείστε την για να απορριφθεί.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Το πραγματικό μέγεθος αρχείου εμφανίζεται μετά την εξαγωγή.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Εξαγόμενο αρχείο: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Πάνω από 25 MB· μειώστε μέγεθος ή ρυθμό καρέ για κοινή χρήση.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Πάνω από 10 MB· μειώστε μέγεθος ή ρυθμό καρέ για κοινή χρήση.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Προετοιμασία προεπισκόπησης ήχου…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Το συνοδευτικό αρχείο εισαγόμενου ήχου λείπει ή έχει καταστραφεί.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Δεν υπάρχουν καταγεγραμμένα δεδομένα κλικ.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>Δεν απομένουν ορατά κλικ στην περικοπή και στα διατηρημένα κλιπ.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Ζουμ που προστέθηκαν: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Όλες οι προτεινόμενες μεγεθύνσεις επικαλύπτουν μεγεθύνσεις που προσθέσατε ή αλλάξατε.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Η προτεινόμενη μεγέθυνση είναι πολύ μικρή για να προστεθεί.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Προσθήκη ήχου</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Αρχεία ήχου (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Όλα τα αρχεία (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Μια εγγραφή μπορεί να περιέχει έως 128 κλιπ ήχου.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Εισαγωγή ήχου…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Δεν αποθηκεύτηκαν οι αλλαγές ήχου για ανάκτηση μετά από κατάρρευση.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Αδυναμία προετοιμασίας προεπισκόπησης ήχου: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Αδυναμία εισαγωγής ήχου: %1</translation>
     </message>
 </context>
 <context>
@@ -6080,6 +6412,14 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Πώς ξεκινούν οι εγγραφές οθόνης, τι καταγράφουν και τι συμβαίνει όταν σταματάτε.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Αυτόματη προσθήκη μεγεθύνσεων σε νέες εγγραφές</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Μεγέθυνση στα καταγεγραμμένα κλικ όταν ανοίγει ο επεξεργαστής. Μπορείτε να το αναιρέσετε σε ένα βήμα.</translation>
     </message>
 </context>
 <context>
@@ -6609,6 +6949,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Εγγράφεται μόνο η περιοχή.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Αυτόματη προσθήκη μεγεθύνσεων</translation>
     </message>
 </context>
 <context>
@@ -8044,6 +8388,40 @@ It may be in use by another application.</source>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Έξοδος: %1 × %2 pixel</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Μη αναγνώσιμο έργο</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Άνοιγμα εγγραφής χωρίς αλλαγές, εμφάνιση φακέλου ή διαγραφή.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Εμφάνιση φακέλου έργου ή διαγραφή.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Επαναφορά από την προηγούμενη αποθήκευση</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Μη αναγνώσιμο έργο</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Ανοιχτό στην προεπισκόπηση</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Επαναφορά από την προηγούμενη αποθήκευση</translation>
     </message>
 </context>
 </TS>

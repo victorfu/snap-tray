@@ -43,13 +43,14 @@ struct VideoTranscodeRequest {
     QString videoCodec;     // kVideoCodecH264 or kVideoCodecHevc; empty = H.264
     // #185: the kept parts in source order, each at its speed, joined in the
     // output; only for transcoders whose supportsSegments() is true. Empty =
-    // startMs..endMs at normal speed. Audio is kept for parts at normal speed
-    // and silent for the others; the result stays in sync at every seam.
+    // startMs..endMs at normal speed. Audio is mixed before pitch-preserving WSOLA stretching. A sped-up part
+    // with keepSound=false is silent; each seam resets the stretcher and fades 5 ms.
     std::vector<SnapTray::TimelineSegment> segments;
     // #189: mix the separate tracks recorded next to this video at these
     // settings, instead of copying its mixed track. Empty = as recorded.
     // Only for transcoders whose supportsAudioMix() is true.
     QString audioTracksVideoPath;
+    SnapTray::AudioClipTrack audioClips;
     SnapTray::AudioMixSettings audioMix;
     // Draws on each output frame (already cropped, RGB32) before it is
     // encoded; [sourceMs, sourceEndMs) is its covered input-time interval.

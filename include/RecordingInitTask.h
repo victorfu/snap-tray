@@ -78,6 +78,7 @@ public:
         bool fragmentedOutput = false;  // crash leaves a playable prefix
         bool audioEnabled = false;
         QString audioWarning;
+        QString captureFallbackReason;
 
         // Track started state for safe cleanup
         bool captureEngineStarted = false;

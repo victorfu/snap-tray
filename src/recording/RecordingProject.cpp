@@ -34,6 +34,9 @@ namespace {
 
 constexpr auto kRecipeType = "snaptray-recipe";
 constexpr auto kManifestName = "project.json";
+constexpr auto kPreviousManifestName = "manifest.prev.json";
+bool failManifestRead = false;
+QString openProjectDir;
 constexpr auto kManifestType = "snaptray-project";
 constexpr int kManifestVersion = 1;
 
@@ -117,14 +120,44 @@ void retryIncompleteProjects(const QDir& projects)
     }
 }
 
+bool validManifest(const QJsonObject& object)
+{
+    return object.value(QStringLiteral("type")).toString() == QLatin1String(kManifestType)
+        && object.value(QStringLiteral("version")).toInt(-1) == kManifestVersion;
+}
+
+enum class ManifestRead { Valid, Missing, Corrupt, IoError };
+ManifestRead readManifest(const QString& path, QJsonObject& object)
+{
+    QFile file(path);
+    if (!file.exists()) return ManifestRead::Missing;
+    if (!file.open(QIODevice::ReadOnly)) return ManifestRead::IoError;
+    const QByteArray bytes = file.readAll();
+    if (file.error() != QFileDevice::NoError) return ManifestRead::IoError;
+    QJsonParseError error;
+    object = QJsonDocument::fromJson(bytes, &error).object();
+    return error.error == QJsonParseError::NoError && validManifest(object)
+        ? ManifestRead::Valid : ManifestRead::Corrupt;
+}
+
+bool commitJson(const QString& path, const QJsonObject& object)
+{
+    QSaveFile file(path);
+    const QByteArray bytes = QJsonDocument(object).toJson(QJsonDocument::Indented);
+    return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
+}
+
 bool writeJson(const QString& path, const QJsonObject& object)
 {
     if (auto callback = std::exchange(beforeManifestWrite(), {})) callback();
     if (std::exchange(failNextManifestWrite(), false)) return false;
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) return false;
-    file.write(QJsonDocument(object).toJson(QJsonDocument::Indented));
-    return file.commit();
+    QJsonObject previous;
+    const auto status = readManifest(path, previous);
+    if (status == ManifestRead::IoError) return false;
+    if (status == ManifestRead::Valid
+        && !commitJson(QFileInfo(path).dir().filePath(QLatin1String(kPreviousManifestName)), previous)) return false;
+    // A corrupt primary must never replace the last valid backup.
+    return commitJson(path, object);
 }
 
 QJsonObject manifestOf(const RecordingProject& p)
@@ -156,7 +189,9 @@ QJsonObject toJson(const PreviewEditState& s, const QJsonObject& exportChoices)
                            {QStringLiteral("timeline"), s.timeline.toJson()},
                            {QStringLiteral("keys"), s.keys.toJson()},
                            {QStringLiteral("overlays"), s.overlays.toJson()},
-                           {QStringLiteral("audio"), s.audio.toJson()}};
+                           {QStringLiteral("shapes"), s.shapes.toJson()},
+                           {QStringLiteral("audio"), s.audio.toJson()},
+                           {QStringLiteral("audioClips"), s.audioClips.toJson()}};
     return {{QStringLiteral("type"), QLatin1String(kRecipeType)},
             {QStringLiteral("version"), kVersion},
             {QStringLiteral("edit"), edit},
@@ -194,8 +229,10 @@ std::optional<PreviewEditState> editState(const QJsonObject& input)
     s.appearance = RecordingAppearance::fromJson(e.value(QStringLiteral("appearance")).toObject());
     s.timeline = TimelineEdit::fromJson(e.value(QStringLiteral("timeline")).toObject());
     s.keys = KeyOverlaySettings::fromJson(e.value(QStringLiteral("keys")).toObject());
+    s.shapes = ShapeTrack::fromJson(e.value(QStringLiteral("shapes")).toObject());
     s.overlays = OverlayTrack::fromJson(e.value(QStringLiteral("overlays")).toObject());
     s.audio = AudioMixSettings::fromJson(e.value(QStringLiteral("audio")).toObject());
+    s.audioClips = AudioClipTrack::fromJson(e.value(QStringLiteral("audioClips")).toObject());
     return s;
 }
 
@@ -228,6 +265,7 @@ QString RecordingProject::thumbnailPath() const
 
 QString RecordingProject::thumbnailUrl() const
 {
+    if (unreadable) return {};
     const QString path = thumbnailPath();
     if (currentThumbnails().value(dir) != path || !QFileInfo(path).isFile()) return {};
     return QUrl::fromLocalFile(path).toString();
@@ -280,8 +318,14 @@ QString root()
 void setRootForTests(const QString& path)
 {
     rootOverride() = path;
+    openProjectDir.clear();
+    failManifestRead = false;
     currentThumbnails().clear();
 }
+
+void setOpenProjectDir(const QString& dir) { openProjectDir = dir; }
+
+void failNextManifestReadForTests() { failManifestRead = true; }
 
 void failNextManifestWriteForTests()
 {
@@ -302,7 +346,7 @@ QStringList sidecarSuffixes()
 {
     return {QLatin1String(WindowTimelineSidecar::kSuffix), QLatin1String(CursorTimelineSidecar::kSuffix),
             QLatin1String(KeyTimelineSidecar::kSuffix), QLatin1String(AudioTracks::kMicrophoneSuffix),
-            QLatin1String(AudioTracks::kSystemAudioSuffix)};
+            QLatin1String(AudioTracks::kSystemAudioSuffix), QLatin1String(AudioClipTrack::kSuffix), QLatin1String(AudioClipTrack::kMixedSuffix), QStringLiteral(".imports.json")};
 }
 
 std::optional<RecordingProject> create(const QString& videoPath, bool copy, const QJsonObject& recipe,
@@ -399,11 +443,24 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
 std::optional<RecordingProject> load(const QString& dir)
 {
     currentThumbnails().remove(dir);
-    QFile file(QDir(dir).filePath(QLatin1String(kManifestName)));
-    if (!file.open(QIODevice::ReadOnly)) return std::nullopt;
-    const QJsonObject m = QJsonDocument::fromJson(file.readAll()).object();
-    if (m.value(QStringLiteral("type")).toString() != QLatin1String(kManifestType)) return std::nullopt;
+    QJsonObject m;
+    auto status = std::exchange(failManifestRead, false) ? ManifestRead::IoError
+        : readManifest(QDir(dir).filePath(QLatin1String(kManifestName)), m);
+    if (status == ManifestRead::IoError) {
+        qWarning() << "RecordingProjects: cannot read project.json";
+        return std::nullopt;
+    }
+    const bool recovered = status != ManifestRead::Valid;
+    if (recovered) {
+        status = readManifest(QDir(dir).filePath(QLatin1String(kPreviousManifestName)), m);
+        if (status != ManifestRead::Valid) {
+            qWarning() << "RecordingProjects: no readable manifest";
+            return std::nullopt;
+        }
+        qWarning() << "RecordingProjects: recovered manifest.prev.json";
+    }
     RecordingProject p;
+    p.recoveredFromBackup = recovered;
     p.dir = dir;
     p.videoName = QFileInfo(m.value(QStringLiteral("video")).toString()).fileName(); // never a path out of the folder
     p.created = QDateTime::fromString(m.value(QStringLiteral("created")).toString(), Qt::ISODateWithMs);
@@ -429,6 +486,7 @@ bool update(RecordingProject& project, const QJsonObject& recipe, const QString&
     next.modified = QDateTime::currentDateTime();
     if (changed) next.thumbnailGeneration = QUuid::createUuid().toString(QUuid::WithoutBraces);
     if (!writeJson(QDir(next.dir).filePath(QLatin1String(kManifestName)), manifestOf(next))) return false;
+    next.recoveredFromBackup = false;
     project = next;
     currentThumbnails().insert(project.dir, project.thumbnailPath());
     if (changed) {
@@ -445,7 +503,27 @@ QList<RecordingProject> list()
     QList<RecordingProject> projects;
     const QDir dir(root());
     for (const QString& name : dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-        if (auto project = load(dir.filePath(name))) projects.append(*project);
+        const QString path = dir.filePath(name);
+        if (QFileInfo(path).isSymLink()) continue;
+        // Uncommitted create transactions are never library entries.
+        if (QFileInfo::exists(pendingMarker(dir, name))) continue;
+        if (auto project = load(path)) projects.append(*project);
+        else {
+            RecordingProject damaged;
+            damaged.dir = path;
+            damaged.unreadable = true;
+            damaged.created = damaged.modified = QFileInfo(path).lastModified();
+            const QDir folder(path);
+            const auto videos = folder.entryList({QStringLiteral("recording.mp4"), QStringLiteral("recording.gif"),
+                                                  QStringLiteral("recording.webp")}, QDir::Files | QDir::NoSymLinks);
+            if (!videos.isEmpty()) damaged.videoName = videos.front();
+            QJsonObject ignored;
+            const auto primary = readManifest(folder.filePath(QLatin1String(kManifestName)), ignored);
+            const auto backup = readManifest(folder.filePath(QLatin1String(kPreviousManifestName)), ignored);
+            damaged.sourceRecoverable = !damaged.videoName.isEmpty()
+                && primary != ManifestRead::IoError && backup != ManifestRead::IoError;
+            projects.append(damaged);
+        }
     }
     std::sort(projects.begin(), projects.end(),
               [](const RecordingProject& a, const RecordingProject& b) { return a.modified > b.modified; });
@@ -478,6 +556,7 @@ int removeOlderThan(int days, const QDateTime& now)
     {
         const QSignalBlocker batch(events());
         for (const auto& project : list()) {
+            if (project.dir == openProjectDir) continue;
             if (project.modified.daysTo(now) >= days && remove(project)) ++removed;
         }
     }

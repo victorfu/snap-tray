@@ -89,6 +89,7 @@ private slots:
     void testConfiguredFrameRate_data();
     void testConfiguredFrameRate();
     void testFrameRateChangesWhileRunning();
+    void testFramesArriveWithoutGuiPolling();
 
 private:
     bool configureEngine(DXGICaptureEngine &engine) const;
@@ -244,6 +245,26 @@ void TestDXGICaptureEngineThreadLifecycleWin::testFrameRateChangesWhileRunning()
     engine.stop();
     QVERIFY(qAbs(ticks.load() - before - 10) <= 3);
     QVERIFY(warnings.threadLifecycleWarnings().isEmpty());
+}
+
+void TestDXGICaptureEngineThreadLifecycleWin::testFramesArriveWithoutGuiPolling()
+{
+    DXGICaptureEngine engine;
+    if (!configureEngine(engine)) QSKIP("No capture screen");
+    QVERIFY(engine.deliversFrames());
+    QVERIFY(engine.allowsSparseFrames());
+    std::atomic<int> frames{0};
+    std::atomic<qint64> timestamp{-1};
+    connect(&engine, &ICaptureEngine::frameCaptured, &engine,
+        [&](const SnapTray::CapturedFrame& frame) { timestamp = frame.sourceTimeNs; ++frames; }, Qt::DirectConnection);
+    QVERIFY(engine.start());
+    const auto stop = qScopeGuard([&] { engine.stop(); });
+    engine.requestFrame();
+    QTRY_VERIFY_WITH_TIMEOUT(frames.load() > 0, 3000);
+    QVERIFY(timestamp.load() >= 0);
+    const int before = frames.load();
+    engine.requestFrame();
+    QTRY_VERIFY_WITH_TIMEOUT(frames.load() > before, 3000);
 }
 
 QTEST_MAIN(TestDXGICaptureEngineThreadLifecycleWin)

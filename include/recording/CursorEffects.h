@@ -3,6 +3,7 @@
 #include "recording/CursorTimeline.h"
 #include "recording/TimelineEdit.h"
 #include "recording/SpringPath.h"
+#include "recording/LoopTransition.h"
 
 #include <QJsonObject>
 #include <QColor>
@@ -33,10 +34,15 @@ struct CursorEffectSettings {
     enum class MotionBlur { Off, Low, Medium, High };
     enum class ClickStyle { Off, Ring, Ripple, Spotlight, Burst };
     enum class PressBounce { Off, Low, High };
+    enum class Straighten { Off, Low, High };
+    enum class PointerStyle { Recorded, Crisp };
 
     bool showCursor = true;
     double scale = 1.0;                  // 1.0 = recorded size
     Smoothing smoothing = Smoothing::Off; // off by default: never move the real pointer path unasked
+    PointerStyle pointerStyle = PointerStyle::Recorded;
+    bool steadyShape = false;
+    Straighten straighten = Straighten::Off;
     ClickStyle clickStyle = ClickStyle::Off;
     QColor clickColor = Qt::white;
     QColor rightClickColor = Qt::white;
@@ -45,6 +51,7 @@ struct CursorEffectSettings {
     // #186: every one off by default, so older recipes draw as before.
     qint64 idleHideMs = 0;     // fade the pointer out after this long without movement; 0 = never
     MotionBlur motionBlur = MotionBlur::Off;
+    bool loopBack = false;    // presentation only; enabled by the caller for animated output
     qint64 stillEndMs = 0;     // the pointer stops moving this long before the clip ends; 0 = off
     // In time order, not overlapping. Specific to one recording: never part
     // of the remembered preferences (see preferences()).
@@ -112,6 +119,7 @@ public:
     // a cut (no smoothing from, ripples of or blur toward cut-out time).
     // Without one the whole recording is one part.
     void setTimeline(const TimelineMap& timeline);
+    void setLoopBounds(const QRectF& bounds);
 
     // Where the pointer is drawn at sourceMs, in source video pixels; nullopt
     // when hidden or before the first sample.
@@ -119,6 +127,11 @@ public:
     // How visible the pointer is at sourceMs with idle hiding (1 = fully).
     double pointerOpacity(qint64 sourceMs) const;
     double pointerBounceScale(qint64 sourceMs) const;
+    quint32 pointerShapeId(qint64 sourceMs) const;
+    static constexpr double kVectorCursorMinScale = 1.25;
+    static constexpr qint64 kShapeHoldMinMs = 250;
+    static constexpr qint64 kShapeClickGuardMs = 150;
+    static constexpr qint64 kStraightenWindowMs = 250;
     // Draws the effects for sourceMs onto an image already showing that
     // frame (cropped and scaled as `mapping` says).
     void paint(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const;
@@ -126,7 +139,15 @@ public:
 
 private:
     QPointF rawPosition(qint64 sourceMs) const;
+    void rebuildLoopReturn();
+    std::optional<double> loopProgress(qint64 sourceMs) const;
+    struct LoopReturn { LoopTransition time; QPointF from; QPointF to; quint32 shape; double fromOpacity; double toOpacity; };
+    std::optional<LoopReturn> m_loopReturn;
+    QRectF m_loopBounds;
     void rebuildSpringPaths();
+    void rebuildShapeSpans();
+    struct ShapeSpan { qint64 startMs; qint64 endMs; quint32 id; };
+    std::vector<ShapeSpan> m_shapes;
     void rebuildBouncePath();
     struct BouncePoint { qint64 tMs; double depth; bool held; };
     std::vector<BouncePoint> m_bounces;

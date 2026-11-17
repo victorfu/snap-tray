@@ -51,6 +51,13 @@ public:
         return false;
     }
 
+    // Capture clocks retain nanoseconds to this boundary. Existing platform
+    // encoders keep their millisecond behavior until they opt into this API.
+    virtual void writeFrameNs(const QImage& frame, qint64 timestampNs)
+    { writeFrame(frame, timestampNs < 0 ? -1 : (timestampNs + 500000) / 1000000); }
+    virtual bool writeNativeFrameNs(const std::shared_ptr<void>& buffer, qint64 timestampNs)
+    { return writeNativeFrame(buffer, timestampNs < 0 ? -1 : (timestampNs + 500000) / 1000000); }
+    virtual void finishAtNs(qint64 endTimestampNs) { Q_UNUSED(endTimestampNs); finish(); }
     virtual void finish() = 0;
     virtual void abort() = 0;
 

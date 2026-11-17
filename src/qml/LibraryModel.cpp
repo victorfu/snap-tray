@@ -148,7 +148,7 @@ QVariant LibraryModel::data(const QModelIndex& index, int role) const
     const bool busy = !m_recordings->openProjectDir().isEmpty() && project.dir == m_recordings->openProjectDir();
     const bool savedExists = !project.savedPath.isEmpty() && QFileInfo::exists(project.savedPath);
     switch (role) {
-    case TitleRole: return project.title();
+    case TitleRole: return project.unreadable ? tr("Unreadable project") : project.title();
     case ThumbnailUrlRole:
         return project.thumbnailUrl();
     case MetaTextRole:
@@ -158,6 +158,10 @@ QVariant LibraryModel::data(const QModelIndex& index, int role) const
                  QLocale().formattedDataSize(row.bytes));
     case DetailTextRole:
         if (busy) return tr("Open in the recording preview");
+        if (project.unreadable) return project.sourceRecoverable
+            ? tr("Open the recording without edits, show its folder, or delete it.")
+            : tr("Show the project folder or delete it.");
+        if (project.recoveredFromBackup) return tr("Recovered from the previous save");
         if (project.savedPath.isEmpty()) return tr("Not saved yet");
         return savedExists ? tr("Saved as %1").arg(QFileInfo(project.savedPath).fileName())
                            : tr("Saved file was moved or deleted");

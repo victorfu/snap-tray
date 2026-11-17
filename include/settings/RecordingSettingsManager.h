@@ -56,7 +56,9 @@ public:
     // Choose an area before each recording (#194); off by default (the
     // whole screen, as before).
     bool preselectArea() const;
+    bool autoZoomOnOpen() const;
     void setPreselectArea(bool value);
+    void setAutoZoomOnOpen(bool value);
 
     // Quick mode (#193, preview off): what happens once the file is saved.
     enum QuickSaveAction { QuickSaveNothing = 0, QuickSaveCopyFile = 1, QuickSaveShowInFolder = 2 };
@@ -73,6 +75,9 @@ public:
 
     // Last MP4 export options chosen in the preview (Mp4ExportOptions JSON, #190);
     // empty = defaults (export as recorded).
+    QJsonObject animatedExportOptions(bool webp) const;
+    void setAnimatedExportOptions(bool webp, const QJsonObject& value);
+
     QJsonObject mp4ExportOptions() const;
     void setMp4ExportOptions(const QJsonObject& value);
 
@@ -106,10 +111,11 @@ public:
     static constexpr int kDefaultCountdownSeconds = 3;
     static constexpr bool kDefaultShowSetupBeforeRecording = false;
     static constexpr bool kDefaultPreselectArea = false;
+    static constexpr bool kDefaultAutoZoomOnOpen = false;
     static constexpr bool kDefaultKeepProjects = false;
     static constexpr int kDefaultProjectCleanupDays = 0; // 0 = keep forever
     static constexpr bool kDefaultNativeFrameEncoding = true;
-    static constexpr bool kDefaultWindowsGraphicsCapture = false;
+    static constexpr bool kDefaultWindowsGraphicsCapture = true;
 
 private:
     RecordingSettingsManager() = default;
@@ -133,7 +139,10 @@ private:
     static constexpr const char* kKeyKeepProjects = "recording/keepProjects";
     static constexpr const char* kKeyQuickSaveAction = "recording/quickSaveAction";
     static constexpr const char* kKeyPreselectArea = "recording/preselectArea";
+    static constexpr const char* kKeyAutoZoomOnOpen = "recording/autoZoomOnOpen";
     static constexpr const char* kKeyProjectCleanupDays = "recording/projectCleanupDays";
+    static constexpr const char* kKeyGifExportOptions = "recording/gifExportOptions";
+    static constexpr const char* kKeyWebpExportOptions = "recording/webpExportOptions";
     static constexpr const char* kKeyMp4ExportOptions = "recording/mp4ExportOptions";
     static constexpr const char* kKeyAppearance = "recording/appearance";
     static constexpr const char* kKeyNativeFrameEncoding = "recording/nativeFrameEncoding";

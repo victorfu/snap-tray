@@ -299,6 +299,19 @@ std::optional<CursorProbe::Shape> windowsCursorShape(void* cursorHandle)
     const WindowsCursor::Picture picture = WindowsCursor::pictureFromBitmaps(bitmaps);
     if (picture.image.isNull()) return shapeFailed(ShapeFailure::Picture, 0);
     CursorProbe::Shape shape;
+    struct StandardCursor { LPCWSTR id; const char* kind; };
+    const StandardCursor kinds[] = {
+        {IDC_ARROW, "arrow"}, {IDC_IBEAM, "text"}, {IDC_HAND, "pointer"},
+        {IDC_CROSS, "crosshair"}, {IDC_SIZEWE, "resizeEW"}, {IDC_SIZENS, "resizeNS"},
+        {IDC_SIZENWSE, "resizeNWSE"}, {IDC_SIZENESW, "resizeNESW"},
+        {IDC_SIZEALL, "move"}, {IDC_WAIT, "wait"}, {IDC_APPSTARTING, "wait"}, {IDC_NO, "notAllowed"}
+    };
+    for (const auto& entry : kinds) {
+        if (static_cast<HCURSOR>(cursorHandle) == LoadCursorW(nullptr, entry.id)) {
+            shape.kind = QLatin1String(entry.kind);
+            break;
+        }
+    }
     shape.image = picture.image;
     shape.hotspot = QPoint(int(icon.xHotspot), int(icon.yHotspot)) + picture.hotspotShift;
     return shape;

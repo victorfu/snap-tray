@@ -7,7 +7,9 @@
 #include <QTemporaryDir>
 
 #include "qml/RecordingPreviewBackend.h"
+#include "qml/VideoPlaybackItem.h"
 #include "recording/CursorTimeline.h"
+#include "settings/RecordingSettingsManager.h"
 #include "video/IVideoTranscoder.h"
 
 // Zoom editing in the preview (#161): backend rules and the real QML.
@@ -27,6 +29,7 @@ QString writeClicks(const QTemporaryDir& dir)
     writer.addSample({0, QPoint(300, 300), true, 0});
     writer.addButton({2000, Qt::LeftButton, true, QPoint(300, 300), false});
     writer.addButton({2080, Qt::LeftButton, false, QPoint(300, 300), false});
+    writer.addSample({4000, QPoint(1500, 800), true, 0});
     writer.addSample({6000, QPoint(1500, 800), true, 0});
     writer.addButton({7000, Qt::LeftButton, true, QPoint(1500, 800), false});
     writer.addButton({7080, Qt::LeftButton, false, QPoint(1500, 800), false});
@@ -48,7 +51,9 @@ class tst_RecordingPreviewZoom : public QObject
     Q_OBJECT
 
 private slots:
+    void cameraBlurControlsPreviewAndExport();
     void manualFocusOverridesAutoFollowStart();
+    void automaticallyZoomsOnlyFreshRecordingOnce();
     void followPreviewAndExportAgree();
     void exportReusesPreparedFollowPath();
     void followComposesWithEdits();
@@ -63,6 +68,80 @@ private slots:
     void zoomedPictureStaysInItsFrame();
     void typedTimesStayWithTheirZoom();
 };
+
+void tst_RecordingPreviewZoom::cameraBlurControlsPreviewAndExport()
+{
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(12000);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QVERIFY(backend.addZoomAt(2000) >= 0);
+    backend.show();
+    QQuickView* view = nullptr;
+    QTRY_VERIFY(([&] {
+        for (auto* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview"))
+                view = qobject_cast<QQuickView*>(window);
+        }
+        return view != nullptr;
+    })());
+    auto* player = view->rootObject()->findChild<VideoPlaybackItem*>("previewVideoPlayer");
+    auto* control = view->rootObject()->findChild<QQuickItem*>("previewCameraMotionBlur");
+    QVERIFY(player && control);
+    backend.setCameraMotionBlur(2);
+    QTRY_VERIFY(player->cameraEffectsEnabled());
+    backend.setZoomReduceMotion(true);
+    QTRY_VERIFY(!player->cameraEffectsEnabled());
+    QVERIFY(!control->isEnabled());
+    backend.undo();
+    QTRY_VERIFY(player->cameraEffectsEnabled());
+    backend.undo();
+    QCOMPARE(backend.cameraMotionBlur(), 0);
+    QTRY_VERIFY(!player->cameraEffectsEnabled());
+    backend.redo();
+    QCOMPARE(backend.cameraMotionBlur(), 2);
+    QTRY_VERIFY(player->cameraEffectsEnabled());
+}
+
+void tst_RecordingPreviewZoom::automaticallyZoomsOnlyFreshRecordingOnce()
+{
+    QTemporaryDir dir;
+    auto& settings = RecordingSettingsManager::instance();
+    const bool previous = settings.autoZoomOnOpen();
+    const auto restore = qScopeGuard([&] { settings.setAutoZoomOnOpen(previous); });
+    settings.setAutoZoomOnOpen(true);
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.autoZoomNewRecording();
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(12000);
+    QTRY_VERIFY(backend.automaticZoomCount() > 0);
+    QVERIFY(backend.canUndo());
+    backend.undo();
+    QCOMPARE(backend.zoomSegments().size(), 0);
+    backend.autoZoomNewRecording();
+    QCoreApplication::processEvents();
+    QCOMPARE(backend.zoomSegments().size(), 0);
+    backend.redo();
+    QVERIFY(!backend.zoomSegments().isEmpty());
+    backend.dismissAutomaticZoom(true);
+    QVERIFY(!settings.autoZoomOnOpen());
+
+    settings.setAutoZoomOnOpen(true);
+    RecordingPreviewBackend reopened(writeClicks(dir));
+    reopened.updateVideoSize(kFrame);
+    reopened.updateDuration(12000);
+    QCoreApplication::processEvents();
+    QVERIFY(reopened.zoomSegments().isEmpty()); // never armed for old recordings
+
+    settings.setAutoZoomOnOpen(false);
+    RecordingPreviewBackend disabled(writeClicks(dir));
+    disabled.autoZoomNewRecording();
+    disabled.updateVideoSize(kFrame);
+    disabled.updateDuration(12000);
+    QCoreApplication::processEvents();
+    QVERIFY(disabled.zoomSegments().isEmpty());
+}
 
 void tst_RecordingPreviewZoom::manualFocusOverridesAutoFollowStart()
 {
@@ -201,7 +280,7 @@ void tst_RecordingPreviewZoom::autoZoomKeepsTheUsersZooms()
     // The user changes the second one; regenerating replaces only the first.
     backend.setZoomScale(1, 3.0);
     QVERIFY(backend.zoomSegments().at(1).toMap().value(QStringLiteral("manual")).toBool());
-    QCOMPARE(backend.generateAutoZoom(), 2);
+    QCOMPARE(backend.generateAutoZoom(), 1);
     QCOMPARE(backend.zoomSegments().size(), 2);
     QCOMPARE(backend.zoomSegments().at(1).toMap().value(QStringLiteral("scale")).toDouble(), 3.0);
 
@@ -237,11 +316,14 @@ void tst_RecordingPreviewZoom::autoZoomNeverLeavesAStaleSelection()
     // A manual zoom stays selected on the same segment.
     backend.setZoomScale(1, 3.0);
     backend.setSelectedZoom(1);
-    QCOMPARE(backend.generateAutoZoom(), 2);
+    QCOMPARE(backend.generateAutoZoom(), 1);
     QVERIFY(backend.selectedZoom() >= 0);
     const QVariantMap selected = backend.zoomSegments().at(backend.selectedZoom()).toMap();
     QVERIFY(selected.value(QStringLiteral("manual")).toBool());
     QCOMPARE(selected.value(QStringLiteral("scale")).toDouble(), 3.0);
+    backend.setZoomScale(0, 3.0);
+    QCOMPARE(backend.generateAutoZoom(), 0);
+    QVERIFY(backend.autoZoomResult().contains(QStringLiteral("overlap")));
 }
 
 void tst_RecordingPreviewZoom::withoutPointerDataOnlyManualZoom()

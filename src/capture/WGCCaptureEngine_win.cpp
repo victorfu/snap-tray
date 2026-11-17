@@ -151,6 +151,8 @@ public:
     std::mutex emitMutex;
     qint64 lastEmittedNs = -1;  // guarded by emitMutex
 
+    std::atomic<bool> refreshRequested{false};
+    std::atomic<quint64> pictureSerial{0};
     std::thread repeater;
     std::mutex repeaterMutex;
     std::condition_variable repeaterWake;
@@ -405,12 +407,23 @@ void WGCCaptureEngine::Private::onItemClosed(quint64 generationAtStart)
 void WGCCaptureEngine::Private::repeatLoop(quint64 generationAtStart)
 {
     // Windows Graphics Capture delivers nothing while the screen is static.
-    // Repeat the last frame once a frame interval passes without one, so a
-    // still screen keeps the recording's cadence instead of reading as a stall.
+    // Sparse keep-alives bound encoder buffering; the encoder extends the
+    // previous sample rather than converting every nominal frame interval.
     std::unique_lock<std::mutex> wakeLock(repeaterMutex);
+    quint64 seenPicture = pictureSerial.load(), settledPicture = 0;
     while (running && generation == generationAtStart) {
-        const auto interval = SnapTray::captureFrameInterval(frameRate.load());
-        repeaterWake.wait_for(wakeLock, interval);
+        const auto interval = seenPicture != settledPicture
+            ? SnapTray::captureSettlingInterval(frameRate.load())
+            : std::chrono::nanoseconds(SnapTray::kCaptureKeepAliveNs);
+        repeaterWake.wait_for(wakeLock, interval, [&] {
+            return refreshRequested.load() || pictureSerial.load() != seenPicture
+                || !running || generation != generationAtStart;
+        });
+        const bool refresh = refreshRequested.exchange(false);
+        if (!refresh && pictureSerial.load() != seenPicture) {
+            seenPicture = pictureSerial.load();
+            continue; // wait for one quiet interval after the newest picture
+        }
         if (!running || generation != generationAtStart) {
             break;
         }
@@ -419,7 +432,7 @@ void WGCCaptureEngine::Private::repeatLoop(quint64 generationAtStart)
         // older one with a newer time.
         std::lock_guard<std::mutex> emitLock(emitMutex);
         const qint64 nowNs = SnapTray::captureClockNowNs();
-        if (lastEmittedNs >= 0 && nowNs - lastEmittedNs < interval.count()) {
+        if (!refresh && lastEmittedNs >= 0 && nowNs - lastEmittedNs < interval.count()) {
             continue;
         }
         SnapTray::CapturedFrame repeat;
@@ -430,8 +443,16 @@ void WGCCaptureEngine::Private::repeatLoop(quint64 generationAtStart)
         if (!repeat.isValid()) {
             continue;
         }
+        // The output policy may have changed at the recording gate, while
+        // a static screen still holds a GPU-only warm-up frame.
+        if (!nativeOutput && repeat.image.isNull() && repeat.nativeBuffer) {
+            const auto texture = SnapTray::d3d11FrameFrom(repeat.nativeBuffer);
+            if (texture) repeat.image = SnapTray::readBackD3D11Frame(*texture);
+            if (repeat.image.isNull()) continue;
+        }
         repeat.sourceTimeNs = nowNs;
         emitFrameLocked(repeat, generationAtStart);
+        settledPicture = seenPicture;
     }
 }
 
@@ -439,6 +460,8 @@ void WGCCaptureEngine::Private::emitFrame(const SnapTray::CapturedFrame &frame, 
 {
     std::lock_guard<std::mutex> lock(emitMutex);
     emitFrameLocked(frame, generationAtStart);
+    ++pictureSerial;
+    repeaterWake.notify_all();
 }
 
 void WGCCaptureEngine::Private::emitFrameLocked(const SnapTray::CapturedFrame &frame, quint64 generationAtStart)
@@ -605,6 +628,13 @@ std::shared_ptr<void> WGCCaptureEngine::nativeFrameDevice() const
 void WGCCaptureEngine::setNativeFrameOutput(bool enabled)
 {
     d->nativeOutput = enabled;
+}
+
+void WGCCaptureEngine::requestFrame()
+{
+    std::lock_guard<std::mutex> lock(d->repeaterMutex);
+    d->refreshRequested = true;
+    d->repeaterWake.notify_all();
 }
 
 QString WGCCaptureEngine::engineName() const

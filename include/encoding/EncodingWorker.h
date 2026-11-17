@@ -53,6 +53,7 @@ public:
         // they cannot be encoded and are counted as rejected.
         std::shared_ptr<void> nativeBuffer;
         QSize pixelSize;  // sizes an image-less frame for the queue budget
+        qint64 timestampNs = -1; // exact session time; legacy callers keep timestampMs
 
         // Bytes counted against the queue budget (a GPU frame as 32-bit pixels).
         qint64 byteSize() const
@@ -151,6 +152,7 @@ public:
      * Non-blocking. Emits finished() when complete.
      */
     void requestFinish();
+    void setEndTimestampNs(qint64 ns) { m_endTimestampNs = ns; }
 
     // ========== Frame/Audio Submission ==========
 
@@ -241,6 +243,7 @@ private:
     std::atomic<bool> m_running{false};
     std::atomic<bool> m_isProcessing{false};
     std::atomic<bool> m_acceptingFrames{true};
+    std::atomic<qint64> m_endTimestampNs{-1};
     std::atomic<bool> m_finishRequested{false};
     std::atomic<qint64> m_framesWritten{0};
     std::atomic<bool> m_finishCalled{false};

@@ -46,6 +46,7 @@ struct Scenario {
     int backwardEvery = 0;      // every Nth frame repeats an older timestamp
     qint64 staticFromMs = -1;   // screen unchanged (same content) in this span
     qint64 staticToMs = -1;
+    bool sparseDesktop = false; // keep-alive every 2 s during unchanged content
     QVector<Pause> pauses;
     qint64 audioGapFromMs = -1; // one audio source delivers nothing here
     qint64 audioGapToMs = -1;

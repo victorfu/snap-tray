@@ -1,4 +1,5 @@
 #include "recording/CursorEffects.h"
+#include "recording/CrispCursor.h"
 
 #include <QJsonArray>
 #include <QPainter>
@@ -37,6 +38,46 @@ constexpr qint64 kSpringSettleMs = 1000;
 constexpr qint64 kJitterWindowMs = 100;
 constexpr double kJitterDistanceSquared = 4.0;
 constexpr double kCoalesceDistanceSquared = 0.25;
+
+// RDP only chooses geometry. Retain sample times by resampling the fitted
+// polyline, so the spring's short interpolation windows do not turn removed
+// knots into artificial pauses. Callers split at every semantic/drag boundary.
+void straightenWindow(std::vector<SpringPath::Knot>& knots, size_t first, size_t last, double tolerance)
+{
+    if (last <= first + 1) return;
+    std::vector<bool> keep(last - first + 1, false);
+    keep.front() = keep.back() = true;
+    std::vector<std::pair<size_t, size_t>> pending{{first, last}};
+    while (!pending.empty()) {
+        const auto [a, b] = pending.back();
+        pending.pop_back();
+        const QPointF delta = knots[b].position - knots[a].position;
+        const double lengthSquared = QPointF::dotProduct(delta, delta);
+        double furthest = tolerance * tolerance;
+        size_t at = b;
+        for (size_t i = a + 1; i < b; ++i) {
+            const QPointF offset = knots[i].position - knots[a].position;
+            const double fraction = lengthSquared > 0 ? std::clamp(QPointF::dotProduct(offset, delta) / lengthSquared, 0.0, 1.0) : 0;
+            const QPointF error = offset - delta * fraction;
+            const double distance = QPointF::dotProduct(error, error);
+            if (distance > furthest) { furthest = distance; at = i; }
+        }
+        if (at != b) {
+            keep[at - first] = true;
+            pending.push_back({a, at});
+            pending.push_back({at, b});
+        }
+    }
+    size_t a = first;
+    for (size_t b = first + 1; b <= last; ++b) {
+        if (!keep[b - first]) continue;
+        for (size_t i = a + 1; i < b; ++i) {
+            const double fraction = (knots[i].ms - knots[a].ms) / (knots[b].ms - knots[a].ms);
+            knots[i].position = knots[a].position + (knots[b].position - knots[a].position) * fraction;
+        }
+        a = b;
+    }
+}
 
 struct MotionBlurLevel {
     CursorEffectSettings::MotionBlur blur;
@@ -177,10 +218,11 @@ QPainterPath defaultArrow()
 bool CursorEffectSettings::operator==(const CursorEffectSettings& o) const
 {
     return showCursor == o.showCursor && qFuzzyCompare(scale, o.scale) && smoothing == o.smoothing
+        && pointerStyle == o.pointerStyle && steadyShape == o.steadyShape && straighten == o.straighten
         && clickStyle == o.clickStyle && clickColor == o.clickColor && rightClickColor == o.rightClickColor
         && separateRightClickColor == o.separateRightClickColor && pressBounce == o.pressBounce
         && idleHideMs == o.idleHideMs && motionBlur == o.motionBlur
-        && stillEndMs == o.stillEndMs && hiddenRanges == o.hiddenRanges;
+        && loopBack == o.loopBack && stillEndMs == o.stillEndMs && hiddenRanges == o.hiddenRanges;
 }
 
 QJsonObject CursorEffectSettings::toJson() const
@@ -202,6 +244,9 @@ QJsonObject CursorEffectSettings::toJson() const
     QJsonObject json{{QStringLiteral("showCursor"), showCursor},
                      {QStringLiteral("scale"), scale},
                      {QStringLiteral("smoothing"), QLatin1String(smoothingName)},
+                     {QStringLiteral("steadyShape"), steadyShape},
+                     {QStringLiteral("pointerStyle"), int(pointerStyle)},
+                     {QStringLiteral("straighten"), int(straighten)},
                      {QStringLiteral("clickStyle"), QLatin1String(clickName)},
                      {QStringLiteral("clickColor"), clickColor.name()},
                      {QStringLiteral("rightClickColor"), rightClickColor.name()},
@@ -209,6 +254,7 @@ QJsonObject CursorEffectSettings::toJson() const
                      {QStringLiteral("pressBounce"), QLatin1String(bounceName)},
                      {QStringLiteral("idleHideMs"), double(idleHideMs)},
                      {QStringLiteral("motionBlur"), QLatin1String(blurName)},
+                     {QStringLiteral("loopBack"), loopBack},
                      {QStringLiteral("stillEndMs"), double(stillEndMs)}};
     if (!ranges.isEmpty()) json.insert(QStringLiteral("hiddenRanges"), ranges);
     return json;
@@ -253,6 +299,9 @@ CursorEffectSettings CursorEffectSettings::fromJson(const QJsonObject& json)
     CursorEffectSettings settings;
     settings.showCursor = json.value(QStringLiteral("showCursor")).toBool(settings.showCursor);
     settings.scale = std::clamp(json.value(QStringLiteral("scale")).toDouble(settings.scale), kMinScale, kMaxScale);
+    settings.pointerStyle = PointerStyle(std::clamp(json.value(QStringLiteral("pointerStyle")).toInt(), 0, 1));
+    settings.steadyShape = json.value(QStringLiteral("steadyShape")).toBool();
+    settings.straighten = Straighten(std::clamp(json.value(QStringLiteral("straighten")).toInt(), 0, 2));
     const QString smoothing = json.value(QStringLiteral("smoothing")).toString();
     for (const auto& entry : kSmoothing) {
         if (smoothing == QLatin1String(entry.name)) settings.smoothing = entry.smoothing;
@@ -278,6 +327,7 @@ CursorEffectSettings CursorEffectSettings::fromJson(const QJsonObject& json)
     for (const auto& entry : kMotionBlur) {
         if (blur == QLatin1String(entry.name)) settings.motionBlur = entry.blur;
     }
+    settings.loopBack = json.value(QStringLiteral("loopBack")).toBool();
     settings.stillEndMs = std::clamp(qint64(json.value(QStringLiteral("stillEndMs")).toDouble(0.0)), qint64(0),
                                      kMaxStillEndMs);
     std::vector<CursorHiddenRange> ranges;
@@ -324,6 +374,8 @@ CursorEffectRenderer::CursorEffectRenderer(const CursorTimeline& timeline, const
 {
     rebuildSpringPaths();
     rebuildBouncePath();
+    rebuildShapeSpans();
+    rebuildLoopReturn();
 }
 
 void CursorEffectRenderer::setTimeline(const TimelineMap& timeline)
@@ -333,6 +385,44 @@ void CursorEffectRenderer::setTimeline(const TimelineMap& timeline)
     m_map = timeline;
     rebuildSpringPaths();
     rebuildBouncePath();
+    rebuildShapeSpans();
+    rebuildLoopReturn();
+}
+
+void CursorEffectRenderer::setLoopBounds(const QRectF& bounds)
+{
+    if (m_loopBounds == bounds) return;
+    m_loopBounds = bounds;
+    rebuildLoopReturn();
+}
+
+void CursorEffectRenderer::rebuildLoopReturn()
+{
+    m_loopReturn.reset();
+    if (!m_settings.loopBack || m_timeline.samples.empty()) return;
+    const auto time = LoopTransition::forTimeline(m_map, m_clipEndMs);
+    if (!time) return;
+    const auto first = positionAt(effectiveTime(time->firstSourceMs));
+    const auto from = positionAt(effectiveTime(time->returnSourceMs));
+    const auto last = positionAt(effectiveTime(time->lastSourceMs));
+    const QRectF bounds = m_loopBounds.isEmpty() ? QRectF(QPointF(), m_timeline.info.frameSize) : m_loopBounds;
+    if (!first || !from || !last || bounds.isEmpty() || !bounds.contains(*first)
+        || !bounds.contains(*from) || !bounds.contains(*last)
+        || m_settings.hiddenAt(time->firstSourceMs) || m_settings.hiddenAt(time->returnSourceMs)
+        || m_settings.hiddenAt(time->lastSourceMs)) return;
+    const double firstOpacity = pointerOpacity(time->firstSourceMs);
+    const double fromOpacity = pointerOpacity(time->returnSourceMs);
+    if (firstOpacity <= 0.0 || fromOpacity <= 0.0 || pointerOpacity(time->lastSourceMs) <= 0.0) return;
+    m_loopReturn = LoopReturn{*time, *from, *first, pointerShapeId(time->firstSourceMs), fromOpacity, firstOpacity};
+}
+
+std::optional<double> CursorEffectRenderer::loopProgress(qint64 sourceMs) const
+{
+    if (!m_loopReturn) return std::nullopt;
+    const auto output = m_map.isEmpty() ? std::optional<qint64>(sourceMs) : m_map.sourceToOutput(sourceMs);
+    if (!output || *output < m_loopReturn->time.startOutputMs || *output >= m_loopReturn->time.endOutputMs)
+        return std::nullopt;
+    return m_loopReturn->time.progress(*output);
 }
 
 qint64 CursorEffectRenderer::partStart(qint64 ms) const
@@ -359,6 +449,69 @@ QPointF CursorEffectRenderer::rawPosition(qint64 sourceMs) const
     return sample ? QPointF(sample->position) : QPointF();
 }
 
+void CursorEffectRenderer::rebuildShapeSpans()
+{
+    m_shapes.clear();
+    if (!m_settings.steadyShape || m_timeline.samples.empty()) return;
+    const auto& samples = m_timeline.samples;
+    const qint64 last = m_clipEndMs >= 0 ? m_clipEndMs : samples.back().tMs + kShapeHoldMinMs;
+    const auto parts = m_kept.empty() ? std::vector<TimelineSegment>{{samples.front().tMs, last, 1.0}} : m_kept;
+    for (const auto& part : parts) {
+        const qint64 start = std::max(part.startMs, samples.front().tMs);
+        if (start >= part.endMs) continue;
+        struct Run { qint64 start; qint64 end; quint32 id; bool visible; };
+        const auto* initial = m_timeline.sampleAt(start);
+        std::vector<Run> runs{{start, part.endMs, initial->shapeId, initial->visible}};
+        auto sample = std::upper_bound(samples.begin(), samples.end(), start,
+            [](qint64 t, const CursorSample& s) { return t < s.tMs; });
+        for (; sample != samples.end() && sample->tMs < part.endMs; ++sample) {
+            if (sample->shapeId == runs.back().id && sample->visible == runs.back().visible) continue;
+            runs.back().end = sample->tMs;
+            runs.push_back({sample->tMs, part.endMs, sample->shapeId, sample->visible});
+        }
+        std::vector<std::pair<qint64, qint64>> guards;
+        auto event = std::lower_bound(m_timeline.buttons.begin(), m_timeline.buttons.end(), start,
+            [](const CursorButtonEvent& e, qint64 t) { return e.tMs < t; });
+        for (; event != m_timeline.buttons.end() && event->tMs < part.endMs; ++event) {
+            if (event->synthetic) continue;
+            const qint64 a = std::max(start, event->tMs - kShapeClickGuardMs);
+            const qint64 b = std::min(part.endMs, event->tMs + kShapeClickGuardMs + 1);
+            if (!guards.empty() && a <= guards.back().second) guards.back().second = std::max(b, guards.back().second);
+            else guards.push_back({a, b});
+        }
+        quint32 stable = initial->shapeId;
+        bool wasVisible = initial->visible;
+        size_t guard = 0;
+        for (const auto& run : runs) {
+            if (run.end - run.start >= kShapeHoldMinMs || run.visible != wasVisible) stable = run.id;
+            wasVisible = run.visible;
+            qint64 at = run.start;
+            while (at < run.end) {
+                while (guard < guards.size() && guards[guard].second <= at) ++guard;
+                const bool guarded = guard < guards.size() && guards[guard].first <= at;
+                const qint64 end = guard == guards.size() ? run.end
+                    : std::min(run.end, guarded ? guards[guard].second : guards[guard].first);
+                const quint32 id = guarded ? run.id : stable;
+                if (!m_shapes.empty() && m_shapes.back().endMs == at && m_shapes.back().id == id)
+                    m_shapes.back().endMs = end;
+                else m_shapes.push_back({at, end, id});
+                at = end;
+            }
+        }
+    }
+}
+
+quint32 CursorEffectRenderer::pointerShapeId(qint64 sourceMs) const
+{
+    if (loopProgress(sourceMs)) return m_loopReturn->shape;
+    const qint64 shown = effectiveTime(sourceMs);
+    auto span = std::upper_bound(m_shapes.begin(), m_shapes.end(), shown,
+        [](qint64 t, const ShapeSpan& s) { return t < s.startMs; });
+    if (span != m_shapes.begin() && shown < (span - 1)->endMs) return (span - 1)->id;
+    const auto* sample = m_timeline.sampleAt(shown);
+    return sample ? sample->shapeId : 0;
+}
+
 void CursorEffectRenderer::rebuildSpringPaths()
 {
     m_paths.clear();
@@ -382,7 +535,16 @@ void CursorEffectRenderer::rebuildSpringPaths()
         auto sample = std::upper_bound(samples.begin(), samples.end(), start,
             [](qint64 t, const CursorSample& s) { return t < s.tMs; });
         bool lastSemantic = true;
+        auto dragEvent = std::upper_bound(buttons.begin(), buttons.end(), start,
+            [](qint64 t, const CursorButtonEvent& e) { return t < e.tMs; });
+        Qt::MouseButtons dragging = m_timeline.buttonsDownAt(start);
         for (; sample != samples.end() && sample->tMs < part.endMs; ++sample) {
+            bool inDrag = bool(dragging);
+            while (dragEvent != buttons.end() && dragEvent->tMs <= sample->tMs) {
+                if (dragEvent->down) dragging |= dragEvent->button; else dragging &= ~Qt::MouseButtons(dragEvent->button);
+                inDrag |= bool(dragging);
+                ++dragEvent;
+            }
             const auto& previous = *(sample - 1);
             const bool semantic = sample->shapeId != previous.shapeId || sample->visible != previous.visible;
             const QPointF delta = QPointF(sample->position) - input.knots.back().position;
@@ -399,7 +561,8 @@ void CursorEffectRenderer::rebuildSpringPaths()
             }
             // Keep first/last and shape/visibility boundaries. Coalesce dense
             // interior samples into the latest sample in their 120 Hz cell.
-            if (interior && !semantic && !lastSemantic && input.knots.size() > 1
+            if ((m_settings.straighten == CursorEffectSettings::Straighten::Off || inDrag)
+                && interior && !semantic && !lastSemantic && input.knots.size() > 1
                 && std::floor((sample->tMs - start) / kSpringStepMs)
                    == std::floor((input.knots.back().ms - start) / kSpringStepMs)) {
                 input.knots.back() = {double(sample->tMs), QPointF(sample->position)};
@@ -423,6 +586,43 @@ void CursorEffectRenderer::rebuildSpringPaths()
         for (const auto& knot : input.knots) {
             if (!unique.empty() && unique.back().ms == knot.ms) unique.back() = knot;
             else unique.push_back(knot);
+        }
+        if (m_settings.straighten != CursorEffectSettings::Straighten::Off && unique.size() > 2) {
+            constexpr double kTolerancePx[] = {0.0, 4.0, 10.0};
+            const double tolerance = kTolerancePx[int(m_settings.straighten)] * m_timeline.info.pixelRatio;
+            auto boundary = std::upper_bound(samples.begin(), samples.end(), start,
+                [](qint64 t, const CursorSample& s) { return t < s.tMs; });
+            auto button = event;
+            Qt::MouseButtons held = m_timeline.buttonsDownAt(start);
+            size_t anchor = 0;
+            for (size_t i = 1; i < unique.size(); ++i) {
+                const qint64 ms = qRound64(unique[i].ms);
+                const bool gap = unique[i].ms - unique[i - 1].ms > kInputInterpolationMs;
+                bool fixed = bool(held);
+                while (button != eventEnd && button->tMs <= ms) {
+                    fixed = true;
+                    if (button->down) held |= button->button; else held &= ~Qt::MouseButtons(button->button);
+                    ++button;
+                }
+                while (boundary != samples.end() && boundary->tMs <= ms) {
+                    const auto& previous = *(boundary - 1);
+                    fixed |= boundary->shapeId != previous.shapeId || boundary->visible != previous.visible;
+                    ++boundary;
+                }
+                if (gap) {
+                    // Both sides of a gap are anchors. Including i in the
+                    // previous window would move the last held position.
+                    straightenWindow(unique, anchor, i - 1, tolerance);
+                    anchor = i;
+                    continue;
+                }
+                if (fixed || i + 1 == unique.size() || unique[i].ms - unique[anchor].ms >= kStraightenWindowMs) {
+                    // Drag intervals have every point fixed. A gap's endpoints
+                    // stay fixed too, retaining the recorder's held position.
+                    straightenWindow(unique, anchor, i, tolerance);
+                    anchor = i;
+                }
+            }
         }
         input.knots.clear();
         input.knots.reserve(unique.size() * 2);
@@ -526,6 +726,8 @@ qint64 CursorEffectRenderer::effectiveTime(qint64 sourceMs) const
 std::optional<QPointF> CursorEffectRenderer::pointerPosition(qint64 sourceMs) const
 {
     if (m_settings.hiddenAt(sourceMs)) return std::nullopt;
+    if (const auto progress = loopProgress(sourceMs))
+        return m_loopReturn->from + (m_loopReturn->to - m_loopReturn->from) * *progress;
     return positionAt(effectiveTime(sourceMs));
 }
 
@@ -577,6 +779,8 @@ qint64 CursorEffectRenderer::idleAfter(qint64 ms, qint64 limit) const
 
 double CursorEffectRenderer::pointerOpacity(qint64 sourceMs) const
 {
+    if (const auto p = loopProgress(sourceMs))
+        return m_loopReturn->fromOpacity + (m_loopReturn->toOpacity - m_loopReturn->fromOpacity) * *p;
     const qint64 hideAfter = m_settings.idleHideMs;
     if (hideAfter <= 0) return 1.0;
     const qint64 frozenAt = effectiveTime(sourceMs);
@@ -631,6 +835,7 @@ void CursorEffectRenderer::paint(QPainter& painter, qint64 sourceMs, const Curso
 
 void CursorEffectRenderer::paintClicks(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const
 {
+    if (loopProgress(sourceMs)) return;
     const ClickStyleEntry* style = nullptr;
     for (const auto& entry : kClickStyles) if (entry.style == m_settings.clickStyle) style = &entry;
     if (!style || !style->draw) return;
@@ -685,6 +890,7 @@ void CursorEffectRenderer::rebuildBouncePath()
 
 double CursorEffectRenderer::pointerBounceScale(qint64 sourceMs) const
 {
+    if (loopProgress(sourceMs)) return 1.0;
     auto it = std::upper_bound(m_bounces.begin(), m_bounces.end(), sourceMs,
                                [](qint64 t, const BouncePoint& point) { return t < point.tMs; });
     if (it == m_bounces.begin() || (it - 1)->tMs < partStart(sourceMs)) return 1.0;
@@ -699,15 +905,13 @@ void CursorEffectRenderer::paintPointer(QPainter& painter, qint64 sourceMs, cons
     if (!position) return;
     const double opacity = pointerOpacity(sourceMs);
     if (opacity <= 0.0) return;
-    const qint64 shownMs = effectiveTime(sourceMs);
     const QPointF at = mapping.toOutput(*position);
     const double scale = mapping.scale() * m_settings.scale;
-    const CursorSample* sample = m_timeline.sampleAt(shownMs);
-    const CursorShape* shape = sample ? m_timeline.shape(sample->shapeId) : nullptr;
+    const CursorShape* shape = m_timeline.shape(pointerShapeId(sourceMs));
     const double baseOpacity = painter.opacity();
     // Motion blur: fainter copies where the pointer was a moment before, at
     // fixed time offsets, so a frame never depends on what was drawn before.
-    if (const double window = blurWindowMs(); window > 0.0) {
+    if (const double window = blurWindowMs(); window > 0.0 && !loopProgress(sourceMs)) {
         for (int k = kBlurSamples; k >= 1; --k) {
             const qint64 ghostMs = sourceMs - qint64(std::lround(window * k / kBlurSamples));
             if (ghostMs < partStart(sourceMs)) continue; // no trail from before a cut
@@ -729,9 +933,15 @@ void CursorEffectRenderer::drawPointerAt(QPainter& painter, const QPointF& at, c
                                          double scale) const
 {
     if (shape) {
+        if (m_settings.pointerStyle == CursorEffectSettings::PointerStyle::Crisp && m_settings.scale > kVectorCursorMinScale
+            && drawCrispCursor(painter, shape->kind, at, shape->image.height() * scale)) return;
         // Shape images are in recorded (video) pixels; the hotspot stays on the point.
         const QRectF target(at - QPointF(shape->hotspot) * scale, QSizeF(shape->image.size()) * scale);
+        painter.save();
+        if (m_settings.pointerStyle == CursorEffectSettings::PointerStyle::Crisp)
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
         painter.drawImage(target, shape->image);
+        painter.restore();
         return;
     }
     // No recorded shape: a plain arrow with an outline, readable on any background.

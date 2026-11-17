@@ -8,6 +8,8 @@
 #include <QtGlobal>
 
 #include <memory>
+#include <functional>
+#include "recording/AudioClipTrack.h"
 
 // Microphone and system audio as separate tracks (#189). While recording
 // with both sources, each is also written on its own next to the temporary
@@ -116,12 +118,20 @@ private:
 class AudioTrackMixer {
 public:
     AudioTrackMixer(const QString& videoPath, const AudioMixSettings& settings);
-    bool isValid() const { return m_microphone.isOpen() && m_systemAudio.isOpen(); }
+    bool isValid() const { return hasSeparateTracks() || bool(m_fallback) || !m_clips.isEmpty(); }
+    bool hasSeparateTracks() const { return m_microphone.isOpen() && m_systemAudio.isOpen(); }
+    using Source = std::function<QByteArray(qint64, int)>;
+    void setFallback(Source source) { m_fallback = std::move(source); }
+    bool setClips(const AudioClipTrack& clips);
     // Interleaved stereo PCM16 for [startFrame, startFrame + frames).
     QByteArray read(qint64 startFrame, int frames);
     void setSettings(const AudioMixSettings& settings);
 
 private:
+    QString m_videoPath;
+    AudioTrackReader m_imports;
+    AudioClipTrack m_clips;
+    Source m_fallback;
     AudioTrackReader m_microphone;
     AudioTrackReader m_systemAudio;
     AudioMixSettings m_settings;

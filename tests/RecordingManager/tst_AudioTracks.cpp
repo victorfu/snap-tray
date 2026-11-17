@@ -1,12 +1,15 @@
 #include <QtTest>
 
 #include <QElapsedTimer>
+#include <QJsonArray>
 #include <QTemporaryDir>
 #include <QtEndian>
 
 #include <cmath>
 
 #include "recording/AudioTracks.h"
+#include "recording/AudioTimeStretch.h"
+#include "recording/AudioSegmentReader.h"
 #include "AudioTrackWriterTestAccess.h"
 
 using namespace SnapTray;
@@ -58,6 +61,9 @@ class TestAudioTracks : public QObject
     Q_OBJECT
 
 private slots:
+    void importedClipsMixAndRoundTrip();
+    void stretchPreservesPitchAndBlockIndependence();
+    void editedAudioHasExactLengthAndSeamFades();
     void writerPlacesChunksOnTheTimeline();
     void writerReportsBufferedFlushFailures_data();
     void writerReportsBufferedFlushFailures();
@@ -69,6 +75,69 @@ private slots:
     void settingsJson();
     void pathsAndRemoval();
 };
+
+void TestAudioTracks::stretchPreservesPitchAndBlockIndependence()
+{
+    constexpr int frames = 48000 * 3;
+    std::vector<std::int16_t> input(frames * 2);
+    for (int i = 0; i < frames; ++i)
+        input[size_t(i) * 2] = input[size_t(i) * 2 + 1] = std::int16_t(12000 * std::sin(2 * 3.14159265358979 * 440 * i / 48000));
+    for (double speed : {0.5, 1.0, 1.5, 2.0, 4.0}) {
+        const auto stretch = [&](int block) {
+            AudioTimeStretch processor(speed);
+            std::vector<std::int16_t> result;
+            const auto drain = [&] {
+                std::vector<std::int16_t> out(processor.availableFrames() * 2);
+                processor.read(out.data(), out.size() / 2);
+                result.insert(result.end(), out.begin(), out.end());
+            };
+            for (int at = 0; at < frames; at += block) {
+                processor.push(input.data() + at * 2, size_t(std::min(block, frames - at)));
+                drain();
+            }
+            processor.finish(); drain(); return result;
+        };
+        const auto output = stretch(4800);
+        QCOMPARE(output.size() / 2, size_t(std::llround(frames / speed)));
+        QCOMPARE(stretch(480), output);
+        QCOMPARE(stretch(1337), output);
+        int first = -1, last = -1, crossings = 0;
+        for (int i = 4800; i < int(output.size() / 2) - 4800; ++i) {
+            if (output[size_t(i - 1) * 2] <= 0 && output[size_t(i) * 2] > 0) {
+                if (first < 0) first = i;
+                last = i; ++crossings;
+            }
+        }
+        const double frequency = double(crossings - 1) * 48000 / (last - first);
+        QVERIFY2(std::abs(frequency - 440) <= 4.4, qPrintable(QString::number(frequency)));
+    }
+}
+
+void TestAudioTracks::editedAudioHasExactLengthAndSeamFades()
+{
+    AudioSegmentReader reader([](qint64, int frames) {
+        QByteArray pcm(frames * 4, '\0');
+        for (int i = 0; i < frames * 2; ++i) qToLittleEndian<qint16>(10000, pcm.data() + i * 2);
+        return pcm;
+    });
+    for (double speed : {0.5, 1.0, 1.5, 2.0, 4.0}) {
+        TimelineSegment part{1000, 3000, speed};
+        reader.begin(part);
+        const int length = int(part.outputLengthMs() * 48);
+        QByteArray output;
+        for (int at = 0; at < length; at += 960) output += reader.read(std::min(960, length - at));
+        QCOMPARE(output.size(), length * 4);
+        QCOMPARE(sampleAt(output, 0), 0);
+        QCOMPARE(sampleAt(output, 120), 5000);
+        QCOMPARE(sampleAt(output, 240), 10000);
+        QCOMPARE(sampleAt(output, length - 1), 0);
+        part.keepSound = false;
+        reader.begin(part);
+        const auto muted = reader.read(length);
+        if (speed != 1.0) QCOMPARE(muted, QByteArray(length * 4, '\0'));
+        else QCOMPARE(sampleAt(muted, 0), 10000); // The old normal-speed behavior.
+    }
+}
 
 void TestAudioTracks::writerPlacesChunksOnTheTimeline()
 {
@@ -255,3 +324,44 @@ void TestAudioTracks::pathsAndRemoval()
 
 QTEST_MAIN(TestAudioTracks)
 #include "tst_AudioTracks.moc"
+
+void TestAudioTracks::importedClipsMixAndRoundTrip()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath("recording.mp4");
+    QByteArray constant(48000 * 4, '\0');
+    for (int i = 0; i < 96000; ++i) qToLittleEndian<qint16>(1000, constant.data() + i * 2);
+    writeTrack(path + QLatin1String(AudioClipTrack::kSuffix), constant);
+    AudioClip c;
+    c.name = "narration"; c.assetFrames = 48000; c.startMs = 500; c.endMs = 2500;
+    c.fadeInMs = c.fadeOutMs = 10; c.loop = true;
+    AudioClipTrack clips; clips.clips.push_back(c);
+    QVERIFY(AudioClipTrack::fromJson(clips.toJson()) == clips);
+    auto corrupt = clips.toJson();
+    auto array = corrupt["clips"].toArray();
+    auto bad = array[0].toObject(); bad["assetFrame"] = -1; array[0] = bad; corrupt["clips"] = array;
+    QVERIFY(AudioClipTrack::fromJson(corrupt).isEmpty());
+    AudioTrackMixer mixer(path, {});
+    QVERIFY(mixer.setClips(clips));
+    QVERIFY(mixer.isValid());
+    QCOMPARE(sampleAt(mixer.read(0, 4800), 100), qint16(0));
+    QCOMPARE(sampleAt(mixer.read(500 * 48, 4800), 0), qint16(0));
+    QCOMPARE(sampleAt(mixer.read(600 * 48, 4800), 500), qint16(1000));
+    QCOMPARE(sampleAt(mixer.read(1600 * 48, 4800), 500), qint16(1000));
+    QCOMPARE(sampleAt(mixer.read(2500 * 48 - 1, 100), 0), qint16(0));
+    const auto one = mixer.read(1400 * 48, 48000);
+    QByteArray blocks;
+    for (int i = 0; i < 10; ++i) blocks += mixer.read(1400 * 48 + i * 4800, 4800);
+    QCOMPARE(one, blocks);
+    mixer.setFallback([](qint64, int n) {
+        QByteArray data(n * 4, '\0');
+        for (int i = 0; i < n * 2; ++i) qToLittleEndian<qint16>(2000, data.data() + i * 2);
+        return data;
+    });
+    QCOMPARE(sampleAt(mixer.read(600 * 48, 4800), 500), qint16(3000));
+    clips.clips[0].loop = false;
+    QVERIFY(mixer.setClips(clips));
+    QCOMPARE(sampleAt(mixer.read(1600 * 48, 4800), 500), qint16(2000));
+    clips.clips[0].assetFrames += 1;
+    QVERIFY(!mixer.setClips(clips));
+}

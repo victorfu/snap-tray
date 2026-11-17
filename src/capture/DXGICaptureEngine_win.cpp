@@ -1,5 +1,6 @@
 #include "capture/DXGICaptureEngine.h"
 #include "capture/CaptureFrameTiming.h"
+#include "capture/DesktopCapturePolicy.h"
 #include "capture/D3D11Frame.h"
 #include "utils/CoordinateHelper.h"
 
@@ -136,7 +137,7 @@ public:
     std::atomic<bool> running{false};
     std::atomic<quint64> captureGeneration{0};
     std::atomic<int> requestedFrameRate{30};
-    bool useDXGI = false;
+    std::atomic<bool> useDXGI{false};
     QImage lastFrame;  // Cache for when no new frame available (used during capture)
     std::chrono::steady_clock::time_point lastFrameTime;
 
@@ -146,9 +147,26 @@ public:
     SnapTray::CapturedFrame latestFrame;  // Thread-safe cached frame for main thread access
     std::mutex frameMutex;
 
-    // Retry limit for DXGI reinitialization
     int dxgiRetryCount = 0;
-    static constexpr int kMaxDxgiRetries = 3;
+    qint64 retryAtNs = 0;
+    qint64 lastEmittedNs = -1;
+    bool settlePending = false;
+    quint64 sequence = 0;
+    std::atomic<bool> refreshRequested{false};
+    std::function<void(const SnapTray::CapturedFrame&)> publish;
+    std::function<void(bool, const QString&)> compatibilityChanged;
+    void enterFallback(HRESULT reason) {
+        const bool deviceLost = reason == DXGI_ERROR_DEVICE_REMOVED || reason == DXGI_ERROR_DEVICE_RESET;
+        cleanup(!deviceLost);
+        retryAtNs = SnapTray::captureClockNowNs() + SnapTray::desktopRecoveryDelayNs(dxgiRetryCount);
+        dxgiRetryCount = qMin(dxgiRetryCount + 1, 3);
+        const QString detail = QStringLiteral("DXGI fallback: %1 (0x%2)")
+            .arg(deviceLost ? QStringLiteral("D3D device lost; rebuilding device")
+                 : reason == E_ACCESSDENIED ? QStringLiteral("secure desktop; waiting for access")
+                 : QStringLiteral("desktop duplication access lost"))
+            .arg(quint32(reason), 8, 16, QChar('0'));
+        if (compatibilityChanged) compatibilityChanged(true, detail);
+    }
 
     // Mutex to protect DXGI resources during cleanup
     // Using recursive_mutex because captureWithDXGI() may call cleanup() internally
@@ -428,20 +446,57 @@ void DXGICaptureEngine::Private::doCapture()
 {
     if (!running) return;
     if (captureTickObserver) captureTickObserver();
-
     std::lock_guard<std::recursive_mutex> lock(resourceMutex);
-    if (!running) return;  // Double-check after acquiring lock
-
-    SnapTray::CapturedFrame frame;
-    if (useDXGI) {
-        frame = captureWithDXGI();
-    } else {
-        frame = imageFrame(captureWithBitBlt());
+    if (!running) return;
+    const qint64 now = SnapTray::captureClockNowNs();
+    if (!useDXGI && now >= retryAtNs) {
+        cleanup(true);
+        useDXGI = initializeDXGI();
+        if (useDXGI) {
+            dxgiRetryCount = 0;
+            if (compatibilityChanged) compatibilityChanged(false, QStringLiteral("DXGI desktop duplication recovered"));
+        } else {
+            retryAtNs = now + SnapTray::desktopRecoveryDelayNs(dxgiRetryCount);
+            dxgiRetryCount = qMin(dxgiRetryCount + 1, 3);
+        }
     }
-
-    if (frame.isValid()) {
-        setLatestFrame(frame);
+    SnapTray::CapturedFrame frame = useDXGI ? captureWithDXGI() : imageFrame(captureWithBitBlt());
+    const bool refresh = refreshRequested.exchange(false);
+    if (!useDXGI && frame.isValid()) {
+        // GDI has no presentation metadata. Compare pixels to avoid encoding
+        // an unchanged compatibility capture at full cadence.
+        const auto previous = getLatestFrame();
+        if (!refresh && frame.image == previous.image) frame = {};
+        else frame.captureCopies = 1;
     }
+    const bool changed = frame.isValid();
+    const bool settle = settlePending && now - lastEmittedNs
+        >= SnapTray::captureSettlingInterval(requestedFrameRate.load()).count();
+    if (!frame.isValid() && (refresh || settle || lastEmittedNs < 0 || now - lastEmittedNs >= SnapTray::kCaptureKeepAliveNs)) {
+        frame = getLatestFrame();
+        // The worker's next polling tick may be delayed by AcquireNextFrame.
+        // Date the settling sample one quiet interval after its real picture,
+        // rather than adding that polling delay to the exported change time.
+        frame.sourceTimeNs = settle && !refresh
+            ? lastEmittedNs + SnapTray::captureSettlingInterval(requestedFrameRate.load()).count() : now;
+        frame.sourceDroppedFrames = frame.captureCopies = 0;
+        if (frame.isValid() && !nativeOutput && frame.image.isNull()) {
+            const auto texture = SnapTray::d3d11FrameFrom(frame.nativeBuffer);
+            if (texture) frame.image = SnapTray::readBackD3D11Frame(*texture);
+        }
+    }
+    if (!frame.isValid()) return;
+    if (refresh || frame.sourceTimeNs < 0) frame.sourceTimeNs = now;
+    // A real presentation can precede a keep-alive emitted while AcquireNextFrame
+    // was pending. Retain its newer picture; the settling delivery lets the
+    // rate-limited consumer see it even when this immediate update is rejected.
+    if (frame.sourceTimeNs <= lastEmittedNs) frame.sourceTimeNs = lastEmittedNs + 1;
+    frame.sequence = ++sequence;
+    frame.generation = captureGeneration;
+    lastEmittedNs = frame.sourceTimeNs;
+    setLatestFrame(frame);
+    settlePending = changed;
+    if (publish) publish(frame);
 }
 
 QImage DXGICaptureEngine::Private::captureWithBitBlt()
@@ -481,7 +536,7 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     HGDIOBJ hOld = SelectObject(hdcMem, hBitmap);
 
     // Capture screen region using physical coordinates
-    BitBlt(hdcMem, 0, 0, physRegion.width(), physRegion.height(),
+    const bool copied = BitBlt(hdcMem, 0, 0, physRegion.width(), physRegion.height(),
            hdcScreen, physRegion.x(), physRegion.y(),
            SRCCOPY | CAPTUREBLT);
 
@@ -501,7 +556,7 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     // frame as opaque RGB so live pins and alpha-capable encoders do not treat
     // the undefined padding byte as transparency.
     QImage image(physRegion.width(), physRegion.height(), QImage::Format_RGB32);
-    const int copiedScanLines = image.isNull()
+    const int copiedScanLines = !copied || image.isNull()
         ? 0
         : GetDIBits(hdcMem, hBitmap, 0, physRegion.height(),
                     image.bits(), &bmi, DIB_RGB_COLORS);
@@ -541,48 +596,27 @@ SnapTray::CapturedFrame DXGICaptureEngine::Private::captureWithDXGI()
     // Try to acquire next frame
     hr = duplication->AcquireNextFrame(16, &frameInfo, &resource);  // 16ms timeout
 
-    if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
-        // No new frame, return cached frame if still fresh
-        auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - lastFrameTime).count();
-
-        // Native output keeps the last GPU frame while the screen is still:
-        // a BitBlt refresh would put a full CPU copy back into every frame.
-        if (nativeOutput && lastNativeFrame) {
-            return nativeFrame(lastNativeFrame);
-        }
-        if (!lastFrame.isNull() && elapsed < 500) {
-            return imageFrame(lastFrame);
-        }
-        return imageFrame(captureWithBitBlt());
-    }
-
-    if (hr == DXGI_ERROR_ACCESS_LOST) {
-        // Duplication was invalidated, try to reinitialize with retry limit
-        if (dxgiRetryCount >= kMaxDxgiRetries) {
-            qWarning() << "DXGICaptureEngine: Max retries reached, falling back to BitBlt";
-            dxgiRetryCount = 0;
-            useDXGI = false;
-            return imageFrame(captureWithBitBlt());
-        }
-
-        qWarning() << "DXGICaptureEngine: Access lost, reinitializing (attempt"
-                   << dxgiRetryCount + 1 << "/" << kMaxDxgiRetries << ")";
-        cleanup(true);
-        useDXGI = initializeDXGI();
-        if (useDXGI) {
-            dxgiRetryCount++;
-            return captureWithDXGI();
-        }
-        dxgiRetryCount = 0;
-        return imageFrame(captureWithBitBlt());
-    }
-
+    if (hr == DXGI_ERROR_WAIT_TIMEOUT) return {};
     if (FAILED(hr)) {
-        qWarning() << "DXGICaptureEngine: AcquireNextFrame failed with hr:" << Qt::hex << hr;
-        return imageFrame(captureWithBitBlt());
+        enterFallback(hr);
+        return {};
     }
+    // Pointer-only notifications have no changed desktop pixels. The cursor
+    // sidecar owns pointer rendering, so do not copy or publish these surfaces.
+    if (!SnapTray::desktopImageChanged(frameInfo.LastPresentTime.QuadPart, frameInfo.AccumulatedFrames)) {
+        duplication->ReleaseFrame();
+        return {};
+    }
+    LARGE_INTEGER counter{}, frequency{};
+    QueryPerformanceCounter(&counter); QueryPerformanceFrequency(&frequency);
+    const qint64 presentationNs = SnapTray::desktopPresentationTimeNs(frameInfo.LastPresentTime.QuadPart,
+        counter.QuadPart, frequency.QuadPart, SnapTray::captureClockNowNs());
+    const auto stamp = [&](SnapTray::CapturedFrame frame) {
+        frame.sourceTimeNs = presentationNs;
+        frame.sourceDroppedFrames = frameInfo.AccumulatedFrames > 1 ? frameInfo.AccumulatedFrames - 1 : 0;
+        frame.captureCopies = 1;
+        return frame;
+    };
 
     // Get texture from resource
     ComPtr<ID3D11Texture2D> frameTexture;
@@ -621,7 +655,7 @@ SnapTray::CapturedFrame DXGICaptureEngine::Private::captureWithDXGI()
             lastFrame = QImage();
             lastFrameTime = std::chrono::steady_clock::now();
             dxgiRetryCount = 0;
-            return nativeFrame(texture);
+            return stamp(nativeFrame(texture));
         }
         // Out of GPU memory for another frame: this frame takes the CPU copy.
     }
@@ -679,7 +713,7 @@ SnapTray::CapturedFrame DXGICaptureEngine::Private::captureWithDXGI()
     // Reset retry counter on successful capture
     dxgiRetryCount = 0;
 
-    return imageFrame(lastFrame);
+    return stamp(imageFrame(lastFrame));
 }
 
 // DXGICaptureEngine implementation
@@ -688,6 +722,8 @@ DXGICaptureEngine::DXGICaptureEngine(QObject *parent)
     : ICaptureEngine(parent)
     , d(new Private)
 {
+    d->publish = [this](const SnapTray::CapturedFrame& frame) { emit frameCaptured(frame); };
+    d->compatibilityChanged = [this](bool active, const QString& detail) { emit compatibilityModeChanged(active, detail); };
 }
 
 DXGICaptureEngine::~DXGICaptureEngine()
@@ -853,6 +889,12 @@ bool DXGICaptureEngine::start()
     connect(d->workerThread, &QThread::started, d->captureTimer,
             &QChronoTimer::start);
 
+    d->lastEmittedNs = -1;
+    d->settlePending = false;
+    d->sequence = 0;
+    d->retryAtNs = SnapTray::captureClockNowNs() + SnapTray::desktopRecoveryDelayNs(0);
+    d->dxgiRetryCount = 0;
+    d->setLatestFrame({});
     d->running = true;
     ++d->captureGeneration;
     d->workerThread->start();
@@ -911,6 +953,20 @@ std::shared_ptr<void> DXGICaptureEngine::nativeFrameDevice() const
 void DXGICaptureEngine::setNativeFrameOutput(bool enabled)
 {
     d->nativeOutput = enabled;
+}
+
+void DXGICaptureEngine::requestFrame()
+{
+    d->refreshRequested = true;
+    const quint64 generation = d->captureGeneration.load();
+    QMetaObject::invokeMethod(d, [state = d, generation] {
+        if (state->running && state->captureGeneration == generation) state->doCapture();
+    }, Qt::QueuedConnection);
+}
+
+bool DXGICaptureEngine::usesCompatibilityMode() const
+{
+    return !d->useDXGI.load();
 }
 
 QString DXGICaptureEngine::engineName() const

@@ -5,7 +5,7 @@ namespace SnapTray {
 std::function<void(QImage&, qint64, qint64)> recordingFrameFilter(
     const PreviewEditState& state, const QSize& videoSize, const TimelineMap& editTimeline,
     std::shared_ptr<const CursorTimeline> timeline, std::shared_ptr<const KeyTimeline> keyTimeline,
-    std::shared_ptr<const ZoomTrack> preparedZoom, qint64 clipEndMs)
+    std::shared_ptr<const ZoomTrack> preparedZoom, qint64 clipEndMs, double outputFps)
 {
     const QRectF bounds = state.crop.isEmpty() ? QRectF(QPointF(), QSizeF(videoSize)) : QRectF(state.crop);
     const auto availability = CursorEffectAvailability::of(timeline.get());
@@ -14,6 +14,8 @@ std::function<void(QImage&, qint64, qint64)> recordingFrameFilter(
               clipEndMs >= 0 ? clipEndMs : (editTimeline.isEmpty() ? -1 : editTimeline.sourceEndMs()))
         : std::shared_ptr<CursorEffectRenderer>();
     if (cursor && !editTimeline.isEmpty()) cursor->setTimeline(editTimeline);
+    if (cursor) cursor->setLoopBounds(bounds);
+    const bool loopBack = state.cursor.loopBack;
     std::shared_ptr<const ZoomTrack> zoom = std::move(preparedZoom);
     if (!zoom && state.zoom.isActive()) {
         auto built = std::make_shared<ZoomTrack>(state.zoom);
@@ -37,7 +39,8 @@ std::function<void(QImage&, qint64, qint64)> recordingFrameFilter(
     }
     const auto overlays = state.overlays.isEmpty() ? std::shared_ptr<const OverlayTrack>()
         : std::make_shared<const OverlayTrack>(state.overlays);
-    return [timeline, editTimeline, cursor, zoom, redaction, appearance, blurredBackground, keys, overlays, bounds, videoSize](
+    const auto shapes = std::make_shared<const ShapeTrack>(state.shapes);
+    return [shapes, timeline, editTimeline, cursor, zoom, redaction, appearance, blurredBackground, keys, overlays, bounds, videoSize, loopBack, clipEndMs, outputFps](
                QImage& frame, qint64 sourceMs, qint64 sourceEndMs) {
         if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
             frame = frame.convertToFormat(QImage::Format_RGB32);
@@ -58,6 +61,7 @@ std::function<void(QImage&, qint64, qint64)> recordingFrameFilter(
                              bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds, maskEndMs);
         }
         if (frame.isNull()) return;
+        shapes->paint(frame, sourceMs, ShapeSegment::Content, bounds, videoSize);
         // A blurred background comes from the masked picture, before zoom and
         // pointer: nothing a mask covers can show through it.
         const QImage blurSource = blurredBackground
@@ -65,25 +69,14 @@ std::function<void(QImage&, qint64, qint64)> recordingFrameFilter(
         // The frame shows `bounds`; a zoom shows part of it, scaled to fill.
         QRectF shown = bounds;
         if (zoom) {
-            shown = zoom->viewportAt(sourceMs, bounds);
-            if (shown != bounds) {
-                QImage zoomed(frame.size(), frame.format());
-                if (zoomed.isNull()) { frame = {}; return; }
-                QPainter painter(&zoomed);
-                if (!painter.isActive()) { frame = {}; return; }
-                painter.setRenderHint(QPainter::SmoothPixmapTransform);
-                const double sx = frame.width() / bounds.width();
-                const double sy = frame.height() / bounds.height();
-                const QRectF source((shown.x() - bounds.x()) * sx, (shown.y() - bounds.y()) * sy,
-                                    shown.width() * sx, shown.height() * sy);
-                painter.drawImage(QRectF(zoomed.rect()), frame, source);
-                painter.end();
-                frame = zoomed;
-            }
+            shown = zoom->loopViewportAt(sourceMs, bounds, editTimeline, loopBack, clipEndMs);
+            zoom->resample(frame, sourceMs, bounds, editTimeline, loopBack, outputFps, clipEndMs);
         }
+        if (frame.isNull()) return;
         if (cursor) cursor->paint(frame, sourceMs, {shown, videoSize, frame.size()});
         if (keys) keys->paint(frame, sourceMs);
         if (overlays) overlays->paint(frame, sourceMs);
+        shapes->paint(frame, sourceMs, ShapeSegment::Screen, bounds, videoSize);
         if (appearance) frame = appearance->compose(frame, blurSource);
     };
 }

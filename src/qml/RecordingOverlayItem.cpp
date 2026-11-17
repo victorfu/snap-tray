@@ -24,6 +24,7 @@ void RecordingOverlayItem::setBackend(QObject* object)
     if (m_backend) disconnect(m_backend, nullptr, this, nullptr);
     m_backend = backend;
     if (m_backend) {
+        connect(m_backend, &RecordingPreviewBackend::shapesChanged, this, [this] { update(); });
         connect(m_backend, &RecordingPreviewBackend::overlaysChanged, this, [this] { update(); });
         connect(m_backend, &RecordingPreviewBackend::cropRectChanged, this, [this] { update(); });
     }
@@ -49,10 +50,12 @@ void RecordingOverlayItem::setContentRect(const QRectF& rect)
 
 void RecordingOverlayItem::paint(QPainter* painter)
 {
-    if (!m_backend || !m_backend->overlaysAvailable() || m_backend->overlayTrack().isEmpty() || m_contentRect.isEmpty()) {
+    if (!m_backend || !m_backend->overlaysAvailable() || m_contentRect.isEmpty()) {
         return;
     }
     const QSize picture = m_backend->exportContentSize();
     if (picture.isEmpty()) return;
     m_backend->overlayTrack().paint(*painter, m_position, m_contentRect, picture);
+    m_backend->shapeTrack().paint(*painter, m_position, SnapTray::ShapeSegment::Screen,
+        m_contentRect, QRectF(QPointF(), picture), m_backend->videoSize());
 }

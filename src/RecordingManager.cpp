@@ -1037,6 +1037,12 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
             qWarning() << "RecordingManager: Capture engine warning:" << msg;
         });
 
+        connect(m_captureEngine.get(), &ICaptureEngine::compatibilityModeChanged, this,
+                [this](bool active, const QString& detail) {
+            if (m_health) m_health->captureEvent(QStringLiteral("%1 ms: %2").arg(m_elapsedTimer.isValid() ? m_elapsedTimer.elapsed() : 0).arg(detail));
+            m_captureStatus = active ? tr("Screen capture temporarily uses compatibility mode") : QString();
+            emit captureStatusChanged();
+        });
         // Connect capture engine error signal
         connect(m_captureEngine.get(), &ICaptureEngine::stoppedByUser, this, [this] {
             interruptRecording(SnapTray::RecordingStopReason::SystemControl);
@@ -1056,6 +1062,11 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     m_encodingWorker = std::make_unique<EncodingWorker>(nullptr);
     m_health = std::make_shared<SnapTray::RecordingHealth>();
     m_health->reset(m_captureEngine ? m_captureEngine->engineName() : QString(), m_startGeneration);
+    m_captureStatus = m_captureEngine && m_captureEngine->usesCompatibilityMode()
+        ? tr("Screen capture temporarily uses compatibility mode") : QString();
+    emit captureStatusChanged();
+    m_health->captureEvent(result.captureFallbackReason);
+    if (!m_captureStatus.isEmpty()) m_health->captureEvent(QStringLiteral("Capture started in compatibility mode"));
     m_encodingWorker->setHealth(m_health);
     m_healthPolicy.reset();
     m_healthOfferedSeen = 0;
@@ -1151,12 +1162,13 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
                 [this, worker](const SnapTray::CapturedFrame& frame) {
             QMutexLocker lock(&m_durationMutex);
             if (!m_acceptAsyncFrames || !frame.isValid()) return;
+            if (m_health) m_health->captureSourceStats(frame.sourceDroppedFrames, frame.captureCopies);
             // The frame's own capture time, not when this thread got to it.
             const qint64 sourceTimeNs = frame.sourceTimeNs >= 0 ? frame.sourceTimeNs
                                                                 : SnapTray::captureClockNowNs();
-            qint64 timeMs = 0;
-            if (!admitFrameLocked(sourceTimeNs, true, &timeMs)) return;
-            if (worker->enqueueFrame({frame.image, timeMs, 0, frame.nativeBuffer, frame.pixelSize})) ++m_frameCount;
+            qint64 timeMs = 0, timeNs = 0;
+            if (!admitFrameLocked(sourceTimeNs, true, &timeMs, &timeNs)) return;
+            if (worker->enqueueFrame({frame.image, timeMs, 0, frame.nativeBuffer, frame.pixelSize, timeNs})) ++m_frameCount;
         }, Qt::DirectConnection);
     }
 
@@ -1185,6 +1197,23 @@ void RecordingManager::configureAudioCapture()
         m_audioEngine.reset(m_createAudioEngine());
         if (m_audioEngine) {
             const QPointer<IAudioCaptureEngine> configuredEngine(m_audioEngine.get());
+            const auto health = m_health;
+            connect(m_audioEngine.get(), &IAudioCaptureEngine::diagnosticsReady, this,
+                [health](const SnapTray::AudioCaptureDiagnostics& diagnostics) {
+                    if (health) health->setAudioSourceDiagnostics(diagnostics);
+                }, Qt::DirectConnection);
+            connect(m_audioEngine.get(), &IAudioCaptureEngine::startCompleted, this,
+                [this, configuredEngine](bool success) {
+                    if (!configuredEngine || m_audioEngine.get() != configuredEngine.data()) return;
+                    if (success) transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Active);
+                    else {
+                        transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Unavailable);
+                        reportAudioWarning(tr("Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device."));
+                        m_audioEnabled = false;
+                        cleanupAudio();
+                        if (m_controlBar) m_controlBar->setAudioEnabled(false);
+                    }
+                });
             // Connect status signals before configuration because some engines
             // can report a source fallback synchronously from setAudioSource().
             connect(m_audioEngine.get(), &IAudioCaptureEngine::error,
@@ -1419,7 +1448,8 @@ void RecordingManager::startRecordingAfterCountdown()
     if (m_audioEngine) {
         startAudioTracks();
         if (m_audioEngine->start()) {
-            transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Active);
+            if (!m_audioEngine->startsAsynchronously())
+                transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Active);
         } else {
             qWarning() << "RecordingManager: Failed to start audio capture";
             transitionAudioSources(SnapTray::AudioSourceState::Starting,
@@ -1504,8 +1534,8 @@ void RecordingManager::startCaptureTimers()
     }
 
     if (m_captureEngine && m_captureEngine->deliversFrames()) {
-        QMutexLocker lock(&m_durationMutex);
-        m_acceptAsyncFrames = true;
+        { QMutexLocker lock(&m_durationMutex); m_acceptAsyncFrames = true; }
+        m_captureEngine->requestFrame();
     } else {
         // Polling backends retain the existing GUI-thread path.
         m_captureTimer = std::make_unique<QTimer>(nullptr);
@@ -1549,16 +1579,16 @@ void RecordingManager::captureFrame()
     const SnapTray::CapturedFrame frame = captureEngine->captureNativeFrame();
 
     if (frame.isValid()) {
-        qint64 timeMs = 0;
+        qint64 timeMs = 0, timeNs = 0;
         {
             QMutexLocker locker(&m_durationMutex);
             // The capture timer already paces polling.
-            if (!admitFrameLocked(sourceTimeNs, false, &timeMs)) return;
+            if (!admitFrameLocked(sourceTimeNs, false, &timeMs, &timeNs)) return;
         }
 
         // Enqueue frame for encoding (non-blocking)
         // Watermark is applied by the worker thread
-        EncodingWorker::FrameData frameData{frame.image, timeMs, 0, frame.nativeBuffer, frame.pixelSize};
+        EncodingWorker::FrameData frameData{frame.image, timeMs, 0, frame.nativeBuffer, frame.pixelSize, timeNs};
         if (encodingWorker->enqueueFrame(frameData)) ++m_frameCount;
     }
 }
@@ -1760,6 +1790,7 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
     setState(State::Previewing);
     // Recorded as the high-quality intermediate (or unknown, from an older
     // manifest): Save still checks the output quality instead of moving it.
+    m_previewIsNewRecording = false;
     emit previewRequested(videoPath, RecordingSettingsManager::instance().outputFormat(), m_session.intermediate);
     return true;
 }
@@ -1771,6 +1802,7 @@ bool RecordingManager::isAllowedSaveDestination(const QString& path)
 
 bool RecordingManager::openProjectRecording(const QString& videoPath)
 {
+    m_previewIsNewRecording = false;
     if (m_state != State::Idle || !QFileInfo::exists(videoPath)) {
         return false;
     }
@@ -1939,16 +1971,17 @@ void RecordingManager::checkHealth(qint64 nowMs)
     }
 }
 
-bool RecordingManager::admitFrameLocked(qint64 sourceTimeNs, bool paced, qint64* encoderTimeMs)
+bool RecordingManager::admitFrameLocked(qint64 sourceTimeNs, bool paced, qint64* encoderTimeMs, qint64* encoderTimeNs)
 {
     qint64 recordingTimeNs = 0;
     if (m_sessionClock.admit(sourceTimeNs, &recordingTimeNs) != SnapTray::SessionClock::Admission::Accepted) {
         return false;
     }
-    if (paced && m_framePacer.onFrame(recordingTimeNs) != SnapTray::FramePacer::Decision::Emit) {
+    if (paced && m_framePacer.onFrame(recordingTimeNs, m_captureEngine && m_captureEngine->allowsSparseFrames()) != SnapTray::FramePacer::Decision::Emit) {
         return false;
     }
     *encoderTimeMs = SnapTray::SessionClock::toEncoderMs(recordingTimeNs);
+    if (encoderTimeNs) *encoderTimeNs = recordingTimeNs;
     return true;
 }
 
@@ -2053,8 +2086,8 @@ void RecordingManager::resumeRecording()
         const quint64 generation = m_startGeneration;
         QTimer::singleShot(kOverlayRenderDelay, this, [this, generation] {
             if (generation != m_startGeneration || m_state != State::Recording) return;
-            QMutexLocker lock(&m_durationMutex);
-            m_acceptAsyncFrames = true;
+            { QMutexLocker lock(&m_durationMutex); m_acceptAsyncFrames = true; }
+            if (m_captureEngine) m_captureEngine->requestFrame();
         });
     }
     // Resume frame capture timer
@@ -2199,6 +2232,8 @@ void RecordingManager::stopFrameCapture()
             m_session.recordedMs = qMax<qint64>(0, raw - m_pausedDuration - currentPause);
         }
         m_acceptAsyncFrames = false;
+        if (m_encodingWorker && m_sessionClock.isStarted())
+            m_encodingWorker->setEndTimestampNs(m_sessionClock.recordingTimeAt(SnapTray::captureClockNowNs()));
         if (m_health && m_sessionClock.isStarted()) {
             m_health->setClockCounters(clockCountersLocked());
         }
@@ -2345,6 +2380,7 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
             QMetaObject::invokeMethod(this, [this, tempPath, defaultOutputFormat, recordedAsIntermediate]() {
                 m_tempVideoPath = tempPath;
                 setState(State::Previewing);
+                m_previewIsNewRecording = true;
                 emit previewRequested(tempPath, defaultOutputFormat, recordedAsIntermediate);
             }, Qt::QueuedConnection);
         } else {

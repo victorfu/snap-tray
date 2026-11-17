@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-11-13
+last_modified_at: 2026-11-17
 layout: docs
 title: Recording
 seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS, Windows and Linux X11"
@@ -15,7 +15,7 @@ Recording is available on macOS, Windows, and Linux X11 builds with recording
 enabled. Linux uses the system FFmpeg libraries and PulseAudio (or PipeWire's
 PulseAudio compatibility service).
 
-On Windows, the optional Windows Graphics Capture backend no longer counts a new picture arriving after a repeated still frame as a duplicate because of its timestamp. The selected frame-rate limit still applies.
+On Windows, Windows Graphics Capture is now the default for settings that have not explicitly selected a backend. If it is unavailable, SnapTray uses DXGI. Both paths keep still frames at a low cadence and retain capture timestamps; the selected frame rate is a maximum, not a requirement to encode an unchanged desktop repeatedly. Temporary DXGI compatibility mode and recovery appear in the tray status and recording diagnostics.
 
 ## Recording entry points
 
@@ -105,7 +105,7 @@ The timeline can do more than trim the ends. In the preview:
 
 The preview plays the edit: cut parts are skipped and each part plays at its own speed. The time under the video shows the exported length. Cuts and speeds can be undone like other edits, and **Reset Crop and Trim** removes them.
 
-The export joins the kept parts in order. Pointer smoothing, motion blur and click highlights never reach across a cut, so a click in a cut part never shows. Audio is kept for parts at normal speed and stays in sync at every seam; **parts at another speed are silent** in this first version. Cutting only the first or last part works like a trim. Cuts and speed changes are available for MP4, GIF and WebP on all supported recording platforms.
+The export joins the kept parts in order. Pointer smoothing, motion blur and click highlights never reach across a cut, so a click in a cut part never shows. Audio stays in sync at every seam. **Keep sound** is on by default and preserves pitch at 0.5×, 1×, 1.5×, 2× and 4×. Turn it off to silence a sped-up or slowed-down part. The shared audio processor mixes recorded and imported tracks before changing speed. Preview playback supports 0.25×–2×; combinations outside that range are labeled **approximate**, while export uses the exact clip speed. Cutting only the first or last part works like a trim. Cuts and speed changes are available for MP4, GIF and WebP on all supported recording platforms.
 
 ## Disk space
 
@@ -159,6 +159,14 @@ When a recording has this record, open **Pointer** in the inspector's Project se
 
 Your last choices are remembered (hidden ranges belong to one recording and are not), and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. Pointer effects are available for MP4, GIF and WebP on all supported recording platforms.
 
+### Pointer cleanup and looping
+
+**Pointer style** offers **Recorded** (the default) and **Crisp**. Crisp redraws recognized standard pointers from SnapTray's own vector artwork when enlarged beyond 1.25×; custom or unrecognized pointers keep their recorded bitmap and hotspot.
+
+**Steady pointer shape** hides shape changes shorter than 250 ms, except near a click. **Straighten path** (Off, Low, High) reduces small bends before smoothing; it requires smoothing and preserves clicks, shape boundaries and dragging. Both options are off by default and restart at each kept clip.
+
+For GIF and WebP, **Loop back** returns the camera and pointer toward the first frame during the final 700 ms, then holds for 120 ms. It stays within the last kept clip, so a short clip may use a shorter return. The pointer returns only if both ends are visible inside the crop; hidden ranges and **Still ending** take precedence. This setting does not affect MP4.
+
 ### Shortcut hints
 
 SnapTray can show the shortcuts you pressed while recording, for tutorials ("Ctrl + C", "Ctrl + Shift + T"). Keys are **never recorded unless you switch it on** before the recording: in the setup shown before recording (**Record shortcut keys**), or in Settings > Recording (**Record keys**). While keys are recorded, the tray status says so.
@@ -175,10 +183,14 @@ In the preview, **Keys** in Project settings (enabled when the recording has key
 Full-screen recordings often make buttons and text small once shared. The preview can zoom in on parts of the recording:
 
 - **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux, Windows and macOS); the camera follows actions spread across the screen while retaining magnification. Running it again replaces the automatic zooms but keeps the ones you added or changed.
+- Auto Zoom ignores clicks in deleted clips and starts a separate group at every cut. Lead-in and hold times follow the exported speed. Clicking a text field keeps the view close while the pointer stays there (up to six seconds); menu interactions can keep the next click in the same group. When keys were recorded, continuous typing can extend a hold up to fifteen seconds. **All keys** provides more typing information than **Shortcuts only**, but the recording privacy defaults are unchanged.
+- **Automatically add zooms to new recordings**, in Settings > Recording and the recording setup, is off by default. When enabled, the first preview of a new recording adds zooms using its initial crop. Undo removes them in one step; reopening a project or recovered recording never applies them again. The notice can turn off the setting for future recordings while keeping the current zooms. Applying effects requires re-encoding on export.
 - **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
 - Zooms appear in the Zoom lane. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less motion** makes all zooms smaller and slower without direct pans, **Zoom effects** turns them all off without deleting them, and **Delete zoom** removes one.
 
-Zooming in and out changes the size evenly from start to finish, and a pan between zooms far apart pulls back a little on the way so you can see where it goes. The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Zooms are available for MP4, GIF and WebP.
+Zooming in and out changes the size evenly from start to finish, and a pan between zooms far apart pulls back a little on the way so you can see where it goes. The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Recorded keys can extend an existing click-generated zoom while you type; they never create a zoom by themselves. **All keys** provides more timing information than **Shortcuts only**, without changing the default privacy setting. Scrolling does not trigger automatic zooms. Zooms are available for MP4, GIF and WebP.
+
+**Camera motion blur** offers Off, Low and High. It softens camera motion using nearby output times inside the same kept clip. Masks are applied first, while the pointer, keys and screen overlays stay sharp. **Less motion** disables camera blur. The default is Off.
 
 ### Follow cursor during zoom
 
@@ -208,6 +220,12 @@ Masks are burned into the exported MP4, GIF or WebP, and the preview shows them 
 
 Overlays sit on the exported picture: they keep their place through a crop and do not zoom with it, and masks never cover them. An image is read once when you add it, so deleting or moving the file afterwards does not affect the export. Overlays can be undone like other edits; **Reset Crop and Trim** keeps them. They are drawn for MP4, GIF and WebP. The font family is saved with editable projects; if it is unavailable on another computer, Qt uses a fallback font. The watermark from Settings is still added while recording, as before; overlays do not replace it.
 
+### Shapes and numbered steps
+
+Choose Arrow, Rectangle, Ellipse, Line, Highlight or Step number from **Add effect**, then drag on the preview. Select the shape to move it, adjust its endpoints, color, line width, arrow style or number, and set its time range and fades. A completed drag is one undo step; Escape cancels an unfinished drag. Shapes have their own timeline lanes and can overlap.
+
+**Content — follows zoom** anchors a shape to source pixels, so crop and camera motion affect it. **Screen — fixed position** keeps it over the final picture. Changing coordinate space preserves the shape's current visible placement. Content shapes are drawn after masks and before camera effects; screen shapes are drawn with the other overlays. Both appear in MP4, GIF and WebP exports and are kept in editable projects.
+
 ### A frame around the video
 
 **Canvas** in the preview puts the exported video on a background, like Beautify does for screenshots. The first time it starts from your screenshot Beautify look (switched off); after that, your last frame for recordings is remembered. It can be undone like other edits, and **Reset Crop and Trim** keeps it.
@@ -230,6 +248,10 @@ On Linux, recordings are written in fragments, so an interrupted recording can u
 Normally the recording is deleted once its file is saved. Turn on **Keep editable projects** in Settings > Recording (off by default) to keep it with your edits instead: crop, trim, cut parts and speeds, pointer, zoom, masks, frame, shortcut hints, text and images, the audio mix, and the export format and MP4 options. **Recording Library...** in the tray menu opens the **Recordings** section of the [Library](/docs/region-capture/#library), which lists the kept projects with a thumbnail, length, size, date and the file saved from each. **Open in Editor** brings one back into the preview with every edit as you left it; saving again exports a new file and updates the project. Closing a project without saving keeps it as it was last saved. Projects are kept when you save from the preview, so the setting needs **Show preview**. An active image background must be readable and is copied into the project, so moving or deleting the original image does not change the saved project. A previously selected image is not required when the image background is disabled. If a project cannot be kept or updated (for example, the disk is full), the saved file stays and the recording stays open in the preview, so nothing is lost; save again to retry. Saving a new project uses hard links on supported filesystems to avoid copying the recording. Across volumes or on filesystems without hard links, it temporarily needs space for another copy. Interrupted cleanup of a failed save is retried the next time a new project is saved. If the message says the image could not be read, select a different background image or disable the image background before retrying. Failed project updates retain the previous saved edits and background. Saving into the projects' own folder is refused.
 
 A project holds the **full screen recording**, including anything you blurred, masked or cropped out, plus its pointer, keys and separate audio tracks, so it uses disk space and contains what the saved file leaves out. It stays on this computer in SnapTray's app data folder and is never uploaded. **Delete Project...** in the Library asks first, then removes a project (the file you saved from it stays). The Recordings section repeats that projects keep the full recording, and how long unchanged ones are kept, and **Delete projects not changed for** removes old ones automatically after 7, 30 or 90 days. Projects are separate from recordings waiting for recovery; neither one ever removes the other's files.
+
+Projects retain one previous valid manifest as `manifest.prev.json`. If the current manifest is missing or corrupt, the Library opens the previous saved edits and labels the recovery. Read-permission or other I/O failures do not trigger a fallback. If both copies are unusable, the folder remains visible with its size and date; you can show or delete it, or open its available recording as a separate project without edits. Automatic cleanup includes unreadable projects and protects the currently open project.
+
+The backup includes embedded overlay images, so that portion of a project's storage can double. The previous recipe's background image is also kept until it is no longer needed by either manifest.
 
 ## When recording can't keep up
 
@@ -264,6 +286,12 @@ With MP4 selected, the **Export…** panel sets the exported file, with its size
 
 The estimate is the target bitrate over the exported length, so the real file is usually a little smaller. Your last choices are remembered. Choices that change nothing for a recording (for example 1080p for a 720p recording) keep an unedited recording on the fast path, saved without re-encoding. Pointer effects, zooms and masks are drawn on the full-size picture before it is scaled, so they stay in place in a smaller video. Size, frame rate and quality options are available on macOS, Windows and Linux. Previously saved HEVC export choices use H.264 on Windows.
 
+### GIF and WebP export options
+
+GIF and WebP remember their own **Size**, **Frame rate**, **Quality** and **Loop forever** settings. Keep the original dimensions, limit the longest edge to 1280/960/640/480 pixels, or enter a custom width; exports never enlarge the picture. Frame rate can follow the source or use 30/20/15/10 fps. **Smaller file (slower)** enables repeated-frame optimization. GIF holds are bounded to five seconds per encoded frame, preserving the overall duration.
+
+The actual file size is shown after export, with sharing advice above 10 MB for GIF and 25 MB for WebP. These controls apply to the editor. Quick mode continues to record directly at the configured recording dimensions, frame rate and quality. Both formats are silent.
+
 ## Audio options
 
 Audio capture is available for MP4 recordings when supported by the current platform and source:
@@ -283,7 +311,15 @@ In the preview, **Audio** (MP4) sets each one for the export:
 - **Microphone** and **System Audio** volume in 6 dB steps from −24 to +12 dB, and **Mute** for either.
 - **Reduce Noise** turns down hiss, hum and room noise between words on the microphone (a high-pass filter and a soft noise gate). It uses very little processor time.
 
-The preview plays the new mix as you change it. With everything at 0 dB and nothing muted, the recording is saved as recorded. A changed mix re-encodes the sound, and stays in sync with the video, cuts and speed changes included (parts at another speed stay silent). The two tracks are deleted with the temporary recording, and crash recovery keeps them with the recording it recovers. Recordings with only one source, or made before this, have just the mixed sound; the Audio category explains why separate-track controls are unavailable. GIF and WebP have no sound, so Audio is available only with MP4. Separate tracks are supported on macOS, Windows and Linux. On Windows the new mix can be previewed for recordings with separate tracks; playback of older recordings with only a mixed track remains unchanged.
+The preview plays the new mix as you change it. With everything at 0 dB and nothing muted, the recording is saved as recorded. A changed mix re-encodes the sound, and stays in sync with the video, cuts and speed changes included (with pitch preserved when **Keep sound** is on). The two tracks are deleted with the temporary recording, and crash recovery keeps them with the recording it recovers. Recordings with only one source, or made before this, have just the mixed sound; the Audio category explains why separate-track controls are unavailable. GIF and WebP have no sound, so Audio is available only with MP4. Separate tracks are supported on macOS, Windows and Linux. Older recordings with only a mixed track prepare a local audio cache when imported audio or clip speed changes need the shared preview mixer.
+
+### Add music or narration
+
+With MP4 selected, **Add Audio…** imports an MP3, M4A/AAC, WAV, FLAC or Ogg file when the platform decoder supports it. Unsupported files show an error without adding an empty clip. Each file is limited to 30 minutes and 512 MB; a project can contain up to 128 clips and 4 GB of imported PCM assets.
+
+The new clip starts at the playhead. Move or resize it on the audio lane, or set exact start/end times in the inspector. Adjust volume, source offset, fade in/out and **Loop audio** there. Multiple clips mix with the recording and follow cuts and speed changes. Brief fades soften loop boundaries. GIF/WebP keep the clip edits but cannot play or export them.
+
+Imported files are decoded into an owned local sidecar, so moving or deleting the original file does not break the recording. Editable projects and crash recovery keep these assets; deleting a clip is undoable, so its cached data stays until the project or recording is discarded. Automatic background-music ducking is not included.
 
 ### Check audio before you record
 
@@ -296,6 +332,8 @@ If a saved microphone is disconnected, it is listed as "Not connected" and recor
 ### Audio status while recording
 
 The tray or menu bar tooltip lists the microphone and system audio separately for the whole recording: Recording, Starting, Off, Permission denied, Device not found, Unavailable, or Not supported by GIF/WebP. If audio falls back during a recording (for example to system audio only), the tooltip keeps showing it after the notification is gone.
+
+On Windows, WASAPI starts asynchronously and uses event notifications with a timeout for silent sources. A restored source fades in over 5 ms. Invalid packet timestamps are appended contiguously for up to two seconds before a recorded realignment. **Copy Recording Diagnostics** includes per-source gaps, trimmed frames, timestamp errors and realignments, without audio content. Changing the system's default output device during a recording does not automatically move capture to the new device.
 
 ## Quality tuning
 

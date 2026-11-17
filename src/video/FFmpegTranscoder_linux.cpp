@@ -1,3 +1,4 @@
+#include "recording/AudioSegmentReader.h"
 #include "FFmpegMedia.h"
 #include "VideoTranscoderFaultInjection.h"
 #include <QDebug>
@@ -35,7 +36,7 @@ public:
     }
     VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback& progress) override {
         // Joined parts (#185) and remixed tracks (#189) both rebuild the audio.
-        if (!request.segments.empty() || !request.audioTracksVideoPath.isEmpty()) return transcodeSegments(request, progress);
+        if (!request.segments.empty() || !request.audioTracksVideoPath.isEmpty() || !request.audioClips.isEmpty()) return transcodeSegments(request, progress);
         VideoTranscodeResult result;
         auto fail = [&](const QString& message) { result.audioCopied = false; result.errorMessage = message; qWarning() << "FFmpeg export:" << message; return result; };
         if (sameFile(request.inputPath, request.outputPath)) return fail(QStringLiteral("Input and output paths must identify different files."));
@@ -310,19 +311,20 @@ private:
         const qint64 interval = qMax<qint64>(1, qRound(1000.0 / fps));
         const double exactOutInterval = 1000.0 / fps;
 
-        // Audio: only when a part at normal speed reaches the source audio
-        // (or, remixing separate tracks, any part at normal speed).
+        // Audio is present when any audible part reaches the source (or separate tracks).
         std::unique_ptr<SnapTray::AudioTrackMixer> tracks;
-        if (!request.audioTracksVideoPath.isEmpty()) {
-            tracks = std::make_unique<SnapTray::AudioTrackMixer>(request.audioTracksVideoPath, request.audioMix);
-            if (!tracks->isValid()) return fail(QStringLiteral("Cannot read the separate audio tracks."));
+        if (!request.audioTracksVideoPath.isEmpty() || !request.audioClips.isEmpty()) {
+            tracks = std::make_unique<SnapTray::AudioTrackMixer>(request.audioTracksVideoPath.isEmpty() ? request.inputPath : request.audioTracksVideoPath, request.audioMix);
+            if (!request.audioTracksVideoPath.isEmpty() && !tracks->hasSeparateTracks())
+                return fail(QStringLiteral("Cannot read the separate audio tracks."));
+            if (!tracks->setClips(request.audioClips)) return fail(QStringLiteral("Cannot read the imported audio clips."));
         }
         bool withAudio = false;
         if (tracks) {
-            for (const auto& segment : segments) withAudio = withAudio || qFuzzyCompare(segment.speed, 1.0);
+            for (const auto& segment : segments) withAudio = withAudio || qFuzzyCompare(segment.speed, 1.0) || segment.keepSound;
         } else if (source.hasAudio) {
             for (const auto& segment : segments) {
-                withAudio = withAudio || (qFuzzyCompare(segment.speed, 1.0)
+                withAudio = withAudio || ((qFuzzyCompare(segment.speed, 1.0) || segment.keepSound)
                     && qMin(segment.endMs, source.audioEndMs) - qMax(segment.startMs, source.audioStartMs) > 0);
             }
         }
@@ -337,15 +339,21 @@ private:
         constexpr int kAudioChunk = 4800; // 100 ms
         AudioReader audio;
         if (withAudio) {
-            if (!tracks && !audio.load(request.inputPath))
+            if ((!tracks || !tracks->hasSeparateTracks()) && source.hasAudio && !audio.load(request.inputPath))
                 return fail(QStringLiteral("Cannot read source audio: %1").arg(audio.error()));
             encoder.setAudioFormat(kAudioRate, kAudioChannels, kAudioBits);
         }
+        if (tracks && !tracks->hasSeparateTracks() && source.hasAudio)
+            tracks->setFallback([&audio](qint64 start, int count) { return audio.read(start, count); });
         if (!encoder.start(staged, outputSize, fps)) return fail(encoder.lastError());
         if (withAudio && !encoder.isAudioEnabled()) return fail(QStringLiteral("Cannot encode audio."));
 
         // Audio follows the video as it is written, a part at a time.
         qint64 audioOutFrame = 0;
+        int readerPart = -1;
+        SnapTray::AudioSegmentReader audioReader([&](qint64 start, int count) {
+            return tracks ? tracks->read(start, count) : audio.read(start, count);
+        });
         const qint64 audioEndFrame = outDuration * kAudioRate / 1000;
         auto writeAudioUntil = [&](qint64 outMs) -> bool {
             if (!withAudio) return true;
@@ -357,15 +365,9 @@ private:
                 const qint64 partEnd = qMin(until, outStarts[index + 1] * kAudioRate / 1000);
                 const int count = int(qMin<qint64>(kAudioChunk, partEnd - audioOutFrame));
                 if (count <= 0) break;
-                QByteArray pcm;
-                if (qFuzzyCompare(segments[index].speed, 1.0)) {
-                    const qint64 sourceFrame = segments[index].startMs * kAudioRate / 1000
-                        + (audioOutFrame - outStarts[index] * kAudioRate / 1000);
-                    pcm = tracks ? tracks->read(sourceFrame, count) : audio.read(sourceFrame, count);
-                    if (pcm.isEmpty()) return false;
-                } else {
-                    pcm = QByteArray(count * kAudioChannels * (kAudioBits / 8), '\0'); // a sped-up part is silent
-                }
+                if (readerPart != int(index)) { audioReader.begin(segments[index]); readerPart = int(index); }
+                const QByteArray pcm = audioReader.read(count);
+                if (pcm.size() != count * SnapTray::AudioTracks::kBytesPerFrame) return false;
                 encoder.writeAudioSamples(pcm, audioOutFrame);
                 if (!encoder.isRunning()) return false;
                 audioOutFrame += count;

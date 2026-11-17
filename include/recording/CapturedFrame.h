@@ -39,6 +39,8 @@ struct CapturedFrame {
     quint64 sequence = 0;      // per capture session, increasing
     quint64 generation = 0;    // capture session that produced it
     QSize pixelSize;           // physical pixels
+    quint64 sourceDroppedFrames = 0; // updates coalesced before capture
+    quint64 captureCopies = 0;       // desktop image copies, excludes keep-alives
 
     bool isValid() const { return !image.isNull() || nativeBuffer != nullptr; }
 };

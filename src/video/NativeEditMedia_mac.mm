@@ -1,4 +1,5 @@
 #include "video/NativeEditExport.h"
+#include "video/AudioFileDecoder.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
@@ -258,3 +259,45 @@ bool nativeHevcExportAvailable()
     return available;
 }
 } // namespace SnapTray
+
+namespace SnapTray {
+bool decodeAudioFile(const QString& path, const AudioPcmSink& sink, QString& error)
+{
+    @autoreleasepool {
+        AVURLAsset* asset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:path.toNSString()] options:nil];
+        AVAssetTrack* track = [asset tracksWithMediaType:AVMediaTypeAudio].firstObject;
+        if (!track) { error = QStringLiteral("AVFoundation cannot decode an audio track in this file."); return false; }
+        NSError* nativeError = nil;
+        AVAssetReader* reader = [[AVAssetReader alloc] initWithAsset:asset error:&nativeError];
+        AVAssetReaderAudioMixOutput* output = [AVAssetReaderAudioMixOutput assetReaderAudioMixOutputWithAudioTracks:@[track]
+            audioSettings:@{AVFormatIDKey: @(kAudioFormatLinearPCM), AVSampleRateKey: @48000,
+                AVNumberOfChannelsKey: @2, AVLinearPCMBitDepthKey: @16, AVLinearPCMIsFloatKey: @NO,
+                AVLinearPCMIsBigEndianKey: @NO, AVLinearPCMIsNonInterleaved: @NO}];
+        if (!reader || ![reader canAddOutput:output]) {
+            error = QStringLiteral("AVFoundation does not support this audio format."); return false;
+        }
+        [reader addOutput:output];
+        if (![reader startReading]) { error = QString::fromNSString(reader.error.localizedDescription); return false; }
+        while (CMSampleBufferRef sample = [output copyNextSampleBuffer]) {
+            CMBlockBufferRef block = CMSampleBufferGetDataBuffer(sample);
+            const size_t size = block ? CMBlockBufferGetDataLength(block) : 0;
+            QByteArray pcm(qsizetype(size), Qt::Uninitialized);
+            const OSStatus status = block ? CMBlockBufferCopyDataBytes(block, 0, size, pcm.data()) : -1;
+            const CMTime timestamp = CMSampleBufferGetPresentationTimeStamp(sample);
+            const std::optional<qint64> position = CMTIME_IS_NUMERIC(timestamp)
+                ? std::optional<qint64>(CMTimeConvertScale(timestamp, 48000, kCMTimeRoundingMethod_RoundHalfAwayFromZero).value)
+                : std::nullopt;
+            CFRelease(sample);
+            if (status != noErr || (!pcm.isEmpty() && !sink(pcm, position))) {
+                [reader cancelReading];
+                if (error.isEmpty()) error = QStringLiteral("Cannot read decoded audio.");
+                return false;
+            }
+        }
+        if (reader.status != AVAssetReaderStatusCompleted) {
+            error = QString::fromNSString(reader.error.localizedDescription); return false;
+        }
+        return true;
+    }
+}
+}

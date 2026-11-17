@@ -3354,6 +3354,10 @@ Size: %2</source>
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>キー表示を保存できませんでした。キー表示なしで録画を続行します。</translation>
     </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>画面キャプチャは一時的に互換モードを使用しています</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5422,6 +5426,262 @@ Size: %2</source>
         <source>Press bounce</source>
         <translation>押したときのバウンス</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>%1 個のズームを自動追加しました</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>元に戻す</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>今後は自動追加しない</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>閉じる</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>矢印</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>四角形</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>楕円</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>線</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>ハイライト</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>ステップ番号</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>図形</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>音声クリップ</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>プレビュー速度（近似）</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>プレビューは 0.25×–2× に制限されます。書き出しでは正確なクリップ速度を使用し、音程を維持します。</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>プレビュー上をドラッグして図形を描画</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>音声を追加…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>音楽やナレーションを読み込む（最大 30 分、512 MB）</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF と WebP に音声は含まれません。音声を追加するには MP4 を選択してください。</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>図形</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>音声クリップ %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>書き出したファイルでのこのクリップの再生速度</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>音声を保持</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>クリップの速度を変更しても元の音程を維持</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>ポインターのスタイル</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>鮮明モードは拡大時に認識済みの標準ポインターを再描画します。カスタムポインターは録画時の画像を保持します</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>録画時の画像</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>鮮明</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>パスを直線化</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>平滑化の前に小さな曲がりを減らします。クリックとドラッグの位置は保持されます。</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>先頭に戻る</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>先頭への復帰は GIF と WebP の書き出しで利用できます</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>ポインターとカメラを先頭に戻します。ポインターは両端が切り抜き内に表示されている場合のみ戻ります。</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>ポインターの形状を安定化</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>クリック付近を除き、一時的な形状変化を非表示にします</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF と WebP に音声は含まれません。音声クリップを編集するには MP4 を選択してください。</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>音量</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>音声をループ</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>クリップの範囲を満たすまで音声ファイルを繰り返します</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>ソースのオフセット（ms）</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>フェードイン（ms）</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>フェードアウト（ms）</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>音声の開始</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>音声の終了</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>音声クリップを削除</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>座標空間</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>コンテンツ — ズームに追従</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>画面 — 固定位置</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>線の幅</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>矢印のスタイル</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>塗りつぶし矢印</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>輪郭矢印</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>開いた矢印</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>両端</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>両端、輪郭</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>図形の開始</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>図形の終了</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>図形を削除</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>カスタム幅</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>長辺を制限するか、幅を指定します。画像は拡大されません。</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>無限ループ</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>小さいファイル（低速）</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>これらの設定はエディターに適用されます。クイックモードでは録画サイズとフレームレートを直接使用します。</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>カメラのモーションブラー</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>ポインターとオーバーレイの鮮明さを保ちながら、カメラの動きをぼかします</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5621,6 +5881,78 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>%1 に保存しましたが、録画を編集可能なプロジェクトとして保持できませんでした。ここでまだ開いています。もう一度保存するか、閉じて破棄してください。</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>実際のファイルサイズは書き出し後に表示されます。</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>書き出したファイル：%1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — 25 MB 超。共有するにはサイズかフレームレートを下げてください。</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — 10 MB 超。共有するにはサイズかフレームレートを下げてください。</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>音声プレビューを準備中…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>読み込んだ音声の補助ファイルが見つからないか破損しています。</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>記録されたクリックデータがありません。</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>切り抜きと保持したクリップ内に表示可能なクリックがありません。</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>追加されたズーム：%1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>提案されたズームはすべて追加または変更したズームと重なっています。</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>推奨倍率が小さすぎるため、ズームを追加できません。</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>音声を追加</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>音声ファイル (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;すべてのファイル (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>録画には最大 128 個の音声クリップを含められます。</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>音声を読み込み中…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>クラッシュ復旧用に音声の編集を保存できませんでした。</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>音声プレビューを準備できません：%1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>音声を読み込めません：%1</translation>
     </message>
 </context>
 <context>
@@ -6076,6 +6408,14 @@ GIF録画では音声はサポートされていません。</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>画面録画の開始方法、録画する内容、停止したときの動作。</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>新しい録画にズームを自動追加</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>エディターを開くと、記録されたクリックを拡大します。1 回の操作で元に戻せます。</translation>
     </message>
 </context>
 <context>
@@ -6605,6 +6945,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>範囲だけを録画します。</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>ズームを自動追加</translation>
     </message>
 </context>
 <context>
@@ -8040,6 +8384,40 @@ It may be in use by another application.</source>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>出力：%1 × %2 ピクセル</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>読み込めないプロジェクト</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>編集なしで録画を開く、フォルダーを表示する、または削除します。</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>プロジェクトのフォルダーを表示するか削除します。</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>前回の保存から復元しました</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>読み込めないプロジェクト</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>プレビューで開いています</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>前回の保存から復元しました</translation>
     </message>
 </context>
 </TS>

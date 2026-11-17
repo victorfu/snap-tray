@@ -16,6 +16,17 @@
 // the segments and the time, so preview, seek and export always agree.
 namespace SnapTray {
 
+enum class AutoZoomInteractionKind { DoubleClick, Selection, Menu, Field, Click };
+// Distances are normalized by the crop's short side; durations are output ms.
+struct AutoZoomInteractionMetrics {
+    double previousPressMs = -1, previousPressDistance = 0;
+    double heldMs = 0;
+    QPointF drag;
+    double downDistance = 0, pathX = 0, pathY = 0, maxDistance = 0;
+    int samples = 0;
+};
+AutoZoomInteractionKind classifyAutoZoomInteraction(const AutoZoomInteractionMetrics& metrics);
+
 struct ZoomSegment {
     qint64 startMs = 0; // fully zoomed from here...
     qint64 endMs = 0;   // ...to here (source time); transitions lie outside
@@ -35,6 +46,7 @@ struct ZoomSegment {
 
 class ZoomTrack {
 public:
+    enum class MotionBlur { Off, Low, High };
     static constexpr double kMinScale = 1.0;
     static constexpr double kMaxScale = 4.0;
     static constexpr double kReducedMotionMaxScale = 1.5;
@@ -45,6 +57,9 @@ public:
     // never cut from one frame to the next.
     static constexpr qint64 kMinBlendMs = 300;
 
+    MotionBlur motionBlur = MotionBlur::Off;
+    static constexpr double kShutterFraction = 0.5;
+    static constexpr double kBlurMinPixels = 1.5;
     bool enabled = true;
     bool reduceMotion = false; // gentler: smaller zoom, slower transitions, no direct pans
 
@@ -62,6 +77,13 @@ public:
     // The part of `bounds` (the crop, or the whole frame, in source pixels)
     // shown at sourceMs. Always inside bounds, with bounds' aspect ratio.
     QRectF viewportAt(qint64 sourceMs, const QRectF& bounds) const;
+    QRectF loopViewportAt(qint64 sourceMs, const QRectF& bounds, const TimelineMap& timeline,
+                          bool loopBack, qint64 clipEndMs = -1) const;
+
+    // Resamples already masked/cropped source pixels; pointers and overlays
+    // are drawn afterwards. The output interval defines the shutter.
+    void resample(QImage& frame, qint64 sourceMs, const QRectF& bounds, const TimelineMap& timeline,
+                  bool loopBack = false, double outputFps = 30.0, qint64 clipEndMs = -1) const;
 
     // Derived data only: rebuilt when geometry, cursor settings or edits change.
     void prepareFollow(const CursorTimeline& cursor, const CursorEffectSettings& settings,
@@ -85,12 +107,21 @@ struct AutoZoomOptions {
     QRectF bounds;          // crop or whole frame, source pixels
     qint64 durationMs = 0;  // recording length (segments are clamped to it)
     double maxScale = 2.0;  // never upscale the picture more than this
+    TimelineMap timeline;
+    std::vector<qint64> keyTimes; // source times only, no key contents
 };
 
 // Zoom segments from clicks and drags in the pointer timeline: nearby
 // interactions are grouped into following segments, and short gaps merged
 // so the view does not pump in and out. Hidden or off-frame activity
 // is ignored. Empty without clicks.
+struct AutoZoomResult {
+    enum class Reason { Added, NoClickData, NoVisibleInteractions, NoFreeSlots, InsufficientScale };
+    std::vector<ZoomSegment> segments;
+    Reason reason = Reason::NoVisibleInteractions;
+};
+AutoZoomResult generateAutoZoomResult(const CursorTimeline& timeline, const AutoZoomOptions& options);
+
 std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const AutoZoomOptions& options);
 
 } // namespace SnapTray

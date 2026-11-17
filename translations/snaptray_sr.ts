@@ -3356,6 +3356,10 @@ Size: %2</source>
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Није могуће сачувати приказ тастера. Снимање ће се наставити без њега.</translation>
     </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Снимање екрана привремено користи режим компатибилности</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5430,6 +5434,262 @@ Size: %2</source>
         <source>Press bounce</source>
         <translation>Одскок при притиску</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>Аутоматски је додато %1 увећања</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Опозови</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Немој поново аутоматски додавати</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Затвори</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Стрелица</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Правоугаоник</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Елипса</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Линија</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Истицање</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Број корака</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Облик</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Аудио-клип</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Брзина прегледа (приближна)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Преглед је ограничен на 0,25×–2×. Извоз користи тачну брзину клипа и чува висину тона.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Превуците по прегледу да нацртате овај облик</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Додај звук…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Увези музику или нарацију (до 30 минута и 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF и WebP не садрже звук. Изаберите MP4 да додате звук.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Облици</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Аудио-клип %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Брзина репродукције овог клипа у извезеној датотеци</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Задржи звук</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Задржи изворну висину тона при промени брзине клипа</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Стил показивача</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Оштро поново исцртава препознате стандардне показиваче при увећању; прилагођени показивачи задржавају снимљену слику</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Снимљени</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Оштро</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Исправи путању</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Смањује мала скретања пре изглађивања. Кликови и превлачења задржавају снимљене положаје.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Повратак на почетак</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Повратак на почетак је доступан за GIF и WebP извоз</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>Враћа показивач и камеру на почетак. Показивач се враћа само ако су обе крајње тачке видљиве у исечку.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Стабилизуј облик показивача</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Сакриј кратке промене облика осим близу клика</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF и WebP не садрже звук. Изаберите MP4 за уређивање аудио-клипова.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Јачина звука</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Понављај звук</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Понављај аудио-датотеку да попуни опсег овог клипа</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Помак извора (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Постепено појачавање (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Постепено утишавање (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Почетак звука</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Крај звука</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Обриши аудио-клип</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Координатни простор</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Садржај — прати увећање</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Екран — фиксни положај</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Ширина линије</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Стил стрелице</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Испуњена стрелица</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Контурна стрелица</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Отворена стрелица</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Оба краја</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Оба краја, контура</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Почетак облика</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Крај облика</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Обриши облик</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Прилагођена ширина</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Ограничите дужу страну или задајте ширину. Слика се никада не увећава.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Понављај бесконачно</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Мања датотека (спорије)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Ове опције важе у уређивачу. Брзи режим директно користи величину и брзину кадрова снимања.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Замућење кретања камере</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Ублажи кретање камере уз очување оштрине показивача и преклопа</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5629,6 +5889,78 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Сачувано у %1, али снимак није могао да се задржи као пројекат за уређивање. И даље је отворен овде: сачувај поново или га затвори да би га одбацио.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Стварна величина датотеке приказује се после извоза.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Извезена датотека: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Преко 25 MB; смањите величину или брзину кадрова за дељење.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Преко 10 MB; смањите величину или брзину кадрова за дељење.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Припрема звучног прегледа…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Пратећа датотека увезеног звука недостаје или је оштећена.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Нема доступних снимљених података о кликовима.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>Нема видљивих кликова у исечку и задржаним клиповима.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Додато зумирања: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Сва предложена увећања преклапају се са додатим или измењеним увећањима.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Предложено увећање је премало за додавање.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Додај звук</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Аудио-датотеке (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Све датотеке (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Снимак може садржати до 128 аудио-клипова.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Увоз звука…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Измене звука нису могле бити сачуване за опоравак после пада.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Није могуће припремити звучни преглед: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Није могуће увести звук: %1</translation>
     </message>
 </context>
 <context>
@@ -6084,6 +6416,14 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Како почиње снимање екрана, шта се снима и шта се дешава по заустављању.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Аутоматски додај увећања новим снимцима</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Увећај снимљене кликове при отварању уређивача. Ово можете поништити једним кораком.</translation>
     </message>
 </context>
 <context>
@@ -6613,6 +6953,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Снима се само област.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Аутоматски додај увећања</translation>
     </message>
 </context>
 <context>
@@ -8048,6 +8392,40 @@ It may be in use by another application.</source>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Излаз: %1 × %2 пиксела</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Нечитљив пројекат</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Отворите снимак без измена, прикажите фасциклу или га обришите.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Прикажите фасциклу пројекта или га обришите.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Враћено из претходног чувања</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Нечитљив пројекат</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Отворено у прегледу</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Враћено из претходног чувања</translation>
     </message>
 </context>
 </TS>

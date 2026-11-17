@@ -186,6 +186,13 @@ bool TimelineEdit::setSpeed(int part, double speed)
     return true;
 }
 
+bool TimelineEdit::setKeepSound(int part, bool keep)
+{
+    if (part < 0 || part >= int(parts.size()) || parts[size_t(part)].keepSound == keep) return false;
+    parts[size_t(part)].keepSound = keep;
+    return true;
+}
+
 TimelineMap TimelineEdit::map(qint64 trimStartMs, qint64 trimEndMs) const
 {
     std::vector<TimelineSegment> kept;
@@ -195,10 +202,11 @@ TimelineMap TimelineEdit::map(qint64 trimStartMs, qint64 trimEndMs) const
         const qint64 end = std::min(trimEndMs, partEndMs(i, trimEndMs));
         if (end <= start) continue;
         // Neighbours at the same speed are one part (a split nobody used).
-        if (!kept.empty() && kept.back().endMs == start && qFuzzyCompare(kept.back().speed, parts[size_t(i)].speed)) {
+        if (!kept.empty() && kept.back().endMs == start && qFuzzyCompare(kept.back().speed, parts[size_t(i)].speed)
+            && kept.back().keepSound == parts[size_t(i)].keepSound) {
             kept.back().endMs = end;
         } else {
-            kept.push_back({start, end, parts[size_t(i)].speed});
+            kept.push_back({start, end, parts[size_t(i)].speed, parts[size_t(i)].keepSound});
         }
     }
     return TimelineMap(std::move(kept));
@@ -210,7 +218,7 @@ QJsonObject TimelineEdit::toJson() const
     for (const qint64 split : splits) splitArray.append(double(split));
     QJsonArray partArray;
     for (const auto& part : parts) {
-        partArray.append(QJsonObject{{QStringLiteral("deleted"), part.deleted}, {QStringLiteral("speed"), part.speed}});
+        partArray.append(QJsonObject{{QStringLiteral("deleted"), part.deleted}, {QStringLiteral("speed"), part.speed}, {QStringLiteral("keepSound"), part.keepSound}});
     }
     return {{QStringLiteral("splits"), splitArray}, {QStringLiteral("parts"), partArray}};
 }
@@ -225,6 +233,7 @@ TimelineEdit TimelineEdit::fromJson(const QJsonObject& json)
         const QJsonObject object = value.toObject();
         Part part;
         part.deleted = object.value(QStringLiteral("deleted")).toBool(false);
+        part.keepSound = object.value(QStringLiteral("keepSound")).toBool(true);
         part.speed = object.value(QStringLiteral("speed")).toDouble(1.0);
         if (!isAllowedSpeed(part.speed)) return edit;
         parts.push_back(part);

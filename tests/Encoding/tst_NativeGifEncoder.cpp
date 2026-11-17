@@ -132,6 +132,8 @@ class TestNativeGifEncoder : public QObject
 private slots:
     void bufferedBytesAreCountedBeforeTheFileExists();
     void gifPendingBytesStayBounded();
+    void coalescesStillFramesAndPreservesDuration();
+    void playsOnceWithoutLoopExtension();
     void gifMatchesLegacy_data();
     void gifMatchesLegacy();
     void gifWriteFailure_data();
@@ -799,6 +801,40 @@ void TestNativeGifEncoder::gifPendingBytesStayBounded()
     gif.abort();
 }
 
+void TestNativeGifEncoder::coalescesStillFramesAndPreservesDuration()
+{
+    const QString path = tempFilePath("still.gif");
+    QVERIFY(m_encoder->start(path, QSize(64, 48), 30));
+    const QImage frame = createTestFrame(QSize(64, 48));
+    for (int i = 0; i < 330; ++i) m_encoder->writeFrame(frame, i * 1000 / 30);
+    QCOMPARE(m_encoder->framesWritten(), 330);
+    m_encoder->finish(11000);
+    const auto delays = gifFrameDelays(path);
+    QCOMPARE(delays, QList<int>({500, 500, 100}));
+    QImageReader reader(path);
+    QCOMPARE(reader.imageCount(), 3);
+    QVERIFY(!reader.read().isNull());
+}
+
+void TestNativeGifEncoder::playsOnceWithoutLoopExtension()
+{
+    const QString path = tempFilePath("once.gif");
+    m_encoder->setLooping(false);
+    QVERIFY(m_encoder->start(path, QSize(64, 48), 15));
+    m_encoder->writeFrame(createTestFrame(QSize(64, 48)), 0);
+    m_encoder->writeFrame(createTestFrame(QSize(64, 48), qRgb(0, 255, 0)), 66);
+    m_encoder->finish(101);
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QVERIFY(!file.readAll().contains("NETSCAPE2.0"));
+    QCOMPARE(gifFrameDelays(path), QList<int>({6, 4}));
+    QImageReader reader(path);
+    QCOMPARE(reader.loopCount(), 0); // No repeat after the first play.
+    QCOMPARE(reader.imageCount(), 2);
+    QVERIFY(!reader.read().isNull());
+    QVERIFY(!reader.read().isNull());
+}
+
 void TestNativeGifEncoder::gifMatchesLegacy_data()
 {
     QTest::addColumn<int>("fixture");
@@ -817,6 +853,7 @@ void TestNativeGifEncoder::gifMatchesLegacy()
     const QString path = dir.filePath("stream.gif");
     NativeGifEncoder gif;
     QVERIFY(gif.start(path, QSize(64, 48), 10));
+    gif.setCoalesceFrames(false); // Keep testing streaming bytes against the pre-coalescing implementation.
     MsfGifState legacy = {};
     QVERIFY(msf_gif_begin(&legacy, 64, 48));
     quint32 rng = 12345;
@@ -990,7 +1027,8 @@ void TestNativeGifEncoder::gifAbortPreservesExisting()
     {
         NativeGifEncoder gif;
         QVERIFY(gif.start(path, QSize(64, 48), 10));
-        for (int i = 0; i < 10; ++i) gif.writeFrame(createTestFrame(QSize(64, 48)), i * 100);
+        for (int i = 0; i < 10; ++i)
+            gif.writeFrame(createTestFrame(QSize(64, 48), i % 2 ? qRgb(0, 255, 0) : qRgb(255, 0, 0)), i * 100);
         QVERIFY(gif.writtenBytesCounter()->load() > 0);
         gif.abort();
         gif.abort();

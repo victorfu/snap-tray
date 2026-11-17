@@ -3,6 +3,7 @@
 #include "capture/WGCFrameTiming.h"
 #include "recording/CapturedFrame.h"
 #include "recording/FramePacer.h"
+#include "capture/CaptureFrameTiming.h"
 #include "recording/SessionClock.h"
 
 using SnapTray::FramePacer;
@@ -19,6 +20,8 @@ class TestSessionClock : public QObject
     Q_OBJECT
 
 private slots:
+    void sparseSourcesAreNotStalls();
+    void finalSparseUpdateIsAdmittedBeforeNextFrame();
     void startGateRejectsEarlierFrames();
     void pausesAreRemoved();
     void repeatedPauseResume();
@@ -307,3 +310,30 @@ void TestSessionClock::pacedTimesAreRealCaptureTimes()
 
 QTEST_MAIN(TestSessionClock)
 #include "tst_SessionClock.moc"
+
+void TestSessionClock::finalSparseUpdateIsAdmittedBeforeNextFrame()
+{
+    for (int fps : {15, 30, 60}) {
+        SnapTray::FramePacer pacer(fps);
+        using Decision = SnapTray::FramePacer::Decision;
+        const qint64 keepAlive = 2000000000LL;
+        QCOMPARE(pacer.onFrame(keepAlive, true), Decision::Emit);
+        const qint64 changed = keepAlive + 1000000;
+        QCOMPARE(pacer.onFrame(changed, true), Decision::DropTooSoon);
+        const qint64 deferred = changed + SnapTray::captureSettlingInterval(fps).count();
+        QCOMPARE(pacer.onFrame(deferred, true), Decision::Emit);
+        QVERIFY(deferred - changed < SnapTray::captureFrameInterval(fps).count());
+        QCOMPARE(pacer.stats().stalls, qint64(0));
+    }
+}
+
+void TestSessionClock::sparseSourcesAreNotStalls()
+{
+    FramePacer pacer(60);
+    for (int second = 0; second < 20; second += 2)
+        QCOMPARE(pacer.onFrame(qint64(second) * 1000000000, true), FramePacer::Decision::Emit);
+    QCOMPARE(pacer.stats().stalls, qint64(0));
+    QCOMPARE(pacer.stats().late, qint64(0));
+    QCOMPARE(pacer.stats().emitted, qint64(10));
+    QCOMPARE(pacer.onFrame(18000000001LL, true), FramePacer::Decision::DropTooSoon);
+}

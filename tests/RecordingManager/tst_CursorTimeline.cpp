@@ -64,7 +64,7 @@ void TestCursorTimeline::roundTrip()
     const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_r.mp4"));
     CursorTimelineWriter writer(CursorTimelineSidecar::pathFor(video));
     QVERIFY(writer.open(info()));
-    QVERIFY(writer.addShape({1, QPoint(1, 1), arrow()}));
+    QVERIFY(writer.addShape({1, QPoint(1, 1), arrow(), QStringLiteral("arrow")}));
     QVERIFY(writer.addShape({2, QPoint(4, 8), arrow(16, Qt::red)}));
     writer.addSample({0, QPoint(10, 20), true, 1});
     writer.addSample({16, QPoint(-5, 2000), true, 2}); // off the frame: kept as is
@@ -86,6 +86,8 @@ void TestCursorTimeline::roundTrip()
     QCOMPARE(timeline->skippedUiClicks, 7);
     QVERIFY(!timeline->truncated);
     QCOMPARE(int(timeline->shapes.size()), 2);
+    QCOMPARE(timeline->shape(1)->kind, QStringLiteral("arrow"));
+    QVERIFY(timeline->shape(2)->kind.isEmpty());
     QCOMPARE(timeline->shape(2)->hotspot, QPoint(4, 8));
     QCOMPARE(timeline->shape(2)->image.pixelColor(0, 0), QColor(Qt::red));
     QCOMPARE(int(timeline->samples.size()), 3);

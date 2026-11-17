@@ -3141,6 +3141,10 @@ English is always included and cannot be removed.</source>
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>ไม่สามารถบันทึกคำแนะนำปุ่มได้ การบันทึกจะดำเนินต่อโดยไม่มีคำแนะนำปุ่ม</translation>
     </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>การจับภาพหน้าจอใช้โหมดความเข้ากันได้ชั่วคราว</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5209,6 +5213,262 @@ English is always included and cannot be removed.</source>
         <source>Press bounce</source>
         <translation>เด้งเมื่อกด</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>เพิ่มการซูม %1 รายการโดยอัตโนมัติแล้ว</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>เลิกทำ</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>ไม่ต้องเพิ่มโดยอัตโนมัติอีก</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>ปิด</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>ลูกศร</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>สี่เหลี่ยมผืนผ้า</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>วงรี</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>เส้น</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>ไฮไลต์</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>หมายเลขขั้นตอน</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>รูปร่าง</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>คลิปเสียง</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>ความเร็วตัวอย่าง (โดยประมาณ)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>ตัวอย่างจำกัดที่ 0.25×–2× การส่งออกใช้ความเร็วคลิปที่แน่นอนและคงระดับเสียงสูงต่ำเดิม</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>ลากบนตัวอย่างเพื่อวาดรูปร่างนี้</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>เพิ่มเสียง…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>นำเข้าเพลงหรือเสียงบรรยาย (ไม่เกิน 30 นาทีและ 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF และ WebP ไม่มีเสียง เลือก MP4 เพื่อเพิ่มเสียง</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>รูปร่าง</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>คลิปเสียง %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>ความเร็วในการเล่นคลิปนี้ในไฟล์ที่ส่งออก</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>เก็บเสียงไว้</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>คงระดับเสียงสูงต่ำเดิมเมื่อเปลี่ยนความเร็วคลิปนี้</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>รูปแบบตัวชี้</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>โหมดคมชัดจะวาดตัวชี้มาตรฐานที่รู้จักใหม่เมื่อขยาย ตัวชี้กำหนดเองจะใช้ภาพที่บันทึกไว้</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>ตามที่บันทึก</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>คมชัด</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>ปรับเส้นทางให้ตรง</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>ลดส่วนโค้งเล็กน้อยก่อนปรับให้ลื่นไหล การคลิกและลากคงตำแหน่งที่บันทึกไว้</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>กลับไปจุดเริ่มต้น</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>การกลับไปจุดเริ่มต้นใช้ได้กับการส่งออก GIF และ WebP</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>นำตัวชี้และกล้องกลับไปจุดเริ่มต้น ตัวชี้จะกลับเมื่อปลายทั้งสองมองเห็นได้ภายในพื้นที่ครอบตัดเท่านั้น</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>ทำให้รูปร่างตัวชี้คงที่</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>ซ่อนการเปลี่ยนรูปร่างช่วงสั้น ๆ ยกเว้นใกล้การคลิก</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF และ WebP ไม่มีเสียง เลือก MP4 เพื่อแก้ไขคลิปเสียง</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>ระดับเสียง</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>วนซ้ำเสียง</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>เล่นไฟล์เสียงซ้ำให้เต็มช่วงของคลิปนี้</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>ออฟเซ็ตต้นทาง (มิลลิวินาที)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>ค่อย ๆ ดังขึ้น (มิลลิวินาที)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>ค่อย ๆ เบาลง (มิลลิวินาที)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>จุดเริ่มเสียง</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>จุดสิ้นสุดเสียง</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>ลบคลิปเสียง</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>ระบบพิกัด</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>เนื้อหา — ตามการซูม</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>หน้าจอ — ตำแหน่งคงที่</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>ความหนาเส้น</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>รูปแบบลูกศร</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>ลูกศรทึบ</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>ลูกศรเส้นขอบ</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>ลูกศรเปิด</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>ทั้งสองปลาย</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>ทั้งสองปลาย เส้นขอบ</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>จุดเริ่มรูปร่าง</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>จุดสิ้นสุดรูปร่าง</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>ลบรูปร่าง</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>ความกว้างกำหนดเอง</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>จำกัดด้านที่ยาวที่สุดหรือกำหนดความกว้าง ภาพจะไม่ถูกขยาย</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>วนซ้ำไม่สิ้นสุด</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>ไฟล์เล็กลง (ช้าลง)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>ตัวเลือกเหล่านี้ใช้ในตัวแก้ไข โหมดด่วนใช้ขนาดและอัตราเฟรมการบันทึกโดยตรง</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>ภาพเบลอจากการเคลื่อนกล้อง</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>ทำให้การเคลื่อนกล้องนุ่มนวลโดยคงความคมชัดของตัวชี้และภาพซ้อน</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5388,6 +5648,78 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>บันทึกไปที่ %1 แล้ว แต่ไม่สามารถเก็บการบันทึกเป็นโปรเจกต์ที่แก้ไขได้ ยังเปิดอยู่ที่นี่: บันทึกอีกครั้ง หรือปิดเพื่อทิ้ง</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>ขนาดไฟล์จริงจะแสดงหลังส่งออก</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>ไฟล์ที่ส่งออก: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — เกิน 25 MB ลดขนาดหรืออัตราเฟรมเพื่อแชร์</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — เกิน 10 MB ลดขนาดหรืออัตราเฟรมเพื่อแชร์</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>กำลังเตรียมตัวอย่างเสียง…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>ไฟล์ประกอบของเสียงที่นำเข้าสูญหายหรือเสียหาย</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>ไม่มีข้อมูลการคลิกที่บันทึกไว้</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>ไม่มีการคลิกที่มองเห็นได้ในพื้นที่ครอบตัดและคลิปที่เก็บไว้</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>เพิ่มการซูมแล้ว: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>การซูมที่แนะนำทั้งหมดทับซ้อนกับการซูมที่คุณเพิ่มหรือแก้ไข</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>กำลังขยายที่แนะนำน้อยเกินไปที่จะเพิ่มการซูม</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>เพิ่มเสียง</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>ไฟล์เสียง (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;ไฟล์ทั้งหมด (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>การบันทึกหนึ่งรายการมีคลิปเสียงได้สูงสุด 128 คลิป</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>กำลังนำเข้าเสียง…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>ไม่สามารถบันทึกการแก้ไขเสียงเพื่อกู้คืนหลังโปรแกรมขัดข้อง</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>ไม่สามารถเตรียมตัวอย่างเสียง: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>ไม่สามารถนำเข้าเสียง: %1</translation>
     </message>
 </context>
 <context>
@@ -5792,6 +6124,14 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>วิธีเริ่มบันทึกหน้าจอ สิ่งที่บันทึก และสิ่งที่เกิดขึ้นเมื่อหยุด</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>เพิ่มการซูมให้การบันทึกใหม่โดยอัตโนมัติ</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>ซูมการคลิกที่บันทึกไว้เมื่อเปิดตัวแก้ไข คุณสามารถเลิกทำได้ในขั้นตอนเดียว</translation>
     </message>
 </context>
 <context>
@@ -6314,6 +6654,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>บันทึกเฉพาะพื้นที่</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>เพิ่มการซูมโดยอัตโนมัติ</translation>
     </message>
 </context>
 <context>
@@ -7725,6 +8069,40 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>เอาต์พุต: %1 × %2 พิกเซล</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>โปรเจกต์ที่อ่านไม่ได้</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>เปิดการบันทึกโดยไม่ใช้การแก้ไข แสดงโฟลเดอร์ หรือลบ</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>แสดงโฟลเดอร์โปรเจกต์หรือลบโปรเจกต์</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>กู้คืนจากการบันทึกครั้งก่อนแล้ว</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>โปรเจกต์ที่อ่านไม่ได้</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>เปิดอยู่ในหน้าตัวอย่าง</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>กู้คืนจากการบันทึกครั้งก่อนแล้ว</translation>
     </message>
 </context>
 </TS>

@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "recording/CursorEffects.h"
+#include "recording/CrispCursor.h"
 #include "recording/RecordingFrameFilter.h"
 
 using namespace SnapTray;
@@ -49,6 +50,11 @@ class TestCursorEffects : public QObject
     Q_OBJECT
 
 private slots:
+    void loopReturnUsesOutputTimeAndStillEnd();
+    void crispPointersKeepTheirHotspotAndCustomImages();
+    void steadyShapePreservesClicksVisibilityAndCuts();
+    void straighteningPreservesEventsAndDragging();
+    void straighteningKeepsBothGapEndpoints();
     void springSteadyMotion();
     void springEventsAndSeeks();
     void springCutsDoNotLookAhead();
@@ -79,6 +85,161 @@ private slots:
     void advancedEffectsDrawThroughCrop();
     void nothingReachesAcrossACut();
 };
+
+void TestCursorEffects::loopReturnUsesOutputTimeAndStillEnd()
+{
+    CursorTimeline t;
+    t.info.frameSize = {200, 100};
+    t.info.clicksAvailable = true;
+    t.samples = {{0, {10, 10}, true, 1}, {1000, {20, 20}, true, 2},
+                 {2000, {80, 40}, true, 3}, {3000, {100, 50}, true, 4}, {4000, {170, 60}, true, 5}};
+    t.buttons = {{4800, Qt::LeftButton, true, {170, 60}}};
+    const TimelineMap map({{1000, 2000, 1}, {3000, 5000, 2}});
+    CursorEffectSettings s;
+    s.loopBack = true;
+    s.stillEndMs = 1000;
+    s.clickStyle = CursorEffectSettings::ClickStyle::Ring;
+    s.showCursor = false; // Isolate the suppressed return-period click effect.
+    CursorEffectRenderer renderer(t, s, 5000);
+    renderer.setTimeline(map);
+    const QPointF first(20, 20), held(100, 50);
+    QCOMPARE(*renderer.pointerPosition(3500), held);
+    QCOMPARE(*renderer.pointerPosition(3600), held); // 1300 output ms: return starts
+    QVERIFY(renderer.pointerPosition(3900)->x() < held.x());
+    QCOMPARE(*renderer.pointerPosition(4900), first);
+    QCOMPARE(renderer.pointerShapeId(3900), 2u);
+    auto frame = blank();
+    renderer.paint(frame, 4900, {{}, frame.size(), frame.size()});
+    QCOMPARE(frame, blank());
+    const auto middle = renderer.pointerPosition(3900);
+    renderer.pointerPosition(4999);
+    renderer.pointerPosition(1000);
+    QCOMPARE(renderer.pointerPosition(3900), middle);
+    renderer.setLoopBounds(QRectF(50, 0, 150, 100));
+    QCOMPARE(*renderer.pointerPosition(4900), held); // First pointer outside the crop.
+    s.hiddenRanges = {{1000, 1100}};
+    CursorEffectRenderer hidden(t, s, 5000);
+    hidden.setTimeline(map);
+    QCOMPARE(*hidden.pointerPosition(4900), held);
+    QCOMPARE(CursorEffectSettings::fromJson(s.toJson()), s);
+    QVERIFY(!CursorEffectSettings::fromJson({}).loopBack);
+}
+
+void TestCursorEffects::crispPointersKeepTheirHotspotAndCustomImages()
+{
+    const QStringList kinds{"arrow", "text", "pointer", "openHand", "closedHand", "crosshair", "resizeEW",
+                            "resizeNS", "resizeNWSE", "resizeNESW", "move", "wait", "notAllowed"};
+    for (const auto& kind : kinds) {
+        QImage a(128, 128, QImage::Format_ARGB32_Premultiplied);
+        a.fill(Qt::transparent);
+        QPainter painter(&a);
+        QVERIFY(drawCrispCursor(painter, kind, {64, 64}, 64));
+        painter.end();
+        QVERIFY(a.pixelColor(64, 64).alpha() > 0 || kind == "notAllowed" || kind == "wait");
+        QImage b(a.size(), a.format());
+        b.fill(Qt::transparent);
+        QPainter repeat(&b);
+        QVERIFY(drawCrispCursor(repeat, kind, {64, 64}, 64));
+        repeat.end();
+        QCOMPARE(a, b);
+    }
+    auto t = timeline();
+    CursorEffectSettings settings;
+    settings.scale = 3;
+    settings.pointerStyle = CursorEffectSettings::PointerStyle::Crisp;
+    CursorEffectRenderer custom(t, settings);
+    auto a = blank();
+    custom.paint(a, 0, {{}, a.size(), a.size()});
+    // Unknown kinds still use the recorded image at the same hotspot.
+    QCOMPARE(a.pixelColor(20, 20), QColor(Qt::red));
+    t.shapes[0].kind = "arrow";
+    CursorEffectRenderer crisp(t, settings);
+    auto b = blank();
+    crisp.paint(b, 0, {{}, b.size(), b.size()});
+    QVERIFY(a != b);
+    QCOMPARE(CursorEffectSettings::fromJson(settings.toJson()), settings);
+    QCOMPARE(CursorEffectSettings::fromJson({}).pointerStyle, CursorEffectSettings::PointerStyle::Recorded);
+}
+
+void TestCursorEffects::steadyShapePreservesClicksVisibilityAndCuts()
+{
+    CursorTimeline t;
+    t.samples = {{0, {20, 20}, true, 1}};
+    for (int i = 0; i < 6; ++i) t.samples.push_back({400 + i * 80, {20, 20}, true, quint32(i + 2)});
+    t.samples.push_back({880, {20, 20}, true, 1});
+    CursorEffectSettings s;
+    s.steadyShape = true;
+    CursorEffectRenderer steady(t, s, 2000);
+    for (qint64 ms = 0; ms < 2000; ++ms) QCOMPARE(steady.pointerShapeId(ms), 1u);
+    t.buttons = {{600, Qt::LeftButton, true, {20, 20}}, {630, Qt::LeftButton, false, {20, 20}}};
+    CursorEffectRenderer clicked(t, s, 2000);
+    for (qint64 ms = 450; ms <= 780; ++ms) QCOMPARE(clicked.pointerShapeId(ms), t.sampleAt(ms)->shapeId);
+    QCOMPARE(clicked.pointerShapeId(440), 1u);
+    QCOMPARE(clicked.pointerShapeId(800), 1u);
+    // No previous shape or click guard leaks across an edit.
+    clicked.setTimeline(TimelineMap({{0, 400, 1}, {640, 800, 1}}));
+    QCOMPARE(clicked.pointerShapeId(650), 5u);
+    QCOMPARE(clicked.pointerShapeId(750), 5u);
+    t.samples.push_back({1000, {20, 20}, false, 7});
+    t.samples.push_back({1080, {20, 20}, true, 8});
+    t.samples.push_back({1160, {20, 20}, true, 1});
+    CursorEffectRenderer visibility(t, s, 2000);
+    QVERIFY(!visibility.pointerPosition(1040));
+    QCOMPARE(visibility.pointerShapeId(1100), 8u);
+    for (qint64 ms = 1999; ms >= 0; --ms) {
+        const auto before = visibility.pointerShapeId(ms);
+        visibility.pointerShapeId((ms * 37) % 2000);
+        QCOMPARE(visibility.pointerShapeId(ms), before);
+    }
+    QCOMPARE(CursorEffectSettings::fromJson(s.toJson()), s);
+    QVERIFY(!CursorEffectSettings::fromJson({}).steadyShape);
+}
+
+void TestCursorEffects::straighteningPreservesEventsAndDragging()
+{
+    CursorTimeline t;
+    for (qint64 ms = 0; ms <= 2000; ms += 8) {
+        const int jitter = ms % 256 == 0 ? 0 : ((ms / 8) % 2 ? 6 : -6);
+        t.samples.push_back({ms, {int(ms), int(ms / 2) + jitter}, true, 1});
+    }
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::Low;
+    s.straighten = CursorEffectSettings::Straighten::High;
+    CursorEffectRenderer clean(t, s, 2200);
+    for (qint64 ms = 300; ms < 1700; ms += 8) {
+        const QPointF p = *clean.pointerPosition(ms);
+        QVERIFY2(std::abs(p.y() - p.x() / 2) < 2.0, qPrintable(QString("%1: %2 (%3, %4)").arg(ms).arg(p.y() - p.x() / 2).arg(p.x()).arg(p.y())));
+    }
+    t.buttons = {{520, Qt::LeftButton, true, {520, 265}}, {900, Qt::LeftButton, false, {900, 450}},
+                 {1500, Qt::RightButton, true, {1500, 750}}, {1530, Qt::RightButton, false, {1500, 750}}};
+    CursorEffectRenderer cleaned(t, s, 2200);
+    s.straighten = CursorEffectSettings::Straighten::Off;
+    CursorEffectRenderer recorded(t, s, 2200);
+    for (const auto& e : t.buttons) QCOMPARE(*cleaned.pointerPosition(e.tMs), QPointF(e.position));
+    for (qint64 ms = 520; ms <= 900; ++ms) QCOMPARE(cleaned.pointerPosition(ms), recorded.pointerPosition(ms));
+    std::vector<QPointF> forward;
+    for (int ms = 0; ms < 2000; ++ms) forward.push_back(*cleaned.pointerPosition(ms));
+    for (int ms = 1999; ms >= 0; --ms) QCOMPARE(*cleaned.pointerPosition(ms), forward[size_t(ms)]);
+    s.straighten = CursorEffectSettings::Straighten::High;
+    QCOMPARE(CursorEffectSettings::fromJson(s.toJson()), s);
+    QCOMPARE(CursorEffectSettings::fromJson({}).straighten, CursorEffectSettings::Straighten::Off);
+}
+
+void TestCursorEffects::straighteningKeepsBothGapEndpoints()
+{
+    CursorTimeline t;
+    t.samples = {{0, {0, 0}, true, 1}, {50, {50, 4}, true, 1},
+                 {100, {100, 8}, true, 1}, {1000, {200, 0}, true, 1},
+                 {1050, {250, 4}, true, 1}, {1100, {300, 8}, true, 1}};
+    CursorEffectSettings s;
+    s.smoothing = CursorEffectSettings::Smoothing::Low;
+    s.straighten = CursorEffectSettings::Straighten::High;
+    CursorEffectRenderer clean(t, s, 1500);
+    // The spring has settled during the gap. RDP must not pull the held
+    // endpoint toward the line to the distant sample at 1000 ms.
+    QVERIFY(QLineF(*clean.pointerPosition(700), QPointF(100, 8)).length() < 0.1);
+    QCOMPARE(clean.pointerPosition(700), clean.pointerPosition(700));
+}
 
 void TestCursorEffects::springSteadyMotion()
 {
@@ -199,13 +360,15 @@ void TestCursorEffects::springPrecomputationBudget()
         t.samples.push_back({qint64(i) * 1000 / 120, QPoint(i % 3840, i % 2160), true, 0});
     CursorEffectSettings s;
     s.smoothing = CursorEffectSettings::Smoothing::High;
+    s.steadyShape = true;
+    s.straighten = CursorEffectSettings::Straighten::High;
     QElapsedTimer timer;
     timer.start();
     CursorEffectRenderer r(t, s);
     const double elapsedMs = timer.nsecsElapsed() / 1e6;
     qInfo("10-minute 120 Hz spring precomputation: %.3f ms", elapsedMs);
 #ifdef NDEBUG
-    QVERIFY(elapsedMs < 50.0);
+    QVERIFY(elapsedMs < 30.0);
 #else
     QVERIFY(elapsedMs < 1000.0);
 #endif

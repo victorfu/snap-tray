@@ -48,6 +48,9 @@ struct RecordingProject {
     qint64 durationMs = 0;
     QString savedPath;   // the last file exported from it
     QJsonObject recipe;
+    bool recoveredFromBackup = false;
+    bool unreadable = false;
+    bool sourceRecoverable = false; // corrupt metadata, readable owned media; never an I/O failure
     QString thumbnailGeneration; // rotated only after a successful manifest commit
 
     QString videoPath() const;
@@ -82,6 +85,7 @@ QString root();
 void setRootForTests(const QString& path);
 // Tests: make the next create() or update() fail at its manifest write.
 void failNextManifestWriteForTests();
+void failNextManifestReadForTests();
 void beforeNextManifestWriteForTests(std::function<void()> callback);
 void failNextProjectCleanupForTests();
 
@@ -102,6 +106,8 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
                                        const RecipePreparer& prepareRecipe = {});
 std::optional<RecordingProject> load(const QString& dir);
 bool update(RecordingProject& project, const QJsonObject& recipe, const QString& savedPath);
+// Protect the project currently open in the editor from automatic cleanup.
+void setOpenProjectDir(const QString& dir);
 QList<RecordingProject> list(); // newest first
 bool remove(const RecordingProject& project);
 qint64 totalBytes();

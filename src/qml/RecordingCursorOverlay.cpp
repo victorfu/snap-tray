@@ -26,6 +26,8 @@ void RecordingCursorOverlay::setBackend(QObject* object)
     m_backend = backend;
     if (m_backend) {
         connect(m_backend, &RecordingPreviewBackend::cursorEffectsChanged, this, [this] { m_renderer.reset(); update(); });
+        connect(m_backend, &RecordingPreviewBackend::formatChanged, this, [this] { m_renderer.reset(); update(); });
+        connect(m_backend, &RecordingPreviewBackend::cropRectChanged, this, [this] { m_renderer.reset(); update(); });
         connect(m_backend, &RecordingPreviewBackend::videoSizeChanged, this, [this] { m_renderer.reset(); update(); });
         // "Still end" depends on where the clip ends.
         connect(m_backend, &RecordingPreviewBackend::trimRangeChanged, this, [this] { m_renderer.reset(); update(); });
@@ -66,8 +68,9 @@ void RecordingCursorOverlay::paint(QPainter* painter)
     if (!m_renderer) {
         m_cachedTimeline = m_backend->cursorTimelineSnapshot();
         m_renderer = std::make_unique<SnapTray::CursorEffectRenderer>(
-            *m_cachedTimeline, m_backend->cursorEffects(), m_backend->effectsClipEnd());
+            *m_cachedTimeline, m_backend->renderedCursorEffects(), m_backend->effectsClipEnd());
         if (!m_backend->timelineMap().isEmpty()) m_renderer->setTimeline(m_backend->timelineMap());
+        m_renderer->setLoopBounds(m_backend->cropRect().isEmpty() ? QRectF(QPointF(), videoSize) : QRectF(m_backend->cropRect()));
     }
     m_renderer->paint(*painter, m_position, {QRect(), videoSize, videoSize});
     painter->restore();

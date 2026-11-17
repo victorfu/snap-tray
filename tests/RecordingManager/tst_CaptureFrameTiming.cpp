@@ -4,11 +4,13 @@
 #include <QEventLoop>
 #include <QTimer>
 #include "capture/CaptureFrameTiming.h"
+#include "capture/DesktopCapturePolicy.h"
 
 class TestCaptureFrameTiming : public QObject
 {
     Q_OBJECT
 private slots:
+    void presentationTimesAndRecovery();
     void testCadence_data();
     void testCadence();
     void testInvalidRates();
@@ -58,3 +60,18 @@ void TestCaptureFrameTiming::testInvalidRates()
 
 QTEST_GUILESS_MAIN(TestCaptureFrameTiming)
 #include "tst_CaptureFrameTiming.moc"
+
+void TestCaptureFrameTiming::presentationTimesAndRecovery()
+{
+    constexpr qint64 counter = 1000000000000000LL;
+    constexpr qint64 now = 50000000000LL;
+    QCOMPARE(SnapTray::desktopPresentationTimeNs(counter - 166667, counter, 10000000, now), now - 16666700);
+    QCOMPARE(SnapTray::desktopPresentationTimeNs(0, counter, 10000000, now), now);
+    QCOMPARE(SnapTray::desktopPresentationTimeNs(counter + 1, counter, 10000000, now), now);
+    QCOMPARE(SnapTray::desktopPresentationTimeNs(counter, counter, 0, now), now);
+    QVERIFY(!SnapTray::desktopImageChanged(0, 1));
+    QVERIFY(!SnapTray::desktopImageChanged(123, 0));
+    QVERIFY(SnapTray::desktopImageChanged(123, 2));
+    const qint64 delays[]{1000000000, 2000000000, 4000000000, 8000000000, 8000000000};
+    for (int i = 0; i < 5; ++i) QCOMPARE(SnapTray::desktopRecoveryDelayNs(i), delays[i]);
+}

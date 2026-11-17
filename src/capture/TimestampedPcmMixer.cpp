@@ -6,6 +6,7 @@
 #include <QtEndian>
 
 #include <array>
+#include <cmath>
 #include <limits>
 
 namespace SnapTray::Audio {
@@ -298,6 +299,10 @@ struct SourceState {
     qint64 enabledFromTimeNs = 0;
     qint64 dropScaleRemainder = 0;
     int dropScaleSampleRate = 0;
+    qint64 nextInputTimeNs = -1;
+    qint64 fallbackDurationNs = 0;
+    qint64 gapRunFrames = 0;
+    int fadeRemaining = 0;
     StreamNormalizer normalizer;
     QList<CanonicalSegment> pending;
 };
@@ -384,6 +389,10 @@ public:
         source.pending.clear();
         source.dropScaleRemainder = 0;
         source.dropScaleSampleRate = 0;
+        source.nextInputTimeNs = -1;
+        source.fallbackDurationNs = 0;
+        source.gapRunFrames = 0;
+        source.fadeRemaining = 0;
     }
 
     qint64 scaleDroppedFrames(SourceState& source, qint64 inputFrames, int sampleRate)
@@ -449,6 +458,7 @@ public:
         }
         if (late) {
             statistics.lateFrames += dropped;
+            noteTrim(source, dropped);
         }
         return dropped;
     }
@@ -481,6 +491,7 @@ public:
         }
 
         statistics.overflowFrames += dropped;
+        noteTrim(source, dropped);
         return dropped;
     }
 
@@ -498,6 +509,7 @@ public:
             trimSegmentPrefix(segment, prefix);
             outcome.droppedFrames += prefix;
             statistics.lateFrames += prefix;
+            noteTrim(source, prefix);
         }
         if (segment.pcm.isEmpty()) {
             return outcome;
@@ -510,6 +522,7 @@ public:
                 trimSegmentPrefix(segment, trimmed);
                 outcome.droppedFrames += trimmed;
                 statistics.overlapFrames += trimmed;
+                noteTrim(source, trimmed);
             }
         }
         if (!segment.pcm.isEmpty()) {
@@ -520,6 +533,32 @@ public:
             statistics.peakPendingBytes,
             segmentBytes(source.pending));
         return outcome;
+    }
+
+    void noteGap(SourceState& source, qint64 frames) {
+        if (frames <= 0) return;
+        auto& stats = statistics.perSource.sources[size_t(&source - sources)];
+        if (source.gapRunFrames == 0) ++stats.gapCount;
+        source.gapRunFrames += frames;
+        stats.gapFrames += frames;
+        stats.maxGapFrames = qMax(stats.maxGapFrames, source.gapRunFrames);
+    }
+    void noteTrim(SourceState& source, qint64 frames) {
+        if (frames <= 0) return;
+        auto& stats = statistics.perSource.sources[size_t(&source - sources)];
+        ++stats.trimCount; stats.trimFrames += frames;
+    }
+    double sampleGain(SourceState& source, bool active, bool present) {
+        if (!active) return 0;
+        if (!present) { noteGap(source, 1); return 0; }
+        constexpr int fadeFrames = kGapFadeInMs * kOutputSampleRate / 1000;
+        if (source.gapRunFrames >= kGapFadeMinGapMs * kOutputSampleRate / 1000 && config.fadeAfterGaps)
+            source.fadeRemaining = fadeFrames;
+        source.gapRunFrames = 0;
+        if (source.fadeRemaining <= 0) return 1;
+        const double gain = double(fadeFrames - source.fadeRemaining) / qMax(1, fadeFrames - 1);
+        --source.fadeRemaining;
+        return gain;
     }
 
     qint16 sampleAt(const SourceState& source, qint64 frame, int channel,
@@ -688,6 +727,8 @@ public:
                 if (silenceFrames > remainingBudget) {
                     const qint64 skipTo = silenceEnd - remainingBudget;
                     statistics.skippedSilenceFrames += skipTo - outputCursor;
+                    for (auto& source : sources)
+                        if (source.enabled) noteGap(source, qMax<qint64>(0, skipTo - qMax(outputCursor, source.enabledFromFrame)));
                     outputCursor = skipTo;
                     consumeThrough(sources[0], outputCursor);
                     consumeThrough(sources[1], outputCursor);
@@ -714,19 +755,20 @@ public:
                 bool systemPresent[2] = {false, false};
                 const bool micActive = sourceActiveAt(sources[0], frame);
                 const bool systemActive = sourceActiveAt(sources[1], frame);
+                qint16 mic[2]{}, system[2]{};
                 for (int channel = 0; channel < kOutputChannels; ++channel) {
-                    const qint16 mic = micActive
-                        ? sampleAt(sources[0], frame, channel, &micPresent[channel])
-                        : 0;
-                    const qint16 system = systemActive
-                        ? sampleAt(sources[1], frame, channel, &systemPresent[channel])
-                        : 0;
-                    appendLittleEndianSample(
-                        chunk.pcm,
-                        clampPcm16(static_cast<qint64>(mic) + system));
+                    if (micActive) mic[channel] = sampleAt(sources[0], frame, channel, &micPresent[channel]);
+                    if (systemActive) system[channel] = sampleAt(sources[1], frame, channel, &systemPresent[channel]);
+                }
+                const double micGain = sampleGain(sources[0], micActive, micPresent[0]);
+                const double systemGain = sampleGain(sources[1], systemActive, systemPresent[0]);
+                for (int channel = 0; channel < kOutputChannels; ++channel) {
+                    const qint16 m = qint16(std::lround(mic[channel] * micGain));
+                    const qint16 s = qint16(std::lround(system[channel] * systemGain));
+                    appendLittleEndianSample(chunk.pcm, clampPcm16(static_cast<qint64>(m) + s));
                     if (config.splitSources) {
-                        appendLittleEndianSample(chunk.microphonePcm, mic);
-                        appendLittleEndianSample(chunk.systemAudioPcm, system);
+                        appendLittleEndianSample(chunk.microphonePcm, m);
+                        appendLittleEndianSample(chunk.systemAudioPcm, s);
                     }
                 }
 
@@ -832,7 +874,7 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
         result.code = ResultCode::SourceDisabled;
         return result;
     }
-    if (!chunk.format.isValid() || chunk.startTimeNs < 0 || activeTimeNs < 0
+    if (!chunk.format.isValid() || (chunk.timestampValid && chunk.startTimeNs < 0) || activeTimeNs < 0
         || chunk.pcm.isEmpty()
         || chunk.pcm.size() % chunk.format.bytesPerFrame() != 0) {
         result.code = ResultCode::MalformedInput;
@@ -844,8 +886,21 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
         return result;
     }
 
+    InputChunk effectiveChunk = chunk;
+    const qint64 packetDuration = framesToNanoseconds(chunk.pcm.size() / chunk.format.bytesPerFrame(), chunk.format.sampleRate);
+    if (!chunk.timestampValid) {
+        auto& stats = d->statistics.perSource.sources[size_t(sourceIndex(source))];
+        ++stats.timestampErrors;
+        if (state.nextInputTimeNs < 0 || state.fallbackDurationNs + packetDuration > kMaxContiguousFallbackMs * 1000000LL) {
+            effectiveChunk.startTimeNs = qMax<qint64>(state.enabledFromTimeNs, activeTimeNs - packetDuration);
+            if (state.nextInputTimeNs >= 0) ++stats.timestampRealignments;
+            state.fallbackDurationNs = 0;
+        } else effectiveChunk.startTimeNs = state.nextInputTimeNs;
+        state.fallbackDurationNs += packetDuration;
+    } else state.fallbackDurationNs = 0;
+
     const qint64 chunkStartFrame = scaledTimeToFrames(
-        chunk.startTimeNs, kOutputSampleRate);
+        effectiveChunk.startTimeNs, kOutputSampleRate);
     const qint64 activeFrame = scaledTimeToFrames(
         activeTimeNs, kOutputSampleRate);
     if (chunkStartFrame > activeFrame
@@ -855,7 +910,8 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
         return result;
     }
 
-    InputChunk effectiveChunk = chunk;
+    // A rejected future timestamp must not poison contiguous fallback.
+    state.nextInputTimeNs = effectiveChunk.startTimeNs + packetDuration;
     qint64 preNormalizationDrops = 0;
     if (effectiveChunk.startTimeNs < state.enabledFromTimeNs) {
         const qint64 inputFrames = effectiveChunk.pcm.size()
@@ -867,6 +923,7 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
                 state, inputFrames, effectiveChunk.format.sampleRate);
             result.droppedFrames = canonicalDrops;
             d->statistics.lateFrames += canonicalDrops;
+            d->noteTrim(state, canonicalDrops);
             result.code = ResultCode::TooLate;
             return result;
         }
@@ -889,6 +946,7 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
                 state, preNormalizationDrops, effectiveChunk.format.sampleRate);
             result.droppedFrames = canonicalDrops;
             d->statistics.lateFrames += canonicalDrops;
+            d->noteTrim(state, canonicalDrops);
             result.code = ResultCode::TooLate;
             return result;
         }
@@ -906,6 +964,7 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
         state, normalized.droppedInputFrames, effectiveChunk.format.sampleRate);
     result.droppedFrames += normalizedDrops;
     d->statistics.overlapFrames += normalizedDrops;
+    d->noteTrim(state, preNormalizationCanonicalDrops + normalizedDrops);
     bool retainedOutput = false;
     for (auto segment : normalized.segments) {
         const AppendOutcome outcome = d->appendSegment(state, std::move(segment));
@@ -961,6 +1020,7 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::setSourceEnabled(
     } else {
         d->clearSource(state);
         state.enabled = true;
+        if (d->config.fadeAfterGaps) state.fadeRemaining = kGapFadeInMs * kOutputSampleRate / 1000;
         const qint64 effectiveFrame = scaledTimeToFrames(
             effectiveTimeNs, kOutputSampleRate);
         state.enabledFromFrame = qMax(effectiveFrame, d->outputCursor);
@@ -1036,6 +1096,8 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::resume(qint64 activeTime
 
     d->clearSource(d->sources[0]);
     d->clearSource(d->sources[1]);
+    if (d->config.fadeAfterGaps) for (auto& source : d->sources)
+        source.fadeRemaining = kGapFadeInMs * kOutputSampleRate / 1000;
     d->outputCursor = qMax(
         d->outputCursor,
         scaledTimeToFrames(activeTimeNs, kOutputSampleRate));

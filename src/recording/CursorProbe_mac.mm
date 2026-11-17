@@ -11,6 +11,7 @@
 
 #include <mach/mach_time.h>
 #include <cmath>
+#include <vector>
 
 namespace SnapTray {
 
@@ -103,6 +104,42 @@ qint64 eventAgeMs(const UptimeClock& now, quint64 eventStamp)
     return nowNs > eventStamp ? qint64((nowNs - eventStamp) / kNanosecondsPerMillisecond) : 0;
 }
 
+QString kindForCursor(NSCursor* cursor)
+{
+    if (!cursor || !cursor.image) return {};
+    struct StandardCursor { NSCursor* cursor; const char* kind; };
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    std::vector<StandardCursor> kinds = {
+        {NSCursor.arrowCursor, "arrow"}, {NSCursor.IBeamCursor, "text"},
+        {NSCursor.pointingHandCursor, "pointer"}, {NSCursor.openHandCursor, "openHand"},
+        {NSCursor.closedHandCursor, "closedHand"}, {NSCursor.crosshairCursor, "crosshair"},
+        {NSCursor.resizeLeftRightCursor, "resizeEW"}, {NSCursor.resizeUpDownCursor, "resizeNS"},
+        {NSCursor.operationNotAllowedCursor, "notAllowed"}
+    };
+#pragma clang diagnostic pop
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+    if (@available(macOS 15.0, *)) {
+        kinds.push_back({[NSCursor frameResizeCursorFromPosition:NSCursorFrameResizePositionTopLeft
+                                                    inDirections:NSCursorFrameResizeDirectionsAll], "resizeNWSE"});
+        kinds.push_back({[NSCursor frameResizeCursorFromPosition:NSCursorFrameResizePositionTopRight
+                                                    inDirections:NSCursorFrameResizeDirectionsAll], "resizeNESW"});
+        kinds.push_back({NSCursor.columnResizeCursor, "resizeEW"});
+        kinds.push_back({NSCursor.rowResizeCursor, "resizeNS"});
+    }
+#endif
+    // Identity is cheap. Separate but identical AppKit images compare their
+    // lossless representation only on a shape change, never on every poll.
+    NSData* representation = nil;
+    for (const auto& entry : kinds) {
+        if (cursor == entry.cursor || cursor.image == entry.cursor.image) return QLatin1String(entry.kind);
+        if (!representation) representation = cursor.image.TIFFRepresentation;
+        if (representation && [representation isEqualToData:entry.cursor.image.TIFFRepresentation])
+            return QLatin1String(entry.kind);
+    }
+    return {}; // No public standard image for a custom cursor: keep its bitmap.
+}
+
 std::optional<CursorProbe::Shape> shapeFromImage(NSImage* image, CGPoint hotSpotPoints, qreal scale)
 {
     if (!image || !std::isfinite(scale) || scale <= 0.0) return std::nullopt;
@@ -192,7 +229,7 @@ CursorProbe::Shape hiddenShape()
 bool sameShape(const std::optional<CursorProbe::Shape>& a, const std::optional<CursorProbe::Shape>& b)
 {
     if (!a || !b) return !a && !b;
-    return a->hotspot == b->hotspot && a->image == b->image;
+    return a->hotspot == b->hotspot && a->image == b->image && a->kind == b->kind;
 }
 
 constexpr CGEventMask kButtonEventMask =
@@ -394,6 +431,7 @@ private:
                 if (image && image == m_cachedImage && NSEqualSizes(image.size, m_cachedSize)
                     && NSEqualPoints(cursor.hotSpot, m_cachedHotspot) && scale == m_cachedScale && m_shape) return;
                 if (cursor) next = MacCursor::shapeFromImage(image, NSPointToCGPoint(cursor.hotSpot), scale);
+                if (next) next->kind = MacCursor::kindForCursor(cursor);
                 m_cachedImage = next ? image : nil;
                 m_cachedSize = image.size;
                 m_cachedHotspot = cursor.hotSpot;

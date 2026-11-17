@@ -530,6 +530,7 @@ void MainApplication::initialize()
         this, &MainApplication::onRecordingDurationChanged);
     connect(m_recordingManager, &RecordingManager::audioStatusChanged,
         this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::captureStatusChanged, this, &MainApplication::updateTrayRecordingIndicator);
     connect(m_recordingManager, &RecordingManager::droppingFramesChanged,
         this, &MainApplication::updateTrayToolTip);
     connect(m_recordingManager, &RecordingManager::lowDiskSpaceChanged,
@@ -1348,6 +1349,7 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
     // The area chosen before recording (#194), also for a recovered recording.
     m_previewBackend->setInitialCrop(m_recordingManager->previewInitialCrop());
+    if (m_recordingManager->previewIsNewRecording()) m_previewBackend->autoZoomNewRecording();
 
     // The save handler opens a native dialog. Keep it out of the QML click/key
     // handler stack so preview deleteLater() cannot run during a nested dialog
@@ -1532,7 +1534,23 @@ void MainApplication::showRecordingLibrary()
 
 void MainApplication::openRecordingProject(const QString& projectDir)
 {
-    const auto project = SnapTray::RecordingProjects::load(projectDir);
+    if (m_previewBackend || m_recordingManager->state() != RecordingManager::State::Idle) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Recording Busy"),
+            tr("Finish or close the current recording first."));
+        return;
+    }
+    auto project = SnapTray::RecordingProjects::load(projectDir);
+    if (!project && !m_previewBackend) {
+        // Recover into an independent project; never change or consume the
+        // damaged folder or silently overwrite the user's previous edits.
+        for (const auto& item : SnapTray::RecordingProjects::list()) {
+            if (item.dir != projectDir || !item.sourceRecoverable) continue;
+            project = SnapTray::RecordingProjects::create(item.videoPath(), true,
+                SnapTray::RecordingRecipe::toJson({}, {}), {}, 0, {});
+            break;
+        }
+    }
     if (!project) {
         SnapTray::QmlToast::screenToast().showToast(
             SnapTray::QmlToast::Level::Warning, tr("Project Unavailable"),
@@ -1767,6 +1785,7 @@ QString MainApplication::trayRecordingStatusLine() const
         && (m_trayRecordingStatus == Status::Recording || m_trayRecordingStatus == Status::Paused)) {
         parts.append(tr("recording keys"));
     }
+    if (m_recordingManager && !m_recordingManager->captureStatus().isEmpty()) parts.append(m_recordingManager->captureStatus());
     QString line = parts.join(QStringLiteral(" \u00B7 "));
     // Audio stays visible for the whole recording, including fallbacks that
     // were announced once in a notification.

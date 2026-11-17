@@ -101,6 +101,7 @@ class tst_TimestampedPcmMixer : public QObject
     Q_OBJECT
 
 private slots:
+    void gapFadeAndContiguousTimestampFallback();
     void outputFormatIsCanonical();
     void outputChunkTimestampsPreserveFramePrecision();
     void encoderTimebaseKeepsAdjacentChunksContiguous();
@@ -797,3 +798,38 @@ void tst_TimestampedPcmMixer::flushClosesUntilReset()
 
 QTEST_MAIN(tst_TimestampedPcmMixer)
 #include "tst_TimestampedPcmMixer.moc"
+
+void tst_TimestampedPcmMixer::gapFadeAndContiguousTimestampFallback()
+{
+    auto cfg = config(true, false);
+    cfg.fadeAfterGaps = true; cfg.splitSources = true;
+    cfg.maxPendingFramesPerSource = 96000;
+    auto constant = [](int frames) {
+        QByteArray data(frames * 4, '\0');
+        for (int i = 0; i < frames * 2; ++i) qToLittleEndian<qint16>(10000, data.data() + i * 2);
+        return data;
+    };
+    TimestampedPcmMixer mixer(cfg);
+    QVector<OutputChunk> output = mixer.push(Source::Microphone, {constant(48000), 0, format(48000, 2)}, kNsPerSecond).output;
+    output += mixer.push(Source::Microphone, {constant(4800), 1050000000, format(48000, 2)}, 1150000000).output;
+    output += mixer.flush(1150000000).output;
+    const auto values = samples(join(output));
+    QCOMPARE(values.size(), 55200 * 2);
+    QCOMPARE(values[100 * 2], qint16(10000)); // no initial fade without a gap
+    QCOMPARE(values[50400 * 2], qint16(0));
+    QCOMPARE(values[(50400 + 239) * 2], qint16(10000));
+    QCOMPARE(values[(50400 + 240) * 2], qint16(10000));
+    for (int i = 1; i < 240; ++i) QVERIFY(values[(50400 + i) * 2] >= values[(50400 + i - 1) * 2]);
+    const auto stats = mixer.stats().perSource.sources[0];
+    QCOMPARE(stats.gapCount, qint64(1)); QCOMPARE(stats.gapFrames, qint64(2400)); QCOMPARE(stats.maxGapFrames, qint64(2400));
+    for (const auto& chunk : output) QCOMPARE(chunk.pcm, chunk.microphonePcm);
+
+    TimestampedPcmMixer continuous(cfg);
+    QByteArray pcm = join(continuous.push(Source::Microphone, {constant(480), 0, format(48000, 2)}, 10000000).output);
+    for (int i = 0; i < 3; ++i)
+        pcm += join(continuous.push(Source::Microphone, {constant(480), -1, format(48000, 2), false}, (i + 2) * 10000000LL).output);
+    pcm += join(continuous.flush(40000000).output);
+    QCOMPARE(pcm, constant(1920));
+    const auto contiguous = continuous.stats().perSource.sources[0];
+    QCOMPARE(contiguous.timestampErrors, qint64(3)); QCOMPARE(contiguous.gapFrames, qint64(0)); QCOMPARE(contiguous.trimFrames, qint64(0));
+}

@@ -3354,6 +3354,10 @@ Boyut: %2</translation>
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Tuş ipuçları kaydedilemedi. Kayıt bunlar olmadan devam edecek.</translation>
     </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Ekran yakalama geçici olarak uyumluluk modunu kullanıyor</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5422,6 +5426,262 @@ Boyut: %2</translation>
         <source>Press bounce</source>
         <translation>Basınca sekme</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>Otomatik olarak %1 yakınlaştırma eklendi</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Geri Al</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Bir daha otomatik ekleme</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Kapat</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Ok</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Dikdörtgen</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Elips</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Çizgi</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Vurgulama</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Adım numarası</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Şekil</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Ses klibi</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Önizleme hızı (yaklaşık)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Önizleme 0,25×–2× ile sınırlıdır. Dışa aktarma tam klip hızını kullanır ve ses perdesini korur.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Bu şekli çizmek için önizleme üzerinde sürükleyin</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Ses ekle…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Müzik veya anlatım içe aktarın (en fazla 30 dakika ve 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF ve WebP ses içermez. Ses eklemek için MP4 seçin.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Şekiller</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Ses klibi %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Bu klibin dışa aktarılan dosyadaki oynatma hızı</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Sesi koru</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Klip hızını değiştirirken özgün ses perdesini koru</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>İşaretçi stili</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Keskin, büyütülen tanınmış standart işaretçileri yeniden çizer; özel işaretçiler kaydedilen görüntülerini korur</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Kaydedilen</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Keskin</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Yolu düzleştir</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Yumuşatmadan önce küçük kıvrımları azaltır. Tıklamalar ve sürüklemeler kaydedilen konumlarını korur.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Başa dön</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Başa dönüş, GIF ve WebP dışa aktarmalarında kullanılabilir</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>İşaretçiyi ve kamerayı başa döndürür. İşaretçi yalnızca her iki uç kırpma alanında görünürse döner.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>İşaretçi şeklini sabitle</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Tıklama yakınları dışında kısa şekil değişikliklerini gizle</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF ve WebP ses içermez. Ses kliplerini düzenlemek için MP4 seçin.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Ses düzeyi</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Sesi döngüye al</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Klibin aralığını doldurmak için ses dosyasını yinele</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Kaynak kayması (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Yavaşça açılma (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Yavaşça kapanma (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Ses başlangıcı</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Ses sonu</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Ses klibini sil</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Koordinat alanı</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>İçerik — yakınlaştırmayı izler</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Ekran — sabit konum</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Çizgi kalınlığı</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Ok stili</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Dolu ok</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Anahat oku</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Açık ok</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Her iki uç</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Her iki uç, anahat</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Şekil başlangıcı</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Şekil sonu</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Şekli sil</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Özel genişlik</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Uzun kenarı sınırlayın veya genişlik ayarlayın. Görüntü asla büyütülmez.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Sonsuz yinele</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Daha küçük dosya (daha yavaş)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Bu seçenekler düzenleyicide geçerlidir. Hızlı mod doğrudan kayıt boyutunu ve kare hızını kullanır.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Kamera hareket bulanıklığı</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>İşaretçileri ve katmanları keskin tutarken kamera hareketini yumuşat</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5621,6 +5881,78 @@ Boyut: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>%1 konumuna kaydedildi ancak kayıt düzenlenebilir proje olarak saklanamadı. Hâlâ burada açık: yeniden kaydedin veya atmak için kapatın.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Gerçek dosya boyutu dışa aktardıktan sonra gösterilir.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Dışa aktarılan dosya: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — 25 MB üzerinde; paylaşmak için boyutu veya kare hızını azaltın.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — 10 MB üzerinde; paylaşmak için boyutu veya kare hızını azaltın.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Ses önizlemesi hazırlanıyor…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>İçe aktarılan sesin yardımcı dosyası eksik veya hasarlı.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Kaydedilmiş tıklama verisi yok.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>Kırpma alanında ve korunan kliplerde görünür tıklama kalmadı.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Eklenen yakınlaştırmalar: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Önerilen tüm yakınlaştırmalar eklediğiniz veya değiştirdiğiniz yakınlaştırmalarla çakışıyor.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Önerilen büyütme, yakınlaştırma eklemek için çok küçük.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Ses ekle</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Ses dosyaları (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Tüm dosyalar (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Bir kayıt en fazla 128 ses klibi içerebilir.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Ses içe aktarılıyor…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Ses düzenlemeleri çökme sonrası kurtarma için kaydedilemedi.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Ses önizlemesi hazırlanamadı: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Ses içe aktarılamadı: %1</translation>
     </message>
 </context>
 <context>
@@ -6076,6 +6408,14 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Ekran kayıtlarının nasıl başladığı, neleri yakaladığı ve durdurduğunuzda ne olacağı.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Yeni kayıtlara otomatik yakınlaştırmalar ekle</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Düzenleyici açıldığında kaydedilen tıklamaları yakınlaştır. Tek adımda geri alabilirsiniz.</translation>
     </message>
 </context>
 <context>
@@ -6605,6 +6945,10 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Yalnızca alan kaydedilir.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Otomatik yakınlaştırmalar ekle</translation>
     </message>
 </context>
 <context>
@@ -8040,6 +8384,40 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Çıktı: %1 × %2 piksel</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Okunamayan proje</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Kaydı düzenlemeler olmadan açın, klasörünü gösterin veya silin.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Proje klasörünü gösterin veya projeyi silin.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Önceki kayıttan geri yüklendi</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Okunamayan proje</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Önizlemede açık</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Önceki kayıttan geri yüklendi</translation>
     </message>
 </context>
 </TS>

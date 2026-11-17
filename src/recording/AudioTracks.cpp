@@ -63,6 +63,8 @@ bool exist(const QString& videoPath)
 
 void remove(const QString& videoPath)
 {
+    for (const auto* suffix : {AudioClipTrack::kSuffix, AudioClipTrack::kMixedSuffix, ".imports.json"})
+        QFile::remove(videoPath + QLatin1String(suffix));
     for (const Track track : {Track::Microphone, Track::SystemAudio}) {
         const QString path = pathFor(videoPath, track);
         if (QFileInfo::exists(path)) QFile::remove(path);
@@ -290,7 +292,7 @@ void MicrophoneNoiseReducer::process(QByteArray& pcm)
 }
 
 AudioTrackMixer::AudioTrackMixer(const QString& videoPath, const AudioMixSettings& settings)
-    : m_settings(settings)
+    : m_videoPath(videoPath), m_settings(settings)
 {
     m_microphone.open(AudioTracks::pathFor(videoPath, AudioTracks::Track::Microphone));
     m_systemAudio.open(AudioTracks::pathFor(videoPath, AudioTracks::Track::SystemAudio));
@@ -302,8 +304,19 @@ void AudioTrackMixer::setSettings(const AudioMixSettings& settings)
     m_settings = settings;
 }
 
+bool AudioTrackMixer::setClips(const AudioClipTrack& clips)
+{
+    if (!clips.isEmpty() && !m_imports.isOpen()
+        && !m_imports.open(m_videoPath + QLatin1String(AudioClipTrack::kSuffix))) return false;
+    for (const auto& clip : clips.clips)
+        if (clip.assetFrame < 0 || clip.assetFrames <= 0 || clip.assetFrame + clip.assetFrames > m_imports.frames()) return false;
+    m_clips = clips;
+    return true;
+}
+
 QByteArray AudioTrackMixer::read(qint64 startFrame, int frames)
 {
+    if (frames <= 0 || frames > AudioTracks::kSampleRate) return {};
     if (startFrame != m_nextFrame) m_reducer.reset(); // a seek: no state from elsewhere
     m_nextFrame = startFrame + frames;
     QByteArray microphone = m_microphone.read(startFrame, frames);
@@ -311,14 +324,52 @@ QByteArray AudioTrackMixer::read(qint64 startFrame, int frames)
     if (m_settings.microphoneNoiseReduction && !m_settings.microphoneMuted) m_reducer.process(microphone);
     const double gm = gainOf(m_settings.microphoneGainDb, m_settings.microphoneMuted);
     const double gs = gainOf(m_settings.systemAudioGainDb, m_settings.systemAudioMuted);
-    QByteArray out(microphone.size(), '\0');
+    QByteArray out(frames * AudioTracks::kBytesPerFrame, '\0');
+    if (!hasSeparateTracks() && m_fallback) {
+        out = m_fallback(startFrame, frames);
+        if (out.size() != frames * AudioTracks::kBytesPerFrame) return {};
+    }
     const auto* mic = reinterpret_cast<const qint16*>(microphone.constData());
     const auto* sys = reinterpret_cast<const qint16*>(system.constData());
     auto* mixed = reinterpret_cast<qint16*>(out.data());
-    for (qsizetype i = 0; i < out.size() / 2; ++i) {
+    if (hasSeparateTracks()) for (qsizetype i = 0; i < out.size() / 2; ++i) {
         const double value = qFromLittleEndian<qint16>(mic + i) * gm + qFromLittleEndian<qint16>(sys + i) * gs;
         qToLittleEndian<qint16>(clampSample(value), mixed + i);
     }
+    // Accumulate in floating point; clamp only once so overlap order never
+    // changes the mix. Fades depend on source samples, never playback history.
+    std::vector<double> sum(size_t(frames) * 2);
+    for (size_t i = 0; i < sum.size(); ++i) sum[i] = qFromLittleEndian<qint16>(mixed + i);
+    for (const auto& clip : m_clips.clips) {
+        const qint64 begin = qMax(startFrame, clip.startMs * 48);
+        const qint64 end = qMin(startFrame + frames, clip.endMs * 48);
+        const qint64 offset = clip.offsetMs * 48;
+        const qint64 length = clip.assetFrames - offset;
+        if (length <= 0) continue;
+        const double gain = std::pow(10.0, clip.gainDb / 20.0);
+        for (qint64 at = begin; at < end;) {
+            qint64 local = at - clip.startMs * 48;
+            if (!clip.loop && local >= length) break;
+            const qint64 within = clip.loop ? local % length : local;
+            const int count = int(qMin(end - at, length - within));
+            const QByteArray pcm = m_imports.read(clip.assetFrame + offset + within, count);
+            if (pcm.size() != count * 4) return {};
+            for (int f = 0; f < count; ++f) {
+                const qint64 pos = at + f;
+                double fade = 1.0;
+                if (clip.fadeInMs > 0) fade = qMin(fade, double(pos - clip.startMs * 48) / (clip.fadeInMs * 48));
+                if (clip.fadeOutMs > 0) fade = qMin(fade, double(clip.endMs * 48 - 1 - pos) / (clip.fadeOutMs * 48));
+                // A tiny equal-time edge fade removes discontinuities at loop
+                // seams without shifting the region or changing its duration.
+                constexpr qint64 seamFrames = 240;
+                if (clip.loop) fade *= qMin(1.0, double(qMin(within + f, length - 1 - within - f)) / qMin(seamFrames, qMax<qint64>(1, length / 2)));
+                for (int c = 0; c < 2; ++c)
+                    sum[size_t(pos - startFrame) * 2 + c] += qFromLittleEndian<qint16>(pcm.constData() + f * 4 + c * 2) * gain * fade;
+            }
+            at += count;
+        }
+    }
+    for (size_t i = 0; i < sum.size(); ++i) qToLittleEndian<qint16>(clampSample(sum[i]), mixed + i);
     return out;
 }
 

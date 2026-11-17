@@ -64,7 +64,8 @@ void TestRemixedAudioPreview::seekDiscardsAnInflightRead()
     preview.setSource([&](qint64 start, int frames) {
         if (block.exchange(false)) { entered.release(); release.acquire(); }
         QByteArray pcm(frames * 4, '\0');
-        pcm[0] = start >= 48000 ? '\2' : '\1';
+        for (int i = 0; i < pcm.size(); i += 2)
+            qToLittleEndian<qint16>(start >= 48000 ? 2000 : 1000, pcm.data() + i);
         return pcm;
     });
     preview.synchronize(0, true, 1.0f, true);
@@ -77,7 +78,7 @@ void TestRemixedAudioPreview::seekDiscardsAnInflightRead()
     preview.synchronize(1000, false, 1.0f);
     QTRY_COMPARE(output.queued.load(), 0);
     std::lock_guard<std::mutex> lock(output.mutex);
-    for (const auto& pcm : output.writes) QCOMPARE(pcm[0], '\2');
+    for (const auto& pcm : output.writes) QCOMPARE(qFromLittleEndian<qint16>(pcm.constData() + 500 * 4), qint16(2000));
 }
 
 void TestRemixedAudioPreview::pauseSpeedAndVolume()
@@ -91,18 +92,19 @@ void TestRemixedAudioPreview::pauseSpeedAndVolume()
     preview.setVolume(0.5f, false);
     preview.synchronize(0, true, 1.0f, true);
     QTRY_VERIFY(writeCount() >= 1);
-    QCOMPARE(qFromLittleEndian<qint16>(lastWrite().constData()), qint16(5000));
+    QCOMPARE(qFromLittleEndian<qint16>(lastWrite().constData() + 500 * 4), qint16(5000));
     preview.synchronize(100, false, 1.0f);
     QTRY_COMPARE(output.queued.load(), 0);
     const int pausedCount = writeCount();
     QTest::qWait(30);
     QCOMPARE(writeCount(), pausedCount);
-    preview.synchronize(100, true, 2.0f); // edited speed policy: silence
-    QTest::qWait(30);
-    QCOMPARE(writeCount(), pausedCount);
+    preview.synchronize(100, true, 2.0f); // WSOLA also feeds the native preview.
+    QTRY_VERIFY(writeCount() > pausedCount);
+    QCOMPARE(qFromLittleEndian<qint16>(lastWrite().constData() + 500 * 4), qint16(5000));
+    const int fastCount = writeCount();
     preview.setVolume(1.0f, true);
     preview.synchronize(100, true, 1.0f);
-    QTRY_VERIFY(writeCount() > pausedCount);
+    QTRY_VERIFY(writeCount() > fastCount);
     QCOMPARE(lastWrite(), QByteArray(SnapTray::PreviewPcmOutput::kChunkFrames * 4, '\0'));
     preview.setSource({});
     QTRY_COMPARE(output.queued.load(), 0);

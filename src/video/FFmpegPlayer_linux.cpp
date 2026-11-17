@@ -2,6 +2,7 @@
 #include <QMutexLocker>
 #include "FFmpegMedia.h"
 #include "video/IVideoPlayer.h"
+#include "recording/AudioSegmentReader.h"
 #include <pulse/pulseaudio.h>
 #include <QtConcurrent>
 #include <QFutureWatcher>
@@ -59,11 +60,12 @@ public:
         loop = nullptr; context = nullptr; stream = nullptr; started = false;
     }
     void reset(bool playing, float rate) {
+        Q_UNUSED(rate);
         if (!stream) return;
         pa_threaded_mainloop_lock(loop);
         if (auto* op = pa_stream_cork(stream, !playing, nullptr, nullptr)) pa_operation_unref(op);
         if (auto* op = pa_stream_flush(stream, nullptr, nullptr)) pa_operation_unref(op);
-        if (auto* op = pa_stream_update_sample_rate(stream, qRound(48000*rate), nullptr, nullptr)) pa_operation_unref(op);
+        if (auto* op = pa_stream_update_sample_rate(stream, 48000, nullptr, nullptr)) pa_operation_unref(op);
         pa_threaded_mainloop_unlock(loop);
     }
     int writableFrames() const {
@@ -187,8 +189,11 @@ public:
     float volume() const override { return gain; }
     void setMuted(bool value) override { muted = value; }
     bool setAudioSource(AudioSource source) override {
-        QMutexLocker lock(&audioSourceMutex);
-        audioSource = std::move(source);
+        {
+            QMutexLocker lock(&audioSourceMutex);
+            audioSource = std::move(source);
+        }
+        seek(position()); // Drop samples buffered with the previous source.
         return true;
     }
     bool isMuted() const override { return muted; }
@@ -218,15 +223,26 @@ private:
         const auto token = generation;
         const bool withAudio = audioReady && m_state == State::Playing;
         const qint64 audioStart = qMax(audioCursor, target*48);
+        const float playbackRate = rate;
         const int audioCount = withAudio ? int(qBound<qint64>(qint64(0),
-            (target+qRound(100*rate))*48-audioStart, qint64(output.writableFrames()))) : 0;
-        watcher.setFuture(QtConcurrent::run([this, token, target, audioStart, audioCount] {
-            Decoded result; result.generation = token; result.position = target; result.audioEnd = audioStart+audioCount;
+            qRound64(((target + qRound(100 * rate)) * 48 - audioStart) / double(rate)), qint64(output.writableFrames()))) : 0;
+        watcher.setFuture(QtConcurrent::run([this, token, target, audioStart, audioCount, playbackRate] {
+            Decoded result; result.generation = token; result.position = target;
+            result.audioEnd = audioStart + qRound64(audioCount * double(playbackRate));
             result.image = video->frameAt(target); result.error = video->lastError();
             if (audioCount) {
                 AudioSource source;
                 { QMutexLocker lock(&audioSourceMutex); source = audioSource; }
-                result.pcm = source ? source(audioStart, audioCount) : audio->read(audioStart, audioCount);
+                if (!stretchedAudio || stretchGeneration != token || stretchNextSource != audioStart) {
+                    stretchedAudio = std::make_unique<SnapTray::AudioSegmentReader>([this, source, audioStart](qint64 frame, int count) {
+                        return source ? source(audioStart + frame, count) : audio->read(audioStart + frame, count);
+                    });
+                    constexpr qint64 kPreviewHorizonMs = 24 * 60 * 60 * 1000;
+                    stretchedAudio->begin({0, kPreviewHorizonMs, playbackRate});
+                    stretchGeneration = token;
+                }
+                result.pcm = stretchedAudio->read(audioCount);
+                stretchNextSource = result.audioEnd;
                 if (result.pcm.isEmpty()) result.error = source ? QStringLiteral("Mixed audio unavailable.") : audio->error();
             }
             return result;
@@ -234,6 +250,9 @@ private:
     }
     std::unique_ptr<SnapTray::FFmpeg::FrameReader> video;
     std::unique_ptr<SnapTray::FFmpeg::AudioReader> audio;
+    std::unique_ptr<SnapTray::AudioSegmentReader> stretchedAudio; // decoder worker only
+    quint64 stretchGeneration = 0;
+    qint64 stretchNextSource = -1;
     QMutex audioSourceMutex;
     AudioSource audioSource;
     VideoFileProbe media;

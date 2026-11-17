@@ -157,11 +157,12 @@ quint32 CursorTimelineRecorder::currentShapeId()
     hash.addData(QByteArrayView(reinterpret_cast<const char*>(image.constBits()), image.sizeInBytes()));
     hash.addData(QByteArray::number(image.width()) + 'x' + QByteArray::number(image.height()) + '@'
                  + QByteArray::number(shape->hotspot.x()) + ',' + QByteArray::number(shape->hotspot.y()));
+    hash.addData(shape->kind.toUtf8());
     const QByteArray key = hash.result();
     if (const auto it = m_shapeIds.constFind(key); it != m_shapeIds.cend()) {
         return it.value();
     }
-    CursorShape stored{m_nextShapeId, shape->hotspot, image};
+    CursorShape stored{m_nextShapeId, shape->hotspot, image, shape->kind};
     // Shapes that cannot be stored (too large, too many) are recorded as
     // "unknown"; positions keep going either way.
     const quint32 id = m_writer.addShape(stored) ? m_nextShapeId++ : 0;

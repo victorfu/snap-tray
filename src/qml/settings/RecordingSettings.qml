@@ -331,6 +331,14 @@ Flickable {
             onActivated: function(index) { settingsBackend.recordingQuickSaveAction = index }
         }
 
+        SettingsToggle {
+            resetKey: "recordingAutoZoomOnOpen"
+            label: qsTr("Automatically add zooms to new recordings")
+            description: qsTr("Zoom in on recorded clicks when the editor opens. You can undo this in one step.")
+            checked: settingsBackend.recordingAutoZoomOnOpen
+            onToggled: function(checked) { settingsBackend.recordingAutoZoomOnOpen = checked }
+        }
+
         // An area chosen before recording (#194); off by default.
         SettingsToggle {
             resetKey: "recordingPreselectArea"

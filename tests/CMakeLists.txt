@@ -473,6 +473,11 @@ add_test(NAME RecordingManager_KeyTimeline COMMAND RecordingManager_KeyTimeline)
 set_tests_properties(RecordingManager_KeyTimeline PROPERTIES TIMEOUT 60 LABELS "unit"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(RecordingManager_ShapeTrack RecordingManager/tst_ShapeTrack.cpp)
+target_link_libraries(RecordingManager_ShapeTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_ShapeTrack COMMAND RecordingManager_ShapeTrack)
+set_tests_properties(RecordingManager_ShapeTrack PROPERTIES TIMEOUT 60 LABELS "unit" ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(RecordingManager_OverlayTrack RecordingManager/tst_OverlayTrack.cpp)
 target_link_libraries(RecordingManager_OverlayTrack PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_OverlayTrack COMMAND RecordingManager_OverlayTrack)
@@ -1131,7 +1136,7 @@ set_tests_properties(Encoding_EncodingWorker PROPERTIES TIMEOUT 60 LABELS "unit"
 
 add_executable(Video_RemixedAudioPreview Video/tst_RemixedAudioPreview.cpp ../src/video/RemixedAudioPreview.cpp)
 target_include_directories(Video_RemixedAudioPreview PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(Video_RemixedAudioPreview PRIVATE Qt6::Gui Qt6::Test)
+target_link_libraries(Video_RemixedAudioPreview PRIVATE snaptray_core Qt6::Gui Qt6::Test)
 add_test(NAME Video_RemixedAudioPreview COMMAND Video_RemixedAudioPreview)
 set_tests_properties(Video_RemixedAudioPreview PROPERTIES TIMEOUT 30 LABELS "unit")
 

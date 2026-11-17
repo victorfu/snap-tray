@@ -170,6 +170,11 @@ bool RecordingInitTask::configureAndStartCaptureEngine()
         m_result.captureEngine->setExcludedCaptureWindowIds(m_config.excludedCaptureWindowIds);
     }
 
+#ifdef Q_OS_WIN
+    // During warm-up/countdown retain GPU surfaces; readback starts only when
+    // the recording needs CPU frames (unsupported encoder or a watermark).
+    m_result.captureEngine->setNativeFrameOutput(m_config.gpuEncoding && m_config.outputFormat == EncoderFactory::Format::MP4);
+#endif
     qDebug() << "RecordingInitTask: Starting capture engine...";
     if (!m_result.captureEngine->start()) {
         m_result.error = "Failed to start capture engine";
@@ -186,6 +191,7 @@ bool RecordingInitTask::initializeCaptureEngine()
 #ifdef Q_OS_WIN
     if (m_config.preferGraphicsCapture) {
         if (!WGCCaptureEngine::isAvailable()) {
+            m_result.captureFallbackReason = QStringLiteral("WGC unavailable on this system; using DXGI/BitBlt.");
             qWarning() << "RecordingInitTask: Windows Graphics Capture unavailable, using the default engine";
         } else {
             m_result.captureEngine.reset(new WGCCaptureEngine(nullptr));
@@ -194,6 +200,7 @@ bool RecordingInitTask::initializeCaptureEngine()
                 return true;
             }
             const auto *wgc = static_cast<WGCCaptureEngine *>(m_result.captureEngine.get());
+            m_result.captureFallbackReason = QStringLiteral("WGC start failed: %1; using DXGI/BitBlt.").arg(wgc->lastStartError());
             qWarning() << "RecordingInitTask: Windows Graphics Capture failed to start ("
                        << wgc->lastStartError() << "), using the default engine";
             m_result.captureEngine.reset();

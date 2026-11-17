@@ -3354,6 +3354,10 @@ Size: %2</source>
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>키 표시를 저장할 수 없습니다. 키 표시 없이 녹화를 계속합니다.</translation>
     </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>화면 캡처가 일시적으로 호환 모드를 사용합니다</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5422,6 +5426,262 @@ Size: %2</source>
         <source>Press bounce</source>
         <translation>누를 때 반동</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>확대 %1개를 자동으로 추가했습니다</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>실행 취소</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>다시 자동으로 추가하지 않기</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>닫기</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>화살표</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>사각형</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>타원</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>선</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>강조 표시</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>단계 번호</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>도형</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>오디오 클립</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>미리 보기 속도(근사값)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>미리 보기는 0.25×–2×로 제한됩니다. 내보내기는 정확한 클립 속도를 사용하고 음높이를 유지합니다.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>미리 보기에서 드래그하여 이 도형 그리기</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>오디오 추가…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>음악 또는 내레이션 가져오기(최대 30분 및 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF와 WebP에는 오디오가 없습니다. 오디오를 추가하려면 MP4를 선택하세요.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>도형</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>오디오 클립 %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>내보낸 파일에서 이 클립이 재생되는 속도</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>소리 유지</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>클립 속도를 변경할 때 원래 음높이 유지</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>포인터 스타일</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>선명 모드는 확대 시 인식된 표준 포인터를 다시 그립니다. 사용자 지정 포인터는 녹화된 이미지를 유지합니다</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>녹화 원본</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>선명</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>경로 곧게 펴기</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>부드럽게 처리하기 전에 작은 굴곡을 줄입니다. 클릭과 드래그는 녹화된 위치를 유지합니다.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>처음으로 돌아가기</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>처음으로 돌아가기는 GIF 및 WebP 내보내기에서 사용할 수 있습니다</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>포인터와 카메라를 처음으로 되돌립니다. 포인터는 양 끝점이 모두 자르기 영역 안에 보일 때만 돌아갑니다.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>포인터 모양 안정화</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>클릭 주변을 제외한 짧은 모양 변화 숨기기</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF와 WebP에는 오디오가 없습니다. 오디오 클립을 편집하려면 MP4를 선택하세요.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>음량</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>오디오 반복</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>클립 범위를 채우도록 오디오 파일 반복</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>소스 오프셋(ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>페이드 인(ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>페이드 아웃(ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>오디오 시작</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>오디오 끝</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>오디오 클립 삭제</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>좌표 공간</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>콘텐츠 — 확대/축소 따라가기</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>화면 — 위치 고정</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>선 두께</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>화살표 스타일</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>채워진 화살표</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>윤곽선 화살표</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>열린 화살표</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>양 끝</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>양 끝, 윤곽선</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>도형 시작</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>도형 끝</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>도형 삭제</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>사용자 지정 너비</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>긴 변을 제한하거나 너비를 지정하세요. 이미지는 확대되지 않습니다.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>무한 반복</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>더 작은 파일(느림)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>이 옵션은 편집기에 적용됩니다. 빠른 모드는 녹화 크기와 프레임 속도를 직접 사용합니다.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>카메라 모션 블러</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>포인터와 오버레이를 선명하게 유지하면서 카메라 움직임을 부드럽게 표시</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5621,6 +5881,78 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>%1에 저장했지만 녹화를 편집 가능한 프로젝트로 보관하지 못했습니다. 아직 여기에 열려 있습니다. 다시 저장하거나 닫아서 버리세요.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>내보내기 후 실제 파일 크기가 표시됩니다.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>내보낸 파일: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — 25 MB 초과. 공유하려면 크기나 프레임 속도를 줄이세요.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — 10 MB 초과. 공유하려면 크기나 프레임 속도를 줄이세요.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>오디오 미리 보기 준비 중…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>가져온 오디오 보조 파일이 없거나 손상되었습니다.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>녹화된 클릭 데이터가 없습니다.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>자르기 영역과 유지된 클립에 보이는 클릭이 없습니다.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>추가된 확대: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>제안된 모든 확대가 추가하거나 변경한 확대와 겹칩니다.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>제안된 배율이 너무 작아 확대를 추가할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>오디오 추가</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>오디오 파일 (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;모든 파일 (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>하나의 녹화에는 최대 128개의 오디오 클립을 포함할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>오디오 가져오는 중…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>충돌 복구를 위해 오디오 편집 내용을 저장할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>오디오 미리 보기를 준비할 수 없습니다: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>오디오를 가져올 수 없습니다: %1</translation>
     </message>
 </context>
 <context>
@@ -6076,6 +6408,14 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>화면 녹화의 시작 방법, 녹화 대상, 중지 후 동작.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>새 녹화에 확대 자동 추가</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>편집기를 열 때 녹화된 클릭을 확대합니다. 한 번에 실행 취소할 수 있습니다.</translation>
     </message>
 </context>
 <context>
@@ -6605,6 +6945,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>영역만 녹화됩니다.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>확대 자동 추가</translation>
     </message>
 </context>
 <context>
@@ -8040,6 +8384,40 @@ It may be in use by another application.</source>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>출력: %1 × %2 픽셀</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>읽을 수 없는 프로젝트</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>편집 없이 녹화를 열거나 폴더를 표시하거나 삭제합니다.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>프로젝트 폴더를 표시하거나 삭제합니다.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>이전 저장본에서 복구됨</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>읽을 수 없는 프로젝트</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>미리보기에서 열려 있음</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>이전 저장본에서 복구됨</translation>
     </message>
 </context>
 </TS>

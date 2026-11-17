@@ -11,6 +11,47 @@ import SnapTrayQml
  */
 Item {
     id: root
+    Rectangle {
+        z: 100
+        visible: backend.automaticZoomCount > 0
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 48
+        width: Math.min(parent.width - 32, 640)
+        height: autoZoomNotice.implicitHeight + 16
+        radius: 8
+        color: root.bgPanel
+        border.color: root.borderColor
+        Column {
+            id: autoZoomNotice
+            width: parent.width - 24
+            anchors.centerIn: parent
+            spacing: 8
+            Text {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                color: root.textPrimary
+                text: qsTr("Automatically added %1 zooms").arg(backend.automaticZoomCount)
+            }
+            Flow {
+                width: parent.width
+                spacing: 8
+                SegmentButton {
+                    text: qsTr("Undo")
+                    onClicked: { backend.undo(); backend.dismissAutomaticZoom() }
+                }
+                SegmentButton {
+                    text: qsTr("Don't add automatically again")
+                    onClicked: backend.dismissAutomaticZoom(true)
+                }
+                SegmentButton {
+                    text: qsTr("Dismiss")
+                    onClicked: backend.dismissAutomaticZoom()
+                }
+            }
+        }
+    }
+
 
     readonly property color accent: SemanticTokens.accentDefault
     readonly property color accentHover: SemanticTokens.accentHover
@@ -27,6 +68,10 @@ Item {
     readonly property real overlayChipButtonSize: 20
 
 
+    property int drawingShape: -1
+    readonly property var shapeNames: [qsTr("Arrow"), qsTr("Rectangle"), qsTr("Ellipse"), qsTr("Line"), qsTr("Highlight"), qsTr("Step number")]
+    readonly property var selectedShapeData: backend.selectedShape >= 0 && backend.selectedShape < backend.shapes.length
+        ? backend.shapes[backend.selectedShape] : null
     property int selectedPart: -1
     readonly property var selectedPartData: selectedPart >= 0 && selectedPart < backend.timelineParts.length
         ? backend.timelineParts[selectedPart] : null
@@ -35,6 +80,8 @@ Item {
     // What the inspector shows, in priority order: a draft crop, a selected
     // object, a whole-recording category, then the project overview.
     readonly property string inspectorKind: cropOverlay.editing ? "crop"
+        : backend.selectedShape >= 0 ? "shape"
+        : backend.selectedAudioClip >= 0 ? "audioClip"
         : backend.selectedMask >= 0 ? "mask"
         : backend.selectedZoom >= 0 ? "zoom"
         : backend.selectedOverlay >= 0 ? (selectedOverlayData && selectedOverlayData.kind === 1 ? "image" : "text")
@@ -51,12 +98,12 @@ Item {
         crop: qsTr("Crop"), mask: qsTr("Mask"), zoom: qsTr("Zoom segment"),
         text: qsTr("Text overlay"), image: qsTr("Image overlay"), pointerHide: qsTr("Hidden pointer"),
         clip: qsTr("Video clip"), appearance: qsTr("Canvas"), pointer: qsTr("Pointer"),
-        audio: qsTr("Audio"), keys: qsTr("Keys"), project: qsTr("Project settings")
+        shape: qsTr("Shape"), audioClip: qsTr("Audio clip"), audio: qsTr("Audio"), keys: qsTr("Keys"), project: qsTr("Project settings")
     })
     readonly property var inspectorIcons: ({
         crop: "crop", mask: "square-dashed", zoom: "zoom-in", text: "text", image: "image",
         pointerHide: "mouse-pointer", clip: "film", appearance: "frame", pointer: "mouse-pointer",
-        audio: "volume-2", keys: "keyboard", project: "panel-right"
+        shape: "square-dashed", audioClip: "volume-2", audio: "volume-2", keys: "keyboard", project: "panel-right"
     })
     readonly property string inspectorTitle: inspectorTitles[inspectorKind]
     // What closing keeps, shown in the top bar.
@@ -71,6 +118,8 @@ Item {
     }
     readonly property string inspectorSubtitle: {
         switch (inspectorKind) {
+        case "shape": return rangeText(selectedShapeData)
+        case "audioClip": return rangeText(selectedAudioClipData)
         case "mask": return rangeText(selectedMaskData)
         case "zoom": return rangeText(backend.zoomSegments[backend.selectedZoom])
         case "text": case "image": return rangeText(selectedOverlayData)
@@ -82,7 +131,22 @@ Item {
     }
     function iconUrl(name) { return "qrc:/icons/icons/" + name + ".svg" }
 
+    function commitNumericFields(item) {
+        if (!item || !item.visible) return true
+        if (item.numericEditor === true && !item.commitText()) {
+            item.forceActiveFocus()
+            return false
+        }
+        for (let i = 0; i < item.children.length; ++i)
+            if (!commitNumericFields(item.children[i])) return false
+        return true
+    }
     function commitInspector() {
+        if (!commitNumericFields(audioClipPanel) || !commitNumericFields(shapePanel)) return false
+        if (backend.selectedShape >= 0 && !root.commitPendingRange(shapeStartField, shapeEndField,
+                (start, end) => backend.setShapeRange(backend.selectedShape, start, end))) return false
+        if (backend.selectedAudioClip >= 0 && !root.commitPendingRange(audioClipStartField, audioClipEndField,
+                (start, end) => backend.setAudioClipRange(backend.selectedAudioClip, start, end))) return false
         if (backend.selectedZoom >= 0 && !root.commitPendingRange(zoomStartField, zoomEndField,
                 (start, end) => backend.setZoomRange(backend.selectedZoom, start, end))) return false
         if (backend.selectedMask >= 0 && !maskPanel.wholeRecording
@@ -96,6 +160,9 @@ Item {
         return true
     }
     function clearSelection() {
+        backend.selectedShape = -1
+        drawingShape = -1
+        backend.selectedAudioClip = -1
         selectedPart = -1
         backend.selectedZoom = -1
         backend.selectedMask = -1
@@ -108,6 +175,8 @@ Item {
         clearSelection()
         if (kind === "zoom") backend.selectedZoom = index
         if (kind === "mask") backend.selectedMask = index
+        if (kind === "shape") backend.selectedShape = index
+        if (kind === "audioClip") backend.selectedAudioClip = index
         if (kind === "overlay") backend.selectedOverlay = index
         if (kind === "pointer") backend.selectedPointerHide = index
         inspectorOpen = index >= 0
@@ -133,7 +202,7 @@ Item {
         // Committing a range rebuilds Repeater delegates. Select through this
         // stable root, then let the replacement delegate handle the next drag.
         const pending = [zoomStartField, zoomEndField, maskStartField, maskEndField,
-            overlayStartField, overlayEndField, pointerHideStartField, pointerHideEndField]
+            overlayStartField, overlayEndField, pointerHideStartField, pointerHideEndField, audioClipStartField, audioClipEndField, shapeStartField, shapeEndField]
             .some(field => field.visible && field.hasPendingText())
         if (!commitInspector()) return false
         if (pending) { selectEffect(kind, index); return false }
@@ -144,6 +213,8 @@ Item {
         videoPlayer.pause()
         if (kind === "mask") backend.setMaskRange(index, start, end)
         else if (kind === "zoom") backend.setZoomRange(index, start, end)
+        else if (kind === "shape") backend.setShapeRange(index, start, end)
+        else if (kind === "audioClip") backend.setAudioClipRange(index, start, end)
         else if (kind === "overlay") backend.setOverlayRange(index, start, end)
         else if (kind === "pointer") backend.setPointerHideRange(index, start, end)
     }
@@ -192,6 +263,25 @@ Item {
         target: backend
         function onSelectedZoomChanged() { if (backend.selectedZoom >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
         function onSelectedMaskChanged() { if (backend.selectedMask >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
+        function onSelectedShapeChanged() {
+            if (backend.selectedShape >= 0) {
+                root.selectedPart = -1; backend.selectedAudioClip = -1
+                backend.selectedZoom = -1; backend.selectedMask = -1
+                backend.selectedOverlay = -1; backend.selectedPointerHide = -1
+                root.inspectorOpen = true
+            }
+        }
+        function onSelectedAudioClipChanged() {
+            if (backend.selectedAudioClip >= 0) {
+                backend.selectedShape = -1
+                root.selectedPart = -1
+                backend.selectedZoom = -1
+                backend.selectedMask = -1
+                backend.selectedOverlay = -1
+                backend.selectedPointerHide = -1
+                root.inspectorOpen = true
+            }
+        }
         function onSelectedOverlayChanged() { if (backend.selectedOverlay >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
         function onSelectedPointerHideChanged() { if (backend.selectedPointerHide >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
         function onTimelineChanged() { root.selectedPart = -1 }
@@ -212,6 +302,8 @@ Item {
     readonly property var pointerBlurLabels: [qsTr("Off"), qsTr("Low"), qsTr("Medium"), qsTr("High")]
     // Project settings category currently shown in the inspector.
     property bool pointerOptionsOpen: false
+    readonly property var selectedAudioClipData: backend.selectedAudioClip >= 0 && backend.selectedAudioClip < backend.audioClips.length
+        ? backend.audioClips[backend.selectedAudioClip] : null
     // Text and image overlays (#188), in OverlaySegment order.
     readonly property var selectedOverlayData: backend.selectedOverlay >= 0 && backend.selectedOverlay < backend.overlays.length
         ? backend.overlays[backend.selectedOverlay] : null
@@ -269,6 +361,7 @@ Item {
         void backend.zoomSegments; void backend.zoomEnabled; void backend.zoomReduceMotion
         void backend.cropRect; void backend.selectedFormat
         void backend.cursorSmoothing; void backend.cursorStillEnd; void backend.timelineParts
+        void backend.loopBack; void backend.straightenPointerPath
         void backend.showCursor; void backend.pointerHiddenRanges
         if (cropOverlay.editing || root.comparingOriginal || backend.selectedMask >= 0)
             return root.zoomTarget
@@ -311,6 +404,9 @@ Item {
     // Escape cancels a drag in progress first, even in a focused field or
     // text box that would take it for itself; the field keeps its text.
     function cancelTimelineDragOnEscape(event) {
+        if (drawingShape >= 0 || shapeEditor.dragging) {
+            shapeEditor.cancel(); event.accepted = true; return true
+        }
         if (!timelineDragActive) return false
         cancelTimelineDrag()
         event.accepted = true
@@ -354,6 +450,8 @@ Item {
     // What every platform player can play (IVideoPlayer::setPlaybackRate).
     readonly property real minPlayerRate: 0.25
     readonly property real maxPlayerRate: 2.0
+    readonly property real wantedPlaybackRate: root.speedOptions[root.speedIndex] * backend.playbackSpeedAt(videoPlayer.position)
+    readonly property bool approximatePlaybackRate: wantedPlaybackRate < minPlayerRate || wantedPlaybackRate > maxPlayerRate
     property real requestedPlaybackRate: 0
     function applyPlaybackRate() {
         // A 4x part at normal preview speed asks for 4x: the preview plays it
@@ -406,6 +504,10 @@ Item {
         if (backend.selectedOverlay >= 0 && !overlayPanel.wholeRecording && !root.commitPendingRange(overlayStartField, overlayEndField,
                 (start, end) => backend.setOverlayRange(backend.selectedOverlay, start, end)))
             return
+        if (backend.selectedFormat !== 0 && animatedWidthField.visible && !animatedWidthField.commitText()) {
+            animatedWidthField.forceActiveFocus()
+            return
+        }
         if (backend.selectedFormat === 0 && mp4WidthField.visible && !mp4WidthField.commitText()) {
             mp4WidthField.forceActiveFocus()
             return
@@ -493,6 +595,8 @@ Item {
         root.forceActiveFocus(Qt.OtherFocusReason)
         if (backend.selectedMask >= 0) backend.removeMask(backend.selectedMask)
         else if (backend.selectedZoom >= 0) backend.removeZoom(backend.selectedZoom)
+        else if (backend.selectedShape >= 0) backend.removeShape(backend.selectedShape)
+        else if (backend.selectedAudioClip >= 0) backend.removeAudioClip(backend.selectedAudioClip)
         else if (backend.selectedOverlay >= 0) backend.removeOverlay(backend.selectedOverlay)
         else if (backend.selectedPointerHide >= 0) backend.removePointerHide(backend.selectedPointerHide)
     }
@@ -797,10 +901,13 @@ Item {
                     width: zoomClip.parent.width
                     height: zoomClip.parent.height
                     source: backend.videoPath
+                    cameraEffectsEnabled: backend.cameraMotionBlur !== 0 && backend.zoomEnabled
+                        && !backend.zoomReduceMotion && backend.zoomAvailable && backend.zoomSegments.length > 0
+                        && !cropOverlay.editing && !root.comparingOriginal && backend.selectedMask < 0
                     transform: [
-                        Translate { x: -root.zoomView.x; y: -root.zoomView.y },
-                        Scale { xScale: root.zoomFactor; yScale: root.zoomFactor },
-                        Translate { x: root.zoomTarget.x; y: root.zoomTarget.y }
+                        Translate { x: videoPlayer.cameraEffectsEnabled ? 0 : -root.zoomView.x; y: videoPlayer.cameraEffectsEnabled ? 0 : -root.zoomView.y },
+                        Scale { xScale: videoPlayer.cameraEffectsEnabled ? 1 : root.zoomFactor; yScale: videoPlayer.cameraEffectsEnabled ? 1 : root.zoomFactor },
+                        Translate { x: videoPlayer.cameraEffectsEnabled ? 0 : root.zoomTarget.x; y: videoPlayer.cameraEffectsEnabled ? 0 : root.zoomTarget.y }
                     ]
 
                     onVideoLoaded: backend.updateVideoSize(videoPlayer.videoSize)
@@ -943,6 +1050,116 @@ Item {
                 backend: root.previewBackend
                 position: videoPlayer.framePosition
                 contentRect: root.zoomTarget
+            }
+
+            Item {
+                id: shapeEditor
+                objectName: "previewShapeEditor"
+                anchors.fill: parent
+                z: 5.5
+                visible: !root.comparingOriginal && !cropOverlay.editing && (root.drawingShape >= 0 || backend.selectedShape >= 0)
+                property bool dragging: false
+                property point draftFrom: Qt.point(0, 0)
+                property point draftTo: Qt.point(0, 0)
+                readonly property var points: {
+                    void backend.shapes
+                    void backend.zoomSegments
+                    void backend.cropRect
+                    void videoPlayer.framePosition
+                    return dragging ? {from: draftFrom, to: draftTo}
+                        : backend.shapePointsInView(backend.selectedShape, root.zoomTarget)
+                }
+                readonly property point first: points.from || Qt.point(0, 0)
+                readonly property point last: points.to || Qt.point(0, 0)
+                function begin() {
+                    draftFrom = first; draftTo = last; dragging = true
+                    videoPlayer.pause(); root.forceActiveFocus()
+                }
+                function finish() {
+                    if (!dragging) return
+                    const from = draftFrom, to = draftTo
+                    dragging = false
+                    if (root.drawingShape >= 0) {
+                        const kind = root.drawingShape
+                        root.drawingShape = -1
+                        backend.addShapeFromView(kind, from, to, root.zoomTarget)
+                    } else backend.setShapeGeometryFromView(backend.selectedShape, from, to, root.zoomTarget)
+                }
+                function cancel() { dragging = false; root.drawingShape = -1 }
+                MouseArea {
+                    objectName: "previewShapeDrawArea"
+                    x: root.zoomTarget.x; y: root.zoomTarget.y
+                    width: root.zoomTarget.width; height: root.zoomTarget.height
+                    enabled: root.drawingShape >= 0
+                    visible: enabled
+                    cursorShape: CursorTokens.pickPoint
+                    onPressed: function(mouse) {
+                        const p = mapToItem(shapeEditor, mouse.x, mouse.y)
+                        shapeEditor.draftFrom = p; shapeEditor.draftTo = p; shapeEditor.dragging = true
+                        videoPlayer.pause(); root.forceActiveFocus()
+                    }
+                    onPositionChanged: function(mouse) {
+                        if (pressed && shapeEditor.dragging) shapeEditor.draftTo = mapToItem(shapeEditor, mouse.x, mouse.y)
+                    }
+                    onReleased: shapeEditor.finish()
+                    onCanceled: shapeEditor.cancel()
+                }
+                Rectangle {
+                    objectName: "previewShapeBounds"
+                    x: Math.min(shapeEditor.first.x, shapeEditor.last.x)
+                    y: Math.min(shapeEditor.first.y, shapeEditor.last.y)
+                    width: Math.max(2, Math.abs(shapeEditor.last.x - shapeEditor.first.x))
+                    height: Math.max(2, Math.abs(shapeEditor.last.y - shapeEditor.first.y))
+                    visible: shapeEditor.dragging || backend.selectedShape >= 0
+                    color: "transparent"
+                    border.width: 1; border.color: root.accent
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: root.drawingShape < 0
+                        cursorShape: CursorTokens.moveItem
+                        property point pressPoint
+                        property point originalFrom
+                        property point originalTo
+                        onPressed: function(mouse) {
+                            pressPoint = mapToItem(shapeEditor, mouse.x, mouse.y)
+                            originalFrom = shapeEditor.first; originalTo = shapeEditor.last
+                            shapeEditor.begin()
+                        }
+                        onPositionChanged: function(mouse) {
+                            if (!pressed || !shapeEditor.dragging) return
+                            const p = mapToItem(shapeEditor, mouse.x, mouse.y)
+                            const dx = p.x - pressPoint.x, dy = p.y - pressPoint.y
+                            shapeEditor.draftFrom = Qt.point(originalFrom.x + dx, originalFrom.y + dy)
+                            shapeEditor.draftTo = Qt.point(originalTo.x + dx, originalTo.y + dy)
+                        }
+                        onReleased: shapeEditor.finish()
+                        onCanceled: shapeEditor.cancel()
+                    }
+                }
+                Repeater {
+                    model: backend.selectedShape >= 0 && root.drawingShape < 0 ? 2 : 0
+                    Rectangle {
+                        required property int index
+                        objectName: "previewShapeHandle" + index
+                        width: 12; height: 12; radius: 2
+                        x: (index === 0 ? shapeEditor.first.x : shapeEditor.last.x) - width / 2
+                        y: (index === 0 ? shapeEditor.first.y : shapeEditor.last.y) - height / 2
+                        color: root.accent
+                        MouseArea {
+                            anchors.fill: parent; anchors.margins: -4
+                            cursorShape: CursorTokens.resizeDiagonal
+                            onPressed: shapeEditor.begin()
+                            onPositionChanged: function(mouse) {
+                                if (!pressed || !shapeEditor.dragging) return
+                                const p = mapToItem(shapeEditor, mouse.x, mouse.y)
+                                if (index === 0) shapeEditor.draftFrom = p
+                                else shapeEditor.draftTo = p
+                            }
+                            onReleased: shapeEditor.finish()
+                            onCanceled: shapeEditor.cancel()
+                        }
+                    }
+                }
             }
 
             // Moving and resizing the selected overlay, on the exported picture.
@@ -1294,8 +1511,10 @@ Item {
                     Layout.preferredWidth: implicitWidth
                     inlineLabel: true
                     maximumInlineLabelWidth: root.wideEditor ? 220 : 140
-                    label: qsTr("Preview speed")
-                    tooltipText: qsTr("Playback speed of this preview only; the export is not changed")
+                    label: root.approximatePlaybackRate ? qsTr("Preview speed (approximate)") : qsTr("Preview speed")
+                    tooltipText: root.approximatePlaybackRate
+                        ? qsTr("Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.")
+                        : qsTr("Playback speed of this preview only; the export is not changed")
                     choices: root.speedOptions.map(v => root.speedLabel(v))
                     currentIndex: root.speedIndex
                     onActivated: function(index) { root.speedIndex = index; root.applyPlaybackRate() }
@@ -1428,8 +1647,7 @@ Item {
                         const count = backend.generateAutoZoom()
                         effectMenu.close()
                         // Say what happened right at the button.
-                        root.showButtonTooltip(count > 0 ? qsTr("Zooms added: %1").arg(count)
-                                                         : qsTr("No clicks to zoom in on"), this, true)
+                        root.showButtonTooltip(backend.autoZoomResult, this, true)
                     }
                 }
                 SegmentButton {
@@ -1505,6 +1723,40 @@ Item {
                         backend.selectedPointerHide = -1
                         backend.chooseOverlayImage()
                     }
+                Repeater {
+                    model: root.shapeNames
+                    SegmentButton {
+                        required property int index
+                        required property string modelData
+                        objectName: "previewAddShape" + index
+                        width: parent.width
+                        minimumButtonWidth: 0
+                        text: modelData
+                        enabled: backend.overlaysAvailable
+                        tooltipText: qsTr("Drag on the preview to draw this shape")
+                        onClicked: {
+                            if (!root.prepareNewEffect()) return
+                            effectMenu.close(); videoPlayer.pause()
+                            root.clearSelection(); root.drawingShape = index
+                            root.forceActiveFocus()
+                        }
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewAddAudioClip"
+                    width: parent.width
+                    minimumButtonWidth: 0
+                    enabled: backend.audioClipsAvailable && !backend.importingAudio
+                    text: qsTr("Add Audio…")
+                    tooltipText: backend.audioClipsAvailable ? qsTr("Import music or narration (up to 30 minutes and 512 MB)")
+                        : qsTr("GIF and WebP do not contain audio. Choose MP4 to add audio.")
+                    onClicked: {
+                        if (!root.prepareNewEffect()) return
+                        effectMenu.close()
+                        videoPlayer.pause()
+                        backend.chooseAudioClip()
+                    }
+                }
                 }
                 }
             }
@@ -1565,18 +1817,25 @@ Item {
                 const masks = packRows(backend.masks)
                 const overlays = packRows(backend.overlays)
                 const pointers = packRows(backend.pointerHiddenRanges)
+                const audioClips = packRows(backend.audioClips)
+                const shapes = packRows(backend.shapes)
                 return {
                     zoomBase: 0, maskBase: zoomRows, overlayBase: zoomRows + masks.count,
                     pointerBase: zoomRows + masks.count + overlays.count,
+                    audioClipBase: zoomRows + masks.count + overlays.count + pointers.count,
+                    audioClip: audioClips,
+                    shapeBase: zoomRows + masks.count + overlays.count + pointers.count + audioClips.count, shape: shapes,
                     zoom: zooms, mask: masks, overlay: overlays, pointer: pointers,
                     groups: [
                         { name: qsTr("Zoom"), icon: "zoom-in", base: 0, count: zoomRows },
                         { name: qsTr("Mask"), icon: "square-dashed", base: zoomRows, count: masks.count },
                         { name: qsTr("Text & image"), icon: "text", base: zoomRows + masks.count, count: overlays.count },
                         { name: qsTr("Pointer"), icon: "mouse-pointer", base: zoomRows + masks.count + overlays.count,
-                          count: pointers.count }
+                          count: pointers.count },
+                        { name: qsTr("Audio"), icon: "volume-2", base: zoomRows + masks.count + overlays.count + pointers.count, count: audioClips.count },
+                        { name: qsTr("Shapes"), icon: "square-dashed", base: zoomRows + masks.count + overlays.count + pointers.count + audioClips.count, count: shapes.count }
                     ].filter(group => group.count > 0),
-                    total: zoomRows + masks.count + overlays.count + pointers.count
+                    total: zoomRows + masks.count + overlays.count + pointers.count + audioClips.count + shapes.count
                 }
             }
             // A selected effect is scrolled into view, wherever it was selected from.
@@ -1590,6 +1849,8 @@ Item {
                                                                  effectTracks.contentHeight - effectTracks.height))
             }
             function revealSelection() {
+                if (backend.selectedShape >= 0) revealLane(lanes.shapeBase + (lanes.shape.row[backend.selectedShape] || 0))
+                if (backend.selectedAudioClip >= 0) revealLane(lanes.audioClipBase + (lanes.audioClip.row[backend.selectedAudioClip] || 0))
                 if (backend.selectedZoom >= 0) revealLane(lanes.zoomBase + (lanes.zoom.row[backend.selectedZoom] || 0))
                 else if (backend.selectedMask >= 0) revealLane(lanes.maskBase + (lanes.mask.row[backend.selectedMask] || 0))
                 else if (backend.selectedOverlay >= 0)
@@ -1599,6 +1860,8 @@ Item {
             }
             Connections {
                 target: backend
+                function onSelectedShapeChanged() { Qt.callLater(timelineArea.revealSelection) }
+                function onSelectedAudioClipChanged() { Qt.callLater(timelineArea.revealSelection) }
                 function onSelectedZoomChanged() { Qt.callLater(timelineArea.revealSelection) }
                 function onSelectedMaskChanged() { Qt.callLater(timelineArea.revealSelection) }
                 function onSelectedOverlayChanged() { Qt.callLater(timelineArea.revealSelection) }
@@ -2081,6 +2344,67 @@ Item {
                 }
             }
 
+            Repeater {
+                model: backend.audioClips
+                parent: effectTracks.contentItem
+                EditorTimelineSegment {
+                    required property int index
+                    required property var modelData
+                    objectName: "previewAudioClipSegment" + index
+                    y: (timelineArea.lanes.audioClipBase + (timelineArea.lanes.audioClip.row[index] || 0)) * timelineArea.laneHeight + 3
+                    z: 2
+                    startMs: modelData.start
+                    endMs: modelData.end
+                    exported: root.rangeExported(modelData.start, modelData.end)
+                    lowerMs: 0
+                    upperMs: timelineArea.dur
+                    minimumDuration: 100
+                    pixelsPerMs: trackRect.width / timelineArea.dur
+                    minimumDisplayWidth: timelineArea.segmentMinWidth
+                    trackX: trackRect.x
+                    selected: backend.selectedAudioClip === index
+                    opacity: backend.audioClipsAvailable ? 1 : 0.5
+                    fillColor: ComponentTokens.editorOverlayFill
+                    edgeColor: ComponentTokens.editorOverlayEdge
+                    iconSource: root.iconUrl("volume-2")
+                    label: modelData.name
+                    accessibleName: qsTr("Audio clip %1").arg(modelData.name)
+                    prepareSelection: function() { return root.prepareEffectInteraction("audioClip", index) }
+                    onActivated: root.selectEffect("audioClip", index)
+                    onRangeEdited: function(start, end) { root.editEffectRange("audioClip", index, start, end) }
+                }
+            }
+
+            Repeater {
+                model: backend.shapes
+                parent: effectTracks.contentItem
+                EditorTimelineSegment {
+                    required property int index
+                    required property var modelData
+                    objectName: "previewShapeSegment" + index
+                    y: (timelineArea.lanes.shapeBase + (timelineArea.lanes.shape.row[index] || 0)) * timelineArea.laneHeight + 3
+                    z: 2
+                    startMs: modelData.start
+                    endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
+                    openEnded: modelData.end < 0
+                    exported: root.rangeExported(modelData.start, modelData.end)
+                    lowerMs: 0; upperMs: timelineArea.dur; minimumDuration: 100
+                    pixelsPerMs: trackRect.width / timelineArea.dur
+                    minimumDisplayWidth: timelineArea.segmentMinWidth
+                    trackX: trackRect.x
+                    selected: backend.selectedShape === index
+                    opacity: backend.overlaysAvailable ? 1 : 0.5
+                    fillColor: ComponentTokens.editorOverlayFill
+                    edgeColor: ComponentTokens.editorOverlayEdge
+                    iconSource: root.iconUrl("square-dashed")
+                    label: root.shapeNames[modelData.kind]
+                    accessibleName: label
+                    prepareSelection: function() { return root.prepareEffectInteraction("shape", index) }
+                    onActivated: root.selectEffect("shape", index)
+                    onRangeEdited: function(start, end) { root.editEffectRange("shape", index, start, end) }
+                }
+            }
+
             // Ranges without a pointer (#186).
             Repeater {
                 model: backend.pointerHiddenRanges
@@ -2239,7 +2563,7 @@ Item {
             id: controlRowArea
             parent: editorShell.inspectorContent
             width: parent.width
-            height: Math.max(formatRow.visible ? formatRow.height : 0,
+            height: Math.max(shapePanel.visible ? shapePanel.height : 0, audioClipPanel.visible ? audioClipPanel.height : 0, formatRow.visible ? formatRow.height : 0,
                 zoomPanel.visible ? zoomPanel.height : 0, maskPanel.visible ? maskPanel.height : 0,
                 pointerPanel.visible ? pointerPanel.height : 0, appearancePanel.visible ? appearancePanel.height : 0,
                 keysPanel.visible ? keysPanel.height : 0, audioPanel.visible ? audioPanel.height : 0,
@@ -2256,7 +2580,7 @@ Item {
                                               && !(backend.selectedMask >= 0) && !pointerPanel.visible
                                               && !pointerHidePanel.visible
                                               && !appearancePanel.visible && !keysPanel.visible && !audioPanel.visible
-                                              && !overlayPanel.visible
+                                              && !overlayPanel.visible && !audioClipPanel.visible && !shapePanel.visible
                 visible: shown
                 enabled: shown
                 Accessible.ignored: !shown
@@ -2359,7 +2683,7 @@ Item {
                 EditorChoice {
                     objectName: "previewPartSpeed"
                     label: qsTr("Export speed")
-                    tooltipText: qsTr("How fast this clip plays in the exported file. Changed-speed clips are silent.")
+                    tooltipText: qsTr("How fast this clip plays in the exported file")
                     choices: root.partSpeeds.map(v => root.speedLabel(v))
                     currentIndex: root.partSpeeds.indexOf(root.selectedPartData ? root.selectedPartData.speed : 1)
                     currentValueText: root.speedLabel(root.selectedPartData ? root.selectedPartData.speed : 1)
@@ -2367,6 +2691,19 @@ Item {
                     onActivated: function(index) {
                         const part = root.selectedPart
                         backend.setPartSpeed(part, root.partSpeeds[index])
+                        root.selectedPart = part
+                    }
+                }
+                EditorSwitch {
+                    objectName: "previewPartKeepSound"
+                    text: qsTr("Keep sound")
+                    tooltipText: qsTr("Keep the original pitch when changing this clip's speed")
+                    enabled: backend.selectedFormat === 0 && backend.timelineEditsAvailable
+                        && root.selectedPartData !== null && !root.selectedPartData.deleted && root.selectedPartData.speed !== 1
+                    on: root.selectedPartData !== null && root.selectedPartData.keepSound
+                    onClicked: {
+                        const part = root.selectedPart
+                        backend.setPartKeepSound(part, !on)
                         root.selectedPart = part
                     }
                 }
@@ -2490,7 +2827,7 @@ Item {
                 y: SemanticTokens.spacing16
                 width: parent.width - 2 * SemanticTokens.spacing16
                 spacing: SemanticTokens.spacing16
-                visible: root.selectedPart < 0 && root.pointerOptionsOpen && backend.cursorEffectsAvailable
+                visible: backend.selectedShape < 0 && backend.selectedAudioClip < 0 && root.selectedPart < 0 && root.pointerOptionsOpen && backend.cursorEffectsAvailable
                          && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
                          && !(backend.selectedZoom >= 0) && !cropOverlay.editing
 
@@ -2515,6 +2852,16 @@ Item {
                     onActivated: function(index) { backend.cursorScale = root.pointerScales[index] }
                 }
                 EditorChoice {
+                    objectName: "previewPointerStyle"
+                    visible: backend.hasPointerData
+                    enabled: backend.cursorEffectsAvailable && backend.showCursor
+                    label: qsTr("Pointer style")
+                    tooltipText: qsTr("Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image")
+                    choices: [qsTr("Recorded"), qsTr("Crisp")]
+                    currentIndex: backend.pointerStyle
+                    onActivated: function(index) { backend.pointerStyle = index }
+                }
+                EditorChoice {
                     objectName: "previewPointerSmoothing"
                     visible: backend.hasPointerData
                     enabled: backend.cursorEffectsAvailable && backend.showCursor
@@ -2523,6 +2870,36 @@ Item {
                     choices: root.pointerSmoothingLabels
                     currentIndex: backend.cursorSmoothing
                     onActivated: function(index) { backend.cursorSmoothing = index }
+                }
+                EditorChoice {
+                    objectName: "previewPointerStraighten"
+                    visible: backend.hasPointerData
+                    enabled: backend.cursorEffectsAvailable && backend.showCursor && backend.cursorSmoothing !== 0
+                    label: qsTr("Straighten path")
+                    tooltipText: qsTr("Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.")
+                    choices: [qsTr("Off"), qsTr("Low"), qsTr("High")]
+                    currentIndex: backend.straightenPointerPath
+                    onActivated: function(index) { backend.straightenPointerPath = index }
+                }
+                EditorSwitch {
+                    objectName: "previewPointerLoopBack"
+                    visible: backend.hasPointerData
+                    enabled: backend.cursorEffectsAvailable && backend.selectedFormat !== 0
+                    text: qsTr("Loop back")
+                    tooltipText: backend.selectedFormat === 0
+                        ? qsTr("Loop back is available for GIF and WebP exports")
+                        : qsTr("Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.")
+                    on: backend.loopBack
+                    onClicked: backend.loopBack = !on
+                }
+                EditorSwitch {
+                    objectName: "previewPointerSteadyShape"
+                    visible: backend.hasPointerData
+                    enabled: backend.cursorEffectsAvailable && backend.showCursor
+                    text: qsTr("Steady pointer shape")
+                    tooltipText: qsTr("Hide brief shape changes except near a click")
+                    on: backend.steadyPointerShape
+                    onClicked: backend.steadyPointerShape = !on
                 }
                 EditorChoice {
                     objectName: "previewClickStyle"
@@ -2830,6 +3207,174 @@ Item {
                 }
             }
 
+            Column {
+                id: audioClipPanel
+                objectName: "previewAudioClipPanel"
+                x: SemanticTokens.spacing16
+                y: SemanticTokens.spacing16
+                width: parent.width - 2 * SemanticTokens.spacing16
+                spacing: SemanticTokens.spacing12
+                visible: backend.selectedAudioClip >= 0 && !cropOverlay.editing
+                enabled: backend.audioClipsAvailable
+                Text {
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    text: backend.audioClipsAvailable ? (root.selectedAudioClipData ? root.selectedAudioClipData.name : "")
+                        : qsTr("GIF and WebP do not contain audio. Choose MP4 to edit audio clips.")
+                    color: root.textSecondary
+                }
+                EditorChoice {
+                    objectName: "previewAudioClipGain"
+                    label: qsTr("Volume")
+                    choices: root.audioGainChoices.map(v => root.gainLabel(v))
+                    currentIndex: root.selectedAudioClipData ? root.audioGainChoices.indexOf(root.selectedAudioClipData.gainDb) : -1
+                    onActivated: function(index) { backend.setAudioClipOption(backend.selectedAudioClip, "gainDb", root.audioGainChoices[index]) }
+                }
+                EditorSwitch {
+                    objectName: "previewAudioClipLoop"
+                    text: qsTr("Loop audio")
+                    tooltipText: qsTr("Repeat the audio file to fill this clip's range")
+                    on: root.selectedAudioClipData ? root.selectedAudioClipData.loop : false
+                    onClicked: backend.setAudioClipOption(backend.selectedAudioClip, "loop", !on)
+                }
+                Repeater {
+                    model: [{key: "offsetMs", label: qsTr("Source offset (ms)")},
+                        {key: "fadeInMs", label: qsTr("Fade in (ms)")}, {key: "fadeOutMs", label: qsTr("Fade out (ms)")}]
+                    Row {
+                        required property var modelData
+                        spacing: 8
+                        Text { text: modelData.label; color: root.textSecondary; width: audioClipPanel.width - 100; anchors.verticalCenter: parent.verticalCenter }
+                        NumberField {
+                            objectName: "previewAudioClip" + modelData.key
+                            value: root.selectedAudioClipData ? root.selectedAudioClipData[modelData.key] : 0
+                            validator: IntValidator { bottom: 0; top: 1800000 }
+                            accessibleName: modelData.label
+                            onCommitted: function(value) { backend.setAudioClipOption(backend.selectedAudioClip, modelData.key, value) }
+                        }
+                    }
+                }
+                Row {
+                    spacing: 8
+                    TimeField {
+                        id: audioClipStartField
+                        objectName: "previewAudioClipStart"
+                        width: (audioClipPanel.width - 8) / 2
+                        timeMs: root.selectedAudioClipData ? root.selectedAudioClipData.start : 0
+                        accessibleName: qsTr("Audio start")
+                        onCommitted: function(ms) { invalid = !backend.setAudioClipRange(backend.selectedAudioClip, ms, root.selectedAudioClipData.end) }
+                    }
+                    TimeField {
+                        id: audioClipEndField
+                        objectName: "previewAudioClipEnd"
+                        width: (audioClipPanel.width - 8) / 2
+                        timeMs: root.selectedAudioClipData ? root.selectedAudioClipData.end : 0
+                        accessibleName: qsTr("Audio end")
+                        onCommitted: function(ms) { invalid = !backend.setAudioClipRange(backend.selectedAudioClip, root.selectedAudioClipData.start, ms) }
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewDeleteAudioClip"
+                    text: qsTr("Delete audio clip")
+                    onClicked: backend.removeAudioClip(backend.selectedAudioClip)
+                }
+            }
+
+            Column {
+                id: shapePanel
+                objectName: "previewShapePanel"
+                x: SemanticTokens.spacing16; y: SemanticTokens.spacing16
+                width: parent.width - 2 * SemanticTokens.spacing16
+                spacing: SemanticTokens.spacing12
+                visible: backend.selectedShape >= 0 && !cropOverlay.editing
+                EditorChoice {
+                    objectName: "previewShapeSpace"
+                    label: qsTr("Coordinate space")
+                    choices: [qsTr("Content — follows zoom"), qsTr("Screen — fixed position")]
+                    currentIndex: root.selectedShapeData ? root.selectedShapeData.space : 0
+                    onActivated: function(index) { backend.setShapeOption(backend.selectedShape, "space", index) }
+                }
+                EditorChoice {
+                    objectName: "previewShapeWidth"
+                    label: qsTr("Line width")
+                    property var widths: [2, 4, 6, 8, 12, 16]
+                    choices: widths.map(v => String(v))
+                    currentIndex: root.selectedShapeData ? widths.indexOf(root.selectedShapeData.width) : 1
+                    onActivated: function(index) { backend.setShapeOption(backend.selectedShape, "width", widths[index]) }
+                }
+                Row {
+                    spacing: 6
+                    Repeater {
+                        model: root.overlayColors
+                        Rectangle {
+                            required property string modelData
+                            width: 24; height: 24; radius: 12
+                            color: modelData
+                            border.width: 1; border.color: root.borderColor
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: backend.setShapeOption(backend.selectedShape, "color", parent.modelData)
+                            }
+                        }
+                    }
+                }
+                EditorChoice {
+                    objectName: "previewShapeArrowStyle"
+                    visible: root.selectedShapeData && root.selectedShapeData.kind === 0
+                    label: qsTr("Arrow style")
+                    choices: [qsTr("Line"), qsTr("Filled arrow"), qsTr("Outline arrow"), qsTr("Open arrow"), qsTr("Both ends"), qsTr("Both ends, outline")]
+                    currentIndex: root.selectedShapeData ? root.selectedShapeData.arrowStyle : 1
+                    onActivated: function(index) { backend.setShapeOption(backend.selectedShape, "arrowStyle", index) }
+                }
+                NumberField {
+                    objectName: "previewShapeStepNumber"
+                    visible: root.selectedShapeData && root.selectedShapeData.kind === 5
+                    accessibleName: qsTr("Step number")
+                    validator: IntValidator { bottom: 1; top: 999 }
+                    value: root.selectedShapeData ? root.selectedShapeData.number : 1
+                    onCommitted: function(value) { backend.setShapeOption(backend.selectedShape, "number", value) }
+                }
+                Repeater {
+                    model: [{key: "fadeInMs", label: qsTr("Fade in (ms)")}, {key: "fadeOutMs", label: qsTr("Fade out (ms)")}]
+                    Row {
+                        required property var modelData
+                        spacing: 8
+                        Text { text: modelData.label; color: root.textSecondary; width: shapePanel.width - 100; anchors.verticalCenter: parent.verticalCenter }
+                        NumberField {
+                            objectName: "previewShape" + modelData.key
+                            value: root.selectedShapeData ? root.selectedShapeData[modelData.key] : 0
+                            accessibleName: modelData.label
+                            validator: IntValidator { bottom: 0; top: 10000 }
+                            onCommitted: function(value) { backend.setShapeOption(backend.selectedShape, modelData.key, value) }
+                        }
+                    }
+                }
+                Row {
+                    spacing: 8
+                    TimeField {
+                        id: shapeStartField
+                        objectName: "previewShapeStart"
+                        width: (shapePanel.width - 8) / 2
+                        timeMs: root.selectedShapeData ? root.selectedShapeData.start : 0
+                        accessibleName: qsTr("Shape start")
+                        onCommitted: function(ms) { invalid = !backend.setShapeRange(backend.selectedShape, ms, root.selectedShapeData.end) }
+                    }
+                    TimeField {
+                        id: shapeEndField
+                        objectName: "previewShapeEnd"
+                        width: (shapePanel.width - 8) / 2
+                        timeMs: root.selectedShapeData && root.selectedShapeData.end >= 0 ? root.selectedShapeData.end : backend.duration
+                        openEnded: root.selectedShapeData && root.selectedShapeData.end < 0
+                        accessibleName: qsTr("Shape end")
+                        onCommitted: function(ms) { invalid = !backend.setShapeRange(backend.selectedShape, root.selectedShapeData.start, ms) }
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewDeleteShape"
+                    text: qsTr("Delete shape")
+                    onClicked: backend.removeShape(backend.selectedShape)
+                }
+            }
+
             // The two audio tracks (#189), in the contextual inspector.
             Column {
                 id: audioPanel
@@ -2838,7 +3383,7 @@ Item {
                 y: SemanticTokens.spacing16
                 width: parent.width - 2 * SemanticTokens.spacing16
                 spacing: SemanticTokens.spacing16
-                visible: root.selectedPart < 0 && root.audioOpen && backend.audioMixAvailable && !cropOverlay.editing
+                visible: backend.selectedShape < 0 && backend.selectedAudioClip < 0 && root.selectedPart < 0 && root.audioOpen && backend.audioMixAvailable && !cropOverlay.editing
                          && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
                          && !(backend.selectedZoom >= 0)
 
@@ -2894,7 +3439,7 @@ Item {
                 y: SemanticTokens.spacing16
                 width: parent.width - 2 * SemanticTokens.spacing16
                 spacing: SemanticTokens.spacing16
-                visible: root.selectedPart < 0 && root.keysOpen && backend.keyOverlayAvailable && !cropOverlay.editing
+                visible: backend.selectedShape < 0 && backend.selectedAudioClip < 0 && root.selectedPart < 0 && root.keysOpen && backend.keyOverlayAvailable && !cropOverlay.editing
                          && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
                          && !(backend.selectedZoom >= 0)
 
@@ -2948,7 +3493,7 @@ Item {
                 y: SemanticTokens.spacing16
                 width: parent.width - 2 * SemanticTokens.spacing16
                 spacing: SemanticTokens.spacing16
-                visible: root.selectedPart < 0 && root.appearanceOpen && backend.appearanceAvailable && !cropOverlay.editing
+                visible: backend.selectedShape < 0 && backend.selectedAudioClip < 0 && root.selectedPart < 0 && root.appearanceOpen && backend.appearanceAvailable && !cropOverlay.editing
                          && !(backend.selectedPointerHide >= 0) && !(backend.selectedMask >= 0) && !(backend.selectedOverlay >= 0)
                          && !(backend.selectedZoom >= 0)
 
@@ -3373,6 +3918,60 @@ Item {
                 }
             }
 
+            Column {
+                parent: exportPanel.optionsContent
+                width: parent.width
+                spacing: SemanticTokens.spacing12
+                visible: backend.selectedFormat !== 0
+                height: visible ? implicitHeight : 0
+                EditorChoice {
+                    objectName: "previewAnimatedResolution"
+                    label: qsTr("Resolution")
+                    choices: [qsTr("Original"), "1280", "960", "640", "480", qsTr("Custom width")]
+                    tooltipText: qsTr("Limit the longest edge, or set a custom width. The image is never enlarged.")
+                    currentIndex: backend.animatedOptions.resolution
+                    onActivated: function(index) { backend.setAnimatedOption("resolution", index) }
+                }
+                NumberField {
+                    id: animatedWidthField
+                    objectName: "previewAnimatedWidth"
+                    visible: backend.animatedOptions.resolution === 5
+                    accessibleName: qsTr("Video width in pixels")
+                    value: backend.animatedOptions.width
+                    onCommitted: function(v) { backend.setAnimatedOption("width", v) }
+                }
+                EditorChoice {
+                    label: qsTr("Frame rate")
+                    readonly property var rates: [0, 30, 20, 15, 10]
+                    choices: rates.map(v => v === 0 ? qsTr("Original") : v + " fps")
+                    currentIndex: rates.indexOf(backend.animatedOptions.fps)
+                    onActivated: function(index) { backend.setAnimatedOption("fps", rates[index]) }
+                }
+                EditorChoice {
+                    label: qsTr("Quality")
+                    choices: [qsTr("High"), qsTr("Medium"), qsTr("Low")]
+                    currentIndex: backend.animatedOptions.quality
+                    onActivated: function(index) { backend.setAnimatedOption("quality", index) }
+                }
+                EditorSwitch {
+                    text: qsTr("Loop forever")
+                    on: backend.animatedOptions.loop
+                    onClicked: backend.setAnimatedOption("loop", !on)
+                }
+                EditorSwitch {
+                    visible: backend.selectedFormat === 2
+                    text: qsTr("Smaller file (slower)")
+                    on: backend.animatedOptions.minimizeSize
+                    onClicked: backend.setAnimatedOption("minimizeSize", !on)
+                }
+                Text {
+                    width: parent.width
+                    color: root.textSecondary
+                    wrapMode: Text.WordWrap
+                    text: qsTr("These options apply in the editor. Quick mode records directly using the recording size and frame rate.")
+                }
+            }
+
             // MP4 export options (#190), in the contextual inspector.
             Column {
                 id: mp4Panel
@@ -3381,6 +3980,7 @@ Item {
                 width: parent.width
                 spacing: SemanticTokens.spacing12
                 visible: backend.selectedFormat === 0
+                height: visible ? implicitHeight : 0
                 readonly property string sizeOrFpsUnavailable:
                     qsTr("Changing the MP4 size and frame rate is not supported on this system yet")
 
@@ -3626,6 +4226,15 @@ Item {
                         on: backend.zoomEnabled
                         onClicked: backend.zoomEnabled = !backend.zoomEnabled
                     }
+                    EditorChoice {
+                        objectName: "previewCameraMotionBlur"
+                        label: qsTr("Camera motion blur")
+                        tooltipText: qsTr("Soften camera movement while keeping pointers and overlays sharp")
+                        enabled: backend.zoomEnabled && !backend.zoomReduceMotion
+                        choices: [qsTr("Off"), qsTr("Low"), qsTr("High")]
+                        currentIndex: backend.cameraMotionBlur
+                        onActivated: function(index) { backend.cameraMotionBlur = index }
+                    }
                     EditorSwitch {
                         objectName: "previewZoomReduceMotion"
                         text: qsTr("Less motion")
@@ -3746,9 +4355,13 @@ Item {
     RecordingExportPanel {
         id: exportPanel
         parent: root
-        showOptions: backend.selectedFormat === 0
-        onExportRequested: root.saveWithCrop()
+        showOptions: true
+        onExportRequested: {
+            if (backend.selectedFormat !== 0 && animatedWidthField.visible && !animatedWidthField.commitText()) return
+            root.saveWithCrop()
+        }
         onReturnRequested: {
+            if (backend.selectedFormat !== 0 && animatedWidthField.visible && !animatedWidthField.commitText()) return
             if (!mp4WidthField.visible || mp4WidthField.commitText()) exportPanel.close()
         }
         // What Save will produce: encoded pixel sizes (not window sizes), kept time, audio.
@@ -3772,7 +4385,7 @@ Item {
             return parts.join(" · ")
         }
         footerText: backend.selectedFormat === 0 && backend.mp4EstimateText.length > 0
-            ? backend.mp4EstimateText : ""
+            ? backend.mp4EstimateText : backend.selectedFormat !== 0 ? backend.animatedSizeText : ""
 
         Column {
             parent: exportPanel.formatContent
@@ -3819,7 +4432,7 @@ Item {
             height: 72
             radius: 36
             color: ComponentTokens.recordingPreviewPlayOverlay
-            visible: !videoPlayer.playing
+            visible: !videoPlayer.playing && root.drawingShape < 0 && backend.selectedShape < 0
             opacity: visible ? 1.0 : 0.0
 
             Behavior on opacity {
@@ -4522,6 +5135,7 @@ Item {
 
     component NumberField: TextField {
         id: numberField
+        readonly property bool numericEditor: true
         property int value: 0
         property string accessibleName: ""
         signal committed(int value)

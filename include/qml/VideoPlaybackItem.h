@@ -27,6 +27,7 @@ class VideoPlaybackItem : public QQuickPaintedItem
     Q_OBJECT
     QML_ELEMENT
 
+    Q_PROPERTY(bool cameraEffectsEnabled READ cameraEffectsEnabled WRITE setCameraEffectsEnabled NOTIFY cameraEffectsEnabledChanged)
     Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged)
     Q_PROPERTY(bool playing READ isPlaying NOTIFY stateChanged)
     Q_PROPERTY(int playerState READ playerState NOTIFY stateChanged)
@@ -95,11 +96,14 @@ public:
     // export hides. The raw frame is kept; reprocessFrame() redoes the shown one.
     using FrameProcessor = std::function<void(QImage& frame, qint64 positionMs)>;
     void setFrameProcessor(FrameProcessor processor);
+    bool cameraEffectsEnabled() const { return m_cameraEffectsEnabled; }
+    void setCameraEffectsEnabled(bool enabled);
     // #189: audio to play instead of the file's track; false where unsupported.
     bool setAudioSource(std::function<QByteArray(qint64 startFrame, int frames)> source);
     void reprocessFrame();
 
 signals:
+    void cameraEffectsEnabledChanged();
     void audioPlaybackSupportedChanged();
     void sourceChanged();
     void stateChanged();
@@ -133,6 +137,7 @@ private:
     QImage m_currentFrame;
     QImage m_rawFrame;
     FrameProcessor m_frameProcessor;
+    bool m_cameraEffectsEnabled = false;
     qint64 m_framePosition = 0;
     qint64 m_pausedSeekPosition = -1;
     QImage m_scaledFrame;

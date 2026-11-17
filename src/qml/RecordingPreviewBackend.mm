@@ -19,6 +19,10 @@
 #include "recording/CursorTimeline.h"
 #include "recording/KeyTimeline.h"
 #include "recording/AudioTracks.h"
+#include "video/AudioFileDecoder.h"
+#include <QSaveFile>
+#include <QJsonArray>
+#include <QJsonDocument>
 
 #include <QCloseEvent>
 #include "recording/DiskSpaceGuard.h"
@@ -28,6 +32,7 @@
 #include <QMutexLocker>
 #include <QStorageInfo>
 #include <cmath>
+#include <cstring>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -40,6 +45,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QPainter>
+#include <QLineF>
 #include <QPointer>
 #include <utility>
 #include <QQmlContext>
@@ -67,9 +73,13 @@ constexpr int kFrameExtractionTimeoutMs = 5000;
 struct RecordingPreviewBackend::PreviewAudio {
     QMutex mutex;
     SnapTray::AudioTrackMixer mixer;
+    SnapTray::TimelineMap timeline;
+    SnapTray::AudioTrackReader mixed;
     PreviewAudio(const QString& videoPath, const SnapTray::AudioMixSettings& settings)
         : mixer(videoPath, settings)
     {
+        if (!mixer.hasSeparateTracks() && mixed.open(videoPath + QLatin1String(SnapTray::AudioClipTrack::kMixedSuffix)))
+            mixer.setFallback([this](qint64 start, int count) { return mixed.read(start, count); });
     }
 };
 
@@ -108,6 +118,9 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     m_appearance = appearance.isEmpty()
         ? SnapTray::RecordingAppearance::fromBeautify(BeautifySettingsManager::instance().loadSettings())
         : SnapTray::RecordingAppearance::fromJson(appearance);
+    QFile audioRecovery(videoPath + QStringLiteral(".imports.json"));
+    if (audioRecovery.open(QIODevice::ReadOnly))
+        m_audioClips = SnapTray::AudioClipTrack::fromJson(QJsonDocument::fromJson(audioRecovery.readAll()).object());
     m_editHistory.reset(currentEditState());
     // Saved styles are one list with screenshot Beautify (#269).
     connect(&SnapTray::FrameStyleLibrary::instance(), &SnapTray::FrameStyleLibrary::stylesChanged, this,
@@ -132,6 +145,14 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
         connect(this, signal, this, [this] { m_preparedZoom.reset(); });
     }
     m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(RecordingSettingsManager::instance().mp4ExportOptions());
+    m_gifOptions = SnapTray::AnimatedExportOptions::fromJson(RecordingSettingsManager::instance().animatedExportOptions(false));
+    m_webpOptions = SnapTray::AnimatedExportOptions::fromJson(RecordingSettingsManager::instance().animatedExportOptions(true));
+    connect(this, &RecordingPreviewBackend::formatChanged, this, [this] {
+        m_animatedBytes = 0;
+        emit animatedOptionsChanged();
+    });
+    connect(this, &RecordingPreviewBackend::animatedOptionsChanged, this, &RecordingPreviewBackend::mp4EstimateChanged);
+
     // The estimate follows everything that changes the exported picture or length.
     for (const auto signal : {&RecordingPreviewBackend::mp4OptionsChanged, &RecordingPreviewBackend::cropRectChanged,
                               &RecordingPreviewBackend::trimRangeChanged, &RecordingPreviewBackend::durationChanged,
@@ -144,6 +165,20 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
                               &RecordingPreviewBackend::overlaysChanged}) {
         connect(this, signal, this, &RecordingPreviewBackend::mp4EstimateChanged);
     }
+    connect(this, &RecordingPreviewBackend::shapesChanged, this, &RecordingPreviewBackend::mp4EstimateChanged);
+    connect(this, &RecordingPreviewBackend::audioClipsChanged, this, &RecordingPreviewBackend::mp4EstimateChanged);
+    connect(this, &RecordingPreviewBackend::audioClipsChanged, this, &RecordingPreviewBackend::storeAudioClipsForRecovery);
+    connect(this, &RecordingPreviewBackend::audioClipsChanged, this, &RecordingPreviewBackend::refreshPreviewAudio);
+    connect(this, &RecordingPreviewBackend::audioMixChanged, this, [this] {
+        if (!m_previewAudio) return;
+        QMutexLocker lock(&m_previewAudio->mutex);
+        m_previewAudio->mixer.setSettings(m_audioMix);
+    });
+    connect(this, &RecordingPreviewBackend::timelineChanged, this, [this] {
+        if (!m_previewAudio) { refreshPreviewAudio(); return; }
+        QMutexLocker lock(&m_previewAudio->mutex);
+        m_previewAudio->timeline = timelineMap();
+    });
     // The saved size follows the same inputs, and the format.
     connect(this, &RecordingPreviewBackend::mp4EstimateChanged, this, &RecordingPreviewBackend::exportSizeChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::exportSizeChanged);
@@ -152,15 +187,17 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
 std::function<void(QImage&, qint64, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
 {
     auto state = currentEditState();
+    state.cursor = renderedCursorEffects();
     // Keep the export format's existing capability gates. Project posters
     // always render the committed recipe, independently of the export format.
     if (!cursorEffectsActive()) { state.cursor.showCursor = false; state.cursor.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Off; }
     if (!zoomAvailable()) state.zoom = {};
     if (!appearanceActive()) state.appearance.enabled = false;
     if (!keyOverlayActive()) state.keys.enabled = false;
-    if (!overlaysAvailable()) state.overlays = {};
+    if (!overlaysAvailable()) { state.overlays = {}; state.shapes = {}; }
     return SnapTray::recordingFrameFilter(state, effectsVideoSize(), timelineMap(), m_cursorTimeline, m_keyTimeline,
-        zoomAvailable() && m_zoom.isActive() ? preparedZoom() : nullptr, effectsClipEnd());
+        zoomAvailable() && m_zoom.isActive() ? preparedZoom() : nullptr, effectsClipEnd(),
+        m_selectedFormat == MP4 ? mp4OutputFrameRate() : selectedAnimatedOptions().outputFrameRate(sourceProbe().frameRate));
 }
 
 QSize RecordingPreviewBackend::effectsVideoSize() const
@@ -448,6 +485,7 @@ const VideoFileProbe& RecordingPreviewBackend::sourceProbe() const
                     if (!weakThis) return;
                     weakThis->m_sourceProbe = probe;
                     weakThis->m_sourceProbePending = false;
+                    weakThis->refreshPreviewAudio();
                     emit weakThis->mp4EstimateChanged();
                 }, Qt::QueuedConnection);
             }
@@ -511,10 +549,46 @@ QSize RecordingPreviewBackend::mp4OutputSize() const
     return effectiveMp4Options().outputSize(mp4BaseSize());
 }
 
+SnapTray::AnimatedExportOptions RecordingPreviewBackend::selectedAnimatedOptions() const
+{
+    return m_selectedFormat == WebP ? m_webpOptions : m_gifOptions;
+}
+
+QVariantMap RecordingPreviewBackend::animatedOptions() const
+{
+    return selectedAnimatedOptions().toJson().toVariantMap();
+}
+
+void RecordingPreviewBackend::setAnimatedOption(const QString& key, const QVariant& value)
+{
+    if (isProcessing() || m_selectedFormat == MP4) return;
+    auto json = selectedAnimatedOptions().toJson();
+    if (!json.contains(key)) return;
+    json.insert(key, QJsonValue::fromVariant(value));
+    auto& options = m_selectedFormat == WebP ? m_webpOptions : m_gifOptions;
+    const auto next = SnapTray::AnimatedExportOptions::fromJson(json);
+    if (options == next) return;
+    options = next;
+    m_animatedBytes = 0;
+    RecordingSettingsManager::instance().setAnimatedExportOptions(m_selectedFormat == WebP, options.toJson());
+    emit animatedOptionsChanged();
+    emit projectChanged();
+}
+
+QString RecordingPreviewBackend::animatedSizeText() const
+{
+    if (m_animatedBytes <= 0) return tr("The actual file size is shown after export.");
+    const QString size = tr("Exported file: %1").arg(QLocale().formattedDataSize(m_animatedBytes));
+    using Options = SnapTray::AnimatedExportOptions;
+    if (m_animatedBytes > Options::kLargeShareLimit) return size + tr(" — Over 25 MB; reduce size or frame rate for sharing.");
+    if (m_animatedBytes > Options::kSmallShareLimit) return size + tr(" — Over 10 MB; reduce size or frame rate for sharing.");
+    return size;
+}
+
 QSize RecordingPreviewBackend::exportSize() const
 {
     // GIF and WebP keep the picture's size; only MP4 has a Size option.
-    return m_selectedFormat == MP4 ? mp4OutputSize() : mp4BaseSize();
+    return m_selectedFormat == MP4 ? mp4OutputSize() : selectedAnimatedOptions().outputSize(mp4BaseSize());
 }
 
 int RecordingPreviewBackend::mp4OutputFrameRate() const
@@ -745,6 +819,29 @@ void RecordingPreviewBackend::setCursorSmoothing(int value)
     editCursorEffects([level](SnapTray::CursorEffectSettings& s) { s.smoothing = SnapTray::CursorEffectSettings::Smoothing(level); });
 }
 
+void RecordingPreviewBackend::setLoopBack(bool value)
+{
+    if (m_selectedFormat == MP4) return;
+    editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.loopBack = value; });
+}
+
+void RecordingPreviewBackend::setPointerStyle(int value)
+{
+    const int style = qBound(0, value, int(SnapTray::CursorEffectSettings::PointerStyle::Crisp));
+    editCursorEffects([style](SnapTray::CursorEffectSettings& s) { s.pointerStyle = SnapTray::CursorEffectSettings::PointerStyle(style); });
+}
+
+void RecordingPreviewBackend::setSteadyPointerShape(bool value)
+{
+    editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.steadyShape = value; });
+}
+
+void RecordingPreviewBackend::setStraightenPointerPath(int value)
+{
+    const int level = qBound(0, value, int(SnapTray::CursorEffectSettings::Straighten::High));
+    editCursorEffects([level](SnapTray::CursorEffectSettings& s) { s.straighten = SnapTray::CursorEffectSettings::Straighten(level); });
+}
+
 void RecordingPreviewBackend::setClickStyle(int value)
 {
     if (!clickEffectsAvailable()) return;
@@ -882,7 +979,7 @@ bool RecordingPreviewBackend::pictureEffectsActive() const
     // (and fade it), and a frame may put an image behind it. Pointer effects
     // and masks only change what was recorded, a small part of it at that.
     return (zoomAvailable() && m_zoom.isActive()) || appearanceActive() || keyOverlayActive()
-        || (!m_overlays.isEmpty() && overlaysAvailable());
+        || ((!m_overlays.isEmpty() || !m_shapes.isEmpty()) && overlaysAvailable());
 }
 
 QVariantList RecordingPreviewBackend::masks() const
@@ -1001,7 +1098,7 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
     // The preview shows masks burned into the real pixels, with the same
     // function as the exports, never a lookalike drawn on top.
     QPointer<RecordingPreviewBackend> weakThis(this);
-    player->setFrameProcessor([weakThis](QImage& frame, qint64 positionMs) {
+    player->setFrameProcessor([weakThis, player](QImage& frame, qint64 positionMs) {
         if (!weakThis) return;
         const QSize source = weakThis->m_videoSize.isEmpty() ? frame.size() : weakThis->m_videoSize;
         if (!weakThis->m_redaction.isEmpty()) {
@@ -1011,6 +1108,8 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
             // unmasked (#177 review).
             weakThis->m_redaction.apply(frame, positionMs, QRectF(QPointF(0, 0), QSizeF(source)));
         }
+        if (!weakThis->m_shapes.isEmpty())
+            weakThis->m_shapes.paint(frame, positionMs, SnapTray::ShapeSegment::Content, QRectF(QPointF(), source), source);
         // A blurred background (#184) is made from this masked frame, cropped
         // like the export's picture.
         if (weakThis->appearanceActive()
@@ -1028,30 +1127,92 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
         } else if (!weakThis->m_appearancePreviewFrame.isNull()) {
             weakThis->m_appearancePreviewFrame = QImage();
         }
+        if (player->cameraEffectsEnabled() && weakThis->zoomAvailable()) {
+            const QRectF bounds = weakThis->zoomBounds();
+            if (source.isEmpty() || bounds.isEmpty()) return;
+            const double sx = double(frame.width()) / source.width(), sy = double(frame.height()) / source.height();
+            const QRect picture(qRound(bounds.x() * sx), qRound(bounds.y() * sy),
+                                qRound(bounds.width() * sx), qRound(bounds.height() * sy));
+            QImage camera = frame.copy(picture.intersected(frame.rect()));
+            const int fps = weakThis->m_selectedFormat == MP4 ? weakThis->mp4OutputFrameRate()
+                : weakThis->selectedAnimatedOptions().outputFrameRate(weakThis->sourceProbe().frameRate);
+            weakThis->preparedZoom()->resample(camera, positionMs, bounds, weakThis->timelineMap(),
+                weakThis->renderedCursorEffects().loopBack, fps, weakThis->effectsClipEnd());
+            QPainter painter(&frame);
+            painter.drawImage(picture, camera);
+        }
     });
+    for (const auto signal : {&RecordingPreviewBackend::zoomChanged, &RecordingPreviewBackend::timelineChanged,
+                              &RecordingPreviewBackend::cursorEffectsChanged, &RecordingPreviewBackend::mp4EstimateChanged,
+                              &RecordingPreviewBackend::formatChanged})
+        connect(this, signal, player, &VideoPlaybackItem::reprocessFrame);
+    connect(this, &RecordingPreviewBackend::shapesChanged, player, &VideoPlaybackItem::reprocessFrame);
     connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
     connect(this, &RecordingPreviewBackend::appearanceChanged, player, &VideoPlaybackItem::reprocessFrame);
     // The blurred background is made from the cropped picture: a new crop
     // (also undo or clear) needs it again, even while paused (PR #198 review).
     connect(this, &RecordingPreviewBackend::cropRectChanged, player, &VideoPlaybackItem::reprocessFrame);
-    // Separate tracks (#189): the preview hears the new mix as it is set.
-    if (m_hasSeparateTracks) {
-        m_previewAudio = std::make_shared<PreviewAudio>(m_videoPath, m_audioMix);
-        if (m_previewAudio->mixer.isValid()) {
-            std::weak_ptr<PreviewAudio> weakAudio = m_previewAudio;
-            player->setAudioSource([weakAudio](qint64 startFrame, int frames) {
-                const auto audio = weakAudio.lock();
-                if (!audio) return QByteArray(qMax(0, frames) * SnapTray::AudioTracks::kBytesPerFrame, '\0');
-                QMutexLocker lock(&audio->mutex);
-                return audio->mixer.read(startFrame, frames);
-            });
-            const auto audio = m_previewAudio;
-            connect(this, &RecordingPreviewBackend::audioMixChanged, this, [this, audio] {
-                QMutexLocker lock(&audio->mutex);
-                audio->mixer.setSettings(m_audioMix);
-            });
-        }
+    refreshPreviewAudio();
+}
+
+void RecordingPreviewBackend::refreshPreviewAudio()
+{
+    auto* player = m_view && m_view->rootObject()
+        ? m_view->rootObject()->findChild<VideoPlaybackItem*>(QStringLiteral("previewVideoPlayer")) : nullptr;
+    if (!player || m_importingAudio) return;
+    const auto timeline = timelineMap();
+    const bool speedEdited = std::any_of(timeline.segments().begin(), timeline.segments().end(),
+        [](const auto& part) { return !qFuzzyCompare(part.speed, 1.0); });
+    const auto& probe = sourceProbe();
+    SnapTray::AudioTrackReader cache;
+    if (!m_hasSeparateTracks && probe.hasAudio && (speedEdited || !m_audioClips.isEmpty())
+        && !m_previewAudioCacheFailed
+        && (!cache.open(m_videoPath + QLatin1String(SnapTray::AudioClipTrack::kMixedSuffix)) || cache.frames() == 0)) {
+        m_importingAudio = true;
+        m_processStatus = tr("Preparing audio preview…");
+        emit processStatusChanged(); emit processingChanged();
+        const QString source = m_videoPath;
+        const qint64 audioStart = probe.audioStartMs;
+        const QPointer<RecordingPreviewBackend> weakThis(this);
+        (void)QtConcurrent::run([source, audioStart, weakThis] {
+            QString error;
+            const bool ok = SnapTray::cacheRecordingAudio(source, audioStart, error);
+            if (!weakThis) return;
+            QMetaObject::invokeMethod(weakThis, [weakThis, ok, error] {
+                if (!weakThis) return;
+                weakThis->m_importingAudio = false;
+                weakThis->m_previewAudioCacheFailed = !ok;
+                emit weakThis->processingChanged();
+                if (!ok) weakThis->setErrorMessage(RecordingPreviewBackend::tr("Cannot prepare audio preview: %1").arg(error));
+                weakThis->refreshPreviewAudio();
+            }, Qt::QueuedConnection);
+        });
+        return;
     }
+    m_previewAudio.reset();
+    auto audio = std::make_shared<PreviewAudio>(m_videoPath, m_audioMix);
+    if (!audio->mixer.setClips(m_audioClips) || !audio->mixer.isValid()) {
+        player->setAudioSource({});
+        if (!m_audioClips.isEmpty()) setErrorMessage(tr("The imported audio sidecar is missing or damaged."));
+        return;
+    }
+    m_previewAudio = audio;
+    audio->timeline = timelineMap();
+    std::weak_ptr<PreviewAudio> weakAudio = audio;
+    player->setAudioSource([weakAudio](qint64 startFrame, int frames) {
+        const auto audio = weakAudio.lock();
+        if (!audio) return QByteArray(qMax(0, frames) * 4, '\0');
+        QMutexLocker lock(&audio->mutex);
+        QByteArray pcm = audio->mixer.read(startFrame, frames);
+        if (pcm.size() != frames * 4) return pcm;
+        for (int i = 0; i < frames; ++i) {
+            const int part = audio->timeline.segmentAt((startFrame + i) / 48);
+            if (part < 0) continue;
+            const auto& segment = audio->timeline.segments()[size_t(part)];
+            if (!segment.keepSound && !qFuzzyCompare(segment.speed, 1.0)) std::memset(pcm.data() + i * 4, 0, 4);
+        }
+        return pcm;
+    });
 }
 
 bool RecordingPreviewBackend::zoomAvailable() const
@@ -1085,6 +1246,12 @@ void RecordingPreviewBackend::editZoom(const std::function<void(SnapTray::ZoomTr
 void RecordingPreviewBackend::setZoomEnabled(bool value)
 {
     editZoom([value](SnapTray::ZoomTrack& z) { z.enabled = value; });
+}
+
+void RecordingPreviewBackend::setCameraMotionBlur(int value)
+{
+    const int level = qBound(0, value, int(SnapTray::ZoomTrack::MotionBlur::High));
+    editZoom([level](SnapTray::ZoomTrack& z) { z.motionBlur = SnapTray::ZoomTrack::MotionBlur(level); });
 }
 
 void RecordingPreviewBackend::setZoomReduceMotion(bool value)
@@ -1123,14 +1290,45 @@ QString RecordingPreviewBackend::appearanceImageName() const
     return QFileInfo(m_appearance.imagePath).fileName();
 }
 
+void RecordingPreviewBackend::autoZoomNewRecording()
+{
+    if (m_autoZoomAttempted) return;
+    m_autoZoomAttempted = true;
+    m_autoZoomPending = RecordingSettingsManager::instance().autoZoomOnOpen();
+    QTimer::singleShot(0, this, &RecordingPreviewBackend::applyPendingAutoZoom);
+}
+
+void RecordingPreviewBackend::applyPendingAutoZoom()
+{
+    if (!m_autoZoomPending || m_videoSize.isEmpty() || m_duration <= 0 || projectLoading()) return;
+    m_autoZoomPending = false;
+    if (m_project || !m_zoom.isEmpty() || !autoZoomAvailable()) return;
+    m_automaticZoomCount = generateAutoZoom();
+    emit zoomChanged();
+}
+
+void RecordingPreviewBackend::dismissAutomaticZoom(bool disable)
+{
+    if (disable) RecordingSettingsManager::instance().setAutoZoomOnOpen(false);
+    m_automaticZoomCount = 0;
+    emit zoomChanged();
+}
+
 int RecordingPreviewBackend::generateAutoZoom()
 {
-    if (isProcessing() || !autoZoomAvailable()) return 0;
+    if (isProcessing()) return 0;
+    m_autoZoomResult = tr("No recorded click data is available.");
+    if (!autoZoomAvailable()) { emit zoomChanged(); return 0; }
+    m_autoZoomResult = tr("No visible clicks remain inside the crop and kept clips.");
     SnapTray::AutoZoomOptions options;
     options.bounds = zoomBounds();
     options.durationMs = m_duration;
-    auto generated = SnapTray::generateAutoZoom(*m_cursorTimeline, options);
-    const int count = int(generated.size());
+    options.timeline = timelineMap();
+    if (options.timeline.isEmpty()) { emit zoomChanged(); return 0; }
+    if (m_keyTimeline) for (const auto& stroke : m_keyTimeline->strokes) options.keyTimes.push_back(stroke.tMs);
+    auto result = SnapTray::generateAutoZoomResult(*m_cursorTimeline, options);
+    const auto& generated = result.segments;
+    int count = 0;
     // The segments are rebuilt, so an index would point at a different zoom:
     // drop the selection while they change, then restore it only on the same
     // (manual) segment.
@@ -1139,7 +1337,7 @@ int RecordingPreviewBackend::generateAutoZoom()
         selected = m_zoom.segments()[size_t(m_selectedZoom)];
     }
     setSelectedZoom(-1);
-    editZoom([&generated](SnapTray::ZoomTrack& z) {
+    editZoom([&generated, &count](SnapTray::ZoomTrack& z) {
         // The user's own segments win; automatic ones that collide with them go.
         std::vector<SnapTray::ZoomSegment> segments;
         for (const auto& s : z.segments()) {
@@ -1151,10 +1349,12 @@ int RecordingPreviewBackend::generateAutoZoom()
             for (size_t i = 0; i < manualCount; ++i) {
                 collides |= candidate.startMs < segments[i].endMs && segments[i].startMs < candidate.endMs;
             }
-            if (!collides) segments.push_back(candidate);
+            if (!collides) { segments.push_back(candidate); ++count; }
         }
-        z.enabled = true;
+        if (count > 0) z.enabled = true;
         z.setSegments(std::move(segments));
+        count = int(std::count_if(z.segments().begin(), z.segments().end(),
+            [](const SnapTray::ZoomSegment& segment) { return !segment.manual; }));
     });
     if (selected && selected->manual) {
         const auto& segments = m_zoom.segments();
@@ -1162,6 +1362,17 @@ int RecordingPreviewBackend::generateAutoZoom()
             if (segments[i] == *selected) setSelectedZoom(int(i));
         }
     }
+    using Reason = SnapTray::AutoZoomResult::Reason;
+    if (!generated.empty() && count == 0) result.reason = Reason::NoFreeSlots;
+    const QString messages[] = {
+        tr("Zooms added: %1").arg(count),
+        tr("No recorded click data is available."),
+        tr("No visible clicks remain inside the crop and kept clips."),
+        tr("All suggested zooms overlap zooms you added or changed."),
+        tr("The suggested magnification is too small to add a zoom.")
+    };
+    m_autoZoomResult = messages[int(result.reason)];
+    emit zoomChanged();
     return count;
 }
 
@@ -1296,7 +1507,7 @@ QRectF RecordingPreviewBackend::zoomViewportInView(qint64 positionMs, const QRec
 {
     const QRectF bounds = zoomBounds();
     if (m_videoSize.isEmpty() || contentRect.isEmpty() || bounds.isEmpty()) return contentRect;
-    const QRectF shown = zoomAvailable() ? preparedZoom()->viewportAt(positionMs, bounds) : bounds;
+    const QRectF shown = zoomAvailable() ? preparedZoom()->loopViewportAt(positionMs, bounds, timelineMap(), renderedCursorEffects().loopBack, effectsClipEnd()) : bounds;
     const double sx = contentRect.width() / m_videoSize.width();
     const double sy = contentRect.height() / m_videoSize.height();
     return QRectF(contentRect.x() + shown.x() * sx, contentRect.y() + shown.y() * sy,
@@ -1323,6 +1534,7 @@ RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderF
 
 RecordingPreviewBackend::~RecordingPreviewBackend()
 {
+    SnapTray::RecordingProjects::setOpenProjectDir({});
     m_exportCancelToken->store(true);
     // Never saved: drop the derived export. The recording itself is untouched.
     if (m_awaitingSave && m_pendingSaveOutput != m_videoPath) {
@@ -1385,7 +1597,7 @@ void RecordingPreviewBackend::ensureView()
 
 bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == m_view && event && event->type() == QEvent::Close && m_isProcessing) {
+    if (watched == m_view && event && event->type() == QEvent::Close && isProcessing()) {
         static_cast<QCloseEvent*>(event)->ignore();
         // Never drop an export silently: let the user choose to keep or cancel it.
         if (canCancelExport() && !m_applicationQuitting && !m_exportCloseQuestionPending) {
@@ -1583,6 +1795,11 @@ bool RecordingPreviewBackend::timelineEditsAvailable() const
 void RecordingPreviewBackend::setProject(const SnapTray::RecordingProject& project)
 {
     m_project = project;
+    const auto animatedChoices = SnapTray::RecordingRecipe::exportChoices(project.recipe);
+    m_gifOptions = SnapTray::AnimatedExportOptions::fromJson(animatedChoices.value(QStringLiteral("gif")).toObject());
+    m_webpOptions = SnapTray::AnimatedExportOptions::fromJson(animatedChoices.value(QStringLiteral("webp")).toObject());
+    emit animatedOptionsChanged();
+    SnapTray::RecordingProjects::setOpenProjectDir(project.dir);
     const QJsonObject choices = SnapTray::RecordingRecipe::exportChoices(project.recipe);
     if (choices.contains(QStringLiteral("format"))) setSelectedFormat(choices.value(QStringLiteral("format")).toInt(MP4));
     if (choices.contains(QStringLiteral("mp4"))) {
@@ -1647,7 +1864,8 @@ bool RecordingPreviewBackend::keepsProject() const
 QJsonObject RecordingPreviewBackend::currentRecipe() const
 {
     return SnapTray::RecordingRecipe::toJson(
-        currentEditState(), {{QStringLiteral("format"), m_selectedFormat}, {QStringLiteral("mp4"), m_mp4Options.toJson()}});
+        currentEditState(), {{QStringLiteral("format"), m_selectedFormat}, {QStringLiteral("mp4"), m_mp4Options.toJson()},
+                            {QStringLiteral("gif"), m_gifOptions.toJson()}, {QStringLiteral("webp"), m_webpOptions.toJson()}});
 }
 
 std::optional<QJsonObject> RecordingPreviewBackend::recipeForProject(const QString& projectDir, QJsonObject recipe, QString* copied, QString* error) const
@@ -1713,8 +1931,19 @@ void RecordingPreviewBackend::removeUnusedBackgrounds(const QString& projectDir,
                                        .value(QStringLiteral("imagePath")).toString())
                              .canonicalFilePath();
     const QDir dir(projectDir);
+    QFile backup(dir.filePath(QStringLiteral("manifest.prev.json")));
+    QString previous;
+    if (backup.exists()) {
+        if (!backup.open(QIODevice::ReadOnly)) return; // cannot safely identify retained assets
+        QJsonParseError error;
+        const auto manifest = QJsonDocument::fromJson(backup.readAll(), &error).object();
+        if (backup.error() != QFileDevice::NoError || error.error != QJsonParseError::NoError) return;
+        previous = QFileInfo(manifest.value(QStringLiteral("recipe")).toObject()
+            .value(QStringLiteral("edit")).toObject().value(QStringLiteral("appearance")).toObject()
+            .value(QStringLiteral("imagePath")).toString()).canonicalFilePath();
+    }
     for (const QFileInfo& file : dir.entryInfoList({QStringLiteral("background*")}, QDir::Files)) {
-        if (file.canonicalFilePath() != used) QFile::remove(file.absoluteFilePath());
+        if (file.canonicalFilePath() != used && file.canonicalFilePath() != previous) QFile::remove(file.absoluteFilePath());
     }
 }
 
@@ -1747,6 +1976,221 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
     const int days = RecordingSettingsManager::instance().projectCleanupDays();
     SnapTray::RecordingProjects::removeOlderThan(days);
     return true;
+}
+
+QVariantList RecordingPreviewBackend::shapes() const
+{
+    QVariantList list;
+    for (const auto& segment : m_shapes.segments) {
+        auto item = segment.shape.toJson().toVariantMap();
+        item.insert("start", segment.startMs); item.insert("end", segment.endMs);
+        item.insert("space", int(segment.space)); item.insert("fadeInMs", segment.fadeInMs); item.insert("fadeOutMs", segment.fadeOutMs);
+        list.append(item);
+    }
+    return list;
+}
+void RecordingPreviewBackend::setSelectedShape(int index)
+{
+    index = index >= 0 && index < int(m_shapes.segments.size()) ? index : -1;
+    if (m_selectedShape == index) return;
+    m_selectedShape = index; emit selectedShapeChanged();
+}
+QPointF RecordingPreviewBackend::shapePointFromView(const QPointF& point, const QRectF& picture, int space) const
+{
+    if (picture.isEmpty()) return {};
+    const QPointF fraction((point.x() - picture.x()) / picture.width(), (point.y() - picture.y()) / picture.height());
+    if (space == SnapTray::ShapeSegment::Screen) return fraction;
+    const auto zoom = preparedZoom();
+    const QRectF viewport = zoomAvailable() && zoom ? zoom->loopViewportAt(m_position, zoomBounds(), timelineMap(),
+        renderedCursorEffects().loopBack, effectsClipEnd()) : zoomBounds();
+    return {viewport.x() + fraction.x() * viewport.width(), viewport.y() + fraction.y() * viewport.height()};
+}
+QVariantMap RecordingPreviewBackend::shapePointsInView(int index, const QRectF& picture) const
+{
+    if (index < 0 || index >= int(m_shapes.segments.size()) || picture.isEmpty()) return {};
+    const auto& segment = m_shapes.segments[size_t(index)];
+    const auto zoom = preparedZoom();
+    const QRectF viewport = zoomAvailable() && zoom ? zoom->loopViewportAt(m_position, zoomBounds(), timelineMap(),
+        renderedCursorEffects().loopBack, effectsClipEnd()) : zoomBounds();
+    if (viewport.isEmpty()) return {};
+    auto map = [&](QPointF p) {
+        if (segment.space == SnapTray::ShapeSegment::Content)
+            p = {(p.x() - viewport.x()) / viewport.width(), (p.y() - viewport.y()) / viewport.height()};
+        return QPointF(picture.x() + p.x() * picture.width(), picture.y() + p.y() * picture.height());
+    };
+    return {{"from", map(segment.shape.from)}, {"to", map(segment.shape.to)}};
+}
+int RecordingPreviewBackend::addShapeFromView(int kind, const QPointF& from, const QPointF& to, const QRectF& picture)
+{
+    if (isProcessing() || !overlaysAvailable() || picture.isEmpty() || m_videoSize.isEmpty()
+        || kind < ShapeParameters::Arrow || kind > ShapeParameters::Step || m_shapes.segments.size() >= 256) return -1;
+    if (QLineF(from, to).length() < 3) return -1;
+    SnapTray::ShapeSegment segment;
+    segment.shape.kind = ShapeParameters::Kind(kind);
+    segment.shape.from = shapePointFromView(from, picture, segment.space);
+    segment.shape.to = shapePointFromView(to, picture, segment.space);
+    segment.startMs = qBound<qint64>(0, m_position, qMax<qint64>(0, m_duration - 100));
+    segment.endMs = qMin(m_duration, segment.startMs + 3000);
+    if (kind == ShapeParameters::Step) {
+        for (const auto& existing : m_shapes.segments)
+            if (existing.shape.kind == ShapeParameters::Step) segment.shape.number = qMax(segment.shape.number, existing.shape.number + 1);
+        segment.shape.number = qMin(999, segment.shape.number);
+    }
+    m_shapes.segments.push_back(segment);
+    emit shapesChanged(); recordEdit();
+    setSelectedShape(int(m_shapes.segments.size()) - 1);
+    return m_selectedShape;
+}
+void RecordingPreviewBackend::setShapeGeometryFromView(int index, const QPointF& from, const QPointF& to, const QRectF& picture)
+{
+    if (isProcessing() || index < 0 || index >= int(m_shapes.segments.size()) || picture.isEmpty()) return;
+    auto& segment = m_shapes.segments[size_t(index)];
+    auto next = segment.shape;
+    next.from = shapePointFromView(from, picture, segment.space);
+    next.to = shapePointFromView(to, picture, segment.space);
+    if (next == segment.shape || QLineF(from, to).length() < 3) return;
+    segment.shape = next; emit shapesChanged(); recordEdit();
+}
+void RecordingPreviewBackend::setShapeOption(int index, const QString& key, const QVariant& value)
+{
+    if (isProcessing() || index < 0 || index >= int(m_shapes.segments.size())) return;
+    auto next = m_shapes.segments[size_t(index)];
+    if (key == QLatin1String("space")) {
+        const int space = value.toInt();
+        if (space < 0 || space > 1 || space == int(next.space)) return;
+        const QRectF picture(QPointF(), QSizeF(1, 1));
+        const auto points = shapePointsInView(index, picture);
+        next.space = SnapTray::ShapeSegment::Space(space);
+        next.shape.from = shapePointFromView(points.value("from").toPointF(), picture, space);
+        next.shape.to = shapePointFromView(points.value("to").toPointF(), picture, space);
+    } else if (key == QLatin1String("fadeInMs") || key == QLatin1String("fadeOutMs")) {
+        if (value.toLongLong() < 0 || value.toLongLong() > 10000) return;
+        (key == QLatin1String("fadeInMs") ? next.fadeInMs : next.fadeOutMs) = value.toLongLong();
+    } else {
+        const QStringList options{QStringLiteral("color"), QStringLiteral("width"), QStringLiteral("arrowStyle"), QStringLiteral("number")};
+        if (!options.contains(key)) return;
+        auto json = next.shape.toJson();
+        json.insert(key, QJsonValue::fromVariant(value));
+        const auto shape = ShapeParameters::fromJson(json);
+        if (!shape) return;
+        next.shape = *shape;
+    }
+    if (next == m_shapes.segments[size_t(index)]) return;
+    m_shapes.segments[size_t(index)] = next; emit shapesChanged(); recordEdit();
+}
+bool RecordingPreviewBackend::setShapeRange(int index, qint64 start, qint64 end)
+{
+    if (isProcessing() || index < 0 || index >= int(m_shapes.segments.size()) || start < 0
+        || start >= m_duration || (end != -1 && (end - start < 100 || end > m_duration))) return false;
+    auto& segment = m_shapes.segments[size_t(index)];
+    if (segment.startMs == start && segment.endMs == end) return true;
+    segment.startMs = start; segment.endMs = end; emit shapesChanged(); recordEdit(); return true;
+}
+void RecordingPreviewBackend::removeShape(int index)
+{
+    if (isProcessing() || index < 0 || index >= int(m_shapes.segments.size())) return;
+    m_shapes.segments.erase(m_shapes.segments.begin() + index);
+    setSelectedShape(-1); emit shapesChanged(); recordEdit();
+}
+
+QVariantList RecordingPreviewBackend::audioClips() const
+{
+    QVariantList result;
+    for (const auto& clip : m_audioClips.clips) result.append(QVariantMap{
+        {"name", clip.name}, {"start", clip.startMs}, {"end", clip.endMs}, {"offsetMs", clip.offsetMs},
+        {"gainDb", clip.gainDb}, {"fadeInMs", clip.fadeInMs}, {"fadeOutMs", clip.fadeOutMs}, {"loop", clip.loop},
+        {"durationMs", clip.assetFrames / 48}});
+    return result;
+}
+void RecordingPreviewBackend::setSelectedAudioClip(int index)
+{
+    index = index >= 0 && index < int(m_audioClips.clips.size()) ? index : -1;
+    if (m_selectedAudioClip == index) return;
+    m_selectedAudioClip = index;
+    emit selectedAudioClipChanged();
+}
+void RecordingPreviewBackend::chooseAudioClip()
+{
+    if (isProcessing() || !audioClipsAvailable()) return;
+    const QString path = QFileDialog::getOpenFileName(nullptr, tr("Add Audio"), {},
+        tr("Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)"));
+    if (!path.isEmpty()) addAudioClip(QUrl::fromLocalFile(path));
+}
+void RecordingPreviewBackend::addAudioClip(const QUrl& file)
+{
+    if (isProcessing() || !audioClipsAvailable() || !file.isLocalFile() || m_duration <= 0) return;
+    if (m_audioClips.clips.size() >= 128) { setErrorMessage(tr("A recording can contain up to 128 audio clips.")); return; }
+    m_importingAudio = true;
+    m_processStatus = tr("Importing audio…");
+    emit processStatusChanged();
+    emit processingChanged();
+    const QString source = m_videoPath;
+    const bool separate = m_hasSeparateTracks;
+    const qint64 position = qBound<qint64>(0, m_position, qMax<qint64>(0, m_duration - 100));
+    QPointer<RecordingPreviewBackend> weakThis(this);
+    (void)QtConcurrent::run([source, input = file.toLocalFile(), separate, position, weakThis] {
+        QString error;
+        auto clip = SnapTray::importAudioClip(input, source, error);
+        auto media = IVideoTranscoder::create();
+        const auto probe = media ? media->probe(source) : VideoFileProbe{};
+        if (clip && !separate && probe.hasAudio
+            && !SnapTray::cacheRecordingAudio(source, probe.audioStartMs, error)) clip.reset();
+        if (!weakThis) return;
+        QMetaObject::invokeMethod(weakThis, [weakThis, clip, error, position] {
+            if (!weakThis) return;
+            auto* self = weakThis.data();
+            self->m_importingAudio = false;
+            emit self->processingChanged();
+            if (!clip) { self->setErrorMessage(RecordingPreviewBackend::tr("Cannot import audio: %1").arg(error)); return; }
+            auto added = *clip;
+            added.startMs = position;
+            added.endMs = qMin(self->m_duration, position + qMax<qint64>(100, added.assetFrames / 48));
+            added.fadeInMs = added.fadeOutMs = qMin<qint64>(5, added.endMs - added.startMs);
+            self->m_audioClips.clips.push_back(added);
+            emit self->audioClipsChanged();
+            self->setSelectedAudioClip(int(self->m_audioClips.clips.size()) - 1);
+            self->recordEdit();
+        }, Qt::QueuedConnection);
+    });
+}
+void RecordingPreviewBackend::removeAudioClip(int index)
+{
+    if (isProcessing() || index < 0 || index >= int(m_audioClips.clips.size())) return;
+    m_audioClips.clips.erase(m_audioClips.clips.begin() + index);
+    setSelectedAudioClip(-1);
+    emit audioClipsChanged(); recordEdit();
+}
+bool RecordingPreviewBackend::setAudioClipRange(int index, qint64 start, qint64 end)
+{
+    if (isProcessing() || index < 0 || index >= int(m_audioClips.clips.size())
+        || start < 0 || end > m_duration || end - start < 100) return false;
+    auto& clip = m_audioClips.clips[size_t(index)];
+    if (clip.startMs == start && clip.endMs == end) return true;
+    clip.startMs = start; clip.endMs = end;
+    clip.fadeInMs = qMin(clip.fadeInMs, end - start); clip.fadeOutMs = qMin(clip.fadeOutMs, end - start);
+    emit audioClipsChanged(); recordEdit(); return true;
+}
+void RecordingPreviewBackend::setAudioClipOption(int index, const QString& key, const QVariant& value)
+{
+    if (isProcessing() || index < 0 || index >= int(m_audioClips.clips.size())) return;
+    auto json = m_audioClips.toJson();
+    auto clips = json.value("clips").toArray();
+    auto clip = clips[index].toObject();
+    const QStringList editable{QStringLiteral("offsetMs"), QStringLiteral("gainDb"), QStringLiteral("fadeInMs"), QStringLiteral("fadeOutMs"), QStringLiteral("loop")};
+    if (!editable.contains(key)) return;
+    clip.insert(key, QJsonValue::fromVariant(value)); clips[index] = clip; json.insert("clips", clips);
+    const auto changed = SnapTray::AudioClipTrack::fromJson(json);
+    if (changed.clips.size() != m_audioClips.clips.size() || changed == m_audioClips) return;
+    m_audioClips = changed;
+    emit audioClipsChanged(); recordEdit();
+}
+void RecordingPreviewBackend::storeAudioClipsForRecovery()
+{
+    if (m_project) return; // the project manifest is authoritative
+    QSaveFile file(m_videoPath + QStringLiteral(".imports.json"));
+    const QByteArray data = QJsonDocument(m_audioClips.toJson()).toJson(QJsonDocument::Compact);
+    if (!file.open(QIODevice::WriteOnly) || file.write(data) != data.size() || !file.commit())
+        setErrorMessage(tr("The audio edits could not be saved for crash recovery."));
 }
 
 bool RecordingPreviewBackend::audioMixAvailable() const
@@ -2041,7 +2485,8 @@ QVariantList RecordingPreviewBackend::timelineParts() const
         list.append(QVariantMap{{QStringLiteral("start"), m_timeline.partStartMs(i)},
                                 {QStringLiteral("end"), m_timeline.partEndMs(i, m_duration)},
                                 {QStringLiteral("deleted"), part.deleted},
-                                {QStringLiteral("speed"), part.speed}});
+                                {QStringLiteral("speed"), part.speed},
+                                {QStringLiteral("keepSound"), part.keepSound}});
     }
     return list;
 }
@@ -2111,6 +2556,11 @@ void RecordingPreviewBackend::setPartDeleted(int part, bool deleted)
         // Something must be left to export.
         return t.setDeleted(part, deleted) && !t.map(start, end).isEmpty();
     });
+}
+
+void RecordingPreviewBackend::setPartKeepSound(int part, bool keep)
+{
+    editTimeline([part, keep](SnapTray::TimelineEdit& t) { return t.setKeepSound(part, keep); });
 }
 
 void RecordingPreviewBackend::setPartSpeed(int part, qreal speed)
@@ -2185,6 +2635,7 @@ void RecordingPreviewBackend::updateDuration(qint64 ms)
         emit durationChanged();
         emit trimRangeChanged();
         applyPendingProjectRecipe();
+        QTimer::singleShot(0, this, &RecordingPreviewBackend::applyPendingAutoZoom);
     }
 }
 
@@ -2235,7 +2686,7 @@ void RecordingPreviewBackend::save()
                                               : RecordingSettingsManager::instance().quality();
 
     // An overlay the user added is part of the export: never leave it out quietly.
-    if (!m_overlays.isEmpty() && !overlaysAvailable()) {
+    if ((!m_overlays.isEmpty() || !m_shapes.isEmpty()) && !overlaysAvailable()) {
         setErrorMessage(tr("Text and image overlays cannot be drawn into MP4 on this system yet. Export as GIF "
                            "or WebP, or remove them to export MP4. Nothing was exported."));
         return;
@@ -2581,6 +3032,7 @@ void RecordingPreviewBackend::toggleTrim()
 
 void RecordingPreviewBackend::updateVideoSize(const QSize &size)
 {
+    QTimer::singleShot(0, this, &RecordingPreviewBackend::applyPendingAutoZoom);
     if (m_videoSize == size) {
         return;
     }
@@ -2761,7 +3213,9 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
     state.timeline = m_timeline;
     state.keys = m_keyOverlay;
     state.overlays = m_overlays;
+    state.shapes = m_shapes;
     state.audio = m_audioMix;
+    state.audioClips = m_audioClips;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -2792,9 +3246,19 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         if (m_selectedZoom >= int(m_zoom.segments().size())) setSelectedZoom(-1);
         emit zoomChanged();
     }
+    if (state.audioClips != m_audioClips) {
+        m_audioClips = state.audioClips;
+        if (m_selectedAudioClip >= int(m_audioClips.clips.size())) setSelectedAudioClip(-1);
+        emit audioClipsChanged();
+    }
     if (state.audio != m_audioMix) {
         m_audioMix = state.audio;
         emit audioMixChanged();
+    }
+    if (state.shapes != m_shapes) {
+        m_shapes = state.shapes;
+        if (m_selectedShape >= int(m_shapes.segments.size())) setSelectedShape(-1);
+        emit shapesChanged();
     }
     if (state.overlays != m_overlays) {
         m_overlays = state.overlays;
@@ -2826,6 +3290,7 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
 void RecordingPreviewBackend::recordEdit()
 {
     if (m_editHistory.record(currentEditState())) {
+        if (m_automaticZoomCount > 0) dismissAutomaticZoom();
         emit editHistoryChanged();
     }
 }
@@ -2835,6 +3300,7 @@ void RecordingPreviewBackend::undo()
     if (isProcessing() || !m_editHistory.canUndo()) {
         return;
     }
+    dismissAutomaticZoom();
     applyEditState(m_editHistory.undo());
 }
 
@@ -2859,7 +3325,9 @@ void RecordingPreviewBackend::resetEdits()
     unedited.appearance = m_appearance;
     unedited.keys = m_keyOverlay;
     unedited.overlays = m_overlays;
+    unedited.shapes = m_shapes;
     unedited.audio = m_audioMix;
+    unedited.audioClips = m_audioClips;
     applyEditState(unedited);
     recordEdit();
 }
@@ -2967,6 +3435,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     const QSize framedSize = cursorFilter ? framedExportSize() : QSize();
     // Cuts and speed changes (#185): frames are taken at output times.
     const SnapTray::TimelineMap timeline = hasTimelineEdits() ? timelineMap() : SnapTray::TimelineMap();
+    const auto animatedOptions = selectedAnimatedOptions();
     const int selectedFormat = static_cast<int>(format);
     const QString createPlayerError = tr("Failed to create video player for conversion");
     const QString loadVideoError = tr("Failed to load video for conversion");
@@ -2990,6 +3459,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              timeline,
                              outputPath,
                              selectedFormat,
+                             animatedOptions,
                              createPlayerError,
                              loadVideoError,
                              invalidVideoError,
@@ -3088,11 +3558,11 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
         const QSize vidSize = frameReader ? frameReader->videoSize() : player->videoSize();
         int frameRateInt = static_cast<int>(frameReader ? frameReader->frameRate() : player->frameRate());
-        if (frameRateInt <= 0) frameRateInt = 30;
+        frameRateInt = animatedOptions.outputFrameRate(frameRateInt);
         const qint64 dur = frameReader ? frameReader->duration() : player->duration();
         const qint64 startMs = qMax<qint64>(0, requestedStartMs);
         const qint64 endMs = requestedEndMs < 0 ? dur : qMin(requestedEndMs, dur);
-        const QSize outputSize = !framedSize.isEmpty() ? framedSize : cropRect.isEmpty() ? vidSize : cropRect.size();
+        const QSize outputSize = animatedOptions.outputSize(!framedSize.isEmpty() ? framedSize : cropRect.isEmpty() ? vidSize : cropRect.size());
 
         if (dur <= 0 || vidSize.isEmpty() || startMs >= endMs) {
             qWarning() << "RecordingPreviewBackend: Video not loaded properly for conversion";
@@ -3109,12 +3579,14 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
         if (selectedFormat == GIF) {
             gifEncoder = std::make_unique<NativeGifEncoder>(nullptr);
-            gifEncoder->setMaxBitDepth(16);
+            gifEncoder->setMaxBitDepth(animatedOptions.gifDepth());
+            gifEncoder->setLooping(animatedOptions.looping);
             encoderStarted = gifEncoder->start(workingOutputPath, outputSize, frameRateInt);
         } else {
             webpEncoder = std::make_unique<WebPAnimationEncoder>(nullptr);
-            webpEncoder->setQuality(80);
-            webpEncoder->setLooping(true);
+            webpEncoder->setQuality(animatedOptions.webpQuality());
+            webpEncoder->setLooping(animatedOptions.looping);
+            webpEncoder->setMinimizeSize(animatedOptions.minimizeSize);
             encoderStarted = webpEncoder->start(workingOutputPath, outputSize, frameRateInt);
         }
 
@@ -3216,6 +3688,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                     }
                     cursorFilter(capturedFrame, timeMs, coverage->endMs());
                 }
+                if (capturedFrame.size() != outputSize)
+                    capturedFrame = capturedFrame.scaled(outputSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
                 const qint64 framesBefore = gifEncoder
                     ? gifEncoder->framesWritten()
                     : webpEncoder->framesWritten();
@@ -3279,8 +3753,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
         // Finish encoding. Both encoders complete synchronously and report the
         // actual result through their finished signal.
-        if (gifEncoder) gifEncoder->finish();
-        if (webpEncoder) webpEncoder->finish();
+        if (gifEncoder) gifEncoder->finish(outputDurationMs);
+        if (webpEncoder) webpEncoder->finish(outputDurationMs);
 
         if (encodedFrameCount <= 0 || !encoderFinishedSuccessfully
             || encoderFinishedPath != workingOutputPath) {
@@ -3304,7 +3778,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             return;
         }
 
-        const QSize croppedSize = cropRect.isEmpty() && framedSize.isEmpty() ? QSize() : outputSize;
+        const QSize croppedSize = outputSize == vidSize ? QSize() : outputSize;
         QMetaObject::invokeMethod(app, [weakThis, isCurrent, cancelToken, outputPath, outputMissingError,
                                         croppedSize]() {
             // The output is still only a temporary next to the recording, so a
@@ -3321,6 +3795,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             QFileInfo outInfo(outputPath);
             if (outInfo.exists() && outInfo.size() > 0) {
                 // The source stays until the save dialog has committed the output.
+                weakThis->m_animatedBytes = outInfo.size();
+                emit weakThis->animatedOptionsChanged();
                 weakThis->handOffForSave(outputPath, croppedSize);
             } else {
                 qWarning() << "RecordingPreviewBackend: Conversion output missing or empty, keeping original";
@@ -3367,7 +3843,8 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     request.startMs = m_trimStart;
     request.endMs = m_trimEnd;
     request.cropRect = m_cropRect;
-    if (audioMixActive()) {
+    request.audioClips = m_audioClips;
+    if (audioMixActive() && m_hasSeparateTracks) {
         request.audioTracksVideoPath = m_videoPath;
         request.audioMix = m_audioMix;
     }
@@ -3417,7 +3894,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         // Nor with a size, frame rate or codec other than the one asked for.
         const bool unsupported = !transcoder || (request.frameFilter && !transcoder->supportsFrameFilter())
             || (!request.segments.empty() && !transcoder->supportsSegments())
-            || (!request.audioTracksVideoPath.isEmpty() && !transcoder->supportsAudioMix())
+            || ((!request.audioTracksVideoPath.isEmpty() || !request.audioClips.isEmpty()) && !transcoder->supportsAudioMix())
             || ((mp4Options.resolution != SnapTray::Mp4ExportOptions::Resolution::Original || mp4Options.frameRate > 0)
                 && !transcoder->supportsOutputOptions())
             || !transcoder->supportsVideoCodec(mp4Options.codecId());
@@ -3559,11 +4036,19 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                 audioCoverageMs = qMax<qint64>(0, qMin(sourceProbe.audioEndMs, rangeEndMs)
                                                       - qMax(sourceProbe.audioStartMs, rangeStartMs));
             } else if (sourceProbe.hasAudio) {
-                // Joined parts keep the audio of the parts at normal speed (#185).
+                // Every audible kept part contributes, including pitch-preserved speed changes.
                 for (const auto& segment : request.segments) {
-                    if (!qFuzzyCompare(segment.speed, 1.0)) continue;
+                    if (!qFuzzyCompare(segment.speed, 1.0) && !segment.keepSound) continue;
                     audioCoverageMs += qMax<qint64>(0, qMin(sourceProbe.audioEndMs, segment.endMs)
                                                            - qMax(sourceProbe.audioStartMs, segment.startMs));
+                }
+            }
+            for (const auto& clip : request.audioClips.clips) {
+                if (request.segments.empty()) {
+                    audioCoverageMs += qMax<qint64>(0, qMin(clip.endMs, rangeEndMs) - qMax(clip.startMs, rangeStartMs));
+                } else for (const auto& segment : request.segments) {
+                    if (!qFuzzyCompare(segment.speed, 1.0) && !segment.keepSound) continue;
+                    audioCoverageMs += qMax<qint64>(0, qMin(clip.endMs, segment.endMs) - qMax(clip.startMs, segment.startMs));
                 }
             }
             const bool expectAudio = audioCoverageMs > kAudioCoverageToleranceMs;

@@ -290,6 +290,14 @@ bool VideoPlaybackItem::setAudioSource(std::function<QByteArray(qint64 startFram
     return accepted;
 }
 
+void VideoPlaybackItem::setCameraEffectsEnabled(bool enabled)
+{
+    if (m_cameraEffectsEnabled == enabled) return;
+    m_cameraEffectsEnabled = enabled;
+    emit cameraEffectsEnabledChanged();
+    reprocessFrame();
+}
+
 void VideoPlaybackItem::setFrameProcessor(FrameProcessor processor)
 {
     m_frameProcessor = std::move(processor);

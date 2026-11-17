@@ -6,6 +6,7 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QTemporaryDir>
+#include <QScopeGuard>
 
 #include <functional>
 
@@ -22,6 +23,7 @@ class tst_RecordingPreviewPointer : public QObject
     Q_OBJECT
 
 private slots:
+    void loopBackIsAnimatedOnly();
     void clickStyleControlsPersistAndUndo();
     void controlsFollowThePointerData();
     void controlsHiddenWithoutPointerData();
@@ -56,6 +58,46 @@ QQuickView* tst_RecordingPreviewPointer::openPreview(RecordingPreviewBackend& ba
 QQuickItem* tst_RecordingPreviewPointer::item(QQuickView* view, const char* name)
 {
     return view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(name));
+}
+
+void tst_RecordingPreviewPointer::loopBackIsAnimatedOnly()
+{
+    auto& settings = RecordingSettingsManager::instance();
+    const auto previous = settings.pointerEffects();
+    settings.setPointerEffects({});
+    auto restore = qScopeGuard([&] { settings.setPointerEffects(previous); });
+    QTemporaryDir dir;
+    const QString video = dir.filePath("missing.mp4");
+    SnapTray::CursorTimelineWriter writer(SnapTray::CursorTimelineSidecar::pathFor(video));
+    SnapTray::CursorTimelineInfo info;
+    info.frameSize = {320, 240};
+    QVERIFY(writer.open(info));
+    writer.addSample({0, {10, 10}, true, 0});
+    writer.addSample({2000, {200, 100}, true, 0});
+    QVERIFY(writer.finish());
+    RecordingPreviewBackend backend(video);
+    backend.updateVideoSize(info.frameSize);
+    backend.updateDuration(3000);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.setLoopBack(true);
+    QVERIFY(backend.loopBack());
+    QVERIFY(backend.renderedCursorEffects().loopBack);
+    auto* view = openPreview(backend);
+    QVERIFY(view);
+    auto* control = item(view, "previewPointerLoopBack");
+    QVERIFY(control);
+    QVERIFY(control->isEnabled());
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QVERIFY(!control->isEnabled());
+    QVERIFY(!backend.renderedCursorEffects().loopBack);
+    QVERIFY(backend.loopBack()); // Format changes retain the user's recipe.
+    backend.setSelectedFormat(RecordingPreviewBackend::WebP);
+    QVERIFY(control->isEnabled());
+    QVERIFY(backend.renderedCursorEffects().loopBack);
+    backend.undo();
+    QVERIFY(!backend.loopBack());
+    backend.redo();
+    QVERIFY(backend.loopBack());
 }
 
 void tst_RecordingPreviewPointer::controlsFollowThePointerData()

@@ -88,6 +88,11 @@ void TestRecordingHealth::diagnosticsHaveNoMediaOrPaths()
     health.reset(QStringLiteral("ScreenCaptureKit"), 3);
     health.frameOffered();
     health.audioDropped(1024);
+    SnapTray::AudioCaptureDiagnostics audio;
+    audio.sources[0] = {1, 2400, 2400, 2, 48, 3, 1};
+    health.setAudioSourceDiagnostics(audio);
+    health.captureEvent(QStringLiteral("compatibility mode"));
+    health.captureSourceStats(4, 2);
     RecordingHealth::ClockCounters clock;
     clock.stalls = 2;
     clock.longestGapMs = 900;
@@ -102,6 +107,9 @@ void TestRecordingHealth::diagnosticsHaveNoMediaOrPaths()
                  "video input: native 2, image 2 (no native buffer 0, watermark 1, turned off 0, incompatible 1)")),
              qPrintable(text));
     QVERIFY(text.contains(QStringLiteral("stalls 2")));
+    QVERIFY(text.contains(QStringLiteral("gaps 1 (2400 frames; max 2400)")));
+    QVERIFY(text.contains(QStringLiteral("trims 2 (48 frames), timestamp errors 3, realignments 1")));
+    QVERIFY(text.contains(QStringLiteral("compatibility mode")));
     QVERIFY(text.contains(QStringLiteral("1024 bytes; kept as silence")));
     QVERIFY(!text.contains(QLatin1Char('/')));
     QVERIFY(!text.contains(QLatin1Char('\\')));

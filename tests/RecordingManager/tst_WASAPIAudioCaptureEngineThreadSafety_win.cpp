@@ -42,6 +42,7 @@ class TestWASAPIAudioCaptureEngineThreadSafetyWin : public QObject
     Q_OBJECT
 
 private slots:
+    void startDoesNotWaitForDriverInitialization();
     void runningThreadIsRetainedUntilItFinishes();
     void disposalReturnsWithoutWaitingForRunningThread();
     void disposalAllowsResponsiveWorkerTail();
@@ -60,6 +61,28 @@ private slots:
     void stalePacketIsRejectedAcrossPauseResume();
     void sourceFailureReportsExplicitDegradation();
 };
+
+void TestWASAPIAudioCaptureEngineThreadSafetyWin::startDoesNotWaitForDriverInitialization()
+{
+    WASAPIAudioCaptureEngine engine;
+    QSemaphore entered, release;
+    engine.m_source = IAudioCaptureEngine::AudioSource::Microphone;
+    engine.m_initializeOverride = [&] { entered.release(); release.acquire(); return false; };
+    QSignalSpy completed(&engine, &IAudioCaptureEngine::startCompleted);
+    QElapsedTimer elapsed;
+    elapsed.start();
+    const bool accepted = engine.start();
+    const qint64 startMs = elapsed.elapsed();
+    const bool initialized = entered.tryAcquire(1, 1000);
+    release.release(); // always release before an assertion can destroy the engine
+    QVERIFY(accepted);
+    QVERIFY(initialized);
+    QVERIFY2(startMs < 50, qPrintable(QStringLiteral("start blocked for %1 ms").arg(startMs)));
+    QTRY_COMPARE_WITH_TIMEOUT(completed.size(), 1, 2000);
+    QVERIFY(!completed.first().first().toBool());
+    engine.stop();
+    QVERIFY(!engine.isRunning());
+}
 
 void TestWASAPIAudioCaptureEngineThreadSafetyWin::runningThreadIsRetainedUntilItFinishes()
 {
@@ -540,6 +563,8 @@ void TestWASAPIAudioCaptureEngineThreadSafetyWin::packetTimestampUsesSharedQpcTi
                  480,
                  format),
              qint64(7000000));
+    QCOMPARE(engine.packetTimestampNs(0, 0, 480, format), qint64(-1));
+    QCOMPARE(engine.packetTimestampNs(1000100000, AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR, 480, format), qint64(-1));
 }
 
 void TestWASAPIAudioCaptureEngineThreadSafetyWin::stalePacketIsRejectedAcrossPauseResume()

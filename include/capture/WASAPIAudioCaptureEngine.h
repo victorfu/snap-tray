@@ -11,6 +11,7 @@
 #include <QWaitCondition>
 #include <atomic>
 #include <memory>
+#include <functional>
 
 // Forward declarations - Windows types are opaque pointers here
 // Actual types are defined in the .cpp file via Windows headers
@@ -45,6 +46,7 @@ public:
     QString defaultInputDevice() const override;
 
     bool start() override;
+    bool startsAsynchronously() const override { return true; }
     void stop() override;
     void disposeAsync() override;
     void pause() override;
@@ -63,6 +65,7 @@ private:
 
     // Thread-based COM initialization (runs in capture thread)
     bool initializeInThread();
+    std::function<bool()> m_initializeOverride; // deterministic blocked-driver lifecycle test
     void cleanupInThread();
 
     // Legacy COM stubs (kept for compatibility but do nothing)
@@ -157,11 +160,13 @@ private:
     IMMDevice *m_micDevice = nullptr;
     IAudioClient *m_micAudioClient = nullptr;
     IAudioCaptureClient *m_micCaptureClient = nullptr;
+    void* m_micEvent = nullptr;
 
     // System audio loopback capture
     IMMDevice *m_loopbackDevice = nullptr;
     IAudioClient *m_loopbackAudioClient = nullptr;
     IAudioCaptureClient *m_loopbackCaptureClient = nullptr;
+    void* m_loopbackEvent = nullptr;
 
     // Capture thread
     QThread *m_captureThread = nullptr;
