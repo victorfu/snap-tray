@@ -71,12 +71,18 @@ public:
 namespace {
 bool waitForQuiet(PaintProbe& probe)
 {
+    // A newly shown native window may not paint immediately (notably on Cocoa).
+    // Silence before the first captured frame is not a settled backing store.
+    const auto hasSettledFrame = [&probe] {
+        return !probe.regions.isEmpty() && !probe.pixels.isNull()
+            && probe.sincePaint.elapsed() >= 100;
+    };
     QElapsedTimer timeout;
     timeout.start();
     do {
         QTest::qWait(10);
-    } while (probe.sincePaint.elapsed() < 100 && timeout.elapsed() < 5000);
-    return probe.sincePaint.elapsed() >= 100;
+    } while (!hasSettledFrame() && timeout.elapsed() < 5000);
+    return hasSettledFrame();
 }
 
 void stopAnimationClock(LoadingSpinnerRenderer* spinner)
@@ -169,6 +175,8 @@ void TestOCRBusyRepaint::pinAnimationRepaintsAndErases()
     const QRect bounds = spinner->bounds(window.rect().center());
     PaintProbe probe(&window, bounds);
     window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    window.update();
     QVERIFY(waitForQuiet(probe));
     const QImage idle = probe.pixels;
     QVERIFY(!idle.isNull());

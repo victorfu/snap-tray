@@ -59,21 +59,28 @@ void RedactionTrack::apply(QImage& frame, qint64 frameMs, const QRectF& frameSou
                                     QPoint(qCeil(mapped.right()) - 1, qCeil(mapped.bottom()) - 1))
                                   .intersected(frame.rect());
         if (covered.isEmpty()) continue;
-        if (!painter.isActive()) painter.begin(&frame);
+        if (!painter.isActive() && !painter.begin(&frame)) {
+            frame = {};
+            return;
+        }
         switch (mask.style) {
         case RedactionMask::Style::Solid:
             painter.fillRect(covered, kSolidColor);
             break;
         case RedactionMask::Style::Pixelate:
-            painter.drawImage(covered.topLeft(),
-                              reduced(frame.copy(covered), std::max(1, qRound(kPixelateBlock * sx)),
-                                      Qt::FastTransformation));
+        case RedactionMask::Style::Blur: {
+            const bool pixelate = mask.style == RedactionMask::Style::Pixelate;
+            const QImage obscured = reduced(frame.copy(covered),
+                std::max(1, qRound((pixelate ? kPixelateBlock : kBlurReduction) * sx)),
+                pixelate ? Qt::FastTransformation : Qt::SmoothTransformation);
+            if (obscured.isNull()) {
+                painter.end();
+                frame = {}; // allocation failure must never leave raw pixels
+                return;
+            }
+            painter.drawImage(covered.topLeft(), obscured);
             break;
-        case RedactionMask::Style::Blur:
-            painter.drawImage(covered.topLeft(),
-                              reduced(frame.copy(covered), std::max(1, qRound(kBlurReduction * sx)),
-                                      Qt::SmoothTransformation));
-            break;
+        }
         }
     }
 }

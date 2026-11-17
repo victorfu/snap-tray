@@ -1,4 +1,6 @@
 #include "qml/RecordingPreviewBackend.h"
+#include "recording/RecordingFrameFilter.h"
+#include "qml/RecordingProjectThumbnail.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/VideoPlaybackItem.h"
@@ -24,7 +26,6 @@
 #include <QLocale>
 #include <QMutex>
 #include <QMutexLocker>
-#include <QSaveFile>
 #include <QStorageInfo>
 #include <cmath>
 #include <QCoreApplication>
@@ -150,89 +151,16 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
 
 std::function<void(QImage&, qint64, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
 {
-    // A snapshot: shares the immutable timeline, copies settings and geometry.
-    const QSize videoSize = effectsVideoSize();
-    const QRectF bounds = m_cropRect.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(videoSize)) : QRectF(m_cropRect);
-    const auto timeline = m_cursorTimeline;
-    const auto editTimeline = timelineMap();
-    const bool drawCursor = cursorEffectsActive();
-    const auto cursor = drawCursor
-        ? std::make_shared<SnapTray::CursorEffectRenderer>(*timeline, m_cursorEffects, effectsClipEnd())
-        : std::shared_ptr<SnapTray::CursorEffectRenderer>();
-    // Nothing of the pointer reaches across a cut (#185).
-    if (cursor && !timelineMap().isEmpty()) cursor->setTimeline(timelineMap());
-    const auto zoom = zoomAvailable() && m_zoom.isActive() ? preparedZoom()
-                                                            : std::shared_ptr<const SnapTray::ZoomTrack>();
-    const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()
-                                                  : std::make_shared<SnapTray::RedactionTrack>(m_redaction);
-    // The frame around the picture (#184), last; its static parts are drawn once here.
-    const auto appearance = appearanceActive() && !bounds.isEmpty()
-        ? std::make_shared<const SnapTray::RecordingAppearanceRenderer>(
-              m_appearance, bounds.size().toSize(),
-              m_appearance.background == SnapTray::RecordingAppearance::Background::Image
-                  ? QImage(m_appearance.imagePath) : QImage())
-        : std::shared_ptr<const SnapTray::RecordingAppearanceRenderer>();
-    const bool blurredBackground = appearance
-        && m_appearance.background == SnapTray::RecordingAppearance::Background::BlurredVideo;
-    // Shortcut hints (#187) on the output picture, after the zoom and pointer.
-    std::shared_ptr<SnapTray::KeyOverlayRenderer> keys;
-    if (keyOverlayActive()) {
-        keys = std::shared_ptr<SnapTray::KeyOverlayRenderer>(
-            new SnapTray::KeyOverlayRenderer(*m_keyTimeline, m_keyOverlay),
-            [held = m_keyTimeline](SnapTray::KeyOverlayRenderer* renderer) { delete renderer; });
-        // Always the trimmed range (PR #200 review): a key pressed before the
-        // trim start must not show in the first hint, even without cuts.
-        keys->setTimeline(timelineMap());
-    }
-    // Text and image overlays (#188): on top, inside the frame.
-    const auto overlays = m_overlays.isEmpty() || !overlaysAvailable()
-        ? std::shared_ptr<const SnapTray::OverlayTrack>()
-        : std::make_shared<const SnapTray::OverlayTrack>(m_overlays);
-    return [timeline, editTimeline, cursor, zoom, redaction, appearance, blurredBackground, keys, overlays, bounds, videoSize](
-               QImage& frame, qint64 sourceMs, qint64 sourceEndMs) {
-        if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
-            frame = frame.convertToFormat(QImage::Format_RGB32);
-        }
-        // Masks first, on the source content: nothing they cover can come
-        // back through the zoom's resampling.
-        // Never skip masks for lack of geometry: without a known size the
-        // frame itself is the source area.
-        if (redaction) {
-            // Preserve conservative lookahead within the current kept part only.
-            // Neither a held frame nor the legacy guard may include a deleted gap.
-            qint64 maskEndMs = qMax(sourceEndMs, sourceMs + SnapTray::RedactionTrack::kFrameHoldMs);
-            const int part = editTimeline.segmentAt(sourceMs);
-            if (part >= 0)
-                maskEndMs = qMin(maskEndMs, editTimeline.segments()[size_t(part)].endMs);
-            redaction->apply(frame, sourceMs,
-                             bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds, maskEndMs);
-        }
-        // A blurred background comes from the masked picture, before zoom and
-        // pointer: nothing a mask covers can show through it.
-        const QImage blurSource = blurredBackground
-            ? SnapTray::RecordingAppearanceRenderer::blurSourceFor(frame) : QImage();
-        // The frame shows `bounds`; a zoom shows part of it, scaled to fill.
-        QRectF shown = bounds;
-        if (zoom) {
-            shown = zoom->viewportAt(sourceMs, bounds);
-            if (shown != bounds) {
-                QImage zoomed(frame.size(), frame.format());
-                QPainter painter(&zoomed);
-                painter.setRenderHint(QPainter::SmoothPixmapTransform);
-                const double sx = frame.width() / bounds.width();
-                const double sy = frame.height() / bounds.height();
-                const QRectF source((shown.x() - bounds.x()) * sx, (shown.y() - bounds.y()) * sy,
-                                    shown.width() * sx, shown.height() * sy);
-                painter.drawImage(QRectF(zoomed.rect()), frame, source);
-                painter.end();
-                frame = zoomed;
-            }
-        }
-        if (cursor) cursor->paint(frame, sourceMs, {shown, videoSize, frame.size()});
-        if (keys) keys->paint(frame, sourceMs);
-        if (overlays) overlays->paint(frame, sourceMs);
-        if (appearance) frame = appearance->compose(frame, blurSource);
-    };
+    auto state = currentEditState();
+    // Keep the export format's existing capability gates. Project posters
+    // always render the committed recipe, independently of the export format.
+    if (!cursorEffectsActive()) { state.cursor.showCursor = false; state.cursor.clickRipple = false; }
+    if (!zoomAvailable()) state.zoom = {};
+    if (!appearanceActive()) state.appearance.enabled = false;
+    if (!keyOverlayActive()) state.keys.enabled = false;
+    if (!overlaysAvailable()) state.overlays = {};
+    return SnapTray::recordingFrameFilter(state, effectsVideoSize(), timelineMap(), m_cursorTimeline, m_keyTimeline,
+        zoomAvailable() && m_zoom.isActive() ? preparedZoom() : nullptr, effectsClipEnd());
 }
 
 QSize RecordingPreviewBackend::effectsVideoSize() const
@@ -1693,11 +1621,6 @@ QJsonObject RecordingPreviewBackend::currentRecipe() const
         currentEditState(), {{QStringLiteral("format"), m_selectedFormat}, {QStringLiteral("mp4"), m_mp4Options.toJson()}});
 }
 
-namespace {
-// The library's thumbnail, at most this size.
-const QSize kProjectThumbnailSize(320, 180);
-}
-
 std::optional<QJsonObject> RecordingPreviewBackend::recipeForProject(const QString& projectDir, QJsonObject recipe, QString* copied, QString* error) const
 {
     const auto selected = SnapTray::RecordingAppearance::fromJson(
@@ -1778,6 +1701,7 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
             return false;
         }
         removeUnusedBackgrounds(m_project->dir, *recipe);
+        SnapTray::requestProjectThumbnail(*m_project);
         return true;
     }
     // Prepare the owned background before the one final manifest commit.
@@ -1790,24 +1714,7 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
         qWarning() << "RecordingPreviewBackend: the recording could not be kept as a project";
         return false;
     }
-    // A small picture for the library, from the middle of what is kept: the
-    // first frame is usually the desktop before anything happens (#210).
-    // Off the GUI thread: frame readers decode from the start, which for the
-    // middle of a long recording takes a while (PR #232 review).
-    const SnapTray::TimelineMap map = timelineMap();
-    const qint64 middle = map.outputDurationMs() > 0 ? map.outputToSource(map.outputDurationMs() / 2) : m_trimStart;
-    (void)QtConcurrent::run([video = project->videoPath(), path = project->thumbnailPath(), middle]() {
-        const auto reader = IVideoFrameReader::create();
-        if (!reader || !reader->load(video)) return;
-        const QImage frame = reader->frameAt(middle);
-        if (frame.isNull()) return;
-        // Whole or not at all: the library may list the project meanwhile.
-        QSaveFile file(path);
-        if (file.open(QIODevice::WriteOnly)
-            && frame.scaled(kProjectThumbnailSize, Qt::KeepAspectRatio, Qt::SmoothTransformation).save(&file, "PNG")) {
-            file.commit();
-        }
-    });
+    SnapTray::requestProjectThumbnail(*project);
     const int days = RecordingSettingsManager::instance().projectCleanupDays();
     SnapTray::RecordingProjects::removeOlderThan(days);
     return true;

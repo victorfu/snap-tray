@@ -50,6 +50,7 @@ class tst_RecordingPreviewZoom : public QObject
 private slots:
     void manualFocusOverridesAutoFollowStart();
     void followPreviewAndExportAgree();
+    void exportReusesPreparedFollowPath();
     void followComposesWithEdits();
     void autoZoomKeepsTheUsersZooms();
     void autoZoomNeverLeavesAStaleSelection();
@@ -116,6 +117,27 @@ void tst_RecordingPreviewZoom::followPreviewAndExportAgree()
     QCOMPARE(fixed, backend.zoomViewportInView(2000, QRectF(QPointF(), QSizeF(kFrame))));
     backend.undo();
     QVERIFY(backend.zoomSegments().first().toMap().value("follow").toBool());
+}
+
+void tst_RecordingPreviewZoom::exportReusesPreparedFollowPath()
+{
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    SnapTray::ZoomSegment segment{0, 10000, 2.0, QPointF(300, 300), true};
+    segment.follow = true;
+    backend.editZoom([&](SnapTray::ZoomTrack& track) { track.setSegments({segment}); });
+    const auto prepared = backend.preparedZoom();
+    const auto owners = prepared.use_count();
+    {
+        const auto filter = backend.effectsFrameFilter();
+        // The export filter must retain the existing prepared path rather
+        // than recomputing the 125 Hz follow simulation on the GUI thread.
+        QCOMPARE(prepared.use_count(), owners + 1);
+    }
+    QCOMPARE(prepared.use_count(), owners);
 }
 
 void tst_RecordingPreviewZoom::followComposesWithEdits()

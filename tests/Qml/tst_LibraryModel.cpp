@@ -81,6 +81,7 @@ private slots:
     void recordingRoles();
     void busyProjectIsMarked();
     void followsSourceChanges();
+    void thumbnailPublicationDoesNotResetModel();
 
 private:
     std::unique_ptr<QTemporaryDir> m_dir;
@@ -227,6 +228,26 @@ void tst_LibraryModel::followsSourceChanges()
     // A smart folder narrows the screenshots shown, not the totals.
     history.setActiveFilter(HistoryModel::LargeFiles);
     QCOMPARE(model.screenshotCount(), 3);
+}
+
+void tst_LibraryModel::thumbnailPublicationDoesNotResetModel()
+{
+    HistoryModel history;
+    RecordingLibraryViewModel recordings;
+    LibraryModel model(&history, &recordings);
+    auto project = SnapTray::RecordingProjects::load(m_newProject);
+    QVERIFY(project);
+    QVERIFY(QFile::remove(project->thumbnailPath()));
+    QSignalSpy resets(&model, &QAbstractItemModel::modelReset);
+    QSignalSpy changes(&model, &QAbstractItemModel::dataChanged);
+    QImage image(32, 18, QImage::Format_RGB32);
+    image.fill(Qt::black);
+    QVERIFY(SnapTray::RecordingProjects::publishThumbnail(*project, image));
+    QCOMPARE(resets.count(), 0);
+    QCOMPARE(changes.count(), 1);
+    const QModelIndex changed = changes.first().first().value<QModelIndex>();
+    QCOMPARE(model.keyAt(changed.row()), m_newProject);
+    QCOMPARE(model.data(changed, LibraryModel::ThumbnailUrlRole).toString(), project->thumbnailUrl());
 }
 
 QTEST_MAIN(tst_LibraryModel)

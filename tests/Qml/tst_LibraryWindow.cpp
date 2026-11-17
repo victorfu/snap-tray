@@ -81,6 +81,7 @@ private slots:
     void cancelledDeleteReturnsFocus();
     void itemsAndSectionsReadTheirSelection();
     void solidSurfacesAndSelectionCue();
+    void projectThumbnailRefreshesVisibleImage();
 
 private:
     QQuickItem* item(const char* name) const;
@@ -519,6 +520,55 @@ void tst_LibraryWindow::solidSurfacesAndSelectionCue()
     QVERIFY(cardBorder(m_savedProject) > 0);
     QQuickItem* selected = item(QByteArray("libraryCard_" + m_project.toUtf8()).constData());
     QVERIFY(selected->property("radius").toReal() <= 8);
+}
+
+// Exercise the displayed QML Image, including invalidation before completion.
+void tst_LibraryWindow::projectThumbnailRefreshesVisibleImage()
+{
+    m_window->showSection(LibraryModel::Recordings);
+    root()->setProperty("listMode", false);
+    auto project = SnapTray::RecordingProjects::load(m_project);
+    QVERIFY(project);
+    const QByteArray cardName = (QStringLiteral("libraryCard_") + m_project).toUtf8();
+    const auto previewImage = [&]() -> QQuickItem* {
+        QQuickItem* card = item(cardName.constData());
+        if (!card) return nullptr;
+        const auto find = [&](const auto& self, QQuickItem* node) -> QQuickItem* {
+            if (node->metaObject()->indexOfProperty("source") >= 0
+                && node->metaObject()->indexOfProperty("status") >= 0) return node;
+            for (QQuickItem* child : node->childItems())
+                if (auto* result = self(self, child)) return result;
+            return nullptr;
+        };
+        return find(find, card);
+    };
+    QTRY_VERIFY(previewImage() && previewImage()->property("status").toInt() == 1); // Image.Ready
+    const auto displayedCenter = [&]() -> QColor {
+        QQuickItem* preview = previewImage();
+        if (!preview) return {};
+        const QImage shot = m_window->view()->grabWindow();
+        if (shot.isNull()) return {};
+        const QPointF center = preview->mapToScene(QPointF(preview->width() / 2, preview->height() / 2));
+        return shot.pixelColor(qRound(center.x() * shot.width() / m_window->view()->width()),
+                               qRound(center.y() * shot.height() / m_window->view()->height()));
+    };
+    QTRY_COMPARE(displayedCenter(), QColor(Qt::blue));
+    const QString oldUrl = project->thumbnailUrl();
+    SnapTray::PreviewEditState state;
+    state.redaction.masks.push_back({QRect(0, 0, 32, 18), 0, -1, SnapTray::RedactionMask::Style::Solid});
+    QVERIFY(SnapTray::RecordingProjects::update(*project, SnapTray::RecordingRecipe::toJson(state, {}), {}));
+    QTRY_VERIFY(previewImage() && previewImage()->property("source").toUrl().isEmpty());
+    QTRY_VERIFY(displayedCenter() != QColor(Qt::blue));
+    // The renderer's pixel correctness is covered by RecordingPreviewExport;
+    // this check isolates QML image refresh and its cached URL.
+    QImage masked(32, 18, QImage::Format_RGB32);
+    masked.fill(Qt::black);
+    QVERIFY(SnapTray::RecordingProjects::publishThumbnail(*project, masked));
+    QVERIFY(project->thumbnailUrl() != oldUrl);
+    QTRY_VERIFY(previewImage() && previewImage()->property("status").toInt() == 1);
+    QTRY_COMPARE(displayedCenter(), QColor(Qt::black));
+    const QString evidence = qEnvironmentVariable("SNAPTRAY_PROJECT_THUMBNAIL_EVIDENCE");
+    if (!evidence.isEmpty()) QVERIFY(m_window->view()->grabWindow().save(evidence));
 }
 
 QTEST_MAIN(tst_LibraryWindow)

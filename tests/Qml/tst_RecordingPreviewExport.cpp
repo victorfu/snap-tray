@@ -10,6 +10,9 @@
 #include "encoding/IntermediateQuality.h"
 #include "encoding/VideoBitrate.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "qml/RecordingProjectThumbnail.h"
+#include "qml/RecordingLibraryViewModel.h"
+#include "qml/LibraryModel.h"
 #include "recording/DiskSpaceGuard.h"
 #include "recording/WindowTimeline.h"
 #include "recording/WindowTimelineSidecar.h"
@@ -436,6 +439,10 @@ private slots:
     void mp4OptionsReachTheOutput();
     void exportSizeIsTheSavedSize();
     void projectThumbnailShowsTheMiddle();
+    void projectThumbnailAppliesSavedMask();
+    void projectThumbnailGeometryAndTiming_data();
+    void projectThumbnailGeometryAndTiming();
+    void projectThumbnailFailureAndLegacyRefresh();
     void mp4OptionsMatchingTheSourceKeepTheFastPath();
     void sourceProbeNeverBlocksTheGuiThread();
     void estimateCountsTheKeptParts();
@@ -2022,13 +2029,221 @@ void tst_RecordingPreviewExport::projectThumbnailShowsTheMiddle()
     }
     const QList<SnapTray::RecordingProject> projects = SnapTray::RecordingProjects::list();
     QCOMPARE(projects.size(), 1);
-    // Written off the GUI thread, shortly after the save.
+    // Rendered off the GUI thread, then published shortly after the save.
     QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(projects.first().thumbnailPath()), 10000);
     const QImage thumbnail(projects.first().thumbnailPath());
     QVERIFY(!thumbnail.isNull());
     const QColor centre = thumbnail.pixelColor(thumbnail.width() / 2, thumbnail.height() / 2);
     QVERIFY2(centre.green() > 128 && centre.red() < 100 && centre.blue() < 100,
              qPrintable(centre.name()));
+}
+
+void tst_RecordingPreviewExport::projectThumbnailAppliesSavedMask()
+{
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    SnapTray::RecordingProjects::setRootForTests(directory.filePath(QStringLiteral("projects")));
+    auto& settings = RecordingSettingsManager::instance();
+    const bool keptBefore = settings.keepProjects();
+    const QJsonObject appearanceBefore = settings.appearance();
+    auto restore = qScopeGuard([&settings, keptBefore, appearanceBefore]() {
+        settings.setKeepProjects(keptBefore);
+        settings.setAppearance(appearanceBefore);
+        SnapTray::RecordingProjects::setRootForTests(QString());
+        RecordingPreviewBackend::outputQualityOverride() = {};
+    });
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+    settings.setKeepProjects(true);
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    {
+        RecordingPreviewBackend backend(inputPath);
+        backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+        backend.updateVideoSize(sourceSize);
+        backend.updateDuration(kFrameCount * kFrameIntervalMs);
+        backend.setAppearanceEnabled(false);
+        QTRY_VERIFY(backend.sourceProbeReady());
+        QCOMPARE(backend.addMask(), 0);
+        backend.setMaskRectFromView(0, QRectF(QPointF(), QSizeF(sourceSize)),
+                                    QRectF(QPointF(), QSizeF(sourceSize)));
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+        const QString saved = directory.filePath(QStringLiteral("saved.mp4"));
+        QVERIFY(QFile::rename(savedSpy.first().at(0).toString(), saved));
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, saved);
+    }
+    const QList<SnapTray::RecordingProject> projects = SnapTray::RecordingProjects::list();
+    QCOMPARE(projects.size(), 1);
+    // Rendered off the GUI thread, then published shortly after the save.
+    QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(projects.first().thumbnailPath()), 10000);
+    const QImage thumbnail(projects.first().thumbnailPath());
+    QVERIFY(!thumbnail.isNull());
+    const QColor centre = thumbnail.pixelColor(thumbnail.width() / 2, thumbnail.height() / 2);
+    QVERIFY2(centre.green() < 20 && centre.red() < 20 && centre.blue() < 20,
+             qPrintable(centre.name()));
+    auto project = projects.first();
+    const QString oldUrl = project.thumbnailUrl();
+    {
+        RecordingPreviewBackend backend(project.videoPath(), true);
+        backend.setProject(project);
+        backend.updateVideoSize(sourceSize);
+        backend.updateDuration(kFrameCount * kFrameIntervalMs);
+        QTRY_VERIFY(backend.sourceProbeReady());
+        QVERIFY(!backend.projectLoading());
+        // Move the original mask, add another, and change crop and trim.
+        const QRectF picture{QPointF(), QSizeF(sourceSize)};
+        backend.setMaskRectFromView(0, QRectF(0, 0, 80, 120), picture);
+        QCOMPARE(backend.addMask(), 1);
+        backend.setMaskRectFromView(1, QRectF(120, 0, 40, 40), picture);
+        backend.setInitialCrop(QRect(40, 0, 120, 120));
+        backend.setTrimStart(400);
+        backend.setTrimEnd(800);
+        QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+        QCOMPARE(savedSpy.count(), 1);
+        const QString saved = directory.filePath(QStringLiteral("resaved.mp4"));
+        QVERIFY(QFile::rename(savedSpy.first().at(0).toString(), saved));
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, saved);
+        const auto updated = SnapTray::RecordingProjects::load(project.dir);
+        QVERIFY(updated);
+        project = *updated;
+        QVERIFY(project.thumbnailUrl().isEmpty());
+    }
+    QTRY_VERIFY_WITH_TIMEOUT(!project.thumbnailUrl().isEmpty(), 10000);
+    QVERIFY(project.thumbnailUrl() != oldUrl);
+    const QImage refreshed(project.thumbnailPath());
+    QCOMPARE(refreshed.size(), QSize(180, 180));
+    QCOMPARE(refreshed.pixelColor(20, 90), QColor(Qt::black));
+    QVERIFY(isGreen(refreshed.pixelColor(130, 90)));
+    QCOMPARE(refreshed.pixelColor(160, 20), QColor(Qt::black));
+}
+
+// Deterministic source with a recognizable colored rectangle. The reader
+// records the requested source time, independently of the mask assertions.
+class PosterFrameReader : public IVideoFrameReader {
+public:
+    QImage frame{QSize(800, 600), QImage::Format_RGB32};
+    qint64 sampled = -1;
+    qint64 nextUs = -1;
+    bool loadOk = true;
+    PosterFrameReader() {
+        frame.fill(Qt::white);
+        QPainter painter(&frame);
+        painter.fillRect(QRect(240, 160, 160, 120), Qt::green);
+    }
+    bool load(const QString&) override { return loadOk; }
+    QImage frameAt(qint64 time) override { sampled = time; return frame; }
+    QSize videoSize() const override { return QSize(800, 600); }
+    qint64 duration() const override { return 4000; }
+    double frameRate() const override { return 10; }
+    QString lastError() const override { return {}; }
+    qint64 nextFrameTimeMicroseconds() const override { return nextUs; }
+};
+
+void tst_RecordingPreviewExport::projectThumbnailGeometryAndTiming_data()
+{
+    QTest::addColumn<qint64>("maskStart");
+    QTest::addColumn<qint64>("maskEnd");
+    QTest::addColumn<bool>("cut");
+    QTest::addColumn<bool>("masked");
+    // Trim 1000..3000 samples at 2000. With the second half deleted,
+    // output midpoint is 1500; lookahead stops at the cut at 2000.
+    QTest::newRow("mask-start") << qint64(2000) << qint64(2500) << false << true;
+    QTest::newRow("mask-end-inclusive") << qint64(1800) << qint64(2000) << false << true;
+    QTest::newRow("mask-ended") << qint64(1800) << qint64(1999) << false << false;
+    QTest::newRow("vfr-hold") << qint64(2500) << qint64(2800) << false << true;
+    QTest::newRow("deleted-gap") << qint64(2000) << qint64(2500) << true << false;
+    QTest::newRow("before-cut") << qint64(1999) << qint64(2500) << true << true;
+}
+
+void tst_RecordingPreviewExport::projectThumbnailGeometryAndTiming()
+{
+    QFETCH(qint64, maskStart);
+    QFETCH(qint64, maskEnd);
+    QFETCH(bool, cut);
+    QFETCH(bool, masked);
+    PosterFrameReader reader;
+    reader.nextUs = 3000000; // a long held frame
+    SnapTray::PreviewEditState state;
+    state.crop = QRect(160, 120, 480, 360);
+    state.trimStart = 1000;
+    state.trimEnd = 3000;
+    state.appearance.enabled = false;
+    if (cut) {
+        QVERIFY(state.timeline.splitAt(2000, 4000));
+        state.timeline.setDeleted(1, true);
+    }
+    state.redaction.masks.push_back({QRect(240, 160, 160, 120), maskStart, maskEnd,
+                                     SnapTray::RedactionMask::Style::Solid});
+    SnapTray::RecordingProject project;
+    project.recipe = SnapTray::RecordingRecipe::toJson(state, {});
+    const QImage thumbnail = SnapTray::renderProjectThumbnail(project, reader);
+    QCOMPARE(reader.sampled, cut ? qint64(1500) : qint64(2000));
+    QCOMPARE(thumbnail.size(), QSize(240, 180));
+    // crop origin is non-zero and final scale is 1/2. Sample inside the
+    // original green rectangle, plus the white area outside it.
+    QCOMPARE(thumbnail.pixelColor(80, 50), QColor(masked ? Qt::black : Qt::green));
+    QCOMPARE(thumbnail.pixelColor(200, 150), QColor(Qt::white));
+}
+
+void tst_RecordingPreviewExport::projectThumbnailFailureAndLegacyRefresh()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    SnapTray::RecordingProjects::setRootForTests(directory.filePath(QStringLiteral("projects")));
+    auto restore = qScopeGuard([] { SnapTray::RecordingProjects::setRootForTests({}); });
+    const QString video = directory.filePath(QStringLiteral("legacy.mp4"));
+    QVERIFY(createRecording(video, 0).isEmpty());
+    SnapTray::PreviewEditState state;
+    state.appearance.enabled = false;
+    state.redaction.masks.push_back({QRect(QPoint(), kFrameSize), 0, -1,
+                                    SnapTray::RedactionMask::Style::Solid});
+    auto project = SnapTray::RecordingProjects::create(video, false,
+        SnapTray::RecordingRecipe::toJson(state, {}), {}, 1200, {});
+    QVERIFY(project);
+    QFile manifest(QDir(project->dir).filePath(QStringLiteral("project.json")));
+    QVERIFY(manifest.open(QIODevice::ReadOnly));
+    auto json = QJsonDocument::fromJson(manifest.readAll()).object();
+    manifest.close();
+    json.remove(QStringLiteral("thumbnailGeneration"));
+    QVERIFY(manifest.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    manifest.write(QJsonDocument(json).toJson());
+    manifest.close();
+    project = SnapTray::RecordingProjects::load(project->dir);
+    QVERIFY(project);
+    QImage raw(kFrameSize, QImage::Format_RGB32);
+    raw.fill(Qt::green);
+    QVERIFY(raw.save(QDir(project->dir).filePath(QStringLiteral("thumbnail.png"))));
+
+    SnapTray::RecordingLibraryViewModel recordings;
+    SnapTray::LibraryModel library(nullptr, &recordings);
+    QVERIFY(library.data(library.index(0), SnapTray::LibraryModel::ThumbnailUrlRole).toString().isEmpty());
+    QTRY_VERIFY_WITH_TIMEOUT(!project->thumbnailUrl().isEmpty(), 10000);
+    const QString before = project->thumbnailUrl();
+    QCOMPARE(library.data(library.index(0), SnapTray::LibraryModel::ThumbnailUrlRole).toString(), before);
+    QCOMPARE(recordings.projects().first().toMap().value(QStringLiteral("thumbnail")).toString(), before);
+    QCOMPARE(QImage(project->thumbnailPath()).pixelColor(80, 60), QColor(Qt::black));
+    state.crop = QRect(8, 8, 48, 32);
+    state.trimStart = 100;
+    state.trimEnd = 1100;
+    QVERIFY(SnapTray::RecordingProjects::update(*project, SnapTray::RecordingRecipe::toJson(state, {}), {}));
+    QVERIFY(library.data(library.index(0), SnapTray::LibraryModel::ThumbnailUrlRole).toString().isEmpty());
+    QTRY_VERIFY_WITH_TIMEOUT(!project->thumbnailUrl().isEmpty(), 10000);
+    QVERIFY(project->thumbnailUrl() != before);
+    QCOMPARE(library.data(library.index(0), SnapTray::LibraryModel::ThumbnailUrlRole).toString(), project->thumbnailUrl());
+
+    PosterFrameReader reader;
+    reader.loadOk = false;
+    QVERIFY(SnapTray::renderProjectThumbnail(*project, reader).isNull());
+    reader.loadOk = true;
+    reader.frame = {};
+    QVERIFY(SnapTray::renderProjectThumbnail(*project, reader).isNull());
+    project->recipe.insert(QStringLiteral("version"), SnapTray::RecordingRecipe::kVersion + 1);
+    QVERIFY(SnapTray::renderProjectThumbnail(*project, reader).isNull());
 }
 
 // #190: a smaller size, a lower frame rate and HEVC reach the MP4, with the

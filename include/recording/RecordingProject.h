@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QJsonObject>
 #include <QList>
+#include <QObject>
 #include <QString>
 #include <QStringList>
 
@@ -20,7 +21,7 @@
 //   <projects root>/<id>/recording.<ext>   the full-screen source (unmasked!)
 //                         recording.<ext>.cursor.jsonl ...   its sidecars
 //                         project.json   version, dates, recipe, saved file
-//                         thumbnail.png
+//                         thumbnail-v1-<revision>.png (derived preview)
 //
 // The projects root is separate from the temporary recordings that crash
 // recovery (#157) looks after, so neither lifecycle ever deletes the
@@ -47,14 +48,34 @@ struct RecordingProject {
     qint64 durationMs = 0;
     QString savedPath;   // the last file exported from it
     QJsonObject recipe;
+    QString thumbnailGeneration; // rotated only after a successful manifest commit
 
     QString videoPath() const;
     QString thumbnailPath() const;
+    QString thumbnailUrl() const; // empty for stale, pending or failed previews
     QString title() const; // the saved file's name, or the date
     qint64 sizeBytes() const;
+
+private:
+    mutable QJsonObject m_thumbnailRecipe;
+    mutable QString m_thumbnailGeneration;
+    mutable QString m_thumbnailPath;
+};
+
+// Lifecycle operations and publication run on the application thread. Workers
+// only render immutable snapshots; their results return here before publication.
+class RecordingProjectEvents : public QObject
+{
+    Q_OBJECT
+signals:
+    void changed();
+    void thumbnailChanged(const QString& projectDir);
 };
 
 namespace RecordingProjects {
+RecordingProjectEvents* events();
+// Publishes only if the snapshot still identifies the committed generation.
+bool publishThumbnail(const RecordingProject& snapshot, const QImage& image);
 
 // Under the app's local data; tests point it elsewhere.
 QString root();
@@ -67,6 +88,8 @@ void failNextProjectCleanupForTests();
 // Every sidecar a recording can have, by suffix of its video path.
 QStringList sidecarSuffixes();
 
+// thumbnail, when supplied, must already be rendered from recipe. It is
+// discarded if prepareRecipe changes the visual recipe before commit.
 // Moves the recording and its sidecars into a new project, or copies them
 // (copy: the source stays where it is). Moves stage hard links when supported,
 // falling back to copies across volumes; explicit copies stay independent. Originals
