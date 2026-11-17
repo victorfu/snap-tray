@@ -2,6 +2,10 @@
 #define ANNOTATIONLAYER_H
 
 #include <QObject>
+#include <QHash>
+#include <QSet>
+#include <optional>
+#include "annotations/ArrowBinding.h"
 #include <QPainter>
 #include <QPoint>
 #include <QRect>
@@ -196,6 +200,16 @@ public:
     AnnotationId gestureId() const { return m_gestureId; }
     bool removeSelectedItem();
 
+    bool hasArrowDependents(const AnnotationItem* item) const {
+        return item && m_bindingDependents.contains(item->persistentId());
+    }
+    ArrowBinding bindingAt(const QPointF& pos, qreal viewScale = 1.0) const;
+    void editArrowEndpoint(ArrowAnnotation& arrow, bool end, const QPoint& pos, qreal viewScale = 1.0);
+    void clearBindingHint();
+    void drawBindingHint(QPainter& painter) const;
+    QRect bindingHintBounds() const;
+    QRect bindingDirtyBounds() const { return m_hasDirtyRect ? m_dirtyRect : QRect(); }
+
     // Cache management for rendering optimization
     void invalidateCache();
     void drawCached(QPainter &painter,
@@ -225,6 +239,20 @@ signals:
     void selectionChanged();
 
 private:
+    void registerBindingItem(AnnotationItem& item, std::size_t order);
+    void rebuildBindingIndex();
+    std::vector<AnnotationItem*> bindingDragItems(int excludeIndex) const;
+    void bindingGeometryChanged(AnnotationItem& item);
+    void indexArrow(ArrowAnnotation& arrow);
+    void resolveArrow(ArrowAnnotation& arrow);
+    void prepareBindingRemoval(RemovedItem& record, AnnotationItem& item);
+    void restoreBindings(const std::vector<RemovedItem>& records);
+    QHash<QUuid, AnnotationItem*> m_bindingItems;
+    QHash<AnnotationItem*, std::size_t> m_bindingOrder;
+    QHash<QUuid, QSet<ArrowAnnotation*>> m_bindingDependents;
+    QHash<ArrowAnnotation*, QSet<QUuid>> m_arrowTargets;
+    QUuid m_bindingHint;
+    bool m_updatingBindings = false;
     AnnotationSnapController m_snapController;
     struct SceneItem {
         AnnotationId id = 0;

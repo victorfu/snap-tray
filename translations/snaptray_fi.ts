@@ -7955,6 +7955,14 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Kohdista tekstiin: korostuskynän vedot kohdistuvat tunnistettuihin tekstiriveihin</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Yhdistä objektit</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Yhdistä nuolten päät muotoihin tai tekstiin. Irrota vetämällä tyhjään kohtaan.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

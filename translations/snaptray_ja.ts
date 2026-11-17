@@ -7951,6 +7951,14 @@ It may be in use by another application.</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>テキストにスナップ: マーカーの線が検出されたテキスト行に揃います</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>オブジェクトを接続</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>矢印の端点を図形やテキストに接続します。何もない場所にドラッグすると接続を解除します。</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

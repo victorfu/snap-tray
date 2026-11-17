@@ -215,3 +215,17 @@ void AnnotationSettingsManager::saveAlignmentAssist(bool enabled)
 {
     SnapTray::getSettings().setValue("annotation/alignmentAssist", enabled);
 }
+
+
+bool AnnotationSettingsManager::loadArrowBinding() const
+{
+    return SnapTray::getSettings().value("annotation/arrowBinding", false).toBool();
+}
+
+void AnnotationSettingsManager::saveArrowBinding(bool enabled)
+{
+    if (loadArrowBinding() == enabled) return;
+    auto settings = SnapTray::getSettings();
+    settings.setValue("annotation/arrowBinding", enabled);
+    emit arrowBindingChanged();
+}

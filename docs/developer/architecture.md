@@ -268,3 +268,36 @@ Commands under `include/cli/commands/` include:
 - [Build from Source](build-from-source.md)
 - [Release & Packaging](release-packaging.md)
 - [CLI](../docs/cli.md)
+
+
+### Optional arrow bindings (#356)
+
+The arrow options strip has a default-off **Link objects** toggle, stored by
+`AnnotationSettingsManager`. It creates persistent endpoint links to rectangles,
+ellipses and text boxes only; polylines and screenshot pixels are not targets.
+Dragging an endpoint over a target shows an outline. Dropping on empty space
+unlinks that endpoint. Turning the toggle off stops creating links; existing links
+still follow their targets. Moving the whole arrow unlinks both ends. Target
+rotation, scale and text mirroring transform the normalized local anchor. Each
+endpoint delta shifts the quadratic control point by half that delta, preserving
+its offset from the endpoint midpoint, including when the endpoints coincide.
+
+`AnnotationItem::persistentId()` is a document UUID, separate from the layer's
+runtime history/selection ID. New scene insertions (including copies) get fresh IDs;
+arrow copies keep references to the original targets. JSON saves UUIDs, optional
+endpoint bindings, and the resolved geometry. Legacy items get fresh UUIDs.
+Missing, invalid, duplicate or unsupported target references become free endpoints
+at their saved positions. Extra fields remain readable by older versions; saving
+in an older version loses bindings. Reverting the feature leaves any saved JSON
+fields and preference key on disk but does not migrate or delete documents.
+
+`AnnotationLayer` maintains target-to-arrow dependencies and observes target
+geometry changes, including text layout edits. Moving a target changes only its
+connected arrows. During a drag the target and connected arrows form a transient
+group above the cached static scene (in their relative drawing order), matching
+the existing selected-item drag presentation; idle rendering and export use the
+full layer order. Removal records retain detached relationships for undo and erase
+cancellation. Snapshots preserve IDs without retaining scene callbacks. Canvas-wide
+translations suppress dependency propagation until all owned objects are moved,
+so endpoints are not translated twice. Hints are drawn only by interactive hosts,
+never by the export path.

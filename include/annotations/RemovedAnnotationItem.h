@@ -2,6 +2,8 @@
 #define REMOVEDANNOTATIONITEM_H
 
 #include "AnnotationItem.h"
+#include "ArrowBinding.h"
+#include <vector>
 
 #include <cstddef>
 #include <cstdint>
@@ -14,6 +16,8 @@ struct RemovedAnnotationItem
     std::size_t originalIndex = 0;
     std::unique_ptr<AnnotationItem> item;
     std::uint64_t id = 0;
+    struct DetachedBinding { QUuid arrowId; bool end; ArrowBinding binding; };
+    std::vector<DetachedBinding> bindings;
 };
 
 #endif // REMOVEDANNOTATIONITEM_H

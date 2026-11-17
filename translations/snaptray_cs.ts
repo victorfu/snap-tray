@@ -7959,6 +7959,14 @@ Může být používána jinou aplikací.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Přichytit k textu: tahy zvýrazňovače se zarovnají na rozpoznané řádky textu</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Propojit objekty</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Připojte konce šipek k tvarům nebo textu. Přetažením do prázdného místa propojení zrušíte.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

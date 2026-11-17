@@ -7955,6 +7955,14 @@ Puede estar en uso por otra aplicación.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Ajustar al texto: los trazos del marcador se alinean con las líneas de texto detectadas</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Vincular objetos</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Vincula los extremos de las flechas a formas o texto. Arrastra a un espacio vacío para desvincular.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

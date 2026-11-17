@@ -7959,6 +7959,14 @@ Jį gali naudoti kita programa.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Pritraukti prie teksto: žymeklio brūkšniai lygiuojami pagal aptiktas teksto eilutes</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Susieti objektus</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Susiekite rodyklių galus su figūromis arba tekstu. Norėdami atsieti, vilkite į tuščią vietą.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

@@ -7959,6 +7959,14 @@ It may be in use by another application.</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Поравнај са текстом: потези маркера се поравнавају са препознатим редовима текста</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Повежи објекте</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Повежите крајеве стрелица са облицима или текстом. Превуците на празан простор да раскинете везу.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

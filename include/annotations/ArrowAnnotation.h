@@ -2,6 +2,7 @@
 #define ARROWANNOTATION_H
 
 #include "AnnotationItem.h"
+#include "ArrowBinding.h"
 #include "LineStyle.h"
 #include <QPoint>
 #include <QColor>
@@ -41,6 +42,13 @@ public:
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
     std::size_t estimatedRetainedBytes() const override { return sizeof(ArrowAnnotation); }
+
+    ArrowBinding binding(bool end) const { return end ? m_endBinding : m_startBinding; }
+    void setBinding(bool end, const ArrowBinding& binding) {
+        (end ? m_endBinding : m_startBinding) = binding;
+        geometryChanged();
+    }
+    void detachBindings() { setBinding(false, {}); setBinding(true, {}); }
 
     // Point accessors
     void setStart(const QPoint &start);
@@ -88,6 +96,7 @@ private:
     double endTangentAngle() const;
     double startTangentAngle() const;
 
+    ArrowBinding m_startBinding, m_endBinding;
     QPoint m_start;
     QPoint m_end;
     QPointF m_controlPoint;

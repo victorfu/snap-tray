@@ -12,6 +12,7 @@
 #include "annotations/PolylineAnnotation.h"
 #include "utils/CoordinateHelper.h"
 #include <QImage>
+#include <QScopedValueRollback>
 #include <QPixmap>
 #include <QPainterPath>
 #include <QPainterPathStroker>
@@ -92,6 +93,10 @@ void AnnotationLayer::addItemNow(std::unique_ptr<AnnotationItem> item)
         return;
     }
 
+    // addItem inserts a new object (including pasted clones). Imports and history
+    // restoration use replaceItems/restoreCommandItems and retain their identities.
+    // Always allocate, even if the source of a clone is currently in undo history.
+    item->setPersistentId(QUuid::createUuid());
     const AnnotationId id = allocateAnnotationId();
     const size_t index = m_items.size();
     HistoryCommand command;
@@ -99,6 +104,7 @@ void AnnotationLayer::addItemNow(std::unique_ptr<AnnotationItem> item)
     command.items.push_back({index, nullptr, id});
 
     m_items.push_back({id, std::move(item)});
+    registerBindingItem(*m_items.back(), index);
     pushAppliedCommand(std::move(command));
 
     if (dynamic_cast<const PencilStroke*>(m_items.back().get())) {
@@ -175,6 +181,7 @@ void AnnotationLayer::replaceItems(std::vector<std::unique_ptr<AnnotationItem>> 
     // Metadata alone can exceed the soft byte limit for unusually large bulk
     // imports. Keep the newest state and commit the oldest prefix.
     trimHistory(m_currentHistoryState);
+    rebuildBindingIndex();
     invalidateCache();
     emit changed();
 }
@@ -203,6 +210,7 @@ void AnnotationLayer::undo()
     trimHistory(m_redoStack.back().afterState);
 
     renumberStepBadges();
+    rebuildBindingIndex();
     invalidateCache();
     // A Modify or Reorder keeps the selected annotation; keep it selected.
     if (!keepSelection) clearSelection();
@@ -233,6 +241,7 @@ void AnnotationLayer::redo()
     trimHistory(m_undoStack.back().afterState);
 
     renumberStepBadges();
+    rebuildBindingIndex();
     invalidateCache();
     // A Modify or Reorder keeps the selected annotation; keep it selected.
     if (!keepSelection) clearSelection();
@@ -255,18 +264,21 @@ void AnnotationLayer::clear()
     m_historyOwnedBytes = 0;
     m_redoOwnedBytes = 0;
     m_currentHistoryState = allocateHistoryState();
+    rebuildBindingIndex();
     invalidateCache();
     emit changed();
 }
 
 void AnnotationLayer::translateAll(const QPointF& delta)
 {
+    QScopedValueRollback<bool> bindingGuard(m_updatingBindings, true);
     forEachOwnedItem([&delta](AnnotationItem* item) {
         if (item) {
             item->translate(delta);
         }
     });
 
+    rebuildBindingIndex();
     invalidateCache();
     emit changed();
 }
@@ -278,6 +290,7 @@ void AnnotationLayer::translateOwnedItems(
         return;
     }
 
+    QScopedValueRollback<bool> bindingGuard(m_updatingBindings, true);
     forEachOwnedItem([&deltaForItem](AnnotationItem* item) {
         if (!item) {
             return;
@@ -289,6 +302,7 @@ void AnnotationLayer::translateOwnedItems(
         }
     });
 
+    rebuildBindingIndex();
     invalidateCache();
     emit changed();
 }
@@ -470,6 +484,7 @@ std::size_t AnnotationLayer::calculateCommandRetainedBytes(
             bytes, command.items.capacity() * sizeof(RemovedItem));
     }
     for (const auto& record : command.items) {
+        addCappedCommandBytes(bytes, record.bindings.capacity() * sizeof(RemovedItem::DetachedBinding));
         if (record.item) {
             addCappedCommandBytes(bytes, record.item->estimatedRetainedBytes());
         }
@@ -496,6 +511,7 @@ void AnnotationLayer::visitCommandOwnedItems(
     }
 
     for (auto& record : command.items) {
+        addCappedCommandBytes(bytes, record.bindings.capacity() * sizeof(RemovedItem::DetachedBinding));
         if (!record.item) {
             continue;
         }
@@ -621,6 +637,7 @@ void AnnotationLayer::restoreCommandItems(HistoryCommand& command)
         m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos),
             SceneItem{record.id, std::move(record.item)});
     }
+    restoreBindings(command.items);
 }
 
 void AnnotationLayer::removeCommandItems(HistoryCommand& command)
@@ -629,6 +646,7 @@ void AnnotationLayer::removeCommandItems(HistoryCommand& command)
         if (record.item) continue;
         auto sceneIt = findSceneItem(record.id);
         if (sceneIt == m_items.end()) continue;
+        prepareBindingRemoval(record, *sceneIt->item);
         record.item = std::move(sceneIt->item);
         m_items.erase(sceneIt);
     }
@@ -692,6 +710,7 @@ bool AnnotationLayer::undoCommand(HistoryCommand& command)
         }
         record.originalIndex =
             static_cast<size_t>(std::distance(m_items.begin(), sceneIt));
+        prepareBindingRemoval(record, *sceneIt->item);
         record.item = std::move(sceneIt->item);
         m_items.erase(sceneIt);
         return true;
@@ -735,6 +754,7 @@ bool AnnotationLayer::redoCommand(HistoryCommand& command)
         for (auto it = command.items.rbegin(); it != command.items.rend(); ++it) {
             const auto sceneIt = m_items.begin() +
                 static_cast<ptrdiff_t>(it->originalIndex);
+            prepareBindingRemoval(*it, *sceneIt->item);
             it->item = std::move(sceneIt->item);
             m_items.erase(sceneIt);
         }
@@ -884,6 +904,7 @@ bool AnnotationLayer::moveSelectedItem(ZOrderMove move)
         m_openModifyId = id;
         m_openModifyKey = coalesceKey;
     }
+    rebuildBindingIndex();
     invalidateCache();
     emit changed();
     return true;
@@ -958,6 +979,7 @@ std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecti
                 }
             }
             removedItems.push_back({currentIndex, nullptr, it->id});
+            prepareBindingRemoval(removedItems.back(), *it->item);
             removedItems.back().item = std::move(it->item);
             it = m_items.erase(it);
             // currentIndex tracks the original scan position, not post-erase offsets.
@@ -969,6 +991,7 @@ std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecti
     }
 
     if (!removedItems.empty()) {
+        rebuildBindingIndex();
         renumberStepBadges();
         invalidateCache();
         // Selection follows the annotation id, so erasing other items keeps it.
@@ -1078,6 +1101,7 @@ bool AnnotationLayer::restoreRemovedItemsNow(std::vector<RemovedItem> items)
         m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos),
             SceneItem{id, std::move(indexed.item)});
     }
+    restoreBindings(items);
 
     renumberStepBadges();
     invalidateCache();
@@ -1251,6 +1275,7 @@ bool AnnotationLayer::beginGesture(AnnotationId id)
     auto sceneIt = findSceneItem(id);
     if (sceneIt == m_items.end() || !sceneIt->item) return false;
     endModifyCoalescing();
+    clearDirtyRect();
     m_gestureId = id;
     m_gestureSnapshot = sceneIt->item->clone();
     emit changed();   // Undo/Redo availability
@@ -1273,6 +1298,8 @@ bool AnnotationLayer::gestureIsReEdit() const
 
 void AnnotationLayer::dropGesture()
 {
+    clearBindingHint();
+    clearDirtyRect();
     m_gestureId = 0;
     m_gestureSnapshot.reset();
 }
@@ -1358,12 +1385,14 @@ bool AnnotationLayer::removeSelectedItem()
     command.items.push_back({static_cast<size_t>(selected),
                              nullptr,
                              m_items[selected].id});
+    prepareBindingRemoval(command.items.front(), *m_items[selected].item);
     command.items.front().item = std::move(m_items[selected].item);
     m_items.erase(m_items.begin() + selected);
 
     pushAppliedCommand(std::move(command));
     clearSelection();
     renumberStepBadges();
+    rebuildBindingIndex();
     invalidateCache();
     emit changed();
     return true;
@@ -1438,8 +1467,10 @@ void AnnotationLayer::paintCacheContents(QPainter& painter, const QPointF& origi
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.translate(-QPointF(origin));
+    const auto moving = bindingDragItems(excludeIndex);
+    const QSet<AnnotationItem*> excluded(moving.begin(), moving.end());
     for (int i = 0; i < static_cast<int>(m_items.size()); ++i) {
-        if (i != excludeIndex && m_items[i]->isVisible())
+        if (!excluded.contains(m_items[i].get()) && m_items[i]->isVisible())
             m_items[i]->draw(painter);
     }
     painter.restore();
@@ -1569,15 +1600,14 @@ void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvas
     else
         paintCacheContents(painter, origin, normalizedExcludeIndex);
 
-    // Draw the excluded item (being dragged) on top, directly to painter
-    if (normalizedExcludeIndex >= 0) {
-        if (m_items[normalizedExcludeIndex]->isVisible()) {
-            painter.save();
-            painter.translate(-QPointF(origin));
-            m_items[normalizedExcludeIndex]->draw(painter);
-            painter.restore();
-        }
+    // The transient drag group includes dependent arrows, in their drawing order.
+    // The static cache remains valid while this group's geometry changes.
+    painter.save();
+    painter.translate(-QPointF(origin));
+    for (auto* item : bindingDragItems(normalizedExcludeIndex)) {
+        if (item->isVisible()) item->draw(painter);
     }
+    painter.restore();
 }
 
 void AnnotationLayer::commitDirtyRegion(const QSize &canvasSize, qreal devicePixelRatio)
