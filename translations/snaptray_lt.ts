@@ -1465,6 +1465,22 @@ Failo dydis: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Atšaukti atidėtą fiksavimą</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Rastos įrašymo sesijos</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray rado %1 įrašymo sesijų, kurioms reikia dėmesio; %2 galima atkurti iš sistemos dėklo meniu.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Įrašas nepasiekiamas</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Įrašas gali būti naudojamas arba jo nebegalima atkurti. Iš naujo atidarykite „Atkurti įrašus“, kad atnaujintumėte sąrašą.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6976,6 +6992,18 @@ Jį gali naudoti kita programa.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>įrašytas visas ekranas; atsivers apkirptas pagal pasirinktą sritį</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Atmetimas nebaigtas. Pasirinkite „Atmesti“, kad pakartotumėte valymą.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Atmesti nepavyko. Patikrinkite failų leidimus ir pasirinkite „Atmesti“, kad bandytumėte dar kartą.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Šis įrašas nepasiekiamas. Patikrinkite failų leidimus ir bandykite dar kartą.</translation>
     </message>
 </context>
 <context>

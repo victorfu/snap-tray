@@ -1464,6 +1464,22 @@ Taille du fichier : %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Annuler la capture différée</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Sessions d’enregistrement trouvées</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray a trouvé %1 sessions d’enregistrement nécessitant votre attention ; %2 peuvent être récupérées depuis le menu de la zone de notification.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Enregistrement indisponible</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>L’enregistrement est peut-être utilisé ou n’est plus récupérable. Rouvrez « Récupérer les enregistrements » pour actualiser la liste.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6972,6 +6988,18 @@ Il est peut-être utilisé par une autre application.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>l'écran entier a été enregistré ; il s'ouvre recadré sur la zone choisie</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>La suppression est incomplète. Choisissez « Supprimer » pour réessayer le nettoyage.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>La suppression a échoué. Vérifiez les autorisations des fichiers et choisissez « Supprimer » pour réessayer.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Impossible d’accéder à cet enregistrement. Vérifiez les autorisations des fichiers et réessayez.</translation>
     </message>
 </context>
 <context>

@@ -556,11 +556,13 @@ void MainApplication::initialize()
                 const QString message = recoverable == total
                     ? tr("SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.")
                           .arg(total)
-                    : tr("SnapTray found %1 recording(s) that were not saved; %2 can be recovered from the tray menu.")
+                    : tr("SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.")
                           .arg(total)
                           .arg(recoverable);
                 SnapTray::QmlToast::screenToast().showToast(
-                    SnapTray::QmlToast::Level::Info, tr("Unsaved Recordings Found"), message, 8000);
+                    SnapTray::QmlToast::Level::Info,
+                    recoverable == total ? tr("Unsaved Recordings Found") : tr("Recording Sessions Found"),
+                    message, 8000);
             }
         });
 
@@ -1501,8 +1503,8 @@ void MainApplication::showRecoveryDialog()
         [this](const QString& path) {
             if (!m_recordingManager->openRecoveredRecording(path)) {
                 SnapTray::QmlToast::screenToast().showToast(
-                    SnapTray::QmlToast::Level::Warning, tr("Recording Busy"),
-                    tr("Finish or close the current recording first."));
+                    SnapTray::QmlToast::Level::Warning, tr("Recording Unavailable"),
+                    tr("The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list."));
                 return;
             }
             m_recoverablePaths.removeAll(path);

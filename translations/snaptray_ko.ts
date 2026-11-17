@@ -1463,6 +1463,22 @@ File size: %3</source>
         <source>Cancel Delayed Capture</source>
         <translation>지연 캡처 취소</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>녹화 세션을 찾았습니다</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray가 확인이 필요한 녹화 세션 %1개를 찾았습니다. 이 중 %2개는 트레이 메뉴에서 복구할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>녹화를 사용할 수 없음</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>녹화가 사용 중이거나 더 이상 복구할 수 없을 수 있습니다. 목록을 새로 고치려면 «녹화 복구»를 다시 여세요.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6968,6 +6984,18 @@ It may be in use by another application.</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>전체 화면이 녹화됨. 선택한 영역으로 잘라 낸 상태로 열립니다</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>삭제가 완료되지 않았습니다. 정리를 다시 시도하려면 «삭제»를 선택하세요.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>삭제하지 못했습니다. 파일 권한을 확인하고 «삭제»를 선택하여 다시 시도하세요.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>이 녹화에 접근할 수 없습니다. 파일 권한을 확인하고 다시 시도하세요.</translation>
     </message>
 </context>
 <context>

@@ -1464,6 +1464,22 @@ File size: %3</source>
         <source>Cancel Delayed Capture</source>
         <translation>Ακύρωση καθυστερημένης καταγραφής</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Βρέθηκαν συνεδρίες εγγραφής</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>Το SnapTray βρήκε %1 συνεδρίες εγγραφής που χρειάζονται προσοχή· %2 μπορούν να ανακτηθούν από το μενού της περιοχής ειδοποιήσεων.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Η εγγραφή δεν είναι διαθέσιμη</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Η εγγραφή μπορεί να χρησιμοποιείται ή να μην είναι πλέον ανακτήσιμη. Ανοίξτε ξανά την «Ανάκτηση εγγραφών» για ανανέωση της λίστας.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6972,6 +6988,18 @@ It may be in use by another application.</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>εγγράφηκε όλη η οθόνη· ανοίγει περικομμένη στην επιλεγμένη περιοχή</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Η απόρριψη δεν ολοκληρώθηκε. Επιλέξτε «Απόρριψη» για νέα προσπάθεια εκκαθάρισης.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Η απόρριψη απέτυχε. Ελέγξτε τα δικαιώματα των αρχείων και επιλέξτε ξανά «Απόρριψη».</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Δεν είναι δυνατή η πρόσβαση σε αυτή την εγγραφή. Ελέγξτε τα δικαιώματα των αρχείων και δοκιμάστε ξανά.</translation>
     </message>
 </context>
 <context>

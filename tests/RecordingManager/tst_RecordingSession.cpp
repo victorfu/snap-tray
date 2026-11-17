@@ -9,6 +9,9 @@
 #include <memory>
 #include "recording/RecordingSession.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "recording/CursorTimeline.h"
+#include "recording/KeyTimeline.h"
+#include "recording/AudioTracks.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
 #include <QSignalSpy>
@@ -55,6 +58,16 @@ private slots:
     void scanTrustsTheFileNotTheManifest();
     void scanSkipsActiveAndDropsOrphans();
     void discardRemovesEverything();
+    void failedDiscardKeepsRowAndSurvivesRestart();
+    void discardFailures_data();
+    void discardFailures();
+    void discardRequiresDurableIntent();
+    void scanHoldsTheSessionLock();
+    void failedIntentKeepsRecoveryAvailable();
+    void failedDiscardRetriesInSameModel();
+    void discardRejectsSymlinkManifest();
+    void scanReportsLockAccessFailure();
+    void scanRechecksTheSessionLock();
     void recoveryTextsAreHonest();
     void discardRespectsTheSessionLock();
     void finishedAnimationsAreRecoverable();
@@ -92,6 +105,7 @@ void TestRecordingSession::manifestRoundTrip()
     touch(Session::manifestPathFor(video),
           R"({"version": 1, "video": "SnapTray_Recording_1.mp4", "state": "finished"})");
     QVERIFY(Session::read(Session::manifestPathFor(video))->intermediate);
+    QVERIFY(!Session::read(Session::manifestPathFor(video))->cleanupPending);
     QVERIFY(QDir(dir.path()).entryList({QStringLiteral("*.tmp"), QStringLiteral("*~")}, QDir::Files).isEmpty());
 }
 
@@ -201,6 +215,278 @@ void TestRecordingSession::discardRemovesEverything()
     QVERIFY(!QFileInfo::exists(video));
     QVERIFY(!QFileInfo::exists(SnapTray::WindowTimelineSidecar::pathFor(video)));
     QVERIFY(!Session::hasSession(video));
+}
+
+void TestRecordingSession::failedDiscardKeepsRowAndSurvivesRestart()
+{
+    using VM = SnapTray::RecordingRecoveryViewModel;
+    QTemporaryDir dir;
+    const QString video = touch(dir.filePath(QStringLiteral("SnapTray_Recording_failed.mp4")));
+    QVERIFY(Session::write(sessionFor(video)));
+    // A directory at a sidecar path deterministically makes QFile::remove fail.
+    const QString blocked = SnapTray::WindowTimelineSidecar::pathFor(video);
+    QVERIFY(QDir().mkpath(blocked));
+    touch(blocked + QStringLiteral("/keep"));
+    Session::Recoverable item;
+    item.info = sessionFor(video);
+    item.decodable = true;
+    VM model;
+    model.setRecoveries({item});
+    QSignalSpy discarded(&model, &VM::discarded);
+    QSignalSpy closed(&model, &VM::closeRequested);
+    model.discard(0);
+    QCOMPARE(model.count(), 1);
+    QCOMPARE(discarded.count(), 0);
+    QCOMPARE(closed.count(), 0);
+    QVERIFY(!model.recordings().first().toMap().value(QStringLiteral("canRecover")).toBool());
+    QVERIFY(model.recordings().first().toMap().value(QStringLiteral("status")).toString().contains(QStringLiteral("Discard failed")));
+    QVERIFY(!QFileInfo::exists(video));
+    QVERIFY(Session::hasSession(video));
+    const auto restarted = Session::scan(dir.path(), {}, {});
+    QCOMPARE(restarted.size(), 1);
+    QVERIFY(!restarted.first().decodable);
+    VM retry;
+    retry.setRecoveries(restarted);
+    QVERIFY(QDir(blocked).removeRecursively());
+    QSignalSpy done(&retry, &VM::discarded);
+    retry.discard(0);
+    QCOMPARE(retry.count(), 0);
+    QCOMPARE(done.count(), 1);
+    QVERIFY(!Session::hasSession(video));
+}
+
+void TestRecordingSession::discardFailures_data()
+{
+    QTest::addColumn<int>("failedIndex");
+    for (int i = 0; i < 7; ++i) {
+        QTest::newRow(qPrintable(QString::number(i))) << i;
+    }
+}
+
+void TestRecordingSession::discardFailures()
+{
+    QFETCH(int, failedIndex);
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_fault.mp4"));
+    const QStringList paths{
+        video, SnapTray::WindowTimelineSidecar::pathFor(video),
+        SnapTray::CursorTimelineSidecar::pathFor(video), SnapTray::KeyTimelineSidecar::pathFor(video),
+        SnapTray::AudioTracks::pathFor(video, SnapTray::AudioTracks::Track::Microphone),
+        SnapTray::AudioTracks::pathFor(video, SnapTray::AudioTracks::Track::SystemAudio),
+        Session::manifestPathFor(video)};
+    for (const auto& path : paths) touch(path);
+    QVERIFY(Session::write(sessionFor(video)));
+    const QString output = touch(dir.filePath(QStringLiteral("saved.mp4")), "user output");
+    const QString project = touch(dir.filePath(QStringLiteral("project.json")), "project");
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression("^RecordingSession: discard failed:.*"));
+    const auto result = Session::discard(video, [&](const QString& path, QString* error) {
+        if (path == paths[failedIndex]) {
+            *error = QStringLiteral("injected removal failure");
+            return false;
+        }
+        return QFile::remove(path);
+    });
+    QVERIFY(!result.complete);
+    QVERIFY(result.remainingPaths.contains(paths[failedIndex]));
+    QVERIFY(result.remainingPaths.contains(paths.last()));
+    QVERIFY(!result.errors.isEmpty());
+    QVERIFY(result.intentPersisted);
+    for (int i = 0; i < paths.size() - 1; ++i) {
+        QCOMPARE(QFileInfo::exists(paths[i]), i == failedIndex);
+    }
+    QVERIFY(Session::read(paths.last())->cleanupPending);
+    const auto found = Session::scan(dir.path(), [](const QString&) {
+        return Session::ProbeResult{true, 1000, true};
+    }, {});
+    QCOMPARE(found.size(), 1);
+    QVERIFY(found.first().info.cleanupPending);
+    QVERIFY(!found.first().decodable);
+    QVERIFY(Session::scan(dir.path(), {}, [](const QString&) { return true; }).isEmpty());
+    const auto retry = Session::discard(video);
+    QVERIFY(retry.complete);
+    QVERIFY(retry.remainingPaths.isEmpty());
+    for (const auto& path : paths) QVERIFY(!QFileInfo::exists(path));
+    QVERIFY(Session::discard(video).complete); // absent files are success
+    QVERIFY(Session::scan(dir.path(), {}, {}).isEmpty());
+    QFile saved(output);
+    QVERIFY(saved.open(QIODevice::ReadOnly));
+    QCOMPARE(saved.readAll(), QByteArray("user output"));
+    QFile savedProject(project);
+    QVERIFY(savedProject.open(QIODevice::ReadOnly));
+    QCOMPARE(savedProject.readAll(), QByteArray("project"));
+}
+
+void TestRecordingSession::discardRequiresDurableIntent()
+{
+    QTemporaryDir dir;
+    const QString video = touch(dir.filePath(QStringLiteral("SnapTray_Recording_intent.mp4")));
+    const QString sidecar = touch(SnapTray::CursorTimelineSidecar::pathFor(video));
+    // The intent cannot be committed over a directory: nothing may be deleted.
+    QVERIFY(QDir().mkpath(Session::manifestPathFor(video)));
+    const auto result = Session::discard(video);
+    QVERIFY(!result.complete);
+    QVERIFY(!result.errors.isEmpty());
+    QVERIFY(QFileInfo::exists(video));
+    QVERIFY(QFileInfo::exists(sidecar));
+}
+
+void TestRecordingSession::failedIntentKeepsRecoveryAvailable()
+{
+    using VM = SnapTray::RecordingRecoveryViewModel;
+    QTemporaryDir dir;
+    const QString video = touch(dir.filePath(QStringLiteral("SnapTray_Recording_intent_ui.mp4")));
+    QVERIFY(QDir().mkpath(Session::manifestPathFor(video)));
+    Session::Recoverable item;
+    item.info = sessionFor(video);
+    item.decodable = true;
+    VM model;
+    model.setRecoveries({item});
+    QSignalSpy discarded(&model, &VM::discarded);
+    QSignalSpy closed(&model, &VM::closeRequested);
+    QSignalSpy recover(&model, &VM::recoverRequested);
+    model.discard(0);
+    QCOMPARE(model.count(), 1);
+    QCOMPARE(discarded.count(), 0);
+    QCOMPARE(closed.count(), 0);
+    QVERIFY(QFileInfo::exists(video));
+    QVERIFY(model.recordings().first().toMap().value(QStringLiteral("canRecover")).toBool());
+    model.recover(0);
+    QCOMPARE(recover.count(), 1);
+    QVERIFY(QDir().rmdir(Session::manifestPathFor(video)));
+    model.discard(0);
+    QCOMPARE(model.count(), 0);
+    QCOMPARE(discarded.count(), 1);
+    QCOMPARE(closed.count(), 1);
+}
+
+void TestRecordingSession::failedDiscardRetriesInSameModel()
+{
+    using VM = SnapTray::RecordingRecoveryViewModel;
+    QTemporaryDir dir;
+    const QString first = touch(dir.filePath(QStringLiteral("SnapTray_Recording_first.mp4")));
+    const QString second = touch(dir.filePath(QStringLiteral("SnapTray_Recording_second.mp4")));
+    const QString blocked = SnapTray::WindowTimelineSidecar::pathFor(first);
+    QVERIFY(QDir().mkpath(blocked));
+    Session::Recoverable a;
+    a.info = sessionFor(first);
+    a.decodable = true;
+    Session::Recoverable b;
+    b.info = sessionFor(second);
+    b.decodable = true;
+    QVERIFY(Session::write(a.info));
+    QVERIFY(Session::write(b.info));
+    VM model;
+    model.setRecoveries({a, b});
+    QSignalSpy discarded(&model, &VM::discarded);
+    QSignalSpy closed(&model, &VM::closeRequested);
+    model.discard(0);
+    QCOMPARE(model.count(), 2);
+    QCOMPARE(discarded.count(), 0);
+    QCOMPARE(closed.count(), 0);
+    QVERIFY(model.recordings()[0].toMap().value(QStringLiteral("status")).toString().contains(QStringLiteral("Discard failed")));
+    QVERIFY(model.recordings()[1].toMap().value(QStringLiteral("canRecover")).toBool());
+    QVERIFY(QDir().rmdir(blocked));
+    model.discard(0);
+    QCOMPARE(model.count(), 1);
+    QCOMPARE(discarded.count(), 1);
+    QCOMPARE(closed.count(), 0);
+    QVERIFY(!model.recordings()[0].toMap().value(QStringLiteral("status")).toString().contains(QStringLiteral("Discard failed")));
+    model.discard(0);
+    QCOMPARE(model.count(), 0);
+    QCOMPARE(discarded.count(), 2);
+    QCOMPARE(closed.count(), 1);
+}
+
+void TestRecordingSession::discardRejectsSymlinkManifest()
+{
+    QTemporaryDir dir;
+    const QString video = touch(dir.filePath(QStringLiteral("SnapTray_Recording_link.mp4")));
+    const QString target = touch(dir.filePath(QStringLiteral("user-file.json")), "do not overwrite");
+    if (!QFile::link(target, Session::manifestPathFor(video))
+        || !QFileInfo(Session::manifestPathFor(video)).isSymLink()) {
+        QSKIP("Symbolic links are unavailable in this environment");
+    }
+    const auto result = Session::discard(video);
+    QVERIFY(!result.complete);
+    QVERIFY(!result.intentPersisted);
+    QFile file(target);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), QByteArray("do not overwrite"));
+    QVERIFY(QFileInfo::exists(video));
+    QVERIFY(QFileInfo(Session::manifestPathFor(video)).isSymLink());
+}
+
+void TestRecordingSession::scanReportsLockAccessFailure()
+{
+#ifdef Q_OS_WIN
+    QSKIP("POSIX directory permissions are required for this lock-error injection");
+#else
+    QTemporaryDir dir;
+    const QString video = touch(dir.filePath(QStringLiteral("SnapTray_Recording_access.mp4")));
+    QVERIFY(Session::write(sessionFor(video)));
+    const auto permissions = QFileInfo(dir.path()).permissions();
+    const auto restore = qScopeGuard([&] { QFile::setPermissions(dir.path(), permissions); });
+    QVERIFY(QFile::setPermissions(dir.path(), QFileDevice::ReadOwner | QFileDevice::ExeOwner));
+    QLockFile probe(Session::lockPathFor(video));
+    QVERIFY(!probe.tryLock(0));
+    QCOMPARE(probe.error(), QLockFile::PermissionError);
+    bool probed = false;
+    const auto found = Session::scan(dir.path(), [&](const QString&) {
+        probed = true;
+        return Session::ProbeResult{};
+    }, {});
+    QCOMPARE(found.size(), 1);
+    QVERIFY(!probed);
+    QVERIFY(!found.first().decodable);
+    QVERIFY(!found.first().problem.isEmpty());
+    QVERIFY(found.first().accessBlocked);
+    QVERIFY(SnapTray::RecordingRecoveryViewModel::statusText(found.first()).contains(QStringLiteral("Cannot access")));
+    QVERIFY(QFileInfo::exists(video));
+    QVERIFY(Session::hasSession(video));
+#endif
+}
+
+void TestRecordingSession::scanHoldsTheSessionLock()
+{
+    using VM = SnapTray::RecordingRecoveryViewModel;
+    QTemporaryDir dir;
+    const QString video = touch(dir.filePath(QStringLiteral("SnapTray_Recording_scan.mp4")));
+    QVERIFY(Session::write(sessionFor(video)));
+    Session::Recoverable item;
+    item.info = sessionFor(video);
+    VM model;
+    model.setRecoveries({item});
+    bool probed = false;
+    const auto found = Session::scan(dir.path(), [&](const QString&) {
+        probed = true;
+        model.discard(0); // the scan owns this session until its snapshot is built
+        return Session::ProbeResult{true, 1000, true};
+    }, {});
+    QVERIFY(probed);
+    QCOMPARE(found.size(), 1);
+    QCOMPARE(model.count(), 1);
+    QVERIFY(QFileInfo::exists(video));
+    QVERIFY(Session::hasSession(video));
+    model.discard(0); // scan released the lock
+    QCOMPARE(model.count(), 0);
+}
+
+void TestRecordingSession::scanRechecksTheSessionLock()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_scan_race.mp4"));
+    QVERIFY(Session::write(sessionFor(video)));
+    QLockFile concurrent(Session::lockPathFor(video));
+    concurrent.setStaleLockTime(0);
+    bool locked = false;
+    const auto found = Session::scan(dir.path(), {}, [&](const QString&) {
+        // An owner acquires the lock just after the initial active check.
+        locked = concurrent.tryLock(0);
+        return false;
+    });
+    QVERIFY(locked);
+    QVERIFY(found.isEmpty());
+    QVERIFY(Session::hasSession(video)); // no orphan cleanup while owned
 }
 
 void TestRecordingSession::recoveryTextsAreHonest()

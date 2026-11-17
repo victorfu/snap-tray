@@ -1468,6 +1468,22 @@ File size: %3</source>
         <source>Cancel Delayed Capture</source>
         <translation>إلغاء الالتقاط المؤجَّل</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>تم العثور على جلسات تسجيل</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>عثر SnapTray على %1 من جلسات التسجيل التي تحتاج إلى انتباه؛ يمكن استعادة %2 منها من قائمة علبة النظام.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>التسجيل غير متاح</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>قد يكون التسجيل قيد الاستخدام أو لم يعد قابلاً للاستعادة. أعد فتح «استعادة التسجيلات» لتحديث القائمة.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6988,6 +7004,18 @@ It may be in use by another application.</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>سُجّلت الشاشة كاملة؛ ويُفتح مقصوصًا على المنطقة المختارة</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>لم يكتمل التجاهل. اختر «تجاهل» لإعادة محاولة التنظيف.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>فشل التجاهل. تحقق من أذونات الملفات واختر «تجاهل» للمحاولة مجددًا.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>تعذر الوصول إلى هذا التسجيل. تحقق من أذونات الملفات وحاول مجددًا.</translation>
     </message>
 </context>
 <context>

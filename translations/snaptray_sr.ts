@@ -1465,6 +1465,22 @@ File size: %3</source>
         <source>Cancel Delayed Capture</source>
         <translation>Откажи одложено снимање</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Пронађене сесије снимања</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray је пронашао %1 сесија снимања којима је потребна пажња; %2 се могу опоравити из менија системске траке.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Снимак није доступан</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Снимак се можда користи или се више не може опоравити. Поново отворите „Опорави снимке“ да освежите листу.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6976,6 +6992,18 @@ It may be in use by another application.</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>снимљен је цео екран; отвара се исечен на изабрану област</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Одбацивање није завршено. Изаберите „Одбаци“ да поновите чишћење.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Одбацивање није успело. Проверите дозволе датотека и изаберите „Одбаци“ да покушате поново.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Није могуће приступити овом снимку. Проверите дозволе датотека и покушајте поново.</translation>
     </message>
 </context>
 <context>

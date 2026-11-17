@@ -1464,6 +1464,22 @@ Tiedoston koko: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Peruuta viivästetty kaappaus</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Tallennusistuntoja löytyi</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray löysi %1 huomiota vaativaa tallennusistuntoa; %2 voidaan palauttaa ilmaisinalueen valikosta.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Tallenne ei ole käytettävissä</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Tallenne saattaa olla käytössä tai sitä ei voi enää palauttaa. Avaa ”Palauta tallenteet” uudelleen päivittääksesi luettelon.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6972,6 +6988,18 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>koko näyttö tallennettiin; avautuu valittuun alueeseen rajattuna</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Hylkääminen on kesken. Valitse ”Hylkää” yrittääksesi siivousta uudelleen.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Hylkääminen epäonnistui. Tarkista tiedostojen käyttöoikeudet ja yritä uudelleen valitsemalla ”Hylkää”.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Tätä tallennetta ei voi käyttää. Tarkista tiedostojen käyttöoikeudet ja yritä uudelleen.</translation>
     </message>
 </context>
 <context>

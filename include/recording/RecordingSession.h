@@ -6,6 +6,7 @@
 #include <QRect>
 #include <QSize>
 #include <QString>
+#include <QStringList>
 
 #include <functional>
 #include <optional>
@@ -36,6 +37,7 @@ struct RecordingSessionInfo {
     QSize frameSize;
     int frameRate = 0;
     bool audioRequired = false;
+    bool cleanupPending = false; // durable discard intent; never offer recovery
     bool fragmented = false;  // a crash leaves a playable prefix
     // Recorded at the high-quality intermediate, so saving it unedited must
     // still meet the output quality. Unknown (older manifests) counts as true.
@@ -91,11 +93,15 @@ struct Recoverable {
     qint64 durationMs = 0;       // what can actually be played
     bool audioMissing = false;   // audio was required but is not in the file
     bool complete = false;       // finished normally (Finished state)
+    bool accessBlocked = false;  // could not acquire lock for reasons other than contention
     QString problem;             // why it cannot be recovered, if not
 };
 
-// Finds left-behind sessions in `directory`. Active sessions are skipped.
-// Manifests whose video is gone are removed (nothing left to recover);
+// Finds left-behind sessions in `directory`, holding each session lock while
+// reading/probing/cleaning it. Held locks are skipped; other lock errors are
+// reported as blocked entries. Cleanup-pending entries are returned unprobed.
+// Cleanup-pending manifests remain discoverable even after the video is gone.
+// Other manifests whose video is gone are removed (nothing left to recover);
 // unreadable manifests are reported with a problem rather than deleted.
 QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsActive& isActive);
 
@@ -103,9 +109,18 @@ QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsAc
 // active): temp cleanup must leave it alone.
 bool hasSession(const QString& videoPath);
 
-// Deletes a session the user chose to discard: video, window timeline and
-// manifest.
-void discard(const QString& videoPath);
+struct DiscardResult {
+    bool complete = false;       // every owned path, including manifest, is gone
+    bool intentPersisted = false; // deletion was authorized durably; recovery is no longer safe
+    QStringList remainingPaths;  // paths still present after this attempt
+    QStringList errors;          // per-path failure details, also logged
+};
+// Optional file operation for deterministic failure tests. Return false with
+// an error when removal fails; already absent paths are handled by discard.
+using RemoveFile = std::function<bool(const QString& path, QString* error)>;
+// Caller holds the session lock. Persist discard intent before deleting the
+// exact video and sidecar paths, then remove the manifest only on full success.
+DiscardResult discard(const QString& videoPath, const RemoveFile& removeFile = {});
 
 } // namespace RecordingSession
 } // namespace SnapTray
