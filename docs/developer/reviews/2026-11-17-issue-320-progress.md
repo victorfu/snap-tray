@@ -78,6 +78,9 @@ The 13 pointer SVGs are original MIT SnapTray drawings; provenance is recorded i
 - Reduce cursor preprocessing work after a hosted Linux run exceeded 30 ms:
   reserve sample storage, retain already ordered samples, and walk nearby input
   knots during spring integration, including backwards lead transitions.
+- Replace the obsolete Windows static-screen full-rate assertion with #337's
+  sparse contract: fresh keep-alives, strictly increasing timestamps, and at
+  most one settling repeat per new picture plus bounded idle repeats.
 
 ## Verification
 
