@@ -118,6 +118,28 @@ class tst_AnnotationSerializer : public QObject
     Q_OBJECT
 
 private slots:
+    void testBoundArrowFollowsReopenedTarget() {
+        const QByteArray json = R"({"items":[
+            {"id":"11111111-1111-1111-1111-111111111111","type":"shape","rect":[10,20,100,80],"shapeType":0,"color":[255,0,0,255],"width":2,"scaleX":1,"scaleY":1},
+            {"id":"22222222-2222-2222-2222-222222222222","type":"arrow","start":[110,60],"end":[250,60],"controlPoint":[180,35],"color":[255,0,0,255],"width":2,
+             "startBinding":{"targetId":"11111111-1111-1111-1111-111111111111","anchor":[1,0.5]}}
+        ]})";
+        AnnotationLayer layer;
+        QVERIFY(SnapTray::deserializeAnnotationLayer(json, &layer, {}));
+        auto* shape = dynamic_cast<ShapeAnnotation*>(layer.itemAt(0));
+        auto* arrow = dynamic_cast<ArrowAnnotation*>(layer.itemAt(1));
+        QVERIFY(shape && arrow);
+        QVERIFY(layer.beginGesture(layer.idAt(0)));
+        shape->moveBy(QPointF(20, 30));
+        QCOMPARE(arrow->start(), QPoint(130,90));
+        QCOMPARE(arrow->end(), QPoint(250,60));
+        QCOMPARE(arrow->controlPoint(), QPointF(190,50));
+        QVERIFY(layer.commitGesture(AnnotationLayer::ModifyGeometry));
+        layer.undo();
+        QCOMPARE(arrow->start(), QPoint(110,60));
+        layer.redo();
+        QCOMPARE(arrow->start(), QPoint(130,90));
+    }
     void testSnappedShapeHistoryRoundtrip_data();
     void testSnappedShapeHistoryRoundtrip();
     void testFractionalEmojiHistory() {
@@ -320,7 +342,8 @@ void tst_AnnotationSerializer::testSerializeExcludesRemovedCommandPayload()
     QCOMPARE(root.value(QStringLiteral("items")).toArray().size(), 2);
     for (const QJsonValue& value : root.value(QStringLiteral("items")).toArray()) {
         const QJsonObject object = value.toObject();
-        QVERIFY(!object.contains(QStringLiteral("id")));
+        // Persistent UUID is document data; runtime numeric IDs and history stay private.
+        QVERIFY(!QUuid(object.value(QStringLiteral("id")).toString()).isNull());
         QVERIFY(!object.contains(QStringLiteral("history")));
     }
 

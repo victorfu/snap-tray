@@ -8299,6 +8299,14 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>An Text ausrichten: Textmarker-Striche richten sich an erkannten Textzeilen aus</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Objekte verbinden</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Pfeilenden mit Formen oder Text verbinden. Zum Lösen auf eine freie Stelle ziehen.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

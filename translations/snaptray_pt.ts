@@ -8299,6 +8299,14 @@ Ele pode estar em uso por outro aplicativo.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Ajustar ao texto: os traços do marcador se alinham às linhas de texto detectadas</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Vincular objetos</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Vincule as extremidades das setas a formas ou texto. Arraste para um espaço vazio para desvincular.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

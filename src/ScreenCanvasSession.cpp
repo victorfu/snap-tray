@@ -899,7 +899,8 @@ QRect ScreenCanvasSession::selectedAnnotationInteractionRect() const
 {
     return snaptray::tools::selectedAnnotationRepaintRect(
         m_annotationLayer,
-        kAnnotationInteractionVisualMargin);
+        kAnnotationInteractionVisualMargin).united(m_annotationLayer ?
+            m_annotationLayer->bindingHintBounds().united(m_annotationLayer->bindingDirtyBounds()) : QRect());
 }
 
 void ScreenCanvasSession::requestLocalizedToolRepaint()
@@ -2792,15 +2793,17 @@ bool ScreenCanvasSession::handleArrowAnnotationMove(const QPoint& pos)
         return false;
     }
 
+    if (pos == m_dragStartPos) return true;
     m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
     if (m_arrowDragHandle == GizmoHandle::Body) {
         const QPoint delta = pos - m_dragStartPos;
+        if (!delta.isNull()) arrowItem->detachBindings();
         arrowItem->moveBy(delta);
         m_dragStartPos = pos;
     } else if (m_arrowDragHandle == GizmoHandle::ArrowStart) {
-        arrowItem->setStart(pos);
+        m_annotationLayer->editArrowEndpoint(*arrowItem, false, pos);
     } else if (m_arrowDragHandle == GizmoHandle::ArrowEnd) {
-        arrowItem->setEnd(pos);
+        m_annotationLayer->editArrowEndpoint(*arrowItem, true, pos);
     } else if (m_arrowDragHandle == GizmoHandle::ArrowControl) {
         const QPointF start = arrowItem->start();
         const QPointF end = arrowItem->end();
@@ -2808,17 +2811,21 @@ bool ScreenCanvasSession::handleArrowAnnotationMove(const QPoint& pos)
         arrowItem->setControlPoint(newControl);
     }
 
+    m_dragStartPos = pos;
     requestLocalizedToolRepaint();
     return true;
 }
 
 bool ScreenCanvasSession::handleArrowAnnotationRelease(const QPoint& pos)
 {
-    Q_UNUSED(pos);
     if (!m_isArrowDragging) {
         return false;
     }
 
+    // Resolve endpoint drop targets at release without changing curve/body drag semantics.
+    if (m_arrowDragHandle == GizmoHandle::ArrowStart || m_arrowDragHandle == GizmoHandle::ArrowEnd) {
+        handleArrowAnnotationMove(pos);
+    }
     m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isArrowDragging = false;
     m_arrowDragHandle = GizmoHandle::None;

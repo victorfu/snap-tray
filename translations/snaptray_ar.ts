@@ -8315,6 +8315,14 @@ It may be in use by another application.</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>محاذاة إلى النص: تتم محاذاة خطوط قلم التحديد مع أسطر النص المكتشفة</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>ربط العناصر</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>اربط أطراف الأسهم بالأشكال أو النصوص. اسحب إلى مساحة فارغة لإلغاء الربط.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

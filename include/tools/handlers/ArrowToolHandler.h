@@ -7,6 +7,7 @@
 #include "annotations/PolylineAnnotation.h"
 
 #include <QPoint>
+#include <QPointer>
 #include <memory>
 
 /**
@@ -53,6 +54,7 @@ private:
     bool m_hasDragged = false;      // True if mouse moved significantly during press
     bool m_isPolylineMode = false;  // True when building a multi-point polyline
     QPoint m_startPoint;
+    QPointer<AnnotationLayer> m_bindingLayer;
 
     // Arrow mode state (drag-to-draw)
     std::unique_ptr<ArrowAnnotation> m_currentArrow;

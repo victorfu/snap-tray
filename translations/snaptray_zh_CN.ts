@@ -8295,6 +8295,14 @@ It may be in use by another application.</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>吸附到文字：记号笔会自动对齐检测到的文字行</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>连接对象</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>将箭头端点连接到形状或文字。拖到空白处即可解除连接。</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

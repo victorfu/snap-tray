@@ -22,6 +22,9 @@
 #include <QPointF>
 
 #include <vector>
+#include <QHash>
+#include <QSet>
+#include <cmath>
 
 namespace {
 
@@ -131,6 +134,23 @@ QColor deserializeColor(const QJsonValue& value)
                   array.size() > 3 ? array.at(3).toInt() : 255);
 }
 
+QJsonObject serializeBinding(const ArrowBinding& binding)
+{
+    return {{"targetId", binding.targetId.toString(QUuid::WithoutBraces)},
+            {"anchor", serializePointF(binding.anchor)}};
+}
+ArrowBinding deserializeBinding(const QJsonValue& value)
+{
+    const auto object = value.toObject();
+    const QUuid id(object.value("targetId").toString());
+    const auto anchor = object.value("anchor").toArray();
+    if (id.isNull() || anchor.size() != 2 || !anchor[0].isDouble() || !anchor[1].isDouble()) return {};
+    const QPointF point(anchor[0].toDouble(), anchor[1].toDouble());
+    if (!std::isfinite(point.x()) || !std::isfinite(point.y())
+        || point.x() < 0 || point.x() > 1 || point.y() < 0 || point.y() > 1) return {};
+    return {id, point};
+}
+
 QJsonObject serializeAnnotationItem(const AnnotationItem* item)
 {
     if (!item) {
@@ -173,6 +193,8 @@ QJsonObject serializeAnnotationItem(const AnnotationItem* item)
             {"start", serializePoint(arrow->start())},
             {"end", serializePoint(arrow->end())},
             {"controlPoint", serializePointF(arrow->controlPoint())},
+            {"startBinding", serializeBinding(arrow->binding(false))},
+            {"endBinding", serializeBinding(arrow->binding(true))},
             {"color", serializeColor(arrow->color())},
             {"width", arrow->width()},
             {"lineEndStyle", static_cast<int>(arrow->lineEndStyle())},
@@ -402,8 +424,9 @@ QByteArray serializeAnnotationLayer(const AnnotationLayer& layer)
             return;
         }
 
-        const QJsonObject object = serializeAnnotationItem(item);
+        QJsonObject object = serializeAnnotationItem(item);
         if (!object.isEmpty()) {
+            object.insert("id", item->persistentId().toString(QUuid::WithoutBraces));
             items.append(object);
         }
     });
@@ -459,9 +482,29 @@ std::optional<std::vector<std::unique_ptr<AnnotationItem>>> decodeAnnotationItem
         if (!item) {
             return std::nullopt;
         }
+        item->setPersistentId(QUuid(value.toObject().value("id").toString()));
+        if (auto* arrow = dynamic_cast<ArrowAnnotation*>(item.get())) {
+            arrow->setBinding(false, deserializeBinding(value.toObject().value("startBinding")));
+            arrow->setBinding(true, deserializeBinding(value.toObject().value("endBinding")));
+        }
         decodedItems.push_back(std::move(item));
     }
 
+    QHash<QUuid, int> counts;
+    QSet<QUuid> targets;
+    for (const auto& item : decodedItems) ++counts[item->persistentId()];
+    for (auto& item : decodedItems) {
+        if (counts.value(item->persistentId()) > 1) item->setPersistentId(QUuid::createUuid());
+        if (dynamic_cast<ShapeAnnotation*>(item.get()) || dynamic_cast<TextBoxAnnotation*>(item.get()))
+            targets.insert(item->persistentId());
+    }
+    for (auto& item : decodedItems) {
+        if (auto* arrow = dynamic_cast<ArrowAnnotation*>(item.get())) {
+            for (bool end : {false, true}) {
+                if (!targets.contains(arrow->binding(end).targetId)) arrow->setBinding(end, {});
+            }
+        }
+    }
     return decodedItems;
 }
 

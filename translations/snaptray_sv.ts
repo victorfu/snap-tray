@@ -8299,6 +8299,14 @@ Den kan användas av ett annat program.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Fäst mot text: markörens streck justeras efter identifierade textrader</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Länka objekt</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Länka pilarnas ändpunkter till former eller text. Dra till en tom yta för att ta bort länken.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

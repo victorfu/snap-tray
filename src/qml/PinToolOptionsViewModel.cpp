@@ -9,6 +9,7 @@
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolWidthSlot.h"
 #include "ui/DesignSystem.h"
+#include "settings/AnnotationSettingsManager.h"
 
 #include <iterator>
 
@@ -30,6 +31,8 @@ PinToolOptionsViewModel::PinToolOptionsViewModel(QObject* parent)
     : QObject(parent)
 {
     buildColorPalette();
+    connect(&AnnotationSettingsManager::instance(), &AnnotationSettingsManager::arrowBindingChanged,
+            this, &PinToolOptionsViewModel::arrowBindingEnabledChanged);
 }
 
 void PinToolOptionsViewModel::buildColorPalette()
@@ -670,4 +673,15 @@ bool PinToolOptionsViewModel::routeToSelection(StyleProperty property, const QVa
     applyDisplayedValue(property, value);
     emit selectionStyleEdited(static_cast<int>(property), value);
     return true;
+}
+
+
+bool PinToolOptionsViewModel::arrowBindingEnabled() const
+{
+    return AnnotationSettingsManager::instance().loadArrowBinding();
+}
+void PinToolOptionsViewModel::setArrowBindingEnabled(bool enabled)
+{
+    if (arrowBindingEnabled() == enabled) return;
+    AnnotationSettingsManager::instance().saveArrowBinding(enabled);
 }

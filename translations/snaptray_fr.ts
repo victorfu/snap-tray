@@ -8299,6 +8299,14 @@ Il est peut-être utilisé par une autre application.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Aligner sur le texte : les traits du surligneur s’alignent sur les lignes de texte détectées</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Lier les objets</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Liez les extrémités des flèches aux formes ou au texte. Glissez vers un espace vide pour les détacher.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

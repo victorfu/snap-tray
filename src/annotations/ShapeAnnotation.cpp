@@ -189,6 +189,7 @@ std::unique_ptr<AnnotationItem> ShapeAnnotation::clone() const
     cloned->setRectF(m_rect);   // keep fractional geometry (undo snapshots)
     cloned->setRotation(m_rotation);
     cloned->setScale(m_scaleX, m_scaleY);
+    cloned->setPersistentId(persistentId());
     return cloned;
 }
 
@@ -200,6 +201,7 @@ void ShapeAnnotation::translate(const QPointF& delta)
 void ShapeAnnotation::setRect(const QRect &rect)
 {
     m_rect = rect;
+    geometryChanged();
 }
 
 void ShapeAnnotation::setRotation(qreal degrees)
@@ -212,15 +214,18 @@ void ShapeAnnotation::setRotation(qreal degrees)
         normalized = 0.0;
     }
     m_rotation = normalized;
+    geometryChanged();
 }
 
 void ShapeAnnotation::setScale(qreal scaleX, qreal scaleY)
 {
     m_scaleX = qBound(kMinScale, scaleX, kMaxScale);
     m_scaleY = qBound(kMinScale, scaleY, kMaxScale);
+    geometryChanged();
 }
 
 void ShapeAnnotation::moveBy(const QPointF& delta)
 {
     m_rect.translate(delta.x(), delta.y());
+    geometryChanged();
 }

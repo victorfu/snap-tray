@@ -8295,6 +8295,14 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Căn theo văn bản: nét bút đánh dấu tự căn theo các dòng văn bản được phát hiện</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Liên kết đối tượng</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Liên kết đầu mũi tên với hình dạng hoặc văn bản. Kéo vào vùng trống để hủy liên kết.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

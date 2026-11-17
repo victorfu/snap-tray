@@ -8299,6 +8299,14 @@ It may be in use by another application.</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Προσκόλληση σε κείμενο: οι πινελιές του μαρκαδόρου ευθυγραμμίζονται με τις γραμμές κειμένου που εντοπίστηκαν</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Σύνδεση αντικειμένων</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Συνδέστε τα άκρα των βελών με σχήματα ή κείμενο. Σύρετε σε κενό χώρο για αποσύνδεση.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

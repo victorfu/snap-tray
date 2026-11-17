@@ -8303,6 +8303,14 @@ Może być używany przez inną aplikację.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Przyciągaj do tekstu: pociągnięcia zakreślacza dopasowują się do wykrytych wierszy tekstu</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Połącz obiekty</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Połącz końce strzałek z kształtami lub tekstem. Przeciągnij w puste miejsce, aby rozłączyć.</translation>
+    </message>
 </context>
 <context>
     <name>PinLayoutDialog</name>

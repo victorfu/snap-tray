@@ -9,6 +9,9 @@
 #include <QGuiApplication>
 
 #include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
+#include <QScopeGuard>
 #include "annotations/EmojiStickerAnnotation.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "cursor/CursorManager.h"
@@ -72,6 +75,28 @@ private slots:
     void init();
     void cleanup();
 
+    void arrowBindingUsesReleasePosition() {
+        auto& settings = AnnotationSettingsManager::instance();
+        settings.saveArrowBinding(true);
+        const auto reset = qScopeGuard([&] { settings.saveArrowBinding(false); });
+        m_selectionManager->startSelection({0,0});
+        m_selectionManager->updateSelection({600,400});
+        m_selectionManager->finishSelection();
+        m_annotationLayer->addItem(std::make_unique<ShapeAnnotation>(QRect(200,50,100,100),ShapeType::Rectangle,Qt::red,2));
+        m_annotationLayer->addItem(std::make_unique<ArrowAnnotation>(QPoint(20,100),QPoint(120,100),Qt::red,2));
+        m_annotationLayer->setSelectedIndex(1);
+        auto* arrow = static_cast<ArrowAnnotation*>(m_annotationLayer->itemAt(1));
+        auto press=makeMouseEvent(QEvent::MouseButtonPress,{120,100},Qt::LeftButton,Qt::LeftButton);
+        auto move=makeMouseEvent(QEvent::MouseMove,{250,100},Qt::NoButton,Qt::LeftButton);
+        auto release=makeMouseEvent(QEvent::MouseButtonRelease,{350,100},Qt::LeftButton,Qt::NoButton);
+        m_handler->handleMousePress(&press); m_handler->handleMouseMove(&move);
+        QVERIFY(!arrow->binding(true).targetId.isNull());
+        m_handler->handleMouseRelease(&release);
+        QCOMPARE(arrow->end(),QPoint(350,100));
+        QVERIFY(arrow->binding(true).targetId.isNull());
+        m_annotationLayer->undo(); QCOMPARE(arrow->end(),QPoint(120,100));
+        m_annotationLayer->redo(); QCOMPARE(arrow->end(),QPoint(350,100));
+    }
     void testAnnotationSnapRelease() {
         AnnotationSettingsManager::instance().saveAlignmentAssist(true);
         m_annotationLayer->snapController().setEnabled(true);

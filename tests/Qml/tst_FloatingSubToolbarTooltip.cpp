@@ -38,6 +38,26 @@ class TestQmlFloatingSubToolbarTooltip : public QObject
     Q_OBJECT
 
 private slots:
+    void testArrowBindingToggle() {
+        PinToolOptionsViewModel viewModel;
+        viewModel.setArrowBindingEnabled(false);
+        SnapTray::QmlFloatingSubToolbar subToolbar(&viewModel);
+        subToolbar.showForTool(static_cast<int>(ToolId::Arrow));
+        QTRY_VERIFY(subToolbar.isVisible());
+        auto* toggle = subToolbar.m_rootItem->findChild<QQuickItem*>(QStringLiteral("arrowBindingToggle"));
+        QVERIFY(toggle);
+        QVERIFY(toggle->isVisible());
+        QVERIFY(toggle->width() > 0);
+        QVERIFY(!toggle->property("checked").toBool());
+        QVERIFY(QMetaObject::invokeMethod(toggle, "toggle"));
+        QVERIFY(viewModel.arrowBindingEnabled());
+        QTRY_VERIFY(toggle->property("checked").toBool());
+        QVERIFY(QMetaObject::invokeMethod(toggle, "toggle"));
+        QVERIFY(!viewModel.arrowBindingEnabled());
+        subToolbar.showForTool(static_cast<int>(ToolId::Shape));
+        QTRY_VERIFY(!toggle->isVisible());
+        subToolbar.close();
+    }
     void initTestCase();
     void testAutoBlurHintLifecycle();
     void testMarkerTextSnapTooltip();

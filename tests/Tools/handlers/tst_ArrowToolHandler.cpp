@@ -5,6 +5,8 @@
 #include "tools/ToolContext.h"
 #include "annotations/AnnotationLayer.h"
 #include "utils/AngleSnap.h"
+#include "annotations/ShapeAnnotation.h"
+#include "settings/AnnotationSettingsManager.h"
 
 /**
  * @brief Tests for ArrowToolHandler class
@@ -23,6 +25,26 @@ class TestArrowToolHandler : public QObject
     Q_OBJECT
 
 private slots:
+    void bindingsUseReleasePositionAndCancelHint() {
+        AnnotationSettingsManager::instance().saveArrowBinding(true);
+        auto target = std::make_unique<ShapeAnnotation>(QRect(10,20,100,80), ShapeType::Rectangle, Qt::red,2);
+        auto* shape = target.get(); m_layer->addItem(std::move(target));
+        m_handler->onMousePress(m_context,QPoint(110,60));
+        m_handler->onMouseMove(m_context,QPoint(105,60));
+        m_handler->onMouseMove(m_context,QPoint(109,85));
+        QVERIFY(!m_layer->bindingHintBounds().isEmpty());
+        m_handler->cancelDrawing();
+        QVERIFY(m_layer->bindingHintBounds().isEmpty());
+        m_handler->onMousePress(m_context,QPoint(110,60));
+        m_handler->onMouseRelease(m_context,QPoint(250,60));
+        auto* arrow = dynamic_cast<ArrowAnnotation*>(m_layer->itemAt(1));
+        QVERIFY(arrow);
+        QCOMPARE(arrow->binding(false).targetId,shape->persistentId());
+        QVERIFY(arrow->binding(true).targetId.isNull());
+        shape->moveBy(QPointF(10,20));
+        QCOMPARE(arrow->start(),QPoint(120,80));
+        QVERIFY(m_layer->bindingHintBounds().isEmpty());
+    }
     void init();
     void cleanup();
 
@@ -98,6 +120,7 @@ void TestArrowToolHandler::init()
 
 void TestArrowToolHandler::cleanup()
 {
+    AnnotationSettingsManager::instance().saveArrowBinding(false);
     delete m_handler;
     delete m_context;
     delete m_layer;
