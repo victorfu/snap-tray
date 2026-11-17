@@ -87,7 +87,7 @@ void tst_CursorProbeMac::nativeClickThroughIsNotExcluded()
 {
     if (QGuiApplication::platformName() != QLatin1String("cocoa")) QSKIP("Requires Cocoa");
     QWindow window;
-    auto* view = reinterpret_cast<NSView*>(window.winId());
+    auto* view = (__bridge NSView*)reinterpret_cast<void*>(window.winId());
     QVERIFY(view.window);
     view.window.ignoresMouseEvents = YES;
     QVERIFY(!windowAcceptsPointerInput(&window));

@@ -2723,10 +2723,8 @@ void RecordingManager::startCursorTimeline()
     m_cursorRecorder->setExcludedRectsProvider([this] {
         QList<QRect> rects;
         for (QWindow* window : QGuiApplication::topLevelWindows()) {
-            // The boundary/countdown can span the entire screen but pass input
-            // through; excluding that rectangle would discard real desktop clicks.
-            if (window->isVisible() && SnapTray::windowAcceptsPointerInput(window))
-                rects.append(window->frameGeometry());
+            for (const QRect& rect : SnapTray::windowPointerInputRegion(window))
+                rects.append(rect);
         }
         if (m_trayIconGeometry) {
             const QRect icon = m_trayIconGeometry();

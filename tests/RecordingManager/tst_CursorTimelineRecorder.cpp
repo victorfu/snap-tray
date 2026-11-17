@@ -104,6 +104,7 @@ class TestCursorTimelineRecorder : public QObject
 
 private slots:
     void clickThroughWindowsAreNotExcluded();
+    void occludedWindowDoesNotExcludeExternalClicks();
     void excludesOwnPressAndRelease();
     void externalDragReleasesOverControls();
     void menuClicksAfterCloseAndDuringPause();
@@ -726,6 +727,55 @@ void TestCursorTimelineRecorder::clickThroughWindowsAreNotExcluded()
     QVERIFY(!windowAcceptsPointerInput(&window));
     window.setFlag(Qt::WindowTransparentForInput, false);
     QVERIFY(windowAcceptsPointerInput(&window));
+}
+
+void TestCursorTimelineRecorder::occludedWindowDoesNotExcludeExternalClicks()
+{
+    if (QGuiApplication::platformName() == QStringLiteral("offscreen"))
+        QSKIP("Requires native window stacking");
+    QWindow settings;
+    settings.setFlags(Qt::Window | Qt::FramelessWindowHint);
+    settings.setGeometry(50, 50, 300, 200);
+    settings.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&settings));
+    // A separate top-level surface stands in for a foreground application;
+    // it deliberately is not part of the SnapTray exclusion provider.
+    QWindow browser;
+    browser.setFlags(Qt::Window | Qt::FramelessWindowHint);
+    browser.setGeometry(200, 50, 300, 200);
+    browser.show();
+    browser.raise();
+    QVERIFY(QTest::qWaitForWindowExposed(&browser));
+    QTRY_VERIFY(!windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
+    QVERIFY(windowPointerInputRegion(&settings).contains(QPoint(100, 150)));
+
+    Rig rig;
+    rig.recorder->setExcludedRectsProvider([&] {
+        QList<QRect> rects;
+        for (const QRect& rect : windowPointerInputRegion(&settings)) rects.append(rect);
+        return rects;
+    });
+    QVERIFY(rig.recorder->start());
+    rig.probe->press(Qt::LeftButton, true, 0, QPoint(250, 150));
+    rig.probe->press(Qt::LeftButton, false, 0, QPoint(250, 150));
+    rig.probe->press(Qt::LeftButton, true, 0, QPoint(100, 150));
+    rig.probe->press(Qt::LeftButton, false, 0, QPoint(100, 150));
+    const auto result = rig.finish();
+    QCOMPARE(result.buttons.size(), size_t(2));
+    QCOMPARE(result.skippedUiClicks, 1);
+
+    browser.setGeometry(settings.geometry());
+    browser.raise();
+    QTRY_VERIFY(windowPointerInputRegion(&settings).isEmpty());
+    browser.hide();
+    QTRY_VERIFY(windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
+    browser.setFlag(Qt::WindowTransparentForInput, true);
+    browser.show();
+    browser.raise();
+    QVERIFY(QTest::qWaitForWindowExposed(&browser));
+    QTRY_VERIFY(windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
+    settings.setFlag(Qt::WindowTransparentForInput, true);
+    QVERIFY(windowPointerInputRegion(&settings).isEmpty());
 }
 
 void TestCursorTimelineRecorder::excludesOwnPressAndRelease()
