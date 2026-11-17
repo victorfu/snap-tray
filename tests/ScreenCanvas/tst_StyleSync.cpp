@@ -29,6 +29,7 @@ class TestScreenCanvasStyleSync : public QObject
 
 private slots:
     void arrowBindingUsesReleasePosition();
+    void arrowControlReleaseKeepsLastDragPosition();
     void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testOverlayRestoreReturnsArrowToolCursor();
@@ -438,6 +439,36 @@ void TestScreenCanvasStyleSync::arrowBindingUsesReleasePosition()
     release(QPoint(250,20)); // release without a move event must bind too
     QCOMPARE(arrow->binding(true).targetId,layer->itemAt(0)->persistentId());
     layer->undo(); QVERIFY(arrow->binding(true).targetId.isNull());
+}
+
+void TestScreenCanvasStyleSync::arrowControlReleaseKeepsLastDragPosition()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    const auto reset = qScopeGuard([&] { settings.saveArrowBinding(false); });
+    for (bool linking : {false, true}) {
+        settings.saveArrowBinding(linking);
+        ScreenCanvasSession session;
+        auto* surface = new ScreenCanvas;
+        session.m_surfaces = {surface};
+        session.m_activeSurface = surface;
+        auto* layer = session.m_annotationLayer;
+
+        layer->addItem(std::make_unique<ArrowAnnotation>(QPoint(20,20),QPoint(120,20),Qt::red,2));
+        layer->setSelectedIndex(0);
+        auto* arrow = static_cast<ArrowAnnotation*>(layer->itemAt(0));
+        const auto press = [&](QPoint p) { return session.handleArrowAnnotationPress(p); };
+        const auto move = [&](QPoint p) { session.handleArrowAnnotationMove(p); };
+        const auto release = [&](QPoint p) { session.handleArrowAnnotationRelease(p); };
+        const QPointF originalControl = arrow->controlPoint();
+        QVERIFY(press(QPoint(70,20)));
+        move(QPoint(80,50));
+        const QPointF draggedControl = arrow->controlPoint();
+        QVERIFY(draggedControl != originalControl);
+        release(QPoint(350,200));
+        QCOMPARE(arrow->controlPoint(),draggedControl);
+        layer->undo(); QCOMPARE(arrow->controlPoint(),originalControl);
+        layer->redo(); QCOMPARE(arrow->controlPoint(),draggedControl);
+    }
 }
 QTEST_MAIN(TestScreenCanvasStyleSync)
 #include "tst_StyleSync.moc"

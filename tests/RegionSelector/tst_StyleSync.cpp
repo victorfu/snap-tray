@@ -1590,11 +1590,16 @@ void TestRegionSelectorStyleSync::testArrowControlReleaseRestoresSelectionBodyCu
                           Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
     selector.m_inputHandler->handleMouseMove(&moveEvent);
 
+    auto* arrow = dynamic_cast<ArrowAnnotation*>(selector.m_annotationLayer->selectedItem());
+    QVERIFY(arrow);
+    const QPointF draggedControl = arrow->controlPoint();
+
     QMouseEvent releaseEvent(QEvent::MouseButtonRelease, kSelectionBodyPos, kSelectionBodyPos,
                              Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
     selector.m_inputHandler->handleMouseRelease(&releaseEvent);
     cursorManager.reapplyCursorForWidget(&selector);
 
+    QCOMPARE(arrow->controlPoint(), draggedControl);
     verifyMoveCursor(selector.cursor());
 }
 

@@ -2822,7 +2822,10 @@ bool ScreenCanvasSession::handleArrowAnnotationRelease(const QPoint& pos)
         return false;
     }
 
-    handleArrowAnnotationMove(pos);
+    // Resolve endpoint drop targets at release without changing curve/body drag semantics.
+    if (m_arrowDragHandle == GizmoHandle::ArrowStart || m_arrowDragHandle == GizmoHandle::ArrowEnd) {
+        handleArrowAnnotationMove(pos);
+    }
     m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isArrowDragging = false;
     m_arrowDragHandle = GizmoHandle::None;
