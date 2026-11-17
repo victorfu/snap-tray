@@ -5394,6 +5394,38 @@ Tamanho: %2</translation>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Você pode manter até %1 estilos salvos. Exclua um para salvar outro.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Anel</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Ondas</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Holofote</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Raios</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Cor do clique</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Cor diferente para o clique direito</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Cor do clique direito</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Rebote ao pressionar</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

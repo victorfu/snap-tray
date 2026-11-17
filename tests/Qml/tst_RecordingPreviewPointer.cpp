@@ -22,6 +22,7 @@ class tst_RecordingPreviewPointer : public QObject
     Q_OBJECT
 
 private slots:
+    void clickStyleControlsPersistAndUndo();
     void controlsFollowThePointerData();
     void controlsHiddenWithoutPointerData();
     void overlayFollowsEachFrameTime();
@@ -79,11 +80,14 @@ void tst_RecordingPreviewPointer::controlsFollowThePointerData()
     QQuickItem* toggle = item(view, "previewPointerToggle");
     QQuickItem* size = item(view, "previewPointerSize");
     QQuickItem* smoothing = item(view, "previewPointerSmoothing");
-    QQuickItem* clicks = item(view, "previewClickRipple");
+    QQuickItem* clicks = item(view, "previewClickStyle");
     QVERIFY(toggle && size && smoothing && clicks);
     QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerOptions"), "clicked"));
     QTRY_VERIFY(toggle->isVisible());
     QVERIFY(item(view, "previewCursorOverlay"));
+    QVERIFY(!item(view, "previewClickColor")->isEnabled());
+    QVERIFY(!item(view, "previewSeparateRightClickColor")->isEnabled());
+    QVERIFY(!item(view, "previewPressBounce")->isEnabled());
     QCOMPARE(clicks->isEnabled(), false); // nothing to highlight without recorded clicks
 
     if (!backend.cursorEffectsAvailable()) {
@@ -107,6 +111,64 @@ void tst_RecordingPreviewPointer::controlsFollowThePointerData()
     QCOMPARE(backend.cursorSmoothing(), 0);
     backend.undo();
     QCOMPARE(backend.cursorScale(), before);
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewPointer::clickStyleControlsPersistAndUndo()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const auto remembered = RecordingSettingsManager::instance().pointerEffects();
+    auto restore = qScopeGuard([&] { RecordingSettingsManager::instance().setPointerEffects(remembered); });
+    // An older remembered look must enter the new picker as Ring.
+    RecordingSettingsManager::instance().setPointerEffects({{QStringLiteral("clickRipple"), true}});
+    const QString video = dir.filePath(QStringLiteral("missing.mp4"));
+    SnapTray::CursorTimelineWriter writer(SnapTray::CursorTimelineSidecar::pathFor(video));
+    SnapTray::CursorTimelineInfo info;
+    info.frameSize = QSize(320, 240);
+    info.clicksAvailable = true;
+    QVERIFY(writer.open(info));
+    writer.addSample({0, QPoint(100, 100), true, 0});
+    writer.addButton({100, Qt::LeftButton, true, QPoint(100, 100), false});
+    writer.addButton({300, Qt::LeftButton, false, QPoint(100, 100), false});
+    QVERIFY(writer.finish());
+    RecordingPreviewBackend backend(video);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QVERIFY(backend.clickEffectsAvailable());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPointerOptions"), "clicked"));
+    QCOMPARE(backend.clickStyle(), 1);
+    auto* style = item(view, "previewClickStyle");
+    QVERIFY(style && style->isEnabled());
+    for (int index = 0; index <= 4; ++index) {
+        QVERIFY(QMetaObject::invokeMethod(style, "activated", Q_ARG(int, index)));
+        QCOMPARE(backend.clickStyle(), index);
+    }
+    auto* color = item(view, "previewClickColor");
+    QVERIFY(color && color->isEnabled());
+    QVERIFY(QMetaObject::invokeMethod(color, "committed", Q_ARG(QColor, QColor("#123456"))));
+    QCOMPARE(backend.clickColor(), QColor("#123456"));
+    auto* custom = color->findChild<QQuickItem*>(QStringLiteral("customClickColor"));
+    QVERIFY(custom);
+    QTRY_VERIFY(custom->isVisible());
+    custom->setProperty("text", QStringLiteral("#abcdef"));
+    QVERIFY(QMetaObject::invokeMethod(custom, "editingFinished"));
+    QCOMPARE(backend.clickColor(), QColor("#abcdef"));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewSeparateRightClickColor"), "clicked"));
+    QVERIFY(backend.separateRightClickColor());
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewRightClickColor"), "committed", Q_ARG(QColor, QColor("#ff5252"))));
+    QVERIFY(QMetaObject::invokeMethod(item(view, "previewPressBounce"), "activated", Q_ARG(int, 2)));
+    QCOMPARE(backend.pressBounce(), 2);
+    const auto saved = SnapTray::CursorEffectSettings::fromJson(RecordingSettingsManager::instance().pointerEffects());
+    QCOMPARE(saved.clickStyle, SnapTray::CursorEffectSettings::ClickStyle::Burst);
+    QCOMPARE(saved.clickColor, QColor("#abcdef"));
+    QCOMPARE(saved.rightClickColor, QColor("#ff5252"));
+    QVERIFY(saved.separateRightClickColor);
+    QCOMPARE(saved.pressBounce, SnapTray::CursorEffectSettings::PressBounce::High);
+    backend.undo();
+    QCOMPARE(backend.pressBounce(), 0);
+    backend.redo();
+    QCOMPARE(backend.pressBounce(), 2);
     backend.requestDiscard();
 }
 
@@ -423,9 +485,12 @@ void tst_RecordingPreviewPointer::springOverlayInvalidatesWithEdits()
         SnapTray::CursorTimelineWriter writer(SnapTray::CursorTimelineSidecar::pathFor(video));
         SnapTray::CursorTimelineInfo info;
         info.frameSize = QSize(320, 240);
+        info.clicksAvailable = true;
         QVERIFY(writer.open(info));
         for (int ms = 0; ms <= 2000; ms += 20)
             writer.addSample({ms, QPoint(20 + (ms / 10) % 200, 80), true, 0});
+        writer.addButton({500, Qt::LeftButton, true, QPoint(70, 80), false});
+        writer.addButton({900, Qt::LeftButton, false, QPoint(110, 80), false});
         QVERIFY(writer.finish());
     }
     RecordingPreviewBackend backend(video);
@@ -456,6 +521,16 @@ void tst_RecordingPreviewPointer::springOverlayInvalidatesWithEdits()
     check(1550);
     backend.undo();
     check(1550);
+    for (int format : {RecordingPreviewBackend::MP4, RecordingPreviewBackend::GIF, RecordingPreviewBackend::WebP}) {
+        backend.setSelectedFormat(format);
+        backend.setClickColor(QColor("#ffd43b"));
+        backend.setPressBounce(2);
+        for (int style = 1; style <= 4; ++style) {
+            backend.setClickStyle(style);
+            check(610);
+            check(560); // seeking backward uses the identical renderer for each output format
+        }
+    }
     overlay.setBackend(nullptr);
 }
 

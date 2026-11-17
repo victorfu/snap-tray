@@ -69,6 +69,7 @@ public:
     std::vector<CursorButtonEvent> buttons; // in time order
     bool finished = false;   // the end record was written (not cut off by a crash)
     bool truncated = false;  // the size limit was reached; later events are missing
+    int skippedUiClicks = 0; // optional diagnostic in the v1 end record
     int droppedShapes = 0;   // shape images that could not be read
 
     // Last sample at or before tMs; the first one for earlier times; nullptr when empty.
@@ -106,7 +107,7 @@ public:
     void addButton(const CursorButtonEvent& event);
     void flush();
     // Writes the end record and closes. Safe to call more than once.
-    bool finish();
+    bool finish(int skippedUiClicks = 0);
 
     bool isOpen() const { return m_file.isOpen(); }
     bool failed() const { return m_failed; }

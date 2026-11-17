@@ -5394,6 +5394,38 @@ Size: %2</source>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Μπορείτε να διατηρήσετε έως %1 αποθηκευμένα στυλ. Διαγράψτε ένα για να αποθηκεύσετε άλλο.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Δακτύλιος</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Κυματισμός</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Προβολέας</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Ακτίνες</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Χρώμα κλικ</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Διαφορετικό χρώμα δεξιού κλικ</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Χρώμα δεξιού κλικ</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Αναπήδηση στο πάτημα</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

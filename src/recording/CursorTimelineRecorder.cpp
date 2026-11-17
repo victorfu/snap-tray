@@ -35,6 +35,7 @@ CursorTimelineRecorder::CursorTimelineRecorder(std::unique_ptr<CursorProbe> prob
     , m_writer(sidecarPath)
     , m_cursorInVideo(cursorInVideo)
 {
+    m_wallClock.start();
     if (m_probe) {
         m_capabilities = m_probe->capabilities();
         connect(m_probe.get(), &CursorProbe::buttonChanged, this, &CursorTimelineRecorder::onButtonChanged);
@@ -113,12 +114,14 @@ void CursorTimelineRecorder::stop()
     m_stopped = true;
     m_sampleTimer.stop();
     m_flushTimer.stop();
-    m_writer.finish();
+    if (m_probe) m_probe->stop();
+    m_writer.finish(m_skippedUiClicks);
 }
 
 void CursorTimelineRecorder::sampleNow()
 {
     if (!m_running || m_paused || !m_probe) return;
+    rememberExcludedRects();
     const auto state = m_probe->poll();
     if (!state) return;
     CursorSample sample;
@@ -167,15 +170,26 @@ quint32 CursorTimelineRecorder::currentShapeId()
 }
 
 void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs,
-                                             std::optional<QPoint> physicalPosition)
+                                             std::optional<QPoint> physicalPosition, std::optional<QPoint> logicalPosition)
 {
-    if (!m_running || m_paused || !m_capabilities.clicks) return;
+    if (!m_running || !m_capabilities.clicks) return;
     // Keep the pointer samples current, including for sources without event coordinates.
     sampleNow();
     // A queued event happened ageMs before it reached us. One from before
     // the recording (re)started, i.e. during a pause, is not recorded.
     const qint64 happenedMs = m_clock() - qMax<qint64>(0, ageMs);
-    if (happenedMs < m_activeSinceMs) return;
+    const QPoint position = physicalPosition ? m_mapping.toVideoPointFromPhysical(*physicalPosition)
+        : logicalPosition ? m_mapping.toVideoPoint(*logicalPosition) : positionAt(happenedMs);
+    if (m_ignored.testFlag(button)) {
+        if (!down) m_ignored.setFlag(button, false);
+        return;
+    }
+    if (down && !m_held.testFlag(button) && excludedAt(position, ageMs)) {
+        m_ignored.setFlag(button);
+        ++m_skippedUiClicks;
+        return;
+    }
+    if (m_paused || happenedMs < m_activeSinceMs) return;
     if (m_held.testFlag(button) == down) return; // a press from before start/resume, or a repeat
     m_held.setFlag(button, down);
     CursorButtonEvent event;
@@ -187,13 +201,13 @@ void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, 
     // Prefer the event source's exact position: a click can fall between
     // polls, or arrive after the pointer has moved during a GUI stall.
     // Sources without event coordinates still use the recorded history.
-    event.position = physicalPosition ? m_mapping.toVideoPointFromPhysical(*physicalPosition)
-                                      : positionAt(event.tMs);
+    event.position = position;
     m_writer.addButton(event);
 }
 
 void CursorTimelineRecorder::onButtonEventsLost()
 {
+    m_ignored = {};
     // Losses from a pause are of events that would have been dropped anyway.
     if (!m_running || m_paused) return;
     ++m_buttonEventLosses;
@@ -202,6 +216,52 @@ void CursorTimelineRecorder::onButtonEventsLost()
     // long drag instead of two clicks. Start from "nothing held" instead.
     sampleNow();
     releaseHeldButtons();
+}
+
+void CursorTimelineRecorder::setMenuOpen(bool open)
+{
+    if (m_menuOpen == open) return;
+    // Drain queued clicks while the previous menu state still applies.
+    if (m_probe && m_running) m_probe->poll();
+    const qint64 now = m_wallClock.elapsed();
+    if (open) m_menuIntervals.push_back({now, -1});
+    else if (!m_menuIntervals.empty()) m_menuIntervals.back().end = now;
+    m_menuOpen = open;
+    while (m_menuIntervals.size() > 1 && m_menuIntervals.front().end >= 0
+           && now - m_menuIntervals.front().end > kRecentPositionsMs) m_menuIntervals.pop_front();
+}
+
+void CursorTimelineRecorder::rememberExcludedRects()
+{
+    if (!m_excludedRects) return;
+    const qint64 now = m_wallClock.elapsed();
+    const auto rects = m_excludedRects();
+    if (m_exclusionHistory.empty() || m_exclusionHistory.back().rects != rects)
+        m_exclusionHistory.push_back({now, rects});
+    while (m_exclusionHistory.size() > 1 && now - m_exclusionHistory[1].wallMs > kRecentPositionsMs)
+        m_exclusionHistory.pop_front();
+}
+
+bool CursorTimelineRecorder::excludedAt(const QPoint& videoPosition, qint64 ageMs) const
+{
+    const qint64 wallMs = m_wallClock.elapsed() - qMax<qint64>(0, ageMs);
+    for (const auto& interval : m_menuIntervals) {
+        if (wallMs >= interval.start && (interval.end < 0 || wallMs <= interval.end)) return true;
+    }
+    const QList<QRect>* rects = nullptr;
+    for (auto it = m_exclusionHistory.crbegin(); it != m_exclusionHistory.crend(); ++it) {
+        if (it->wallMs <= wallMs) { rects = &it->rects; break; }
+    }
+    // Pauses stop position polling, but the resume control is still interactive.
+    const auto current = m_paused && m_excludedRects ? m_excludedRects() : QList<QRect>();
+    if (m_paused) rects = &current;
+    if (!rects) return false;
+    for (const QRect& rect : *rects) {
+        // Do not clip to the video: controls can sit outside a cropped recording.
+        const QRect mapped(m_mapping.toVideoPoint(rect.topLeft()), m_mapping.toVideoPoint(rect.bottomRight()));
+        if (mapped.contains(videoPosition)) return true;
+    }
+    return false;
 }
 
 void CursorTimelineRecorder::rememberSample(const CursorSample& sample)

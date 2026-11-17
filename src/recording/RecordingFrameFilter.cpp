@@ -9,7 +9,7 @@ std::function<void(QImage&, qint64, qint64)> recordingFrameFilter(
 {
     const QRectF bounds = state.crop.isEmpty() ? QRectF(QPointF(), QSizeF(videoSize)) : QRectF(state.crop);
     const auto availability = CursorEffectAvailability::of(timeline.get());
-    const auto cursor = availability.cursor && (state.cursor.showCursor || (state.cursor.clickRipple && availability.clicks))
+    const auto cursor = availability.cursor && (state.cursor.showCursor || (state.cursor.clickStyle != CursorEffectSettings::ClickStyle::Off && availability.clicks))
         ? std::make_shared<CursorEffectRenderer>(*timeline, state.cursor,
               clipEndMs >= 0 ? clipEndMs : (editTimeline.isEmpty() ? -1 : editTimeline.sourceEndMs()))
         : std::shared_ptr<CursorEffectRenderer>();

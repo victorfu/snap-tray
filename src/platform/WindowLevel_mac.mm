@@ -3,9 +3,11 @@
 // found in the LICENSE file.
 
 #include "WindowLevel.h"
+#include "platform/WindowInput.h"
 
 #include <QGuiApplication>
 #include <QCursor>
+#include <QSet>
 
 #include "cursor/CursorSurfaceSupport.h"
 
@@ -172,6 +174,50 @@ void raiseWindowAboveMenuBar(QWindow *window)
     if (view) {
         [[view window] setLevel:kCGScreenSaverWindowLevel]; // level 1000
     }
+}
+
+bool SnapTray::windowAcceptsPointerInput(QWindow* window)
+{
+    if (!window || window->flags().testFlag(Qt::WindowTransparentForInput)) return false;
+    NSView* view = nsViewForWindow(window);
+    return !view || !view.window.ignoresMouseEvents;
+}
+
+QRegion SnapTray::windowPointerInputRegion(QWindow* window)
+{
+    if (!window || !window->isVisible() || !windowAcceptsPointerInput(window)) return {};
+    NSView* view = nsViewForWindow(window);
+    if (!view.window || !view.window.isOnActiveSpace || view.window.isMiniaturized) return {};
+    const auto nativeId = static_cast<CGWindowID>(view.window.windowNumber);
+    CFArrayRef windows = CGWindowListCopyWindowInfo(
+        kCGWindowListOptionOnScreenAboveWindow, nativeId);
+    if (!windows) return {};
+    QSet<CGWindowID> clickThrough;
+    for (QWindow* own : QGuiApplication::topLevelWindows()) {
+        if (own->isVisible() && !windowAcceptsPointerInput(own)) {
+            NSView* ownView = nsViewForWindow(own);
+            if (ownView.window) clickThrough.insert(static_cast<CGWindowID>(ownView.window.windowNumber));
+        }
+    }
+    QRegion exposed(window->frameGeometry());
+    for (CFIndex i = 0; i < CFArrayGetCount(windows); ++i) {
+        auto info = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windows, i));
+        CGWindowID id = 0;
+        auto number = static_cast<CFNumberRef>(CFDictionaryGetValue(info, kCGWindowNumber));
+        if (number) CFNumberGetValue(number, kCFNumberSInt32Type, &id);
+        if (clickThrough.contains(id)) continue;
+        CGRect bounds{};
+        auto dict = static_cast<CFDictionaryRef>(CFDictionaryGetValue(info, kCGWindowBounds));
+        if (dict && CGRectMakeWithDictionaryRepresentation(dict, &bounds)) {
+            // CG window bounds, like Qt global positions, use logical points
+            // with the primary display's top-left as the origin.
+            exposed -= QRectF(bounds.origin.x, bounds.origin.y,
+                              bounds.size.width, bounds.size.height).toAlignedRect();
+        }
+        if (exposed.isEmpty()) break;
+    }
+    CFRelease(windows);
+    return exposed;
 }
 
 void setWindowClickThrough(QWidget *widget, bool enabled)

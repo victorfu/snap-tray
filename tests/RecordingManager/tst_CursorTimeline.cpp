@@ -73,7 +73,7 @@ void TestCursorTimeline::roundTrip()
     writer.addButton({25, Qt::LeftButton, false, QPoint(11, 21), false});
     writer.addButton({30, Qt::RightButton, true, QPoint(12, 22), false});
     writer.addButton({50, Qt::RightButton, false, QPoint(12, 22), true});
-    QVERIFY(writer.finish());
+    QVERIFY(writer.finish(7));
     QVERIFY(writer.finish()); // idempotent
 
     const auto timeline = CursorTimelineSidecar::read(video);
@@ -83,6 +83,7 @@ void TestCursorTimeline::roundTrip()
     QVERIFY(timeline->info.clicksAvailable);
     QVERIFY(!timeline->info.cursorInVideo);
     QVERIFY(timeline->finished);
+    QCOMPARE(timeline->skippedUiClicks, 7);
     QVERIFY(!timeline->truncated);
     QCOMPARE(int(timeline->shapes.size()), 2);
     QCOMPARE(timeline->shape(2)->hotspot, QPoint(4, 8));
@@ -276,11 +277,12 @@ void TestCursorTimeline::reportReplaysEvents()
              qPrintable(summary));
     QVERIFY(!summary.contains(QStringLiteral("move 1,2")));
     const QStringList lines = timeline.report(true).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    QCOMPARE(lines.size(), 3 + 4);
-    QCOMPARE(lines[3], QStringLiteral("0 ms  move 1,2 shape 1"));
-    QCOMPARE(lines[4], QStringLiteral("10 ms  left down 1,2"));
-    QCOMPARE(lines[5], QStringLiteral("30 ms  move 3,4 shape 1 hidden"));
-    QCOMPARE(lines[6], QStringLiteral("40 ms  left up 3,4 (released by SnapTray)"));
+    QCOMPARE(lines.size(), 4 + 4);
+    QCOMPARE(lines[3], QStringLiteral("clicks skipped on SnapTray UI 0"));
+    QCOMPARE(lines[4], QStringLiteral("0 ms  move 1,2 shape 1"));
+    QCOMPARE(lines[5], QStringLiteral("10 ms  left down 1,2"));
+    QCOMPARE(lines[6], QStringLiteral("30 ms  move 3,4 shape 1 hidden"));
+    QCOMPARE(lines[7], QStringLiteral("40 ms  left up 3,4 (released by SnapTray)"));
 }
 
 void TestCursorTimeline::growthStaysWithinTheLimit()

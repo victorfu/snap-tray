@@ -5394,6 +5394,38 @@ Grootte: %2</translation>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Je kunt maximaal %1 opgeslagen stijlen bewaren. Verwijder er een om een andere op te slaan.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Ring</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Rimpels</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Spotlicht</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Stralen</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Klikkleur</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Andere kleur voor rechtsklikken</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Rechtsklikkleur</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Terugveren bij indrukken</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

@@ -135,7 +135,11 @@ The recorded video does not contain the mouse pointer. While a recording that op
 
 On Linux (X11), Windows and macOS it includes the pointer's shape and clicks. On Windows, buttons are read with a mouse hook that only listens: clicks are never blocked or changed, and not noticeably delayed. Clicks that a program injects are left out; this includes your own clicks when a remote-control tool, button remapper or some tablet drivers deliver them that way. If the record cannot be written, the recording itself is not affected.
 
-On macOS this needs no extra permission: SnapTray only listens for mouse button presses, never changes or delays them, and does not ask for Input Monitoring or Accessibility for the pointer. (Input Monitoring is only requested if you turn on shortcut hints.) A pointer that an application hides, for example over a full-screen video or while you type, is recorded as hidden and is not drawn in the export.
+On macOS, mouse monitoring uses AppKit's global and local mouse monitors when Input Monitoring has not already been granted. These mouse-only monitors do not request permission; Apple restricts keyboard monitoring separately ([event monitoring documentation](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/MonitoringEvents/MonitoringEvents.html)). When Input Monitoring is already granted, SnapTray uses a listen-only event tap. The fresh-install permission flow, mixed Retina displays and system button swapping still need the [Mac device checks](../developer/recording-sync-matrix.md#macos-pointer-probe-322).
+
+SnapTray observes mouse button presses without changing or consuming them. Input Monitoring is only requested if you turn on shortcut hints. A pointer that an application hides, for example over a full-screen video or while you type, is recorded as hidden and is not drawn in the export.
+
+Clicks on SnapTray's recording controls, tray icon (when its geometry is available), and open tray menus are excluded from click highlights and Auto Zoom. A drag that starts in another application keeps its release even if it ends over SnapTray. The click and its release are excluded together; click-through recording borders and pinned images do not block clicks on the content beneath them. Recording diagnostics and the pointer report include the number of presses skipped on SnapTray UI.
 
 ### Pointer effects in the preview
 
@@ -144,7 +148,9 @@ When a recording has this record, open **Pointer** in the inspector's Project se
 - **Pointer**: show or hide the mouse pointer in the exported video.
 - **Size** (1×, 1.5×, 2×, 3×): draw the pointer larger.
 - **Smooth** (Off, Low, Medium, High): smooth out a shaky path with a spring that anticipates movement and clicks, with tighter tracking during drags. Clicks stay at their recorded positions and times. Off preserves the recorded path and remains the default. Seeking and exporting use the same precomputed path; smoothing never reaches across a cut. Existing projects with smoothing enabled also use this improved model when reopened and exported, so their pointer paths can differ from earlier exports.
-- **Clicks**: show a brief ring where each click happened. Needs recorded clicks (Linux, Windows and macOS).
+- **Clicks**: choose Off, Ring (the original highlight), Ripple (two expanding rings), Spotlight (a soft glow with a slightly darker surround), or Burst (outward rays). Effects stay at the actual click position and never cross a cut. Needs recorded clicks (Linux, Windows and macOS).
+- **Click color**: use the default white with a dark outline, yellow, red, blue, or a custom `#RRGGBB` color. Turn on **Different right-click color** to give right clicks their own color; otherwise all buttons share one color.
+- **Press bounce** (Off, Low, High): briefly shrink the pointer around its tip, hold it slightly smaller while dragging, and restore its size on release. It combines with Pointer size; motion-blur trails keep their original size. Off is the default. Older recipes retain their original Ring or Off setting, default colors, and no bounce.
 - **Pointer** also includes these effects, all off by default:
   - **Hide When Idle** (1 s, 2 s, 5 s): fade the pointer out once it has not moved for that long. It fades back in just before it moves or clicks, so it is always visible at a click, and click rings are never hidden.
   - **Motion Blur** (Low, Medium, High): a short trail behind a fast-moving pointer. A resting pointer is drawn sharp.

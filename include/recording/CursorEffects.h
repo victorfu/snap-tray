@@ -5,6 +5,7 @@
 #include "recording/SpringPath.h"
 
 #include <QJsonObject>
+#include <QColor>
 #include <QPointF>
 #include <QRect>
 #include <QSize>
@@ -30,11 +31,17 @@ struct CursorHiddenRange {
 struct CursorEffectSettings {
     enum class Smoothing { Off, Low, Medium, High };
     enum class MotionBlur { Off, Low, Medium, High };
+    enum class ClickStyle { Off, Ring, Ripple, Spotlight, Burst };
+    enum class PressBounce { Off, Low, High };
 
     bool showCursor = true;
     double scale = 1.0;                  // 1.0 = recorded size
     Smoothing smoothing = Smoothing::Off; // off by default: never move the real pointer path unasked
-    bool clickRipple = false;
+    ClickStyle clickStyle = ClickStyle::Off;
+    QColor clickColor = Qt::white;
+    QColor rightClickColor = Qt::white;
+    bool separateRightClickColor = false;
+    PressBounce pressBounce = PressBounce::Off;
     // #186: every one off by default, so older recipes draw as before.
     qint64 idleHideMs = 0;     // fade the pointer out after this long without movement; 0 = never
     MotionBlur motionBlur = MotionBlur::Off;
@@ -50,7 +57,7 @@ struct CursorEffectSettings {
     static constexpr qint64 kMinHiddenRangeMs = 100;
 
     // True when exports must draw anything (otherwise the plain fast paths apply).
-    bool drawsAnything() const { return showCursor || clickRipple; }
+    bool drawsAnything() const { return showCursor || clickStyle != ClickStyle::Off; }
     bool operator==(const CursorEffectSettings& o) const;
     bool operator!=(const CursorEffectSettings& o) const { return !(*this == o); }
 
@@ -87,6 +94,7 @@ public:
     // Ripple timing and source-time anticipation of a button press.
     static constexpr qint64 kRippleDurationMs = 450;
     static constexpr qint64 kClickLookaheadMs = 450;
+    static constexpr qint64 kBounceDurationMs = 220;
     // Idle hiding: how long the fade out (and the fade back in, which starts
     // this long before the next movement) takes.
     static constexpr qint64 kIdleFadeMs = 250;
@@ -110,6 +118,7 @@ public:
     std::optional<QPointF> pointerPosition(qint64 sourceMs) const;
     // How visible the pointer is at sourceMs with idle hiding (1 = fully).
     double pointerOpacity(qint64 sourceMs) const;
+    double pointerBounceScale(qint64 sourceMs) const;
     // Draws the effects for sourceMs onto an image already showing that
     // frame (cropped and scaled as `mapping` says).
     void paint(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const;
@@ -118,6 +127,10 @@ public:
 private:
     QPointF rawPosition(qint64 sourceMs) const;
     void rebuildSpringPaths();
+    void rebuildBouncePath();
+    struct BouncePoint { qint64 tMs; double depth; bool held; };
+    std::vector<BouncePoint> m_bounces;
+    static double bounceDepth(const BouncePoint& point, qint64 ms);
     QPointF springPosition(qint64 sourceMs) const;
     struct PartPath { qint64 startMs; qint64 endMs; SpringPath path; };
     std::vector<PartPath> m_paths;
@@ -131,7 +144,7 @@ private:
     double blurWindowMs() const;
     void drawPointerAt(QPainter& painter, const QPointF& at, const CursorShape* shape, double scale) const;
     qint64 distanceToButtonEvent(qint64 sourceMs) const;
-    void paintRipples(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const;
+    void paintClicks(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const;
     void paintPointer(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const;
 
     const CursorTimeline& m_timeline;

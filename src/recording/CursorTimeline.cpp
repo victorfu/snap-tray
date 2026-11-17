@@ -110,6 +110,7 @@ QString CursorTimeline::report(bool events) const
     }
     stream << shapes.size() << " shapes, " << samples.size() << " moves, " << presses << " presses ("
            << synthetic << " releases by SnapTray), last event at " << lastMs << " ms\n";
+    stream << "clicks skipped on SnapTray UI " << skippedUiClicks << '\n';
     if (!events) return out;
 
     // Merge both streams in time order; a press sorts after a move at the same time.
@@ -203,6 +204,7 @@ std::optional<CursorTimeline> CursorTimeline::parse(const QByteArray& jsonl, QSt
             event.synthetic = record.value(QStringLiteral("synthetic")).toBool();
             timeline.buttons.push_back(event);
         } else if (type == QLatin1String("end")) {
+            timeline.skippedUiClicks = qMax(0, record.value(QStringLiteral("skippedUiClicks")).toInt());
             timeline.finished = true;
             timeline.truncated = record.value(QStringLiteral("truncated")).toBool();
             break;
@@ -323,12 +325,13 @@ void CursorTimelineWriter::flush()
     m_buffer.clear();
 }
 
-bool CursorTimelineWriter::finish()
+bool CursorTimelineWriter::finish(int skippedUiClicks)
 {
     if (m_finished) return !m_failed;
     if (m_file.isOpen()) {
         append(line({{QStringLiteral("type"), QStringLiteral("end")},
-                     {QStringLiteral("truncated"), m_truncated}}),
+                     {QStringLiteral("truncated"), m_truncated},
+                     {QStringLiteral("skippedUiClicks"), qMax(0, skippedUiClicks)}}),
                true);
         flush();
         m_file.close();

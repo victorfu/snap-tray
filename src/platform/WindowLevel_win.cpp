@@ -3,12 +3,16 @@
 // found in the LICENSE file.
 
 #include "WindowLevel.h"
+#include "platform/WindowInput.h"
 #include "platform/CaptureExclusionPolicy.h"
 #include <QDateTime>
 #include <QDebug>
+#include <QGuiApplication>
+#include <QSet>
 
 #ifdef Q_OS_WIN
 #include <Windows.h>
+#include <dwmapi.h>
 
 namespace {
 // Windows 10 can reject per-pixel-alpha surfaces with error 8: translucent
@@ -154,6 +158,65 @@ void raiseWindowAboveMenuBar(QWidget *)
 void raiseWindowAboveMenuBar(QWindow *)
 {
     // Windows does not need special handling for window level
+}
+
+bool SnapTray::windowAcceptsPointerInput(QWindow* window)
+{
+    if (!window || window->flags().testFlag(Qt::WindowTransparentForInput)) return false;
+#ifdef Q_OS_WIN
+    const HWND handle = reinterpret_cast<HWND>(window->winId());
+    const LONG_PTR flags = handle ? GetWindowLongPtr(handle, GWL_EXSTYLE) : 0;
+    constexpr LONG_PTR clickThrough = WS_EX_TRANSPARENT | WS_EX_LAYERED;
+    return (flags & clickThrough) != clickThrough;
+#else
+    return true;
+#endif
+}
+
+QRegion SnapTray::windowPointerInputRegion(QWindow* window)
+{
+    if (!window || !window->isVisible() || !windowAcceptsPointerInput(window)) return {};
+#ifdef Q_OS_WIN
+    const HWND native = reinterpret_cast<HWND>(window->winId());
+    RECT target{};
+    if (IsIconic(native) || !GetWindowRect(native, &target)) return {};
+    DWORD targetCloaked = 0;
+    if (SUCCEEDED(DwmGetWindowAttribute(native, DWMWA_CLOAKED, &targetCloaked, sizeof(targetCloaked)))
+        && targetCloaked) return {};
+    QRegion exposed(window->frameGeometry());
+    const QPoint logicalOrigin = window->frameGeometry().topLeft();
+    const qreal scale = window->devicePixelRatio();
+    QSet<HWND> visited{native};
+    for (HWND above = GetWindow(native, GW_HWNDPREV); above; above = GetWindow(above, GW_HWNDPREV)) {
+        // The native stack can change while it is being read.
+        if (visited.contains(above)) return {};
+        visited.insert(above);
+        if (!IsWindowVisible(above) || IsIconic(above)) continue;
+        DWORD cloaked = 0;
+        if (SUCCEEDED(DwmGetWindowAttribute(above, DWMWA_CLOAKED, &cloaked, sizeof(cloaked)))
+            && cloaked) continue;
+        constexpr LONG_PTR clickThrough = WS_EX_TRANSPARENT | WS_EX_LAYERED;
+        if ((GetWindowLongPtr(above, GWL_EXSTYLE) & clickThrough) == clickThrough) continue;
+        bool acceptsInput = true;
+        for (QWindow* own : QGuiApplication::topLevelWindows()) {
+            if (own->isVisible() && reinterpret_cast<HWND>(own->winId()) == above) {
+                acceptsInput = windowAcceptsPointerInput(own);
+                break;
+            }
+        }
+        if (!acceptsInput) continue;
+        RECT bounds{};
+        if (!GetWindowRect(above, &bounds)) continue;
+        exposed -= QRect(logicalOrigin + QPoint(qRound((bounds.left - target.left) / scale),
+                                                 qRound((bounds.top - target.top) / scale)),
+                         QSize(qRound((bounds.right - bounds.left) / scale),
+                               qRound((bounds.bottom - bounds.top) / scale)));
+        if (exposed.isEmpty()) break;
+    }
+    return exposed;
+#else
+    return {};
+#endif
 }
 
 void setWindowClickThrough(QWidget *widget, bool enabled)

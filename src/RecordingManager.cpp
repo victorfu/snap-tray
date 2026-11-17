@@ -30,6 +30,8 @@
 #include "settings/RecordingSettingsManager.h"
 
 #include <QGuiApplication>
+#include <QWindow>
+#include "platform/WindowInput.h"
 #include <QCoreApplication>
 #include <QCursor>
 #include <QScreen>
@@ -2293,6 +2295,9 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         m_lastDiagnostics = SnapTray::RecordingHealth::formatDiagnostics(snapshot);
         if (!m_cursorDiagnostics.isEmpty()) {
             m_lastDiagnostics += QLatin1Char('\n') + m_cursorDiagnostics;
+            if (m_cursorRecorder) {
+                m_lastDiagnostics += QStringLiteral(" (clicks skipped on SnapTray UI: %1)").arg(m_cursorRecorder->skippedUiClicks());
+            }
             if (m_cursorRecorder && m_cursorRecorder->truncated()) {
                 m_lastDiagnostics += QStringLiteral(" (size limit reached)");
             }
@@ -2691,6 +2696,12 @@ qint64 RecordingManager::mediaTimeMs()
     return qMax<qint64>(0, raw - m_pausedDuration);
 }
 
+void RecordingManager::setTrayMenuOpen(bool open)
+{
+    m_trayMenuOpen = open;
+    if (m_cursorRecorder) m_cursorRecorder->setMenuOpen(open);
+}
+
 void RecordingManager::startCursorTimeline()
 {
     dropCursorTimeline(false);
@@ -2709,6 +2720,19 @@ void RecordingManager::startCursorTimeline()
     m_cursorRecorder = std::make_unique<SnapTray::CursorTimelineRecorder>(
         std::move(probe), mediaTime, m_windowFrameMapping,
         SnapTray::CursorTimelineSidecar::pathFor(m_cursorSidecarVideo), cursorInVideo, nullptr);
+    m_cursorRecorder->setExcludedRectsProvider([this] {
+        QList<QRect> rects;
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            for (const QRect& rect : SnapTray::windowPointerInputRegion(window))
+                rects.append(rect);
+        }
+        if (m_trayIconGeometry) {
+            const QRect icon = m_trayIconGeometry();
+            if (!icon.isEmpty()) rects.append(icon);
+        }
+        return rects;
+    });
+    m_cursorRecorder->setMenuOpen(m_trayMenuOpen);
     const auto caps = m_cursorRecorder->capabilities();
     m_cursorDiagnostics = QStringLiteral("cursor: %1, shapes %2, clicks %3")
                               .arg(m_cursorRecorder->probeName(),

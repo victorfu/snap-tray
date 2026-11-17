@@ -5398,6 +5398,38 @@ Dydis: %2</translation>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>Galite laikyti iki %1 išsaugotų stilių. Ištrinkite vieną, kad išsaugotumėte kitą.</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>Žiedas</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>Raibuliai</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>Prožektorius</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>Spinduliai</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>Spustelėjimo spalva</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>Kita dešiniojo spustelėjimo spalva</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>Dešiniojo spustelėjimo spalva</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>Atšokimas paspaudus</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

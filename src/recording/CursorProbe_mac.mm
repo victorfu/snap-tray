@@ -10,6 +10,7 @@
 #import <CoreGraphics/CoreGraphics.h>
 
 #include <mach/mach_time.h>
+#include <cmath>
 
 namespace SnapTray {
 
@@ -33,12 +34,13 @@ constexpr NumberedButton kButtons[] = {
 struct ButtonEventType {
     int type;
     bool down;
+    Qt::MouseButton button;
 };
 
 constexpr ButtonEventType kButtonEventTypes[] = {
-    {kCGEventLeftMouseDown, true},  {kCGEventLeftMouseUp, false},
-    {kCGEventRightMouseDown, true}, {kCGEventRightMouseUp, false},
-    {kCGEventOtherMouseDown, true}, {kCGEventOtherMouseUp, false},
+    {kCGEventLeftMouseDown, true, Qt::LeftButton},  {kCGEventLeftMouseUp, false, Qt::LeftButton},
+    {kCGEventRightMouseDown, true, Qt::RightButton}, {kCGEventRightMouseUp, false, Qt::RightButton},
+    {kCGEventOtherMouseDown, true, Qt::NoButton}, {kCGEventOtherMouseUp, false, Qt::NoButton},
 };
 
 constexpr qint64 kNanosecondsPerMillisecond = 1000000;
@@ -52,6 +54,17 @@ std::optional<Qt::MouseButton> buttonForNumber(qint64 number)
 {
     for (const auto& entry : kButtons) {
         if (entry.number == number) return entry.button;
+    }
+    return std::nullopt;
+}
+
+std::optional<Qt::MouseButton> buttonForEvent(int eventType, qint64 number)
+{
+    for (const auto& entry : kButtonEventTypes) {
+        if (entry.type == eventType) {
+            if (entry.button != Qt::NoButton) return entry.button;
+            return number >= 2 ? buttonForNumber(number) : std::nullopt;
+        }
     }
     return std::nullopt;
 }
@@ -92,8 +105,10 @@ qint64 eventAgeMs(const UptimeClock& now, quint64 eventStamp)
 
 std::optional<CursorProbe::Shape> shapeFromImage(NSImage* image, CGPoint hotSpotPoints, qreal scale)
 {
-    if (!image || scale <= 0.0) return std::nullopt;
+    if (!image || !std::isfinite(scale) || scale <= 0.0) return std::nullopt;
     const NSSize points = image.size;
+    if (!std::isfinite(points.width) || !std::isfinite(points.height)
+        || points.width * scale > kMaxShapeEdgePx || points.height * scale > kMaxShapeEdgePx) return std::nullopt;
     const int width = qRound(points.width * scale);
     const int height = qRound(points.height * scale);
     if (width <= 0 || height <= 0 || width > kMaxShapeEdgePx || height > kMaxShapeEdgePx) {
@@ -201,9 +216,8 @@ constexpr CGEventMask kButtonEventMask =
 //  - otherwise an NSEvent global monitor, which needs no permission for
 //    mouse events (only key events are restricted).
 //
-// The two differ in one way: the monitor does not see presses on SnapTray's
-// own windows and the tap does (as the X11 and Windows probes do). Leaving
-// those out everywhere is #323.
+// The global monitor is paired with a local, pass-through monitor so a drag
+// released over SnapTray is closed too. The recorder filters our own presses.
 //
 // Both are expected to report the buttons after the system's "primary mouse
 // button" setting (the swap is applied below the session event stream), so
@@ -221,9 +235,14 @@ public:
         m_shapeClock.start();
     }
 
-    ~MacCursorProbe() override
+    ~MacCursorProbe() override { stop(); }
+
+    void stop() override
     {
         if (m_monitor) [NSEvent removeMonitor:m_monitor];
+        if (m_localMonitor) [NSEvent removeMonitor:m_localMonitor];
+        m_monitor = nil;
+        m_localMonitor = nil;
         stopTap();
     }
 
@@ -237,6 +256,7 @@ public:
 
     std::optional<State> poll() override
     {
+        Q_ASSERT(QThread::currentThread() == QCoreApplication::instance()->thread());
         if (m_shapeClock.elapsed() >= MacCursor::kShapePollIntervalMs) {
             refreshShape();
             m_shapeClock.restart();
@@ -295,9 +315,12 @@ private:
         MacCursorProbe* self = this;
         m_monitor = [NSEvent addGlobalMonitorForEventsMatchingMask:mask
                                                            handler:^(NSEvent* event) {
-                                                               self->report(int(event.type), event.buttonNumber,
-                                                                            quint64(event.timestamp * NSEC_PER_SEC));
+                                                               self->reportEvent(event);
                                                            }];
+        m_localMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:mask handler:^NSEvent*(NSEvent* event) {
+            self->reportEvent(event);
+            return event; // Observation only; Qt still receives the original event.
+        }];
         if (!m_monitor) qWarning() << "MacCursorProbe: no source for button events; clicks are not recorded";
     }
 
@@ -309,7 +332,7 @@ private:
             return event;
         }
         self->report(int(type), CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber),
-                     CGEventGetTimestamp(event));
+                     CGEventGetTimestamp(event), CGEventGetLocation(event));
         return event; // Listen-only: the event goes on unchanged.
     }
 
@@ -335,29 +358,46 @@ private:
         }, Qt::QueuedConnection);
     }
 
-    void report(int eventType, qint64 buttonNumber, quint64 eventStamp)
+    void reportEvent(NSEvent* event)
     {
-        const auto down = MacCursor::pressForEventType(eventType);
-        const auto button = MacCursor::buttonForNumber(buttonNumber);
-        if (!down || !button) return;
-        emit buttonChanged(*button, *down, MacCursor::eventAgeMs(uptimeNow(), eventStamp));
+        // Quartz locations have the same top-left global point coordinates as
+        // Qt on macOS. Keep the event location even if delivery was delayed.
+        if (CGEventRef cg = event.CGEvent) {
+            report(int(event.type), event.buttonNumber, quint64(event.timestamp * NSEC_PER_SEC),
+                   CGEventGetLocation(cg));
+        }
     }
 
-    // Re-reads the pointer. The converted pixels themselves are compared:
-    // that is exact, and no dearer than encoding the image to digest it.
+    void report(int eventType, qint64 buttonNumber, quint64 eventStamp, CGPoint position)
+    {
+        const auto down = MacCursor::pressForEventType(eventType);
+        const auto button = MacCursor::buttonForEvent(eventType, buttonNumber);
+        if (!down || !button) return;
+        emit buttonChanged(*button, *down, MacCursor::eventAgeMs(uptimeNow(), eventStamp), std::nullopt,
+                           QPoint(qRound(position.x), qRound(position.y)));
+    }
+
+    // AppKit retains immutable cursor images. Identity, point size, hotspot
+    // and screen scale avoid rasterizing an unchanged image at every poll.
     void refreshShape()
     {
         std::optional<Shape> next;
         if (!pointerVisible()) {
+            m_cachedImage = nil;
             next = hiddenShape();
         } else {
             @autoreleasepool {
                 // nil when the system cannot say: recorded as an unknown shape.
                 NSCursor* cursor = NSCursor.currentSystemCursor;
-                if (cursor) {
-                    next = MacCursor::shapeFromImage(cursor.image, NSPointToCGPoint(cursor.hotSpot),
-                                                     scaleUnderPointer());
-                }
+                NSImage* image = cursor.image;
+                const qreal scale = scaleUnderPointer();
+                if (image && image == m_cachedImage && NSEqualSizes(image.size, m_cachedSize)
+                    && NSEqualPoints(cursor.hotSpot, m_cachedHotspot) && scale == m_cachedScale && m_shape) return;
+                if (cursor) next = MacCursor::shapeFromImage(image, NSPointToCGPoint(cursor.hotSpot), scale);
+                m_cachedImage = next ? image : nil;
+                m_cachedSize = image.size;
+                m_cachedHotspot = cursor.hotSpot;
+                m_cachedScale = scale;
                 if (!next && !m_unreadableReported) {
                     m_unreadableReported = true;
                     qWarning() << "MacCursorProbe: a pointer shape is recorded as unknown:"
@@ -373,6 +413,11 @@ private:
     CFMachPortRef m_tap = nullptr;
     CFRunLoopSourceRef m_source = nullptr;
     id m_monitor = nil;
+    id m_localMonitor = nil;
+    NSImage* m_cachedImage = nil; // ARC retains identity until the next shape
+    NSSize m_cachedSize{};
+    NSPoint m_cachedHotspot{};
+    qreal m_cachedScale = 0.0;
     std::optional<Shape> m_shape;
     // Never 0, which means "unknown" to the recorder; grows with every change.
     quint64 m_serial = 1;

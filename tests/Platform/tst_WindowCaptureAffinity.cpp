@@ -5,6 +5,7 @@
 #include <QWidget>
 
 #include "platform/WindowLevel.h"
+#include "platform/WindowInput.h"
 #include "platform/CaptureExclusionPolicy.h"
 #include "platform/QtQuickBackendPolicy.h"
 #include <Windows.h>
@@ -45,6 +46,16 @@ private slots:
         // Same scene graph as the app: software on Windows 10, where a
         // transparent Qt Quick window is then a layered window.
         SnapTray::applyQtQuickGraphicsBackendPolicy(SnapTray::currentQtQuickGraphicsBackendPolicy());
+    }
+
+    void nativeClickThroughIsNotExcluded()
+    {
+        QWidget window;
+        window.winId();
+        setWindowClickThrough(&window, true);
+        QVERIFY(!SnapTray::windowAcceptsPointerInput(window.windowHandle()));
+        setWindowClickThrough(&window, false);
+        QVERIFY(SnapTray::windowAcceptsPointerInput(window.windowHandle()));
     }
 
     void translucentOverlay_data()

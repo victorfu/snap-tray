@@ -63,6 +63,97 @@ constexpr double kRippleRingWidth = 3.0;
 constexpr int kRippleFillAlpha = 70;
 constexpr int kRippleRingAlpha = 220;
 
+// All styles share recorded coordinates, but their lifetimes and drawing
+// functions live with their recipe names in one table.
+using ClickStyle = CursorEffectSettings::ClickStyle;
+using PressBounce = CursorEffectSettings::PressBounce;
+constexpr qint64 kDoubleRippleDurationMs = 600;
+constexpr double kSecondRippleDelay = 0.25;
+constexpr int kBurstRays = 8;
+constexpr double kSpotlightRadius = 48.0;
+constexpr int kSpotlightDimAlpha = 45;
+constexpr int kSpotlightCenterAlpha = 110;
+constexpr int kSpotlightHaloAlpha = 70;
+constexpr double kSpotlightHaloStop = 0.45;
+constexpr double kSpotlightDimStop = 0.7;
+constexpr double kBurstTravel = 22.0;
+constexpr double kBurstRayLength = 10.0;
+constexpr double kMinimumBounceScale = 0.5;
+
+QColor withAlpha(QColor color, int alpha)
+{
+    color.setAlpha(alpha);
+    return color;
+}
+
+void drawRing(QPainter& painter, const QPointF& center, double progress, double unit, const QColor& color)
+{
+    // Preserve the original ring's geometry, colors and rounding exactly.
+    const double eased = 1.0 - std::pow(1.0 - progress, 3.0);
+    const double radius = (kRippleStartRadius + (kRippleEndRadius - kRippleStartRadius) * eased) * unit;
+    const double fade = 1.0 - progress;
+    painter.setPen(QPen(QColor(0, 0, 0, int(kRippleRingAlpha * fade * 0.5)), (kRippleRingWidth + 1.5) * unit));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawEllipse(center, radius, radius);
+    painter.setPen(QPen(withAlpha(color, int(kRippleRingAlpha * fade)), kRippleRingWidth * unit));
+    painter.setBrush(withAlpha(color, int(kRippleFillAlpha * fade)));
+    painter.drawEllipse(center, radius, radius);
+}
+
+void drawRipple(QPainter& painter, const QPointF& center, double progress, double unit, const QColor& color)
+{
+    const double first = progress / (1.0 - kSecondRippleDelay);
+    if (first < 1.0) drawRing(painter, center, first, unit, color);
+    if (progress >= kSecondRippleDelay)
+        drawRing(painter, center, (progress - kSecondRippleDelay) / (1.0 - kSecondRippleDelay), unit, color);
+}
+
+void drawSpotlight(QPainter& painter, const QPointF& center, double progress, double unit, const QColor& color)
+{
+    const double fade = std::sin(progress * M_PI);
+    const double radius = kSpotlightRadius * unit;
+    QRadialGradient light(center, radius);
+    light.setColorAt(0.0, withAlpha(color, int(kSpotlightCenterAlpha * fade)));
+    light.setColorAt(kSpotlightHaloStop, withAlpha(color, int(kSpotlightHaloAlpha * fade)));
+    light.setColorAt(kSpotlightDimStop, QColor(0, 0, 0, int(kSpotlightDimAlpha * fade)));
+    light.setColorAt(1.0, Qt::transparent);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(light);
+    painter.drawEllipse(center, radius, radius);
+}
+
+void drawBurst(QPainter& painter, const QPointF& center, double progress, double unit, const QColor& color)
+{
+    const double eased = 1.0 - std::pow(1.0 - progress, 3.0);
+    const double inner = (kRippleStartRadius + kBurstTravel * eased) * unit;
+    const double outer = inner + kBurstRayLength * (1.0 - progress) * unit;
+    painter.setPen(QPen(withAlpha(color, int(kRippleRingAlpha * (1.0 - progress))),
+                        kRippleRingWidth * unit, Qt::SolidLine, Qt::RoundCap));
+    for (int i = 0; i < kBurstRays; ++i) {
+        const double angle = 2.0 * M_PI * i / kBurstRays;
+        const QPointF ray(std::cos(angle), std::sin(angle));
+        painter.drawLine(center + ray * inner, center + ray * outer);
+    }
+}
+
+struct ClickStyleEntry {
+    ClickStyle style;
+    const char* name;
+    qint64 durationMs;
+    void (*draw)(QPainter&, const QPointF&, double, double, const QColor&);
+};
+const ClickStyleEntry kClickStyles[] = {
+    {ClickStyle::Off, "off", 0, nullptr},
+    {ClickStyle::Ring, "ring", CursorEffectRenderer::kRippleDurationMs, drawRing},
+    {ClickStyle::Ripple, "ripple", kDoubleRippleDurationMs, drawRipple},
+    {ClickStyle::Spotlight, "spotlight", CursorEffectRenderer::kRippleDurationMs, drawSpotlight},
+    {ClickStyle::Burst, "burst", CursorEffectRenderer::kRippleDurationMs, drawBurst},
+};
+struct BounceLevel { PressBounce level; const char* name; double amplitude; };
+constexpr BounceLevel kBounce[] = {
+    {PressBounce::Off, "off", 0.0}, {PressBounce::Low, "low", 0.08}, {PressBounce::High, "high", 0.16}
+};
+
 // The generic pointer for timelines without shapes, in logical pixels.
 constexpr double kDefaultArrowHeight = 22.0;
 
@@ -86,7 +177,9 @@ QPainterPath defaultArrow()
 bool CursorEffectSettings::operator==(const CursorEffectSettings& o) const
 {
     return showCursor == o.showCursor && qFuzzyCompare(scale, o.scale) && smoothing == o.smoothing
-        && clickRipple == o.clickRipple && idleHideMs == o.idleHideMs && motionBlur == o.motionBlur
+        && clickStyle == o.clickStyle && clickColor == o.clickColor && rightClickColor == o.rightClickColor
+        && separateRightClickColor == o.separateRightClickColor && pressBounce == o.pressBounce
+        && idleHideMs == o.idleHideMs && motionBlur == o.motionBlur
         && stillEndMs == o.stillEndMs && hiddenRanges == o.hiddenRanges;
 }
 
@@ -100,12 +193,20 @@ QJsonObject CursorEffectSettings::toJson() const
     for (const auto& entry : kMotionBlur) {
         if (entry.blur == motionBlur) blurName = entry.name;
     }
+    const char* clickName = "off";
+    for (const auto& entry : kClickStyles) if (entry.style == clickStyle) clickName = entry.name;
+    const char* bounceName = "off";
+    for (const auto& entry : kBounce) if (entry.level == pressBounce) bounceName = entry.name;
     QJsonArray ranges;
     for (const auto& range : hiddenRanges) ranges.append(QJsonArray{double(range.startMs), double(range.endMs)});
     QJsonObject json{{QStringLiteral("showCursor"), showCursor},
                      {QStringLiteral("scale"), scale},
                      {QStringLiteral("smoothing"), QLatin1String(smoothingName)},
-                     {QStringLiteral("clickRipple"), clickRipple},
+                     {QStringLiteral("clickStyle"), QLatin1String(clickName)},
+                     {QStringLiteral("clickColor"), clickColor.name()},
+                     {QStringLiteral("rightClickColor"), rightClickColor.name()},
+                     {QStringLiteral("separateRightClickColor"), separateRightClickColor},
+                     {QStringLiteral("pressBounce"), QLatin1String(bounceName)},
                      {QStringLiteral("idleHideMs"), double(idleHideMs)},
                      {QStringLiteral("motionBlur"), QLatin1String(blurName)},
                      {QStringLiteral("stillEndMs"), double(stillEndMs)}};
@@ -156,7 +257,21 @@ CursorEffectSettings CursorEffectSettings::fromJson(const QJsonObject& json)
     for (const auto& entry : kSmoothing) {
         if (smoothing == QLatin1String(entry.name)) settings.smoothing = entry.smoothing;
     }
-    settings.clickRipple = json.value(QStringLiteral("clickRipple")).toBool(settings.clickRipple);
+    if (!json.contains(QStringLiteral("clickStyle"))) {
+        settings.clickStyle = json.value(QStringLiteral("clickRipple")).toBool() ? ClickStyle::Ring : ClickStyle::Off;
+    } else {
+        const QString style = json.value(QStringLiteral("clickStyle")).toString();
+        for (const auto& entry : kClickStyles) if (style == QLatin1String(entry.name)) settings.clickStyle = entry.style;
+    }
+    const auto color = [&json](const char* key) {
+        QColor value(json.value(QLatin1String(key)).toString());
+        return value.isValid() ? QColor(value.red(), value.green(), value.blue()) : QColor(Qt::white);
+    };
+    settings.clickColor = color("clickColor");
+    settings.rightClickColor = color("rightClickColor");
+    settings.separateRightClickColor = json.value(QStringLiteral("separateRightClickColor")).toBool();
+    const QString bounce = json.value(QStringLiteral("pressBounce")).toString();
+    for (const auto& entry : kBounce) if (bounce == QLatin1String(entry.name)) settings.pressBounce = entry.level;
     settings.idleHideMs = std::clamp(qint64(json.value(QStringLiteral("idleHideMs")).toDouble(0.0)), qint64(0),
                                      kMaxIdleHideMs);
     const QString blur = json.value(QStringLiteral("motionBlur")).toString();
@@ -208,6 +323,7 @@ CursorEffectRenderer::CursorEffectRenderer(const CursorTimeline& timeline, const
     , m_clipEndMs(clipEndMs)
 {
     rebuildSpringPaths();
+    rebuildBouncePath();
 }
 
 void CursorEffectRenderer::setTimeline(const TimelineMap& timeline)
@@ -216,6 +332,7 @@ void CursorEffectRenderer::setTimeline(const TimelineMap& timeline)
     m_kept = timeline.segments();
     m_map = timeline;
     rebuildSpringPaths();
+    rebuildBouncePath();
 }
 
 qint64 CursorEffectRenderer::partStart(qint64 ms) const
@@ -507,35 +624,73 @@ void CursorEffectRenderer::paint(QPainter& painter, qint64 sourceMs, const Curso
         painter.restore();
         return;
     }
-    if (m_settings.clickRipple && m_timeline.info.clicksAvailable) paintRipples(painter, sourceMs, mapping);
+    if (m_settings.clickStyle != ClickStyle::Off && m_timeline.info.clicksAvailable) paintClicks(painter, sourceMs, mapping);
     if (m_settings.showCursor) paintPointer(painter, sourceMs, mapping);
     painter.restore();
 }
 
-void CursorEffectRenderer::paintRipples(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const
+void CursorEffectRenderer::paintClicks(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const
 {
+    const ClickStyleEntry* style = nullptr;
+    for (const auto& entry : kClickStyles) if (entry.style == m_settings.clickStyle) style = &entry;
+    if (!style || !style->draw) return;
     const double unit = m_timeline.info.pixelRatio * mapping.scale() * m_settings.scale;
     const auto& buttons = m_timeline.buttons;
-    // A click in a part that is cut out never shows, not even as a ripple
-    // running on into the next part.
-    const qint64 from = std::max(sourceMs - kRippleDurationMs + 1, partStart(sourceMs));
+    const qint64 from = std::max(sourceMs - style->durationMs + 1, partStart(sourceMs));
     auto it = std::lower_bound(buttons.begin(), buttons.end(), from,
                                [](const CursorButtonEvent& e, qint64 t) { return e.tMs < t; });
+    painter.save();
+    painter.setClipRect(QRect(QPoint(), mapping.outputSize), Qt::IntersectClip);
     for (; it != buttons.end() && it->tMs <= sourceMs; ++it) {
         if (!it->down || it->synthetic) continue;
-        // Anchored to the real press: time and place, never the smoothed path.
-        const double progress = double(sourceMs - it->tMs) / kRippleDurationMs;
-        const double eased = 1.0 - std::pow(1.0 - progress, 3.0);
-        const double radius = (kRippleStartRadius + (kRippleEndRadius - kRippleStartRadius) * eased) * unit;
-        const double fade = 1.0 - progress;
-        const QPointF center = mapping.toOutput(QPointF(it->position));
-        painter.setPen(QPen(QColor(0, 0, 0, int(kRippleRingAlpha * fade * 0.5)), (kRippleRingWidth + 1.5) * unit));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawEllipse(center, radius, radius);
-        painter.setPen(QPen(QColor(255, 255, 255, int(kRippleRingAlpha * fade)), kRippleRingWidth * unit));
-        painter.setBrush(QColor(255, 255, 255, int(kRippleFillAlpha * fade)));
-        painter.drawEllipse(center, radius, radius);
+        const QColor color = it->button == Qt::RightButton && m_settings.separateRightClickColor
+            ? m_settings.rightClickColor : m_settings.clickColor;
+        style->draw(painter, mapping.toOutput(QPointF(it->position)),
+                    double(sourceMs - it->tMs) / style->durationMs, unit, color);
     }
+    painter.restore();
+}
+
+double CursorEffectRenderer::bounceDepth(const BouncePoint& point, qint64 ms)
+{
+    const double progress = std::clamp(double(ms - point.tMs) / (kBounceDurationMs / 2.0), 0.0, 1.0);
+    // Two halves of a sine bounce: compress, hold while dragging, recover.
+    return point.held ? point.depth + (1.0 - point.depth) * std::sin(progress * M_PI_2)
+                      : point.depth * std::cos(progress * M_PI_2);
+}
+
+void CursorEffectRenderer::rebuildBouncePath()
+{
+    m_bounces.clear();
+    if (m_settings.pressBounce == PressBounce::Off || !m_timeline.info.clicksAvailable) return;
+    Qt::MouseButtons held;
+    qint64 start = std::numeric_limits<qint64>::min();
+    for (const auto& event : m_timeline.buttons) {
+        const qint64 boundary = partStart(event.tMs);
+        if (!m_kept.empty() && partEnd(event.tMs) == event.tMs) continue;
+        if (start != boundary) { held = {}; start = boundary; }
+        const double depth = m_bounces.empty() || m_bounces.back().tMs < boundary
+            ? 0.0 : bounceDepth(m_bounces.back(), event.tMs);
+        if (event.synthetic) {
+            held.setFlag(event.button, false);
+            m_bounces.push_back({event.tMs, held ? depth : 0.0, bool(held)});
+            continue;
+        }
+        // A release whose press was cut out cannot animate the next part.
+        if (!event.down && !held.testFlag(event.button)) continue;
+        held.setFlag(event.button, event.down);
+        m_bounces.push_back({event.tMs, depth, bool(held)});
+    }
+}
+
+double CursorEffectRenderer::pointerBounceScale(qint64 sourceMs) const
+{
+    auto it = std::upper_bound(m_bounces.begin(), m_bounces.end(), sourceMs,
+                               [](qint64 t, const BouncePoint& point) { return t < point.tMs; });
+    if (it == m_bounces.begin() || (it - 1)->tMs < partStart(sourceMs)) return 1.0;
+    double amplitude = 0.0;
+    for (const auto& entry : kBounce) if (entry.level == m_settings.pressBounce) amplitude = entry.amplitude;
+    return std::max(kMinimumBounceScale, 1.0 - amplitude * bounceDepth(*--it, sourceMs));
 }
 
 void CursorEffectRenderer::paintPointer(QPainter& painter, qint64 sourceMs, const CursorFrameMapping& mapping) const
@@ -566,7 +721,7 @@ void CursorEffectRenderer::paintPointer(QPainter& painter, qint64 sourceMs, cons
         }
     }
     painter.setOpacity(baseOpacity * opacity);
-    drawPointerAt(painter, at, shape, scale);
+    drawPointerAt(painter, at, shape, scale * pointerBounceScale(sourceMs));
     painter.setOpacity(baseOpacity);
 }
 

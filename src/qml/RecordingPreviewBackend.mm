@@ -154,7 +154,7 @@ std::function<void(QImage&, qint64, qint64)> RecordingPreviewBackend::effectsFra
     auto state = currentEditState();
     // Keep the export format's existing capability gates. Project posters
     // always render the committed recipe, independently of the export format.
-    if (!cursorEffectsActive()) { state.cursor.showCursor = false; state.cursor.clickRipple = false; }
+    if (!cursorEffectsActive()) { state.cursor.showCursor = false; state.cursor.clickStyle = SnapTray::CursorEffectSettings::ClickStyle::Off; }
     if (!zoomAvailable()) state.zoom = {};
     if (!appearanceActive()) state.appearance.enabled = false;
     if (!keyOverlayActive()) state.keys.enabled = false;
@@ -703,7 +703,7 @@ bool RecordingPreviewBackend::clickEffectsAvailable() const
 bool RecordingPreviewBackend::cursorEffectsActive() const
 {
     if (!cursorEffectsAvailable()) return false;
-    return m_cursorEffects.showCursor || (m_cursorEffects.clickRipple && clickEffectsAvailable());
+    return m_cursorEffects.showCursor || (m_cursorEffects.clickStyle != SnapTray::CursorEffectSettings::ClickStyle::Off && clickEffectsAvailable());
 }
 
 void RecordingPreviewBackend::setCursorEffects(const SnapTray::CursorEffectSettings& settings)
@@ -745,9 +745,38 @@ void RecordingPreviewBackend::setCursorSmoothing(int value)
     editCursorEffects([level](SnapTray::CursorEffectSettings& s) { s.smoothing = SnapTray::CursorEffectSettings::Smoothing(level); });
 }
 
-void RecordingPreviewBackend::setClickRipple(bool value)
+void RecordingPreviewBackend::setClickStyle(int value)
 {
-    editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.clickRipple = value; });
+    if (!clickEffectsAvailable()) return;
+    const int style = qBound(0, value, int(SnapTray::CursorEffectSettings::ClickStyle::Burst));
+    editCursorEffects([style](SnapTray::CursorEffectSettings& s) { s.clickStyle = SnapTray::CursorEffectSettings::ClickStyle(style); });
+}
+
+void RecordingPreviewBackend::setClickColor(const QColor& value)
+{
+    if (!clickEffectsAvailable() || !value.isValid()) return;
+    const QColor opaque(value.red(), value.green(), value.blue());
+    editCursorEffects([opaque](SnapTray::CursorEffectSettings& s) { s.clickColor = opaque; });
+}
+
+void RecordingPreviewBackend::setRightClickColor(const QColor& value)
+{
+    if (!clickEffectsAvailable() || !value.isValid()) return;
+    const QColor opaque(value.red(), value.green(), value.blue());
+    editCursorEffects([opaque](SnapTray::CursorEffectSettings& s) { s.rightClickColor = opaque; });
+}
+
+void RecordingPreviewBackend::setSeparateRightClickColor(bool value)
+{
+    if (!clickEffectsAvailable()) return;
+    editCursorEffects([value](SnapTray::CursorEffectSettings& s) { s.separateRightClickColor = value; });
+}
+
+void RecordingPreviewBackend::setPressBounce(int value)
+{
+    if (!clickEffectsAvailable()) return;
+    const int level = qBound(0, value, int(SnapTray::CursorEffectSettings::PressBounce::High));
+    editCursorEffects([level](SnapTray::CursorEffectSettings& s) { s.pressBounce = SnapTray::CursorEffectSettings::PressBounce(level); });
 }
 
 void RecordingPreviewBackend::setCursorIdleHide(int ms)

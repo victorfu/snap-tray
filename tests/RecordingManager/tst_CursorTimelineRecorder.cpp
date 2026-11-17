@@ -1,6 +1,8 @@
 #include <QtTest>
 
 #include <QElapsedTimer>
+#include <QWindow>
+#include "platform/WindowInput.h"
 #include <QTemporaryDir>
 
 #include <functional>
@@ -101,6 +103,12 @@ class TestCursorTimelineRecorder : public QObject
     Q_OBJECT
 
 private slots:
+    void clickThroughWindowsAreNotExcluded();
+    void occludedWindowDoesNotExcludeExternalClicks();
+    void excludesOwnPressAndRelease();
+    void externalDragReleasesOverControls();
+    void menuClicksAfterCloseAndDuringPause();
+    void logicalClickCoordinatesUseCaptureMapping();
     void startRecordsTheInitialPointer();
     void onlyChangesAreWritten();
     void smoothingPreservesStationaryGaps();
@@ -708,6 +716,156 @@ void TestCursorTimelineRecorder::lossesWhilePausedAreNotCounted()
     rig.recorder->resume();
     QCOMPARE(rig.recorder->buttonEventLosses(), 0);
     QVERIFY(rig.finish().buttons.empty());
+}
+
+void TestCursorTimelineRecorder::clickThroughWindowsAreNotExcluded()
+{
+    QVERIFY(!windowAcceptsPointerInput(nullptr));
+    QWindow window;
+    QVERIFY(windowAcceptsPointerInput(&window));
+    window.setFlag(Qt::WindowTransparentForInput, true);
+    QVERIFY(!windowAcceptsPointerInput(&window));
+    window.setFlag(Qt::WindowTransparentForInput, false);
+    QVERIFY(windowAcceptsPointerInput(&window));
+}
+
+void TestCursorTimelineRecorder::occludedWindowDoesNotExcludeExternalClicks()
+{
+    if (QGuiApplication::platformName() == QStringLiteral("offscreen"))
+        QSKIP("Requires native window stacking");
+    QWindow settings;
+    settings.setFlags(Qt::Window | Qt::FramelessWindowHint);
+    settings.setGeometry(50, 50, 300, 200);
+    settings.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&settings));
+    // A separate top-level surface stands in for a foreground application;
+    // it deliberately is not part of the SnapTray exclusion provider.
+    QWindow browser;
+    browser.setFlags(Qt::Window | Qt::FramelessWindowHint);
+    browser.setGeometry(200, 50, 300, 200);
+    browser.show();
+    browser.raise();
+    QVERIFY(QTest::qWaitForWindowExposed(&browser));
+    QTRY_VERIFY(!windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
+    QVERIFY(windowPointerInputRegion(&settings).contains(QPoint(100, 150)));
+
+    Rig rig;
+    rig.recorder->setExcludedRectsProvider([&] {
+        QList<QRect> rects;
+        for (const QRect& rect : windowPointerInputRegion(&settings)) rects.append(rect);
+        return rects;
+    });
+    QVERIFY(rig.recorder->start());
+    rig.probe->press(Qt::LeftButton, true, 0, QPoint(250, 150));
+    rig.probe->press(Qt::LeftButton, false, 0, QPoint(250, 150));
+    rig.probe->press(Qt::LeftButton, true, 0, QPoint(100, 150));
+    rig.probe->press(Qt::LeftButton, false, 0, QPoint(100, 150));
+    const auto result = rig.finish();
+    QCOMPARE(result.buttons.size(), size_t(2));
+    QCOMPARE(result.skippedUiClicks, 1);
+
+    browser.setGeometry(settings.geometry());
+    browser.raise();
+    QTRY_VERIFY(windowPointerInputRegion(&settings).isEmpty());
+    browser.hide();
+    QTRY_VERIFY(windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
+    browser.setFlag(Qt::WindowTransparentForInput, true);
+    browser.show();
+    browser.raise();
+    QVERIFY(QTest::qWaitForWindowExposed(&browser));
+    QTRY_VERIFY(windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
+    settings.setFlag(Qt::WindowTransparentForInput, true);
+    QVERIFY(windowPointerInputRegion(&settings).isEmpty());
+}
+
+void TestCursorTimelineRecorder::excludesOwnPressAndRelease()
+{
+    Rig rig;
+    QList<QRect> excluded{QRect(0, 0, 40, 40)};
+    rig.recorder->setExcludedRectsProvider([&] { return excluded; });
+    QVERIFY(rig.recorder->start());
+    rig.now = 10;
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, true); // duplicate is not another skipped click
+    rig.probeState.state.position = QPoint(200, 200);
+    rig.probe->press(Qt::LeftButton, false); // release outside also dropped
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, false);
+    // A stop press on the control must not become a synthetic release.
+    rig.probeState.state.position = QPoint(10, 10);
+    rig.probe->press(Qt::RightButton, true);
+    const auto result = rig.finish();
+    QCOMPARE(result.buttons.size(), size_t(2));
+    QCOMPARE(result.buttonsDownAt(100), Qt::MouseButtons());
+    QCOMPARE(result.skippedUiClicks, 2);
+    QVERIFY(result.report().contains(QStringLiteral("clicks skipped on SnapTray UI 2")));
+}
+
+void TestCursorTimelineRecorder::externalDragReleasesOverControls()
+{
+    Rig rig;
+    rig.recorder->setExcludedRectsProvider([] { return QList<QRect>{QRect(100, 100, 100, 100)}; });
+    QVERIFY(rig.recorder->start());
+    rig.now = 10;
+    rig.probe->press(Qt::LeftButton, true);
+    rig.now = 20;
+    rig.probe->press(Qt::LeftButton, false, 0, QPoint(150, 150));
+    const auto result = rig.finish();
+    QCOMPARE(result.buttons.size(), size_t(2));
+    QCOMPARE(result.buttons.back().position, QPoint(150, 150));
+    QVERIFY(!result.buttons.back().synthetic);
+    QCOMPARE(result.buttonsDownAt(100), Qt::MouseButtons());
+    QCOMPARE(result.skippedUiClicks, 0);
+}
+
+void TestCursorTimelineRecorder::menuClicksAfterCloseAndDuringPause()
+{
+    Rig rig;
+    QVERIFY(rig.recorder->start());
+    rig.now = 100;
+    rig.recorder->setMenuOpen(true);
+    rig.probe->press(Qt::LeftButton, true); // pause
+    rig.recorder->pause();
+    rig.probe->press(Qt::LeftButton, false);
+    rig.probe->press(Qt::LeftButton, true); // resume, still paused
+    rig.recorder->resume();
+    rig.probe->press(Qt::LeftButton, false);
+    QTest::qWait(10);
+    QElapsedTimer lateEventAge;
+    lateEventAge.start();
+    QTest::qWait(10);
+    // A queued press is drained before the menu closes (native menu timing).
+    rig.probeState.onPoll = [&] { rig.probe->press(Qt::LeftButton, true); };
+    rig.recorder->setMenuOpen(false);
+    rig.probe->press(Qt::LeftButton, false);
+    QCOMPARE(rig.recorder->skippedUiClicks(), 3);
+    // A late event's original time was while the native menu was open.
+    QTest::qWait(20);
+    rig.now = 1000;
+    rig.probe->press(Qt::RightButton, true, lateEventAge.elapsed());
+    rig.probe->press(Qt::RightButton, false);
+    const auto result = rig.finish();
+    QVERIFY(result.buttons.empty());
+    QCOMPARE(result.skippedUiClicks, 4);
+}
+
+void TestCursorTimelineRecorder::logicalClickCoordinatesUseCaptureMapping()
+{
+    const WindowFrameMapping mapping{QRect(-500, 0, 500, 400), QRect(), 2.0, QRect(100, 50, 800, 600)};
+    Rig rig(mapping);
+    rig.probeState.state = {QPoint(-480, 20), false, 1};
+    rig.recorder->setExcludedRectsProvider([] { return QList<QRect>{QRect(-300, 100, 80, 40)}; });
+    QVERIFY(rig.recorder->start());
+    rig.now = 100;
+    emit rig.probe->buttonChanged(Qt::LeftButton, true, 0, std::nullopt, QPoint(-250, 120));
+    emit rig.probe->buttonChanged(Qt::LeftButton, false, 0, std::nullopt, QPoint(-100, 200));
+    emit rig.probe->buttonChanged(Qt::RightButton, true, 0, std::nullopt, QPoint(-100, 200));
+    emit rig.probe->buttonChanged(Qt::RightButton, false, 0, std::nullopt, QPoint(-90, 210));
+    const auto result = rig.finish();
+    QCOMPARE(result.skippedUiClicks, 1);
+    QCOMPARE(result.buttons.size(), size_t(2));
+    QCOMPARE(result.buttons.front().position, mapping.toVideoPoint(QPoint(-100, 200)));
+    QCOMPARE(result.buttons.back().position, mapping.toVideoPoint(QPoint(-90, 210)));
 }
 
 QTEST_MAIN(TestCursorTimelineRecorder)

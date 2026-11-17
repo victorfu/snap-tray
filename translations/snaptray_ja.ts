@@ -5390,6 +5390,38 @@ Size: %2</source>
         <source>You can keep up to %1 saved styles. Delete one to save another.</source>
         <translation>保存できるスタイルは最大 %1 個です。新しく保存するには、いずれかを削除してください。</translation>
     </message>
+    <message>
+        <source>Ring</source>
+        <translation>リング</translation>
+    </message>
+    <message>
+        <source>Ripple</source>
+        <translation>波紋</translation>
+    </message>
+    <message>
+        <source>Spotlight</source>
+        <translation>スポットライト</translation>
+    </message>
+    <message>
+        <source>Burst</source>
+        <translation>放射線</translation>
+    </message>
+    <message>
+        <source>Click color</source>
+        <translation>クリックの色</translation>
+    </message>
+    <message>
+        <source>Different right-click color</source>
+        <translation>右クリックに別の色を使う</translation>
+    </message>
+    <message>
+        <source>Right-click color</source>
+        <translation>右クリックの色</translation>
+    </message>
+    <message>
+        <source>Press bounce</source>
+        <translation>押したときのバウンス</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
