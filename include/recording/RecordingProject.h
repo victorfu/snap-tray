@@ -61,16 +61,19 @@ QString root();
 void setRootForTests(const QString& path);
 // Tests: make the next create() or update() fail at its manifest write.
 void failNextManifestWriteForTests();
+void beforeNextManifestWriteForTests(std::function<void()> callback);
+void failNextProjectCleanupForTests();
 
 // Every sidecar a recording can have, by suffix of its video path.
 QStringList sidecarSuffixes();
 
 // Moves the recording and its sidecars into a new project, or copies them
-// (copy: the source stays where it is). Files are copied first; originals
+// (copy: the source stays where it is). Moves stage hard links when supported,
+// falling back to copies across volumes; explicit copies stay independent. Originals
 // are removed only after the final manifest commits. nullopt leaves the
 // sources intact. prepareRecipe, when supplied, prepares owned assets in
 // the new folder before that commit; nullopt aborts and removes the folder.
-using RecipePreparer = std::function<std::optional<QJsonObject>(const QString& projectDir)>;
+using RecipePreparer = std::function<std::optional<QJsonObject>(const QString& projectDir, const QJsonObject& recipe)>;
 std::optional<RecordingProject> create(const QString& videoPath, bool copy, const QJsonObject& recipe,
                                        const QImage& thumbnail, qint64 durationMs, const QString& savedPath,
                                        const RecipePreparer& prepareRecipe = {});

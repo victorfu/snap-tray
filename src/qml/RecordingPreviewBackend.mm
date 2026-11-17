@@ -1698,25 +1698,35 @@ namespace {
 const QSize kProjectThumbnailSize(320, 180);
 }
 
-std::optional<QJsonObject> RecordingPreviewBackend::recipeForProject(const QString& projectDir, QString* copied) const
+std::optional<QJsonObject> RecordingPreviewBackend::recipeForProject(const QString& projectDir, QJsonObject recipe, QString* copied, QString* error) const
 {
-    QJsonObject recipe = currentRecipe();
+    const auto selected = SnapTray::RecordingAppearance::fromJson(
+        recipe.value(QStringLiteral("edit")).toObject().value(QStringLiteral("appearance")).toObject());
     if (copied) copied->clear();
-    const bool imageRequired = m_appearance.enabled
-        && m_appearance.background == SnapTray::RecordingAppearance::Background::Image;
+    if (error) error->clear();
+    const bool imageRequired = selected.enabled
+        && selected.background == SnapTray::RecordingAppearance::Background::Image;
     // Preserve a readable inactive selection too, as before, but never let
     // an unused image path prevent saving the recording.
     const std::optional<QJsonObject> unavailableRecipe = imageRequired
         ? std::nullopt : std::optional<QJsonObject>(recipe);
-    const QString image = m_appearance.imagePath;
+    const QString image = selected.imagePath;
     const QFileInfo imageInfo(image);
-    if (image.isEmpty() || !imageInfo.isFile() || !imageInfo.isReadable()) return unavailableRecipe;
+    if (image.isEmpty() || !imageInfo.isFile() || !imageInfo.isReadable()) {
+        if (imageRequired && error) *error = tr("The image could not be read.");
+        return unavailableRecipe;
+    }
     QString owned = imageInfo.canonicalFilePath();
     // Already the project's own copy: nothing to do. Otherwise a new name,
     // so the copy the saved manifest uses stays until a new manifest is
     // written (PR #203 review).
     const bool needsCopy = QFileInfo(imageInfo.canonicalFilePath()).absolutePath()
         != QFileInfo(projectDir).canonicalFilePath();
+    if (!needsCopy) {
+        // Keep the configured project-root spelling: contains() uses that
+        // boundary to prevent project assets becoming recording defaults.
+        owned = QDir(projectDir).absoluteFilePath(QFileInfo(owned).fileName());
+    }
     if (needsCopy) {
         owned = QDir(projectDir).filePath(QStringLiteral("background-%1.%2")
                                               .arg(QUuid::createUuid().toString(QUuid::WithoutBraces))
@@ -1731,6 +1741,7 @@ std::optional<QJsonObject> RecordingPreviewBackend::recipeForProject(const QStri
     // Validate the owned bytes too: an unreadable/invalid image must not
     // silently reopen using the renderer's fallback background.
     if (QImage(owned).isNull()) {
+        if (imageRequired && error) *error = tr("The image could not be read.");
         if (needsCopy) QFile::remove(owned);
         return unavailableRecipe;
     }
@@ -1757,9 +1768,10 @@ void RecordingPreviewBackend::removeUnusedBackgrounds(const QString& projectDir,
 
 bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
 {
+    m_projectSaveError.clear();
     if (m_project) {
         QString copied;
-        const auto recipe = recipeForProject(m_project->dir, &copied);
+        const auto recipe = recipeForProject(m_project->dir, currentRecipe(), &copied, &m_projectSaveError);
         if (!recipe || !SnapTray::RecordingProjects::update(*m_project, *recipe, savedPath)) {
             // The saved manifest still uses the old image: it stays.
             if (!copied.isEmpty()) QFile::remove(copied);
@@ -1773,7 +1785,7 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
     // then, so any failure leaves this preview ready to retry.
     auto project = SnapTray::RecordingProjects::create(
         m_videoPath, false, currentRecipe(), QImage(), m_duration, savedPath,
-        [this](const QString& dir) { return recipeForProject(dir); });
+        [this](const QString& dir, const QJsonObject& recipe) { return recipeForProject(dir, recipe, nullptr, &m_projectSaveError); });
     if (!project) {
         qWarning() << "RecordingPreviewBackend: the recording could not be kept as a project";
         return false;
@@ -2457,7 +2469,8 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
             finishProcessing();
             m_canRetrySave = true;
             setErrorMessage(tr("Saved to %1, but the project could not be updated. Save again to keep these "
-                               "edits in the project.").arg(QDir::toNativeSeparators(savedPath)));
+                               "edits in the project.").arg(QDir::toNativeSeparators(savedPath))
+                            + (m_projectSaveError.isEmpty() ? QString() : QLatin1Char('\n') + m_projectSaveError));
             return;
         }
         finishProcessing();
@@ -2483,7 +2496,8 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
             m_canRetrySave = true;
             setErrorMessage(tr("Saved to %1, but the recording could not be kept as an editable project. "
                                "It is still open here: save again, or close it to discard it.")
-                                .arg(QDir::toNativeSeparators(savedPath)));
+                                .arg(QDir::toNativeSeparators(savedPath))
+                            + (m_projectSaveError.isEmpty() ? QString() : QLatin1Char('\n') + m_projectSaveError));
             return;
         }
         if (derived && !savedOverSource) {

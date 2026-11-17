@@ -1,6 +1,8 @@
 #include <QtTest>
 #include <QDir>
 #include <QFile>
+#include <QBuffer>
+#include <QImageReader>
 #include <QStandardPaths>
 #include <QScopeGuard>
 #include <QTemporaryDir>
@@ -62,6 +64,7 @@ private slots:
         RecordingSettingsManager::instance().setProjectCleanupDays(m_cleanupDays);
     }
     void missingBackgroundKeepsPreviewRetryable();
+    void readableHeaderDoesNotMakeACompleteImage();
     void failedSave_data();
     void failedSave();
     void inactiveImageDoesNotBlockSave_data();
@@ -95,6 +98,36 @@ void tst_RecordingProjectSave::missingBackgroundKeepsPreviewRetryable()
     QVERIFY(QFile::exists(source));
     QVERIFY(RecordingProjects::list().isEmpty());
     QCOMPARE(backend.m_videoPath, source);
+}
+
+void tst_RecordingProjectSave::readableHeaderDoesNotMakeACompleteImage()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    RecordingProjects::setRootForTests(dir.filePath("projects"));
+    QByteArray png;
+    QBuffer output(&png);
+    QVERIFY(output.open(QIODevice::WriteOnly));
+    QVERIFY(background().save(&output, "PNG"));
+    output.close();
+    constexpr int kPngSignatureAndHeaderBytes = 33;
+    png.truncate(kPngSignatureAndHeaderBytes);
+    QBuffer input(&png);
+    QVERIFY(input.open(QIODevice::ReadOnly));
+    QImageReader reader(&input, "PNG");
+    QVERIFY(reader.canRead());
+    QVERIFY(reader.read().isNull());
+    const QString source = dir.filePath("source.mp4");
+    const QString image = dir.filePath("truncated.png");
+    QVERIFY(writeFile(source, "source"));
+    QVERIFY(writeFile(image, png));
+    RecordingPreviewBackend backend(source);
+    backend.m_appearance.enabled = true;
+    backend.m_appearance.background = RecordingAppearance::Background::Image;
+    backend.m_appearance.imagePath = image;
+    QVERIFY(!backend.keepAsProject("export.mp4"));
+    QVERIFY(QFile::exists(source));
+    QVERIFY(RecordingProjects::list().isEmpty());
 }
 
 void tst_RecordingProjectSave::failedSave_data()
@@ -181,6 +214,8 @@ void tst_RecordingProjectSave::failedSave()
     QVERIFY(backend.m_canRetrySave);
     QVERIFY(!backend.isProcessing());
     QVERIFY(backend.errorMessage().contains("Saved to"));
+    QCOMPARE(backend.errorMessage().contains("The image could not be read."),
+             failure == "missing" || failure == "unreadable");
     QCOMPARE(backend.currentRecipe(), edits);
     QCOMPARE(backend.m_videoPath, source);
     QCOMPARE(readFile(source), QByteArray("original recording"));
@@ -225,6 +260,7 @@ void tst_RecordingProjectSave::failedSave()
     QCOMPARE(closed.count(), 1);
     QVERIFY(closed.first().first().toBool());
     QCOMPARE(discarded.count(), 0);
+    QVERIFY(backend.m_projectSaveError.isEmpty());
     const auto projects = RecordingProjects::list();
     QCOMPARE(projects.size(), 1);
     const auto project = projects.first();
@@ -342,6 +378,18 @@ void tst_RecordingProjectSave::projectOwnsReadableBackground()
     QCOMPARE(QFileInfo(backgroundPath(reopened.m_project->recipe)).canonicalFilePath(),
              QFileInfo(state->appearance.imagePath).canonicalFilePath());
     QVERIFY(!QImage(backgroundPath(reopened.m_project->recipe)).isNull());
+    QVERIFY(RecordingProjects::contains(backgroundPath(reopened.m_project->recipe)));
+    auto& settings = RecordingSettingsManager::instance();
+    const auto remembered = settings.appearance();
+    const auto restoreAppearance = qScopeGuard([&] { settings.setAppearance(remembered); });
+    const QString previousImage = dir.filePath("remembered.png");
+    auto previous = reopened.m_appearance;
+    previous.imagePath = previousImage;
+    settings.setAppearance(previous.toJson());
+    reopened.m_appearance.imagePath = backgroundPath(reopened.m_project->recipe);
+    reopened.setAppearanceEnabled(false);
+    QCOMPARE(RecordingAppearance::fromJson(settings.appearance()).imagePath, previousImage);
+    reopened.setAppearanceEnabled(true);
 #ifdef Q_OS_UNIX
     // An external symlink to an owned asset must not become a dependency.
     const QString alias = dir.filePath("outside-link.png");

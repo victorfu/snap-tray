@@ -788,7 +788,8 @@ private:
     // stops using it is written (PR #203 review). `copied` names a file this
     // call created, to remove if that write fails. nullopt means an active
     // background could not be prepared; never persist its external path.
-    std::optional<QJsonObject> recipeForProject(const QString& projectDir, QString* copied = nullptr) const;
+    std::optional<QJsonObject> recipeForProject(const QString& projectDir, QJsonObject recipe, QString* copied = nullptr, QString* error = nullptr) const;
+    QString m_projectSaveError;
     // Test seam for an I/O failure while copying the selected background.
     std::function<bool(const QString&, const QString&)> m_copyProjectBackgroundForTests;
     // Background images in `projectDir` the recipe no longer uses.
