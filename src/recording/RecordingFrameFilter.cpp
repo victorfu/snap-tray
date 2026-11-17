@@ -4,19 +4,21 @@
 namespace SnapTray {
 std::function<void(QImage&, qint64, qint64)> recordingFrameFilter(
     const PreviewEditState& state, const QSize& videoSize, const TimelineMap& editTimeline,
-    std::shared_ptr<const CursorTimeline> timeline, std::shared_ptr<const KeyTimeline> keyTimeline)
+    std::shared_ptr<const CursorTimeline> timeline, std::shared_ptr<const KeyTimeline> keyTimeline,
+    std::shared_ptr<const ZoomTrack> preparedZoom, qint64 clipEndMs)
 {
     const QRectF bounds = state.crop.isEmpty() ? QRectF(QPointF(), QSizeF(videoSize)) : QRectF(state.crop);
     const auto availability = CursorEffectAvailability::of(timeline.get());
     const auto cursor = availability.cursor && (state.cursor.showCursor || (state.cursor.clickRipple && availability.clicks))
         ? std::make_shared<CursorEffectRenderer>(*timeline, state.cursor,
-              editTimeline.isEmpty() ? -1 : editTimeline.sourceEndMs())
+              clipEndMs >= 0 ? clipEndMs : (editTimeline.isEmpty() ? -1 : editTimeline.sourceEndMs()))
         : std::shared_ptr<CursorEffectRenderer>();
     if (cursor && !editTimeline.isEmpty()) cursor->setTimeline(editTimeline);
-    std::shared_ptr<ZoomTrack> zoom;
-    if (state.zoom.isActive()) {
-        zoom = std::make_shared<ZoomTrack>(state.zoom);
-        if (timeline) zoom->prepareFollow(*timeline, state.cursor, editTimeline, bounds);
+    std::shared_ptr<const ZoomTrack> zoom = std::move(preparedZoom);
+    if (!zoom && state.zoom.isActive()) {
+        auto built = std::make_shared<ZoomTrack>(state.zoom);
+        if (timeline) built->prepareFollow(*timeline, state.cursor, editTimeline, bounds);
+        zoom = std::move(built);
     }
     const auto redaction = state.redaction.isEmpty() ? std::shared_ptr<RedactionTrack>()
         : std::make_shared<RedactionTrack>(state.redaction);

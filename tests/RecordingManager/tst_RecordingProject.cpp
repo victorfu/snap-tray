@@ -37,6 +37,8 @@ private slots:
     void removeOlderThan();
     void thumbnailPublicationFollowsCommittedGeneration();
     void legacyThumbnailIsNeverTrusted();
+    void unchangedEditsKeepThumbnail();
+    void thumbnailUrlUsesLoadedSnapshot();
 
 private:
     static PreviewEditState sampleState();
@@ -420,6 +422,41 @@ void tst_RecordingProject::legacyThumbnailIsNeverTrusted()
     QVERIFY(RecordingProjects::publishThumbnail(*loaded, raw));
     QVERIFY(!loaded->thumbnailUrl().isEmpty());
     QCOMPARE(QImage(loaded->thumbnailPath()).pixelColor(0, 0), QColor(Qt::black));
+}
+
+void tst_RecordingProject::unchangedEditsKeepThumbnail()
+{
+    QImage image(32, 18, QImage::Format_RGB32);
+    image.fill(Qt::black);
+    auto recipe = RecordingRecipe::toJson(sampleState(), {});
+    auto project = RecordingProjects::create(writeRecording(QStringLiteral("unchanged.mp4"), false),
+                                              false, recipe, image, 5000, {});
+    QVERIFY(project);
+    const QString path = project->thumbnailPath();
+    QVERIFY(RecordingProjects::update(*project, recipe, QStringLiteral("another.mp4")));
+    QCOMPARE(project->thumbnailPath(), path);
+    QVERIFY(!project->thumbnailUrl().isEmpty());
+    recipe.insert(QStringLiteral("export"), QJsonObject{{QStringLiteral("format"), 2}});
+    QVERIFY(RecordingProjects::update(*project, recipe, {}));
+    QCOMPARE(project->thumbnailPath(), path);
+    QVERIFY(!project->thumbnailUrl().isEmpty());
+}
+
+void tst_RecordingProject::thumbnailUrlUsesLoadedSnapshot()
+{
+    QImage image(32, 18, QImage::Format_RGB32);
+    image.fill(Qt::black);
+    auto project = RecordingProjects::create(writeRecording(QStringLiteral("cached.mp4"), false),
+        false, RecordingRecipe::toJson(sampleState(), {}), image, 5000, {});
+    QVERIFY(project);
+    const QString expected = project->thumbnailUrl();
+    QVERIFY(!expected.isEmpty());
+    const QString manifest = QDir(project->dir).filePath(QStringLiteral("project.json"));
+    // Role reads use the loaded snapshot; only explicit refresh/publication
+    // reads the manifest again. No disk access is needed to parse it here.
+    QVERIFY(QFile::rename(manifest, manifest + QStringLiteral(".held")));
+    QCOMPARE(project->thumbnailUrl(), expected);
+    QVERIFY(QFile::rename(manifest + QStringLiteral(".held"), manifest));
 }
 
 QTEST_GUILESS_MAIN(tst_RecordingProject)

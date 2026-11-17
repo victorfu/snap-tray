@@ -10,5 +10,6 @@ namespace SnapTray {
 std::function<void(QImage&, qint64, qint64)> recordingFrameFilter(
     const PreviewEditState& state, const QSize& videoSize, const TimelineMap& editTimeline,
     std::shared_ptr<const CursorTimeline> timeline = {},
-    std::shared_ptr<const KeyTimeline> keyTimeline = {});
+    std::shared_ptr<const KeyTimeline> keyTimeline = {},
+    std::shared_ptr<const ZoomTrack> preparedZoom = {}, qint64 clipEndMs = -1);
 } // namespace SnapTray

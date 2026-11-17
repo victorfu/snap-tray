@@ -17,6 +17,26 @@ RecordingLibraryViewModel::RecordingLibraryViewModel(QObject* parent)
     : QObject(parent)
 {
     connect(RecordingProjects::events(), &RecordingProjectEvents::changed, this, &RecordingLibraryViewModel::refresh);
+    connect(RecordingProjects::events(), &RecordingProjectEvents::thumbnailChanged, this, [this](const QString& dir) {
+        for (int i = 0; i < m_items.size(); ++i) {
+            if (m_items.at(i).dir != dir) continue;
+            auto row = m_rows.at(i).toMap();
+            const auto& project = m_items.at(i);
+            const qint64 bytes = project.sizeBytes();
+            m_totalBytes += bytes - row.value(QStringLiteral("bytes")).toLongLong();
+            row[QStringLiteral("bytes")] = bytes;
+            row[QStringLiteral("thumbnail")] = project.thumbnailUrl();
+            if (!row.value(QStringLiteral("open")).toBool())
+                row[QStringLiteral("details")] = tr("%1, %2, created %3")
+                    .arg(RecordingRecoveryViewModel::durationText(project.durationMs),
+                         QLocale().formattedDataSize(bytes),
+                         QLocale().toString(project.created, QLocale::ShortFormat));
+            m_rows[i] = row;
+            emit projectsChanged(); // compatibility list property
+            emit thumbnailChanged(dir);
+            break;
+        }
+    });
     refresh();
 }
 
@@ -57,6 +77,7 @@ void RecordingLibraryViewModel::rebuildRows()
         const qint64 bytes = project.sizeBytes();
         m_totalBytes += bytes;
         QVariantMap row;
+        row[QStringLiteral("bytes")] = bytes;
         row[QStringLiteral("title")] = project.title();
         const QString details = tr("%1, %2, created %3")
                                     .arg(RecordingRecoveryViewModel::durationText(project.durationMs),
@@ -69,6 +90,7 @@ void RecordingLibraryViewModel::rebuildRows()
         m_rows.append(row);
     }
     emit projectsChanged();
+    emit itemsChanged();
 }
 
 void RecordingLibraryViewModel::open(int index)
@@ -80,10 +102,11 @@ void RecordingLibraryViewModel::open(int index)
 void RecordingLibraryViewModel::remove(int index)
 {
     if (index < 0 || index >= m_items.size() || m_items.at(index).dir == m_openProjectDir) return;
-    if (!RecordingProjects::remove(m_items.at(index))) {
-        qWarning() << "RecordingLibraryViewModel: could not remove" << m_items.at(index).dir;
+    const RecordingProject project = m_items.at(index); // notification may replace m_items
+    if (!RecordingProjects::remove(project)) {
+        qWarning() << "RecordingLibraryViewModel: could not remove" << project.dir;
+        refresh();
     }
-    refresh();
 }
 
 void RecordingLibraryViewModel::showInFolder(int index)

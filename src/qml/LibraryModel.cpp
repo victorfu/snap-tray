@@ -25,11 +25,20 @@ LibraryModel::LibraryModel(HistoryModel* history, RecordingLibraryViewModel* rec
         connect(m_history, &QAbstractItemModel::dataChanged, this, &LibraryModel::rebuild);
         connect(m_history, &HistoryModel::totalCountChanged, this, &LibraryModel::countsChanged);
     }
-    if (m_recordings)
-        connect(m_recordings, &RecordingLibraryViewModel::projectsChanged, this, [this] {
+    if (m_recordings) {
+        connect(m_recordings, &RecordingLibraryViewModel::itemsChanged, this, [this] {
             rebuild();
             emit countsChanged();
         });
+        connect(m_recordings, &RecordingLibraryViewModel::thumbnailChanged, this, [this](const QString& dir) {
+            const int row = indexOfKey(dir);
+            if (row >= 0 && m_rows.at(row).kind == Recording) {
+                auto& item = m_rows[row];
+                item.bytes = m_recordings->items().at(item.sourceRow).sizeBytes();
+                emit dataChanged(index(row), index(row), {ThumbnailUrlRole, MetaTextRole});
+            }
+        });
+    }
     rebuild();
 }
 

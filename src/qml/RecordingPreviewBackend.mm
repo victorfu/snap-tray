@@ -159,7 +159,8 @@ std::function<void(QImage&, qint64, qint64)> RecordingPreviewBackend::effectsFra
     if (!appearanceActive()) state.appearance.enabled = false;
     if (!keyOverlayActive()) state.keys.enabled = false;
     if (!overlaysAvailable()) state.overlays = {};
-    return SnapTray::recordingFrameFilter(state, effectsVideoSize(), timelineMap(), m_cursorTimeline, m_keyTimeline);
+    return SnapTray::recordingFrameFilter(state, effectsVideoSize(), timelineMap(), m_cursorTimeline, m_keyTimeline,
+        zoomAvailable() && m_zoom.isActive() ? preparedZoom() : nullptr, effectsClipEnd());
 }
 
 QSize RecordingPreviewBackend::effectsVideoSize() const

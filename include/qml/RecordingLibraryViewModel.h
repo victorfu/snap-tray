@@ -46,6 +46,8 @@ public:
 
 signals:
     void projectsChanged();
+    void itemsChanged(); // structural/metadata changes, not thumbnail completion
+    void thumbnailChanged(const QString& projectDir);
     void openRequested(const QString& projectDir);
     void closeRequested();
 

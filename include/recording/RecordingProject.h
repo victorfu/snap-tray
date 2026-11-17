@@ -54,6 +54,11 @@ struct RecordingProject {
     QString thumbnailUrl() const; // empty for stale, pending or failed previews
     QString title() const; // the saved file's name, or the date
     qint64 sizeBytes() const;
+
+private:
+    mutable QJsonObject m_thumbnailRecipe;
+    mutable QString m_thumbnailGeneration;
+    mutable QString m_thumbnailPath;
 };
 
 // Lifecycle operations and publication run on the application thread. Workers
@@ -63,6 +68,7 @@ class RecordingProjectEvents : public QObject
     Q_OBJECT
 signals:
     void changed();
+    void thumbnailChanged(const QString& projectDir);
 };
 
 namespace RecordingProjects {
