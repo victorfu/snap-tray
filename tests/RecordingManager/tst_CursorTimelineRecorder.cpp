@@ -733,21 +733,28 @@ void TestCursorTimelineRecorder::occludedWindowDoesNotExcludeExternalClicks()
 {
     if (QGuiApplication::platformName() == QStringLiteral("offscreen"))
         QSKIP("Requires native window stacking");
+    // Native input regions include other applications' windows. Keep both
+    // fixtures above the runner's desktop windows, at the same window level.
+    const auto flags = Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint;
     QWindow settings;
-    settings.setFlags(Qt::Window | Qt::FramelessWindowHint);
+    settings.setFlags(flags);
     settings.setGeometry(50, 50, 300, 200);
     settings.show();
+    settings.raise();
     QVERIFY(QTest::qWaitForWindowExposed(&settings));
+    QTRY_COMPARE(windowPointerInputRegion(&settings), QRegion(settings.frameGeometry()));
     // A separate top-level surface stands in for a foreground application;
     // it deliberately is not part of the SnapTray exclusion provider.
     QWindow browser;
-    browser.setFlags(Qt::Window | Qt::FramelessWindowHint);
+    browser.setFlags(flags);
     browser.setGeometry(200, 50, 300, 200);
     browser.show();
     browser.raise();
     QVERIFY(QTest::qWaitForWindowExposed(&browser));
-    QTRY_VERIFY(!windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
-    QVERIFY(windowPointerInputRegion(&settings).contains(QPoint(100, 150)));
+    // Exposure alone does not establish the input region. Wait for both the
+    // covered and uncovered portions together; an empty region must not pass.
+    QTRY_COMPARE(windowPointerInputRegion(&settings),
+                 QRegion(settings.frameGeometry()).subtracted(QRegion(browser.frameGeometry())));
 
     Rig rig;
     rig.recorder->setExcludedRectsProvider([&] {
@@ -768,12 +775,12 @@ void TestCursorTimelineRecorder::occludedWindowDoesNotExcludeExternalClicks()
     browser.raise();
     QTRY_VERIFY(windowPointerInputRegion(&settings).isEmpty());
     browser.hide();
-    QTRY_VERIFY(windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
+    QTRY_COMPARE(windowPointerInputRegion(&settings), QRegion(settings.frameGeometry()));
     browser.setFlag(Qt::WindowTransparentForInput, true);
     browser.show();
     browser.raise();
     QVERIFY(QTest::qWaitForWindowExposed(&browser));
-    QTRY_VERIFY(windowPointerInputRegion(&settings).contains(QPoint(250, 150)));
+    QTRY_COMPARE(windowPointerInputRegion(&settings), QRegion(settings.frameGeometry()));
     settings.setFlag(Qt::WindowTransparentForInput, true);
     QVERIFY(windowPointerInputRegion(&settings).isEmpty());
 }
