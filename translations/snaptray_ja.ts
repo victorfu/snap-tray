@@ -7952,4 +7952,94 @@ It may be in use by another application.</source>
         <translation>テキストにスナップ: マーカーの線が検出されたテキスト行に揃います</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>画像を配置</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>適用前にレイアウトをプレビュー</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>レイアウト</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>手動</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>元のサイズ</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>横並び・高さを統一</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>縦並び・幅を統一</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>元のピクセルを拡大しない</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>最小の画像をサイズの上限にする</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>間隔</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>画像の順序（番号はキャンバスと対応）</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>画像 %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>前へ</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>画像 %1 を前へ移動</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>後ろへ</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>画像 %1 を後ろへ移動</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>「手動」を選ぶと自由配置に戻り、キャンバス上で画像を移動できます。</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>適用</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>出力の上限を超えているか、無効な画像が含まれています。</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>出力：%1 × %2 ピクセル</translation>
+    </message>
+</context>
 </TS>

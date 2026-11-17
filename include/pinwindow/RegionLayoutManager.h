@@ -9,6 +9,9 @@
 #include <QColor>
 #include <QVector>
 #include <QPixmap>
+#include <QVariantList>
+#include <QTransform>
+#include "pinwindow/PinLayoutGeometry.h"
 
 #include "ResizeHandler.h"
 
@@ -31,8 +34,8 @@ namespace LayoutModeConstants {
     constexpr int kButtonHeight = 32;            // Button height
     constexpr int kButtonSpacing = 12;           // Space between buttons
     constexpr int kButtonMargin = 16;            // Margin from canvas edge
-    constexpr int kMaxCanvasSize = 10000;        // Maximum canvas dimension
-    constexpr int kMaxRegionCount = 20;          // Maximum supported regions
+    constexpr int kMaxCanvasSize = PinLayoutGeometry::MaxCanvasExtent;
+    constexpr int kMaxRegionCount = PinLayoutGeometry::MaxSources;
 }
 
 /**
@@ -85,6 +88,12 @@ struct RegionLayoutState {
 class RegionLayoutManager : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(int arrangementMode READ arrangementMode NOTIFY layoutChanged)
+    Q_PROPERTY(int arrangementGap READ arrangementGap NOTIFY layoutChanged)
+    Q_PROPERTY(bool preventUpscale READ preventUpscale NOTIFY layoutChanged)
+    Q_PROPERTY(QVariantList arrangementOrder READ arrangementOrder NOTIFY layoutChanged)
+    Q_PROPERTY(QString outputDescription READ outputDescription NOTIFY layoutChanged)
+    Q_PROPERTY(bool arrangementValid READ arrangementValid NOTIFY layoutChanged)
 
 public:
     explicit RegionLayoutManager(QObject* parent = nullptr);
@@ -99,7 +108,20 @@ public:
      * @param regions The regions to edit
      * @param canvasSize The initial canvas size
      */
-    void enterLayoutMode(const QVector<LayoutRegion>& regions, const QSize& canvasSize);
+    void enterLayoutMode(const QVector<LayoutRegion>& regions, const QSize& canvasSize,
+                         qreal outputDpr = 1.0, const QTransform& outputOrientation = {});
+
+    // 0 is the preserved free layout; 1/2/3 are original/horizontal/vertical.
+    int arrangementMode() const { return m_arrangementMode; }
+    int arrangementGap() const { return m_arrangementOptions.gap; }
+    bool preventUpscale() const { return m_arrangementOptions.preventUpscale; }
+    QVariantList arrangementOrder() const;
+    QString outputDescription() const;
+    bool arrangementValid() const;
+    Q_INVOKABLE void setArrangementMode(int mode);
+    Q_INVOKABLE void setArrangementGap(int gap);
+    Q_INVOKABLE void setPreventUpscale(bool prevent);
+    Q_INVOKABLE void moveArrangementItem(int position, int direction);
 
     /**
      * @brief Exit layout mode.
@@ -244,9 +266,8 @@ public:
     /**
      * @brief Recompose the regions into a single image.
      * @param dpr Device pixel ratio
-     * @param committedRegions Optional normalized snapshot whose per-region
-     * images are materialized at their final physical sizes. The output is
-     * assigned only when recomposition succeeds.
+     * @param committedRegions Optional normalized snapshot retaining native
+     * source pixels for future layouts. Assigned only when composition succeeds.
      * @return The composited pixmap
      */
     QPixmap recomposeImage(
@@ -274,6 +295,10 @@ public:
     QPointF annotationTranslation(const AnnotationItem& annotation,
                                   qreal viewScale = 1.0,
                                   bool normalizeToRecomposedOrigin = true) const;
+    static QPointF annotationTranslationBetween(
+        const AnnotationItem& annotation, const QVector<LayoutRegion>& before,
+        const QVector<LayoutRegion>& after, qreal viewScale,
+        bool normalizeToRecomposedOrigin = true);
 
     // ========================================================================
     // Serialization
@@ -327,6 +352,13 @@ signals:
     void cancelRequested();
 
 private:
+    void updateArrangement();
+    QVector<LayoutRegion> m_freeRegions;
+    PinLayoutGeometry::Options m_arrangementOptions;
+    int m_arrangementMode = 0;
+    qreal m_outputDpr = 1.0;
+    QTransform m_outputOrientation;
+    bool m_arrangementValid = true;
     /**
      * @brief Recalculate canvas bounds based on current region positions.
      */

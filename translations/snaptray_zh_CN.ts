@@ -7952,4 +7952,94 @@ It may be in use by another application.</source>
         <translation>吸附到文字：记号笔会自动对齐检测到的文字行</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>排列图片</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>应用前预览布局</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>布局</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>手动</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>原始尺寸</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>横排，等高</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>竖排，等宽</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>不放大源像素</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>以最小源图像作为尺寸上限</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>间距</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>图片顺序（编号对应画布）</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>图片 %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>向前</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>将图片 %1 向前移</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>向后</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>将图片 %1 向后移</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>选择“手动”可恢复自由布局，并在画布上移动图片。</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>应用</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>布局超出输出限制，或包含无效图片。</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>输出：%1 × %2 像素</translation>
+    </message>
+</context>
 </TS>

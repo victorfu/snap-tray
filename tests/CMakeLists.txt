@@ -205,6 +205,12 @@ target_sources(Qml_DialogModality PRIVATE ${CMAKE_SOURCE_DIR}/resources/resource
 add_test(NAME Qml_DialogModality COMMAND Qml_DialogModality)
 set_tests_properties(Qml_DialogModality PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
 
+add_executable(Qml_PinLayoutDialog Qml/tst_PinLayoutDialog.cpp)
+target_link_libraries(Qml_PinLayoutDialog PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_PinLayoutDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_PinLayoutDialog COMMAND Qml_PinLayoutDialog)
+set_tests_properties(Qml_PinLayoutDialog PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
+
 add_executable(Qml_SettingsCombo Qml/tst_SettingsCombo.cpp)
 target_link_libraries(Qml_SettingsCombo PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_SettingsCombo PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -818,6 +824,11 @@ add_executable(PinWindow_PinWindowPlacement PinWindow/tst_PinWindowPlacement.cpp
 target_link_libraries(PinWindow_PinWindowPlacement PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_PinWindowPlacement COMMAND PinWindow_PinWindowPlacement)
 set_tests_properties(PinWindow_PinWindowPlacement PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_PinLayoutGeometry PinWindow/tst_PinLayoutGeometry.cpp)
+target_link_libraries(PinWindow_PinLayoutGeometry PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_PinLayoutGeometry COMMAND PinWindow_PinLayoutGeometry)
+set_tests_properties(PinWindow_PinLayoutGeometry PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(PinWindow_RegionLayoutManager PinWindow/tst_RegionLayoutManager.cpp)
 target_link_libraries(PinWindow_RegionLayoutManager PRIVATE snaptray_ui Qt6::Test)

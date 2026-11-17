@@ -7960,4 +7960,94 @@ Jį gali naudoti kita programa.</translation>
         <translation>Pritraukti prie teksto: žymeklio brūkšniai lygiuojami pagal aptiktas teksto eilutes</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Išdėstyti vaizdus</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Peržiūrėti išdėstymą prieš taikant</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Išdėstymas</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Rankinis</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Pradiniai dydžiai</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Horizontaliai, vienodas aukštis</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Vertikaliai, vienodas plotis</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Nedidinti šaltinio pikselių</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Naudoti mažiausią šaltinį kaip dydžio ribą</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Tarpai</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Vaizdų tvarka (numeriai atitinka drobę)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Vaizdas %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Anksčiau</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Perkelti vaizdą %1 anksčiau</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Vėliau</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Perkelti vaizdą %1 vėliau</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Pasirinkite Rankinis, kad atkurtumėte laisvą išdėstymą ir perkeltumėte vaizdus drobėje.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Atšaukti</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Taikyti</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Išdėstymas viršija išvesties ribas arba jame yra netinkamų vaizdų.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Išvestis: %1 × %2 pikselių</translation>
+    </message>
+</context>
 </TS>

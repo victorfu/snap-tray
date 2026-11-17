@@ -7960,4 +7960,94 @@ It may be in use by another application.</source>
         <translation>Поравнај са текстом: потези маркера се поравнавају са препознатим редовима текста</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Распореди слике</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Преглед распореда пре примене</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Распоред</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Ручно</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Изворне величине</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Водоравно, једнака висина</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Усправно, једнака ширина</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Не увећавај изворне пикселе</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Користи најмањи извор као ограничење величине</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Размак</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Редослед слика (бројеви одговарају платну)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Слика %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Раније</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Помери слику %1 раније</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Касније</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Помери слику %1 касније</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Изаберите Ручно да вратите слободан распоред и померате слике на платну.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Откажи</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Примени</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Распоред премашује ограничења излаза или садржи неисправне слике.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Излаз: %1 × %2 пиксела</translation>
+    </message>
+</context>
 </TS>

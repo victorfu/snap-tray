@@ -7972,4 +7972,94 @@ It may be in use by another application.</source>
         <translation>محاذاة إلى النص: تتم محاذاة خطوط قلم التحديد مع أسطر النص المكتشفة</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>ترتيب الصور</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>معاينة التخطيط قبل التطبيق</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>التخطيط</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>يدوي</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>الأحجام الأصلية</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>أفقي، ارتفاع موحّد</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>عمودي، عرض موحّد</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>عدم تكبير بكسلات المصدر</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>استخدام أصغر مصدر كحد للحجم</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>التباعد</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>ترتيب الصور (الأرقام تطابق لوحة الرسم)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>الصورة %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>قبل</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>نقل الصورة %1 إلى موضع سابق</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>بعد</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>نقل الصورة %1 إلى موضع لاحق</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>اختر يدوي لاستعادة التخطيط الحر وتحريك الصور على لوحة الرسم.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>إلغاء</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>تطبيق</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>يتجاوز التخطيط حدود الإخراج أو يحتوي على صور غير صالحة.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>الإخراج: %1 × %2 بكسل</translation>
+    </message>
+</context>
 </TS>

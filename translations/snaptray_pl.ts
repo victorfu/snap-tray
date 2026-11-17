@@ -7960,4 +7960,94 @@ Może być używany przez inną aplikację.</translation>
         <translation>Przyciągaj do tekstu: pociągnięcia zakreślacza dopasowują się do wykrytych wierszy tekstu</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Rozmieść obrazy</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Podgląd układu przed zastosowaniem</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Układ</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Ręczny</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Oryginalne rozmiary</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Poziomo, jednakowa wysokość</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Pionowo, jednakowa szerokość</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Nie powiększaj pikseli źródłowych</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Użyj najmniejszego źródła jako limitu rozmiaru</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Odstęp</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Kolejność obrazów (numery odpowiadają płótnu)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Obraz %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Wcześniej</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Przenieś obraz %1 wcześniej</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Później</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Przenieś obraz %1 później</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Wybierz Ręczny, aby przywrócić swobodny układ i przesuwać obrazy na płótnie.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Anuluj</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Zastosuj</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Układ przekracza limity wyjściowe lub zawiera nieprawidłowe obrazy.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Wynik: %1 × %2 pikseli</translation>
+    </message>
+</context>
 </TS>

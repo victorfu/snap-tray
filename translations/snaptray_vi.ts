@@ -7952,4 +7952,94 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <translation>Căn theo văn bản: nét bút đánh dấu tự căn theo các dòng văn bản được phát hiện</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Sắp xếp ảnh</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Xem trước bố cục trước khi áp dụng</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Bố cục</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Thủ công</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Kích thước gốc</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Ngang, cùng chiều cao</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Dọc, cùng chiều rộng</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Không phóng to điểm ảnh nguồn</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Dùng nguồn nhỏ nhất làm giới hạn kích thước</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Khoảng cách</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Thứ tự ảnh (số khớp với vùng vẽ)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Ảnh %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Trước</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Chuyển ảnh %1 lên trước</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Sau</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Chuyển ảnh %1 ra sau</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Chọn Thủ công để khôi phục bố cục tự do và di chuyển ảnh trên vùng vẽ.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Áp dụng</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Bố cục vượt quá giới hạn đầu ra hoặc có ảnh không hợp lệ.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Đầu ra: %1 × %2 điểm ảnh</translation>
+    </message>
+</context>
 </TS>

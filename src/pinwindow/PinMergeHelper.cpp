@@ -1,4 +1,5 @@
 #include "pinwindow/PinMergeHelper.h"
+#include "pinwindow/PinLayoutGeometry.h"
 
 #include "PinWindow.h"
 #include "pinwindow/RegionLayoutManager.h"
@@ -22,116 +23,6 @@ const QColor kRegionColors[] = {
     QColor(0, 174, 255),   // Blue
     QColor(90, 200, 250),  // Light blue
 };
-
-qreal normalizedDpr(const QPixmap& pixmap)
-{
-    const qreal dpr = pixmap.devicePixelRatio();
-    return dpr > 0.0 ? dpr : 1.0;
-}
-
-QSize logicalSizeFromPixmap(const QPixmap& pixmap)
-{
-    const qreal dpr = normalizedDpr(pixmap);
-    return CoordinateHelper::toLogical(pixmap.size(), dpr);
-}
-
-QPixmap normalizeToTargetDpr(const QPixmap& source, qreal targetDpr)
-{
-    if (source.isNull()) {
-        return source;
-    }
-
-    const qreal sourceDpr = normalizedDpr(source);
-    if (qFuzzyCompare(sourceDpr, targetDpr)) {
-        return source;
-    }
-
-    const QSize logicalSize = logicalSizeFromPixmap(source);
-    const QSize physicalSize = CoordinateHelper::toPhysical(logicalSize, targetDpr);
-    const QSize physicalTargetSize(qMax(1, physicalSize.width()),
-                                   qMax(1, physicalSize.height()));
-
-    QPixmap normalized = source.scaled(physicalTargetSize,
-                                       Qt::IgnoreAspectRatio,
-                                       Qt::SmoothTransformation);
-    normalized.setDevicePixelRatio(targetDpr);
-    return normalized;
-}
-
-struct PositionedLayoutItem {
-    QPoint topLeft;
-};
-
-struct MergeLayoutGeometry {
-    QVector<PositionedLayoutItem> placements;
-    qint64 composedWidth = 0;
-    qint64 composedHeight = 0;
-};
-
-MergeLayoutGeometry calculateLayoutGeometry(const QVector<QSize>& logicalSizes,
-                                            int gap,
-                                            int maxRowWidth,
-                                            int rowGap)
-{
-    MergeLayoutGeometry geometry;
-    geometry.placements.reserve(logicalSizes.size());
-
-    const int effectiveGap = qMax(0, gap);
-    const int effectiveRowGap = rowGap < 0 ? effectiveGap : qMax(0, rowGap);
-
-    if (maxRowWidth <= 0) {
-        qint64 currentX = 0;
-        int maxHeight = 0;
-        for (int i = 0; i < logicalSizes.size(); ++i) {
-            const QSize& logicalSize = logicalSizes[i];
-            geometry.placements.append({QPoint(static_cast<int>(currentX), 0)});
-            currentX += logicalSize.width();
-            maxHeight = qMax(maxHeight, logicalSize.height());
-            if (i + 1 < logicalSizes.size()) {
-                currentX += effectiveGap;
-            }
-        }
-        geometry.composedWidth = currentX;
-        geometry.composedHeight = maxHeight;
-        return geometry;
-    }
-
-    qint64 maxComposedWidth = 0;
-    qint64 currentX = 0;
-    qint64 currentY = 0;
-    qint64 currentRowWidth = 0;
-    int currentRowHeight = 0;
-    bool rowHasItem = false;
-
-    for (const QSize& logicalSize : logicalSizes) {
-        const qint64 itemWidth = logicalSize.width();
-        const int itemHeight = logicalSize.height();
-
-        const bool shouldWrap = rowHasItem && (currentX + itemWidth > maxRowWidth);
-        if (shouldWrap) {
-            maxComposedWidth = qMax(maxComposedWidth, currentRowWidth);
-            currentY += currentRowHeight + effectiveRowGap;
-            currentX = 0;
-            currentRowWidth = 0;
-            currentRowHeight = 0;
-            rowHasItem = false;
-        }
-
-        geometry.placements.append({QPoint(static_cast<int>(currentX), static_cast<int>(currentY))});
-        currentRowWidth = currentX + itemWidth;
-        currentRowHeight = qMax(currentRowHeight, itemHeight);
-        currentX = currentRowWidth + effectiveGap;
-        rowHasItem = true;
-    }
-
-    if (rowHasItem) {
-        maxComposedWidth = qMax(maxComposedWidth, currentRowWidth);
-    }
-
-    geometry.composedWidth = maxComposedWidth;
-    geometry.composedHeight = currentY + currentRowHeight;
-    return geometry;
-}
 }
 
 PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows, int gap)
@@ -174,114 +65,58 @@ PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows,
         }
     }
 
+    QVector<PinLayoutGeometry::Source> sources;
+    qreal targetDpr = 1.0;
+    for (const auto* window : eligible) {
+        sources.append(window->mergeSourceGeometry());
+        targetDpr = qMax(targetDpr, sources.last().dpr);
+    }
+    PinLayoutGeometry::Options geometryOptions;
+    geometryOptions.gap = qMax(0, options.gap);
+    geometryOptions.maxRowWidth = options.maxRowWidth;
+    geometryOptions.rowGap = options.rowGap;
+    geometryOptions.preventUpscale = false; // preserve the existing merge default
+    const auto geometry = PinLayoutGeometry::calculate(sources, targetDpr, geometryOptions);
+    if (!geometry.valid()) {
+        result.errorMessage = QCoreApplication::translate("RegionLayoutManager",
+            "Layout exceeds the output limits or has invalid images.");
+        return result;
+    }
+
+    // Reject the aggregate geometry before allocating any rendered snapshot.
     QList<QPixmap> sourcePixmaps;
     sourcePixmaps.reserve(eligible.size());
-
-    QList<PinWindow*> sourceWindows;
-    sourceWindows.reserve(eligible.size());
-
-    for (PinWindow* window : eligible) {
-        if (!window) {
-            continue;
+    for (int i = 0; i < eligible.size(); ++i) {
+        const QPixmap source = eligible[i]->exportPixmapForMerge();
+        if (source.isNull() || source.size() != sources[i].pixels
+            || !qFuzzyCompare(source.devicePixelRatio(), sources[i].dpr)) {
+            result.errorMessage = QObject::tr("Failed to merge pins");
+            return result;
         }
-
-        const QPixmap exportPixmap = window->exportPixmapForMerge();
-        if (exportPixmap.isNull()) {
-            continue;
-        }
-
-        sourcePixmaps.append(exportPixmap);
-        sourceWindows.append(window);
+        sourcePixmaps.append(source);
     }
 
-    if (sourcePixmaps.size() < 2) {
-        result.errorMessage = QObject::tr("Need at least 2 pins to merge");
+    QPixmap composed(geometry.physicalSize);
+    if (composed.isNull()) {
+        result.errorMessage = QObject::tr("Failed to merge pins");
         return result;
     }
-
-    qreal targetDpr = 1.0;
-    for (const QPixmap& pixmap : sourcePixmaps) {
-        targetDpr = qMax(targetDpr, normalizedDpr(pixmap));
-    }
-
-    QList<QPixmap> normalizedPixmaps;
-    normalizedPixmaps.reserve(sourcePixmaps.size());
-    QList<PinWindow*> mergedWindows;
-    mergedWindows.reserve(sourceWindows.size());
-
-    QVector<QSize> logicalSizes;
-    logicalSizes.reserve(sourcePixmaps.size());
-
-    const int effectiveGap = qMax(0, options.gap);
-    for (int i = 0; i < sourcePixmaps.size(); ++i) {
-        const QPixmap& pixmap = sourcePixmaps[i];
-        const QPixmap normalized = normalizeToTargetDpr(pixmap, targetDpr);
-        const QSize logicalSize = logicalSizeFromPixmap(normalized);
-        if (logicalSize.width() <= 0 || logicalSize.height() <= 0) {
-            continue;
-        }
-
-        normalizedPixmaps.append(normalized);
-        mergedWindows.append(sourceWindows[i]);
-        logicalSizes.append(logicalSize);
-    }
-
-    if (normalizedPixmaps.size() < 2 || logicalSizes.size() < 2) {
-        result.errorMessage = QObject::tr("Need at least 2 pins to merge");
-        return result;
-    }
-
-    const MergeLayoutGeometry geometry = calculateLayoutGeometry(
-        logicalSizes, effectiveGap, options.maxRowWidth, options.rowGap);
-    const qint64 composedWidth = geometry.composedWidth;
-    const qint64 composedHeight = geometry.composedHeight;
-    if (geometry.placements.size() != logicalSizes.size()
-        || composedWidth <= 0
-        || composedHeight <= 0) {
-        result.errorMessage = QObject::tr("Need at least 2 pins to merge");
-        return result;
-    }
-
-    if (composedWidth > LayoutModeConstants::kMaxCanvasSize
-        || composedHeight > LayoutModeConstants::kMaxCanvasSize) {
-        result.errorMessage = QObject::tr("Merged layout exceeds maximum size (%1x%1)")
-                                  .arg(LayoutModeConstants::kMaxCanvasSize);
-        return result;
-    }
-
-    const QSize composedPhysical = CoordinateHelper::toPhysical(
-        QSize(static_cast<int>(composedWidth), static_cast<int>(composedHeight)), targetDpr);
-    const QSize composedPhysicalSize(qMax(1, composedPhysical.width()),
-                                     qMax(1, composedPhysical.height()));
-    QPixmap composed(composedPhysicalSize);
     composed.setDevicePixelRatio(targetDpr);
     composed.fill(Qt::transparent);
-
     QPainter painter(&composed);
-    painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-
     QVector<LayoutRegion> regions;
-    regions.reserve(normalizedPixmaps.size());
-
-    for (int i = 0; i < normalizedPixmaps.size(); ++i) {
-        const QPixmap& source = normalizedPixmaps[i];
-        const QSize logicalSize = logicalSizes[i];
-        const QPoint topLeft = geometry.placements[i].topLeft;
-
-        painter.drawPixmap(topLeft, source);
-
+    for (int i = 0; i < sourcePixmaps.size(); ++i) {
+        const QPixmap& source = sourcePixmaps[i];
+        painter.drawPixmap(geometry.placements[i], source, source.rect());
         LayoutRegion region;
-        region.rect = QRect(topLeft, logicalSize);
+        region.rect = geometry.placements[i];
         region.originalRect = region.rect;
-
-        QImage image = source.toImage();
-        image.setDevicePixelRatio(targetDpr);
-        region.image = image;
-
+        // Keep final exported, redacted pixels at native resolution. Later
+        // no-upscale layouts must not mistake normalized pixels for detail.
+        region.image = source.toImage();
         region.color = regionColor(i);
         region.index = i + 1;
-        region.isSelected = false;
         regions.append(region);
     }
 
@@ -294,7 +129,7 @@ PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows,
 
     result.composedPixmap = composed;
     result.regions = regions;
-    result.mergedWindows = mergedWindows;
+    result.mergedWindows = eligible;
     result.success = true;
     return result;
 }

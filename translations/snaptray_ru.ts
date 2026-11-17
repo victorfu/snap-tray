@@ -7960,4 +7960,94 @@ It may be in use by another application.</source>
         <translation>Привязка к тексту: штрихи маркера выравниваются по распознанным строкам текста</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Расположить изображения</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Предпросмотр макета перед применением</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Макет</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Вручную</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Исходные размеры</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>По горизонтали, равная высота</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>По вертикали, равная ширина</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Не увеличивать исходные пиксели</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Ограничить размер наименьшим источником</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Интервал</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Порядок изображений (номера соответствуют холсту)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Изображение %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Раньше</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Переместить изображение %1 раньше</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Позже</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Переместить изображение %1 позже</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Выберите «Вручную», чтобы восстановить свободный макет и перемещать изображения на холсте.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Применить</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Макет превышает ограничения вывода или содержит недопустимые изображения.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Вывод: %1 × %2 пикселей</translation>
+    </message>
+</context>
 </TS>

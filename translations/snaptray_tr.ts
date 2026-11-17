@@ -7952,4 +7952,94 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <translation>Metne hizala: İşaretleyici çizgileri algılanan metin satırlarına hizalanır</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Görüntüleri Düzenle</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Uygulamadan önce düzeni önizleyin</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Düzen</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Elle</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Özgün boyutlar</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Yatay, eşit yükseklik</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Dikey, eşit genişlik</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Kaynak pikselleri büyütme</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Boyut sınırı olarak en küçük kaynağı kullan</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Aralık</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Görüntü sırası (numaralar tuvalle eşleşir)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Görüntü %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Önce</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Görüntü %1 öğesini öne taşı</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Sonra</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Görüntü %1 öğesini arkaya taşı</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Serbest düzeninizi geri yüklemek ve tuvalde görüntüleri taşımak için Elle seçeneğini seçin.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Uygula</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>Düzen çıktı sınırlarını aşıyor veya geçersiz görüntüler içeriyor.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Çıktı: %1 × %2 piksel</translation>
+    </message>
+</context>
 </TS>

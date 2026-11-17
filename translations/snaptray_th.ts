@@ -7637,4 +7637,94 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>จัดแนวกับข้อความ: เส้นปากกาเน้นข้อความจะจัดแนวตามบรรทัดข้อความที่ตรวจพบ</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>จัดเรียงรูปภาพ</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>ดูตัวอย่างเค้าโครงก่อนนำไปใช้</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>เค้าโครง</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>กำหนดเอง</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>ขนาดต้นฉบับ</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>แนวนอน ความสูงเท่ากัน</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>แนวตั้ง ความกว้างเท่ากัน</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>ไม่ขยายพิกเซลต้นฉบับ</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>ใช้ภาพต้นฉบับที่เล็กที่สุดเป็นขีดจำกัดขนาด</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>ระยะห่าง</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>ลำดับรูปภาพ (หมายเลขตรงกับผืนผ้าใบ)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>รูปภาพ %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>ก่อนหน้า</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>ย้ายรูปภาพ %1 ไปก่อนหน้า</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>ถัดไป</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>ย้ายรูปภาพ %1 ไปถัดไป</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>เลือกกำหนดเองเพื่อคืนค่าเค้าโครงอิสระและย้ายรูปภาพบนผืนผ้าใบ</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>นำไปใช้</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>เค้าโครงเกินขีดจำกัดเอาต์พุตหรือมีรูปภาพที่ไม่ถูกต้อง</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>เอาต์พุต: %1 × %2 พิกเซล</translation>
+    </message>
+</context>
 </TS>

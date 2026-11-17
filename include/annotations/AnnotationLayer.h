@@ -71,6 +71,14 @@ public:
     // items aligned so a later undo/redo cannot restore stale coordinates.
     void translateOwnedItems(
         const std::function<QPointF(const AnnotationItem&)>& deltaForItem);
+    // Image-layout history uses a fixed generation ceiling. Newer redo
+    // snapshots already use the new canvas and must not be translated again.
+    // A stable (command generation, annotation id) identifies each owned slot;
+    // Modify undo/redo may replace its snapshot object without changing it.
+    using LayoutItemKey = QPair<quint64, quint64>;
+    HistoryStateToken latestHistoryGeneration() const { return m_nextHistoryState - 1; }
+    void translateLayoutOwnedItems(HistoryStateToken ceiling,
+        const std::function<QPointF(LayoutItemKey, const AnnotationItem&)>& deltaForItem);
     void forEachItem(const std::function<void(AnnotationItem*)>& visitor,
                      bool includeRedoStack = false);
     void forEachItem(const std::function<void(const AnnotationItem*)>& visitor,

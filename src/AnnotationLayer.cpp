@@ -322,6 +322,33 @@ void AnnotationLayer::forEachItem(const std::function<void(AnnotationItem*)>& vi
     }
 }
 
+void AnnotationLayer::translateLayoutOwnedItems(
+    HistoryStateToken ceiling,
+    const std::function<QPointF(LayoutItemKey, const AnnotationItem&)>& deltaForItem)
+{
+    if (!deltaForItem || isHistoryLocked() || isGestureActive()) return;
+    const auto translate = [&deltaForItem](LayoutItemKey key, AnnotationItem* item) {
+        if (item) item->translate(deltaForItem(key, *item));
+    };
+    for (auto& item : m_items) translate({0, item.id}, item.get());
+    for (auto* stack : {&m_undoStack, &m_redoStack}) {
+        for (auto& command : *stack) {
+            if (command.afterState <= ceiling) {
+                const std::size_t beforeBytes = command.retainedBytes;
+                for (auto& record : command.items)
+                    translate({command.afterState, record.id}, record.item.get());
+                refreshCommandRetainedBytes(command);
+                adjustHistoryBytes(beforeBytes, command.retainedBytes);
+                if (stack == &m_redoStack)
+                    adjustRetainedByteCounter(m_redoOwnedBytes, beforeBytes, command.retainedBytes);
+            }
+        }
+    }
+    trimHistory(m_currentHistoryState);
+    invalidateCache();
+    emit changed();
+}
+
 void AnnotationLayer::forEachItem(const std::function<void(const AnnotationItem*)>& visitor,
                                   bool includeRedoStack) const
 {

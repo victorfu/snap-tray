@@ -1174,10 +1174,11 @@ void PinWindow::updateSize(bool liveFrame)
     update();
 }
 
-QPixmap PinWindow::getExportPixmapCore(bool includeDisplayEffects) const
+QPixmap PinWindow::getExportPixmapCore(bool includeDisplayEffects, bool nativeResolution) const
 {
     const QPixmap scaledPixmapSource =
-        buildDisplayPixmap(size(), Qt::SmoothTransformation);
+        buildDisplayPixmap(nativeResolution || m_hasMultiRegionData
+            ? transformedContentLogicalSize() : size(), Qt::SmoothTransformation);
     QPixmap scaledPixmap = scaledPixmapSource;
 
     if (includeDisplayEffects) {
@@ -1207,7 +1208,8 @@ QPixmap PinWindow::getExportPixmap() const
     return getExportPixmapCore(true);
 }
 
-void PinWindow::drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize) const
+void PinWindow::drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize,
+                                         bool nativeResolution) const
 {
     if (!m_annotationLayer || m_annotationLayer->isEmpty() || logicalSize.isEmpty()) {
         return;
@@ -1220,6 +1222,7 @@ void PinWindow::drawAnnotationsForExport(QPainter& painter, const QSize& logical
             pixmapRect, m_rotationAngle, m_flipHorizontal, m_flipVertical);
         painter.setTransform(transform, true);
     }
+    if (nativeResolution || m_hasMultiRegionData) painter.scale(1.0 / m_zoomLevel, 1.0 / m_zoomLevel);
     m_annotationLayer->draw(painter);
     painter.restore();
 }
@@ -1516,7 +1519,7 @@ void PinWindow::createContextMenu()
 
     m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
     m_adjustRegionLayoutAction->setObjectName(QStringLiteral("pinMenuRegionLayout"));
-    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
+    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::showRegionLayoutDialog);
 
     m_contextMenu->addSeparator();
 
@@ -2618,20 +2621,9 @@ void PinWindow::paintEvent(QPaintEvent* event)
         painter.save();
         painter.setTransform(layoutTransform, true);
         for (const auto& region : regions) {
-            QRect targetRect = region.rect;
-            if (region.rect.size() != region.originalRect.size()) {
-                // Scale the image if region was resized
-                QImage scaled = region.image.scaled(
-                    CoordinateHelper::toPhysical(region.rect.size(), dpr),
-                    Qt::IgnoreAspectRatio,
-                    Qt::SmoothTransformation);
-                scaled.setDevicePixelRatio(dpr);
-                painter.drawImage(targetRect.topLeft(), scaled);
-            } else {
-                QImage img = region.image;
-                img.setDevicePixelRatio(dpr);
-                painter.drawImage(targetRect.topLeft(), img);
-            }
+            // Source images retain their native DPR/pixels. The logical
+            // placement, not the source DPR or current display zoom, sets size.
+            painter.drawImage(region.rect, region.image, region.image.rect());
         }
         painter.restore();
 
@@ -3691,6 +3683,16 @@ void PinWindow::initializeAnnotationComponents()
 {
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
+    // Layout can be applied before the annotation toolbar is ever opened.
+    // Bind those image-only undo entries to the newly created empty layer.
+    for (auto* stack : {&m_cropUndoStack, &m_cropRedoStack}) {
+        for (auto& entry : *stack) {
+            if (entry.isLayout && entry.annotationHistoryState == 0) {
+                entry.annotationHistoryState = m_annotationLayer->historyStateToken();
+                entry.layoutHistoryCeiling = m_annotationLayer->latestHistoryGeneration();
+            }
+        }
+    }
     connect(m_annotationLayer, &AnnotationLayer::changed,
         this, [this]() {
             // Track visible mosaic demand on edits, not on every frame.
@@ -4491,8 +4493,15 @@ void PinWindow::undoCrop()
     m_hasMultiRegionData = entry.hasMultiRegionData;
 
     if (m_annotationLayer) {
-        m_annotationLayer->translateAll(QPointF(entry.annotationOffsetDisplay.x(),
-                                                entry.annotationOffsetDisplay.y()));
+        if (entry.isLayout) {
+            m_annotationLayer->translateLayoutOwnedItems(entry.layoutHistoryCeiling,
+                [&entry](AnnotationLayer::LayoutItemKey key, const AnnotationItem&) {
+                    return -entry.layoutAnnotationOffsets.value(key);
+                });
+        } else {
+            m_annotationLayer->translateAll(QPointF(entry.annotationOffsetDisplay.x(),
+                                                    entry.annotationOffsetDisplay.y()));
+        }
     }
     m_cropRedoStack.append(entry);
     if (m_cropRedoStack.size() > kMaxCropUndoSize) {
@@ -4525,8 +4534,19 @@ void PinWindow::redoCrop()
     m_hasMultiRegionData = entry.croppedHasMultiRegionData;
 
     if (m_annotationLayer) {
-        m_annotationLayer->translateAll(QPointF(-entry.annotationOffsetDisplay.x(),
-                                                -entry.annotationOffsetDisplay.y()));
+        if (entry.isLayout) {
+            entry.layoutAnnotationOffsets.clear();
+            m_annotationLayer->translateLayoutOwnedItems(entry.layoutHistoryCeiling,
+                [&entry](AnnotationLayer::LayoutItemKey key, const AnnotationItem& item) {
+                    const QPointF delta = RegionLayoutManager::annotationTranslationBetween(
+                        item, entry.storedRegions, entry.croppedStoredRegions, entry.layoutViewScale);
+                    entry.layoutAnnotationOffsets.insert(key, delta);
+                    return delta;
+                });
+        } else {
+            m_annotationLayer->translateAll(QPointF(-entry.annotationOffsetDisplay.x(),
+                                                    -entry.annotationOffsetDisplay.y()));
+        }
     }
 
     m_cropUndoStack.append(entry);
@@ -4651,11 +4671,24 @@ QPixmap PinWindow::getExportPixmapWithAnnotations() const
     return result;
 }
 
+PinLayoutGeometry::Source PinWindow::mergeSourceGeometry() const
+{
+    if (m_autoBlurInProgress) return {};
+    const qreal dpr = m_originalPixmap.devicePixelRatio();
+    QSize logicalSize = transformedContentLogicalSize();
+    if (isRegionLayoutMode()) {
+        if (!m_regionLayoutManager->arrangementValid()) return {};
+        QRect bounds;
+        for (const auto& region : m_regionLayoutManager->regions()) bounds = bounds.united(region.rect);
+        logicalSize = transformedLogicalSizeForRotation(bounds.size(), m_rotationAngle);
+    }
+    if (!PinLayoutGeometry::safeOutputSize(logicalSize, dpr)) return {};
+    return {CoordinateHelper::toPhysical(logicalSize, dpr), dpr};
+}
+
 QPixmap PinWindow::exportPixmapForMerge() const
 {
-    if (m_autoBlurInProgress) {
-        return QPixmap();
-    }
+    if (mergeSourceGeometry().pixels.isEmpty()) return {};
 
     // Merge output is reopened in a PinWindow, so avoid baking display effects
     // (opacity/watermark) that the destination window can apply again.
@@ -4663,45 +4696,20 @@ QPixmap PinWindow::exportPixmapForMerge() const
     bool usedActiveLayout = false;
     QSize activeLayoutSize;
     if (isRegionLayoutMode() && m_regionLayoutManager) {
-        qreal dpr = m_displayPixmap.devicePixelRatio();
-        if (dpr <= 0.0) {
-            dpr = 1.0;
-        }
+        if (!m_regionLayoutManager->arrangementValid()) return {};
+        const qreal dpr = m_originalPixmap.devicePixelRatio();
         const QPixmap layoutPixmap = m_regionLayoutManager->recomposeImage(dpr);
-        if (!layoutPixmap.isNull()) {
-            const QSize layoutSize = logicalSizeFromPixmap(layoutPixmap);
-            activeLayoutSize = layoutSize;
-            const QSize viewportSize = regionLayoutContentViewSize(layoutSize);
-            const QSize physicalSize = CoordinateHelper::toPhysical(viewportSize, dpr);
-            if (!physicalSize.isEmpty()) {
-                QPixmap transformedLayout = layoutPixmap;
-                if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
-                    transformedLayout = layoutPixmap.transformed(
-                        buildOrientationLinearTransform(
-                            m_rotationAngle,
-                            m_flipHorizontal,
-                            m_flipVertical),
-                        Qt::SmoothTransformation);
-                    transformedLayout.setDevicePixelRatio(dpr);
-                }
-
-                result = QPixmap(physicalSize);
-                result.setDevicePixelRatio(dpr);
-                result.fill(Qt::transparent);
-
-                QPainter layoutPainter(&result);
-                layoutPainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-                layoutPainter.drawPixmap(
-                    QRectF(QPointF(0.0, 0.0), QSizeF(viewportSize)),
-                    transformedLayout,
-                    QRectF(QPointF(0.0, 0.0), QSizeF(transformedLayout.size())));
-                layoutPainter.end();
-                usedActiveLayout = !result.isNull();
-            }
+        if (layoutPixmap.isNull()) return {};
+        activeLayoutSize = logicalSizeFromPixmap(layoutPixmap);
+        result = layoutPixmap;
+        if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+            result = layoutPixmap.transformed(buildOrientationLinearTransform(
+                m_rotationAngle, m_flipHorizontal, m_flipVertical), Qt::SmoothTransformation);
+            result.setDevicePixelRatio(dpr);
         }
-    }
-    if (result.isNull()) {
-        result = getExportPixmapCore(false);
+        usedActiveLayout = true;
+    } else {
+        result = getExportPixmapCore(false, true);
     }
     if (result.isNull()) {
         return result;
@@ -4711,9 +4719,9 @@ QPixmap PinWindow::exportPixmapForMerge() const
     painter.setRenderHint(QPainter::Antialiasing);
     if (usedActiveLayout) {
         drawRegionLayoutAnnotations(
-            painter, activeLayoutSize, true);
+            painter, activeLayoutSize, true, true);
     } else {
-        drawAnnotationsForExport(painter, logicalSizeFromPixmap(result));
+        drawAnnotationsForExport(painter, logicalSizeFromPixmap(result), true);
     }
     painter.end();
 
@@ -4886,7 +4894,8 @@ void PinWindow::keepRegionLayoutControlsOnScreen()
 void PinWindow::drawRegionLayoutAnnotations(
     QPainter& painter,
     const QSize& layoutSize,
-    bool normalizeToRecomposedOrigin) const
+    bool normalizeToRecomposedOrigin,
+    bool nativeResolution) const
 {
     if (!m_regionLayoutManager || !m_annotationLayer || m_annotationLayer->isEmpty()) {
         return;
@@ -4894,7 +4903,8 @@ void PinWindow::drawRegionLayoutAnnotations(
 
     painter.save();
     if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
-        const QSize contentViewSize = regionLayoutContentViewSize(layoutSize);
+        QSize contentViewSize = nativeResolution ? layoutSize : regionLayoutContentViewSize(layoutSize);
+        if (nativeResolution && m_rotationAngle % 180 != 0) contentViewSize.transpose();
         painter.setTransform(
             buildPinWindowTransform(
                 QRectF(QPointF(0.0, 0.0), QSizeF(contentViewSize)),
@@ -4903,6 +4913,8 @@ void PinWindow::drawRegionLayoutAnnotations(
                 m_flipVertical),
             true);
     }
+
+    if (nativeResolution) painter.scale(1.0 / m_zoomLevel, 1.0 / m_zoomLevel);
 
     for (size_t i = 0; i < m_annotationLayer->itemCount(); ++i) {
         const AnnotationItem* item = m_annotationLayer->itemAt(static_cast<int>(i));
@@ -6412,11 +6424,26 @@ void PinWindow::prepareForMerge()
     }
 }
 
+void PinWindow::showRegionLayoutDialog()
+{
+    enterRegionLayoutMode();
+    if (!isRegionLayoutMode() || m_regionLayoutDialog) return;
+    auto* dialog = new SnapTray::QmlDialog(
+        QUrl("qrc:/SnapTrayQml/dialogs/PinLayoutDialog.qml"),
+        m_regionLayoutManager, "viewModel", this, SnapTray::QmlDialog::ViewModelOwnership::Borrowed);
+    m_regionLayoutDialog = dialog;
+    connect(dialog, &SnapTray::QmlDialog::closed, this, [this, dialog] {
+        if (m_regionLayoutDialog == dialog && isRegionLayoutMode()) exitRegionLayoutMode(false);
+    });
+    dialog->showCenteredOnScreen(screen());
+}
+
 void PinWindow::enterRegionLayoutMode()
 {
     // The hover bar hides while the layout is edited (#225).
     const auto syncBar = qScopeGuard([this] { syncHoverBar(); });
-    if (!m_hasMultiRegionData || m_isLiveMode || isRegionLayoutMode()) {
+    if (!m_hasMultiRegionData || m_isLiveMode || isRegionLayoutMode()
+        || !ensureAutoBlurReadyForExport()) {
         return;
     }
 
@@ -6437,6 +6464,10 @@ void PinWindow::enterRegionLayoutMode()
     if (!m_regionLayoutManager) {
         m_regionLayoutManager = new RegionLayoutManager(this);
 
+        connect(m_regionLayoutManager, &RegionLayoutManager::confirmRequested,
+                this, [this] { exitRegionLayoutMode(true); });
+        connect(m_regionLayoutManager, &RegionLayoutManager::cancelRequested,
+                this, [this] { exitRegionLayoutMode(false); });
         // Connect signals
         connect(m_regionLayoutManager, &RegionLayoutManager::layoutChanged,
                 this, QOverload<>::of(&QWidget::update));
@@ -6452,7 +6483,9 @@ void PinWindow::enterRegionLayoutMode()
 
     // Enter layout mode with stored regions
     QSize canvasSize = baseContentLogicalSize();
-    m_regionLayoutManager->enterLayoutMode(m_storedRegions, canvasSize);
+    m_regionLayoutManager->enterLayoutMode(m_storedRegions, canvasSize,
+        m_originalPixmap.devicePixelRatio(),
+        buildOrientationLinearTransform(m_rotationAngle, m_flipHorizontal, m_flipVertical));
     setFixedSize(regionLayoutViewportSize(canvasSize));
     keepRegionLayoutControlsOnScreen();
 
@@ -6468,6 +6501,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
     }
 
     if (apply) {
+        if (!ensureAutoBlurReadyForExport() || !m_regionLayoutManager->arrangementValid()) return;
         // Recompose the image
         qreal dpr = m_originalPixmap.devicePixelRatio();
         QVector<LayoutRegion> committedRegions;
@@ -6487,21 +6521,46 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         }
 
         invalidateAutoBlurRequest();
-        m_storedRegions = std::move(committedRegions);
-
         if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+        CropUndoEntry entry;
+        entry.isLayout = true;
+        entry.pixmap = m_originalPixmap;
+        entry.contentLogicalSize = baseContentLogicalSize();
+        entry.sourceSampleRect = sourceSampleRect();
+        entry.rotationAngle = m_rotationAngle;
+        entry.flipH = m_flipHorizontal;
+        entry.flipV = m_flipVertical;
+        entry.storedRegions = m_storedRegions;
+        entry.hasMultiRegionData = m_hasMultiRegionData;
+        entry.layoutViewScale = m_zoomLevel;
+
+        m_storedRegions = std::move(committedRegions);
         m_originalPixmap = newPixmap;
         setContentLogicalSize(logicalSizeFromPixmap(newPixmap));
         resetSourceSampleRect();
         m_displayPixmap = newPixmap;
-        clearCropUndoHistory();
-
-        // Move annotations in tool coordinates; updateSize() below refreshes
-        // all mosaic sources after the recomposed display is ready.
+        entry.croppedPixmap = newPixmap;
+        entry.croppedContentLogicalSize = baseContentLogicalSize();
+        entry.croppedSourceSampleRect = sourceSampleRect();
+        entry.croppedRotationAngle = m_rotationAngle;
+        entry.croppedFlipH = m_flipHorizontal;
+        entry.croppedFlipV = m_flipVertical;
+        entry.croppedStoredRegions = m_storedRegions;
+        entry.croppedHasMultiRegionData = m_hasMultiRegionData;
         if (m_annotationLayer) {
-            m_regionLayoutManager->updateAnnotationPositions(
-                m_annotationLayer, m_zoomLevel);
+            m_annotationLayer->endModifyCoalescing();
+            entry.annotationHistoryState = m_annotationLayer->historyStateToken();
+            entry.layoutHistoryCeiling = m_annotationLayer->latestHistoryGeneration();
+            m_annotationLayer->translateLayoutOwnedItems(entry.layoutHistoryCeiling,
+                [this, &entry](AnnotationLayer::LayoutItemKey key, const AnnotationItem& annotation) {
+                    const QPointF delta = m_regionLayoutManager->annotationTranslation(annotation, m_zoomLevel);
+                    entry.layoutAnnotationOffsets.insert(key, delta);
+                    return delta;
+                });
         }
+        m_cropRedoStack.clear();
+        m_cropUndoStack.append(std::move(entry));
+        if (m_cropUndoStack.size() > kMaxCropUndoSize) m_cropUndoStack.removeFirst();
 
         // Invalidate transform cache
         m_cachedRotation = -1;
@@ -6511,6 +6570,12 @@ void PinWindow::exitRegionLayoutMode(bool apply)
     }
 
     m_regionLayoutManager->exitLayoutMode(apply);
+    if (m_regionLayoutDialog) {
+        auto* dialog = m_regionLayoutDialog.data();
+        m_regionLayoutDialog = nullptr;
+        dialog->close();
+    }
+    updateUndoRedoState();
     // Rebuild from the committed (or original, on Cancel) base content only
     // after leaving layout mode so updateSize() uses the normal display path.
     updateSize();

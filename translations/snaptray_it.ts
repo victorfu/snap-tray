@@ -7956,4 +7956,94 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
         <translation>Allinea al testo: i tratti dell'evidenziatore si allineano alle righe di testo rilevate</translation>
     </message>
 </context>
+<context>
+    <name>PinLayoutDialog</name>
+    <message>
+        <source>Arrange Images</source>
+        <translation>Disponi immagini</translation>
+    </message>
+    <message>
+        <source>Preview the layout before applying</source>
+        <translation>Anteprima della disposizione prima di applicarla</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Disposizione</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Manuale</translation>
+    </message>
+    <message>
+        <source>Original sizes</source>
+        <translation>Dimensioni originali</translation>
+    </message>
+    <message>
+        <source>Horizontal, equal height</source>
+        <translation>Orizzontale, stessa altezza</translation>
+    </message>
+    <message>
+        <source>Vertical, equal width</source>
+        <translation>Verticale, stessa larghezza</translation>
+    </message>
+    <message>
+        <source>Do not enlarge source pixels</source>
+        <translation>Non ingrandire i pixel originali</translation>
+    </message>
+    <message>
+        <source>Use the smallest source as the size limit</source>
+        <translation>Usa la sorgente più piccola come limite delle dimensioni</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Spaziatura</translation>
+    </message>
+    <message>
+        <source>Image order (numbers match the canvas)</source>
+        <translation>Ordine delle immagini (numeri corrispondenti alla tela)</translation>
+    </message>
+    <message>
+        <source>Image %1</source>
+        <translation>Immagine %1</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Prima</translation>
+    </message>
+    <message>
+        <source>Move image %1 earlier</source>
+        <translation>Sposta prima l’immagine %1</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Dopo</translation>
+    </message>
+    <message>
+        <source>Move image %1 later</source>
+        <translation>Sposta dopo l’immagine %1</translation>
+    </message>
+    <message>
+        <source>Choose Manual to restore your free layout and move images on the canvas.</source>
+        <translation>Scegli Manuale per ripristinare la disposizione libera e spostare le immagini sulla tela.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Applica</translation>
+    </message>
+</context>
+<context>
+    <name>RegionLayoutManager</name>
+    <message>
+        <source>Layout exceeds the output limits or has invalid images.</source>
+        <translation>La disposizione supera i limiti di uscita o contiene immagini non valide.</translation>
+    </message>
+    <message>
+        <source>Output: %1 × %2 pixels</source>
+        <translation>Uscita: %1 × %2 pixel</translation>
+    </message>
+</context>
 </TS>
