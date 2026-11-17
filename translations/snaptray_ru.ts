@@ -7899,5 +7899,13 @@ It may be in use by another application.</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Привязка к тексту: штрихи маркера выравниваются по распознанным строкам текста</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Связать объекты</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Свяжите концы стрелок с фигурами или текстом. Перетащите на пустое место, чтобы разорвать связь.</translation>
+    </message>
 </context>
 </TS>

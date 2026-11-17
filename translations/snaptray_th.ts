@@ -7576,5 +7576,13 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>จัดแนวกับข้อความ: เส้นปากกาเน้นข้อความจะจัดแนวตามบรรทัดข้อความที่ตรวจพบ</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>เชื่อมโยงวัตถุ</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>เชื่อมโยงปลายลูกศรกับรูปร่างหรือข้อความ ลากไปยังพื้นที่ว่างเพื่อยกเลิกการเชื่อมโยง</translation>
+    </message>
 </context>
 </TS>

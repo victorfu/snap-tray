@@ -241,6 +241,51 @@ Item {
             onMenuOpened: lineStyleSection.closeMenu()
         }
 
+        Rectangle {
+            id: arrowBindingToggle
+            objectName: "arrowBindingToggle"
+            visible: root.hasViewModel && root.viewModel.showArrowStyleSection && root.viewModel.arrowBindingAvailable
+            anchors.verticalCenter: parent.verticalCenter
+            width: bindingLabel.implicitWidth + 16
+            height: 24
+            radius: 4
+            activeFocusOnTab: visible
+            readonly property bool checked: root.hasViewModel && root.viewModel.arrowBindingEnabled
+            readonly property string tooltipText: qsTr("Link arrow endpoints to shapes or text. Drag onto empty space to unlink.")
+            color: checked ? DesignSystem.accentDefault
+                           : bindingMouse.containsMouse ? root.controlHoverBg : "transparent"
+            border.width: activeFocus ? 1 : 0
+            border.color: ComponentTokens.toolbarIconActive
+            Accessible.role: Accessible.CheckBox
+            Accessible.name: qsTr("Link objects")
+            Accessible.description: tooltipText
+            Accessible.checkable: true
+            Accessible.checked: checked
+            Accessible.onToggleAction: toggle()
+            Accessible.onPressAction: toggle()
+            Keys.onSpacePressed: toggle()
+            Keys.onReturnPressed: toggle()
+            function toggle() {
+                if (root.hasViewModel) root.viewModel.arrowBindingEnabled = !checked
+            }
+            Text {
+                id: bindingLabel
+                anchors.centerIn: parent
+                text: qsTr("Link objects")
+                font.pixelSize: 11
+                color: arrowBindingToggle.checked ? ComponentTokens.toolbarIconActive : ComponentTokens.toolbarIcon
+            }
+            MouseArea {
+                id: bindingMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: CursorTokens.toolbarControl
+                onClicked: arrowBindingToggle.toggle()
+                onEntered: root.controlTooltipRequested(arrowBindingToggle.objectName, arrowBindingToggle.tooltipText)
+                onExited: root.controlTooltipDismissed(arrowBindingToggle.objectName)
+            }
+        }
+
         LineStyleSection {
             id: lineStyleSection
             visible: root.hasViewModel && root.viewModel.showLineStyleSection

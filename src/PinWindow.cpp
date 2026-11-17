@@ -931,7 +931,7 @@ QRect PinWindow::selectedAnnotationInteractionVisualRect() const
     return mappedAnnotationRect(
         snaptray::tools::selectedAnnotationRepaintRect(
             m_annotationLayer,
-            kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds() : QRect()));
+            kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds().united(m_annotationLayer->bindingHintBounds()).united(m_annotationLayer->bindingDirtyBounds()) : QRect()));
 }
 
 bool PinWindow::requestLocalizedToolRepaint()
@@ -2486,8 +2486,17 @@ void PinWindow::paintEvent(QPaintEvent* event)
             painter.setTransform(transform, true);
         }
 
-        m_annotationLayer->draw(painter);
+        if (m_annotationLayer->isGestureActive()
+            && m_annotationLayer->hasArrowDependents(m_annotationLayer->selectedItem())) {
+            const QSize annotationSize = (m_rotationAngle == 90 || m_rotationAngle == 270)
+                ? QSize(height(), width()) : size();
+            m_annotationLayer->drawWithDirtyRegion(painter, annotationSize,
+                devicePixelRatioF(), m_annotationLayer->selectedIndex());
+        } else {
+            m_annotationLayer->draw(painter);
+        }
         m_annotationLayer->snapController().draw(painter);
+        m_annotationLayer->drawBindingHint(painter);
 
         // Draw transformation gizmo for selected text annotation
         if (auto* textItem = getSelectedTextAnnotation()) {
@@ -6192,15 +6201,17 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
     if (m_isArrowDragging && m_annotationLayer->selectedIndex() >= 0) {
         auto* arrowItem = getSelectedArrowAnnotation();
         if (arrowItem) {
+            if (mappedPos == m_annotationDragStartPos) return true;
             m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
             if (m_arrowDragHandle == GizmoHandle::Body) {
                 QPoint delta = mappedPos - m_annotationDragStartPos;
+                if (!delta.isNull()) arrowItem->detachBindings();
                 arrowItem->moveBy(delta);
                 m_annotationDragStartPos = mappedPos;
             } else if (m_arrowDragHandle == GizmoHandle::ArrowStart) {
-                arrowItem->setStart(mappedPos);
+                m_annotationLayer->editArrowEndpoint(*arrowItem, false, mappedPos);
             } else if (m_arrowDragHandle == GizmoHandle::ArrowEnd) {
-                arrowItem->setEnd(mappedPos);
+                m_annotationLayer->editArrowEndpoint(*arrowItem, true, mappedPos);
             } else if (m_arrowDragHandle == GizmoHandle::ArrowControl) {
                 // User drags the curve midpoint (t=0.5), calculate actual Bézier control point
                 // P1 = 2*Mid - 0.5*(Start + End)
@@ -6209,6 +6220,7 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
                 QPointF newControl = 2.0 * QPointF(mappedPos) - 0.5 * (start + end);
                 arrowItem->setControlPoint(newControl);
             }
+            m_annotationDragStartPos = mappedPos;
             requestLocalizedToolRepaint();
             return true;
         }
@@ -6219,6 +6231,7 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
 bool PinWindow::handleArrowAnnotationRelease(const QPoint& pos)
 {
     if (m_isArrowDragging) {
+        handleArrowAnnotationMove(pos);
         m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
         m_isArrowDragging = false;
         m_arrowDragHandle = GizmoHandle::None;

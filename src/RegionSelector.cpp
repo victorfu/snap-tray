@@ -3928,7 +3928,7 @@ QRect RegionSelector::selectedAnnotationInteractionVisualRect() const
 {
     return snaptray::tools::selectedAnnotationRepaintRect(
         m_annotationLayer,
-        kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds() : QRect());
+        kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds().united(m_annotationLayer->bindingHintBounds()).united(m_annotationLayer->bindingDirtyBounds()) : QRect());
 }
 
 bool RegionSelector::requestLocalizedAnnotationInteractionUpdate()

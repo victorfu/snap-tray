@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "qml/PinToolOptionsViewModel.h"
+#include "settings/AnnotationSettingsManager.h"
 #include "annotations/AnnotationStyle.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
@@ -25,6 +26,19 @@ class tst_PinToolOptionsViewModel : public QObject
     Q_OBJECT
 
 private slots:
+    void arrowBindingPreferenceSyncsAcrossToolbars() {
+        auto& settings = AnnotationSettingsManager::instance();
+        settings.saveArrowBinding(false);
+        PinToolOptionsViewModel a, b;
+        QSignalSpy spy(&b, &PinToolOptionsViewModel::arrowBindingEnabledChanged);
+        QVERIFY(!a.arrowBindingEnabled());
+        a.setArrowBindingEnabled(true);
+        QVERIFY(settings.loadArrowBinding());
+        QVERIFY(b.arrowBindingEnabled());
+        QCOMPARE(spy.count(), 1);
+        b.setArrowBindingEnabled(false);
+        QVERIFY(!a.arrowBindingEnabled());
+    }
     void selectionTargetRoutesEdits();
     void clearingTargetRestoresDefaults();
     void textSelectionShowsTextSection();

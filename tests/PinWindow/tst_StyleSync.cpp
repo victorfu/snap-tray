@@ -1,3 +1,4 @@
+#include "annotations/ShapeAnnotation.h"
 #include <QtTest/QtTest>
 
 #include <QApplication>
@@ -160,6 +161,7 @@ private:
     static std::unique_ptr<PinWindow> arrowPin(QPixmap pixmap);
 
 private slots:
+    void arrowBindingUsesReleasePosition();
     void testLongScreenshotAnnotationToolbar();
     void initTestCase();
     void testUsesAuthorityModeByDefault();
@@ -1331,5 +1333,35 @@ void TestPinWindowStyleSync::textDragEscapeRestores()
     QVERIFY(!window->m_annotationLayer->isGestureActive());
 }
 
+
+void TestPinWindowStyleSync::arrowBindingUsesReleasePosition()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    settings.saveArrowBinding(true);
+    const auto reset = qScopeGuard([&] { settings.saveArrowBinding(false); });
+    auto window = arrowPin(createTestPixmap(500,300));
+    auto* layer = window->m_annotationLayer;
+
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(200,0,100,100),ShapeType::Rectangle,Qt::red,2));
+    layer->addItem(std::make_unique<ArrowAnnotation>(QPoint(20,20),QPoint(120,20),Qt::red,2));
+    layer->setSelectedIndex(1);
+    auto* arrow = static_cast<ArrowAnnotation*>(layer->itemAt(1));
+    const auto press = [&](QPoint p) { return window->handleArrowAnnotationPress(window->mapFromOriginalCoords(p)); };
+    const auto move = [&](QPoint p) { window->handleArrowAnnotationMove(window->mapFromOriginalCoords(p)); };
+    const auto release = [&](QPoint p) { window->handleArrowAnnotationRelease(window->mapFromOriginalCoords(p)); };
+    QVERIFY(press(QPoint(120,20)));
+    move(QPoint(250,20));
+    QVERIFY(!arrow->binding(true).targetId.isNull());
+    release(QPoint(350,20));
+    QCOMPARE(arrow->end(),QPoint(350,20));
+    QVERIFY(arrow->binding(true).targetId.isNull());
+    layer->undo(); QCOMPARE(arrow->end(),QPoint(120,20));
+    layer->redo(); QCOMPARE(arrow->end(),QPoint(350,20));
+    layer->setSelectedIndex(1);
+    QVERIFY(press(QPoint(350,20)));
+    release(QPoint(250,20)); // release without a move event must bind too
+    QCOMPARE(arrow->binding(true).targetId,layer->itemAt(0)->persistentId());
+    layer->undo(); QVERIFY(arrow->binding(true).targetId.isNull());
+}
 QTEST_MAIN(TestPinWindowStyleSync)
 #include "tst_StyleSync.moc"

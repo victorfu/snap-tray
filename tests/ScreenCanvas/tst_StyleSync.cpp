@@ -1,3 +1,4 @@
+#include "annotations/ShapeAnnotation.h"
 #include <QtTest/QtTest>
 
 #include <QGuiApplication>
@@ -27,6 +28,7 @@ class TestScreenCanvasStyleSync : public QObject
     Q_OBJECT
 
 private slots:
+    void arrowBindingUsesReleasePosition();
     void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testOverlayRestoreReturnsArrowToolCursor();
@@ -405,5 +407,37 @@ void TestScreenCanvasStyleSync::escapeMidDragRestores()
     QCOMPARE(arrow()->start(), QPoint(20, 20));
 }
 
+
+void TestScreenCanvasStyleSync::arrowBindingUsesReleasePosition()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    settings.saveArrowBinding(true);
+    const auto reset = qScopeGuard([&] { settings.saveArrowBinding(false); });
+    ScreenCanvasSession session;
+    auto* surface = new ScreenCanvas;
+    session.m_surfaces = {surface}; session.m_activeSurface = surface;
+    auto* layer = session.m_annotationLayer;
+
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(200,0,100,100),ShapeType::Rectangle,Qt::red,2));
+    layer->addItem(std::make_unique<ArrowAnnotation>(QPoint(20,20),QPoint(120,20),Qt::red,2));
+    layer->setSelectedIndex(1);
+    auto* arrow = static_cast<ArrowAnnotation*>(layer->itemAt(1));
+    const auto press = [&](QPoint p) { return session.handleArrowAnnotationPress(p); };
+    const auto move = [&](QPoint p) { session.handleArrowAnnotationMove(p); };
+    const auto release = [&](QPoint p) { session.handleArrowAnnotationRelease(p); };
+    QVERIFY(press(QPoint(120,20)));
+    move(QPoint(250,20));
+    QVERIFY(!arrow->binding(true).targetId.isNull());
+    release(QPoint(350,20));
+    QCOMPARE(arrow->end(),QPoint(350,20));
+    QVERIFY(arrow->binding(true).targetId.isNull());
+    layer->undo(); QCOMPARE(arrow->end(),QPoint(120,20));
+    layer->redo(); QCOMPARE(arrow->end(),QPoint(350,20));
+    layer->setSelectedIndex(1);
+    QVERIFY(press(QPoint(350,20)));
+    release(QPoint(250,20)); // release without a move event must bind too
+    QCOMPARE(arrow->binding(true).targetId,layer->itemAt(0)->persistentId());
+    layer->undo(); QVERIFY(arrow->binding(true).targetId.isNull());
+}
 QTEST_MAIN(TestScreenCanvasStyleSync)
 #include "tst_StyleSync.moc"

@@ -6,6 +6,8 @@
 #include <QRect>
 #include <cstddef>
 #include <memory>
+#include <functional>
+#include <QUuid>
 
 /**
  * @brief 所有標註項目的抽象基類
@@ -13,6 +15,19 @@
 class AnnotationItem
 {
 public:
+    AnnotationItem() = default;
+    AnnotationItem(const AnnotationItem& other)
+        : m_visible(other.m_visible), m_persistentId(other.m_persistentId) {}
+    // Snapshot copies preserve identity but never copy a scene observer.
+    AnnotationItem& operator=(const AnnotationItem& other) {
+        m_visible = other.m_visible;
+        m_persistentId = other.m_persistentId;
+        return *this;
+    }
+    QUuid persistentId() const { return m_persistentId; }
+    // Set only before inserting into a layer (document load or duplication).
+    void setPersistentId(const QUuid& id) { m_persistentId = id.isNull() ? QUuid::createUuid() : id; }
+    void setGeometryObserver(std::function<void()> observer) { m_geometryObserver = std::move(observer); }
     virtual ~AnnotationItem() = default;
     virtual void draw(QPainter &painter) const = 0;
     virtual QRect boundingRect() const = 0;
@@ -29,6 +44,7 @@ public:
     bool isVisible() const { return m_visible; }
 
 protected:
+    void geometryChanged() { if (m_geometryObserver) m_geometryObserver(); }
     static std::size_t estimatedPixmapBytes(const QPixmap& pixmap)
     {
         if (pixmap.isNull()) return 0;
@@ -38,6 +54,9 @@ protected:
     }
 
     bool m_visible = true;
+private:
+    QUuid m_persistentId = QUuid::createUuid();
+    std::function<void()> m_geometryObserver;
 };
 
 #endif // ANNOTATIONITEM_H

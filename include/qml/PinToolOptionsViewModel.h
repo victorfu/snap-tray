@@ -22,6 +22,8 @@ class PinToolOptionsViewModel : public QObject
 
     Q_PROPERTY(bool markerTextSnapAvailable READ markerTextSnapAvailable NOTIFY markerTextSnapChanged)
     Q_PROPERTY(bool markerTextSnapEnabled READ markerTextSnapEnabled WRITE setMarkerTextSnapEnabled NOTIFY markerTextSnapEnabledChanged)
+    Q_PROPERTY(bool arrowBindingAvailable READ arrowBindingAvailable NOTIFY targetChanged)
+    Q_PROPERTY(bool arrowBindingEnabled READ arrowBindingEnabled WRITE setArrowBindingEnabled NOTIFY arrowBindingEnabledChanged)
     // Section visibility
     Q_PROPERTY(bool showColorSection READ showColorSection NOTIFY sectionVisibilityChanged)
     Q_PROPERTY(bool showWidthSection READ showWidthSection NOTIFY sectionVisibilityChanged)
@@ -98,6 +100,9 @@ class PinToolOptionsViewModel : public QObject
 
 public:
     explicit PinToolOptionsViewModel(QObject* parent = nullptr);
+    bool arrowBindingAvailable() const { return !m_editingSelection || m_targetKind == StyleTargetKind::Arrow; }
+    bool arrowBindingEnabled() const;
+    void setArrowBindingEnabled(bool enabled);
 
     // Section visibility
     bool showColorSection() const { return m_showColor; }
@@ -218,6 +223,7 @@ public:
     void setZOrderAvailability(bool canRaise, bool canLower);
 
 signals:
+    void arrowBindingEnabledChanged();
     void markerTextSnapChanged();
     void markerTextSnapEnabledChanged();
     void sectionVisibilityChanged();

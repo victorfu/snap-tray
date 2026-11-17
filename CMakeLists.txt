@@ -867,6 +867,7 @@ add_library(snaptray_ui STATIC
     src/ToolbarStyle.cpp
     # Annotation UI
     src/AnnotationLayer.cpp
+    src/annotation/ArrowBindings.cpp
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp

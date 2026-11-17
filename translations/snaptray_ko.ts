@@ -7891,5 +7891,13 @@ It may be in use by another application.</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>텍스트에 맞추기: 마커 획이 감지된 텍스트 줄에 맞춰집니다</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>개체 연결</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>화살표 끝점을 도형이나 텍스트에 연결합니다. 빈 공간으로 드래그하면 연결이 해제됩니다.</translation>
+    </message>
 </context>
 </TS>

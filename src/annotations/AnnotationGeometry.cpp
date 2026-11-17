@@ -41,12 +41,15 @@ const std::array<Ops, 5> kOps = {{
          auto& b = as<ArrowAnnotation>(t);
          b.setStart(a.start());
          b.setEnd(a.end());
+         b.setBinding(false, a.binding(false));
+         b.setBinding(true, a.binding(true));
          b.setControlPoint(a.controlPoint());   // last: setStart/setEnd shift it
      },
      [](const AnnotationItem& x, const AnnotationItem& y) {
          const auto& a = as<ArrowAnnotation>(x);
          const auto& b = as<ArrowAnnotation>(y);
-         return a.start() == b.start() && a.end() == b.end() && a.controlPoint() == b.controlPoint();
+         return a.start() == b.start() && a.end() == b.end() && a.controlPoint() == b.controlPoint()
+             && a.binding(false) == b.binding(false) && a.binding(true) == b.binding(true);
      }},
     {&is<PolylineAnnotation>,
      [](const AnnotationItem& f, AnnotationItem& t) {

@@ -6,7 +6,7 @@
 #include <QDebug>
 
 void ArrowToolHandler::onActivate(ToolContext* ctx) {
-    Q_UNUSED(ctx);
+    if (ctx->annotationLayer) ctx->annotationLayer->clearBindingHint();
     // Reset all state when tool is activated
     m_isDrawing = false;
     m_hasDragged = false;
@@ -16,6 +16,7 @@ void ArrowToolHandler::onActivate(ToolContext* ctx) {
 }
 
 void ArrowToolHandler::onDeactivate(ToolContext* ctx) {
+    if (ctx->annotationLayer) ctx->annotationLayer->clearBindingHint();
     // Cancel any in-progress drawing when switching tools
     if (m_isDrawing || m_isPolylineMode) {
         cancelDrawing();
@@ -24,6 +25,7 @@ void ArrowToolHandler::onDeactivate(ToolContext* ctx) {
 }
 
 void ArrowToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
+    m_bindingLayer = ctx->annotationLayer;
     if (m_isPolylineMode) {
         if (!m_currentPolyline)
             return;
@@ -91,6 +93,10 @@ void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
     } else {
         m_currentArrow->setEnd(endPos);
     }
+    if (ctx->annotationLayer && m_currentArrow) {
+        ctx->annotationLayer->editArrowEndpoint(*m_currentArrow, false, m_startPoint);
+        ctx->annotationLayer->editArrowEndpoint(*m_currentArrow, true, endPos);
+    }
     ctx->repaint();
 }
 
@@ -104,6 +110,7 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
+    if (ctx->annotationLayer) ctx->annotationLayer->clearBindingHint();
     bool committedAnnotation = false;
     const QPoint releaseDelta = pos - m_startPoint;
     const bool releaseIsDrag = releaseDelta.manhattanLength() > kDragThreshold;
@@ -127,6 +134,11 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
                     ctx->lineStyle);
             } else {
                 m_currentArrow->setEnd(endPos);
+            }
+            if (ctx->annotationLayer) {
+                ctx->annotationLayer->editArrowEndpoint(*m_currentArrow, false, m_startPoint);
+                ctx->annotationLayer->editArrowEndpoint(*m_currentArrow, true, endPos);
+                ctx->annotationLayer->clearBindingHint();
             }
             ctx->addItem(std::move(m_currentArrow));
             committedAnnotation = true;
@@ -206,9 +218,9 @@ void ArrowToolHandler::drawPreview(QPainter& painter) const {
 
 QRect ArrowToolHandler::previewBounds() const
 {
-    QRect bounds;
+    QRect bounds = m_bindingLayer ? m_bindingLayer->bindingHintBounds() : QRect();
     if (m_currentArrow) {
-        bounds = m_currentArrow->boundingRect();
+        bounds = bounds.united(m_currentArrow->boundingRect());
     }
     if (m_currentPolyline) {
         bounds = bounds.isValid() && !bounds.isEmpty()
@@ -219,6 +231,7 @@ QRect ArrowToolHandler::previewBounds() const
 }
 
 void ArrowToolHandler::cancelDrawing() {
+    if (m_bindingLayer) m_bindingLayer->clearBindingHint();
     m_isDrawing = false;
     m_hasDragged = false;
     m_isPolylineMode = false;

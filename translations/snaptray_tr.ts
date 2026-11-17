@@ -7891,5 +7891,13 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Metne hizala: İşaretleyici çizgileri algılanan metin satırlarına hizalanır</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Nesneleri bağla</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Ok uçlarını şekillere veya metne bağlayın. Bağlantıyı kaldırmak için boş bir alana sürükleyin.</translation>
+    </message>
 </context>
 </TS>

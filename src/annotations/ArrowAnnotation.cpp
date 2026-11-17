@@ -180,5 +180,8 @@ std::unique_ptr<AnnotationItem> ArrowAnnotation::clone() const
 {
     auto cloned = std::make_unique<ArrowAnnotation>(m_start, m_end, m_color, m_width, m_lineEndStyle, m_lineStyle);
     cloned->setControlPoint(m_controlPoint);
+    cloned->setPersistentId(persistentId());
+    cloned->m_startBinding = m_startBinding;
+    cloned->m_endBinding = m_endBinding;
     return cloned;
 }

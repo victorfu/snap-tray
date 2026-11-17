@@ -7891,5 +7891,13 @@ It may be in use by another application.</source>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>貼齊文字：螢光筆會自動對齊偵測到的文字行</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>連結物件</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>將箭頭端點連結至形狀或文字。拖曳至空白處即可解除連結。</translation>
+    </message>
 </context>
 </TS>

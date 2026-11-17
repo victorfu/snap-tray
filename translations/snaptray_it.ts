@@ -7895,5 +7895,13 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Allinea al testo: i tratti dell'evidenziatore si allineano alle righe di testo rilevate</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Collega oggetti</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Collega le estremità delle frecce a forme o testo. Trascina in uno spazio vuoto per scollegare.</translation>
+    </message>
 </context>
 </TS>

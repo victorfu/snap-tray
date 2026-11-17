@@ -43,6 +43,7 @@ void drawAnnotationVisuals(QPainter& painter,
 
     painter.save();
     painter.translate(-QPointF(origin));
+    annotationLayer->drawBindingHint(painter);
     if (selectedItems.text) {
         TransformationGizmo::draw(painter, selectedItems.text);
     }

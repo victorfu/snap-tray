@@ -1,3 +1,4 @@
+#include "settings/AnnotationSettingsManager.h"
 #include <QGuiApplication>
 #include "region/RegionInputHandler.h"
 #include "region/SelectionStateManager.h"
@@ -1674,19 +1675,21 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
     if (!arrowItem) {
         return false;
     }
+    const QPoint delta = pos - m_arrowDragStart;
+    if (delta.isNull()) return true;
     m_annotationLayer->ensureGesture();   // one undo step per gesture (#237)
-
-    QPoint delta = pos - m_arrowDragStart;
 
     switch (m_activeArrowHandle) {
     case GizmoHandle::ArrowStart:
         // Move start point directly
-        arrowItem->setStart(arrowItem->start() + delta);
+        m_annotationLayer->editArrowEndpoint(*arrowItem, false,
+            AnnotationSettingsManager::instance().loadArrowBinding() ? pos : arrowItem->start() + delta);
         break;
 
     case GizmoHandle::ArrowEnd:
         // Move end point directly
-        arrowItem->setEnd(arrowItem->end() + delta);
+        m_annotationLayer->editArrowEndpoint(*arrowItem, true,
+            AnnotationSettingsManager::instance().loadArrowBinding() ? pos : arrowItem->end() + delta);
         break;
 
     case GizmoHandle::ArrowControl:
@@ -1703,6 +1706,7 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
 
     case GizmoHandle::Body:
         // Move entire arrow
+        if (!delta.isNull()) arrowItem->detachBindings();
         arrowItem->moveBy(delta);
         break;
 
@@ -1721,6 +1725,7 @@ bool RegionInputHandler::handleArrowAnnotationRelease(const QPoint& pos)
         return false;
     }
 
+    handleArrowAnnotationMove(pos);
     m_annotationLayer->commitGesture(AnnotationLayer::ModifyGeometry);
     m_isArrowDragging = false;
     m_activeArrowHandle = GizmoHandle::None;

@@ -7895,5 +7895,13 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
         <source>Snap to text: marker strokes align to detected text lines</source>
         <translation>Uitlijnen op tekst: markeerstiftstreken worden uitgelijnd op gedetecteerde tekstregels</translation>
     </message>
+    <message>
+        <source>Link objects</source>
+        <translation>Objecten koppelen</translation>
+    </message>
+    <message>
+        <source>Link arrow endpoints to shapes or text. Drag onto empty space to unlink.</source>
+        <translation>Koppel pijlpunten aan vormen of tekst. Sleep naar een lege plek om de koppeling te verbreken.</translation>
+    </message>
 </context>
 </TS>

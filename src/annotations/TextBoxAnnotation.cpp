@@ -160,6 +160,7 @@ std::unique_ptr<AnnotationItem> TextBoxAnnotation::clone() const
     cloned->m_scale = m_scale;
     cloned->m_mirrorX = m_mirrorX;
     cloned->m_mirrorY = m_mirrorY;
+    cloned->setPersistentId(persistentId());
     return cloned;
 }
 
@@ -169,6 +170,7 @@ void TextBoxAnnotation::setText(const QString &text)
     // Recalculate box size to fit new text
     calculateInitialBox();
     invalidateCache();
+    geometryChanged();
 }
 
 void TextBoxAnnotation::setPosition(const QPointF &position)
@@ -178,6 +180,7 @@ void TextBoxAnnotation::setPosition(const QPointF &position)
     // (rendered at local coordinates 0,0 to boxWidth,boxHeight).
     // Text, font, color, or box-size changes invalidate the cache via their setters.
     m_cachedOrigin = m_position;
+    geometryChanged();
 }
 
 void TextBoxAnnotation::setBox(const QRectF& box)
@@ -185,6 +188,7 @@ void TextBoxAnnotation::setBox(const QRectF& box)
     m_box = box;
     if (m_wrapWidth > 0) m_wrapWidth = qMax(1.0, box.width() - 2 * kPadding);
     invalidateCache();
+    geometryChanged();
 }
 
 void TextBoxAnnotation::setWrapWidth(qreal width)
@@ -192,6 +196,7 @@ void TextBoxAnnotation::setWrapWidth(qreal width)
     m_wrapWidth = qIsFinite(width) && width > 0 ? qCeil(width) : 0;
     calculateInitialBox();
     invalidateCache();
+    geometryChanged();
 }
 
 void TextBoxAnnotation::restoreLayout(const QString& text, const QRectF& box, qreal wrapWidth)
@@ -200,6 +205,7 @@ void TextBoxAnnotation::restoreLayout(const QString& text, const QRectF& box, qr
     m_box = box;
     m_wrapWidth = wrapWidth;
     invalidateCache();
+    geometryChanged();
 }
 
 void TextBoxAnnotation::moveBy(const QPointF &delta)
@@ -207,6 +213,7 @@ void TextBoxAnnotation::moveBy(const QPointF &delta)
     m_position += delta;
     // Only update blit origin — cached pixmap content is position-independent.
     m_cachedOrigin = m_position;
+    geometryChanged();
 }
 
 void TextBoxAnnotation::translate(const QPointF& delta)
@@ -220,6 +227,7 @@ void TextBoxAnnotation::setFont(const QFont &font)
     // Recalculate box size since font affects text dimensions
     calculateInitialBox();
     invalidateCache();
+    geometryChanged();
 }
 
 void TextBoxAnnotation::setColor(const QColor &color)
@@ -232,12 +240,14 @@ void TextBoxAnnotation::setRotation(qreal degrees)
 {
     m_rotation = degrees;
     invalidateCache();
+    geometryChanged();
 }
 
 void TextBoxAnnotation::setScale(qreal scale)
 {
     m_scale = scale;
     invalidateCache();
+    geometryChanged();
 }
 
 void TextBoxAnnotation::setMirror(bool mirrorX, bool mirrorY)
@@ -245,6 +255,7 @@ void TextBoxAnnotation::setMirror(bool mirrorX, bool mirrorY)
     m_mirrorX = mirrorX;
     m_mirrorY = mirrorY;
     invalidateCache();
+    geometryChanged();
 }
 
 QPointF TextBoxAnnotation::mapLocalPointToTransformed(const QPointF& localPoint) const

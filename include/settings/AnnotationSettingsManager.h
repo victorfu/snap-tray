@@ -2,6 +2,7 @@
 #define ANNOTATIONSETTINGSMANAGER_H
 
 #include <QColor>
+#include <QObject>
 #include "annotations/MosaicBlurType.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
@@ -15,14 +16,18 @@
  * such as color and width, reducing code duplication across
  * RegionSelector and ScreenCanvas.
  */
-class AnnotationSettingsManager
+class AnnotationSettingsManager : public QObject
 {
+    Q_OBJECT
 public:
     static AnnotationSettingsManager& instance();
 
     // Color settings
     QColor loadColor() const;
     void saveColor(const QColor& color);
+
+    bool loadArrowBinding() const;
+    void saveArrowBinding(bool enabled);
 
     bool loadAlignmentAssist() const;
     void saveAlignmentAssist(bool enabled);
@@ -77,6 +82,9 @@ public:
     static constexpr int kDefaultAspectRatioWidth = 1;
     static constexpr int kDefaultAspectRatioHeight = 1;
     static constexpr MosaicBlurType kDefaultMosaicBlurType = MosaicBlurType::Pixelate;
+
+signals:
+    void arrowBindingChanged();
 
 private:
     AnnotationSettingsManager() = default;
