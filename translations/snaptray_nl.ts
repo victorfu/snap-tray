@@ -1464,6 +1464,22 @@ Bestandsgrootte: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Vertraagde opname annuleren</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Opnamesessies gevonden</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray heeft %1 opnamesessies gevonden die aandacht vereisen; %2 kunnen via het systeemvakmenu worden hersteld.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Opname niet beschikbaar</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>De opname is mogelijk in gebruik of kan niet meer worden hersteld. Open «Opnamen herstellen» opnieuw om de lijst te vernieuwen.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6940,6 +6956,18 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>het hele scherm is opgenomen; het opent bijgesneden tot het gekozen gebied</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Het verwijderen is niet voltooid. Kies «Verwijderen» om het opruimen opnieuw te proberen.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Verwijderen mislukt. Controleer de bestandsrechten en kies «Verwijderen» om het opnieuw te proberen.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Geen toegang tot deze opname. Controleer de bestandsrechten en probeer het opnieuw.</translation>
     </message>
 </context>
 <context>

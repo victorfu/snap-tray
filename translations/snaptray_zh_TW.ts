@@ -1463,6 +1463,22 @@ File size: %3</source>
         <source>Cancel Delayed Capture</source>
         <translation>取消延遲擷取</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>找到錄製工作階段</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray 找到 %1 個需要處理的錄製工作階段，其中 %2 個可從系統匣選單復原。</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>錄製無法使用</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>此錄製可能正在使用或已無法復原。請重新開啟「復原錄製」以重新整理清單。</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6936,6 +6952,18 @@ It may be in use by another application.</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>錄製的是整個螢幕；開啟時會裁切至所選範圍</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>捨棄尚未完成。請選擇「捨棄」以重試清理。</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>捨棄失敗。請檢查檔案權限，然後選擇「捨棄」重試。</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>無法存取此錄製。請檢查檔案權限後再試一次。</translation>
     </message>
 </context>
 <context>

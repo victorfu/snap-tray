@@ -8,11 +8,13 @@
 #include "recording/AudioTracks.h"
 
 #include <QDir>
+#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QSaveFile>
 
 namespace SnapTray::RecordingSession {
@@ -58,6 +60,7 @@ bool write(const RecordingSessionInfo& info, QString* error)
     object[QStringLiteral("audioRequired")] = info.audioRequired;
     object[QStringLiteral("intermediate")] = info.intermediate;
     object[QStringLiteral("fragmented")] = info.fragmented;
+    object[QStringLiteral("cleanupPending")] = info.cleanupPending;
     object[QStringLiteral("startedAt")] = info.startedAt.toUTC().toString(Qt::ISODateWithMs);
     object[QStringLiteral("updatedAt")] = info.updatedAt.toUTC().toString(Qt::ISODateWithMs);
     object[QStringLiteral("recordedMs")] = QString::number(info.recordedMs);
@@ -127,6 +130,7 @@ std::optional<RecordingSessionInfo> read(const QString& manifestPath, QString* e
     info.audioRequired = object.value(QStringLiteral("audioRequired")).toBool();
     info.intermediate = object.value(QStringLiteral("intermediate")).toBool(true);
     info.fragmented = object.value(QStringLiteral("fragmented")).toBool();
+    info.cleanupPending = object.value(QStringLiteral("cleanupPending")).toBool();
     info.startedAt = QDateTime::fromString(object.value(QStringLiteral("startedAt")).toString(), Qt::ISODateWithMs);
     info.updatedAt = QDateTime::fromString(object.value(QStringLiteral("updatedAt")).toString(), Qt::ISODateWithMs);
     info.recordedMs = object.value(QStringLiteral("recordedMs")).toString().toLongLong();
@@ -151,14 +155,77 @@ bool hasSession(const QString& videoPath)
     return QFileInfo::exists(manifestPathFor(videoPath));
 }
 
-void discard(const QString& videoPath)
+DiscardResult discard(const QString& videoPath, const RemoveFile& removeFile)
 {
-    QFile::remove(videoPath);
-    WindowTimelineSidecar::remove(videoPath);
-    CursorTimelineSidecar::remove(videoPath);
-    KeyTimelineSidecar::remove(videoPath);
-    AudioTracks::remove(videoPath);
-    remove(videoPath);
+    DiscardResult result;
+    // Never enumerate the directory or follow paths from manifest contents.
+    const QStringList materials{
+        videoPath, WindowTimelineSidecar::pathFor(videoPath),
+        CursorTimelineSidecar::pathFor(videoPath), KeyTimelineSidecar::pathFor(videoPath),
+        AudioTracks::pathFor(videoPath, AudioTracks::Track::Microphone),
+        AudioTracks::pathFor(videoPath, AudioTracks::Track::SystemAudio)};
+    const QString manifest = manifestPathFor(videoPath);
+    const auto exists = [](const QString& path) {
+        const QFileInfo file(path);
+        return file.exists() || file.isSymLink();
+    };
+    const auto collectRemaining = [&] {
+        for (const auto& path : materials) {
+            if (exists(path)) result.remainingPaths.append(path);
+        }
+        if (exists(manifest)) result.remainingPaths.append(manifest);
+    };
+    collectRemaining();
+    if (result.remainingPaths.isEmpty()) {
+        result.complete = true;
+        return result;
+    }
+    const auto reportError = [&](const QString& path, const QString& error) {
+        const QString detail = QStringLiteral("%1: %2").arg(path, error);
+        result.errors.append(detail);
+        qWarning().noquote() << "RecordingSession: discard failed:" << detail;
+    };
+    // QSaveFile follows an existing symlink. Never let a cleanup-intent write
+    // replace a link target or a non-file in the shared temporary directory.
+    const QFileInfo manifestInfo(manifest);
+    if (manifestInfo.isSymLink() || (manifestInfo.exists() && !manifestInfo.isFile())) {
+        reportError(manifest, QStringLiteral("manifest is not a regular, non-symlink file"));
+        return result;
+    }
+    auto info = read(manifest).value_or(RecordingSessionInfo{});
+    info.videoPath = videoPath;
+    if (!info.cleanupPending) {
+        info.cleanupPending = true;
+        QString error;
+        if (!write(info, &error)) {
+            reportError(manifest, error);
+            return result; // no deletion without a durable retry record
+        }
+    }
+    result.intentPersisted = true;
+    const auto removeOne = [&](const QString& path) {
+        if (!exists(path)) return true;
+        QString error;
+        bool removed;
+        if (removeFile) {
+            removed = removeFile(path, &error);
+        } else {
+            QFile file(path);
+            removed = file.remove();
+            error = file.errorString();
+        }
+        if (!removed) reportError(path, error);
+        return removed;
+    };
+    bool materialsRemoved = true;
+    for (const auto& path : materials) {
+        if (!removeOne(path)) materialsRemoved = false;
+    }
+    if (materialsRemoved) removeOne(manifest);
+    result.remainingPaths.clear();
+    collectRemaining();
+    result.complete = result.errors.isEmpty() && result.remainingPaths.isEmpty();
+    return result;
 }
 
 bool isAnimatedFormat(const QString& videoPath)
@@ -211,8 +278,22 @@ QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsAc
         if (isActive && isActive(videoPath)) {
             continue;  // still recording, or open in a preview
         }
+        // The active callback is only a hint: an owner can start immediately
+        // after it returns. Hold the lock through reading, probing and orphan
+        // cleanup so a concurrent discard cannot replace our manifest snapshot.
+        QLockFile lock(lockPathFor(videoPath));
+        lock.setStaleLockTime(0);
         Recoverable item;
         item.manifestPath = manifestPath;
+        if (!lock.tryLock(0)) {
+            if (lock.error() == QLockFile::LockFailedError) continue;
+            item.info.videoPath = videoPath;
+            item.accessBlocked = true;
+            item.problem = QStringLiteral("cannot lock session (error %1)").arg(int(lock.error()));
+            qWarning().noquote() << "RecordingSession:" << item.problem << lock.fileName();
+            found.append(item);
+            continue; // no probe or cleanup without ownership
+        }
         QString error;
         const auto info = read(manifestPath, &error);
         if (!info) {
@@ -225,6 +306,10 @@ QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsAc
             continue;
         }
         item.info = *info;
+        if (info->cleanupPending) {
+            found.append(item);
+            continue;
+        }
         if (!QFileInfo::exists(info->videoPath)) {
             remove(info->videoPath);  // nothing left to recover
             continue;

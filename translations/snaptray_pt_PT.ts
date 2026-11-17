@@ -1464,6 +1464,22 @@ Tamanho do ficheiro: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Cancelar captura com atraso</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Sessões de gravação encontradas</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>O SnapTray encontrou %1 sessões de gravação que requerem atenção; %2 podem ser recuperadas através do menu da área de notificação.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Gravação indisponível</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>A gravação pode estar em utilização ou já não ser recuperável. Volte a abrir «Recuperar gravações» para atualizar a lista.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6940,6 +6956,18 @@ Pode estar a ser utilizado por outra aplicação.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>foi gravado o ecrã inteiro; abre recortado para a área escolhida</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>O descarte está incompleto. Escolha «Descartar» para tentar a limpeza novamente.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Não foi possível descartar. Verifique as permissões dos ficheiros e escolha «Descartar» para tentar novamente.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Não é possível aceder a esta gravação. Verifique as permissões dos ficheiros e tente novamente.</translation>
     </message>
 </context>
 <context>

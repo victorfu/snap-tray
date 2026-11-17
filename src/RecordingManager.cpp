@@ -1711,9 +1711,6 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
     if (m_state != State::Idle || !QFileInfo::exists(videoPath)) {
         return false;
     }
-    const auto info = SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(videoPath));
-    m_session = info.value_or(SnapTray::RecordingSessionInfo{});
-    m_session.videoPath = videoPath;
     m_sessionLock = std::make_unique<QLockFile>(SnapTray::RecordingSession::lockPathFor(videoPath));
     m_sessionLock->setStaleLockTime(0);
     if (!m_sessionLock->tryLock(0)) {
@@ -1721,6 +1718,16 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
         m_session = {};
         return false;  // another SnapTray has it open
     }
+    // Re-read under the lock: another SnapTray instance may have partially
+    // discarded this session after our list was populated.
+    const auto info = SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(videoPath));
+    if (!QFileInfo::exists(videoPath) || (info && info->cleanupPending)) {
+        m_sessionLock.reset();
+        m_session = {};
+        return false;
+    }
+    m_session = info.value_or(SnapTray::RecordingSessionInfo{});
+    m_session.videoPath = videoPath;
     if (SnapTray::RecordingSession::isAnimatedFormat(videoPath)) {
         // A finished GIF/WebP is the output already, and the preview plays
         // video only (#172 review): save it as the no-preview flow does. The

@@ -1463,6 +1463,22 @@ Kích thước tệp: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Hủy chụp trễ</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Đã tìm thấy các phiên ghi</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray tìm thấy %1 phiên ghi cần chú ý; có thể khôi phục %2 phiên từ menu khay hệ thống.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Bản ghi không khả dụng</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Bản ghi có thể đang được sử dụng hoặc không còn khôi phục được. Mở lại «Khôi phục bản ghi» để làm mới danh sách.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6936,6 +6952,18 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>đã ghi toàn màn hình; sẽ mở ra đã cắt theo vùng đã chọn</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Chưa bỏ xong. Chọn «Bỏ» để thử dọn dẹp lại.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Không thể bỏ. Kiểm tra quyền truy cập tệp và chọn «Bỏ» để thử lại.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Không thể truy cập bản ghi này. Kiểm tra quyền truy cập tệp rồi thử lại.</translation>
     </message>
 </context>
 <context>

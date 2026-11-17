@@ -1465,6 +1465,22 @@ Velikost souboru: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Zrušit zpožděné zachycení</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Nalezeny relace nahrávání</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray našel %1 relací nahrávání vyžadujících pozornost; %2 lze obnovit z nabídky v oznamovací oblasti.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Nahrávka není dostupná</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Nahrávka se možná používá nebo ji již nelze obnovit. Znovu otevřete „Obnovit nahrávky“ pro aktualizaci seznamu.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6944,6 +6960,18 @@ Může být používána jinou aplikací.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>nahrávala se celá obrazovka; otevře se oříznutý na zvolenou oblast</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Zahození není dokončeno. Pro opakování úklidu zvolte „Zahodit“.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Zahození se nezdařilo. Zkontrolujte oprávnění souborů a zkuste znovu zvolit „Zahodit“.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>K této nahrávce nelze přistupovat. Zkontrolujte oprávnění souborů a zkuste to znovu.</translation>
     </message>
 </context>
 <context>

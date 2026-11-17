@@ -1465,6 +1465,22 @@ File size: %3</source>
         <source>Cancel Delayed Capture</source>
         <translation>Отменить отложенный захват</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Найдены сеансы записи</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray обнаружил %1 сеансов записи, требующих внимания; %2 можно восстановить через меню в системном трее.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Запись недоступна</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Запись может использоваться или быть недоступной для восстановления. Снова откройте «Восстановить записи», чтобы обновить список.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6944,6 +6960,18 @@ It may be in use by another application.</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>записан весь экран; откроется обрезанным по выбранной области</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Удаление не завершено. Выберите «Удалить», чтобы повторить очистку.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Не удалось удалить запись. Проверьте права доступа к файлам и выберите «Удалить», чтобы повторить попытку.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Нет доступа к этой записи. Проверьте права доступа к файлам и повторите попытку.</translation>
     </message>
 </context>
 <context>

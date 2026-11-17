@@ -1464,6 +1464,22 @@ Dateigröße: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Verzögerte Aufnahme abbrechen</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Aufnahmesitzungen gefunden</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray hat %1 Aufnahmesitzungen gefunden, die Aufmerksamkeit erfordern; %2 können über das Infobereich-Menü wiederhergestellt werden.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Aufnahme nicht verfügbar</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Die Aufnahme wird möglicherweise verwendet oder kann nicht mehr wiederhergestellt werden. Öffnen Sie „Aufnahmen wiederherstellen“ erneut, um die Liste zu aktualisieren.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6940,6 +6956,18 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>der ganze Bildschirm wurde aufgenommen; die Aufnahme öffnet sich auf den gewählten Bereich zugeschnitten</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Das Verwerfen ist unvollständig. Wählen Sie „Verwerfen“, um die Bereinigung erneut zu versuchen.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Verwerfen fehlgeschlagen. Prüfen Sie die Dateiberechtigungen und wählen Sie erneut „Verwerfen“.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Auf diese Aufnahme kann nicht zugegriffen werden. Prüfen Sie die Dateiberechtigungen und versuchen Sie es erneut.</translation>
     </message>
 </context>
 <context>
