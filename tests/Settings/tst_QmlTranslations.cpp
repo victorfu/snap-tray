@@ -35,6 +35,7 @@ private slots:
     void testRecordingPreviewCropTranslatedForAllLocales();
     void testRecordingWarningTitleTranslatedForAllLocales();
     void testRecordingAudioWarningsTranslatedForAllLocales();
+    void testRecoveryDiscardTranslatedForAllLocales();
 
 private:
     QTranslator m_translator;
@@ -572,6 +573,34 @@ void tst_QmlTranslations::testRecordingAudioWarningsTranslatedForAllLocales()
                      qPrintable(QStringLiteral(
                                     "%1 fell back to English for a recording-audio warning: %2")
                                     .arg(qmFile, QString::fromUtf8(source))));
+        }
+    }
+}
+
+void tst_QmlTranslations::testRecoveryDiscardTranslatedForAllLocales()
+{
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"MainApplication", "Recording Sessions Found"},
+        {"MainApplication", "SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu."},
+        {"MainApplication", "Recording Unavailable"},
+        {"MainApplication", "The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list."},
+        {"SnapTray::RecordingRecoveryViewModel", "Discard is incomplete. Choose Discard to retry cleanup."},
+        {"SnapTray::RecordingRecoveryViewModel", "Discard failed. Check file permissions and choose Discard to retry."},
+        {"SnapTray::RecordingRecoveryViewModel", "Cannot access this recording. Check file permissions and try again."},
+    };
+    const QDir directory(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const auto files = directory.entryList({QStringLiteral("snaptray_*.qm")}, QDir::Files);
+    QCOMPARE(files.size(), 24);
+    for (const auto& file : files) {
+        QTranslator translator;
+        QVERIFY(translator.load(directory.filePath(file)));
+        for (const auto& message : messages) {
+            const auto translated = translator.translate(message.first.constData(), message.second.constData());
+            QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(message.second),
+                     qPrintable(file + QStringLiteral(": ") + QString::fromUtf8(message.second)));
+            for (const auto& placeholder : {QStringLiteral("%1"), QStringLiteral("%2")}) {
+                QCOMPARE(translated.count(placeholder), QString::fromUtf8(message.second).count(placeholder));
+            }
         }
     }
 }

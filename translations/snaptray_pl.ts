@@ -1465,6 +1465,22 @@ Rozmiar pliku: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Anuluj opóźnione przechwytywanie</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Znaleziono sesje nagrywania</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray znalazł %1 sesji nagrywania wymagających uwagi; %2 można odzyskać z menu zasobnika systemowego.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Nagranie niedostępne</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Nagranie może być używane lub nie można go już odzyskać. Otwórz ponownie „Odzyskaj nagrania”, aby odświeżyć listę.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6944,6 +6960,18 @@ Może być używany przez inną aplikację.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>nagrano cały ekran; otworzy się przycięty do wybranego obszaru</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Odrzucanie nie zostało ukończone. Wybierz „Odrzuć”, aby ponowić czyszczenie.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Odrzucanie nie powiodło się. Sprawdź uprawnienia plików i wybierz „Odrzuć”, aby ponowić próbę.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Nie można uzyskać dostępu do tego nagrania. Sprawdź uprawnienia plików i spróbuj ponownie.</translation>
     </message>
 </context>
 <context>

@@ -560,7 +560,9 @@ void MainApplication::initialize()
                           .arg(total)
                           .arg(recoverable);
                 SnapTray::QmlToast::screenToast().showToast(
-                    SnapTray::QmlToast::Level::Info, tr("Recording Sessions Found"), message, 8000);
+                    SnapTray::QmlToast::Level::Info,
+                    recoverable == total ? tr("Unsaved Recordings Found") : tr("Recording Sessions Found"),
+                    message, 8000);
             }
         });
 

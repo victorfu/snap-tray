@@ -1411,6 +1411,22 @@ File size: %3</source>
         <source>Cancel Delayed Capture</source>
         <translation>ยกเลิกการจับภาพแบบหน่วงเวลา</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>พบเซสชันการบันทึก</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray พบเซสชันการบันทึก %1 รายการที่ต้องตรวจสอบ โดยกู้คืนได้ %2 รายการจากเมนูถาดระบบ</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>การบันทึกไม่พร้อมใช้งาน</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>การบันทึกอาจกำลังใช้งานอยู่หรือกู้คืนไม่ได้แล้ว เปิด «กู้คืนการบันทึก» อีกครั้งเพื่อรีเฟรชรายการ</translation>
+    </message>
 </context>
 <context>
     <name>MultiRegionListPanel</name>
@@ -6612,6 +6628,18 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>บันทึกทั้งหน้าจอไว้ เปิดโดยครอปตามพื้นที่ที่เลือก</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>ยังทิ้งไม่เสร็จสมบูรณ์ เลือก «ทิ้ง» เพื่อลองล้างข้อมูลอีกครั้ง</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>ทิ้งไม่สำเร็จ ตรวจสอบสิทธิ์ของไฟล์และเลือก «ทิ้ง» เพื่อลองอีกครั้ง</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>ไม่สามารถเข้าถึงการบันทึกนี้ได้ ตรวจสอบสิทธิ์ของไฟล์แล้วลองอีกครั้ง</translation>
     </message>
 </context>
 <context>

@@ -1464,6 +1464,22 @@ Filstorlek: %3</translation>
         <source>Cancel Delayed Capture</source>
         <translation>Avbryt fördröjd fångst</translation>
     </message>
+    <message>
+        <source>Recording Sessions Found</source>
+        <translation>Inspelningssessioner hittades</translation>
+    </message>
+    <message>
+        <source>SnapTray found %1 recording session(s) needing attention; %2 can be recovered from the tray menu.</source>
+        <translation>SnapTray hittade %1 inspelningssessioner som behöver åtgärdas; %2 kan återställas från menyn i systemfältet.</translation>
+    </message>
+    <message>
+        <source>Recording Unavailable</source>
+        <translation>Inspelningen är inte tillgänglig</translation>
+    </message>
+    <message>
+        <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
+        <translation>Inspelningen kanske används eller kan inte längre återställas. Öppna «Återställ inspelningar» igen för att uppdatera listan.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -6940,6 +6956,18 @@ Den kan användas av ett annat program.</translation>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="47" />
         <source>the whole screen was recorded; it opens cropped to the chosen area</source>
         <translation>hela skärmen spelades in; öppnas beskuren till det valda området</translation>
+    </message>
+    <message>
+        <source>Discard is incomplete. Choose Discard to retry cleanup.</source>
+        <translation>Borttagningen är inte slutförd. Välj «Ta bort» för att försöka rensa igen.</translation>
+    </message>
+    <message>
+        <source>Discard failed. Check file permissions and choose Discard to retry.</source>
+        <translation>Borttagningen misslyckades. Kontrollera filbehörigheterna och välj «Ta bort» för att försöka igen.</translation>
+    </message>
+    <message>
+        <source>Cannot access this recording. Check file permissions and try again.</source>
+        <translation>Det går inte att komma åt inspelningen. Kontrollera filbehörigheterna och försök igen.</translation>
     </message>
 </context>
 <context>
