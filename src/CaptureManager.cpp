@@ -10,6 +10,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "history/AnnotationSerializer.h"
 #include "history/HistoryRecorder.h"
+#include "history/HistoryReplayDocument.h"
 #include "history/HistoryStore.h"
 #include "region/RegionExportManager.h"
 #include "settings/PinWindowSettingsManager.h"
@@ -186,6 +187,14 @@ bool CaptureManager::startHistoryReplay(const QString& entryId)
 
     const auto entry = SnapTray::HistoryStore::loadEntry(entryId);
     if (!entry.has_value()) {
+        return false;
+    }
+
+    // Find out that the entry opens before the screen is grabbed and a
+    // selector covers it: a damaged entry starts no capture at all.
+    QString replayError;
+    if (!SnapTray::loadHistoryReplayDocument(*entry, &replayError)) {
+        qWarning() << "CaptureManager: cannot replay history entry" << entryId << "-" << replayError;
         return false;
     }
 

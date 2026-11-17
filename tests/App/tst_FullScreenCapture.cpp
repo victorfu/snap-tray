@@ -23,7 +23,10 @@
 #include "RegionSelector.h"
 #include "../RegionSelector/RegionSelectorTestAccess.h"
 #include "capture/OwnWindowCaptureHider.h"
+#include "annotations/AnnotationLayer.h"
+#include "history/AnnotationSerializer.h"
 #include "history/HistoryRecorder.h"
+#include "history/HistoryStore.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
 
@@ -153,6 +156,8 @@ private slots:
     void recentlyClosedMenu_waitsBeforeGrab();
     void windowShownAfterCaptureStarts_isHiddenBeforeGrab();
     void windowsKeepAppearing_cancelsInsteadOfGrabbing();
+    void libraryReopen_refusesDamagedEntryAndOpensIntactOne_data();
+    void libraryReopen_refusesDamagedEntryAndOpensIntactOne();
 
 private:
     void configure(CaptureManager& manager, std::optional<QImage>* copiedImage);
@@ -699,6 +704,87 @@ void tst_FullScreenCapture::windowsKeepAppearing_cancelsInsteadOfGrabbing()
     for (const auto& window : lateWindows) {
         QCOMPARE(window->windowHandle()->opacity(), 1.0);
     }
+}
+
+// #352: the Library's "Edit" opens a selector only for an entry whose whole
+// document loads. A damaged one starts no capture at all, rather than showing
+// the bare canvas as if it were the saved picture.
+void tst_FullScreenCapture::libraryReopen_refusesDamagedEntryAndOpensIntactOne_data()
+{
+    QTest::addColumn<bool>("removeAnnotations");
+    QTest::addColumn<QByteArray>("payload");
+    QTest::newRow("missing-file") << true << QByteArray();
+    QTest::newRow("empty-file") << false << QByteArray();
+    QTest::newRow("truncated-json") << false << QByteArray("{");
+    QTest::newRow("root-not-object") << false << QByteArray("[]");
+    QTest::newRow("items-missing") << false << QByteArray("{}");
+    QTest::newRow("items-not-array") << false << QByteArray("{\"items\":{}}");
+    QTest::newRow("item-not-object") << false << QByteArray("{\"items\":[42]}");
+    QTest::newRow("unknown-item-type") << false << QByteArray("{\"items\":[{\"type\":\"hologram\"}]}");
+}
+
+void tst_FullScreenCapture::libraryReopen_refusesDamagedEntryAndOpensIntactOne()
+{
+#ifdef Q_OS_MACOS
+    QSKIP("RegionSelector needs the Cocoa platform; this suite runs offscreen.");
+#endif
+    QFETCH(bool, removeAnnotations);
+    QFETCH(QByteArray, payload);
+
+    SnapTray::CaptureSessionWriteRequest request;
+    request.canvasImage = QImage(400, 300, QImage::Format_RGB32);
+    request.canvasImage.fill(Qt::blue);
+    request.selectionRect = QRect(5, 5, 80, 60);
+    request.resultImage = request.canvasImage.copy(request.selectionRect);
+    request.canvasLogicalSize = request.canvasImage.size();
+    request.annotationsJson = SnapTray::serializeAnnotationLayer(AnnotationLayer());
+    const auto intact = SnapTray::HistoryStore::writeCaptureSession(request);
+    QVERIFY(intact);
+    const auto damaged = SnapTray::HistoryStore::writeCaptureSession(request);
+    QVERIFY(damaged);
+    auto removeEntries = qScopeGuard([&] {
+        SnapTray::HistoryStore::deleteEntry(*intact);
+        SnapTray::HistoryStore::deleteEntry(*damaged);
+    });
+    if (removeAnnotations) {
+        QVERIFY(QFile::remove(damaged->annotationsPath));
+    } else {
+        QFile file(damaged->annotationsPath);
+        QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        QCOMPARE(file.write(payload), payload.size());
+    }
+
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    QSignalSpy started(&manager, &CaptureManager::captureStarted);
+    QSignalSpy cancelled(&manager, &CaptureManager::captureCancelled);
+
+    // Refused before a capture starts: no screen grab, no selector flashing up.
+    QVERIFY(!manager.startHistoryReplay(damaged->id));
+    QCOMPARE(started.count(), 0);
+    QCOMPARE(cancelled.count(), 0);
+    QVERIFY(!manager.isActive());
+    QVERIFY(!manager.m_regionSelector);
+
+    QVERIFY(manager.startHistoryReplay(intact->id));
+    QCOMPARE(started.count(), 1);
+    QCOMPARE(cancelled.count(), 0);
+    QPointer<RegionSelector> selector = manager.m_regionSelector;
+    QVERIFY(selector);
+    auto closeSelector = qScopeGuard([&selector] { if (selector) selector->close(); });
+    QVERIFY(manager.isActive());
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(*selector), request.selectionRect);
+    QCOMPARE(selector->backgroundPixmap().size(), request.canvasImage.size());
+
+    // With the selector open, the Library reaches the same entry through it;
+    // the refusal leaves what is on screen alone.
+    QVERIFY(!manager.startHistoryReplay(damaged->id));
+    QVERIFY(selector && selector->isVisible());
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(*selector), request.selectionRect);
+    QCOMPARE(cancelled.count(), 0);
+
+    selector->close();
+    QTRY_VERIFY(!selector);
 }
 
 int main(int argc, char** argv)

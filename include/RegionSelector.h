@@ -47,6 +47,7 @@ class AnnotationStyleEditor;
 class ColorPickOverlay;
 struct ColorPickSource;
 namespace SnapTray {
+struct HistoryReplayDocument;
 class QmlFloatingToolbar;
 class QmlFloatingSubToolbar;
 class QmlOverlayPanel;
@@ -254,6 +255,12 @@ private:
     void snapshotLiveReplaySlot();
     void restoreLiveReplaySlot();
     bool loadHistoryReplayIndex(int index);
+    // Replay is validate-then-commit: SnapTray::loadHistoryReplayDocument
+    // touches nothing here, and committing a loaded document cannot fail.
+    void commitHistoryReplayEntry(const SnapTray::HistoryEntry& entry,
+                                  SnapTray::HistoryReplayDocument& document);
+    void showHistoryReplayToast(const QString& message);
+    void setHistoryReplayIndex(int index);
     bool applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry);
     void clearHistoryReplaySelectionState();
     void setSelectionWindowMetadata(const QString& title, const QString& ownerApp);
@@ -522,6 +529,9 @@ private:
         QPixmap backgroundPixmap;
         qreal devicePixelRatio = 1.0;
         QPointer<QScreen> sourceScreen;
+        // Set when annotations were already decoded against this capture, so
+        // the selector and those annotations share one source pixmap.
+        SharedPixmap sharedSourcePixmap;
     };
 
     struct RegionSelectorTraceProbe {

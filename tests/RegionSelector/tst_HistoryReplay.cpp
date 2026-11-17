@@ -11,8 +11,145 @@
 #include "history/HistoryRecorder.h"
 #include "history/AnnotationSerializer.h"
 #include "annotations/ShapeAnnotation.h"
+#include "annotations/MosaicRectAnnotation.h"
 #include <QScopeGuard>
 #include <QFile>
+
+namespace {
+
+// Ways a stored annotations.json stops being a document (#352).
+struct AnnotationDamage {
+    const char* name;
+    bool removeFile;
+    QByteArray payload;
+};
+
+const AnnotationDamage kAnnotationDamages[] = {
+    {"missing-file", true, {}},
+    {"empty-file", false, QByteArray("")},
+    {"truncated-json", false, QByteArray("{")},
+    {"root-not-object", false, QByteArray("[]")},
+    {"items-missing", false, QByteArray("{}")},
+    {"items-not-array", false, QByteArray("{\"items\":{}}")},
+    {"item-not-object", false, QByteArray("{\"items\":[42]}")},
+    {"unknown-item-type", false, QByteArray("{\"items\":[{\"type\":\"hologram\"}]}")},
+};
+
+bool damageAnnotations(const SnapTray::HistoryEntry& entry, const AnnotationDamage& damage)
+{
+    if (damage.removeFile) {
+        return QFile::remove(entry.annotationsPath);
+    }
+    QFile file(entry.annotationsPath);
+    return file.open(QIODevice::WriteOnly | QIODevice::Truncate) &&
+           file.write(damage.payload) == damage.payload.size();
+}
+
+// A stored capture whose only annotation is a mosaic over the selection: the
+// canvas underneath is what the saved picture was hiding.
+std::optional<SnapTray::HistoryEntry> writeRedactedEntry(const QColor& canvasColor,
+                                                         const QRect& selectionRect,
+                                                         const QDateTime& createdAt,
+                                                         const QString& windowTitle)
+{
+    SnapTray::CaptureSessionWriteRequest request;
+    request.canvasImage = QImage(400, 300, QImage::Format_RGB32);
+    request.canvasImage.fill(canvasColor);
+    request.selectionRect = selectionRect;
+    request.resultImage = request.canvasImage.copy(selectionRect);
+    request.canvasLogicalSize = request.canvasImage.size();
+    request.createdAt = createdAt;
+    request.windowTitle = windowTitle;
+
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<MosaicRectAnnotation>(
+        selectionRect,
+        std::make_shared<const QPixmap>(QPixmap::fromImage(request.canvasImage)),
+        12,
+        MosaicBlurType::Pixelate));
+    request.annotationsJson = SnapTray::serializeAnnotationLayer(layer);
+    return SnapTray::HistoryStore::writeCaptureSession(request);
+}
+
+// Hand-built entries need the document a stored one always has.
+QString writeEmptyAnnotations(const QTemporaryDir& directory)
+{
+    const QString path = directory.filePath(QStringLiteral("annotations.json"));
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly) ||
+        file.write(SnapTray::serializeAnnotationLayer(AnnotationLayer())) <= 0) {
+        return {};
+    }
+    return path;
+}
+
+// Everything a failed replay must leave alone.
+struct EditState {
+    QRect selectionRect;
+    QByteArray annotations;
+    bool canUndo = false;
+    bool canRedo = false;
+    QImage background;
+    qreal devicePixelRatio = 0.0;
+    QSize canvasSize;
+    int replayIndex = 0;
+    bool replayActive = false;
+    QString windowTitle;
+    QString ownerApp;
+    int cornerRadius = 0;
+    QVector<QRect> regions;
+    bool hasBeautify = false;
+
+    bool operator==(const EditState& other) const
+    {
+        return cornerRadius == other.cornerRadius && regions == other.regions &&
+               hasBeautify == other.hasBeautify &&
+               selectionRect == other.selectionRect && annotations == other.annotations &&
+               canUndo == other.canUndo && canRedo == other.canRedo &&
+               background == other.background && devicePixelRatio == other.devicePixelRatio &&
+               canvasSize == other.canvasSize && replayIndex == other.replayIndex &&
+               replayActive == other.replayActive && windowTitle == other.windowTitle &&
+               ownerApp == other.ownerApp;
+    }
+};
+
+EditState editStateOf(RegionSelector& selector)
+{
+    AnnotationLayer* layer = RegionSelectorTestAccess::annotationLayer(selector);
+    EditState state;
+    state.selectionRect = RegionSelectorTestAccess::selectionRect(selector);
+    state.annotations = SnapTray::serializeAnnotationLayer(*layer);
+    state.canUndo = layer->canUndo();
+    state.canRedo = layer->canRedo();
+    state.background = RegionSelectorTestAccess::backgroundImage(selector);
+    state.devicePixelRatio = RegionSelectorTestAccess::devicePixelRatio(selector);
+    state.canvasSize = selector.size();
+    state.replayIndex = RegionSelectorTestAccess::historyReplayIndex(selector);
+    state.replayActive = RegionSelectorTestAccess::historyReplayActive(selector);
+    if (const auto request = RegionSelectorTestAccess::currentHistoryRequest(selector)) {
+        state.windowTitle = request->windowTitle;
+        state.ownerApp = request->ownerApp;
+        state.cornerRadius = request->cornerRadius;
+        for (const auto& region : request->captureRegions) {
+            state.regions.append(region.rect);
+        }
+    }
+    state.hasBeautify = selector.historyReplayBeautify().has_value();
+    return state;
+}
+
+// Two red rectangles with the second one undone: annotations, Undo and Redo
+// are all live.
+void addUndoableEdits(AnnotationLayer* layer)
+{
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(40, 40, 30, 25),
+        ShapeType::Rectangle, Qt::red, 3, true));
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(90, 90, 30, 25),
+        ShapeType::Rectangle, Qt::red, 3, true));
+    layer->undo();
+}
+
+} // namespace
 
 class tst_RegionSelectorHistoryReplay : public QObject
 {
@@ -33,6 +170,12 @@ private slots:
     void testPreservedSelectionRecordsOriginalHistory();
     void testLiveEditsSurviveHistoryNavigation_data();
     void testLiveEditsSurviveHistoryNavigation();
+    void testDamagedEntryLeavesCurrentEditUntouched_data();
+    void testDamagedEntryLeavesCurrentEditUntouched();
+    void testNavigationStepsOverDamagedEntries();
+    void testFailedReplayKeepsMultiRegionBeautifiedEdit();
+    void testEntryWithoutSelectionIsNotReplayed();
+    void testValidEntriesStillReplay();
 };
 
 void tst_RegionSelectorHistoryReplay::initTestCase()
@@ -95,6 +238,7 @@ void tst_RegionSelectorHistoryReplay::testBoundarySnapHistoryAndCloseLifecycle()
     SnapTray::HistoryEntry entry;
     entry.id="boundary-snap-lifecycle";entry.replayAvailable=true;
     entry.canvasPath=directory.filePath("canvas.png");
+    entry.annotationsPath=writeEmptyAnnotations(directory);
     entry.canvasLogicalSize={400,400};entry.devicePixelRatio=1;entry.selectionRect=raw;
     QImage replay(400, 400, QImage::Format_RGB32);
     replay.fill(Qt::black);
@@ -256,6 +400,7 @@ void tst_RegionSelectorHistoryReplay::testReplayedBeautifySettingsReachThePin()
     SnapTray::HistoryEntry entry;
     entry.id = QStringLiteral("beautified-entry");
     entry.canvasPath = canvasPath;
+    entry.annotationsPath = writeEmptyAnnotations(tempDir);
     entry.canvasLogicalSize = QSize(160, 100);
     entry.selectionRect = QRect(5, 6, 30, 20);
     BeautifySettings look;
@@ -346,6 +491,7 @@ void tst_RegionSelectorHistoryReplay::testApplyHistoryReplayEntryRecordsCaptureC
     entry.id = QStringLiteral("test-entry");
     entry.replayAvailable = true;
     entry.canvasPath = canvasPath;
+    entry.annotationsPath = writeEmptyAnnotations(tempDir);
     entry.devicePixelRatio = 2.0;
     entry.canvasLogicalSize = QSize(80, 50);
     entry.selectionRect = QRect(5, 6, 30, 20);
@@ -616,6 +762,317 @@ void tst_RegionSelectorHistoryReplay::testLiveEditsSurviveHistoryNavigation()
     QCOMPARE(layer->itemCount(), size_t(2));
     QCOMPARE(SnapTray::serializeAnnotationLayer(*layer), annotationsAB);
     QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), editedCrop);
+}
+
+// #352: an entry whose annotations cannot be read is refused before anything
+// on screen changes, whichever way it is reached and whatever is on screen.
+void tst_RegionSelectorHistoryReplay::testDamagedEntryLeavesCurrentEditUntouched_data()
+{
+    QTest::addColumn<int>("damageIndex");
+    QTest::addColumn<bool>("fromHistoryEntry");
+    QTest::addColumn<bool>("openByEntryId");
+    for (int i = 0; i < int(std::size(kAnnotationDamages)); ++i) {
+        for (bool fromHistoryEntry : {false, true}) {
+            for (bool openByEntryId : {false, true}) {
+                QTest::addRow("%s-from-%s-by-%s", kAnnotationDamages[i].name,
+                              fromHistoryEntry ? "history-entry" : "live-capture",
+                              openByEntryId ? "entry-id" : "keyboard")
+                    << i << fromHistoryEntry << openByEntryId;
+            }
+        }
+    }
+}
+
+void tst_RegionSelectorHistoryReplay::testDamagedEntryLeavesCurrentEditUntouched()
+{
+    QFETCH(int, damageIndex);
+    QFETCH(bool, fromHistoryEntry);
+    QFETCH(bool, openByEntryId);
+    QTemporaryDir history;
+    QVERIFY(history.isValid());
+    const QByteArray previousHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
+    const auto restoreEnvironment = qScopeGuard([&] {
+        if (previousHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
+        else qputenv("SNAPTRAY_HISTORY_DIR", previousHistory);
+    });
+
+    // Keyboard navigation walks from the live capture to the newest entry and
+    // on to older ones. The damaged entry is the next and last stop either way.
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    const QRect goodSelection(5, 5, 80, 60);
+    std::optional<SnapTray::HistoryEntry> good;
+    if (fromHistoryEntry) {
+        good = writeRedactedEntry(Qt::blue, goodSelection, now, "Good title");
+        QVERIFY(good);
+    }
+    const auto damaged = writeRedactedEntry(Qt::darkGreen, QRect(10, 10, 60, 40),
+                                            now.addSecs(-1), "Damaged title");
+    QVERIFY(damaged);
+    QVERIFY(damageAnnotations(*damaged, kAnnotationDamages[damageIndex]));
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap liveCapture(400, 300);
+    liveCapture.fill(Qt::white);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(), liveCapture);
+    const QRect liveCrop(20, 20, 200, 150);
+    RegionSelectorTestAccess::setSelectionRect(selector, liveCrop);
+    auto* layer = RegionSelectorTestAccess::annotationLayer(selector);
+    addUndoableEdits(layer);
+    const EditState liveState = editStateOf(selector);
+
+    if (fromHistoryEntry) {
+        QTest::keyClick(&selector, Qt::Key_Comma);
+        QCOMPARE(RegionSelectorTestAccess::historyReplayIndex(selector), 0);
+        QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), goodSelection);
+        QCOMPARE(layer->itemCount(), size_t(1));
+        addUndoableEdits(layer);
+    }
+    const EditState before = editStateOf(selector);
+    QCOMPARE(before.replayIndex, fromHistoryEntry ? 0 : -1);
+    QCOMPARE(before.replayActive, fromHistoryEntry);
+    QVERIFY(before.canUndo);
+    QVERIFY(before.canRedo);
+    QCOMPARE(before.windowTitle, fromHistoryEntry ? QStringLiteral("Good title") : QString());
+
+    QSignalSpy changedSpy(layer, &AnnotationLayer::changed);
+    if (openByEntryId) {
+        QVERIFY(!selector.beginHistoryReplay(damaged->id));
+    } else {
+        QTest::keyClick(&selector, Qt::Key_Comma);
+    }
+
+    QCOMPARE(changedSpy.count(), 0);
+    QVERIFY(editStateOf(selector) == before);
+
+    // Undo and Redo still act on the edit that was on screen.
+    const size_t itemCount = layer->itemCount();
+    layer->redo();
+    QCOMPARE(layer->itemCount(), itemCount + 1);
+    layer->undo();
+    layer->undo();
+    QCOMPARE(layer->itemCount(), itemCount - 1);
+    layer->redo();
+    QVERIFY(editStateOf(selector) == before);
+
+    // The index did not move: one step forward is where it was before.
+    if (fromHistoryEntry) {
+        QTest::keyClick(&selector, Qt::Key_Period);
+        QCOMPARE(RegionSelectorTestAccess::historyReplayIndex(selector), -1);
+        QVERIFY(editStateOf(selector).selectionRect == liveState.selectionRect);
+        QCOMPARE(editStateOf(selector).annotations, liveState.annotations);
+    } else {
+        good = writeRedactedEntry(Qt::blue, goodSelection, now.addSecs(-2), "Good title");
+        QVERIFY(good);
+        QVERIFY(selector.beginHistoryReplay(good->id));
+        QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), goodSelection);
+        QCOMPARE(layer->itemCount(), size_t(1));
+    }
+}
+
+// A damaged entry does not cut off the entries behind it, nor the way back to
+// the live capture from an older entry.
+void tst_RegionSelectorHistoryReplay::testNavigationStepsOverDamagedEntries()
+{
+    QTemporaryDir history;
+    QVERIFY(history.isValid());
+    const QByteArray previousHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
+    const auto restoreEnvironment = qScopeGuard([&] {
+        if (previousHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
+        else qputenv("SNAPTRAY_HISTORY_DIR", previousHistory);
+    });
+
+    // Newest to oldest: damaged, newer, damaged, older.
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    const QRect newerSelection(5, 5, 80, 60);
+    const QRect olderSelection(15, 25, 70, 50);
+    const auto newestDamaged = writeRedactedEntry(Qt::red, QRect(1, 1, 20, 20), now, "D1");
+    const auto newer = writeRedactedEntry(Qt::blue, newerSelection, now.addSecs(-1), "Newer");
+    const auto middleDamaged = writeRedactedEntry(Qt::red, QRect(2, 2, 20, 20), now.addSecs(-2), "D2");
+    const auto older = writeRedactedEntry(Qt::green, olderSelection, now.addSecs(-3), "Older");
+    QVERIFY(newestDamaged && newer && middleDamaged && older);
+    QVERIFY(damageAnnotations(*newestDamaged, kAnnotationDamages[0]));
+    QVERIFY(damageAnnotations(*middleDamaged, kAnnotationDamages[2]));
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap liveCapture(400, 300);
+    liveCapture.fill(Qt::white);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(), liveCapture);
+    RegionSelectorTestAccess::setSelectionRect(selector, QRect(20, 20, 200, 150));
+    auto* layer = RegionSelectorTestAccess::annotationLayer(selector);
+    addUndoableEdits(layer);
+    const EditState liveState = editStateOf(selector);
+
+    QTest::keyClick(&selector, Qt::Key_Comma);
+    QCOMPARE(RegionSelectorTestAccess::historyReplayIndex(selector), 1);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), newerSelection);
+    QTest::keyClick(&selector, Qt::Key_Comma);
+    QCOMPARE(RegionSelectorTestAccess::historyReplayIndex(selector), 3);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), olderSelection);
+    const EditState oldest = editStateOf(selector);
+    QTest::keyClick(&selector, Qt::Key_Comma);
+    QVERIFY(editStateOf(selector) == oldest);
+
+    QTest::keyClick(&selector, Qt::Key_Period);
+    QCOMPARE(RegionSelectorTestAccess::historyReplayIndex(selector), 1);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), newerSelection);
+    QTest::keyClick(&selector, Qt::Key_Period);
+    QCOMPARE(RegionSelectorTestAccess::historyReplayIndex(selector), -1);
+    QVERIFY(!RegionSelectorTestAccess::historyReplayActive(selector));
+    // Undo history is not part of the live slot's round trip (#109).
+    QCOMPARE(editStateOf(selector).selectionRect, liveState.selectionRect);
+    QCOMPARE(editStateOf(selector).annotations, liveState.annotations);
+    QCOMPARE(editStateOf(selector).background, liveState.background);
+}
+
+// The same guarantee for an edit that is more than one rectangle: a replayed
+// multi-region entry with a rounded corner and its own Beautify look.
+void tst_RegionSelectorHistoryReplay::testFailedReplayKeepsMultiRegionBeautifiedEdit()
+{
+    QTemporaryDir history;
+    QVERIFY(history.isValid());
+    const QByteArray previousHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
+    const auto restoreEnvironment = qScopeGuard([&] {
+        if (previousHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
+        else qputenv("SNAPTRAY_HISTORY_DIR", previousHistory);
+    });
+
+    SnapTray::CaptureSessionWriteRequest request;
+    request.canvasImage = QImage(400, 300, QImage::Format_RGB32);
+    request.canvasImage.fill(Qt::darkCyan);
+    request.canvasLogicalSize = request.canvasImage.size();
+    request.selectionRect = QRect(10, 10, 200, 100);
+    request.captureRegions = {
+        MultiRegionManager::Region{QRect(10, 10, 80, 60), QColor(Qt::green), 1, false},
+        MultiRegionManager::Region{QRect(120, 40, 90, 70), QColor(Qt::red), 2, true},
+    };
+    request.cornerRadius = 7;
+    BeautifySettings look;
+    look.padding = 17;
+    request.beautify = look;
+    request.resultImage = request.canvasImage.copy(request.selectionRect);
+    request.annotationsJson = SnapTray::serializeAnnotationLayer(AnnotationLayer());
+    const auto shown = SnapTray::HistoryStore::writeCaptureSession(request);
+    QVERIFY(shown);
+    const auto damaged = writeRedactedEntry(Qt::red, QRect(1, 1, 20, 20),
+                                            request.createdAt.addSecs(-1), "Damaged");
+    QVERIFY(damaged);
+    QVERIFY(damageAnnotations(*damaged, kAnnotationDamages[2]));
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap liveCapture(400, 300);
+    liveCapture.fill(Qt::white);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(), liveCapture);
+    QVERIFY(selector.beginHistoryReplay(shown->id));
+    addUndoableEdits(RegionSelectorTestAccess::annotationLayer(selector));
+    const EditState before = editStateOf(selector);
+    QCOMPARE(before.regions, QVector<QRect>({QRect(10, 10, 80, 60), QRect(120, 40, 90, 70)}));
+    QCOMPARE(before.cornerRadius, 7);
+    QVERIFY(before.hasBeautify);
+
+    QVERIFY(!selector.beginHistoryReplay(damaged->id));
+    QVERIFY(editStateOf(selector) == before);
+    QTest::keyClick(&selector, Qt::Key_Comma);
+    QVERIFY(editStateOf(selector) == before);
+    QCOMPARE(selector.historyReplayBeautify()->padding, 17);
+}
+
+// A manifest that lost its selection is damaged too, not a capture of nothing.
+void tst_RegionSelectorHistoryReplay::testEntryWithoutSelectionIsNotReplayed()
+{
+    QTemporaryDir history;
+    QVERIFY(history.isValid());
+    const QByteArray previousHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
+    const auto restoreEnvironment = qScopeGuard([&] {
+        if (previousHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
+        else qputenv("SNAPTRAY_HISTORY_DIR", previousHistory);
+    });
+    auto entry = writeRedactedEntry(Qt::blue, QRect(5, 5, 80, 60),
+                                    QDateTime::currentDateTimeUtc(), "Title");
+    QVERIFY(entry);
+
+    RegionSelector selector;
+    QPixmap liveCapture(400, 300);
+    liveCapture.fill(Qt::white);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(), liveCapture);
+    RegionSelectorTestAccess::setSelectionRect(selector, QRect(20, 20, 200, 150));
+    addUndoableEdits(RegionSelectorTestAccess::annotationLayer(selector));
+    const EditState before = editStateOf(selector);
+
+    entry->selectionRect = QRect();
+    QVERIFY(!RegionSelectorTestAccess::invokeApplyHistoryReplayEntry(selector, *entry));
+    QVERIFY(editStateOf(selector) == before);
+
+    entry->selectionRect = QRect(5, 5, 80, 60);
+    entry->canvasPath = history.filePath("no-such-canvas.png");
+    QVERIFY(!RegionSelectorTestAccess::invokeApplyHistoryReplayEntry(selector, *entry));
+    QVERIFY(editStateOf(selector) == before);
+}
+
+// The stricter check keeps what was valid: a document with no annotations,
+// and multi-region captures at a fractional device pixel ratio.
+void tst_RegionSelectorHistoryReplay::testValidEntriesStillReplay()
+{
+    QTemporaryDir history;
+    QVERIFY(history.isValid());
+    const QByteArray previousHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
+    const auto restoreEnvironment = qScopeGuard([&] {
+        if (previousHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
+        else qputenv("SNAPTRAY_HISTORY_DIR", previousHistory);
+    });
+
+    const qreal dpr = 1.5;
+    SnapTray::CaptureSessionWriteRequest request;
+    request.canvasImage = QImage(600, 450, QImage::Format_RGB32);
+    request.canvasImage.fill(Qt::darkCyan);
+    request.devicePixelRatio = dpr;
+    request.canvasLogicalSize = QSize(400, 300);
+    request.selectionRect = QRect(10, 10, 200, 100);
+    request.captureRegions = {
+        MultiRegionManager::Region{QRect(10, 10, 80, 60), QColor(Qt::green), 1, false},
+        MultiRegionManager::Region{QRect(120, 40, 90, 70), QColor(Qt::red), 2, true},
+    };
+    request.resultImage = request.canvasImage.copy(QRect(15, 15, 300, 150));
+    request.annotationsJson = SnapTray::serializeAnnotationLayer(AnnotationLayer());
+    QCOMPARE(request.annotationsJson, QByteArray("{\"items\":[]}"));
+    const auto multiRegion = SnapTray::HistoryStore::writeCaptureSession(request);
+    QVERIFY(multiRegion);
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap liveCapture(400, 300);
+    liveCapture.fill(Qt::white);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(), liveCapture);
+    auto* layer = RegionSelectorTestAccess::annotationLayer(selector);
+    addUndoableEdits(layer);
+
+    QVERIFY(selector.beginHistoryReplay(multiRegion->id));
+    QVERIFY(layer->isEmpty());
+    QVERIFY(RegionSelectorTestAccess::historyReplayActive(selector));
+    QCOMPARE(RegionSelectorTestAccess::devicePixelRatio(selector), dpr);
+    QCOMPARE(RegionSelectorTestAccess::backgroundPixelSize(selector), QSize(600, 450));
+    QCOMPARE(selector.size(), QSize(400, 300));
+    const auto replayed = RegionSelectorTestAccess::currentHistoryRequest(selector);
+    QVERIFY(replayed);
+    QCOMPARE(replayed->captureRegions.size(), 2);
+    QCOMPARE(replayed->captureRegions.at(0).rect, QRect(10, 10, 80, 60));
+    QCOMPARE(replayed->captureRegions.at(1).rect, QRect(120, 40, 90, 70));
+
+    // A redacted entry comes back with its mosaic, drawn from its own canvas.
+    const auto redacted = writeRedactedEntry(Qt::blue, QRect(5, 5, 80, 60),
+                                             QDateTime::currentDateTimeUtc().addSecs(5), "Title");
+    QVERIFY(redacted);
+    QVERIFY(selector.beginHistoryReplay(redacted->id));
+    QCOMPARE(layer->itemCount(), size_t(1));
+    QVERIFY(dynamic_cast<MosaicRectAnnotation*>(layer->itemAt(0)));
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), QRect(5, 5, 80, 60));
 }
 
 QTEST_MAIN(tst_RegionSelectorHistoryReplay)
