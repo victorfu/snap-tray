@@ -48,15 +48,6 @@ QRect rectFromJson(const QJsonValue& value)
     return QRect(a[0].toInt(), a[1].toInt(), a[2].toInt(), a[3].toInt());
 }
 
-// Moves a file; across file systems, copies and removes.
-bool moveFile(const QString& from, const QString& to)
-{
-    if (QFile::rename(from, to)) return true;
-    if (!QFile::copy(from, to)) return false;
-    QFile::remove(from);
-    return true;
-}
-
 bool& failNextManifestWrite()
 {
     static bool fail = false;
@@ -204,7 +195,8 @@ QStringList sidecarSuffixes()
 }
 
 std::optional<RecordingProject> create(const QString& videoPath, bool copy, const QJsonObject& recipe,
-                                       const QImage& thumbnail, qint64 durationMs, const QString& savedPath)
+                                       const QImage& thumbnail, qint64 durationMs, const QString& savedPath,
+                                       const RecipePreparer& prepareRecipe)
 {
     if (!QFileInfo::exists(videoPath)) return std::nullopt;
     const QDateTime now = QDateTime::currentDateTime();
@@ -220,32 +212,41 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
     project.durationMs = durationMs;
     project.savedPath = savedPath;
     project.recipe = recipe;
-    // What was moved, so a failure can put it back: the recording is the
-    // only full-quality copy and must survive a half-made project
-    // (PR #203 review).
-    QList<QPair<QString, QString>> moved;
-    const auto transfer = [copy, &moved](const QString& from, const QString& to) {
-        if (copy) return QFile::copy(from, to);
-        if (!moveFile(from, to)) return false;
-        moved.append({from, to});
+    // No source is removed before the complete recipe and all assets have
+    // committed. A failed save can retry using exactly the same source paths,
+    // without relying on a rollback move that could itself fail.
+    bool ok = true;
+    if (prepareRecipe) {
+        const auto prepared = prepareRecipe(project.dir);
+        ok = prepared.has_value();
+        if (prepared) project.recipe = *prepared;
+    }
+    QStringList sources;
+    const auto transfer = [&sources](const QString& from, const QString& to) {
+        if (!QFile::copy(from, to)) return false;
+        sources.append(from);
         return true;
     };
-    bool ok = transfer(videoPath, project.videoPath());
+    ok = ok && transfer(videoPath, project.videoPath());
     for (const QString& sidecar : sidecarSuffixes()) {
         if (ok && QFileInfo::exists(videoPath + sidecar)) ok = transfer(videoPath + sidecar, project.videoPath() + sidecar);
     }
     if (ok && !thumbnail.isNull()) thumbnail.save(project.thumbnailPath(), "PNG");
+    // The only commit point: no partially prepared project is published.
     ok = ok && writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(project));
     if (!ok) {
-        qWarning() << "RecordingProjects: could not create a project in" << project.dir;
-        bool restored = true;
-        for (auto it = moved.crbegin(); it != moved.crend(); ++it) {
-            if (!moveFile(it->second, it->first)) restored = false;
+        qWarning() << "RecordingProjects: could not create a project";
+        if (!QDir(project.dir).removeRecursively()) {
+            qWarning() << "RecordingProjects: could not remove an incomplete project";
         }
-        // Never delete the only copy of something that could not go back.
-        if (restored) QDir(project.dir).removeRecursively();
-        else qWarning() << "RecordingProjects: kept" << project.dir << "- files could not be moved back";
         return std::nullopt;
+    }
+    if (!copy) {
+        for (const QString& source : sources) {
+            if (!QFile::remove(source)) {
+                qWarning() << "RecordingProjects: could not remove a committed project's temporary source";
+            }
+        }
     }
     return project;
 }
@@ -271,10 +272,13 @@ std::optional<RecordingProject> load(const QString& dir)
 
 bool update(RecordingProject& project, const QJsonObject& recipe, const QString& savedPath)
 {
-    project.recipe = recipe;
-    if (!savedPath.isEmpty()) project.savedPath = savedPath;
-    project.modified = QDateTime::currentDateTime();
-    return writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(project));
+    RecordingProject updated = project;
+    updated.recipe = recipe;
+    if (!savedPath.isEmpty()) updated.savedPath = savedPath;
+    updated.modified = QDateTime::currentDateTime();
+    if (!writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(updated))) return false;
+    project = std::move(updated);
+    return true;
 }
 
 QList<RecordingProject> list()

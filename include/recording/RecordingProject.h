@@ -9,6 +9,7 @@
 #include <QString>
 #include <QStringList>
 
+#include <functional>
 #include <optional>
 
 // Editable recording projects (#191). Off by default: after a save the
@@ -65,10 +66,14 @@ void failNextManifestWriteForTests();
 QStringList sidecarSuffixes();
 
 // Moves the recording and its sidecars into a new project, or copies them
-// (copy: the source stays where it is). nullopt when anything fails: moved
-// files are moved back first, so the source is never lost.
+// (copy: the source stays where it is). Files are copied first; originals
+// are removed only after the final manifest commits. nullopt leaves the
+// sources intact. prepareRecipe, when supplied, prepares owned assets in
+// the new folder before that commit; nullopt aborts and removes the folder.
+using RecipePreparer = std::function<std::optional<QJsonObject>(const QString& projectDir)>;
 std::optional<RecordingProject> create(const QString& videoPath, bool copy, const QJsonObject& recipe,
-                                       const QImage& thumbnail, qint64 durationMs, const QString& savedPath);
+                                       const QImage& thumbnail, qint64 durationMs, const QString& savedPath,
+                                       const RecipePreparer& prepareRecipe = {});
 std::optional<RecordingProject> load(const QString& dir);
 bool update(RecordingProject& project, const QJsonObject& recipe, const QString& savedPath);
 QList<RecordingProject> list(); // newest first

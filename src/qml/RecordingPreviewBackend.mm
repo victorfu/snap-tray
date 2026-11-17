@@ -1698,22 +1698,43 @@ namespace {
 const QSize kProjectThumbnailSize(320, 180);
 }
 
-QJsonObject RecordingPreviewBackend::recipeForProject(const QString& projectDir, QString* copied) const
+std::optional<QJsonObject> RecordingPreviewBackend::recipeForProject(const QString& projectDir, QString* copied) const
 {
     QJsonObject recipe = currentRecipe();
+    if (copied) copied->clear();
+    const bool imageRequired = m_appearance.enabled
+        && m_appearance.background == SnapTray::RecordingAppearance::Background::Image;
+    // Preserve a readable inactive selection too, as before, but never let
+    // an unused image path prevent saving the recording.
+    const std::optional<QJsonObject> unavailableRecipe = imageRequired
+        ? std::nullopt : std::optional<QJsonObject>(recipe);
     const QString image = m_appearance.imagePath;
-    if (image.isEmpty() || !QFileInfo::exists(image)) return recipe;
-    QString owned = image;
+    const QFileInfo imageInfo(image);
+    if (image.isEmpty() || !imageInfo.isFile() || !imageInfo.isReadable()) return unavailableRecipe;
+    QString owned = imageInfo.canonicalFilePath();
     // Already the project's own copy: nothing to do. Otherwise a new name,
     // so the copy the saved manifest uses stays until a new manifest is
     // written (PR #203 review).
-    if (QFileInfo(image).absolutePath() != QFileInfo(projectDir).absoluteFilePath()) {
+    const bool needsCopy = QFileInfo(imageInfo.canonicalFilePath()).absolutePath()
+        != QFileInfo(projectDir).canonicalFilePath();
+    if (needsCopy) {
         owned = QDir(projectDir).filePath(QStringLiteral("background-%1.%2")
-                                              .arg(QDateTime::currentMSecsSinceEpoch())
-                                              .arg(QFileInfo(image).suffix()));
-        if (!QFile::copy(image, owned)) return recipe; // keeps the outside path
-        if (copied) *copied = owned;
+                                              .arg(QUuid::createUuid().toString(QUuid::WithoutBraces))
+                                              .arg(imageInfo.suffix()));
+        const bool ok = m_copyProjectBackgroundForTests
+            ? m_copyProjectBackgroundForTests(image, owned) : QFile::copy(image, owned);
+        if (!ok) {
+            QFile::remove(owned);
+            return unavailableRecipe;
+        }
     }
+    // Validate the owned bytes too: an unreadable/invalid image must not
+    // silently reopen using the renderer's fallback background.
+    if (QImage(owned).isNull()) {
+        if (needsCopy) QFile::remove(owned);
+        return unavailableRecipe;
+    }
+    if (needsCopy && copied) *copied = owned;
     QJsonObject edit = recipe.value(QStringLiteral("edit")).toObject();
     QJsonObject appearance = edit.value(QStringLiteral("appearance")).toObject();
     appearance.insert(QStringLiteral("imagePath"), owned);
@@ -1727,10 +1748,10 @@ void RecordingPreviewBackend::removeUnusedBackgrounds(const QString& projectDir,
     const QString used = QFileInfo(recipe.value(QStringLiteral("edit")).toObject()
                                        .value(QStringLiteral("appearance")).toObject()
                                        .value(QStringLiteral("imagePath")).toString())
-                             .absoluteFilePath();
+                             .canonicalFilePath();
     const QDir dir(projectDir);
     for (const QFileInfo& file : dir.entryInfoList({QStringLiteral("background*")}, QDir::Files)) {
-        if (file.absoluteFilePath() != used) QFile::remove(file.absoluteFilePath());
+        if (file.canonicalFilePath() != used) QFile::remove(file.absoluteFilePath());
     }
 }
 
@@ -1738,18 +1759,21 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
 {
     if (m_project) {
         QString copied;
-        const QJsonObject recipe = recipeForProject(m_project->dir, &copied);
-        if (!SnapTray::RecordingProjects::update(*m_project, recipe, savedPath)) {
+        const auto recipe = recipeForProject(m_project->dir, &copied);
+        if (!recipe || !SnapTray::RecordingProjects::update(*m_project, *recipe, savedPath)) {
             // The saved manifest still uses the old image: it stays.
             if (!copied.isEmpty()) QFile::remove(copied);
             return false;
         }
-        removeUnusedBackgrounds(m_project->dir, recipe);
+        removeUnusedBackgrounds(m_project->dir, *recipe);
         return true;
     }
-    // Moved with its sidecars; the caller then removes whatever is left.
-    // The thumbnail follows below.
-    auto project = SnapTray::RecordingProjects::create(m_videoPath, false, currentRecipe(), QImage(), m_duration, savedPath);
+    // Prepare the owned background before the one final manifest commit.
+    // create keeps the recording and sidecars at their original paths until
+    // then, so any failure leaves this preview ready to retry.
+    auto project = SnapTray::RecordingProjects::create(
+        m_videoPath, false, currentRecipe(), QImage(), m_duration, savedPath,
+        [this](const QString& dir) { return recipeForProject(dir); });
     if (!project) {
         qWarning() << "RecordingPreviewBackend: the recording could not be kept as a project";
         return false;
@@ -1772,13 +1796,6 @@ bool RecordingPreviewBackend::keepAsProject(const QString& savedPath)
             file.commit();
         }
     });
-    // Its own copy of a background image, now that the folder exists.
-    QString copied;
-    const QJsonObject recipe = recipeForProject(project->dir, &copied);
-    if (recipe != project->recipe && !SnapTray::RecordingProjects::update(*project, recipe, savedPath)
-        && !copied.isEmpty()) {
-        QFile::remove(copied); // the project keeps the image where it was
-    }
     const int days = RecordingSettingsManager::instance().projectCleanupDays();
     SnapTray::RecordingProjects::removeOlderThan(days);
     return true;

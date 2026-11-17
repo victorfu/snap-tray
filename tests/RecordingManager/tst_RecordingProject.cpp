@@ -30,6 +30,8 @@ private slots:
     void createCanCopy();
     void createFailsCleanly();
     void failedCreateNeverLosesTheSource();
+    void failedTransferPreservesEverySource_data();
+    void failedTransferPreservesEverySource();
     void loadRejectsDamagedProjects();
     void updateKeepsTheSourceAndBumpsModified();
     void listIsNewestFirst();
@@ -241,8 +243,7 @@ void tst_RecordingProject::createFailsCleanly()
     QVERIFY(RecordingProjects::list().isEmpty());
 }
 
-// PR #203 review: a failure after the recording was moved (a full disk at
-// the manifest) moves everything back instead of deleting the only copy.
+// A manifest failure leaves the source and every sidecar in place for retry.
 void tst_RecordingProject::failedCreateNeverLosesTheSource()
 {
     const QString source = writeRecording(QStringLiteral("SnapTray_Recording_keep.mp4"), true);
@@ -258,6 +259,35 @@ void tst_RecordingProject::failedCreateNeverLosesTheSource()
     QVERIFY(RecordingProjects::list().isEmpty());
     // The next try works.
     QVERIFY(RecordingProjects::create(source, false, {}, {}, 1000, {}).has_value());
+}
+
+void tst_RecordingProject::failedTransferPreservesEverySource_data()
+{
+    QTest::addColumn<QString>("blockedSuffix");
+    QTest::newRow("video") << QString();
+    QTest::newRow("last-sidecar") << RecordingProjects::sidecarSuffixes().last();
+}
+
+void tst_RecordingProject::failedTransferPreservesEverySource()
+{
+    QFETCH(QString, blockedSuffix);
+    const QString source = writeRecording(QStringLiteral("transfer.mp4"), true);
+    QVERIFY(!source.isEmpty());
+    const auto prepare = [&](const QString& dir) -> std::optional<QJsonObject> {
+        // Occupy the copy destination to fail after asset preparation, and
+        // (for the last sidecar) after the other media files were staged.
+        if (!QDir(dir).mkdir(QStringLiteral("recording.mp4") + blockedSuffix)) return std::nullopt;
+        return QJsonObject{};
+    };
+    QVERIFY(!RecordingProjects::create(source, false, {}, {}, 1000, {}, prepare));
+    QCOMPARE(QFileInfo(source).size(), qint64(1024));
+    for (const QString& suffix : RecordingProjects::sidecarSuffixes()) {
+        QFile file(source + suffix);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        QCOMPARE(file.readAll(), suffix.toUtf8());
+    }
+    QVERIFY(QDir(m_root).entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty());
+    QVERIFY(RecordingProjects::create(source, false, {}, {}, 1000, {}));
 }
 
 void tst_RecordingProject::loadRejectsDamagedProjects()
