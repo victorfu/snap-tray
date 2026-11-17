@@ -13,11 +13,14 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLocale>
+#include <QLockFile>
+#include <QRegularExpression>
 #include <QRandomGenerator>
 #include <QSaveFile>
 #include <QStandardPaths>
 
 #include <algorithm>
+#include <filesystem>
 #include <utility>
 
 namespace SnapTray {
@@ -48,23 +51,57 @@ QRect rectFromJson(const QJsonValue& value)
     return QRect(a[0].toInt(), a[1].toInt(), a[2].toInt(), a[3].toInt());
 }
 
-// Moves a file; across file systems, copies and removes.
-bool moveFile(const QString& from, const QString& to)
-{
-    if (QFile::rename(from, to)) return true;
-    if (!QFile::copy(from, to)) return false;
-    QFile::remove(from);
-    return true;
-}
-
 bool& failNextManifestWrite()
 {
     static bool fail = false;
     return fail;
 }
 
+std::function<void()>& beforeManifestWrite()
+{
+    static std::function<void()> callback;
+    return callback;
+}
+
+bool& failNextProjectCleanup()
+{
+    static bool fail = false;
+    return fail;
+}
+
+const QString kPendingPrefix = QStringLiteral(".creating-");
+const QString kPendingSuffix = QStringLiteral(".pending");
+
+QString pendingMarker(const QDir& root, const QString& id)
+{
+    return root.filePath(kPendingPrefix + id + kPendingSuffix);
+}
+
+void retryIncompleteProjects(const QDir& projects)
+{
+    // Only this transaction protocol's markers authorize cleanup. Legacy
+    // manifest-less folders may contain the only copy of a recording.
+    static const QRegularExpression idPattern(QStringLiteral("^[0-9]{8}-[0-9]{6}-[0-9]{3}-[0-9a-f]{1,4}$"));
+    for (const QString& marker : projects.entryList({kPendingPrefix + '*' + kPendingSuffix}, QDir::Files | QDir::Hidden)) {
+        const QString id = marker.mid(kPendingPrefix.size(), marker.size() - kPendingPrefix.size() - kPendingSuffix.size());
+        if (!idPattern.match(id).hasMatch()) continue;
+        const QString markerPath = projects.filePath(marker);
+        QLockFile lock(markerPath + QStringLiteral(".lock"));
+        lock.setStaleLockTime(0);
+        if (!lock.tryLock(0)) continue; // another create() still owns it
+        if (QFileInfo(projects.filePath(id)).isSymLink()) continue;
+        QDir dir(projects.filePath(id));
+        // A crash after commit must never turn a valid project into cleanup.
+        if (QFileInfo::exists(dir.filePath(QLatin1String(kManifestName)))
+            || !dir.exists() || dir.removeRecursively()) {
+            QFile::remove(markerPath);
+        }
+    }
+}
+
 bool writeJson(const QString& path, const QJsonObject& object)
 {
+    if (auto callback = std::exchange(beforeManifestWrite(), {})) callback();
     if (std::exchange(failNextManifestWrite(), false)) return false;
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) return false;
@@ -196,6 +233,16 @@ void failNextManifestWriteForTests()
     failNextManifestWrite() = true;
 }
 
+void beforeNextManifestWriteForTests(std::function<void()> callback)
+{
+    beforeManifestWrite() = std::move(callback);
+}
+
+void failNextProjectCleanupForTests()
+{
+    failNextProjectCleanup() = true;
+}
+
 QStringList sidecarSuffixes()
 {
     return {QLatin1String(WindowTimelineSidecar::kSuffix), QLatin1String(CursorTimelineSidecar::kSuffix),
@@ -204,14 +251,26 @@ QStringList sidecarSuffixes()
 }
 
 std::optional<RecordingProject> create(const QString& videoPath, bool copy, const QJsonObject& recipe,
-                                       const QImage& thumbnail, qint64 durationMs, const QString& savedPath)
+                                       const QImage& thumbnail, qint64 durationMs, const QString& savedPath,
+                                       const RecipePreparer& prepareRecipe)
 {
     if (!QFileInfo::exists(videoPath)) return std::nullopt;
+    QDir projects(root());
+    if (!projects.mkpath(QStringLiteral("."))) return std::nullopt;
+    retryIncompleteProjects(projects);
     const QDateTime now = QDateTime::currentDateTime();
     const QString id = now.toString(QStringLiteral("yyyyMMdd-HHmmss-zzz")) + QLatin1Char('-')
         + QString::number(QRandomGenerator::global()->bounded(0x10000), 16);
-    QDir projects(root());
-    if (!projects.mkpath(id)) return std::nullopt;
+    const QString markerPath = pendingMarker(projects, id);
+    QLockFile creationLock(markerPath + QStringLiteral(".lock"));
+    creationLock.setStaleLockTime(0);
+    if (!creationLock.tryLock(0) || !projects.mkdir(id)) return std::nullopt;
+    QFile marker(markerPath);
+    if (!marker.open(QIODevice::WriteOnly | QIODevice::NewOnly)) {
+        projects.rmdir(id);
+        return std::nullopt;
+    }
+    marker.close();
     RecordingProject project;
     project.dir = projects.filePath(id);
     const QString suffix = QFileInfo(videoPath).suffix();
@@ -220,32 +279,58 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
     project.durationMs = durationMs;
     project.savedPath = savedPath;
     project.recipe = recipe;
-    // What was moved, so a failure can put it back: the recording is the
-    // only full-quality copy and must survive a half-made project
-    // (PR #203 review).
-    QList<QPair<QString, QString>> moved;
-    const auto transfer = [copy, &moved](const QString& from, const QString& to) {
-        if (copy) return QFile::copy(from, to);
-        if (!moveFile(from, to)) return false;
-        moved.append({from, to});
+    // No source is removed before the complete recipe and all assets have
+    // committed. A failed save can retry using exactly the same source paths,
+    // without relying on a rollback move that could itself fail.
+    bool ok = true;
+    if (prepareRecipe) {
+        const auto prepared = prepareRecipe(project.dir, recipe);
+        ok = prepared.has_value();
+        if (prepared) project.recipe = *prepared;
+    }
+    QStringList sources;
+    const auto transfer = [copy, &sources](const QString& from, const QString& to) {
+        bool linked = false;
+        if (!copy && !QFileInfo(from).isSymLink()) {
+            // A second name keeps the original path retryable without copying
+            // media on the same filesystem. QFile::link is a symlink on Unix,
+            // so use the C++17 hard-link API with UTF-8 path conversion.
+            std::error_code error;
+            std::filesystem::create_hard_link(std::filesystem::u8path(from.toUtf8().constData()),
+                                              std::filesystem::u8path(to.toUtf8().constData()), error);
+            linked = !error;
+        }
+        // Cross-volume/unsupported filesystems retain the previous copy path.
+        // Explicit copy mode must remain independent, never a shared inode.
+        if (!linked && !QFile::copy(from, to)) return false;
+        sources.append(from);
         return true;
     };
-    bool ok = transfer(videoPath, project.videoPath());
+    ok = ok && transfer(videoPath, project.videoPath());
     for (const QString& sidecar : sidecarSuffixes()) {
         if (ok && QFileInfo::exists(videoPath + sidecar)) ok = transfer(videoPath + sidecar, project.videoPath() + sidecar);
     }
     if (ok && !thumbnail.isNull()) thumbnail.save(project.thumbnailPath(), "PNG");
+    // The only commit point: no partially prepared project is published.
     ok = ok && writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(project));
     if (!ok) {
-        qWarning() << "RecordingProjects: could not create a project in" << project.dir;
-        bool restored = true;
-        for (auto it = moved.crbegin(); it != moved.crend(); ++it) {
-            if (!moveFile(it->second, it->first)) restored = false;
+        qWarning() << "RecordingProjects: could not create a project";
+        if (!std::exchange(failNextProjectCleanup(), false) && QDir(project.dir).removeRecursively()) {
+            QFile::remove(markerPath);
+        } else {
+            // The marker lives outside the folder so partial recursive cleanup
+            // cannot erase the evidence needed to retry on the next save.
+            qWarning() << "RecordingProjects: could not remove an incomplete project; cleanup will retry";
         }
-        // Never delete the only copy of something that could not go back.
-        if (restored) QDir(project.dir).removeRecursively();
-        else qWarning() << "RecordingProjects: kept" << project.dir << "- files could not be moved back";
         return std::nullopt;
+    }
+    QFile::remove(markerPath); // the committed manifest also protects this directory
+    if (!copy) {
+        for (const QString& source : sources) {
+            if (!QFile::remove(source)) {
+                qWarning() << "RecordingProjects: could not remove a committed project's temporary source";
+            }
+        }
     }
     return project;
 }
@@ -271,10 +356,13 @@ std::optional<RecordingProject> load(const QString& dir)
 
 bool update(RecordingProject& project, const QJsonObject& recipe, const QString& savedPath)
 {
-    project.recipe = recipe;
-    if (!savedPath.isEmpty()) project.savedPath = savedPath;
-    project.modified = QDateTime::currentDateTime();
-    return writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(project));
+    RecordingProject updated = project;
+    updated.recipe = recipe;
+    if (!savedPath.isEmpty()) updated.savedPath = savedPath;
+    updated.modified = QDateTime::currentDateTime();
+    if (!writeJson(QDir(project.dir).filePath(QLatin1String(kManifestName)), manifestOf(updated))) return false;
+    project = std::move(updated);
+    return true;
 }
 
 QList<RecordingProject> list()

@@ -693,6 +693,7 @@ signals:
 
 private:
     friend class tst_RecordingPreviewExport;
+    friend class tst_RecordingProjectSave;
     friend class tst_RecordingPreviewCrop;
     friend class tst_RecordingPreviewDiscard;
     friend class tst_RecordingPreviewZoom;
@@ -785,8 +786,12 @@ private:
     // project does not depend on a file elsewhere (PR #203 review).
     // A new image gets a new name; the old one stays until the manifest that
     // stops using it is written (PR #203 review). `copied` names a file this
-    // call created, to remove if that write fails.
-    QJsonObject recipeForProject(const QString& projectDir, QString* copied = nullptr) const;
+    // call created, to remove if that write fails. nullopt means an active
+    // background could not be prepared; never persist its external path.
+    std::optional<QJsonObject> recipeForProject(const QString& projectDir, QJsonObject recipe, QString* copied = nullptr, QString* error = nullptr) const;
+    QString m_projectSaveError;
+    // Test seam for an I/O failure while copying the selected background.
+    std::function<bool(const QString&, const QString&)> m_copyProjectBackgroundForTests;
     // Background images in `projectDir` the recipe no longer uses.
     static void removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe);
     // A project's edits wait for the player's size and length (PR #203 review).

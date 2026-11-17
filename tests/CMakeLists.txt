@@ -622,6 +622,10 @@ endif()
 
 # Recording preview export (native encoder + transcoder): every recording platform.
 if(APPLE OR WIN32 OR SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_executable(Qml_RecordingProjectSave Qml/tst_RecordingProjectSave.cpp)
+    target_link_libraries(Qml_RecordingProjectSave PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+    add_test(NAME Qml_RecordingProjectSave COMMAND Qml_RecordingProjectSave)
+    set_tests_properties(Qml_RecordingProjectSave PROPERTIES TIMEOUT 60 LABELS "integration")
     add_executable(Qml_RecordingPreviewExport Qml/tst_RecordingPreviewExport.cpp)
     target_link_libraries(Qml_RecordingPreviewExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
     add_test(NAME Qml_RecordingPreviewExport COMMAND Qml_RecordingPreviewExport)
