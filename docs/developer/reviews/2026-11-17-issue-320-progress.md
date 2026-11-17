@@ -75,6 +75,9 @@ The 13 pointer SVGs are original MIT SnapTray drawings; provenance is recorded i
 - Require a fresh painted frame before the busy-spinner comparison, and place
   both native cursor-occlusion test windows at the app's overlay level so Cocoa
   desktop windows cannot obscure their fixture.
+- Reduce cursor preprocessing work after a hosted Linux run exceeded 30 ms:
+  reserve sample storage, retain already ordered samples, and walk nearby input
+  knots during spring integration, including backwards lead transitions.
 
 ## Verification
 
@@ -102,11 +105,11 @@ Release measurements on this Linux host (synthetic, reproducible fixtures):
 | Workload | Measurement |
 | --- | --- |
 | Auto Zoom, 10 minutes / 300 clicks / 72,000 samples | 7.794 ms; requirement < 50 ms |
-| Cursor spring + steady shape + High straightening, 10 minutes / 120 Hz | 10.099 ms; requirement < 30 ms |
+| Cursor spring + steady shape + High straightening, 10 minutes / 120 Hz | 7.955 ms; requirement < 30 ms |
 | 1080p transition frame, blur Off / Low / High | 2.035 / 37.176 / 60.906 ms |
 | Additional transition-frame cost, Low / High | 35.141 / 58.871 ms |
 | 10-second 1080p export, four camera transitions, Off / Low / High | 2567.3 / 5569.2 / 6481.7 ms (1.00× / 2.17× / 2.52×) |
-| 10-minute 1080p/30 fps source, all 2×, Keep sound Off / On / Off after warm-up | 59,590.7 / 60,406.6 / 59,130.7 ms; **1.76%** above the bracketed baseline (< 5%) |
+| 10-minute 1080p/30 fps source, all 2×, Keep sound Off / On / Off after warm-up | 59,688.9 / 60,013.8 / 59,039.2 ms; **1.09%** above the bracketed baseline (< 5%) |
 
 The blur benchmark used CPU libx264 because no CUDA encoding device was available.
 High blur is intentionally more expensive and remains opt-in; preview uses the

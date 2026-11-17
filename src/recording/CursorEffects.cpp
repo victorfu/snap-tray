@@ -531,14 +531,17 @@ void CursorEffectRenderer::rebuildSpringPaths()
         const qint64 end = std::min(part.endMs, last + kSpringSettleMs);
         if (end <= start) continue;
         SpringPath input;
-        input.knots.push_back({double(start), rawPosition(start)});
         auto sample = std::upper_bound(samples.begin(), samples.end(), start,
             [](qint64 t, const CursorSample& s) { return t < s.tMs; });
+        const auto sampleEnd = std::lower_bound(sample, samples.end(), part.endMs,
+            [](const CursorSample& s, qint64 t) { return s.tMs < t; });
+        input.knots.reserve(size_t(sampleEnd - sample) + 1);
+        input.knots.push_back({double(start), rawPosition(start)});
         bool lastSemantic = true;
         auto dragEvent = std::upper_bound(buttons.begin(), buttons.end(), start,
             [](qint64 t, const CursorButtonEvent& e) { return t < e.tMs; });
         Qt::MouseButtons dragging = m_timeline.buttonsDownAt(start);
-        for (; sample != samples.end() && sample->tMs < part.endMs; ++sample) {
+        for (; sample != sampleEnd; ++sample) {
             bool inDrag = bool(dragging);
             while (dragEvent != buttons.end() && dragEvent->tMs <= sample->tMs) {
                 if (dragEvent->down) dragging |= dragEvent->button; else dragging &= ~Qt::MouseButtons(dragEvent->button);
@@ -548,7 +551,7 @@ void CursorEffectRenderer::rebuildSpringPaths()
             const auto& previous = *(sample - 1);
             const bool semantic = sample->shapeId != previous.shapeId || sample->visible != previous.visible;
             const QPointF delta = QPointF(sample->position) - input.knots.back().position;
-            const bool interior = sample + 1 != samples.end() && (sample + 1)->tMs < part.endMs;
+            const bool interior = sample + 1 != sampleEnd;
             if (interior && !semantic && (sample + 1)->shapeId == sample->shapeId
                 && (sample + 1)->visible == sample->visible) {
                 const QPointF back = QPointF((sample + 1)->position) - QPointF(sample->position);
@@ -579,8 +582,11 @@ void CursorEffectRenderer::rebuildSpringPaths()
         // event so a drag cannot run beyond its release then snap backwards.
         for (auto e = event; e != eventEnd; ++e)
             input.knots.push_back({double(e->tMs), QPointF(e->position)});
-        std::stable_sort(input.knots.begin(), input.knots.end(),
-            [](const SpringPath::Knot& a, const SpringPath::Knot& b) { return a.ms < b.ms; });
+        // Recorded samples already arrive in order. Only appended button
+        // positions require merging into that order.
+        if (event != eventEnd)
+            std::stable_sort(input.knots.begin(), input.knots.end(),
+                [](const SpringPath::Knot& a, const SpringPath::Knot& b) { return a.ms < b.ms; });
         std::vector<SpringPath::Knot> unique;
         unique.reserve(input.knots.size());
         for (const auto& knot : input.knots) {
@@ -635,6 +641,21 @@ void CursorEffectRenderer::rebuildSpringPaths()
         }
         std::vector<const CursorButtonEvent*> presses;
         for (auto e = event; e != eventEnd; ++e) if (e->down) presses.push_back(&*e);
+        // Simulation advances through nearby targets. Walk the input instead
+        // of binary-searching the entire recording twice per 120 Hz step.
+        // Lead changes (and argument evaluation order) can move backwards;
+        // handle both directions so interpolation stays identical to at().
+        size_t inputNext = 0;
+        const auto inputAt = [&](double ms) {
+            while (inputNext > 0 && input.knots[inputNext - 1].ms > ms) --inputNext;
+            while (inputNext < input.knots.size() && input.knots[inputNext].ms <= ms) ++inputNext;
+            if (inputNext == 0) return input.knots.front().position;
+            const auto& before = input.knots[inputNext - 1];
+            if (inputNext == input.knots.size()) return before.position;
+            const auto& after = input.knots[inputNext];
+            const double fraction = (ms - before.ms) / (after.ms - before.ms);
+            return before.position + (after.position - before.position) * fraction;
+        };
         size_t nextPress = 0;
         // Only held state is carried into a part, never spring momentum.
         Qt::MouseButtons held = m_timeline.buttonsDownAt(start);
@@ -665,7 +686,7 @@ void CursorEffectRenderer::rebuildSpringPaths()
             const auto target = [&](double t, double lead) {
                 if (anticipate) return QPointF(presses[nextPress]->position);
                 const double targetTime = event != eventEnd ? std::min(t + lead, double(event->tMs)) : t + lead;
-                return input.at(targetTime);
+                return inputAt(targetTime);
             };
             advanceSpring(position, velocity, target(time, leadMs), target(next, nextLead), dt / 1000.0, parameters);
             time = next;
