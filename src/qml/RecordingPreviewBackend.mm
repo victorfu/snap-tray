@@ -2099,7 +2099,7 @@ QVariantList RecordingPreviewBackend::audioClips() const
     for (const auto& clip : m_audioClips.clips) result.append(QVariantMap{
         {"name", clip.name}, {"start", clip.startMs}, {"end", clip.endMs}, {"offsetMs", clip.offsetMs},
         {"gainDb", clip.gainDb}, {"fadeInMs", clip.fadeInMs}, {"fadeOutMs", clip.fadeOutMs}, {"loop", clip.loop},
-        {"durationMs", clip.assetFrames / 48}});
+        {"durationMs", clip.durationMs()}});
     return result;
 }
 void RecordingPreviewBackend::setSelectedAudioClip(int index)
@@ -2144,7 +2144,7 @@ void RecordingPreviewBackend::addAudioClip(const QUrl& file)
             if (!clip) { self->setErrorMessage(RecordingPreviewBackend::tr("Cannot import audio: %1").arg(error)); return; }
             auto added = *clip;
             added.startMs = position;
-            added.endMs = qMin(self->m_duration, position + qMax<qint64>(100, added.assetFrames / 48));
+            added.endMs = qMin(self->m_duration, position + qMax<qint64>(100, added.durationMs()));
             added.fadeInMs = added.fadeOutMs = qMin<qint64>(5, added.endMs - added.startMs);
             self->m_audioClips.clips.push_back(added);
             emit self->audioClipsChanged();

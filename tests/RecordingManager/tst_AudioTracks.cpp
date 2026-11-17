@@ -353,6 +353,18 @@ void TestAudioTracks::importedClipsMixAndRoundTrip()
     QByteArray blocks;
     for (int i = 0; i < 10; ++i) blocks += mixer.read(1400 * 48 + i * 4800, 4800);
     QCOMPARE(one, blocks);
+    auto partial = c;
+    partial.assetFrames = 47999;
+    partial.startMs = 0;
+    partial.endMs = partial.durationMs();
+    partial.fadeInMs = partial.fadeOutMs = 0;
+    partial.loop = false;
+    AudioClipTrack partialTrack; partialTrack.clips.push_back(partial);
+    QVERIFY(mixer.setClips(partialTrack));
+    const auto tail = mixer.read(47998, 2);
+    QCOMPARE(sampleAt(tail, 0), qint16(1000)); // The last partial millisecond survives.
+    QCOMPARE(sampleAt(tail, 1), qint16(0));
+    QVERIFY(mixer.setClips(clips));
     mixer.setFallback([](qint64, int n) {
         QByteArray data(n * 4, '\0');
         for (int i = 0; i < n * 2; ++i) qToLittleEndian<qint16>(2000, data.data() + i * 2);

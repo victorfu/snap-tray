@@ -13,6 +13,7 @@ struct AudioClip {
     double gainDb = 0;
     qint64 fadeInMs = 5, fadeOutMs = 5;
     bool loop = false;
+    qint64 durationMs() const;
     bool operator==(const AudioClip& o) const;
 };
 struct AudioClipTrack {

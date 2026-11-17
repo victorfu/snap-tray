@@ -76,7 +76,7 @@ std::optional<AudioClip> importAudioClip(const QString& input, const QString& vi
     committed = true;
     AudioClip clip;
     clip.name = info.fileName(); clip.assetFrame = assetStart; clip.assetFrames = frames;
-    clip.endMs = frames / 48;
+    clip.endMs = clip.durationMs();
     return clip;
 }
 }

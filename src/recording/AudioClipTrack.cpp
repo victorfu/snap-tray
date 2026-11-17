@@ -1,8 +1,16 @@
 #include "recording/AudioClipTrack.h"
+#include "recording/AudioTracks.h"
 #include <QJsonArray>
 #include <cmath>
 
 namespace SnapTray {
+qint64 AudioClip::durationMs() const
+{
+    constexpr qint64 framesPerMs = AudioTracks::kSampleRate / 1000;
+    // The millisecond editor must include the final partial millisecond,
+    // including platform resamplers that return one sample short of a second.
+    return assetFrames <= 0 ? 0 : assetFrames / framesPerMs + (assetFrames % framesPerMs != 0);
+}
 bool AudioClip::operator==(const AudioClip& o) const
 {
     return name == o.name && assetFrame == o.assetFrame && assetFrames == o.assetFrames
@@ -39,7 +47,7 @@ AudioClipTrack AudioClipTrack::fromJson(const QJsonObject& json)
         if (c.assetFrame < 0 || c.assetFrames <= 0 || c.assetFrames > kMaxDurationMs * 48
             || c.assetFrame > kMaxArchiveBytes / 4 - c.assetFrames
             || c.startMs < 0 || c.endMs <= c.startMs || c.endMs > maxTimelineMs
-            || c.offsetMs < 0 || c.offsetMs >= (c.assetFrames + 47) / 48
+            || c.offsetMs < 0 || c.offsetMs >= c.durationMs()
             || !std::isfinite(c.gainDb) || c.gainDb < -24 || c.gainDb > 12
             || c.fadeInMs < 0 || c.fadeOutMs < 0
             || c.fadeInMs > c.endMs - c.startMs || c.fadeOutMs > c.endMs - c.startMs) continue;

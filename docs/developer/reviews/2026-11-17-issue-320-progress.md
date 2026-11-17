@@ -69,6 +69,9 @@ The 13 pointer SVGs are original MIT SnapTray drawings; provenance is recorded i
   encoding with video work using a single bounded 100 ms task; keep all muxer
   access on the owner thread and join before abort, failure or final flush.
   Compare synchronous/asynchronous AAC payloads, timestamps and side data.
+- Accept the native resampler's one-sample rounding difference, while rounding
+  imported clip coverage up to include its final partial millisecond. Verify
+  that the final stored sample survives and the next sample is silent.
 
 ## Verification
 
@@ -78,7 +81,9 @@ measurements use the Release build. Canonical scripts are run with
 
 Main advanced to `29a807e6` during the work. After integrating it, the canonical
 application build passed and the complete suite passed **262/262 tests**, with
-zero failures in **567.54 seconds**. Focused tests cover cursor gap/settling timing,
+zero failures in **567.54 seconds**. After the asynchronous AAC and isolated
+audio-fixture fixes, the full suite again passed **262/262**, in **540.38 seconds**.
+Focused tests cover cursor gap/settling timing,
 numeric inspector commit, legacy audio preparation, imported audio persistence
 and export, and actual shape/loop-return outputs in all three formats. The
 optimized WSOLA Release suite passed all 16 cases, including pitch, chunk

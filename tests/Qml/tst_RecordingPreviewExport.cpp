@@ -3866,7 +3866,13 @@ void tst_RecordingPreviewExport::importedAudioSurvivesSourceRemovalAndProjectReo
     QTRY_VERIFY_WITH_TIMEOUT(!backend.importingAudio(), 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(backend.audioClips().size(), 1);
-    QCOMPARE(backend.m_audioClips.clips[0].assetFrames, qint64(48000));
+    const auto& imported = backend.m_audioClips.clips[0];
+    // Media Foundation returns 47,999 samples for this 44.1 kHz source;
+    // native resampling may round by one output sample (about 21 microseconds).
+    QVERIFY2(qAbs(imported.assetFrames - 48000) <= 1,
+             qPrintable(QString::number(imported.assetFrames)));
+    QVERIFY(imported.durationMs() >= 1000 && imported.durationMs() <= 1001);
+    QCOMPARE(imported.endMs, qMin(backend.duration(), imported.durationMs()));
     QVERIFY(QFile::remove(wav));
     QVERIFY(QFileInfo::exists(source + QLatin1String(SnapTray::AudioClipTrack::kMixedSuffix)));
     backend.undo(); QVERIFY(backend.audioClips().isEmpty());
