@@ -20,6 +20,7 @@ void RecordingRecoveryViewModel::setRecoveries(const QList<RecordingSession::Rec
 {
     m_items = recoveries;
     m_busy.clear();
+    m_discardErrors.clear();
     rebuildRows();
 }
 
@@ -32,6 +33,9 @@ QString RecordingRecoveryViewModel::durationText(qint64 ms)
 
 QString RecordingRecoveryViewModel::statusText(const RecordingSession::Recoverable& item)
 {
+    if (item.info.cleanupPending) {
+        return tr("Discard is incomplete. Choose Discard to retry cleanup.");
+    }
     if (!item.decodable) {
         return tr("Cannot be recovered: the recording was interrupted before any playable part was saved.");
     }
@@ -62,8 +66,8 @@ void RecordingRecoveryViewModel::rebuildRows()
         const bool busy = m_busy.contains(item.info.videoPath);
         row[QStringLiteral("status")] = busy
             ? tr("Open in another SnapTray window. Close it there, then try again.")
-            : statusText(item);
-        row[QStringLiteral("canRecover")] = item.decodable;
+            : m_discardErrors.value(item.info.videoPath, statusText(item));
+        row[QStringLiteral("canRecover")] = item.decodable && !item.info.cleanupPending;
         row[QStringLiteral("busy")] = busy;
         m_rows.append(row);
     }
@@ -72,7 +76,8 @@ void RecordingRecoveryViewModel::rebuildRows()
 
 void RecordingRecoveryViewModel::recover(int index)
 {
-    if (index < 0 || index >= m_items.size() || !m_items.at(index).decodable) {
+    if (index < 0 || index >= m_items.size() || !m_items.at(index).decodable
+        || m_items.at(index).info.cleanupPending) {
         return;
     }
     emit recoverRequested(m_items.at(index).info.videoPath);
@@ -93,9 +98,19 @@ void RecordingRecoveryViewModel::discard(int index)
         rebuildRows();
         return;
     }
-    RecordingSession::discard(path);
+    const auto result = RecordingSession::discard(path);
     lock.unlock();
     m_busy.remove(path);
+    if (!result.complete) {
+        auto& item = m_items[index];
+        item.info.cleanupPending = true;
+        item.decodable = false;
+        m_discardErrors.insert(path, tr("Discard failed. Choose Discard to retry. %1")
+            .arg(result.errors.join(QStringLiteral("; "))));
+        rebuildRows();
+        return;
+    }
+    m_discardErrors.remove(path);
     m_items.removeAt(index);
     rebuildRows();
     emit discarded(path);

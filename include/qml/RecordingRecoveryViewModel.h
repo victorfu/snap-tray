@@ -3,6 +3,7 @@
 #include "recording/RecordingSession.h"
 
 #include <QObject>
+#include <QHash>
 #include <QSet>
 #include <QVariantList>
 
@@ -44,6 +45,7 @@ private:
     QList<RecordingSession::Recoverable> m_items;
     QVariantList m_rows;
     QSet<QString> m_busy;
+    QHash<QString, QString> m_discardErrors;
 };
 
 } // namespace SnapTray

@@ -6,6 +6,7 @@
 #include <QRect>
 #include <QSize>
 #include <QString>
+#include <QStringList>
 
 #include <functional>
 #include <optional>
@@ -36,6 +37,7 @@ struct RecordingSessionInfo {
     QSize frameSize;
     int frameRate = 0;
     bool audioRequired = false;
+    bool cleanupPending = false; // durable discard intent; never offer recovery
     bool fragmented = false;  // a crash leaves a playable prefix
     // Recorded at the high-quality intermediate, so saving it unedited must
     // still meet the output quality. Unknown (older manifests) counts as true.
@@ -95,7 +97,8 @@ struct Recoverable {
 };
 
 // Finds left-behind sessions in `directory`. Active sessions are skipped.
-// Manifests whose video is gone are removed (nothing left to recover);
+// Cleanup-pending manifests remain discoverable even after the video is gone.
+// Other manifests whose video is gone are removed (nothing left to recover);
 // unreadable manifests are reported with a problem rather than deleted.
 QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsActive& isActive);
 
@@ -103,9 +106,17 @@ QList<Recoverable> scan(const QString& directory, const Probe& probe, const IsAc
 // active): temp cleanup must leave it alone.
 bool hasSession(const QString& videoPath);
 
-// Deletes a session the user chose to discard: video, window timeline and
-// manifest.
-void discard(const QString& videoPath);
+struct DiscardResult {
+    bool complete = false;
+    QStringList remainingPaths;
+    QStringList errors;
+};
+// Optional file operation for deterministic failure tests. Return false with
+// an error when removal fails; already absent paths are handled by discard.
+using RemoveFile = std::function<bool(const QString& path, QString* error)>;
+// Caller holds the session lock. Persist discard intent before deleting the
+// exact video and sidecar paths, then remove the manifest only on full success.
+DiscardResult discard(const QString& videoPath, const RemoveFile& removeFile = {});
 
 } // namespace RecordingSession
 } // namespace SnapTray

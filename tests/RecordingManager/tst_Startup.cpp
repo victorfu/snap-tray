@@ -78,6 +78,7 @@ private slots:
     void sessionManifestFollowsTheRecording();
     void staleCleanupSparesPendingRecoveries();
     void recoveredRecordingOpensInPreview();
+    void cleanupPendingCannotBeRecovered();
     void recoveredRecordingKeepsTheChosenArea();
     void savesNeverGoIntoTheProjectsFolder();
     void interruptionsKeepTheRecording_data();
@@ -1067,6 +1068,28 @@ void TestRecordingStartup::staleCleanupSparesPendingRecoveries()
     RecordingManager manager;  // its constructor runs the old 24-hour cleanup
     QVERIFY2(QFileInfo::exists(pending), "a recording waiting for recovery must not be cleaned up");
     QVERIFY(!QFileInfo::exists(stale));
+}
+
+void TestRecordingStartup::cleanupPendingCannotBeRecovered()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_pending.mp4"));
+    QFile file(video);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("data");
+    file.close();
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = video;
+    info.cleanupPending = true;
+    QVERIFY(SnapTray::RecordingSession::write(info));
+    RecordingManager manager;
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    QVERIFY(!manager.openRecoveredRecording(video));
+    QCOMPARE(preview.count(), 0);
+    QCOMPARE(manager.state(), RecordingManager::State::Idle);
+    QVERIFY(!RecordingManager::isSessionActive(video));
+    QVERIFY(QFileInfo::exists(video));
+    QVERIFY(SnapTray::RecordingSession::hasSession(video));
 }
 
 void TestRecordingStartup::recoveredRecordingOpensInPreview()
