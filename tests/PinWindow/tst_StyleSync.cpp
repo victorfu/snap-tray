@@ -23,6 +23,8 @@
 #include <QClipboard>
 #include "PlatformFeatures.h"
 #include "qml/PinToolOptionsViewModel.h"
+#include "qml/RedactionReview.h"
+#include "settings/AutoBlurSettingsManager.h"
 #include "qml/PinToolbarViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlBeautifyPanel.h"
@@ -186,6 +188,9 @@ private slots:
     void testPolylineReleaseRecomputesHoverCursor();
     void testReleaseOverFloatingToolbarFinishesWindowDrag();
     void testAutoBlurMapsRotatedDisplayRectToAnnotationSpace();
+    void testNativeRedactionReviewAndExport();
+    void reviewOutcome_data();
+    void reviewOutcome();
     void testAutoBlurGaussianCoversMappedHiDpiRegion();
     void testAutomaticSavesPreserveEarlierImage_data();
     void testAutomaticSavesPreserveEarlierImage();
@@ -701,6 +706,120 @@ void TestPinWindowStyleSync::testQuittingFinishesASaveInFlight()
     QCOMPARE(saved.count(), 0);
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     delete window.data();
+}
+
+void TestPinWindowStyleSync::reviewOutcome_data()
+{
+    QTest::addColumn<QString>("action");
+    for (const auto* action : {"apply", "cancel", "empty", "stale", "destroy"})
+        QTest::newRow(action) << QString::fromLatin1(action);
+}
+
+void TestPinWindowStyleSync::reviewOutcome()
+{
+    QFETCH(QString, action);
+    const auto image = createTestPixmap();
+    auto window = std::make_unique<PinWindow>(image, QPoint(0, 0));
+    window->m_autoBlurInProgress = true;
+    const QVector<QRect> text{{50, 10, 40, 20}};
+    int applied = 0;
+    window->reviewAutoBlurCandidates(window->m_autoBlurContentGeneration, image.toImage(),
+        {{5, 10, 20, 10}}, text, {}, [&](QVector<QRect> acceptedFaces, QVector<QRect> acceptedText) {
+            ++applied;
+            QVERIFY(acceptedFaces.isEmpty());
+            QCOMPARE(acceptedText, text);
+        });
+    QPointer<SnapTray::RedactionReview> model = window->findChild<SnapTray::RedactionReview*>();
+    QVERIFY(model);
+    if (action == "destroy") {
+        window.reset();
+        QVERIFY(!model);
+        QCOMPARE(applied, 0);
+        return;
+    }
+    model->select(0, false);
+    if (action == "empty")
+        model->select(1, false);
+    if (action == "stale")
+        window->invalidateAutoBlurRequest();
+    if (action == "cancel")
+        emit model->cancel();
+    else
+        emit model->apply();
+    QCOMPARE(applied, action == "apply" ? 1 : 0);
+    if (!applied)
+        QVERIFY(!window->m_autoBlurInProgress);
+}
+
+void TestPinWindowStyleSync::testNativeRedactionReviewAndExport()
+{
+    if (!qEnvironmentVariableIsSet("SNAPTRAY_TEST_NATIVE_OCR"))
+        QSKIP("Set SNAPTRAY_TEST_NATIVE_OCR=1 to exercise the native OCR and pin review.");
+
+    auto& blur = AutoBlurSettingsManager::instance();
+    const auto original = blur.load();
+    const auto restore = qScopeGuard([&] { blur.save(original); });
+    blur.saveDetectFaces(false);
+    blur.saveSensitiveCategories({"email"});
+
+    QPixmap image(720, 200);
+    image.fill(Qt::white);
+    {
+        QPainter painter(&image);
+        QFont font("Arial");
+        font.setPixelSize(32);
+        painter.setFont(font);
+        painter.drawText(30, 70, QStringLiteral("first@example.org"));
+        painter.drawText(30, 150, QStringLiteral("second@example.org"));
+    }
+    PinWindow window(image, QPoint(50, 50));
+    window.show();
+    window.showToolbar();
+    window.onAutoBlurRequested();
+    QTRY_VERIFY_WITH_TIMEOUT(window.findChild<SnapTray::RedactionReview*>(), 60000);
+    auto* review = window.findChild<SnapTray::RedactionReview*>();
+    QCOMPARE(review->thumbnails().size(), 2);
+    QVERIFY(window.m_autoBlurInProgress);
+    QCOMPARE(window.m_annotationLayer->itemCount(), size_t(0));
+    review->select(1, false);
+    emit review->apply();
+    QVERIFY(!window.m_autoBlurInProgress);
+    QCOMPARE(window.m_annotationLayer->itemCount(), size_t(1));
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& files = FileSettingsManager::instance();
+    const QString previousPath = files.loadScreenshotPath();
+    const QString previousTemplate = files.loadFilenameTemplate();
+    const bool previousAutoSave = files.loadAutoSaveScreenshots();
+    const auto restoreFiles = qScopeGuard([&] {
+        files.saveScreenshotPath(previousPath);
+        files.saveFilenameTemplate(previousTemplate);
+        files.saveAutoSaveScreenshots(previousAutoSave);
+    });
+    files.saveScreenshotPath(dir.path());
+    files.saveAutoSaveScreenshots(true);
+    files.saveFilenameTemplate("review.png");
+    QSignalSpy saved(&window, &PinWindow::saveCompleted);
+    window.saveToFile();
+    QTRY_COMPARE(saved.count(), 1);
+    const QImage output(saved.first().at(1).toString());
+    QCOMPARE(output.size(), image.size());
+    const auto pixels = image.toImage().convertToFormat(QImage::Format_RGB32);
+    const auto exported = output.convertToFormat(QImage::Format_RGB32);
+    const QRect firstLine(20, 30, 370, 55);
+    const QRect secondLine = firstLine.translated(0, 80);
+    int changedPixels = 0;
+    for (int y = firstLine.top(); y <= firstLine.bottom(); ++y) {
+        for (int x = firstLine.left(); x <= firstLine.right(); ++x)
+            changedPixels += exported.pixel(x, y) != pixels.pixel(x, y);
+    }
+    QVERIFY(changedPixels > 0);
+    for (int y = secondLine.top(); y <= secondLine.bottom(); ++y) {
+        for (int x = secondLine.left(); x <= secondLine.right(); ++x)
+            QCOMPARE(exported.pixel(x, y), pixels.pixel(x, y));
+    }
+    QVERIFY(output.textKeys().isEmpty());
 }
 
 void TestPinWindowStyleSync::testAutoBlurGaussianCoversMappedHiDpiRegion()

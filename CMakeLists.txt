@@ -1192,6 +1192,7 @@ set_source_files_properties(src/qml/dialogs/AppImageUpdateDialog.qml PROPERTIES 
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/PinLayoutDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/PinLayoutDialog.qml)
+set_source_files_properties(src/qml/dialogs/RedactionReview.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RedactionReview.qml)
 set_source_files_properties(src/qml/dialogs/ImageExportDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ImageExportDialog.qml)
 set_source_files_properties(src/qml/recording/RecordingPrompterView.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPrompterView.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
@@ -1304,6 +1305,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/recording/RecordingPrompterView.qml
         src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/dialogs/PinLayoutDialog.qml
+        src/qml/dialogs/RedactionReview.qml
         src/qml/dialogs/ImageExportDialog.qml
         src/qml/dialogs/RecordingRecoveryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
@@ -1408,7 +1410,9 @@ qt_add_qml_module(snaptray_qml
         src/qml/UpdateDialogViewModel.cpp
         include/qml/UpdateDialogViewModel.h
         src/qml/QRCodeResultViewModel.cpp
+        src/qml/RedactionReview.cpp
         include/qml/QRCodeResultViewModel.h
+        include/qml/RedactionReview.h
         include/qml/QmlOverlayPanel.h
         src/qml/ShortcutHintsViewModel.cpp
         include/qml/ShortcutHintsViewModel.h

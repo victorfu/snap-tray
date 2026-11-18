@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>E-posta adresleri</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Web adresleri</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 adresleri</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Telefon numaraları</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Ödeme kartları</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Yakalama</translation>
@@ -8934,6 +8954,39 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Metni büyüt</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Otomatik bulanıklaştırmayı gözden geçir</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Gizlenecek bölgeleri seçin. OCR hassas metinleri gözden kaçırabilir.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Bölge %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Bulanıklaştırılan yüzler: %1 · Metin bölgeleri: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Yüz veya hassas metin algılanmadı</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Uygula</translation>
     </message>
 </context>
 </TS>

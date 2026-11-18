@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Endereços de e-mail</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Endereços da web</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Endereços IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Números de telefone</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Cartões de pagamento</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Captura</translation>
@@ -8938,6 +8958,39 @@ Ele pode estar em uso por outro aplicativo.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Aumentar texto</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Revisar desfoque automático</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Selecione as regiões a ocultar. O OCR pode deixar de detectar texto sensível.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Região %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Rostos desfocados: %1 · Regiões de texto: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Nenhum rosto ou texto sensível detectado</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Aplicar</translation>
     </message>
 </context>
 </TS>

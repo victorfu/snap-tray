@@ -211,6 +211,12 @@ target_sources(Qml_ImageExportDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resou
 add_test(NAME Qml_ImageExportDialog COMMAND Qml_ImageExportDialog)
 set_tests_properties(Qml_ImageExportDialog PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
 
+add_executable(Qml_RedactionReview Qml/tst_RedactionReview.cpp)
+target_link_libraries(Qml_RedactionReview PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_RedactionReview PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RedactionReview COMMAND Qml_RedactionReview)
+set_tests_properties(Qml_RedactionReview PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
+
 add_executable(Qml_PinLayoutDialog Qml/tst_PinLayoutDialog.cpp)
 target_link_libraries(Qml_PinLayoutDialog PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_PinLayoutDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)

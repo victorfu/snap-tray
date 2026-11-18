@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Διευθύνσεις email</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Διευθύνσεις ιστού</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Διευθύνσεις IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Αριθμοί τηλεφώνου</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Κάρτες πληρωμών</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Λήψη</translation>
@@ -8938,6 +8958,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>Αύξηση μεγέθους κειμένου</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Έλεγχος αυτόματης θόλωσης</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Επιλέξτε τις περιοχές για απόκρυψη. Η αναγνώριση κειμένου μπορεί να παραλείψει ευαίσθητο κείμενο.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Περιοχή %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Θολωμένα πρόσωπα: %1 · Περιοχές κειμένου: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Δεν εντοπίστηκαν πρόσωπα ή ευαίσθητο κείμενο</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Ακύρωση</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Εφαρμογή</translation>
     </message>
 </context>
 </TS>

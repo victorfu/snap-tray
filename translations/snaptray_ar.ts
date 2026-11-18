@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>عناوين البريد الإلكتروني</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>عناوين الويب</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>عناوين IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>أرقام الهواتف</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>بطاقات الدفع</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>الالتقاط</translation>
@@ -8954,6 +8974,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>تكبير النص</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>مراجعة التمويه التلقائي</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>حدد المناطق المراد إخفاؤها. قد يفوت التعرف الضوئي نصًا حساسًا.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>المنطقة %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>الوجوه المموهة: %1 · مناطق النص: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>لم يتم اكتشاف وجوه أو نص حساس</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>إلغاء</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>تطبيق</translation>
     </message>
 </context>
 </TS>

@@ -31,6 +31,7 @@ public:
     virtual void showCenteredOnScreen(QScreen* screen);
     virtual void close();
     void setModal(bool modal);
+    bool prepare();
 
     static QPoint centeredTopLeftForBounds(const QRect& bounds, const QSize& viewSize);
     // topLeft, moved just enough for a window of viewSize to fit in bounds.

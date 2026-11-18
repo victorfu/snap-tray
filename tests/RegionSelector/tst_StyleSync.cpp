@@ -13,6 +13,7 @@
 #include "qml/QmlOverlayManager.h"
 #include <QtMath>
 #include "RegionSelector.h"
+#include "qml/RedactionReview.h"
 #include "RegionSelectorTestAccess.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
@@ -146,6 +147,8 @@ private slots:
     void testReleaseOverFloatingUiCancelsSingleClickAnnotation_data();
     void testReleaseOverFloatingUiCancelsSingleClickAnnotation();
     void testAutoBlurRequestGuardRejectsStaleContext();
+    void reviewOutcome_data();
+    void reviewOutcome();
     void testAutoBlurGaussianCoversDetectedRegion_data();
     void testAutoBlurGaussianCoversDetectedRegion();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
@@ -1355,15 +1358,68 @@ void TestRegionSelectorStyleSync::testAutoBlurGaussianCoversDetectedRegion()
     request.annotationLayer = &layer;
     request.blockSize = 12;
     request.blurType = MosaicBlurType::Gaussian;
-    selector.addAutoBlurRegions(request, {QRect(16 * dpr, 16 * dpr, 32 * dpr, 24 * dpr)});
+    const QRect detected(17, 13, 31, 21);
+    selector.addAutoBlurRegions(request, {detected});
     QCOMPARE(layer.itemCount(), size_t(1));
     QImage output(240, 200, QImage::Format_ARGB32);
     output.setDevicePixelRatio(dpr);
     output.fill(Qt::transparent);
     { QPainter painter(&output); layer.itemAt(0)->draw(painter); }
-    for (int y = 32 * dpr; y < 56 * dpr; ++y)
-        for (int x = 32 * dpr; x < 64 * dpr; ++x)
+    const QRect expected = detected.translated(request.clampedPhysicalRect.topLeft());
+    for (int y = expected.top(); y <= expected.bottom(); ++y)
+        for (int x = expected.left(); x <= expected.right(); ++x)
             QCOMPARE(output.pixelColor(x, y), QColor(Qt::red));
+}
+
+void TestRegionSelectorStyleSync::reviewOutcome_data()
+{
+    QTest::addColumn<QString>("action");
+    for (const auto* action : {"apply", "cancel", "empty", "stale", "destroy"})
+        QTest::newRow(action) << QString::fromLatin1(action);
+}
+
+void TestRegionSelectorStyleSync::reviewOutcome()
+{
+    QFETCH(QString, action);
+    auto selector = std::make_unique<RegionSelector>();
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    QPixmap capture(240, 160);
+    capture.fill(Qt::white);
+    selector->initializeForScreen(screen, capture);
+    selector->m_selectionManager->setSelectionRect(QRect(0, 0, 200, 120));
+    RegionSelector::AutoBlurRequestSnapshot request;
+    request.generation = selector->m_autoBlurGeneration;
+    request.selectionRect = selector->m_selectionManager->selectionRect();
+    request.clampedPhysicalRect = capture.rect();
+    request.devicePixelRatio = selector->m_devicePixelRatio;
+    request.sourcePixmap = selector->m_sharedSourcePixmap;
+    request.sourceScreen = screen;
+    request.annotationLayer = selector->m_annotationLayer;
+    selector->m_activeAutoBlurGeneration = request.generation;
+    selector->m_autoBlurInProgress = true;
+    selector->reviewAutoBlurResult(request, capture.toImage(), {{5, 5, 15, 20}},
+                                   {{40, 40, 50, 15}}, QStringLiteral("Partial scan"));
+    QPointer<SnapTray::RedactionReview> model = selector->findChild<SnapTray::RedactionReview*>();
+    QVERIFY(model);
+    QCOMPARE(model->property("warning").toString(), QStringLiteral("Partial scan"));
+    QVERIFY(selector->m_autoBlurInProgress);
+    if (action == "destroy") {
+        selector.reset();
+        QVERIFY(!model);
+        return;
+    }
+    model->select(0, false);
+    if (action == "stale")
+        ++selector->m_autoBlurGeneration;
+    if (action == "empty")
+        model->select(1, false);
+    if (action == "cancel")
+        emit model->cancel();
+    else
+        emit model->apply();
+    QVERIFY(!selector->m_autoBlurInProgress);
+    QCOMPARE(selector->m_annotationLayer->itemCount(), size_t(action == "apply" ? 1 : 0));
 }
 
 void TestRegionSelectorStyleSync::testAutoBlurRequestGuardRejectsStaleContext()

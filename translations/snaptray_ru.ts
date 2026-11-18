@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Адреса электронной почты</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Веб-адреса</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Адреса IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Номера телефонов</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Платёжные карты</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Захват</translation>
@@ -8942,6 +8962,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>Увеличить текст</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Проверка автоматического размытия</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Выберите области, которые нужно скрыть. Распознавание может пропустить конфиденциальный текст.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Область %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Размыто лиц: %1 · Областей текста: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Лица и конфиденциальный текст не обнаружены</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Применить</translation>
     </message>
 </context>
 </TS>

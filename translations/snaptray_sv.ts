@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>E-postadresser</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Webbadresser</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4-adresser</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Telefonnummer</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Betalkort</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Fångst</translation>
@@ -8938,6 +8958,39 @@ Den kan användas av ett annat program.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Öka textstorleken</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Granska automatisk oskärpa</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Välj de områden som ska döljas. Textigenkänningen kan missa känslig text.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Område %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Oskarpa ansikten: %1 · Textområden: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Inga ansikten eller känsliga texter upptäcktes</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Tillämpa</translation>
     </message>
 </context>
 </TS>

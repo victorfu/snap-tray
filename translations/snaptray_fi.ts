@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Sähköpostiosoitteet</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Verkko-osoitteet</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4-osoitteet</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Puhelinnumerot</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Maksukortit</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Kaappaus</translation>
@@ -8938,6 +8958,39 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Suurenna tekstiä</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Tarkista automaattinen sumennus</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Valitse piilotettavat alueet. Tekstintunnistus voi ohittaa arkaluonteista tekstiä.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Alue %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Sumennettuja kasvoja: %1 · Tekstialueita: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Kasvoja tai arkaluonteista tekstiä ei havaittu</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Käytä</translation>
     </message>
 </context>
 </TS>

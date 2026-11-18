@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>E-mailové adresy</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Webové adresy</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Adresy IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Telefonní čísla</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Platební karty</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Zachycení</translation>
@@ -8942,6 +8962,39 @@ Může být používána jinou aplikací.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Zvětšit text</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Kontrola automatického rozmazání</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Vyberte oblasti ke skrytí. OCR může citlivý text přehlédnout.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Oblast %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Rozmazané obličeje: %1 · Textové oblasti: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Nebyly nalezeny obličeje ani citlivý text</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Použít</translation>
     </message>
 </context>
 </TS>

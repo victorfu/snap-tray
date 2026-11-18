@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Адресе е-поште</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Веб-адресе</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 адресе</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Бројеви телефона</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Платне картице</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Снимак екрана</translation>
@@ -8942,6 +8962,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>Повећај текст</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Преглед аутоматског замућења</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Изаберите области за скривање. Препознавање текста може пропустити осетљив текст.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Област %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Замућена лица: %1 · Области текста: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Нису откривена лица ни осетљив текст</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Откажи</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Примени</translation>
     </message>
 </context>
 </TS>
