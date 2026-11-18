@@ -3477,6 +3477,10 @@ Size: %2</source>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>画面キャプチャは一時的に互換モードを使用しています</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>プロンプターには別の画面が必要です。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6073,6 +6077,38 @@ Size: %2</source>
         <source>Cannot import audio: %1</source>
         <translation>音声を読み込めません：%1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>録画の編集を復元</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>未保存の録画の編集を復元しますか？</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>下書きが破損しているか、互換性がないか、別の録画のものです。</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>「下書きを破棄」で最後に保存した版を開きます。「キャンセル」で下書きを保持します。</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>復元</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>下書きを破棄</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>下書きを削除できませんでした。</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>下書きを保存できませんでした。空き容量とファイルの権限を確認して再試行してください。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7069,6 +7105,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Automatically add zooms</source>
         <translation>ズームを自動追加</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>プロンプターの画面</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>オフ</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>プロンプターには別の画面が必要です。</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>この録画の原稿を入力または貼り付け</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7593,6 +7645,10 @@ It may be in use by another application.</source>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>マイクの権限を待っています...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>原稿を入力し、プロンプターとは別の画面を録画対象に選んでください。</translation>
     </message>
 </context>
 <context>
@@ -8616,6 +8672,21 @@ It may be in use by another application.</source>
     <message>
         <source>Recovered from the previous save</source>
         <translation>前回の保存から復元しました</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>プロンプター</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>文字を小さくする</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>文字を大きくする</translation>
     </message>
 </context>
 </TS>

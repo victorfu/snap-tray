@@ -3479,6 +3479,10 @@ Size: %2</source>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Снимање екрана привремено користи режим компатибилности</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Суфлер захтева засебан екран.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6081,6 +6085,38 @@ Size: %2</source>
         <source>Cannot import audio: %1</source>
         <translation>Није могуће увести звук: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Опоравак измена снимка</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Вратити несачуване измене снимка?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Нацрт је оштећен, некомпатибилан или припада другом снимку.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Одбацивање нацрта отвара последњу сачувану верзију. Отказивање задржава нацрт.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Врати</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Одбаци нацрт</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Није могуће уклонити нацрт.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Није могуће сачувати нацрт. Проверите слободан простор и дозволе датотеке па покушајте поново.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7077,6 +7113,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Automatically add zooms</source>
         <translation>Аутоматски додај увећања</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Екран суфлера</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Искључено</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Суфлер захтева засебан екран.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Унесите или налепите текст за овај снимак</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7601,6 +7653,10 @@ It may be in use by another application.</source>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Чека се дозвола за микрофон...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Унесите текст и за снимање изаберите екран различит од екрана суфлера.</translation>
     </message>
 </context>
 <context>
@@ -8624,6 +8680,21 @@ It may be in use by another application.</source>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Враћено из претходног чувања</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Суфлер</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Смањи текст</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Повећај текст</translation>
     </message>
 </context>
 </TS>

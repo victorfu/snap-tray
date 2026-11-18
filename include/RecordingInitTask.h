@@ -53,6 +53,7 @@ public:
         // quality where supported, 1 s keyframes); the user's quality is then
         // applied when the preview saves. See IntermediateQuality.h.
         bool intermediateQuality = false;
+        quintptr separateDisplayWindow = 0;
         QList<quintptr> excludedCaptureWindowIds; // Native capture IDs resolved on the GUI thread
         // Windows: use the captured WGC preference (enabled by default);
         // fall back to DXGI/BitBlt when WGC is unavailable or fails to start.

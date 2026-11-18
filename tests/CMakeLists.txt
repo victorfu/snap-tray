@@ -306,7 +306,7 @@ add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
 set_tests_properties(Qml_EmojiPickerBackend PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Qml_ScreenPickerViewModel Qml/tst_ScreenPickerViewModel.cpp)
-target_link_libraries(Qml_ScreenPickerViewModel PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(Qml_ScreenPickerViewModel PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME Qml_ScreenPickerViewModel COMMAND Qml_ScreenPickerViewModel)
 set_tests_properties(Qml_ScreenPickerViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 

@@ -32,6 +32,7 @@ class QLocalSocket;
 class QJsonObject;
 
 namespace SnapTray {
+struct RecordingProject;
 class QmlSettingsWindow;
 class QmlHistoryWindow;
 class QmlDialog;
@@ -111,7 +112,8 @@ private:
                             SnapTray::ScreenPickerViewModel* viewModel);
     void onScreenPickerChosen(QScreen* screen);
     // Starts recording `screen`, after choosing an area when that is on (#194).
-    void startRecordingOn(QScreen* screen);
+    void openRecordingPreview(const QString& path, int format, bool intermediate, const SnapTray::RecordingProject* project);
+    void startRecordingOn(QScreen* screen, QPointer<QScreen> promptDisplay = {}, const QString& script = {});
     // The recording setup is on screen: the screen picker, or the area
     // selector after it (#194). Captures and other overlays wait.
     bool recordingSetupActive() const;

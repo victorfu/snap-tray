@@ -3479,6 +3479,10 @@ Dydis: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Ekrano fiksavimas laikinai naudoja suderinamumo režimą</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Sufleriui reikia atskiro ekrano.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6081,6 +6085,38 @@ Dydis: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Nepavyksta importuoti garso: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Atkurti įrašo pakeitimus</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Atkurti neįrašytus įrašo pakeitimus?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Juodraštis sugadintas, nesuderinamas arba priklauso kitam įrašui.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Atmetus juodraštį atveriama paskutinė įrašyta versija. Atšaukus juodraštis išsaugomas.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Atkurti</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Atmesti juodraštį</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Nepavyko pašalinti juodraščio.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Nepavyko įrašyti juodraščio. Patikrinkite laisvą vietą bei failo leidimus ir bandykite dar kartą.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7077,6 +7113,22 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <source>Automatically add zooms</source>
         <translation>Automatiškai pridėti priartinimus</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Suflerio ekranas</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Išjungta</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Sufleriui reikia atskiro ekrano.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Įveskite arba įklijuokite šio įrašo tekstą</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7601,6 +7653,10 @@ Jį gali naudoti kita programa.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Laukiama mikrofono leidimo...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Įveskite tekstą ir įrašymui pasirinkite kitą ekraną nei sufleriui.</translation>
     </message>
 </context>
 <context>
@@ -8624,6 +8680,21 @@ Jį gali naudoti kita programa.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Atkurta iš ankstesnio išsaugojimo</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Sufleris</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Sumažinti tekstą</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Padidinti tekstą</translation>
     </message>
 </context>
 </TS>

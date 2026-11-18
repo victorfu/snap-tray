@@ -3264,6 +3264,10 @@ English is always included and cannot be removed.</source>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>การจับภาพหน้าจอใช้โหมดความเข้ากันได้ชั่วคราว</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>ต้องใช้หน้าจอแยกสำหรับแสดงบทพูด</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5840,6 +5844,38 @@ English is always included and cannot be removed.</source>
         <source>Cannot import audio: %1</source>
         <translation>ไม่สามารถนำเข้าเสียง: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>กู้คืนการแก้ไขวิดีโอที่บันทึก</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>ต้องการกู้คืนการแก้ไขที่ยังไม่ได้บันทึกหรือไม่</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>ฉบับร่างเสียหาย ไม่เข้ากัน หรือเป็นของวิดีโออื่น</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>การทิ้งฉบับร่างจะเปิดเวอร์ชันที่บันทึกล่าสุด การยกเลิกจะเก็บฉบับร่างไว้</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>กู้คืน</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>ทิ้งฉบับร่าง</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>ไม่สามารถลบฉบับร่างได้</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>ไม่สามารถบันทึกฉบับร่างได้ ตรวจสอบพื้นที่ว่างและสิทธิ์ของไฟล์แล้วลองอีกครั้ง</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6778,6 +6814,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Automatically add zooms</source>
         <translation>เพิ่มการซูมโดยอัตโนมัติ</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>หน้าจอแสดงบทพูด</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>ปิด</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>ต้องใช้หน้าจอแยกสำหรับแสดงบทพูด</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>พิมพ์หรือวางบทพูดสำหรับการบันทึกครั้งนี้</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7269,6 +7321,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>กำลังรอสิทธิ์ใช้ไมโครโฟน...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>ป้อนบทพูดแล้วเลือกหน้าจอที่จะบันทึกแยกจากหน้าจอแสดงบทพูด</translation>
     </message>
 </context>
 <context>
@@ -8301,6 +8357,21 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <source>Recovered from the previous save</source>
         <translation>กู้คืนจากการบันทึกครั้งก่อนแล้ว</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>เครื่องแสดงบทพูด</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>ลดขนาดข้อความ</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>เพิ่มขนาดข้อความ</translation>
     </message>
 </context>
 </TS>

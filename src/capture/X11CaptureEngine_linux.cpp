@@ -2,6 +2,7 @@
 #include "capture/CaptureFrameTiming.h"
 #include "X11ScreenGeometry.h"
 #include <QDebug>
+#include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QScreen>
 #include <xcb/xcb.h>
@@ -30,6 +31,7 @@ struct X11CaptureEngine::State {
     QRect pixels;
     int stride = 0;
     bool shared = false;
+    int randrEvent = 0;
     ~State() {
         if (connection && shared) xcb_shm_detach(connection, segment);
         if (connection) xcb_disconnect(connection);
@@ -37,6 +39,44 @@ struct X11CaptureEngine::State {
         if (shmid >= 0) shmctl(shmid, IPC_RMID, nullptr);
     }
 };
+namespace {
+// X11 cannot filter a window. Watch the override-redirect reader and check
+// its actual root-pixel bounds before accepting any frames. Structure events
+// precede the reply to a subsequent GetImage on this same connection.
+bool watchSeparateWindow(xcb_connection_t* connection, xcb_window_t root, xcb_window_t window,
+                         const QRect& recorded)
+{
+    const uint32_t mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    auto* error = xcb_request_check(connection, xcb_change_window_attributes_checked(
+        connection, window, XCB_CW_EVENT_MASK, &mask));
+    if (error) {
+        free(error);
+        return false;
+    }
+    auto* tree = xcb_query_tree_reply(connection, xcb_query_tree(connection, window), nullptr);
+    auto* rect = xcb_get_geometry_reply(connection, xcb_get_geometry(connection, window), nullptr);
+    const bool safe = tree && tree->parent == root && rect
+        && !recorded.intersects(QRect(rect->x, rect->y, rect->width, rect->height));
+    free(tree);
+    free(rect);
+    return safe;
+}
+
+bool placementChanged(xcb_connection_t* connection, int randrEvent)
+{
+    bool changed = false;
+    while (auto* event = xcb_poll_for_event(connection)) {
+        const int type = event->response_type & 0x7f;
+        // Mapping without a move keeps the validated bounds. An unmap can
+        // only hide the reader. RandR layout events have extension event IDs.
+        changed |= type == XCB_CONFIGURE_NOTIFY || type == XCB_REPARENT_NOTIFY
+            || type == randrEvent + XCB_RANDR_SCREEN_CHANGE_NOTIFY || type == randrEvent + XCB_RANDR_NOTIFY || type == 0;
+        free(event);
+    }
+    return changed;
+}
+}
+
 X11CaptureEngine::X11CaptureEngine(QObject* parent) : ICaptureEngine(parent) {}
 X11CaptureEngine::~X11CaptureEngine() { stop(); }
 bool X11CaptureEngine::setRegion(const QRect& region, QScreen* screen) {
@@ -77,6 +117,23 @@ bool X11CaptureEngine::start() {
                            qRound(m_captureRegion.height()*m_info.devicePixelRatio)));
     if (!QRect(0, 0, s.screen->width_in_pixels, s.screen->height_in_pixels).contains(s.pixels)
         || setup->image_byte_order != XCB_IMAGE_ORDER_LSB_FIRST) { d.reset(); return false; }
+    if (m_separateWindow) {
+        const auto* randr = xcb_get_extension_data(s.connection, &xcb_randr_id);
+        if (!randr || !randr->present) { d.reset(); return false; }
+        s.randrEvent = randr->first_event;
+        auto* error = xcb_request_check(s.connection, xcb_randr_select_input_checked(
+            s.connection, s.screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE
+                | XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE | XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE));
+        if (error) {
+            free(error);
+            d.reset();
+            return false;
+        }
+        if (!watchSeparateWindow(s.connection, s.screen->root, m_separateWindow, s.pixels)) {
+            d.reset();
+            return false;
+        }
+    }
     bool supported = false;
     for (auto it = xcb_setup_pixmap_formats_iterator(setup); it.rem; xcb_format_next(&it))
         if (it.data->depth == s.screen->root_depth && it.data->bits_per_pixel == 32) supported = true;
@@ -125,6 +182,11 @@ bool X11CaptureEngine::start() {
                     image = QImage(xcb_get_image_data(reply), s.pixels.width(), s.pixels.height(),
                         s.stride, QImage::Format_RGB32).copy();
                 free(reply);
+            }
+            if (m_separateWindow && placementChanged(s.connection, s.randrEvent)) {
+                s.running = false;
+                emit error(QCoreApplication::translate("RecordingManager", "The teleprompter requires a separate display."));
+                break;
             }
             if (image.isNull()) { s.running = false; emit error(QStringLiteral("X11 screen capture failed.")); break; }
             captureNs += timer.nsecsElapsed(); ++count;

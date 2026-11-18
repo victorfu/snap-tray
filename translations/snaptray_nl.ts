@@ -3478,6 +3478,10 @@ Grootte: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Schermopname gebruikt tijdelijk de compatibiliteitsmodus</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>De autocue heeft een apart scherm nodig.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6077,6 +6081,38 @@ Grootte: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Kan audio niet importeren: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Opnamebewerkingen herstellen</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Niet-opgeslagen wijzigingen in de opname herstellen?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Het concept is beschadigd, niet compatibel of hoort bij een andere opname.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Concept verwerpen opent de laatst opgeslagen versie. Annuleren behoudt het concept.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Herstellen</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Concept verwerpen</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Het concept kon niet worden verwijderd.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Het concept kon niet worden opgeslagen. Controleer de vrije ruimte en bestandsrechten en probeer het opnieuw.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7073,6 +7109,22 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
         <source>Automatically add zooms</source>
         <translation>Zooms automatisch toevoegen</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Autocuescherm</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Uit</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>De autocue heeft een apart scherm nodig.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Typ of plak de tekst voor deze opname</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7597,6 +7649,10 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Wachten op microfoontoestemming...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Voer tekst in en kies voor de opname een ander scherm dan voor de autocue.</translation>
     </message>
 </context>
 <context>
@@ -8620,6 +8676,21 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Hersteld vanuit de vorige opslag</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Autocue</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Tekst verkleinen</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Tekst vergroten</translation>
     </message>
 </context>
 </TS>

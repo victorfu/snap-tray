@@ -35,6 +35,7 @@ class RecordingInitTask;
 namespace SnapTray {
 class QmlRecordingControlBar;
 class QmlRecordingBoundary;
+class RecordingPrompter;
 }
 class QmlCountdownOverlay;
 class NativeGifEncoder;
@@ -108,7 +109,8 @@ public slots:
     // global coordinates on `screen`) is an area chosen beforehand: the
     // preview's initial crop in edit mode, the recorded region in quick mode.
     // Fractional: at 150% a pixel edge can be 233.33 logical (#210).
-    void startScreenRecording(QScreen* screen = nullptr, const QRectF& area = QRectF());
+    void startScreenRecording(QScreen* screen = nullptr, const QRectF& area = QRectF(),
+                              QScreen* promptDisplay = nullptr, const QString& script = {});
     void stopRecording();           // Stop and save recording
     void cancelRecording();         // Cancel without saving
     void pauseRecording();          // Pause recording
@@ -243,6 +245,9 @@ private:
     // The same area unrounded, for the initial crop in video pixels (#210).
     QRectF m_preselectedAreaExact;
     QRect m_pendingInitialCrop;
+    QPointer<QScreen> m_promptDisplay;
+    QString m_promptScript;
+    std::unique_ptr<SnapTray::RecordingPrompter> m_prompter;
     QPointer<SnapTray::QmlRecordingBoundary> m_areaBoundary;
     void showAreaBoundary();
     void closeAreaBoundary();

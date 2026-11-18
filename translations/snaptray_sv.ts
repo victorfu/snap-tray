@@ -3478,6 +3478,10 @@ Storlek: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Skärminspelning använder tillfälligt kompatibilitetsläge</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Telepromptern kräver en separat skärm.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6077,6 +6081,38 @@ Storlek: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Kan inte importera ljud: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Återställ inspelningsändringar</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Återställa osparade ändringar i inspelningen?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Utkastet är skadat, är inkompatibelt eller hör till en annan inspelning.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Kassera utkast öppnar den senast sparade versionen. Avbryt behåller utkastet.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Återställ</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Kassera utkast</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Det gick inte att ta bort utkastet.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Det gick inte att spara utkastet. Kontrollera ledigt utrymme och filbehörigheter och försök igen.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7073,6 +7109,22 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <source>Automatically add zooms</source>
         <translation>Lägg till zoomningar automatiskt</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Teleprompterns skärm</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Av</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Telepromptern kräver en separat skärm.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Skriv eller klistra in manuset för den här inspelningen</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7597,6 +7649,10 @@ Den kan användas av ett annat program.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Väntar på mikrofonbehörighet...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Ange ett manus och välj en annan skärm för inspelning än för telepromptern.</translation>
     </message>
 </context>
 <context>
@@ -8620,6 +8676,21 @@ Den kan användas av ett annat program.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Återställd från föregående sparning</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Teleprompter</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Minska textstorleken</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Öka textstorleken</translation>
     </message>
 </context>
 </TS>

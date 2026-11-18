@@ -9,6 +9,7 @@
 #include "recording/KeyTimeline.h"
 #include "qml/QmlRecordingControlBar.h"
 #include "qml/QmlRecordingBoundary.h"
+#include "qml/RecordingPrompter.h"
 #include "recording/RecordingArea.h"
 #include "hotkey/HotkeyManager.h"
 #include "RecordingInitTask.h"
@@ -315,6 +316,12 @@ void RecordingManager::setState(State newState)
 {
     if (m_state != newState) {
         m_state = newState;
+        if (m_prompter) m_prompter->setReading(newState == State::Recording);
+        if (newState == State::Encoding || newState == State::Idle || newState == State::Previewing) {
+            m_prompter.reset();
+            m_promptScript.clear();
+            m_promptDisplay.clear();
+        }
         // The area's frame (#194) follows the recording, amber while paused.
         if (m_areaBoundary) {
             if (m_state == State::Recording) m_areaBoundary->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Recording);
@@ -435,7 +442,8 @@ QString RecordingManager::activeScreenSummary() const
         .arg(SnapTray::ScreenSourceService::resolutionText(screen));
 }
 
-void RecordingManager::startScreenRecording(QScreen* screen, const QRectF& area)
+void RecordingManager::startScreenRecording(QScreen* screen, const QRectF& area,
+                                            QScreen* promptDisplay, const QString& script)
 {
     if (m_state == State::Recording || m_state == State::Paused ||
         m_state == State::Encoding || m_state == State::Preparing ||
@@ -456,6 +464,12 @@ void RecordingManager::startScreenRecording(QScreen* screen, const QRectF& area)
         setState(State::Idle);
         return;
     }
+    if (!script.isEmpty() && !SnapTray::RecordingPrompter::separate(targetScreen, promptDisplay)) {
+        emit recordingError(tr("The teleprompter requires a separate display."));
+        return;
+    }
+    m_promptDisplay = promptDisplay;
+    m_promptScript = script;
     m_targetScreen = targetScreen;
     // An area chosen before recording (#194), kept on this screen.
     const QRect roundedArea(qRound(area.x()), qRound(area.y()), qRound(area.width()), qRound(area.height()));
@@ -910,6 +924,19 @@ void RecordingManager::beginAsyncInitialization()
     // leave it out; elsewhere (X11) it is drawn just outside the area.
     if (m_areaBoundary) {
         if (const quintptr id = m_areaBoundary->captureExclusionId()) config.excludedCaptureWindowIds.append(id);
+    }
+
+    if (!m_promptScript.isEmpty()) {
+        m_prompter = std::make_unique<SnapTray::RecordingPrompter>(targetScreen, m_promptDisplay,
+                                                                   std::exchange(m_promptScript, {}), 28);
+        const quintptr id = m_prompter->captureExclusionId();
+        if (!id) {
+            cancelRecording();
+            emit recordingError(tr("The teleprompter requires a separate display."));
+            return;
+        }
+        config.separateDisplayWindow = id;
+        config.excludedCaptureWindowIds.append(id);
     }
 
     const quint64 generation = ++m_initGeneration;
@@ -1809,6 +1836,8 @@ bool RecordingManager::openProjectRecording(const QString& videoPath)
     if (m_state != State::Idle || !QFileInfo::exists(videoPath)) {
         return false;
     }
+    m_sessionLock = SnapTray::RecordingProjects::lockEditor(QFileInfo(videoPath).absolutePath());
+    if (!m_sessionLock) return false;
     m_session = {};
     m_tempVideoPath = videoPath;
     setState(State::Previewing);

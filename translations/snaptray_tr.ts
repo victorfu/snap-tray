@@ -3477,6 +3477,10 @@ Boyut: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Ekran yakalama geçici olarak uyumluluk modunu kullanıyor</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Prompter için ayrı bir ekran gerekir.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6073,6 +6077,38 @@ Boyut: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Ses içe aktarılamadı: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Kayıt düzenlemelerini kurtar</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Kaydedilmemiş düzenlemeler geri yüklensin mi?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Taslak bozuk, uyumsuz veya başka bir kayda ait.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Taslağı at son kaydedilen sürümü açar. İptal taslağı korur.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Geri yükle</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Taslağı at</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Taslak kaldırılamadı.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Taslak kaydedilemedi. Boş alanı ve dosya izinlerini kontrol edip yeniden deneyin.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7069,6 +7105,22 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <source>Automatically add zooms</source>
         <translation>Otomatik yakınlaştırmalar ekle</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Prompter ekranı</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Kapalı</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Prompter için ayrı bir ekran gerekir.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Bu kaydın metnini yazın veya yapıştırın</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7593,6 +7645,10 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Mikrofon izni bekleniyor...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Metni girin ve kayıt için prompter ekranından farklı bir ekran seçin.</translation>
     </message>
 </context>
 <context>
@@ -8616,6 +8672,21 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Önceki kayıttan geri yüklendi</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Prompter</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Metni küçült</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Metni büyüt</translation>
     </message>
 </context>
 </TS>

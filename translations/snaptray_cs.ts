@@ -3479,6 +3479,10 @@ Velikost: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Snímání obrazovky dočasně používá režim kompatibility</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Čtecí zařízení vyžaduje samostatnou obrazovku.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6081,6 +6085,38 @@ Velikost: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Nelze importovat zvuk: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Obnovit úpravy záznamu</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Obnovit neuložené úpravy záznamu?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Koncept je poškozený, nekompatibilní nebo patří k jinému záznamu.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Zahozením konceptu otevřete poslední uloženou verzi. Zrušením koncept zachováte.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Obnovit</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Zahodit koncept</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Koncept nelze odstranit.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Koncept nelze uložit. Zkontrolujte volné místo a oprávnění souboru a zkuste to znovu.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7077,6 +7113,22 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <source>Automatically add zooms</source>
         <translation>Automaticky přidávat přiblížení</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Obrazovka čtecího zařízení</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Vypnuto</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Čtecí zařízení vyžaduje samostatnou obrazovku.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Napište nebo vložte text pro tento záznam</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7601,6 +7653,10 @@ Může být používána jinou aplikací.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Čeká se na oprávnění k mikrofonu...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Zadejte text a pro nahrávání zvolte jinou obrazovku než pro čtecí zařízení.</translation>
     </message>
 </context>
 <context>
@@ -8624,6 +8680,21 @@ Může být používána jinou aplikací.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Obnoveno z předchozího uložení</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Čtecí zařízení</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Zmenšit text</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Zvětšit text</translation>
     </message>
 </context>
 </TS>

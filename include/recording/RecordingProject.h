@@ -6,6 +6,8 @@
 #include <QImage>
 #include <QJsonObject>
 #include <QList>
+#include <QLockFile>
+#include <memory>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -112,6 +114,9 @@ std::optional<RecordingProject> load(const QString& dir);
 bool update(RecordingProject& project, const QJsonObject& recipe, const QString& savedPath);
 // Protect the project currently open in the editor from automatic cleanup.
 void setOpenProjectDir(const QString& dir);
+std::unique_ptr<QLockFile> lockEditor(const QString& dir);
+void setPendingDraft(const QString& dir, bool pending);
+bool hasDraft(const RecordingProject& project);
 QList<RecordingProject> list(); // newest first
 bool remove(const RecordingProject& project);
 qint64 totalBytes();

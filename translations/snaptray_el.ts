@@ -3478,6 +3478,10 @@ Size: %2</source>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Η λήψη οθόνης χρησιμοποιεί προσωρινά λειτουργία συμβατότητας</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Ο υποβολέας απαιτεί ξεχωριστή οθόνη.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6077,6 +6081,38 @@ Size: %2</source>
         <source>Cannot import audio: %1</source>
         <translation>Αδυναμία εισαγωγής ήχου: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Ανάκτηση αλλαγών εγγραφής</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Να επαναφερθούν οι μη αποθηκευμένες αλλαγές στην εγγραφή;</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Το πρόχειρο είναι κατεστραμμένο, ασύμβατο ή ανήκει σε άλλη εγγραφή.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Η απόρριψη ανοίγει την τελευταία αποθηκευμένη έκδοση. Η ακύρωση διατηρεί το πρόχειρο.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Επαναφορά</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Απόρριψη προχείρου</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Δεν ήταν δυνατή η διαγραφή του προχείρου.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Δεν ήταν δυνατή η αποθήκευση του προχείρου. Ελέγξτε τον ελεύθερο χώρο και τα δικαιώματα του αρχείου και δοκιμάστε ξανά.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7073,6 +7109,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Automatically add zooms</source>
         <translation>Αυτόματη προσθήκη μεγεθύνσεων</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Οθόνη υποβολέα</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Ανενεργό</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Ο υποβολέας απαιτεί ξεχωριστή οθόνη.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Πληκτρολογήστε ή επικολλήστε το κείμενο της εγγραφής</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7597,6 +7649,10 @@ It may be in use by another application.</source>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Αναμονή για άδεια μικροφώνου...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Πληκτρολογήστε το κείμενο και επιλέξτε για εγγραφή διαφορετική οθόνη από εκείνη του υποβολέα.</translation>
     </message>
 </context>
 <context>
@@ -8620,6 +8676,21 @@ It may be in use by another application.</source>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Επαναφορά από την προηγούμενη αποθήκευση</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Υποβολέας</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Μείωση μεγέθους κειμένου</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Αύξηση μεγέθους κειμένου</translation>
     </message>
 </context>
 </TS>

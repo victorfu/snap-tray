@@ -3478,6 +3478,10 @@ Tamanho: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>A captura de tela usa temporariamente o modo de compatibilidade</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>O teleprompter precisa de uma tela separada.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -6077,6 +6081,38 @@ Tamanho: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Não foi possível importar o áudio: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Recuperar edições da gravação</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Restaurar as edições não salvas da gravação?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>O rascunho está danificado, é incompatível ou pertence a outra gravação.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Descartar rascunho abre a última versão salva. Cancelar mantém o rascunho.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Restaurar</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Descartar rascunho</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Não foi possível remover o rascunho.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Não foi possível salvar o rascunho. Verifique o espaço livre e as permissões do arquivo e tente novamente.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -7073,6 +7109,22 @@ Tokens de data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, ou {date}</translation
         <source>Automatically add zooms</source>
         <translation>Adicionar zooms automaticamente</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Tela do teleprompter</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Desativado</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>O teleprompter precisa de uma tela separada.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Digite ou cole o roteiro desta gravação</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7597,6 +7649,10 @@ Ele pode estar em uso por outro aplicativo.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Aguardando permissão do microfone...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Insira um roteiro e escolha para gravar uma tela diferente da usada pelo teleprompter.</translation>
     </message>
 </context>
 <context>
@@ -8620,6 +8676,21 @@ Ele pode estar em uso por outro aplicativo.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Restaurado do salvamento anterior</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Teleprompter</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Diminuir texto</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Aumentar texto</translation>
     </message>
 </context>
 </TS>
