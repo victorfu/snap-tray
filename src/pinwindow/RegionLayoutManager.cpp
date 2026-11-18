@@ -258,6 +258,16 @@ bool RegionLayoutManager::isActive() const
     return m_active;
 }
 
+bool RegionLayoutManager::hasPendingChanges() const
+{
+    return m_active && (!m_arrangementValid ||
+        !std::equal(m_state.regions.cbegin(), m_state.regions.cend(),
+                    m_state.originalSnapshot.cbegin(), m_state.originalSnapshot.cend(),
+                    [](const LayoutRegion& a, const LayoutRegion& b) {
+                        return a.index == b.index && a.rect == b.rect;
+                    }));
+}
+
 QVariantList RegionLayoutManager::arrangementOrder() const
 {
     QVariantList result;

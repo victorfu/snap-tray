@@ -2085,6 +2085,26 @@ English is always included and cannot be removed.</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>ทิ้ง</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>บันทึก</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>บันทึกการแก้ไขก่อนปิดภาพปักหมุดนี้หรือไม่</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>การแก้ไขภาพปักหมุดที่ยังไม่ได้บันทึก</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>จัดเรียง</translation>
@@ -2672,6 +2692,10 @@ English is always included and cannot be removed.</source>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>ถามก่อนปิดภาพปักหมุดที่แก้ไขแล้ว</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

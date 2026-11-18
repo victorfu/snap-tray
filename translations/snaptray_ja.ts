@@ -2234,6 +2234,26 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>破棄</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>保存</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>このピン留め画像を閉じる前に変更を保存しますか？</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>ピン留め画像に未保存の変更があります</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>配置</translation>
@@ -2821,6 +2841,10 @@ Size: %2</source>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>編集したピン留め画像を閉じる前に確認する</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

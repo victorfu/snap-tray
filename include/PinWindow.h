@@ -520,7 +520,28 @@ private:
     void applyStepBadgeOrientationCompensation(StepBadgeAnnotation* badgeItem) const;
     void compensateNewestStepBadgeIfNeeded(const AnnotationItem* previousLastItem) const;
 
-    // Original members
+    struct EditSnapshot {
+        QPixmap image;
+        bool uneditedFrame = true;
+        int rotation = 0;
+        bool flipHorizontal = false;
+        QByteArray annotations;
+
+        bool operator==(const EditSnapshot& other) const;
+    };
+    EditSnapshot editSnapshot() const;
+    bool hasUnsavedEdits() const;
+    void finishPendingTextEdit();
+    bool confirmClose();
+    enum class FileSaveOutcome { NoFileSave, Saved, Failed };
+    FileSaveOutcome waitForActiveExport();
+    friend class PinWindowManager;
+    bool m_internalClose = false;
+    bool m_confirmingClose = false;
+    bool m_choosingSavePath = false;
+    qint64 m_uneditedImageKey = 0;
+    std::optional<EditSnapshot> m_savedEdits;
+
     QPixmap m_originalPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
     bool m_mosaicSourceDirty = false;

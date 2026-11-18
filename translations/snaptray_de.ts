@@ -2235,6 +2235,26 @@ Größe: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Verwerfen</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Speichern</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Änderungen vor dem Schließen dieses angehefteten Bildes speichern?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Ungespeicherte Änderungen am angehefteten Bild</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Anordnen</translation>
@@ -2822,6 +2842,10 @@ Größe: %2</translation>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Vor dem Schließen bearbeiteter angehefteter Bilder nachfragen</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

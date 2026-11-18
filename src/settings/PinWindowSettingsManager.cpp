@@ -80,6 +80,18 @@ void PinWindowSettingsManager::saveShowHoverControls(bool enabled)
     settings.setValue(kSettingsKeyShowHoverControls, enabled);
 }
 
+bool PinWindowSettingsManager::loadProtectUnsavedEdits() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyProtectUnsavedEdits, kDefaultProtectUnsavedEdits).toBool();
+}
+
+void PinWindowSettingsManager::saveProtectUnsavedEdits(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyProtectUnsavedEdits, enabled);
+}
+
 int PinWindowSettingsManager::loadMaxCacheFiles() const
 {
     auto settings = SnapTray::getSettings();

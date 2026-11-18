@@ -64,6 +64,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int pinOpacityStep READ pinOpacityStep WRITE setPinOpacityStep NOTIFY pinOpacityStepChanged)
     Q_PROPERTY(int pinZoomStep READ pinZoomStep WRITE setPinZoomStep NOTIFY pinZoomStepChanged)
     Q_PROPERTY(bool pinShowHoverControls READ pinShowHoverControls WRITE setPinShowHoverControls NOTIFY pinShowHoverControlsChanged)
+    Q_PROPERTY(bool pinProtectUnsavedEdits READ pinProtectUnsavedEdits WRITE setPinProtectUnsavedEdits NOTIFY pinProtectUnsavedEditsChanged)
     Q_PROPERTY(int pinMaxCacheFiles READ pinMaxCacheFiles WRITE setPinMaxCacheFiles NOTIFY pinMaxCacheFilesChanged)
 
     // ──── Watermark ────
@@ -198,7 +199,9 @@ public:
     int pinZoomStep() const;
     void setPinZoomStep(int v);
     bool pinShowHoverControls() const;
+    bool pinProtectUnsavedEdits() const;
     void setPinShowHoverControls(bool v);
+    void setPinProtectUnsavedEdits(bool v);
     int pinMaxCacheFiles() const;
     void setPinMaxCacheFiles(int v);
 
@@ -364,6 +367,7 @@ signals:
     void pinOpacityStepChanged();
     void pinZoomStepChanged();
     void pinShowHoverControlsChanged();
+    void pinProtectUnsavedEditsChanged();
     void pinMaxCacheFilesChanged();
 
     // Watermark
@@ -475,6 +479,7 @@ private:
     int m_pinOpacityStep = 5;
     int m_pinZoomStep = 5;
     bool m_pinShowHoverControls = true;
+    bool m_pinProtectUnsavedEdits = false;
     int m_pinMaxCacheFiles = 20;
 
     // Watermark

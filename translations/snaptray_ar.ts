@@ -2239,6 +2239,26 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>إلغاء</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>تجاهل</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>حفظ</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>هل تريد حفظ تعديلاتك قبل إغلاق هذه الصورة المثبتة؟</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>تعديلات غير محفوظة على الصورة المثبتة</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>ترتيب</translation>
@@ -2826,6 +2846,10 @@ Size: %2</source>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>طلب التأكيد قبل إغلاق الصور المثبتة المعدلة</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

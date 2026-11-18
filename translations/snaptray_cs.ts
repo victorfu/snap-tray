@@ -2236,6 +2236,26 @@ Velikost: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Zahodit</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Uložit</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Uložit úpravy před zavřením tohoto připnutého obrázku?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Neuložené úpravy připnutého obrázku</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Uspořádat</translation>
@@ -2823,6 +2843,10 @@ Velikost: %2</translation>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Potvrdit zavření upravených připnutých obrázků</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

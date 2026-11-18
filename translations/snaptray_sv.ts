@@ -2235,6 +2235,26 @@ Storlek: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Ta bort</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Spara</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Vill du spara ändringarna innan du stänger den fästa bilden?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Osparade ändringar i den fästa bilden</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Ordna</translation>
@@ -2822,6 +2842,10 @@ Storlek: %2</translation>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Fråga innan redigerade fästa bilder stängs</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

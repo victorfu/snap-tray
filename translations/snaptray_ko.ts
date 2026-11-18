@@ -2234,6 +2234,26 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>삭제</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>저장</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>이 고정 이미지를 닫기 전에 변경 사항을 저장할까요?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>고정 이미지에 저장하지 않은 변경 사항이 있습니다</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>정렬</translation>
@@ -2821,6 +2841,10 @@ Size: %2</source>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>편집한 고정 이미지를 닫기 전에 확인</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

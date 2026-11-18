@@ -34,6 +34,9 @@ public:
     bool loadShowHoverControls() const;
     void saveShowHoverControls(bool enabled);
 
+    bool loadProtectUnsavedEdits() const;
+    void saveProtectUnsavedEdits(bool enabled);
+
     // Max history entries (5 - 200)
     int loadMaxCacheFiles() const;
     void saveMaxCacheFiles(int maxFiles);
@@ -44,6 +47,7 @@ public:
     static constexpr qreal kDefaultZoomStep = 0.05;
     static constexpr bool kDefaultShadowEnabled = true;
     static constexpr bool kDefaultShowHoverControls = true;
+    static constexpr bool kDefaultProtectUnsavedEdits = false;
     static constexpr int kDefaultMaxCacheFiles = 20;
 
 private:
@@ -56,6 +60,7 @@ private:
     static constexpr const char* kSettingsKeyZoomStep = "pinWindow/zoomStep";
     static constexpr const char* kSettingsKeyShadowEnabled = "pinWindow/shadowEnabled";
     static constexpr const char* kSettingsKeyShowHoverControls = "pinWindow/showHoverControls";
+    static constexpr const char* kSettingsKeyProtectUnsavedEdits = "pinWindow/protectUnsavedEdits";
     static constexpr const char* kSettingsKeyMaxCacheFiles = "history/maxEntries";
 };
 

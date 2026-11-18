@@ -85,6 +85,7 @@ Rectangle {
             e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "Blur intensity"), "blurIntensity", QT_TRANSLATE_NOOP("CaptureSettings", "Auto Blur")),
             e("pins", "PinWindowSettings", QT_TRANSLATE_NOOP("PinWindowSettings", "Default opacity"), "pinDefaultOpacity", QT_TRANSLATE_NOOP("PinWindowSettings", "Appearance")),
             e("pins", "PinWindowSettings", QT_TRANSLATE_NOOP("PinWindowSettings", "Show controls on hover"), "pinShowHoverControls", QT_TRANSLATE_NOOP("PinWindowSettings", "Appearance")),
+            e("pins", "PinWindowSettings", QT_TRANSLATE_NOOP("PinWindowSettings", "Confirm before closing edited pins"), "pinProtectUnsavedEdits", QT_TRANSLATE_NOOP("PinWindowSettings", "Appearance")),
             e("pins", "PinWindowSettings", QT_TRANSLATE_NOOP("PinWindowSettings", "Opacity step"), "pinOpacityStep", QT_TRANSLATE_NOOP("PinWindowSettings", "Steps")),
             e("pins", "PinWindowSettings", QT_TRANSLATE_NOOP("PinWindowSettings", "Zoom step"), "pinZoomStep", QT_TRANSLATE_NOOP("PinWindowSettings", "Steps")),
             e("saving", "SavingSettings", QT_TRANSLATE_NOOP("SavingSettings", "Screenshots"), "screenshotPath", QT_TRANSLATE_NOOP("SavingSettings", "Save Locations")),

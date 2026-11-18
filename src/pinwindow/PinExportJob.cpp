@@ -19,6 +19,7 @@ PinExportResult runPinExport(const PinExportRequest& request)
              !request.uniqueSave.outputDir.isEmpty());
 
     PinExportResult result;
+    result.destination = request.destination;
     if (request.destination == Destination::ExactFile) {
         result.filePath = request.filePath;
     }
@@ -133,8 +134,12 @@ void PinExportRunner::deliver(QFutureWatcher<PinExportResult>* watcher)
     watcher->deleteLater();
     // Cleared before calling, so the completion may start the next job.
     const Completion completion = std::exchange(m_completion, Completion());
+    QPointer<PinExportRunner> alive(this);
     if (completion) {
         completion(result);
+    }
+    if (alive) {
+        emit finished(result.destination, result.success);
     }
 }
 

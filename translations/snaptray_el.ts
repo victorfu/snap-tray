@@ -2235,6 +2235,26 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Ακύρωση</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Αποθήκευση</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Να αποθηκευτούν οι αλλαγές πριν κλείσει η καρφιτσωμένη εικόνα;</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Μη αποθηκευμένες αλλαγές στην καρφιτσωμένη εικόνα</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Τακτοποίηση</translation>
@@ -2822,6 +2842,10 @@ Size: %2</source>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Επιβεβαίωση πριν από το κλείσιμο τροποποιημένων καρφιτσωμένων εικόνων</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

@@ -144,6 +144,18 @@ Applying is one undo step that restores the image, its size, the annotations and
 
 It is not available during Live Update, while auto-blur is still running or while you are drawing; if one of these starts before it finishes, the result is discarded. Images are limited to 40 megapixels (a full 8K screen).
 
+## Protect edited pins when closing
+
+Enable **Confirm before closing edited pins** in **Settings → Pin Windows** to choose Save, Discard, or Cancel before closing a pin with unsaved edits. The setting is off by default. Moving or zooming a pin does not require saving. Save and Beautify Save protect the snapshot written to disk. Copying or exporting a derived image leaves the pin's edit state intact.
+
+If you rearrange or resize regions in **Adjust Region Layout**, closing the pin, choosing **Close All**, or exiting SnapTray also prompts before you lose those changes. **Cancel** keeps the layout open for editing. **Save** applies the layout and writes the rearranged image before closing the pin.
+
+To check the behavior on your desktop:
+
+1. Annotate a pin, merge it with an untouched pin, then close the result. Only the merged pin should ask. Choose Cancel to keep it.
+2. Hide the edited pin and choose Exit from the tray. Cancel should keep SnapTray running. Show the pins again to continue editing.
+3. Save a large edited pin and immediately close it. The pin should close after the write succeeds. If you edit again during the write, the pin should stay open. To check cancellation, turn off automatic screenshot saving, choose Save in the close prompt, and cancel the file picker.
+
 ## Next step
 
 Use [Hotkeys](/docs/hotkeys/) to bind pin actions for faster workflows.
