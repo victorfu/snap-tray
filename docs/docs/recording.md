@@ -31,6 +31,12 @@ While recording, the tray menu also offers Pause/Resume Recording and, on macOS 
 3. Use the floating control bar to monitor duration, pause or resume, and stop recording. While paused, the bar shows "Paused" and the time stops. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
 4. Click Stop to open the preview in edit mode, or to save the file right away in quick mode.
 
+## Reading a script while recording
+
+In recording setup, choose a **Teleprompter display**, then type or paste your script. Select a different screen for the recording. Both displays must have separate desktop areas. Mirrored displays and a single display cannot host the reader.
+
+The reader shows the script when recording starts. Scroll manually and use **A−** or **A+** to change the text size. Pausing keeps your place. Stopping or cancelling closes the reader. If the display layout changes, the reader closes. On X11 this can also interrupt recording to keep the script out of captured frames. The script stays in memory for this session. The reader works offline and needs no microphone.
+
 ## Choosing an area before recording
 
 Turn on **Choose an area before recording** in Settings > Recording (or **Choose an area first** in the recording setup) to pick what to record before it starts. It is off by default: recording starts on the whole screen, as before.
@@ -242,6 +248,12 @@ The frame makes the exported file larger than the cropped picture by the padding
 SnapTray keeps a small record next to each recording until it is saved or discarded. If SnapTray stops before that (a crash, power loss, or quitting with an unsaved preview open), the next start shows a notice, and **Recover Recordings** in the tray menu lists what was left. Each entry shows when it was recorded, how much of it can be played, and whether audio that should be there is missing. **Recover** opens it in the preview so you can save it; **Discard** deletes it; **Later** keeps it for next time. Files waiting here are never removed by SnapTray's routine clean-up of old temporary files.
 
 On Linux, recordings are written in fragments, so an interrupted recording can usually be recovered up to its last fragment (about every two seconds of video). This depends on the disk and when the system last wrote to it, so it is not a guarantee. On macOS and Windows an interrupted recording cannot be played yet and is listed only so you can discard it; a recording that finished normally but was never saved can be recovered on every platform.
+
+## Recovering unsaved edits
+
+Recording Preview saves a local draft after about 750 ms without an edit. This covers new recordings and changes to existing projects, including masks, cuts, crop, audio, appearance and export choices. The draft keeps its own background image and uses the recording’s local audio assets. A normal application quit flushes pending edits. A crash during the delay or during a write can lose the latest changes.
+
+When you reopen the recording, choose **Restore** to resume editing, **Discard Draft** to open the last saved version, or **Cancel** to keep the draft and leave the recording closed. The preview waits for your choice before showing the video. An incompatible or damaged draft, or one associated with a different source, can be kept or discarded. Explicitly saving or discarding clears the draft. A write error leaves the current edits in the preview and offers **Try Again**.
 
 ## Editable projects
 

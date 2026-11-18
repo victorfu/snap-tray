@@ -1,5 +1,6 @@
 #include "qml/ScreenPickerViewModel.h"
 #include "recording/KeyProbe.h"
+#include "qml/RecordingPrompter.h"
 
 #include "qml/DialogImageProvider.h"
 #include "recording/RecordingAudioStatus.h"
@@ -85,6 +86,7 @@ ScreenPickerViewModel::ScreenPickerViewModel(const QVector<ScreenSourceInfo>& so
 
 ScreenPickerViewModel::~ScreenPickerViewModel()
 {
+    setEditingScript(false);
     m_levelMonitor.stop();
     clearThumbnails();
 }
@@ -370,6 +372,13 @@ void ScreenPickerViewModel::setSources(const QVector<ScreenSourceInfo>& sources)
     emit screensChanged();
 }
 
+void ScreenPickerViewModel::setEditingScript(bool editing)
+{
+    if (m_editingScript == editing) return;
+    m_editingScript = editing;
+    emit editingScriptChanged(editing);
+}
+
 void ScreenPickerViewModel::chooseScreen(int index)
 {
     if (index < 0 || index >= m_screenRefs.size()) {
@@ -384,6 +393,13 @@ void ScreenPickerViewModel::chooseScreen(int index)
         }
     }
 
+    if (m_prompterDisplay >= 0
+        && (!RecordingPrompter::separate(screen, prompterScreen()) || m_prompterScript.trimmed().isEmpty())) {
+        m_prompterError = tr("Enter a script and choose a recording screen separate from the teleprompter.");
+        emit prompterChanged();
+        return;
+    }
+    setEditingScript(false);
     // Release the test microphone before recording opens its own capture.
     m_levelMonitor.stop();
     emit screenChosen(screen);
@@ -391,6 +407,7 @@ void ScreenPickerViewModel::chooseScreen(int index)
 
 void ScreenPickerViewModel::cancel()
 {
+    setEditingScript(false);
     m_levelMonitor.stop();
     emit cancelled();
 }

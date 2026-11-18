@@ -265,3 +265,9 @@ Windows sync-matrix rows `sparse-desktop-20s-mixed` and
 audio alignment and the final held duration.
 Windows-only tests must run on Windows; tests that skip for unavailable
 hardware do not establish that hardware acceptance passed.
+
+## Delayed clicks and the teleprompter
+
+- Run `RecordingManager_CursorTimelineRecorder delayedLogicalClickBetweenPolls` for delayed press and release, a negative desktop origin, a cropped capture and 1×/2× conversion. It reads back the cursor sidecar and checks event time and position independently of both surrounding polls.
+- On macOS, record a marked target on a Retina screen and on a second screen at a different scale. Exercise the event tap with permission and the fallback global monitor without input-monitoring permission. Click a mark, then move immediately while the GUI is busy. Compare press/release times and coordinates in the sidecar with the marked frame. Verify the click ripple and generated Auto Zoom center in preview and export. Record OS version, scaling, input path and observed offsets.
+- On a dedicated extended desktop, set `SNAPTRAY_TEST_RECORDING_DISPLAYS=1` and run `Qml_ScreenPickerViewModel livePrompterStaysOutsideCapturedFrames`. The test shows an actual script on the second display, changes the first display’s color and checks frames from the selected capture engine. Record the engine name. Also check unplugging, pause/resume, cancellation, starting again, and both quick and edit mode on the target OS. The test takes over both screens temporarily.

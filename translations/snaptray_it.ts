@@ -3375,6 +3375,10 @@ Dimensione: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>La cattura dello schermo usa temporaneamente la modalità compatibilità</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Il suggeritore richiede uno schermo separato.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5974,6 +5978,38 @@ Dimensione: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Impossibile importare l’audio: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Recupera modifiche alla registrazione</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Ripristinare le modifiche non salvate alla registrazione?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>La bozza è danneggiata, incompatibile o appartiene a un’altra registrazione.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Scarta bozza apre l’ultima versione salvata. Annulla conserva la bozza.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Ripristina</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Scarta bozza</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Impossibile eliminare la bozza.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Impossibile salvare la bozza. Controlla lo spazio libero e i permessi del file e riprova.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6970,6 +7006,22 @@ Token di data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} o {date}</translation>
         <source>Automatically add zooms</source>
         <translation>Aggiungi zoom automaticamente</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Schermo del suggeritore</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Disattivato</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Il suggeritore richiede uno schermo separato.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Scrivi o incolla il testo di questa registrazione</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7423,6 +7475,10 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>In attesa dell’autorizzazione al microfono...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Inserisci un testo e scegli per la registrazione uno schermo diverso da quello del suggeritore.</translation>
     </message>
 </context>
 <context>
@@ -8446,6 +8502,21 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Ripristinato dal salvataggio precedente</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Suggeritore</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Riduci il testo</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Ingrandisci il testo</translation>
     </message>
 </context>
 </TS>

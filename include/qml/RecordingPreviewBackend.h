@@ -11,6 +11,9 @@
 #include "utils/VideoCropGeometry.h"
 #include "recording/WindowTimeline.h"
 #include <QObject>
+#include <QFutureWatcher>
+#include <QTemporaryDir>
+#include <QTimer>
 #include <QString>
 #include <QRect>
 #include <QRectF>
@@ -88,6 +91,7 @@ class RecordingPreviewBackend : public QObject
     // The window was closed during an export: ask whether to keep exporting.
     Q_PROPERTY(bool exportCloseQuestionPending READ exportCloseQuestionPending NOTIFY exportCloseQuestionChanged)
     // The last export or save failed; Save can be tried again.
+    Q_PROPERTY(bool canRetryDraft READ canRetryDraft NOTIFY errorMessageChanged)
     Q_PROPERTY(bool canRetrySave READ canRetrySave NOTIFY errorMessageChanged)
 
     // Error state
@@ -313,6 +317,8 @@ public:
     void completeSave(SaveOutcome outcome, const QString &savedPath = QString());
     bool processIndeterminate() const { return m_processIndeterminate; }
     bool exportCloseQuestionPending() const { return m_exportCloseQuestionPending; }
+    bool canRetryDraft() const { return m_draftFailed && m_errorMessage == draftWriteError(); }
+    Q_INVOKABLE void retryDraft();
     bool canRetrySave() const { return m_canRetrySave && !m_errorMessage.isEmpty(); }
     // Answers to the close-during-export question.
     Q_INVOKABLE void keepExporting();
@@ -486,7 +492,7 @@ public:
     bool isProject() const { return m_project.has_value(); }
     // Edits waiting for the player's size (a project's recipe, an area chosen
     // before recording): no Save until they are applied.
-    bool projectLoading() const { return m_projectRecipePending || !m_pendingInitialCrop.isEmpty(); }
+    bool projectLoading() const { return m_projectRecipePending || !m_pendingInitialCrop.isEmpty() || m_pendingDraft.has_value() || !m_pendingSessionBaseline.isEmpty(); }
     // A reopened project whose edits differ from the ones it was opened with.
     bool hasUnsavedProjectChanges() const;
     QString projectDir() const { return m_project ? m_project->dir : QString(); }
@@ -893,6 +899,31 @@ private:
     // Remembers the frame for the next recording, never a project-owned image.
     void rememberAppearance(const SnapTray::RecordingAppearance& appearance);
     void applyPendingProjectRecipe();
+    void showEditor();
+    void openDraft();
+    void applyPendingDraft();
+    void identifyDraft();
+    void setDraftBaseline();
+    void scheduleDraft();
+    void writeDraft();
+    bool finishDraftWrite();
+    bool flushDraft();
+    bool clearDraft();
+    static void showDraftRemovalError();
+    QJsonObject exportChoices() const;
+    QString m_draftIdentity;
+    QTimer m_draftTimer;
+    quint64 m_draftGeneration = 0;
+    QFutureWatcher<bool>* m_draftWorker = nullptr;
+    std::shared_ptr<QTemporaryDir> m_draftAssets;
+    std::optional<QJsonObject> m_pendingDraft;
+    QJsonObject m_pendingSessionBaseline;
+    SnapTray::PreviewEditState m_draftBaseline;
+    QJsonObject m_draftBaselineChoices;
+    bool m_draftActive = false;
+    bool m_draftDirty = false;
+    bool m_draftFailed = false;
+    static QString draftWriteError();
     SnapTray::AudioMixSettings m_audioMix;
     SnapTray::AudioClipTrack m_audioClips;
     int m_selectedAudioClip = -1;

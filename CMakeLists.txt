@@ -382,6 +382,7 @@ add_library(snaptray_core STATIC
     src/video/AudioFileDecoder.cpp
     src/recording/AudioTimeStretch.cpp
     src/recording/AudioSegmentReader.cpp
+    src/recording/RecordingDraft.cpp
     src/recording/RecordingProject.cpp
     include/recording/RecordingProject.h
     src/recording/RecordingFrameFilter.cpp
@@ -1174,6 +1175,7 @@ set_source_files_properties(src/qml/dialogs/AppImageUpdateDialog.qml PROPERTIES 
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/PinLayoutDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/PinLayoutDialog.qml)
+set_source_files_properties(src/qml/recording/RecordingPrompterView.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPrompterView.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
 set_source_files_properties(src/qml/dialogs/RecordingRecoveryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingRecoveryDialog.qml)
 
@@ -1198,6 +1200,7 @@ set_source_files_properties(src/qml/panels/MultiRegionListPanel.qml PROPERTIES Q
 
 set(SNAPTRAY_QML_NATIVE_SOURCES
     src/qml/QmlOverlayManager.mm
+    src/qml/RecordingPrompter.mm
     src/qml/QmlRecordingBoundary.mm
     src/qml/QmlRecordingControlBar.mm
     src/qml/QmlCountdownOverlay.mm
@@ -1280,6 +1283,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/UpdateDialog.qml
         src/qml/dialogs/AppImageUpdateDialog.qml
         src/qml/dialogs/QRCodeResultDialog.qml
+        src/qml/recording/RecordingPrompterView.qml
         src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/dialogs/PinLayoutDialog.qml
         src/qml/dialogs/RecordingRecoveryDialog.qml

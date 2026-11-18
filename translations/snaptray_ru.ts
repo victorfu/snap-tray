@@ -3376,6 +3376,10 @@ Size: %2</source>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Захват экрана временно использует режим совместимости</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Для суфлёра нужен отдельный экран.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5978,6 +5982,38 @@ Size: %2</source>
         <source>Cannot import audio: %1</source>
         <translation>Не удалось импортировать аудио: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Восстановление правок записи</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Восстановить несохранённые изменения записи?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Черновик повреждён, несовместим или относится к другой записи.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>При удалении черновика откроется последняя сохранённая версия. При отмене черновик сохранится.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Восстановить</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Удалить черновик</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Не удалось удалить черновик.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Не удалось сохранить черновик. Проверьте свободное место и права доступа к файлу и повторите попытку.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6974,6 +7010,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Automatically add zooms</source>
         <translation>Автоматически добавлять приближения</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Экран суфлёра</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Выкл.</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Для суфлёра нужен отдельный экран.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Введите или вставьте текст для этой записи</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7427,6 +7479,10 @@ It may be in use by another application.</source>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Ожидание разрешения на микрофон...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Введите текст и выберите для записи экран, отличный от экрана суфлёра.</translation>
     </message>
 </context>
 <context>
@@ -8450,6 +8506,21 @@ It may be in use by another application.</source>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Восстановлено из предыдущего сохранения</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Суфлёр</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Уменьшить текст</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Увеличить текст</translation>
     </message>
 </context>
 </TS>

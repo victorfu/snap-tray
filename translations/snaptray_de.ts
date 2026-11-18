@@ -3375,6 +3375,10 @@ Größe: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Bildschirmaufnahme verwendet vorübergehend den Kompatibilitätsmodus</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Der Teleprompter benötigt einen separaten Bildschirm.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5974,6 +5978,38 @@ Größe: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Audio kann nicht importiert werden: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Aufnahmebearbeitung wiederherstellen</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Ungespeicherte Änderungen an der Aufnahme wiederherstellen?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Der Entwurf ist beschädigt, inkompatibel oder gehört zu einer anderen Aufnahme.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>„Entwurf verwerfen“ öffnet die zuletzt gespeicherte Version. „Abbrechen“ behält den Entwurf.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Wiederherstellen</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Entwurf verwerfen</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Der Entwurf konnte nicht entfernt werden.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Der Entwurf konnte nicht gespeichert werden. Freien Speicher und Dateiberechtigungen prüfen und erneut versuchen.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6970,6 +7006,22 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <source>Automatically add zooms</source>
         <translation>Zooms automatisch hinzufügen</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Teleprompter-Bildschirm</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Der Teleprompter benötigt einen separaten Bildschirm.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Text für diese Aufnahme eingeben oder einfügen</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7423,6 +7475,10 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Warte auf Mikrofonberechtigung...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Text eingeben und für die Aufnahme einen anderen Bildschirm als für den Teleprompter wählen.</translation>
     </message>
 </context>
 <context>
@@ -8446,6 +8502,21 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Aus dem vorherigen Speicherstand wiederhergestellt</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Teleprompter</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Text verkleinern</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Text vergrößern</translation>
     </message>
 </context>
 </TS>

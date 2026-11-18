@@ -1,4 +1,5 @@
 #include "recording/RecordingProject.h"
+#include "recording/RecordingDraft.h"
 
 #include "recording/AudioTracks.h"
 #include "recording/CursorTimeline.h"
@@ -37,6 +38,7 @@ constexpr auto kManifestName = "project.json";
 constexpr auto kPreviousManifestName = "manifest.prev.json";
 bool failManifestRead = false;
 QString openProjectDir;
+QString pendingDraftDir;
 constexpr auto kManifestType = "snaptray-project";
 constexpr int kManifestVersion = 1;
 
@@ -271,7 +273,7 @@ QString RecordingProject::thumbnailPath() const
 
 QString RecordingProject::thumbnailUrl() const
 {
-    if (unreadable) return {};
+    if (unreadable || RecordingProjects::hasDraft(*this)) return {};
     const QString path = thumbnailPath();
     if (currentThumbnails().value(dir) != path || !QFileInfo(path).isFile()) return {};
     return QUrl::fromLocalFile(path).toString();
@@ -325,11 +327,35 @@ void setRootForTests(const QString& path)
 {
     rootOverride() = path;
     openProjectDir.clear();
+    pendingDraftDir.clear();
     failManifestRead = false;
     currentThumbnails().clear();
 }
 
 void setOpenProjectDir(const QString& dir) { openProjectDir = dir; }
+
+std::unique_ptr<QLockFile> lockEditor(const QString& dir)
+{
+    const QFileInfo info(dir);
+    if (!info.isDir() || info.isSymLink()
+        || info.absoluteDir().canonicalPath() != QDir(root()).canonicalPath()) return {};
+    auto lock = std::make_unique<QLockFile>(info.absoluteFilePath() + QStringLiteral(".edit.lock"));
+    lock->setStaleLockTime(0);
+    if (!lock->tryLock()) return {};
+    return lock;
+}
+
+void setPendingDraft(const QString& dir, bool pending)
+{
+    if (pending == (dir == pendingDraftDir)) return;
+    pendingDraftDir = pending ? dir : QString();
+    emit events()->thumbnailChanged(dir);
+}
+
+bool hasDraft(const RecordingProject& project)
+{
+    return project.dir == pendingDraftDir || RecordingDraft::exists(project.videoPath());
+}
 
 void failNextManifestReadForTests() { failManifestRead = true; }
 
@@ -542,7 +568,7 @@ QList<RecordingProject> list()
             QJsonObject ignored;
             const auto primary = readManifest(folder.filePath(QLatin1String(kManifestName)), ignored);
             const auto backup = readManifest(folder.filePath(QLatin1String(kPreviousManifestName)), ignored);
-            damaged.sourceRecoverable = !damaged.videoName.isEmpty()
+            damaged.sourceRecoverable = !damaged.videoName.isEmpty() && !RecordingDraft::exists(damaged.videoPath())
                 && primary != ManifestRead::IoError && backup != ManifestRead::IoError
                 && primary != ManifestRead::UnsupportedVersion && backup != ManifestRead::UnsupportedVersion;
             projects.append(damaged);
@@ -553,8 +579,10 @@ QList<RecordingProject> list()
     return projects;
 }
 
-bool remove(const RecordingProject& project)
+static bool removeProject(const RecordingProject& project, bool automatic)
 {
+    auto lock = lockEditor(project.dir);
+    if (!lock || (automatic && hasDraft(project))) return false;
     // Only ever a folder inside the projects root.
     if (!contains(project.dir) || QDir::cleanPath(project.dir) == QDir::cleanPath(root())) return false;
     const bool removed = QDir(project.dir).removeRecursively();
@@ -563,6 +591,11 @@ bool remove(const RecordingProject& project)
         emit events()->changed();
     }
     return removed;
+}
+
+bool remove(const RecordingProject& project)
+{
+    return removeProject(project, false);
 }
 
 qint64 totalBytes()
@@ -579,8 +612,8 @@ int removeOlderThan(int days, const QDateTime& now)
     {
         const QSignalBlocker batch(events());
         for (const auto& project : list()) {
-            if (project.unreadable || project.dir == openProjectDir) continue;
-            if (project.modified.daysTo(now) >= days && remove(project)) ++removed;
+            if (project.unreadable || project.dir == openProjectDir || RecordingDraft::exists(project.videoPath())) continue;
+            if (project.modified.daysTo(now) >= days && removeProject(project, true)) ++removed;
         }
     }
     if (removed) emit events()->changed();

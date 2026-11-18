@@ -3375,6 +3375,10 @@ Taille : %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>La capture utilise temporairement le mode de compatibilité</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Le prompteur nécessite un écran distinct.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5974,6 +5978,38 @@ Taille : %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Impossible d’importer l’audio : %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Récupérer les modifications de l’enregistrement</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Restaurer vos modifications non enregistrées ?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Le brouillon est endommagé, incompatible ou associé à un autre enregistrement.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Abandonner le brouillon ouvre la dernière version enregistrée. Annuler conserve le brouillon.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Restaurer</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Abandonner le brouillon</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Impossible de supprimer le brouillon.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Impossible d’enregistrer le brouillon. Vérifiez l’espace libre et les droits du fichier, puis réessayez.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6970,6 +7006,22 @@ Jetons de date : {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} ou {date}</translation
         <source>Automatically add zooms</source>
         <translation>Ajouter automatiquement des zooms</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Écran du prompteur</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Désactivé</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Le prompteur nécessite un écran distinct.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Saisissez ou collez le texte de cet enregistrement</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7423,6 +7475,10 @@ Il est peut-être utilisé par une autre application.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>En attente de l’autorisation du microphone...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Saisissez un texte et choisissez un écran à enregistrer distinct de celui du prompteur.</translation>
     </message>
 </context>
 <context>
@@ -8446,6 +8502,21 @@ Il est peut-être utilisé par une autre application.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Restauré depuis la sauvegarde précédente</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Prompteur</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Réduire la taille du texte</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Augmenter la taille du texte</translation>
     </message>
 </context>
 </TS>

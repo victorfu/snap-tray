@@ -110,6 +110,8 @@ private slots:
     void externalDragReleasesOverControls();
     void menuClicksAfterCloseAndDuringPause();
     void logicalClickCoordinatesUseCaptureMapping();
+    void delayedLogicalClickBetweenPolls_data();
+    void delayedLogicalClickBetweenPolls();
     void startRecordsTheInitialPointer();
     void onlyChangesAreWritten();
     void smoothingPreservesStationaryGaps();
@@ -881,6 +883,42 @@ void TestCursorTimelineRecorder::logicalClickCoordinatesUseCaptureMapping()
     QCOMPARE(result.buttons.size(), size_t(2));
     QCOMPARE(result.buttons.front().position, mapping.toVideoPoint(QPoint(-100, 200)));
     QCOMPARE(result.buttons.back().position, mapping.toVideoPoint(QPoint(-90, 210)));
+}
+
+void TestCursorTimelineRecorder::delayedLogicalClickBetweenPolls_data()
+{
+    QTest::addColumn<qreal>("scale");
+    QTest::addColumn<QPoint>("expected");
+    QTest::newRow("external-1x") << qreal(1) << QPoint(190, 130);
+    QTest::newRow("retina-2x") << qreal(2) << QPoint(390, 280);
+}
+
+void TestCursorTimelineRecorder::delayedLogicalClickBetweenPolls()
+{
+    QFETCH(qreal, scale);
+    QFETCH(QPoint, expected);
+    // Logical screen left of primary, native origin distinct from logical,
+    // capture starts 10x20 pixels inside it. Expected values are independent
+    // of the production coordinate helper.
+    const WindowFrameMapping mapping{QRect(-800, 0, 800, 600), QRect(-1600, 0, 1600, 1200),
+                                     scale, QRect(-1590, 20, 750, 560)};
+    Rig rig(mapping);
+    rig.now = 100;
+    rig.probeState.state = {QPoint(-750, 50), false, 1};
+    QVERIFY(rig.recorder->start());
+    rig.probeState.state.position = QPoint(-500, 200);
+    rig.now = 400;
+    rig.probeState.onPoll = [&] {
+        emit rig.probe->buttonChanged(Qt::LeftButton, true, 250, std::nullopt, QPoint(-600, 150));
+        emit rig.probe->buttonChanged(Qt::LeftButton, false, 225, std::nullopt, QPoint(-590, 150));
+    };
+    rig.recorder->sampleNow();
+    const auto timeline = rig.finish();
+    QCOMPARE(timeline.buttons.size(), size_t(2));
+    QCOMPARE(timeline.buttons[0].tMs, 150);
+    QCOMPARE(timeline.buttons[0].position, expected);
+    QCOMPARE(timeline.buttons[1].tMs, 175);
+    QCOMPARE(timeline.buttons[1].position, expected + QPoint(qRound(10 * scale), 0));
 }
 
 QTEST_MAIN(TestCursorTimelineRecorder)

@@ -3375,6 +3375,10 @@ Tamaño: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>La captura de pantalla usa temporalmente el modo de compatibilidad</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>El teleprónter requiere otra pantalla.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5974,6 +5978,38 @@ Tamaño: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>No se puede importar el audio: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Recuperar cambios de la grabación</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>¿Restaurar los cambios sin guardar de la grabación?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>El borrador está dañado, es incompatible o pertenece a otra grabación.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Descartar borrador abre la última versión guardada. Cancelar conserva el borrador.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Restaurar</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Descartar borrador</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>No se pudo eliminar el borrador.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>No se pudo guardar el borrador. Revisa el espacio libre y los permisos del archivo y vuelve a intentarlo.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6970,6 +7006,22 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
         <source>Automatically add zooms</source>
         <translation>Añadir acercamientos automáticamente</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Pantalla del teleprónter</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Desactivado</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>El teleprónter requiere otra pantalla.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Escribe o pega el guion de esta grabación</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7423,6 +7475,10 @@ Puede estar en uso por otra aplicación.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Esperando permiso del micrófono...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Escribe un guion y elige una pantalla para grabar distinta de la del teleprónter.</translation>
     </message>
 </context>
 <context>
@@ -8446,6 +8502,21 @@ Puede estar en uso por otra aplicación.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Restaurado desde el guardado anterior</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Teleprónter</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Reducir el tamaño del texto</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Aumentar el tamaño del texto</translation>
     </message>
 </context>
 </TS>

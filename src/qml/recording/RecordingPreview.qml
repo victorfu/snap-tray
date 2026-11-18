@@ -829,6 +829,7 @@ Item {
         Item {
             id: stage
             objectName: "previewStage"
+            visible: !backend.projectLoading
             Layout.fillWidth: true
             Layout.fillHeight: true
             // A zoomed picture never spills over the controls. Only while
@@ -4871,15 +4872,19 @@ Item {
             IconButton {
                 id: retryButtonSlot
                 objectName: "previewRetrySaveButton"
-                visible: backend.canRetrySave
+                visible: backend.canRetrySave || backend.canRetryDraft
                 iconText: qsTr("Try Again")
                 height: 20
-                tooltipText: qsTr("Save again with the current settings")
+                tooltipText: backend.canRetryDraft ? qsTr("Try Again") : qsTr("Save again with the current settings")
                 tooltipPreferredAbove: false
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
-                    backend.clearError()
-                    root.openExport()
+                    if (backend.canRetryDraft) {
+                        backend.retryDraft()
+                    } else {
+                        backend.clearError()
+                        root.openExport()
+                    }
                 }
             }
 

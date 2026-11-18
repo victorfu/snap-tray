@@ -116,6 +116,44 @@ DialogBase {
                     spacing: 6
                     visible: root.viewModel !== null
 
+                    SettingsCombo {
+                        id: prompterDisplay
+                        width: parent.width
+                        label: qsTr("Teleprompter display")
+                        enabled: root.screenCount > 1
+                        model: [{ text: qsTr("Off"), value: -1 }].concat(
+                            root.viewModel ? root.viewModel.screens.map((s, i) => ({text: s.name, value: i})) : [])
+                        currentIndex: root.viewModel ? root.viewModel.prompterDisplay + 1 : 0
+                        onActivated: index => root.viewModel.prompterDisplay = index - 1
+                    }
+                    Text {
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        text: root.viewModel && root.viewModel.prompterError
+                              ? root.viewModel.prompterError : qsTr("The teleprompter requires a separate display.")
+                        color: SemanticTokens.textSecondary
+                        font.pixelSize: SemanticTokens.fontSizeCaption
+                    }
+                    ScrollView {
+                        id: scriptBox
+                        objectName: "prompterScriptBox"
+                        width: parent.width
+                        height: 120
+                        visible: prompterDisplay.currentIndex > 0
+                        clip: true
+                        TextArea {
+                            id: scriptEditor
+                            placeholderText: qsTr("Type or paste your script for this recording")
+                            Accessible.name: placeholderText
+                            wrapMode: TextEdit.Wrap
+                            textFormat: TextEdit.PlainText
+                            color: SemanticTokens.textPrimary
+                            background: Rectangle { color: SemanticTokens.backgroundElevated }
+                            onTextChanged: if (root.viewModel) root.viewModel.prompterScript = text
+                            onActiveFocusChanged: if (root.viewModel) root.viewModel.setEditingScript(activeFocus)
+                        }
+                    }
+
                     // Quick or edit mode (#193), shared with Settings > Recording.
                     SettingsCombo {
                         objectName: "setupRecordingMode"

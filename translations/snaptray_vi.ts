@@ -3374,6 +3374,10 @@ Kích thước: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Chụp màn hình tạm thời dùng chế độ tương thích</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Cần một màn hình riêng để nhắc lời.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5970,6 +5974,38 @@ Kích thước: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Không thể nhập âm thanh: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Khôi phục chỉnh sửa bản ghi</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Khôi phục các chỉnh sửa bản ghi chưa lưu?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Bản nháp bị hỏng, không tương thích hoặc thuộc bản ghi khác.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Bỏ bản nháp sẽ mở phiên bản đã lưu gần nhất. Hủy sẽ giữ lại bản nháp.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Khôi phục</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Bỏ bản nháp</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Không thể xóa bản nháp.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Không thể lưu bản nháp. Hãy kiểm tra dung lượng trống và quyền truy cập tệp rồi thử lại.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6966,6 +7002,22 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <source>Automatically add zooms</source>
         <translation>Tự động thêm thu phóng</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Màn hình nhắc lời</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Tắt</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Cần một màn hình riêng để nhắc lời.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Nhập hoặc dán kịch bản cho bản ghi này</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7419,6 +7471,10 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Đang chờ quyền micrô...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Nhập kịch bản và chọn màn hình ghi khác với màn hình nhắc lời.</translation>
     </message>
 </context>
 <context>
@@ -8442,6 +8498,21 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     <message>
         <source>Recovered from the previous save</source>
         <translation>Đã khôi phục từ lần lưu trước</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Máy nhắc lời</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Giảm cỡ chữ</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Tăng cỡ chữ</translation>
     </message>
 </context>
 </TS>

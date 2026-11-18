@@ -1,5 +1,8 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/RecordingFrameFilter.h"
+#include "recording/RecordingDraft.h"
+#include <QMessageBox>
+#include <QPushButton>
 #include "qml/RecordingProjectThumbnail.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
@@ -122,6 +125,12 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     if (audioRecovery.open(QIODevice::ReadOnly))
         m_audioClips = SnapTray::AudioClipTrack::fromJson(QJsonDocument::fromJson(audioRecovery.readAll()).object());
     m_editHistory.reset(currentEditState());
+    m_draftTimer.setSingleShot(true);
+    m_draftTimer.setInterval(750);
+    connect(&m_draftTimer, &QTimer::timeout, this, &RecordingPreviewBackend::writeDraft);
+    for (const auto signal : {&RecordingPreviewBackend::editHistoryChanged, &RecordingPreviewBackend::formatChanged,
+                              &RecordingPreviewBackend::mp4OptionsChanged, &RecordingPreviewBackend::animatedOptionsChanged})
+        connect(this, signal, this, &RecordingPreviewBackend::scheduleDraft);
     // Saved styles are one list with screenshot Beautify (#269).
     connect(&SnapTray::FrameStyleLibrary::instance(), &SnapTray::FrameStyleLibrary::stylesChanged, this,
             &RecordingPreviewBackend::frameStylesChanged);
@@ -343,7 +352,8 @@ void RecordingPreviewBackend::rememberAppearance(const SnapTray::RecordingAppear
     // project: the next recording keeps the image it remembered before
     // (PR #203 review).
     QJsonObject json = appearance.toJson();
-    if (!appearance.imagePath.isEmpty() && SnapTray::RecordingProjects::contains(appearance.imagePath)) {
+    if (!appearance.imagePath.isEmpty() && (SnapTray::RecordingProjects::contains(appearance.imagePath)
+        || (m_draftAssets && QFileInfo(appearance.imagePath).absolutePath() == m_draftAssets->path()))) {
         const auto remembered = SnapTray::RecordingAppearance::fromJson(RecordingSettingsManager::instance().appearance());
         json.insert(QStringLiteral("imagePath"), remembered.imagePath);
     }
@@ -1543,6 +1553,7 @@ RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderF
 
 RecordingPreviewBackend::~RecordingPreviewBackend()
 {
+    flushDraft();
     SnapTray::RecordingProjects::setOpenProjectDir({});
     m_exportCancelToken->store(true);
     m_audioImportCancelToken->store(true);
@@ -1621,6 +1632,10 @@ bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
     // Let that close through so Exit keeps working; the flag only covers the
     // quit being handled right now.
     if (watched == qApp && event && event->type() == QEvent::Quit) {
+        if (!flushDraft()) {
+            event->ignore();
+            return true;
+        }
         m_applicationQuitting = true;
         m_audioImportCancelToken->store(true);
         QTimer::singleShot(0, this, [this] { m_applicationQuitting = false; });
@@ -1632,6 +1647,12 @@ bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
         && !(isProject() && !hasUnsavedProjectChanges())) {
         static_cast<QCloseEvent*>(event)->ignore();
         requestDiscard();
+        return true;
+    }
+
+    if (watched == m_view && event && event->type() == QEvent::Close
+        && !m_applicationQuitting && !m_saved && !clearDraft()) {
+        static_cast<QCloseEvent*>(event)->ignore();
         return true;
     }
 
@@ -1664,8 +1685,29 @@ void RecordingPreviewBackend::applyPlatformWindowFlags()
 #endif
 }
 
+void RecordingPreviewBackend::identifyDraft()
+{
+    if (m_project) {
+        m_draftIdentity = m_project->dir + QLatin1Char('/') + m_project->created.toString(Qt::ISODateWithMs)
+            + QLatin1Char('/') + m_project->modified.toString(Qt::ISODateWithMs);
+    } else if (const auto session = SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(m_videoPath))) {
+        m_draftIdentity = session->sessionId;
+    }
+}
+
 void RecordingPreviewBackend::show()
 {
+    identifyDraft();
+    if (!m_draftIdentity.isEmpty() && SnapTray::RecordingDraft::exists(m_videoPath)) {
+        openDraft();
+        return;
+    }
+    showEditor();
+}
+
+void RecordingPreviewBackend::showEditor()
+{
+    setDraftBaseline();
     ensureView();
 
     // Center on primary screen
@@ -1686,6 +1728,192 @@ void RecordingPreviewBackend::show()
     syncCursorSurface();
 }
 
+void RecordingPreviewBackend::openDraft()
+{
+    using Result = std::optional<SnapTray::RecordingDraft::Recipes>;
+    // The read owns its temporary directory until it finishes, even if the
+    // preview is destroyed first. No player or derived image is shown yet.
+    auto assets = std::make_shared<QTemporaryDir>();
+    auto* reader = new QFutureWatcher<Result>(this);
+    connect(reader, &QFutureWatcher<Result>::finished, this, [this, reader, assets] {
+        const auto recipe = reader->result();
+        reader->deleteLater();
+        auto* question = new QMessageBox();
+        question->setAttribute(Qt::WA_DeleteOnClose);
+        question->setWindowTitle(tr("Recover recording edits"));
+        question->setText(recipe ? tr("Restore your unsaved recording edits?")
+                                 : tr("The draft is damaged, incompatible, or belongs to a different recording."));
+        question->setInformativeText(tr("Discard Draft opens the last saved version. Cancel keeps the draft."));
+        auto* restore = recipe ? question->addButton(tr("Restore"), QMessageBox::AcceptRole) : nullptr;
+        auto* discard = question->addButton(tr("Discard Draft"), QMessageBox::DestructiveRole);
+        auto* cancel = question->addButton(QMessageBox::Cancel);
+        question->setDefaultButton(restore ? restore : cancel);
+        connect(this, &QObject::destroyed, question, &QWidget::close);
+        connect(question, &QDialog::finished, this, [this, question, restore, discard, assets, recipe] {
+            if (restore && question->clickedButton() == restore) {
+                m_pendingDraft = recipe->current;
+                m_draftAssets = assets;
+                m_autoZoomPending = false;
+            } else if (question->clickedButton() == discard && SnapTray::RecordingDraft::remove(m_videoPath)) {
+                if (m_project) {
+                    emit SnapTray::RecordingProjects::events()->thumbnailChanged(m_project->dir);
+                    SnapTray::requestProjectThumbnail(*m_project);
+                }
+            } else {
+                if (question->clickedButton() == discard) showDraftRemovalError();
+                m_applicationQuitting = true; // release the session without discarding its files
+                finishClose();
+                return;
+            }
+            if (recipe && !m_project) {
+                m_pendingSessionBaseline = recipe->sessionBaseline;
+                m_draftAssets = assets;
+            }
+            showEditor();
+        });
+        question->open();
+    });
+    reader->setFuture(QtConcurrent::run([video = m_videoPath, id = m_draftIdentity, assets] {
+        return SnapTray::RecordingDraft::read(video, id, assets->isValid() ? assets->path() : QString());
+    }));
+}
+
+void RecordingPreviewBackend::applyPendingDraft()
+{
+    if ((!m_pendingDraft && m_pendingSessionBaseline.isEmpty()) || m_videoSize.isEmpty() || m_duration <= 0 || m_projectRecipePending
+        || !m_pendingInitialCrop.isEmpty()) return;
+    m_restoringProject = true;
+    const auto apply = [this](const QJsonObject& recipe) {
+        const auto state = SnapTray::RecordingRecipe::editState(recipe);
+        Q_ASSERT(state);
+        const auto choices = SnapTray::RecordingRecipe::exportChoices(recipe);
+        setSelectedFormat(choices.value("format").toInt(MP4));
+        m_mp4Options = SnapTray::Mp4ExportOptions::fromJson(choices.value("mp4").toObject());
+        m_gifOptions = SnapTray::AnimatedExportOptions::fromJson(choices.value("gif").toObject());
+        m_webpOptions = SnapTray::AnimatedExportOptions::fromJson(choices.value("webp").toObject());
+        emit mp4OptionsChanged();
+        emit animatedOptionsChanged();
+        applyEditState(*state);
+    };
+    if (!m_pendingSessionBaseline.isEmpty()) {
+        apply(std::exchange(m_pendingSessionBaseline, {}));
+        m_editHistory.reset(currentEditState());
+        setDraftBaseline();
+    }
+    if (m_pendingDraft) {
+        apply(*m_pendingDraft);
+        m_editHistory.record(currentEditState());
+    }
+    m_restoringProject = false;
+    m_pendingDraft.reset();
+    emit editHistoryChanged();
+    emit projectChanged();
+}
+
+void RecordingPreviewBackend::setDraftBaseline()
+{
+    if (m_draftIdentity.isEmpty()) return;
+    m_draftBaseline = currentEditState();
+    m_draftBaselineChoices = exportChoices();
+    m_draftActive = true;
+}
+
+void RecordingPreviewBackend::scheduleDraft()
+{
+    if (!m_draftActive || m_restoringProject || projectLoading() || m_closeHandled) return;
+    if (m_project) SnapTray::RecordingProjects::setPendingDraft(m_project->dir, true);
+    ++m_draftGeneration;
+    m_draftDirty = true;
+    m_draftTimer.start();
+}
+
+void RecordingPreviewBackend::writeDraft()
+{
+    if (!m_draftDirty || m_draftWorker || !m_draftActive) return;
+    const auto state = currentEditState();
+    const auto choices = exportChoices();
+    const bool clean = state == m_draftBaseline && choices == m_draftBaselineChoices;
+    m_draftDirty = false;
+    auto* worker = new QFutureWatcher<bool>(this);
+    m_draftWorker = worker;
+    connect(worker, &QFutureWatcher<bool>::finished, this, [this, worker, generation = m_draftGeneration] {
+        if (m_draftWorker != worker) return;
+        finishDraftWrite();
+        if (generation != m_draftGeneration && !m_draftTimer.isActive()) writeDraft();
+    });
+    using Snapshot = SnapTray::RecordingDraft::Snapshot;
+    std::optional<Snapshot> sessionBaseline;
+    if (!m_project && !clean) sessionBaseline = Snapshot{m_draftBaseline, m_draftBaselineChoices};
+    worker->setFuture(QtConcurrent::run([video = m_videoPath, id = m_draftIdentity, state, choices, clean, sessionBaseline] {
+        return clean ? SnapTray::RecordingDraft::remove(video)
+                     : SnapTray::RecordingDraft::write(video, id, {state, choices}, sessionBaseline);
+    }));
+}
+
+QString RecordingPreviewBackend::draftWriteError()
+{
+    return tr("Draft could not be saved. Check free space and file permissions, then retry.");
+}
+
+void RecordingPreviewBackend::retryDraft()
+{
+    if (m_draftFailed) writeDraft();
+}
+
+bool RecordingPreviewBackend::finishDraftWrite()
+{
+    auto* worker = std::exchange(m_draftWorker, nullptr);
+    if (!worker) return true;
+    worker->waitForFinished();
+    const bool ok = worker->result();
+    worker->deleteLater();
+    if (m_project && ok && !m_draftDirty)
+        SnapTray::RecordingProjects::setPendingDraft(m_project->dir, false);
+    m_draftFailed = !ok;
+    if (!ok) {
+        m_draftDirty = true;
+        setErrorMessage(draftWriteError());
+    } else if (m_errorMessage == draftWriteError()) {
+        clearError();
+    }
+    return ok;
+}
+
+bool RecordingPreviewBackend::flushDraft()
+{
+    m_draftTimer.stop();
+    finishDraftWrite();
+    if (!m_draftActive || !m_draftDirty) return true;
+    writeDraft();
+    return finishDraftWrite();
+}
+
+void RecordingPreviewBackend::showDraftRemovalError()
+{
+    auto* warning = new QMessageBox(QMessageBox::Warning, tr("Recover recording edits"),
+                                    tr("The draft could not be removed."), QMessageBox::Ok);
+    warning->setAttribute(Qt::WA_DeleteOnClose);
+    warning->open();
+}
+
+bool RecordingPreviewBackend::clearDraft()
+{
+    if (!m_draftActive) return true;
+    m_draftTimer.stop();
+    finishDraftWrite();
+    if (!SnapTray::RecordingDraft::remove(m_videoPath)) {
+        setErrorMessage(tr("The draft could not be removed."));
+        return false;
+    }
+    m_draftActive = m_draftDirty = false;
+    if (m_project) {
+        SnapTray::RecordingProjects::setPendingDraft(m_project->dir, false);
+        emit SnapTray::RecordingProjects::events()->thumbnailChanged(m_project->dir);
+        SnapTray::requestProjectThumbnail(*m_project);
+    }
+    return true;
+}
+
 void RecordingPreviewBackend::close()
 {
     if (isProcessing() || m_closeHandled) return;
@@ -1701,6 +1929,9 @@ void RecordingPreviewBackend::close()
 void RecordingPreviewBackend::finishClose()
 {
     if (m_closeHandled) return;
+    // Drain the writer before the owner releases the session lock.
+    if (m_applicationQuitting) flushDraft();
+    else if (!m_saved && !clearDraft()) return;
     m_closeHandled = true;
     const QString discardPath = m_videoPath;
     const bool saved = m_saved;
@@ -1838,6 +2069,7 @@ void RecordingPreviewBackend::applyPendingProjectRecipe()
     // Undo starts from the project as it was saved.
     m_editHistory.reset(currentEditState());
     m_projectOpenedRecipe = currentRecipe();
+    setDraftBaseline();
     emit editHistoryChanged();
     emit projectChanged(); // Save is possible now
 }
@@ -1845,6 +2077,7 @@ void RecordingPreviewBackend::applyPendingProjectRecipe()
 bool RecordingPreviewBackend::hasUnsavedProjectChanges() const
 {
     // Nothing can be edited before the saved edits are applied.
+    if (m_pendingDraft && m_project) return true;
     if (!m_project || projectLoading()) return false;
     return currentRecipe() != m_projectOpenedRecipe;
 }
@@ -1865,6 +2098,7 @@ void RecordingPreviewBackend::applyPendingInitialCrop()
     setCropRect(std::exchange(m_pendingInitialCrop, QRect()));
     m_editHistory.reset(currentEditState());
     emit editHistoryChanged();
+    setDraftBaseline();
     emit projectChanged(); // Save is possible now
 }
 
@@ -1875,9 +2109,13 @@ bool RecordingPreviewBackend::keepsProject() const
 
 QJsonObject RecordingPreviewBackend::currentRecipe() const
 {
-    return SnapTray::RecordingRecipe::toJson(
-        currentEditState(), {{QStringLiteral("format"), m_selectedFormat}, {QStringLiteral("mp4"), m_mp4Options.toJson()},
-                            {QStringLiteral("gif"), m_gifOptions.toJson()}, {QStringLiteral("webp"), m_webpOptions.toJson()}});
+    return SnapTray::RecordingRecipe::toJson(currentEditState(), exportChoices());
+}
+
+QJsonObject RecordingPreviewBackend::exportChoices() const
+{
+    return {{QStringLiteral("format"), m_selectedFormat}, {QStringLiteral("mp4"), m_mp4Options.toJson()},
+                            {QStringLiteral("gif"), m_gifOptions.toJson()}, {QStringLiteral("webp"), m_webpOptions.toJson()}};
 }
 
 std::optional<QJsonObject> RecordingPreviewBackend::recipeForProject(const QString& projectDir, QJsonObject recipe, QString* copied, QString* error) const
@@ -2216,7 +2454,7 @@ void RecordingPreviewBackend::setAudioClipOption(int index, const QString& key, 
 }
 void RecordingPreviewBackend::storeAudioClipsForRecovery()
 {
-    if (m_project) return; // the project manifest is authoritative
+    if (m_project || !m_draftIdentity.isEmpty()) return; // the full recipe owns these edits
     QSaveFile file(m_videoPath + QStringLiteral(".imports.json"));
     const QByteArray data = QJsonDocument(m_audioClips.toJson()).toJson(QJsonDocument::Compact);
     if (!file.open(QIODevice::WriteOnly) || file.write(data) != data.size() || !file.commit())
@@ -2667,6 +2905,7 @@ void RecordingPreviewBackend::updateDuration(qint64 ms)
         emit durationChanged();
         emit trimRangeChanged();
         applyPendingProjectRecipe();
+        applyPendingDraft();
         QTimer::singleShot(0, this, &RecordingPreviewBackend::applyPendingAutoZoom);
     }
 }
@@ -2879,6 +3118,11 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
     m_pendingSaveOutput.clear();
     const bool derived = output != m_videoPath;
 
+    if (outcome == SaveOutcome::Saved) {
+        // Project creation can move the source and its assets.
+        m_draftTimer.stop();
+        finishDraftWrite();
+    }
     if (outcome == SaveOutcome::Saved && m_project) {
         // A project keeps its source; the save updates its recipe. The save
         // dialog took the export (or the copy) as with any save.
@@ -2890,6 +3134,10 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
             setErrorMessage(tr("Saved to %1, but the project could not be updated. Save again to keep these "
                                "edits in the project.").arg(QDir::toNativeSeparators(savedPath))
                             + (m_projectSaveError.isEmpty() ? QString() : QLatin1Char('\n') + m_projectSaveError));
+            return;
+        }
+        if (!clearDraft()) {
+            finishProcessing();
             return;
         }
         finishProcessing();
@@ -2926,6 +3174,11 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
         SnapTray::CursorTimelineSidecar::remove(m_videoPath);
         SnapTray::KeyTimelineSidecar::remove(m_videoPath);
         SnapTray::AudioTracks::remove(m_videoPath);
+        if (!clearDraft()) {
+            // The export is committed and the source may already have moved.
+            m_draftActive = m_draftDirty = false;
+            showDraftRemovalError();
+        }
         SnapTray::RecordingSession::remove(m_videoPath);
         finishProcessing();
         m_saved = true;
@@ -2978,6 +3231,7 @@ void RecordingPreviewBackend::discard()
         qDebug() << "RecordingPreviewBackend: Discard ignored while processing";
         return;
     }
+    if (!clearDraft()) return;
     m_saved = false;
     if (m_discardConfirmationPending) {
         m_discardConfirmationPending = false;
@@ -3072,6 +3326,7 @@ void RecordingPreviewBackend::updateVideoSize(const QSize &size)
     emit videoSizeChanged();
     applyPendingProjectRecipe();
     applyPendingInitialCrop();
+    applyPendingDraft();
     if (m_windowTimeline && m_windowTimeline->frameSize() != size) {
         qWarning() << "RecordingPreviewBackend: window timeline frame size" << m_windowTimeline->frameSize()
                    << "does not match the video" << size << "- snapping disabled";
